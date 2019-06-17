@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace neo_express
+namespace Neo.Express
 {
     class Program
     {

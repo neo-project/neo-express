@@ -85,6 +85,8 @@ namespace Neo.Express.Commands
             }
 
             console.WriteLine($"Created {nodeCount} node privatenet at {output}");
+            console.WriteLine("    Note: The private keys for the accounts in this file are stored in the clear.");
+            console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
             return 0;
         }
     }

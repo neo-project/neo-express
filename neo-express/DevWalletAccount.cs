@@ -27,7 +27,9 @@ namespace Neo.Express
         {
             writer.WriteStartObject();
             writer.WriteString("private-key", key.PrivateKey.ToHexString());
-            writer.WriteString("script-hash", this.ScriptHash.ToAddress());
+            writer.WriteString("script-hash", ScriptHash.ToAddress());
+            writer.WriteString("label", Label);
+            writer.WriteBoolean("is-default", IsDefault);
             writer.WriteStartObject("contract");
             writer.WriteString("script", Contract?.Script.ToHexString());
             writer.WriteStartArray("parameters");

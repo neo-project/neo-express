@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -32,16 +33,33 @@ namespace Neo.Express.Commands
         [Option]
         int MultiNode { get; }
 
-        async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
-        {
-            await Task.Delay(1);
+        [Option]
+        string Output { get; }
 
+        [Option]
+        bool Force { get; }
+
+        int OnExecute(CommandLineApplication app, IConsole console)
+        {
+            var output = string.IsNullOrEmpty(Output)
+                ? Path.Combine(Directory.GetCurrentDirectory(), "express.privatenet.json")
+                : Output;
+
+            if (File.Exists(output) && !Force)
+            {
+                console.WriteLine("You must specify --force to overwrite an existing file");
+                app.ShowHelp();
+                return 1;
+            }
+
+            var nodeCount = (MultiNode == 0 ? 1 : MultiNode);
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>();
 
-            for (int i = 1; i <= (MultiNode == 0 ? 1 : MultiNode); i++)
+            for (int i = 1; i <= nodeCount; i++)
             {
                 var wallet = new DevWallet($"node{i}");
                 var account = wallet.CreateAccount();
+                account.IsDefault = true;
                 wallets.Add((wallet, account));
             }
 
@@ -51,10 +69,11 @@ namespace Neo.Express.Commands
 
             foreach (var (wallet, account) in wallets)
             {
-                wallet.CreateAccount(contract, account.GetKey());
+                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
+                multiSigContractAccount.Label = "MultiSigContract";
             }
 
-            using (var stream = Console.OpenStandardOutput())
+            using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
             using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
                 writer.WriteStartArray();
@@ -65,6 +84,7 @@ namespace Neo.Express.Commands
                 writer.WriteEndArray();
             }
 
+            console.WriteLine($"Created {nodeCount} node privatenet at {output}");
             return 0;
         }
     }

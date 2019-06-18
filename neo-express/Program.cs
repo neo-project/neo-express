@@ -1,12 +1,19 @@
-﻿using System;
+﻿using McMaster.Extensions.CommandLineUtils;
+using Neo.Express.Commands;
 
 namespace Neo.Express
 {
+    [Command("neo-express")]
+    [Subcommand(typeof(CreateCommand))]
     class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
+
+        int OnExecute(CommandLineApplication app, IConsole console)
         {
-            Console.WriteLine("Hello World!");
+            console.WriteLine("You must specify at a subcommand.");
+            app.ShowHelp();
+            return 1;
         }
     }
 }

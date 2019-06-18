@@ -6,4 +6,10 @@
     <RootNamespace>Neo.Express</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
+    <PackageReference Include="Neo" Version="3.0.0-CI00075" />
+    <PackageReference Include="System.Text.Json" Version="4.6.0-preview6.19303.8" />
+  </ItemGroup>
+
 </Project>

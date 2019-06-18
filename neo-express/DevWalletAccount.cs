@@ -23,6 +23,32 @@ namespace Neo.Express
             return key;
         }
 
+        public static DevWalletAccount FromJson(JsonElement json)
+        {
+            var jsonContract = json.GetProperty("contract");
+            var contract = new Contract()
+            {
+                Script = jsonContract
+                    .GetProperty("script")
+                    .GetString()
+                    .HexToBytes(),
+                ParameterList = jsonContract
+                    .GetProperty("parameters")
+                    .EnumerateArray()
+                    .Select(cpt => Enum.Parse<ContractParameterType>(cpt.GetString()))
+                    .ToArray(),
+            };
+
+            return new DevWalletAccount(
+                new KeyPair(json.GetProperty("private-key").GetString().HexToBytes()),
+                contract,
+                json.GetProperty("script-hash").GetString().ToScriptHash())
+            {
+                Label = json.GetProperty("label").GetString(),
+                IsDefault = json.GetProperty("is-default").GetBoolean()
+            };
+        }
+
         public void WriteJson(Utf8JsonWriter writer)
         {
             writer.WriteStartObject();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text.Json;
 using Neo.SmartContract;
 using Neo.Wallets;
@@ -16,10 +17,17 @@ namespace Neo.Express
         {
             this.name = name;
 
-            foreach (var a in accounts ?? System.Linq.Enumerable.Empty<DevWalletAccount>())
+            foreach (var a in accounts ?? Enumerable.Empty<DevWalletAccount>())
             {
                 this.accounts.Add(a.ScriptHash, a);
             }
+        }
+
+        public static DevWallet FromJson(JsonElement json)
+        {
+            return new DevWallet(
+                json.GetProperty("name").GetString(), 
+                json.GetProperty("accounts").EnumerateArray().Select(DevWalletAccount.FromJson));
         }
 
         public void WriteJson(Utf8JsonWriter writer)
@@ -41,6 +49,15 @@ namespace Neo.Express
 
         public override bool Contains(UInt160 scriptHash) => accounts.ContainsKey(scriptHash);
 
+        DevWalletAccount AddAccount(DevWalletAccount account)
+        {
+            lock (accounts)
+            {
+                accounts.Add(account.ScriptHash, account);
+            }
+            return account;
+        }
+
         public override WalletAccount CreateAccount(byte[] privateKey)
         {
             var key = new KeyPair(privateKey);
@@ -51,26 +68,19 @@ namespace Neo.Express
             };
 
             var account = new DevWalletAccount(key, contract, contract.ScriptHash);
-            lock (accounts)
-            {
-                accounts.Add(account.ScriptHash, account);
-            }
-            return account;
+            return AddAccount(account);
         }
 
         public override WalletAccount CreateAccount(Contract contract, KeyPair key = null)
         {
             var account = new DevWalletAccount(key, contract, contract.ScriptHash);
-            lock (accounts)
-            {
-                accounts.Add(account.ScriptHash, account);
-            }
-            return account;
+            return AddAccount(account);
         }
 
         public override WalletAccount CreateAccount(UInt160 scriptHash)
         {
-            throw new NotImplementedException();
+            var account = new DevWalletAccount(null, null, scriptHash);
+            return AddAccount(account);
         }
 
         public override bool DeleteAccount(UInt160 scriptHash) => accounts.Remove(scriptHash);

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace Neo.Express.Commands
@@ -76,12 +74,8 @@ namespace Neo.Express.Commands
             using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
             using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
-                writer.WriteStartArray();
-                foreach (var (wallet, _) in wallets)
-                {
-                    wallet.WriteJson(writer);
-                }
-                writer.WriteEndArray();
+                var chain = new DevChain(wallets.Select(t => t.wallet));
+                chain.WriteJson(writer);
             }
 
             console.WriteLine($"Created {nodeCount} node privatenet at {output}");

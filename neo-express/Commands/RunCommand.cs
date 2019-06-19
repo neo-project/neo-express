@@ -28,19 +28,6 @@ namespace Neo.Express.Commands
         [Option]
         uint SecondsPerBlock { get; }
 
-        DevChain LoadChain(string input)
-        {
-            using (var stream = File.OpenRead(input))
-            {
-                var doc = JsonDocument.Parse(stream);
-                if (!DevChain.InitializeProtocolSettings(doc, SecondsPerBlock))
-                {
-                    throw new Exception("Couldn't initialize protocol settings");
-                }
-                return DevChain.Parse(doc);
-            }
-        }
-
         class LogPlugin : Plugin, ILogPlugin
         {
             readonly IConsole console;
@@ -56,7 +43,7 @@ namespace Neo.Express.Commands
 
             void ILogPlugin.Log(string source, LogLevel level, string message)
             {
-                console.WriteLine($"{source} {level} {message}");
+                console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
             }
         }
 
@@ -73,7 +60,20 @@ namespace Neo.Express.Commands
                 return 1;
             }
 
-            var chain = LoadChain(input);
+            DevChain LoadChain()
+            {
+                using (var stream = File.OpenRead(input))
+                {
+                    var doc = JsonDocument.Parse(stream);
+                    if (!DevChain.InitializeProtocolSettings(doc, SecondsPerBlock))
+                    {
+                        throw new Exception("Couldn't initialize protocol settings");
+                    }
+                    return DevChain.Parse(doc);
+                }
+            }
+
+            var chain = LoadChain();
             if (NodeIndex >= chain.Wallets.Count || NodeIndex < 0)
             {
                 console.WriteLine("Invalid node index");
@@ -83,8 +83,7 @@ namespace Neo.Express.Commands
 
             var wallet = chain.Wallets[NodeIndex];
             var cts = new CancellationTokenSource();
-            var address = IPAddress.Parse("127.0.0.1");
-            var port = ((NodeIndex + 1) * 10000) + 1;
+            var basePort = (NodeIndex + 1) * 10000;
 
             const string ROOT_PATH = @"C:\Users\harry\neoexpress";
             var path = Path.Combine(ROOT_PATH, wallet.GetAccounts().Single(a => a.IsDefault).Address);
@@ -102,24 +101,19 @@ namespace Neo.Express.Commands
                 {
                     var logPlugin = new LogPlugin(console);
 
-                    var channelConfig = new ChannelsConfig()
+                    system.StartNode(new ChannelsConfig()
                     {
-                        Tcp = new IPEndPoint(address, port),
-                        WebSocket = new IPEndPoint(address, port + 1)
-                    };
-
-                    system.StartNode(channelConfig);
+                        Tcp = new IPEndPoint(IPAddress.Any, basePort + 1),
+                        WebSocket = new IPEndPoint(IPAddress.Any, basePort + 2)
+                    });
                     system.StartConsensus(wallet);
-                    system.StartRpc(address, port + 2, wallet);
-                }
+                    system.StartRpc(IPAddress.Any, basePort + 2, wallet);
 
-                cts.Token.WaitHandle.WaitOne();
+                    cts.Token.WaitHandle.WaitOne();
+                }
             });
 
-            console.CancelKeyPress += (sender, args) =>
-            {
-                cts.Cancel();
-            };
+            console.CancelKeyPress += (sender, args) => cts.Cancel();
 
             cts.Token.WaitHandle.WaitOne();
             return 0;

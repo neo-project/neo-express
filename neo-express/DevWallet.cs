@@ -30,6 +30,15 @@ namespace Neo.Express
                 json.GetProperty("accounts").EnumerateArray().Select(DevWalletAccount.FromJson));
         }
 
+        public static KeyPair KeyPairFromJson(JsonElement json)
+        {
+            return new KeyPair(json.GetProperty("accounts").EnumerateArray()
+                .Select(DevWalletAccount.PrivateKeyFromJson)
+                .Distinct()
+                .Single()
+                .HexToBytes());
+        }
+
         public void WriteJson(Utf8JsonWriter writer)
         {
             writer.WriteStartObject();

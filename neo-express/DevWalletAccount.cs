@@ -23,6 +23,11 @@ namespace Neo.Express
             return key;
         }
 
+        public static string PrivateKeyFromJson(JsonElement json)
+        {
+            return json.GetProperty("private-key").GetString();
+        }
+
         public static DevWalletAccount FromJson(JsonElement json)
         {
             var jsonContract = json.GetProperty("contract");

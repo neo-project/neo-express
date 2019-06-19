@@ -23,12 +23,12 @@ namespace Neo.Express
             return key;
         }
 
-        public static string PrivateKeyFromJson(JsonElement json)
+        public static string ParsePrivateKey(JsonElement json)
         {
             return json.GetProperty("private-key").GetString();
         }
 
-        public static DevWalletAccount FromJson(JsonElement json)
+        public static DevWalletAccount Parse(JsonElement json)
         {
             var jsonContract = json.GetProperty("contract");
             var contract = new Contract()
@@ -54,7 +54,7 @@ namespace Neo.Express
             };
         }
 
-        public void WriteJson(Utf8JsonWriter writer)
+        public void Write(Utf8JsonWriter writer)
         {
             writer.WriteStartObject();
             writer.WriteString("private-key", key.PrivateKey.ToHexString());

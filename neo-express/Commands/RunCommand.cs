@@ -37,7 +37,7 @@ namespace Neo.Express.Commands
                 {
                     throw new Exception("Couldn't initialize protocol settings");
                 }
-                return DevChain.FromJson(doc);
+                return DevChain.Parse(doc);
             }
         }
 
@@ -83,7 +83,7 @@ namespace Neo.Express.Commands
 
             var wallet = chain.Wallets[NodeIndex];
             var cts = new CancellationTokenSource();
-            var address = IPAddress.Loopback;
+            var address = IPAddress.Parse("127.0.0.1");
             var port = ((NodeIndex + 1) * 10000) + 1;
 
             const string ROOT_PATH = @"C:\Users\harry\neoexpress";

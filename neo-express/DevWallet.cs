@@ -23,30 +23,30 @@ namespace Neo.Express
             }
         }
 
-        public static DevWallet FromJson(JsonElement json)
+        public static DevWallet Parse(JsonElement json)
         {
             return new DevWallet(
                 json.GetProperty("name").GetString(), 
-                json.GetProperty("accounts").EnumerateArray().Select(DevWalletAccount.FromJson));
+                json.GetProperty("accounts").EnumerateArray().Select(DevWalletAccount.Parse));
         }
 
-        public static KeyPair KeyPairFromJson(JsonElement json)
+        public static KeyPair ParseKeyPair(JsonElement json)
         {
             return new KeyPair(json.GetProperty("accounts").EnumerateArray()
-                .Select(DevWalletAccount.PrivateKeyFromJson)
+                .Select(DevWalletAccount.ParsePrivateKey)
                 .Distinct()
                 .Single()
                 .HexToBytes());
         }
 
-        public void WriteJson(Utf8JsonWriter writer)
+        public void Write(Utf8JsonWriter writer)
         {
             writer.WriteStartObject();
             writer.WriteString("name", Name);
             writer.WriteStartArray("accounts");
             foreach (var a in accounts.Values)
             {
-                a.WriteJson(writer);
+                a.Write(writer);
             }
             writer.WriteEndArray();
             writer.WriteEndObject();

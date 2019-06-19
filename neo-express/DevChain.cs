@@ -46,16 +46,16 @@ namespace Neo.Express
         {
         }
 
-        public static DevChain FromJson(JsonElement json)
+        public static DevChain Parse(JsonElement json)
         {
             return new DevChain(
                 json.GetProperty("magic").GetUInt32(),
-                json.GetProperty("wallets").EnumerateArray().Select(DevWallet.FromJson));
+                json.GetProperty("wallets").EnumerateArray().Select(DevWallet.Parse));
         }
 
-        public static DevChain FromJson(JsonDocument doc)
+        public static DevChain Parse(JsonDocument doc)
         {
-            return FromJson(doc.RootElement);
+            return Parse(doc.RootElement);
         }
 
         // InitializeProtocolSettings uses the dev chain's raw JSON information 
@@ -64,7 +64,7 @@ namespace Neo.Express
         {
             var keyPairs = json.GetProperty("wallets")
                 .EnumerateArray()
-                .Select(DevWallet.KeyPairFromJson);
+                .Select(DevWallet.ParseKeyPair);
 
             secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
 
@@ -105,7 +105,7 @@ namespace Neo.Express
             writer.WriteStartArray("wallets");
             foreach (var wallet in Wallets)
             {
-                wallet.WriteJson(writer);
+                wallet.Write(writer);
             }
             writer.WriteEndArray();
             writer.WriteEndObject();

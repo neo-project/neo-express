@@ -4,7 +4,7 @@ using Neo.Express.Commands;
 namespace Neo.Express
 {
     [Command("neo-express")]
-    [Subcommand(typeof(CreateCommand))]
+    [Subcommand(typeof(CreateCommand), typeof(RunCommand))]
     class Program
     {
         static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);

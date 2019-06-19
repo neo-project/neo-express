@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -10,8 +11,10 @@ namespace Neo.Express
 {
     class DevChain
     {
-        const uint MAINNET_MAGIC = 0x4F454Eu;
-        const uint TESTNET_MAGIC = 0x544F454Eu;
+        readonly static ImmutableArray<uint> KNOWN_MAGIC_NUMBERS = ImmutableArray.Create(
+            /* NEO 3 MainNet */ 0x4F454Eu,
+            /* NEO 2 TestNet */ 0x544F454Eu,
+            /* NEO 2 MainNet */ 0x746E41u);
 
         static uint GenerateMagicValue()
         {
@@ -21,9 +24,7 @@ namespace Neo.Express
             {
                 uint magic = (uint)random.Next(int.MaxValue);
 
-                // ensure the generated magic value isn't MainNet or TestNet's 
-                // magic value
-                if (!(magic == MAINNET_MAGIC || magic == TESTNET_MAGIC))
+                if (!KNOWN_MAGIC_NUMBERS.Contains(magic))
                 {
                     return magic;
                 }
@@ -57,13 +58,15 @@ namespace Neo.Express
             return FromJson(doc.RootElement);
         }
 
-        // InitializeProtocolSettings works against the raw dev chain JSON file to avoid
-        // default initialization of ProtocolSettings.
-        public static bool InitializeProtocolSettings(JsonElement json, uint secondsPerBlock = 15)
+        // InitializeProtocolSettings uses the dev chain's raw JSON information 
+        // to avoid default initialization of ProtocolSettings.
+        public static bool InitializeProtocolSettings(JsonElement json, uint secondsPerBlock = 0)
         {
             var keyPairs = json.GetProperty("wallets")
                 .EnumerateArray()
                 .Select(DevWallet.KeyPairFromJson);
+
+            secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
 
             IEnumerable<KeyValuePair<string, string>> settings()
             {

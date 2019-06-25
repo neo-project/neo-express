@@ -20,7 +20,7 @@ namespace Neo.Express
         {
             var random = new Random();
 
-            do
+            while (true)
             {
                 uint magic = (uint)random.Next(int.MaxValue);
 
@@ -29,7 +29,6 @@ namespace Neo.Express
                     return magic;
                 }
             }
-            while (true);
         }
 
         public uint Magic { get; set; }

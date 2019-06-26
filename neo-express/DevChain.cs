@@ -94,7 +94,7 @@ namespace Neo.Express
 
         public static bool InitializeProtocolSettings(JsonDocument doc, uint secondsPerBlock = 15)
         {
-            return InitializeProtocolSettings(doc.RootElement);
+            return InitializeProtocolSettings(doc.RootElement, secondsPerBlock);
         }
 
         public void WriteJson(Utf8JsonWriter writer)

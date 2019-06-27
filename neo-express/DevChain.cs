@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -33,15 +34,17 @@ namespace Neo.Express
 
         public uint Magic { get; set; }
         public List<DevWallet> ConensusNodes { get; set; }
+        public List<DevWallet> Wallets { get; set; }
 
-        public DevChain(uint magic, IEnumerable<DevWallet> consensusNodes)
+        public DevChain(uint magic, IEnumerable<DevWallet> consensusNodes, IEnumerable<DevWallet> wallets = null)
         {
             Magic = magic;
             ConensusNodes = consensusNodes.ToList();
+            Wallets = wallets == null ? new List<DevWallet>() : wallets.ToList();
         }
 
-        public DevChain(IEnumerable<DevWallet> wallets) 
-            : this(GenerateMagicValue(), wallets)
+        public DevChain(IEnumerable<DevWallet> consensusNodes, IEnumerable<DevWallet> wallets = null) 
+            : this(GenerateMagicValue(), consensusNodes, wallets)
         {
         }
 
@@ -49,12 +52,30 @@ namespace Neo.Express
         {
             return new DevChain(
                 json.GetProperty("magic").GetUInt32(),
-                json.GetProperty("consensus-nodes").EnumerateArray().Select(DevWallet.Parse));
+                json.GetProperty("consensus-nodes").EnumerateArray().Select(DevWallet.Parse),
+                json.GetProperty("wallets").EnumerateArray().Select(DevWallet.Parse));
         }
 
         public static DevChain Parse(JsonDocument doc)
         {
             return Parse(doc.RootElement);
+        }
+
+        public static DevChain Load(string filename)
+        {
+            using (var stream = File.OpenRead(filename))
+            {
+                return DevChain.Parse(JsonDocument.Parse(stream));
+            }
+        }
+
+        public void Save(string filename)
+        {
+            using (var stream = File.Open(filename, FileMode.Create, FileAccess.Write))
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            {
+                WriteJson(writer);
+            }
         }
 
         // InitializeProtocolSettings uses the dev chain's raw JSON information 
@@ -105,6 +126,12 @@ namespace Neo.Express
             foreach (var conensusNode in ConensusNodes)
             {
                 conensusNode.Write(writer);
+            }
+            writer.WriteEndArray();
+            writer.WriteStartArray("wallets");
+            foreach (var wallets in Wallets)
+            {
+                wallets.Write(writer);
             }
             writer.WriteEndArray();
             writer.WriteEndObject();

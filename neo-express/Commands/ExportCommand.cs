@@ -40,27 +40,27 @@ namespace Neo.Express.Commands
 
             var password = Prompt.GetPassword("Input password to use for exported wallets");
 
-            for (var i = 0; i < chain.Wallets.Count; i++)
+            for (var i = 0; i < chain.ConensusNodes.Count; i++)
             {
-                var wallet = chain.Wallets[i];
-                console.WriteLine($"Exporting {wallet.Name}");
+                var conensusNode = chain.ConensusNodes[i];
+                console.WriteLine($"Exporting {conensusNode.Name} Conensus Node wallet");
 
-                var walletPath = Path.Combine(Directory.GetCurrentDirectory(), $"{wallet.Name}.wallet.json");
+                var walletPath = Path.Combine(Directory.GetCurrentDirectory(), $"{conensusNode.Name}.wallet.json");
                 if (File.Exists(walletPath))
                 {
                     File.Delete(walletPath);
                 }
 
-                var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(walletPath, wallet.Name);
+                var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(walletPath, conensusNode.Name);
                 nep6Wallet.Unlock(password);
-                foreach (var account in wallet.GetAccounts())
+                foreach (var account in conensusNode.GetAccounts())
                 {
                     nep6Wallet.CreateAccount(account.Contract, account.GetKey());
                 }
                 nep6Wallet.Save();
 
                 var basePort = (i + 1) * 10000;
-                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{wallet.Name}.config.json"), FileMode.Create, FileAccess.Write))
+                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{conensusNode.Name}.config.json"), FileMode.Create, FileAccess.Write))
                 using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
                 {
                     writer.WriteStartObject();
@@ -106,14 +106,14 @@ namespace Neo.Express.Commands
                     writer.WriteNumber("SecondsPerBlock", 15);
 
                     writer.WriteStartArray("StandbyValidators");
-                    foreach (var wallet in chain.Wallets)
+                    foreach (var wallet in chain.ConensusNodes)
                     {
-                        writer.WriteStringValue(wallet.GetAccounts().First().GetKey().PublicKey.EncodePoint(true).ToHexString());
+                        writer.WriteStringValue(wallet.GetAccounts().Single(a => a.IsDefault).GetKey().PublicKey.EncodePoint(true).ToHexString());
                     }
                     writer.WriteEndArray();
 
                     writer.WriteStartArray("SeedList");
-                    for (var i = 0; i < chain.Wallets.Count; i++)
+                    for (var i = 0; i < chain.ConensusNodes.Count; i++)
                     {
                         writer.WriteStringValue($"{System.Net.IPAddress.Loopback}:{((i + 1) * 10000) + 1}");
                     }

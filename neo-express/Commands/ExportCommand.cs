@@ -51,13 +51,7 @@ namespace Neo.Express.Commands
                     File.Delete(walletPath);
                 }
 
-                var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(walletPath, conensusNode.Name);
-                nep6Wallet.Unlock(password);
-                foreach (var account in conensusNode.GetAccounts())
-                {
-                    nep6Wallet.CreateAccount(account.Contract, account.GetKey());
-                }
-                nep6Wallet.Save();
+                conensusNode.Export(walletPath, password);
 
                 var basePort = (i + 1) * 10000;
                 using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{conensusNode.Name}.config.json"), FileMode.Create, FileAccess.Write))

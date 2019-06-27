@@ -39,10 +39,7 @@ namespace Neo.Express.Commands
 
         int OnExecute(CommandLineApplication app, IConsole console)
         {
-            var output = string.IsNullOrEmpty(Output)
-                ? Path.Combine(Directory.GetCurrentDirectory(), "express.privatenet.json")
-                : Output;
-
+            var output = Program.DefaultPrivatenetFileName(Output);
             if (File.Exists(output) && !Force)
             {
                 console.WriteLine("You must specify --force to overwrite an existing file");

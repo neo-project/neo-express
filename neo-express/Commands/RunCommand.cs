@@ -49,10 +49,7 @@ namespace Neo.Express.Commands
 
         int OnExecute(CommandLineApplication app, IConsole console)
         {
-            var input = string.IsNullOrEmpty(Input)
-                ? Path.Combine(Directory.GetCurrentDirectory(), "express.privatenet.json")
-                : Input;
-
+            var input = Program.DefaultPrivatenetFileName(Input);
             if (!File.Exists(input))
             {
                 console.WriteLine($"{input} doesn't exist");

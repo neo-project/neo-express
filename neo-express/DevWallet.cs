@@ -52,6 +52,17 @@ namespace Neo.Express
             writer.WriteEndObject();
         }
 
+        public void Export(string filename, string password)
+        {
+            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(filename, Name);
+            nep6Wallet.Unlock(password);
+            foreach (var account in GetAccounts())
+            {
+                nep6Wallet.CreateAccount(account.Contract, account.GetKey());
+            }
+            nep6Wallet.Save();
+        }
+
         public override string Name => name;
 
         public override Version Version => null;

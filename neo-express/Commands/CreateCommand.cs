@@ -12,13 +12,13 @@ namespace Neo.Express.Commands
     {
         class ValidNodeCountAttribute : ValidationAttribute
         {
-            public ValidNodeCountAttribute() : base("The value for {0} must be '4' or '7'")
+            public ValidNodeCountAttribute() : base("The value for {0} must be 1, 4 or 7")
             {
             }
 
             protected override ValidationResult IsValid(object value, ValidationContext context)
             {
-                if (value == null || (value is string str && str != "4" && str != "7"))
+                if (value == null || (value is string str && str != "1" && str != "4" && str != "7"))
                 {
                     return new ValidationResult(FormatErrorMessage(context.DisplayName));
                 }
@@ -29,7 +29,7 @@ namespace Neo.Express.Commands
 
         [ValidNodeCount]
         [Option]
-        int MultiNode { get; }
+        int Count { get; }
 
         [Option]
         string Output { get; }
@@ -50,7 +50,7 @@ namespace Neo.Express.Commands
                 return 1;
             }
 
-            var nodeCount = (MultiNode == 0 ? 1 : MultiNode);
+            var nodeCount = (Count == 0 ? 1 : Count);
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>();
 
             for (int i = 1; i <= nodeCount; i++)

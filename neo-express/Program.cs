@@ -1,11 +1,11 @@
-using McMaster.Extensions.CommandLineUtils;
+﻿using McMaster.Extensions.CommandLineUtils;
 using Neo.Express.Commands;
 using System.IO;
 
 namespace Neo.Express
 {
     [Command("neo-express")]
-    [Subcommand(typeof(CreateCommand), typeof(RunCommand), typeof(ExportCommand))]
+    [Subcommand(typeof(CreateCommand), typeof(RunCommand), typeof(ExportCommand), typeof(WalletCommand))]
     class Program
     {
         static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);

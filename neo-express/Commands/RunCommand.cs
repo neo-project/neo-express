@@ -95,6 +95,7 @@ namespace Neo.Express.Commands
                 using (var system = new NeoSystem(store))
                 {
                     var logPlugin = new LogPlugin(console);
+                    var rpcPlugin = new ExpressNodeRpcPlugin();
 
                     system.StartNode(new ChannelsConfig()
                     {

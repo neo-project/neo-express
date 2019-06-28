@@ -33,17 +33,17 @@ namespace Neo.Express
         }
 
         public uint Magic { get; set; }
-        public List<DevConensusNode> ConsensusNodes { get; set; }
+        public List<DevConsensusNode> ConsensusNodes { get; set; }
         public List<DevWallet> Wallets { get; set; }
 
-        public DevChain(uint magic, IEnumerable<DevConensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
+        public DevChain(uint magic, IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
         {
             Magic = magic;
             ConsensusNodes = consensusNodes.ToList();
             Wallets = wallets == null ? new List<DevWallet>() : wallets.ToList();
         }
 
-        public DevChain(IEnumerable<DevConensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
+        public DevChain(IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
             : this(GenerateMagicValue(), consensusNodes, wallets)
         {
         }
@@ -52,7 +52,7 @@ namespace Neo.Express
         {
             return new DevChain(
                 json.GetProperty("magic").GetUInt32(),
-                json.GetProperty("consensus-nodes").EnumerateArray().Select(DevConensusNode.Parse),
+                json.GetProperty("consensus-nodes").EnumerateArray().Select(DevConsensusNode.Parse),
                 json.GetProperty("wallets").EnumerateArray().Select(DevWallet.Parse));
         }
 
@@ -84,7 +84,7 @@ namespace Neo.Express
         {
             var nodes = json.GetProperty("consensus-nodes")
                 .EnumerateArray()
-                .Select(DevConensusNode.ParseProtocolSettings);
+                .Select(DevConsensusNode.ParseProtocolSettings);
 
             secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
 

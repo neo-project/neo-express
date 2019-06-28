@@ -76,7 +76,7 @@ namespace Neo.Express.Commands
             using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
             using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
-                var chain = new DevChain(wallets.Select(t => new DevConensusNode()
+                var chain = new DevChain(wallets.Select(t => new DevConsensusNode()
                 {
                     Wallet = t.wallet,
                     TcpPort = port++,

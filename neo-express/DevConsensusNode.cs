@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Neo.Express
 {
-    class DevConensusNode
+    class DevConsensusNode
     {
         public DevWallet Wallet { get; set; }
         public ushort TcpPort { get; set; }
@@ -20,10 +20,10 @@ namespace Neo.Express
 
         }
 
-        public static DevConensusNode Parse(JsonElement json)
+        public static DevConsensusNode Parse(JsonElement json)
         {
             var (tcp, ws, rpc) = ParsePorts(json);
-            return new DevConensusNode()
+            return new DevConsensusNode()
             {
                 Wallet = DevWallet.Parse(json.GetProperty("wallet")),
                 TcpPort = tcp,

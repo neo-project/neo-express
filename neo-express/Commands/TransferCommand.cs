@@ -68,10 +68,9 @@ namespace Neo.Express.Commands
 
             var response = await PostAsync("");
             using (var stream = await response.Content.ReadAsStreamAsync())
+            using (var json = JsonDocument.Parse(stream))
             {
-                var json = JsonDocument.Parse(stream);
                 console.WriteLine(json.ToString());
-
             }
 
             return 1;

@@ -64,8 +64,9 @@ namespace Neo.Express
         public static DevChain Load(string filename)
         {
             using (var stream = File.OpenRead(filename))
+            using (var json = JsonDocument.Parse(stream))
             {
-                return DevChain.Parse(JsonDocument.Parse(stream));
+                return DevChain.Parse(json);
             }
         }
 

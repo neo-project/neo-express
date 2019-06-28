@@ -59,13 +59,14 @@ namespace Neo.Express.Commands
             DevChain LoadChain()
             {
                 using (var stream = File.OpenRead(input))
+                using (var json = JsonDocument.Parse(stream))
                 {
-                    var doc = JsonDocument.Parse(stream);
-                    if (!DevChain.InitializeProtocolSettings(doc, SecondsPerBlock))
+                    if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
                     {
                         throw new Exception("Couldn't initialize protocol settings");
                     }
-                    return DevChain.Parse(doc);
+
+                    return DevChain.Parse(json);
                 }
             }
 

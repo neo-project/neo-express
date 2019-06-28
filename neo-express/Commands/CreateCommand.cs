@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
@@ -37,6 +38,9 @@ namespace Neo.Express.Commands
         [Option]
         bool Force { get; }
 
+        [Option]
+        ushort Port { get; }
+
         int OnExecute(CommandLineApplication app, IConsole console)
         {
             var output = Program.DefaultPrivatenetFileName(Output);
@@ -68,11 +72,18 @@ namespace Neo.Express.Commands
                 multiSigContractAccount.Label = "MultiSigContract";
             }
 
+            var port = Port == 0 ? (ushort)49152 : Port;
             using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
             using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
-                var chain = new DevChain(wallets.Select(t => t.wallet));
-                chain.WriteJson(writer);
+                var chain = new DevChain(wallets.Select(t => new DevConensusNode()
+                {
+                    Wallet = t.wallet,
+                    TcpPort = port++,
+                    WebSocketPort = port++,
+                    RpcPort = port++
+                }));
+                chain.Write(writer);
             }
 
             console.WriteLine($"Created {nodeCount} node privatenet at {output}");

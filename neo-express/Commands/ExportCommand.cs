@@ -40,21 +40,20 @@ namespace Neo.Express.Commands
 
             var password = Prompt.GetPassword("Input password to use for exported wallets");
 
-            for (var i = 0; i < chain.ConensusNodes.Count; i++)
+            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                var conensusNode = chain.ConensusNodes[i];
-                console.WriteLine($"Exporting {conensusNode.Name} Conensus Node wallet");
+                var consensusNode = chain.ConsensusNodes[i];
+                console.WriteLine($"Exporting {consensusNode.Wallet.Name} Conensus Node wallet");
 
-                var walletPath = Path.Combine(Directory.GetCurrentDirectory(), $"{conensusNode.Name}.wallet.json");
+                var walletPath = Path.Combine(Directory.GetCurrentDirectory(), $"{consensusNode.Wallet.Name}.wallet.json");
                 if (File.Exists(walletPath))
                 {
                     File.Delete(walletPath);
                 }
 
-                conensusNode.Export(walletPath, password);
+                consensusNode.Wallet.Export(walletPath, password);
 
-                var basePort = (i + 1) * 10000;
-                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{conensusNode.Name}.config.json"), FileMode.Create, FileAccess.Write))
+                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{consensusNode.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write))
                 using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
                 {
                     writer.WriteStartObject();
@@ -65,13 +64,13 @@ namespace Neo.Express.Commands
                     writer.WriteEndObject();
 
                     writer.WriteStartObject("P2P");
-                    writer.WriteNumber("Port", basePort + 1);
-                    writer.WriteNumber("WsPort", basePort + 2);
+                    writer.WriteNumber("Port", consensusNode.TcpPort);
+                    writer.WriteNumber("WsPort", consensusNode.WebSocketPort);
                     writer.WriteEndObject();
 
                     writer.WriteStartObject("RPC");
                     writer.WriteString("BindAddress", "127.0.0.1");
-                    writer.WriteNumber("Port", basePort + 3);
+                    writer.WriteNumber("Port", consensusNode.RpcPort);
                     writer.WriteString("SslCert", "");
                     writer.WriteString("SslCertPassword", "");
                     writer.WriteEndObject();
@@ -100,16 +99,16 @@ namespace Neo.Express.Commands
                     writer.WriteNumber("SecondsPerBlock", 15);
 
                     writer.WriteStartArray("StandbyValidators");
-                    foreach (var wallet in chain.ConensusNodes)
+                    foreach (var conensusNode in chain.ConsensusNodes)
                     {
-                        writer.WriteStringValue(wallet.GetAccounts().Single(a => a.IsDefault).GetKey().PublicKey.EncodePoint(true).ToHexString());
+                        writer.WriteStringValue(conensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).GetKey().PublicKey.EncodePoint(true).ToHexString());
                     }
                     writer.WriteEndArray();
 
                     writer.WriteStartArray("SeedList");
-                    for (var i = 0; i < chain.ConensusNodes.Count; i++)
+                    foreach (var node in chain.ConsensusNodes)
                     {
-                        writer.WriteStringValue($"{System.Net.IPAddress.Loopback}:{((i + 1) * 10000) + 1}");
+                        writer.WriteStringValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
                     }
                     writer.WriteEndArray();
 

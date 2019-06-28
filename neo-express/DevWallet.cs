@@ -39,9 +39,13 @@ namespace Neo.Express
                 .HexToBytes());
         }
 
-        public void Write(Utf8JsonWriter writer)
+        public void Write(Utf8JsonWriter writer, string propertyName = null)
         {
-            writer.WriteStartObject();
+            if (string.IsNullOrEmpty(propertyName))
+                writer.WriteStartObject();
+            else
+                writer.WriteStartObject(propertyName);
+
             writer.WriteString("name", Name);
             writer.WriteStartArray("accounts");
             foreach (var a in accounts.Values)

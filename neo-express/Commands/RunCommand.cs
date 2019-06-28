@@ -18,8 +18,7 @@ namespace Neo.Express.Commands
     [Command("run")]
     class RunCommand
     {
-        [Option]
-        [Required]
+        [Argument(0)]
         int NodeIndex { get; }
 
         [Option]
@@ -71,19 +70,18 @@ namespace Neo.Express.Commands
             }
 
             var chain = LoadChain();
-            if (NodeIndex >= chain.ConensusNodes.Count || NodeIndex < 0)
+            if (NodeIndex >= chain.ConsensusNodes.Count || NodeIndex < 0)
             {
                 console.WriteLine("Invalid node index");
                 app.ShowHelp();
                 return 1;
             }
-
-            var conensusNode = chain.ConensusNodes[NodeIndex];
+                
+            var consensusNode = chain.ConsensusNodes[NodeIndex];
             var cts = new CancellationTokenSource();
-            var basePort = (NodeIndex + 1) * 10000;
 
             const string ROOT_PATH = @"C:\Users\harry\neoexpress";
-            var path = Path.Combine(ROOT_PATH, conensusNode.GetAccounts().Single(a => a.IsDefault).Address);
+            var path = Path.Combine(ROOT_PATH, consensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).Address);
 
             if (Directory.Exists(path))
             {
@@ -100,11 +98,11 @@ namespace Neo.Express.Commands
 
                     system.StartNode(new ChannelsConfig()
                     {
-                        Tcp = new IPEndPoint(IPAddress.Any, basePort + 1),
-                        WebSocket = new IPEndPoint(IPAddress.Any, basePort + 2)
+                        Tcp = new IPEndPoint(IPAddress.Any, consensusNode.TcpPort),
+                        WebSocket = new IPEndPoint(IPAddress.Any, consensusNode.WebSocketPort)
                     });
-                    system.StartConsensus(conensusNode);
-                    system.StartRpc(IPAddress.Any, basePort + 2, conensusNode);
+                    system.StartConsensus(consensusNode.Wallet);
+                    system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
 
                     cts.Token.WaitHandle.WaitOne();
                 }

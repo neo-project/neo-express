@@ -33,17 +33,17 @@ namespace Neo.Express
         }
 
         public uint Magic { get; set; }
-        public List<DevWallet> ConensusNodes { get; set; }
+        public List<DevConensusNode> ConsensusNodes { get; set; }
         public List<DevWallet> Wallets { get; set; }
 
-        public DevChain(uint magic, IEnumerable<DevWallet> consensusNodes, IEnumerable<DevWallet> wallets = null)
+        public DevChain(uint magic, IEnumerable<DevConensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
         {
             Magic = magic;
-            ConensusNodes = consensusNodes.ToList();
+            ConsensusNodes = consensusNodes.ToList();
             Wallets = wallets == null ? new List<DevWallet>() : wallets.ToList();
         }
 
-        public DevChain(IEnumerable<DevWallet> consensusNodes, IEnumerable<DevWallet> wallets = null) 
+        public DevChain(IEnumerable<DevConensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
             : this(GenerateMagicValue(), consensusNodes, wallets)
         {
         }
@@ -52,7 +52,7 @@ namespace Neo.Express
         {
             return new DevChain(
                 json.GetProperty("magic").GetUInt32(),
-                json.GetProperty("consensus-nodes").EnumerateArray().Select(DevWallet.Parse),
+                json.GetProperty("consensus-nodes").EnumerateArray().Select(DevConensusNode.Parse),
                 json.GetProperty("wallets").EnumerateArray().Select(DevWallet.Parse));
         }
 
@@ -74,7 +74,7 @@ namespace Neo.Express
             using (var stream = File.Open(filename, FileMode.Create, FileAccess.Write))
             using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
-                WriteJson(writer);
+                Write(writer);
             }
         }
 
@@ -82,9 +82,9 @@ namespace Neo.Express
         // to avoid default initialization of ProtocolSettings.
         public static bool InitializeProtocolSettings(JsonElement json, uint secondsPerBlock = 0)
         {
-            var keyPairs = json.GetProperty("consensus-nodes")
+            var nodes = json.GetProperty("consensus-nodes")
                 .EnumerateArray()
-                .Select(DevWallet.ParseKeyPair);
+                .Select(DevConensusNode.ParseProtocolSettings);
 
             secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
 
@@ -97,12 +97,12 @@ namespace Neo.Express
                 yield return new KeyValuePair<string, string>(
                     "ProtocolConfiguration:SecondsPerBlock", $"{secondsPerBlock}");
 
-                foreach (var (keypair, index) in keyPairs.Select((pk, i) => (pk, i)))
+                foreach (var node in nodes.Select((n, i) => (config:n, index:i)))
                 {
                     yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:StandbyValidators:{index}", keypair.PublicKey.EncodePoint(true).ToHexString());
+                        $"ProtocolConfiguration:StandbyValidators:{node.index}", node.config.publicKey.EncodePoint(true).ToHexString());
                     yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:SeedList:{index}", $"{IPAddress.Loopback}:{((index + 1) * 10000) + 1}");
+                        $"ProtocolConfiguration:SeedList:{node.index}", $"{IPAddress.Loopback}:{node.config.tcpPort}");
                 }
             }
 
@@ -118,12 +118,12 @@ namespace Neo.Express
             return InitializeProtocolSettings(doc.RootElement, secondsPerBlock);
         }
 
-        public void WriteJson(Utf8JsonWriter writer)
+        public void Write(Utf8JsonWriter writer)
         {
             writer.WriteStartObject();
             writer.WriteNumber("magic", Magic);
             writer.WriteStartArray("consensus-nodes");
-            foreach (var conensusNode in ConensusNodes)
+            foreach (var conensusNode in ConsensusNodes)
             {
                 conensusNode.Write(writer);
             }

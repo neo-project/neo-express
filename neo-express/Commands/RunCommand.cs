@@ -77,7 +77,7 @@ namespace Neo.Express.Commands
                 app.ShowHelp();
                 return 1;
             }
-                
+
             var consensusNode = chain.ConsensusNodes[NodeIndex];
             var cts = new CancellationTokenSource();
 
@@ -92,21 +92,25 @@ namespace Neo.Express.Commands
 
             Task.Factory.StartNew(() =>
             {
-                using (var store = new Persistence.LevelDB.LevelDBStore(path))
-                using (var system = new NeoSystem(store))
+                try
                 {
-                    //var logPlugin = new LogPlugin(console);
-                    //var rpcPlugin = new ExpressNodeRpcPlugin();
+                    using (var store = new Persistence.LevelDB.LevelDBStore(path))
+                    using (var system = new NeoSystem(store))
+                    {
+                        var logPlugin = new LogPlugin(console);
+                        var rpcPlugin = new ExpressNodeRpcPlugin();
 
-                    //system.StartNode(new ChannelsConfig()
-                    //{
-                    //    Tcp = new IPEndPoint(IPAddress.Any, consensusNode.TcpPort),
-                    //    WebSocket = new IPEndPoint(IPAddress.Any, consensusNode.WebSocketPort)
-                    //});
-                    //system.StartConsensus(consensusNode.Wallet);
-                    //system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
+                        system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
+                        system.StartConsensus(consensusNode.Wallet);
+                        system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
 
-                    //cts.Token.WaitHandle.WaitOne();
+                        cts.Token.WaitHandle.WaitOne();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex);
+                    cts.Cancel();
                 }
             });
 

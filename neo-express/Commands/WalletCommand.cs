@@ -9,7 +9,7 @@ using System.Text;
 namespace Neo.Express.Commands
 {
     [Command("wallet")]
-    [Subcommand(typeof(WalletCommand.Create), typeof(WalletCommand.Delete), typeof(WalletCommand.Export), typeof(WalletCommand.List))]
+    [Subcommand(typeof(Create), typeof(Delete), typeof(Export), typeof(List))]
     class WalletCommand
     {
         int OnExecute(CommandLineApplication app, IConsole console)

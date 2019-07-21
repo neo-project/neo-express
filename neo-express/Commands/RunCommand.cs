@@ -95,18 +95,18 @@ namespace Neo.Express.Commands
                 using (var store = new Persistence.LevelDB.LevelDBStore(path))
                 using (var system = new NeoSystem(store))
                 {
-                    var logPlugin = new LogPlugin(console);
-                    var rpcPlugin = new ExpressNodeRpcPlugin();
+                    //var logPlugin = new LogPlugin(console);
+                    //var rpcPlugin = new ExpressNodeRpcPlugin();
 
-                    system.StartNode(new ChannelsConfig()
-                    {
-                        Tcp = new IPEndPoint(IPAddress.Any, consensusNode.TcpPort),
-                        WebSocket = new IPEndPoint(IPAddress.Any, consensusNode.WebSocketPort)
-                    });
-                    system.StartConsensus(consensusNode.Wallet);
-                    system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
+                    //system.StartNode(new ChannelsConfig()
+                    //{
+                    //    Tcp = new IPEndPoint(IPAddress.Any, consensusNode.TcpPort),
+                    //    WebSocket = new IPEndPoint(IPAddress.Any, consensusNode.WebSocketPort)
+                    //});
+                    //system.StartConsensus(consensusNode.Wallet);
+                    //system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
 
-                    cts.Token.WaitHandle.WaitOne();
+                    //cts.Token.WaitHandle.WaitOne();
                 }
             });
 

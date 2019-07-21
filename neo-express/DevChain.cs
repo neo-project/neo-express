@@ -111,7 +111,7 @@ namespace Neo.Express
                 .AddInMemoryCollection(settings())
                 .Build();
 
-            return ProtocolSettings.Initialize(config);
+            return false; // ProtocolSettings.Initialize(config);
         }
 
         public static bool InitializeProtocolSettings(JsonDocument doc, uint secondsPerBlock = 15)

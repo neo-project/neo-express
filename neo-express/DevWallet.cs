@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
+using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.Wallets;
 
@@ -12,6 +13,8 @@ namespace Neo.Express
     {
         private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
+
+        public override event EventHandler<WalletTransactionEventArgs> WalletTransaction;
 
         public DevWallet(string name, IEnumerable<DevWalletAccount> accounts = null)
         {
@@ -58,7 +61,7 @@ namespace Neo.Express
 
         public void Export(string filename, string password)
         {
-            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(filename, Name);
+            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(null, filename, Name);
             nep6Wallet.Unlock(password);
             foreach (var account in GetAccounts())
             {
@@ -70,6 +73,8 @@ namespace Neo.Express
         public override string Name => name;
 
         public override Version Version => null;
+
+        public override uint WalletHeight => throw new NotImplementedException();
 
         public override bool Contains(UInt160 scriptHash) => accounts.ContainsKey(scriptHash);
 
@@ -114,5 +119,20 @@ namespace Neo.Express
         public override IEnumerable<WalletAccount> GetAccounts() => accounts.Values;
 
         public override bool VerifyPassword(string password) => true;
+
+        public override void ApplyTransaction(Transaction tx)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<Coin> GetCoins(IEnumerable<UInt160> accounts)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<UInt256> GetTransactions()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

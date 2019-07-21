@@ -5,7 +5,6 @@ using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Plugins;
 using Neo.SmartContract;
-using Neo.SmartContract.Native;
 using Neo.Wallets;
 using System;
 using System.Collections.Generic;
@@ -22,15 +21,15 @@ namespace Neo.Express
 
         static UInt160 GetAssetId(string asset)
         {
-            if (string.Equals("neo", asset, StringComparison.OrdinalIgnoreCase))
-            {
-                return NativeContract.NEO.Hash;
-            }
+            //if (string.Equals("neo", asset, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    return NativeContract.NEO.Hash;
+            //}
 
-            if (string.Equals("gas", asset, StringComparison.OrdinalIgnoreCase))
-            {
-                return NativeContract.GAS.Hash;
-            }
+            //if (string.Equals("gas", asset, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    return NativeContract.GAS.Hash;
+            //}
 
             return UInt160.Parse(asset);
         }
@@ -54,21 +53,23 @@ namespace Neo.Express
             var sender = @params[2].AsString().ToScriptHash();
             var receiver = @params[3].AsString().ToScriptHash();
 
-            var tx = Wallet.MakeTransaction(new[] { sender },
-                new[] { new TransferOutput {
-                    AssetId = assetId,
-                    Value = amount,
-                    ScriptHash = receiver } });
-            var context = new ContractParametersContext(tx);
+            //var tx = Wallet.MakeTransaction(new[] { sender },
+            //    new[] { new TransferOutput {
+            //        AssetId = assetId,
+            //        Value = amount,
+            //        ScriptHash = receiver } });
+            //var context = new ContractParametersContext(tx);
 
-            if (context.Completed)
-            {
-                tx.Witnesses = context.GetWitnesses();
-                System.LocalNode.Tell(new LocalNode.Relay { Inventory = tx });
-                return new JObject();
-            }
+            //if (context.Completed)
+            //{
+            //    tx.Witnesses = context.GetWitnesses();
+            //    System.LocalNode.Tell(new LocalNode.Relay { Inventory = tx });
+            //    return new JObject();
+            //}
 
-            return ToJson(context);
+            //return ToJson(context);
+
+            return null;
         }
 
         public JObject OnProcess(HttpContext context, string method, JArray @params)

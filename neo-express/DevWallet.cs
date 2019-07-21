@@ -14,8 +14,6 @@ namespace Neo.Express
         private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
 
-        public override event EventHandler<WalletTransactionEventArgs> WalletTransaction;
-
         public DevWallet(string name, IEnumerable<DevWalletAccount> accounts = null)
         {
             this.name = name;
@@ -74,8 +72,6 @@ namespace Neo.Express
 
         public override Version Version => null;
 
-        public override uint WalletHeight => throw new NotImplementedException();
-
         public override bool Contains(UInt160 scriptHash) => accounts.ContainsKey(scriptHash);
 
         DevWalletAccount AddAccount(DevWalletAccount account)
@@ -119,6 +115,14 @@ namespace Neo.Express
         public override IEnumerable<WalletAccount> GetAccounts() => accounts.Values;
 
         public override bool VerifyPassword(string password) => true;
+
+        public override uint WalletHeight => throw new NotImplementedException();
+
+        public override event EventHandler<WalletTransactionEventArgs> WalletTransaction
+        {
+            add { throw new NotImplementedException(); }
+            remove { throw new NotImplementedException(); }
+        }
 
         public override void ApplyTransaction(Transaction tx)
         {

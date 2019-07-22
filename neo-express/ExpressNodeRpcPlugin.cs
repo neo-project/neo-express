@@ -43,6 +43,30 @@ namespace Neo.Express
             return json;
         }
 
+        private JObject CreateContextResponse(ContractParametersContext context, Transaction tx)
+        {
+            if (tx == null)
+            {
+                return new JObject();
+            }
+
+            if (context.Completed)
+            {
+                tx.Witnesses = context.GetWitnesses();
+
+                //ImmutableInterlocked.TryAdd(ref unconfirmed, tx.Hash, tx);
+                System.LocalNode.Tell(new LocalNode.Relay { Inventory = tx });
+
+                JObject json = new JObject();
+                json["txid"] = tx.Hash.ToString();
+                return json;
+            }
+            else
+            {
+                return ToJson(context);
+            }
+        }
+
         private JObject OnTransfer(JArray @params)
         {
             var assetId = GetAssetId(@params[0].AsString());
@@ -62,17 +86,7 @@ namespace Neo.Express
                     rpcWallet.Sign(context);
                 }
 
-                if (context.Completed)
-                {
-                    tx.Witnesses = context.GetWitnesses();
-                    System.LocalNode.Tell(new LocalNode.Relay { Inventory = tx });
-
-                    var json = new JObject();
-                    json["txid"] = tx.Hash.ToString();
-                    return json;
-                }
-
-                return ToJson(context);
+                return CreateContextResponse(context, tx);
             }
         }
 
@@ -96,6 +110,49 @@ namespace Neo.Express
             }
         }
 
+        JObject OnShowGas(JArray @params)
+        {
+            var address = @params[0].AsString().ToScriptHash();
+
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
+            {
+                var coins = NeoUtility.GetCoins(snapshot, ImmutableHashSet.Create(address));
+
+                var unclaimedCoins = coins.Unclaimed(Blockchain.GoverningToken.Hash);
+                var unspentCoins = coins.Unspent(Blockchain.GoverningToken.Hash);
+
+                var unavailable = snapshot.CalculateBonus(
+                    unspentCoins.Select(c => c.Reference),
+                    snapshot.Height + 1);
+                var available = snapshot.CalculateBonus(unclaimedCoins.Select(c => c.Reference));
+
+                JObject json = new JObject();
+                json["unavailable"] = (double)(decimal)unavailable;
+                json["available"] = (double)(decimal)available;
+                return json;
+            }
+        }
+
+        JObject OnClaim(JArray @params)
+        {
+            var assetId = GetAssetId(@params[0].AsString());
+            var address = @params[1].AsString().ToScriptHash();
+
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
+            {
+                var tx = NeoUtility.MakeClaimTransaction(snapshot, address, assetId);
+                var context = new ContractParametersContext(tx);
+
+                var rpcWallet = System.RpcServer.Wallet;
+                if (rpcWallet.GetAccounts().Any(a => a.ScriptHash == address))
+                {
+                    rpcWallet.Sign(context);
+                }
+
+                return CreateContextResponse(context, tx);
+            }
+        }
+
         public JObject OnProcess(HttpContext context, string method, JArray @params)
         {
             try
@@ -104,8 +161,12 @@ namespace Neo.Express
                 {
                     case "express-tranfer":
                         return OnTransfer(@params);
+                    case "express-claim":
+                        return OnClaim(@params);
                     case "express-show-coins":
                         return OnShowCoins(@params);
+                    case "express-show-gas":
+                        return OnShowGas(@params);
                 }
             }
             catch (Exception ex)

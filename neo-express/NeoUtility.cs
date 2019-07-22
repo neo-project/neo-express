@@ -20,6 +20,14 @@ namespace Neo.Express
                 && (c.State & CoinState.Frozen) == 0;
         }
 
+        public static bool CoinUnclaimed(Coin c)
+        {
+            return (c.State & CoinState.Confirmed) != 0
+                && (c.State & CoinState.Spent) != 0
+                && (c.State & CoinState.Claimed) == 0
+                && (c.State & CoinState.Frozen) == 0;
+        }
+
         public static IEnumerable<Coin> GetCoins(Snapshot snapshot, ImmutableHashSet<UInt160> addresses)
         {
             var coinIndex = new Dictionary<CoinReference, Coin>();
@@ -78,9 +86,20 @@ namespace Neo.Express
             return coinIndex.Select(kvp => kvp.Value);
         }
 
-        private static IEnumerable<Coin> Unspent(this IEnumerable<Coin> coins, UInt256 assetId = null)
+        public static IEnumerable<Coin> Unspent(this IEnumerable<Coin> coins, UInt256 assetId = null)
         {
             var ret = coins.Where(CoinUnspent);
+            if (assetId != null)
+            {
+                ret = ret.Where(c => c.Output.AssetId == assetId);
+            }
+            return ret;
+        }
+
+
+        public static IEnumerable<Coin> Unclaimed(this IEnumerable<Coin> coins, UInt256 assetId = null)
+        {
+            var ret = coins.Where(CoinUnclaimed);
             if (assetId != null)
             {
                 ret = ret.Where(c => c.Output.AssetId == assetId);
@@ -177,5 +196,35 @@ namespace Neo.Express
                 Witnesses = new Witness[0],
             };
         }
+
+        public static ClaimTransaction MakeClaimTransaction(Snapshot snapshot, UInt160 address, UInt256 assetId)
+        {
+            var coinReferences = GetCoins(snapshot, ImmutableHashSet.Create(address))
+                .Unclaimed(assetId)
+                .Take(50)
+                .Select(c => c.Reference);
+
+            if (coinReferences.Any())
+            {
+                return new ClaimTransaction
+                {
+                    Claims = coinReferences.ToArray(),
+                    Attributes = new TransactionAttribute[0],
+                    Inputs = new CoinReference[0],
+                    Outputs = new[]
+                    {
+                        new TransactionOutput
+                        {
+                            AssetId = Blockchain.UtilityToken.Hash,
+                            Value = snapshot.CalculateBonus(coinReferences),
+                            ScriptHash = address
+                        }
+                    }
+                };
+            }
+
+            return null;
+        }
+
     }
 }

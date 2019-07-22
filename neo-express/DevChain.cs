@@ -48,14 +48,14 @@ namespace Neo.Express
         {
         }
 
-        public bool IsReservedName(string walletName)
+        public bool IsReservedName(string name)
         {
-            if (string.Compare(walletName, "genesis", true) == 0)
+            if (string.Compare(name, "genesis", true) == 0)
                 return true;
 
             foreach (var node in ConsensusNodes)
             {
-                if (node.Wallet.NameMatches(walletName))
+                if (node.Wallet.NameMatches(name))
                     return true;
             }
 
@@ -63,6 +63,31 @@ namespace Neo.Express
         }
 
         public DevWallet GetWallet(string name) => Wallets.SingleOrDefault(w => w.NameMatches(name));
+
+        public UInt160 GetAddress(string name)
+        {
+            var wallet = Wallets.SingleOrDefault(w => w.NameMatches(name));
+            if (wallet != default)
+            {
+                return wallet.GetAccounts().First().ScriptHash;
+            }
+
+            var node = ConsensusNodes.SingleOrDefault(n => n.Wallet.NameMatches(name));
+            if (node != default)
+            {
+                return node.Wallet.GetAccounts().Single(a => a.IsDefault).ScriptHash;
+            }
+
+            if (string.Compare(name, "genesis", true) == 0)
+            {
+                return ConsensusNodes
+                    .Select(n => n.Wallet.GetAccounts().Single(a => a.Label == "MultiSigContract").ScriptHash)
+                    .Distinct()
+                    .Single();
+            }
+
+            return default;
+        }
 
         public static DevChain FromJson(JObject json)
         {

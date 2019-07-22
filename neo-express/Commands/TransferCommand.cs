@@ -1,6 +1,8 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
+using System;
 using System.IO;
-using System.Net.Http;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Neo.Express.Commands
@@ -23,32 +25,6 @@ namespace Neo.Express.Commands
         [Option]
         private string Input { get; }
 
-
-        private async Task<HttpResponseMessage> PostAsync(string uri)
-        {
-            using (var stream = new MemoryStream())
-            {
-                //using (var writer = new Utf8JsonWriter(stream))
-                //{
-                //    writer.WriteStartObject();
-                //    writer.WriteNumber("id", 1);
-                //    writer.WriteString("jsonrpc", "2.0");
-                //    writer.WriteString("method", "express-transfer");
-                //    writer.WriteStartArray();
-                //    writer.WriteStringValue(Asset);
-                //    writer.WriteStringValue(Quantity);
-                //    writer.WriteStringValue(Sender);
-                //    writer.WriteStringValue(Receiver);
-                //    writer.WriteEndArray();
-                //    writer.WriteEndObject();
-                //}
-
-                var client = new HttpClient();
-                return (await client.PostAsync("", new StreamContent(stream)))
-                    .EnsureSuccessStatusCode();
-            }
-        }
-
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             var input = Program.DefaultPrivatenetFileName(Input);
@@ -60,15 +36,26 @@ namespace Neo.Express.Commands
             }
 
             var devchain = DevChain.Load(input);
+            var senderAddress = devchain.GetAddress(Sender);
+            if (senderAddress == default)
+            {
+                console.WriteLine($"{Sender} sender not found.");
+                app.ShowHelp();
+                return 1;
+            }
 
-            var response = await PostAsync("");
-            //using (var stream = await response.Content.ReadAsStreamAsync())
-            //using (var json = JsonDocument.Parse(stream))
-            //{
-            //    console.WriteLine(json.ToString());
-            //}
+            var receiverAddress = devchain.GetAddress(Receiver);
+            if (receiverAddress == default)
+            {
+                console.WriteLine($"{Receiver} receiver not found.");
+                app.ShowHelp();
+                return 1;
+            }
 
-            return 1;
+            var uri = new Uri($"http://localhost:{devchain.ConsensusNodes.First().RpcPort}");
+            var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAddress, receiverAddress);
+            console.WriteLine(result.ToString(Formatting.Indented));
+            return 0;
         }
     }
 }

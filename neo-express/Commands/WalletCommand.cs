@@ -93,7 +93,7 @@ namespace Neo.Express.Commands
 
                 var devchain = DevChain.Load(input);
                 var wallet = devchain.GetWallet(Name);
-                if (wallet == (default))
+                if (wallet == default)
                 {
                     console.WriteLine($"{Name} privatenet wallet not found.");
                 }

@@ -5,7 +5,7 @@ using System.IO;
 namespace Neo.Express
 {
     [Command("neo-express")]
-    [Subcommand(typeof(CreateCommand), typeof(RunCommand), typeof(ExportCommand), typeof(WalletCommand))]
+    [Subcommand(typeof(CreateCommand), typeof(RunCommand), typeof(ExportCommand), typeof(TransferCommand), typeof(WalletCommand))]
     internal class Program
     {
         private static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);

@@ -71,13 +71,13 @@ namespace Neo.Express
         {
             var assetId = GetAssetId(@params[0].AsString());
             var assetDescriptor = new AssetDescriptor(assetId);
-            var amount = BigDecimal.Parse(@params[1].AsString(), assetDescriptor.Decimals).ToFixed8();
+            var quantity = BigDecimal.Parse(@params[1].AsString(), assetDescriptor.Decimals).ToFixed8();
             var sender = @params[2].AsString().ToScriptHash();
             var receiver = @params[3].AsString().ToScriptHash();
 
             using (var snapshot = Blockchain.Singleton.GetSnapshot())
             {
-                var tx = NeoUtility.MakeTransferTransaction(snapshot, ImmutableHashSet.Create(sender), receiver, assetId, amount);
+                var tx = NeoUtility.MakeTransferTransaction(snapshot, ImmutableHashSet.Create(sender), receiver, assetId, quantity);
                 var context = new ContractParametersContext(tx);
 
                 var rpcWallet = System.RpcServer.Wallet;
@@ -159,7 +159,7 @@ namespace Neo.Express
             {
                 switch (method)
                 {
-                    case "express-tranfer":
+                    case "express-transfer":
                         return OnTransfer(@params);
                     case "express-claim":
                         return OnClaim(@params);

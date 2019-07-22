@@ -59,6 +59,7 @@ namespace Neo.Express.Commands
 
                 var wallet = new DevWallet(Name);
                 var account = wallet.CreateAccount();
+                account.IsDefault = true;
 
                 console.WriteLine($"{Name}\n\t{account.Address}");
                 devchain.Wallets.Add(wallet);

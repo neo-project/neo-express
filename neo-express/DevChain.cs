@@ -64,25 +64,46 @@ namespace Neo.Express
 
         public DevWallet GetWallet(string name) => Wallets.SingleOrDefault(w => w.NameMatches(name));
 
-        public UInt160 GetAddress(string name)
+        public Uri GetUri(int node = 0) =>new Uri($"http://localhost:{ConsensusNodes[node].RpcPort}");
+
+        private class DevWalletAccountComparer : IEqualityComparer<DevWalletAccount>
+        {
+            public bool Equals(DevWalletAccount x, DevWalletAccount y)
+            {
+                return x.ScriptHash.Equals(y.ScriptHash);
+            }
+
+            public int GetHashCode(DevWalletAccount obj)
+            {
+                int hash = default(byte).GetHashCode();
+                var scriptHashArray = obj.ScriptHash.ToArray();
+                for (int i = 0; i < scriptHashArray.Length; i++)
+                {
+                    hash = HashCode.Combine(hash, i, scriptHashArray[i]);
+                }
+                return hash;
+            }
+        }
+
+        public DevWalletAccount GetAccount(string name)
         {
             var wallet = Wallets.SingleOrDefault(w => w.NameMatches(name));
             if (wallet != default)
             {
-                return wallet.GetAccounts().First().ScriptHash;
+                return wallet.DefaultAccount;
             }
 
             var node = ConsensusNodes.SingleOrDefault(n => n.Wallet.NameMatches(name));
             if (node != default)
             {
-                return node.Wallet.GetAccounts().Single(a => a.IsDefault).ScriptHash;
+                return node.Wallet.DefaultAccount;
             }
 
             if (string.Compare(name, "genesis", true) == 0)
             {
                 return ConsensusNodes
-                    .Select(n => n.Wallet.GetAccounts().Single(a => a.Label == "MultiSigContract").ScriptHash)
-                    .Distinct()
+                    .Select(n => n.Wallet.GetAccounts().Cast<DevWalletAccount>().Single(a => a.Label == "MultiSigContract"))
+                    .Distinct(new DevWalletAccountComparer())
                     .Single();
             }
 

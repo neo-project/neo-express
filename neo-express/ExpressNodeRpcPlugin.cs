@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Microsoft.AspNetCore.Http;
+using Neo.Cryptography.ECC;
 using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P;
@@ -110,7 +111,7 @@ namespace Neo.Express
             }
         }
 
-        JObject OnShowGas(JArray @params)
+        private JObject OnShowGas(JArray @params)
         {
             var address = @params[0].AsString().ToScriptHash();
 
@@ -133,7 +134,7 @@ namespace Neo.Express
             }
         }
 
-        JObject OnClaim(JArray @params)
+        private JObject OnClaim(JArray @params)
         {
             var assetId = GetAssetId(@params[0].AsString());
             var address = @params[1].AsString().ToScriptHash();
@@ -153,25 +154,51 @@ namespace Neo.Express
             }
         }
 
-        public JObject OnProcess(HttpContext context, string method, JArray @params)
+        private JObject OnSubmitSignatures(JArray @params)
         {
-            try
+            var context = ContractParametersContext.FromJson(@params[0]);
+            var signatures = (JArray)@params[1];
+
+            foreach (var signature in signatures)
             {
-                switch (method)
+                var signatureData = signature["signature"].AsString().HexToBytes();
+                var publicKeyData = signature["public-key"].AsString().HexToBytes();
+                var contractScript = signature["contract"]["script"].AsString().HexToBytes();
+                var parameters = ((JArray)signature["contract"]["parameters"])
+                    .Select(j => Enum.Parse<ContractParameterType>(j.AsString()));
+
+                var publicKey = ECPoint.FromBytes(publicKeyData, ECCurve.Secp256r1);
+                var contract = Contract.Create(parameters.ToArray(), contractScript);
+                if (!context.AddSignature(contract, publicKey, signatureData))
                 {
-                    case "express-transfer":
-                        return OnTransfer(@params);
-                    case "express-claim":
-                        return OnClaim(@params);
-                    case "express-show-coins":
-                        return OnShowCoins(@params);
-                    case "express-show-gas":
-                        return OnShowGas(@params);
+                    throw new Exception($"AddSignature failed for {signature["public-key"].AsString()}");
                 }
             }
-            catch (Exception ex)
+
+            if (context.Verifiable is Transaction tx)
             {
-                Log(ex.ToString(), LogLevel.Error);
+                return CreateContextResponse(context, tx);
+            }
+            else
+            {
+                throw new Exception("Only support to relay transaction");
+            }
+        }
+
+        public JObject OnProcess(HttpContext context, string method, JArray @params)
+        {
+            switch (method)
+            {
+                case "express-transfer":
+                    return OnTransfer(@params);
+                case "express-claim":
+                    return OnClaim(@params);
+                case "express-show-coins":
+                    return OnShowCoins(@params);
+                case "express-show-gas":
+                    return OnShowGas(@params);
+                case "express-submit-signatures":
+                    return OnSubmitSignatures(@params);
             }
 
             return null;

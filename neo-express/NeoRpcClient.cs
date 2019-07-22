@@ -40,5 +40,28 @@ namespace Neo.Express
         {
             return RpcCall(uri, "express-transfer", new JArray(asset, quantity, senderAddress.ToAddress(), receiverAddress.ToAddress()));
         }
+
+        public static Task<JToken> ExpressSubmitSignatures(Uri uri, JToken context, JToken signatures)
+        {
+            return RpcCall(uri, "express-submit-signatures", new JArray(context, signatures));
+        }
+
+        public static Task<JToken> GetAccountState(Uri uri, UInt160 address)
+        {
+            return RpcCall(uri, "getaccountstate", new JArray(address.ToAddress()));
+        }
+
+        public static Task<JToken> ExpressShowCoins(Uri uri, UInt160 address)
+        {
+            return RpcCall(uri, "express-show-coins", new JArray(address.ToAddress()));
+        }
+
+        public static Task<JToken> ExpressShowGas(Uri uri, UInt160 address)
+        {
+            return RpcCall(uri, "express-show-gas", new JArray(address.ToAddress()));
+        }
+
+
+
     }
 }

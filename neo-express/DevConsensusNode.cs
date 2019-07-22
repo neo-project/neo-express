@@ -11,7 +11,7 @@ namespace Neo.Express
         public ushort WebSocketPort { get; set; }
         public ushort RpcPort { get; set; }
 
-        internal static DevConsensusNode FromJson(JToken json)
+        public static DevConsensusNode FromJson(JToken json)
         {
             var (tcpPort, webSocketPort, rpcPort) = PortsFromJson(json);
             var wallet = DevWallet.FromJson(json["wallet"]);
@@ -24,7 +24,7 @@ namespace Neo.Express
             };
         }
 
-        static (ushort tcpPort, ushort webSocketPort, ushort rpcPort) PortsFromJson(JToken json)
+        public static (ushort tcpPort, ushort webSocketPort, ushort rpcPort) PortsFromJson(JToken json)
         {
             var tcpPort = json.Value<ushort>("tcp-port");
             var wsPort = json.Value<ushort>("ws-port");
@@ -32,13 +32,13 @@ namespace Neo.Express
             return (tcpPort, wsPort, rpcPort);
         }
 
-        //public static (ECPoint publicKey, ushort tcpPort) ParseProtocolSettings(JsonElement json)
-        //{
-        //    var keyPair = DevWallet.ParseKeyPair(json.GetProperty("wallet"));
-        //    var (tcp, _, _) = ParsePorts(json);
+        public static (ECPoint publicKey, ushort tcpPort) ProtocolSettingsFromJson(JToken json)
+        {
+            var keyPair = DevWallet.KeyPairFromJson(json["wallet"]);
+            var (tcp, _, _) = PortsFromJson(json);
 
-        //    return (keyPair.PublicKey, tcp);
-        //}
+            return (keyPair.PublicKey, tcp);
+        }
 
         public void ToJson(JsonWriter writer)
         {

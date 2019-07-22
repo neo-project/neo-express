@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Neo.Express.Commands
 {
@@ -52,18 +54,18 @@ namespace Neo.Express.Commands
 
             DevChain LoadChain()
             {
-                //using (var stream = File.OpenRead(input))
-                //using (var json = JsonDocument.Parse(stream))
-                //{
-                //    if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
-                //    {
-                //        throw new Exception("Couldn't initialize protocol settings");
-                //    }
+                using (var stream = File.OpenRead(input))
+                using (var reader = new JsonTextReader(new StreamReader(stream)))
+                {
+                    var json = JObject.Load(reader);
 
-                //    return DevChain.Parse(json);
-                //}
+                    if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
+                    {
+                        throw new Exception("Couldn't initialize protocol settings");
+                    }
 
-                return null;
+                    return DevChain.FromJson(json);
+                }
             }
 
             var chain = LoadChain();

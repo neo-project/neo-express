@@ -24,7 +24,7 @@ namespace Neo.Express
             return key;
         }
 
-        internal void ToJson(JsonWriter writer)
+        public void ToJson(JsonWriter writer)
         {
             writer.WriteStartObject();
             writer.WritePropertyName("private-key");
@@ -50,7 +50,7 @@ namespace Neo.Express
             writer.WriteEndObject();
         }
 
-        internal static DevWalletAccount FromJson(JToken json)
+        public static DevWalletAccount FromJson(JToken json)
         {
             var jsonContract = (JObject)json["contract"];
             var script = jsonContract.Value<string>("script").HexToBytes();
@@ -73,10 +73,9 @@ namespace Neo.Express
             };
         }
 
-        //public static string ParsePrivateKey(JsonElement json)
-        //{
-        //    return json.GetProperty("private-key").GetString();
-        //}
-
+        public static string PrivateKeyFromJson(JToken json)
+        {
+            return json.Value<string>("private-key");
+        }
     }
 }

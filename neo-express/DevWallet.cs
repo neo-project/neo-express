@@ -32,16 +32,15 @@ namespace Neo.Express
             return new DevWallet(name, accounts);
         }
 
-
-        //public static KeyPair ParseKeyPair(JsonElement json)
-        //{
-        //    return new KeyPair(json.GetProperty("accounts").EnumerateArray()
-        //        .Select(DevWalletAccount.ParsePrivateKey)
-        //        .Distinct()
-        //        .Single()
-        //        .HexToBytes());
-        //}
-
+        public static KeyPair KeyPairFromJson(JToken json)
+        {
+            var privateKey = json["accounts"]
+                .Select(DevWalletAccount.PrivateKeyFromJson)
+                .Distinct()
+                .Single()
+                .HexToBytes();
+            return new KeyPair(privateKey);
+        }
 
         public void ToJson(JsonWriter writer)
         {

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace Neo.Express.Commands
@@ -73,18 +71,18 @@ namespace Neo.Express.Commands
             }
 
             var port = Port == 0 ? (ushort)49152 : Port;
-            using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
-            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
-            {
-                var chain = new DevChain(wallets.Select(t => new DevConsensusNode()
-                {
-                    Wallet = t.wallet,
-                    TcpPort = port++,
-                    WebSocketPort = port++,
-                    RpcPort = port++
-                }));
-                chain.Write(writer);
-            }
+            //using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
+            //using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            //{
+            //    var chain = new DevChain(wallets.Select(t => new DevConsensusNode()
+            //    {
+            //        Wallet = t.wallet,
+            //        TcpPort = port++,
+            //        WebSocketPort = port++,
+            //        RpcPort = port++
+            //    }));
+            //    chain.Write(writer);
+            //}
 
             console.WriteLine($"Created {nodeCount} node privatenet at {output}");
             console.WriteLine("    Note: The private keys for the accounts in this file are stored in the clear.");

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.Wallets;
@@ -24,38 +23,38 @@ namespace Neo.Express
             }
         }
 
-        public static DevWallet Parse(JsonElement json)
-        {
-            return new DevWallet(
-                json.GetProperty("name").GetString(), 
-                json.GetProperty("accounts").EnumerateArray().Select(DevWalletAccount.Parse));
-        }
+        //public static DevWallet Parse(JsonElement json)
+        //{
+        //    return new DevWallet(
+        //        json.GetProperty("name").GetString(), 
+        //        json.GetProperty("accounts").EnumerateArray().Select(DevWalletAccount.Parse));
+        //}
 
-        public static KeyPair ParseKeyPair(JsonElement json)
-        {
-            return new KeyPair(json.GetProperty("accounts").EnumerateArray()
-                .Select(DevWalletAccount.ParsePrivateKey)
-                .Distinct()
-                .Single()
-                .HexToBytes());
-        }
+        //public static KeyPair ParseKeyPair(JsonElement json)
+        //{
+        //    return new KeyPair(json.GetProperty("accounts").EnumerateArray()
+        //        .Select(DevWalletAccount.ParsePrivateKey)
+        //        .Distinct()
+        //        .Single()
+        //        .HexToBytes());
+        //}
 
-        public void Write(Utf8JsonWriter writer, string propertyName = null)
-        {
-            if (string.IsNullOrEmpty(propertyName))
-                writer.WriteStartObject();
-            else
-                writer.WriteStartObject(propertyName);
+        //public void Write(Utf8JsonWriter writer, string propertyName = null)
+        //{
+        //    if (string.IsNullOrEmpty(propertyName))
+        //        writer.WriteStartObject();
+        //    else
+        //        writer.WriteStartObject(propertyName);
 
-            writer.WriteString("name", Name);
-            writer.WriteStartArray("accounts");
-            foreach (var a in accounts.Values)
-            {
-                a.Write(writer);
-            }
-            writer.WriteEndArray();
-            writer.WriteEndObject();
-        }
+        //    writer.WriteString("name", Name);
+        //    writer.WriteStartArray("accounts");
+        //    foreach (var a in accounts.Values)
+        //    {
+        //        a.Write(writer);
+        //    }
+        //    writer.WriteEndArray();
+        //    writer.WriteEndObject();
+        //}
 
         public void Export(string filename, string password)
         {

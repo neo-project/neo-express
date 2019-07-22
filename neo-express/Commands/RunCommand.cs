@@ -1,13 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.Consensus;
-using Neo.Network.P2P;
 using Neo.Plugins;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Net;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
@@ -58,16 +52,18 @@ namespace Neo.Express.Commands
 
             DevChain LoadChain()
             {
-                using (var stream = File.OpenRead(input))
-                using (var json = JsonDocument.Parse(stream))
-                {
-                    if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
-                    {
-                        throw new Exception("Couldn't initialize protocol settings");
-                    }
+                //using (var stream = File.OpenRead(input))
+                //using (var json = JsonDocument.Parse(stream))
+                //{
+                //    if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
+                //    {
+                //        throw new Exception("Couldn't initialize protocol settings");
+                //    }
 
-                    return DevChain.Parse(json);
-                }
+                //    return DevChain.Parse(json);
+                //}
+
+                return null;
             }
 
             var chain = LoadChain();

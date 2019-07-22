@@ -60,7 +60,9 @@ namespace Neo.Express
             return RpcCall(uri, "express-show-gas", new JArray(address.ToAddress()));
         }
 
-
-
+        public static Task<JToken> ExpressClaim(Uri uri, string asset, UInt160 address)
+        {
+            return RpcCall(uri, "express-claim", new JArray(asset, address.ToAddress()));
+        }
     }
 }

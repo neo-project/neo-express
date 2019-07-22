@@ -100,7 +100,8 @@ namespace Neo.Express.Commands
             }
 
             var uri = devchain.GetUri();
-            var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash);
+            var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
+                .ConfigureAwait(false);
             console.WriteLine(result.ToString(Formatting.Indented));
 
             var txid = result["txid"];

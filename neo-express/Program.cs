@@ -6,11 +6,11 @@ namespace Neo.Express
 {
     [Command("neo-express")]
     [Subcommand(typeof(CreateCommand), typeof(RunCommand), typeof(ExportCommand), typeof(WalletCommand))]
-    class Program
+    internal class Program
     {
-        static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
+        private static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
-        int OnExecute(CommandLineApplication app, IConsole console)
+        private int OnExecute(CommandLineApplication app, IConsole console)
         {
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp();

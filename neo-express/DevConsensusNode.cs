@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Neo.Express
 {
-    class DevConsensusNode
+    public class DevConsensusNode
     {
         public DevWallet Wallet { get; set; }
         public ushort TcpPort { get; set; }

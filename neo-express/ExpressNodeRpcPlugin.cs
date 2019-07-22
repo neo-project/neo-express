@@ -13,13 +13,13 @@ using System.Text;
 
 namespace Neo.Express
 {
-    class ExpressNodeRpcPlugin : Plugin, IRpcPlugin
+    internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin
     {
         public override void Configure()
         {
         }
 
-        static UInt160 GetAssetId(string asset)
+        private static UInt160 GetAssetId(string asset)
         {
             //if (string.Equals("neo", asset, StringComparison.OrdinalIgnoreCase))
             //{
@@ -34,7 +34,7 @@ namespace Neo.Express
             return UInt160.Parse(asset);
         }
 
-        static JObject ToJson(ContractParametersContext context)
+        private static JObject ToJson(ContractParametersContext context)
         {
             var json = new JObject();
             json["contract-context"] = context.ToJson();

@@ -7,9 +7,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Neo.Express
 {
-    class DevWalletAccount : WalletAccount
+    public class DevWalletAccount : WalletAccount
     {
-        readonly KeyPair key;
+        private readonly KeyPair key;
 
         public DevWalletAccount(KeyPair key, Contract contract, UInt160 scriptHash) : base(scriptHash)
         {

@@ -6,25 +6,25 @@ using System.Threading.Tasks;
 namespace Neo.Express.Commands
 {
     [Command("transfer")]
-    class TransferCommand
+    internal class TransferCommand
     {
         [Argument(0)]
-        string Asset { get; }
+        private string Asset { get; }
 
         [Argument(1)]
-        string Quantity { get; }
+        private string Quantity { get; }
 
         [Argument(2)]
-        string Sender { get; }
+        private string Sender { get; }
 
         [Argument(3)]
-        string Receiver { get; }
+        private string Receiver { get; }
 
         [Option]
-        string Input { get; }
+        private string Input { get; }
 
 
-        async Task<HttpResponseMessage> PostAsync(string uri)
+        private async Task<HttpResponseMessage> PostAsync(string uri)
         {
             using (var stream = new MemoryStream())
             {
@@ -49,7 +49,7 @@ namespace Neo.Express.Commands
             }
         }
 
-        async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             var input = Program.DefaultPrivatenetFileName(Input);
             if (!File.Exists(input))

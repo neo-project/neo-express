@@ -6,12 +6,12 @@ using System.Linq;
 namespace Neo.Express.Commands
 {
     [Command("export")]
-    class ExportCommand
+    internal class ExportCommand
     {
         [Option]
-        string Input { get; }
+        private string Input { get; }
 
-        int OnExecute(CommandLineApplication app, IConsole console)
+        private int OnExecute(CommandLineApplication app, IConsole console)
         {
             var input = string.IsNullOrEmpty(Input)
                 ? Path.Combine(Directory.GetCurrentDirectory(), "express.privatenet.json")

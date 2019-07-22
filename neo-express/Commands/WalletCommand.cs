@@ -10,9 +10,9 @@ namespace Neo.Express.Commands
 {
     [Command("wallet")]
     [Subcommand(typeof(Create), typeof(Delete), typeof(Export), typeof(List))]
-    class WalletCommand
+    internal class WalletCommand
     {
-        int OnExecute(CommandLineApplication app, IConsole console)
+        private int OnExecute(CommandLineApplication app, IConsole console)
         {
             console.WriteLine("You must specify at a subcommand.");
             app.ShowHelp();
@@ -20,19 +20,19 @@ namespace Neo.Express.Commands
         }
 
         [Command("create")]
-        class Create
+        private class Create
         {
             [Argument(0)]
             [Required]
-            string Name { get; }
+            private string Name { get; }
 
             [Option]
-            bool Force { get; }
+            private bool Force { get; }
 
             [Option]
-            string Input { get; }
+            private string Input { get; }
 
-            int OnExecute(CommandLineApplication app, IConsole console)
+            private int OnExecute(CommandLineApplication app, IConsole console)
             {
                 var input = Program.DefaultPrivatenetFileName(Input);
                 if (!File.Exists(input))
@@ -62,19 +62,19 @@ namespace Neo.Express.Commands
         }
 
         [Command("delete")]
-        class Delete
+        private class Delete
         {
             [Argument(0)]
             [Required]
-            string Name { get; }
+            private string Name { get; }
 
             [Option]
-            bool Force { get; }
+            private bool Force { get; }
 
             [Option]
-            string Input { get; }
+            private string Input { get; }
 
-            int OnExecute(CommandLineApplication app, IConsole console)
+            private int OnExecute(CommandLineApplication app, IConsole console)
             {
                 if (!Force)
                 {
@@ -109,23 +109,23 @@ namespace Neo.Express.Commands
         }
 
         [Command("export")]
-        class Export
+        private class Export
         {
             [Argument(0)]
             [Required]
-            string Name { get; }
+            private string Name { get; }
 
             [Option]
-            string Input { get; }
+            private string Input { get; }
 
             [Option]
-            string Output { get; }
+            private string Output { get; }
 
             [Option]
-            bool Force { get; }
+            private bool Force { get; }
 
 
-            int OnExecute(CommandLineApplication app, IConsole console)
+            private int OnExecute(CommandLineApplication app, IConsole console)
             {
                 var input = Program.DefaultPrivatenetFileName(Input);
                 if (!File.Exists(input))
@@ -171,12 +171,12 @@ namespace Neo.Express.Commands
         }
 
         [Command("list")]
-        class List
+        private class List
         {
             [Option]
-            string Input { get; }
+            private string Input { get; }
 
-            int OnExecute(CommandLineApplication app, IConsole console)
+            private int OnExecute(CommandLineApplication app, IConsole console)
             {
                 var input = Program.DefaultPrivatenetFileName(Input);
                 if (!File.Exists(input))

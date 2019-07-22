@@ -12,20 +12,20 @@ using Newtonsoft.Json.Linq;
 namespace Neo.Express.Commands
 {
     [Command("run")]
-    class RunCommand
+    internal class RunCommand
     {
         [Argument(0)]
-        int NodeIndex { get; }
+        private int NodeIndex { get; }
 
         [Option]
-        string Input { get; }
+        private string Input { get; }
 
         [Option]
-        uint SecondsPerBlock { get; }
+        private uint SecondsPerBlock { get; }
 
-        class LogPlugin : Plugin, ILogPlugin
+        private class LogPlugin : Plugin, ILogPlugin
         {
-            readonly IConsole console;
+            private readonly IConsole console;
 
             public LogPlugin(IConsole console)
             {
@@ -42,7 +42,7 @@ namespace Neo.Express.Commands
             }
         }
 
-        int OnExecute(CommandLineApplication app, IConsole console)
+        private int OnExecute(CommandLineApplication app, IConsole console)
         {
             var input = Program.DefaultPrivatenetFileName(Input);
             if (!File.Exists(input))

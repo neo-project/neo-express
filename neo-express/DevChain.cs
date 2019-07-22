@@ -10,14 +10,14 @@ using System.Net;
 
 namespace Neo.Express
 {
-    class DevChain
+    public class DevChain
     {
-        readonly static ImmutableArray<uint> KNOWN_MAGIC_NUMBERS = ImmutableArray.Create(
+        private readonly static ImmutableArray<uint> KNOWN_MAGIC_NUMBERS = ImmutableArray.Create(
             /* NEO 3 MainNet */ 0x4F454Eu,
             /* NEO 2 TestNet */ 0x544F454Eu,
             /* NEO 2 MainNet */ 0x746E41u);
 
-        static uint GenerateMagicValue()
+        public static uint GenerateMagicValue()
         {
             var random = new Random();
 

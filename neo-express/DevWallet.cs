@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Neo.Express
 {
-    class DevWallet : Wallet
+    public class DevWallet : Wallet
     {
         private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();

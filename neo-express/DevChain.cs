@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -31,17 +32,10 @@ namespace Neo.Express
             }
         }
 
-        [JsonProperty("magic")]
         public uint Magic { get; set; }
-
-        [JsonProperty("consensus-nodes")]
         public List<DevConsensusNode> ConsensusNodes { get; set; }
-
-        [JsonProperty("wallets")]
-        [JsonConverter(typeof(DevWalletListConverter))]
         public List<DevWallet> Wallets { get; set; }
 
-        [JsonConstructor]
         public DevChain(uint magic, IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
         {
             Magic = magic;
@@ -54,39 +48,52 @@ namespace Neo.Express
         {
         }
 
-        //public static DevChain Parse(JsonElement json)
-        //{
-        //    return new DevChain(
-        //        json.GetProperty("magic").GetUInt32(),
-        //        json.GetProperty("consensus-nodes").EnumerateArray().Select(DevConsensusNode.Parse),
-        //        json.GetProperty("wallets").EnumerateArray().Select(DevWallet.Parse));
-        //}
+        public static DevChain FromJson(JObject json)
+        {
+            var magic = json.Value<uint>("magic");
+            var consensusNodes = json["consensus-nodes"].Select(DevConsensusNode.FromJson);
+            var wallets = json["wallets"].Select(DevWallet.FromJson);
+            return new DevChain(magic, consensusNodes, wallets);
+        }
 
-        //public static DevChain Parse(JsonDocument doc)
-        //{
-        //    return Parse(doc.RootElement);
-        //}
+        public void ToJson(JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("magic");
+            writer.WriteValue(Magic);
+            writer.WritePropertyName("consensus-nodes");
+            writer.WriteStartArray();
+            foreach (var conensusNode in ConsensusNodes)
+            {
+                conensusNode.ToJson(writer);
+            }
+            writer.WriteEndArray();
+            writer.WritePropertyName("wallets");
+            writer.WriteStartArray();
+            foreach (var wallet in Wallets)
+            {
+                wallet.ToJson(writer);
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
 
         public static DevChain Load(string filename)
         {
             using (var stream = File.OpenRead(filename))
-            using (var jsonReader = new JsonTextReader(new StreamReader(stream)))
+            using (var reader = new JsonTextReader(new StreamReader(stream)))
             {
-                var ser = new JsonSerializer();
-                return ser.Deserialize<DevChain>(jsonReader);
+                var json = JObject.Load(reader);
+                return FromJson(json);
             }
         }
 
         public void Save(string filename)
         {
             using (var stream = File.Open(filename, FileMode.Create, FileAccess.Write))
-            using (var jsonWriter = new JsonTextWriter(new StreamWriter(stream)))
+            using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
             {
-                JsonSerializer ser = new JsonSerializer()
-                {
-                    Formatting = Formatting.Indented
-                };
-                ser.Serialize(jsonWriter, this);
+                ToJson(writer);
             }
         }
 
@@ -130,23 +137,5 @@ namespace Neo.Express
         //    return InitializeProtocolSettings(doc.RootElement, secondsPerBlock);
         //}
 
-        //public void Write(Utf8JsonWriter writer)
-        //{
-        //    writer.WriteStartObject();
-        //    writer.WriteNumber("magic", Magic);
-        //    writer.WriteStartArray("consensus-nodes");
-        //    foreach (var conensusNode in ConsensusNodes)
-        //    {
-        //        conensusNode.Write(writer);
-        //    }
-        //    writer.WriteEndArray();
-        //    writer.WriteStartArray("wallets");
-        //    foreach (var wallets in Wallets)
-        //    {
-        //        wallets.Write(writer);
-        //    }
-        //    writer.WriteEndArray();
-        //    writer.WriteEndObject();
-        //}
     }
 }

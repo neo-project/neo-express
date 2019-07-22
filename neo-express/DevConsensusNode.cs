@@ -1,42 +1,36 @@
 ﻿using Neo.Cryptography.ECC;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Neo.Express
 {
     class DevConsensusNode
     {
-        [JsonProperty("wallet")]
-        [JsonConverter(typeof(DevWalletConverter))]
         public DevWallet Wallet { get; set; }
-
-        [JsonProperty("tcp-port")]
         public ushort TcpPort { get; set; }
-
-        [JsonProperty("ws-port")]
         public ushort WebSocketPort { get; set; }
-
-        [JsonProperty("rpc-port")]
         public ushort RpcPort { get; set; }
 
-        //static (ushort tcpPort, ushort webSocketPort, ushort rpcPort) ParsePorts(JsonElement json)
-        //{
-        //    return ((ushort)json.GetProperty("tcp-port").GetUInt32(),
-        //        (ushort)json.GetProperty("ws-port").GetUInt32(),
-        //        (ushort)json.GetProperty("rpc-port").GetUInt32());
+        internal static DevConsensusNode FromJson(JToken json)
+        {
+            var (tcpPort, webSocketPort, rpcPort) = PortsFromJson(json);
+            var wallet = DevWallet.FromJson(json["wallet"]);
+            return new DevConsensusNode()
+            {
+                Wallet = wallet,
+                TcpPort = tcpPort,
+                WebSocketPort = webSocketPort,
+                RpcPort = rpcPort
+            };
+        }
 
-        //}
-
-        //public static DevConsensusNode Parse(JsonElement json)
-        //{
-        //    var (tcp, ws, rpc) = ParsePorts(json);
-        //    return new DevConsensusNode()
-        //    {
-        //        Wallet = DevWallet.Parse(json.GetProperty("wallet")),
-        //        TcpPort = tcp,
-        //        WebSocketPort = ws,
-        //        RpcPort = rpc,
-        //    };
-        //}
+        static (ushort tcpPort, ushort webSocketPort, ushort rpcPort) PortsFromJson(JToken json)
+        {
+            var tcpPort = json.Value<ushort>("tcp-port");
+            var wsPort = json.Value<ushort>("ws-port");
+            var rpcPort = json.Value<ushort>("rpc-port");
+            return (tcpPort, wsPort, rpcPort);
+        }
 
         //public static (ECPoint publicKey, ushort tcpPort) ParseProtocolSettings(JsonElement json)
         //{
@@ -46,14 +40,18 @@ namespace Neo.Express
         //    return (keyPair.PublicKey, tcp);
         //}
 
-        //public void Write(Utf8JsonWriter writer)
-        //{
-        //    writer.WriteStartObject();
-        //    writer.WriteNumber("tcp-port", TcpPort);
-        //    writer.WriteNumber("ws-port", WebSocketPort);
-        //    writer.WriteNumber("rpc-port", RpcPort);
-        //    Wallet.Write(writer, "wallet");
-        //    writer.WriteEndObject();
-        //}
+        public void ToJson(JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("tcp-port");
+            writer.WriteValue(TcpPort);
+            writer.WritePropertyName("ws-port");
+            writer.WriteValue(WebSocketPort);
+            writer.WritePropertyName("rpc-port");
+            writer.WriteValue(RpcPort);
+            writer.WritePropertyName("wallet");
+            Wallet.ToJson(writer);
+            writer.WriteEndObject();
+        }
     }
 }

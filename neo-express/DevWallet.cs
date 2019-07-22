@@ -43,7 +43,7 @@ namespace Neo.Express
         //}
 
 
-        public void WriteJson(JsonWriter writer)
+        public void ToJson(JsonWriter writer)
         {
             writer.WriteStartObject();
             writer.WritePropertyName("name");
@@ -53,7 +53,7 @@ namespace Neo.Express
 
             foreach (var account in accounts.Values)
             {
-                account.WriteJson(writer);
+                account.ToJson(writer);
             }
             writer.WriteEndArray();
             writer.WriteEndObject();

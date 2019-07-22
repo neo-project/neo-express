@@ -24,7 +24,7 @@ namespace Neo.Express
             return key;
         }
 
-        internal void WriteJson(JsonWriter writer)
+        internal void ToJson(JsonWriter writer)
         {
             writer.WriteStartObject();
             writer.WritePropertyName("private-key");

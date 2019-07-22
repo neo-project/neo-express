@@ -48,9 +48,11 @@ namespace Neo.Express
         {
         }
 
+        public static bool IsGenesis(string name) => string.Compare(name, "genesis", true) == 0;
+
         public bool IsReservedName(string name)
         {
-            if (string.Compare(name, "genesis", true) == 0)
+            if (IsGenesis(name))
                 return true;
 
             foreach (var node in ConsensusNodes)

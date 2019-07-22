@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
 
 namespace Neo.Express.Commands
 {

@@ -5,12 +5,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo;
 using Neo.Cryptography;
-using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.Wallets;
-using Neo.Wallets.NEP6;
+using System.Collections.Generic;
 
 namespace Neo.Express.Commands
 {
@@ -32,32 +30,40 @@ namespace Neo.Express.Commands
         [Option]
         private string Input { get; }
 
-        static JArray SignContext(JToken ctx, DevWalletAccount senderAccount)
+        private async Task<int> GenesisTransferAsync(CommandLineApplication app, IConsole console, DevChain devchain)
         {
-            var hashes = ctx["script-hashes"].Select(t => t.Value<string>().ToScriptHash());
-            var data = ctx.Value<string>("hash-data").HexToBytes();
-            var signatures = new JArray();
-
-            foreach (var hash in hashes)
+            var senderAccount = devchain.GetAccount(Sender);
+            if (senderAccount == default)
             {
-                if (senderAccount?.HasKey != true) continue;
-                var key = senderAccount.GetKey();
-                var signature = Crypto.Default.Sign(data, key.PrivateKey,
-                    key.PublicKey.EncodePoint(false).Skip(1).ToArray());
-
-                signatures.Add(new JObject
-                {
-                    ["signature"] = signature.ToHexString(),
-                    ["public-key"] = key.PublicKey.EncodePoint(true).ToHexString(),
-                    ["contract"] = new JObject
-                    {
-                        ["script"] = senderAccount.Contract.Script.ToHexString(),
-                        ["parameters"] = new JArray(senderAccount.Contract.ParameterList.Select(cpt => Enum.GetName(typeof(Neo.SmartContract.ContractParameterType), cpt)))
-                    }
-                });
+                console.WriteLine($"{Sender} sender not found.");
+                app.ShowHelp();
+                return 1;
             }
 
-            return signatures;
+            var receiverAccount = devchain.GetAccount(Receiver);
+            if (receiverAccount == default)
+            {
+                console.WriteLine($"{Receiver} receiver not found.");
+                app.ShowHelp();
+                return 1;
+            }
+
+            var uri = devchain.GetUri();
+            var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash);
+            console.WriteLine(result.ToString(Formatting.Indented));
+
+            var (hashes, data) = NeoUtility.ParseResultHashesAndData(result);
+            var signatures = new JArray();
+            foreach (var sig in devchain.ConsensusNodes.SelectMany(n => n.Wallet.Sign(hashes, data)))
+            {
+                signatures.Add(sig);
+            }
+
+            console.WriteLine(signatures.ToString(Formatting.Indented));
+            var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+            console.WriteLine(result2.ToString(Formatting.Indented));
+
+            return 0;
         }
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
@@ -71,6 +77,11 @@ namespace Neo.Express.Commands
             }
 
             var devchain = DevChain.Load(input);
+
+            if (DevChain.IsGenesis(Sender))
+            {
+                return await GenesisTransferAsync(app, console, devchain);
+            }
 
             var senderAccount = devchain.GetAccount(Sender);
             if (senderAccount == default)
@@ -99,7 +110,8 @@ namespace Neo.Express.Commands
             }
             else
             {
-                var signatures = SignContext(result, senderAccount);
+                var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                var signatures = new JArray(senderAccount.Sign(data));
                 var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
                 console.WriteLine(result2.ToString(Formatting.Indented));
             }

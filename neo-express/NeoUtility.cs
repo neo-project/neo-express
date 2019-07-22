@@ -1,17 +1,55 @@
 ﻿using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.SmartContract;
 using Neo.Wallets;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 
 namespace Neo.Express
 {
     internal static class NeoUtility
     {
+        public static JObject Sign(this WalletAccount account, byte[] data)
+        {
+            var key = account.GetKey();
+            var signature = Cryptography.Crypto.Default.Sign(data, key.PrivateKey,
+                key.PublicKey.EncodePoint(false).Skip(1).ToArray());
+
+            return new JObject
+            {
+                ["signature"] = signature.ToHexString(),
+                ["public-key"] = key.PublicKey.EncodePoint(true).ToHexString(),
+                ["contract"] = new JObject
+                {
+                    ["script"] = account.Contract.Script.ToHexString(),
+                    ["parameters"] = new JArray(account.Contract.ParameterList.Select(cpt => Enum.GetName(typeof(ContractParameterType), cpt)))
+                }
+            };
+        }
+
+        public static IEnumerable<JObject> Sign(this DevWallet wallet, IEnumerable<UInt160> hashes, byte[] data)
+        {
+            foreach (var hash in hashes)
+            {
+                var account = wallet.GetAccount(hash);
+                if (account == null || !account.HasKey)
+                    continue;
+
+                yield return Sign(account, data);
+            }
+        }
+
+        public static (IEnumerable<UInt160> hashes, byte[] data) ParseResultHashesAndData(JToken result)
+        {
+            var hashes = result["script-hashes"].Select(t => t.Value<string>().ToScriptHash());
+            var data = result.Value<string>("hash-data").HexToBytes();
+            return (hashes, data);
+        }
+
         private static bool CoinUnspent(Coin c)
         {
             return (c.State & CoinState.Confirmed) != 0

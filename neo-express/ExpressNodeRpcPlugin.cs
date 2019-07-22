@@ -9,10 +9,8 @@ using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.Wallets;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 
 namespace Neo.Express
 {
@@ -81,12 +79,6 @@ namespace Neo.Express
                 var tx = NeoUtility.MakeTransferTransaction(snapshot, ImmutableHashSet.Create(sender), receiver, assetId, quantity);
                 var context = new ContractParametersContext(tx);
 
-                var rpcWallet = System.RpcServer.Wallet;
-                if (rpcWallet.GetAccounts().Any(a => a.ScriptHash == sender))
-                {
-                    rpcWallet.Sign(context);
-                }
-
                 return CreateContextResponse(context, tx);
             }
         }
@@ -144,12 +136,6 @@ namespace Neo.Express
                 var tx = NeoUtility.MakeClaimTransaction(snapshot, address, assetId);
                 var context = new ContractParametersContext(tx);
 
-                var rpcWallet = System.RpcServer.Wallet;
-                if (rpcWallet.GetAccounts().Any(a => a.ScriptHash == address))
-                {
-                    rpcWallet.Sign(context);
-                }
-
                 return CreateContextResponse(context, tx);
             }
         }
@@ -173,6 +159,9 @@ namespace Neo.Express
                 {
                     throw new Exception($"AddSignature failed for {signature["public-key"].AsString()}");
                 }
+
+                if (context.Completed)
+                    break;
             }
 
             if (context.Verifiable is Transaction tx)

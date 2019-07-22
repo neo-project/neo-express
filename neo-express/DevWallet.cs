@@ -69,6 +69,11 @@ namespace Neo.Express
             nep6Wallet.Save();
         }
 
+        public bool NameMatches(string name)
+        {
+            return string.Compare(Name, name, true) == 0;
+        }
+
         public override string Name => name;
 
         public override Version Version => null;

@@ -48,6 +48,22 @@ namespace Neo.Express
         {
         }
 
+        public bool IsReservedName(string walletName)
+        {
+            if (string.Compare(walletName, "genesis", true) == 0)
+                return true;
+
+            foreach (var node in ConsensusNodes)
+            {
+                if (node.Wallet.NameMatches(walletName))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public DevWallet GetWallet(string name) => Wallets.SingleOrDefault(w => w.NameMatches(name));
+
         public static DevChain FromJson(JObject json)
         {
             var magic = json.Value<uint>("magic");

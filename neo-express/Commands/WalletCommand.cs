@@ -43,7 +43,14 @@ namespace Neo.Express.Commands
                 }
 
                 var devchain = DevChain.Load(input);
-                if (devchain.Wallets.Any(w => w.Name == Name) && !Force)
+                if (devchain.IsReservedName(Name))
+                {
+                    console.WriteLine($"{Name} is a reserved name. Choose a different wallet name.");
+                    app.ShowHelp();
+                    return 1;
+                }
+
+                if (!Force && (devchain.GetWallet(Name) != default))
                 {
                     console.WriteLine($"{Name} dev wallet already exists. Use --force to overwrite.");
                     app.ShowHelp();
@@ -76,13 +83,6 @@ namespace Neo.Express.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
-                if (!Force)
-                {
-                    console.WriteLine("You must specify force to delete a privatenet wallet.");
-                    app.ShowHelp();
-                    return 1;
-                }
-
                 var input = Program.DefaultPrivatenetFileName(Input);
                 if (!File.Exists(input))
                 {
@@ -92,16 +92,23 @@ namespace Neo.Express.Commands
                 }
 
                 var devchain = DevChain.Load(input);
-                var wallet = devchain.Wallets.SingleOrDefault(w => w.Name == Name);
-                if (wallet != default)
+                var wallet = devchain.GetWallet(Name);
+                if (wallet == (default))
                 {
-                    devchain.Wallets.Remove(wallet);
-                    devchain.Save(input);
-                    console.WriteLine($"{Name} privatenet wallet deleted.");
+                    console.WriteLine($"{Name} privatenet wallet not found.");
                 }
                 else
                 {
-                    console.WriteLine($"{Name} privatenet wallet not found.");
+                    if (!Force)
+                    {
+                        console.WriteLine("You must specify force to delete a privatenet wallet.");
+                        app.ShowHelp();
+                        return 1;
+                    }
+
+                    devchain.Wallets.Remove(wallet);
+                    devchain.Save(input);
+                    console.WriteLine($"{Name} privatenet wallet deleted.");
                 }
 
                 return 0;
@@ -123,7 +130,6 @@ namespace Neo.Express.Commands
 
             [Option]
             private bool Force { get; }
-
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
@@ -154,16 +160,16 @@ namespace Neo.Express.Commands
                 }
 
                 var devchain = DevChain.Load(input);
-                var wallet = devchain.Wallets.SingleOrDefault(w => w.Name == Name);
-                if (wallet != default)
+                var wallet = devchain.GetWallet(Name);
+                if (wallet == (default))
+                {
+                    console.WriteLine($"{Name} privatenet wallet not found.");
+                }
+                else
                 {
                     var password = Prompt.GetPassword("Input password to use for exported wallet");
                     wallet.Export(output, password);
                     console.WriteLine($"{Name} privatenet wallet exported to {output}");
-                }
-                else
-                {
-                    console.WriteLine($"{Name} privatenet wallet not found.");
                 }
 
                 return 0;

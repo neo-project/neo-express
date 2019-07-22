@@ -1,12 +1,21 @@
 ﻿using Neo.Cryptography.ECC;
+using Newtonsoft.Json;
 
 namespace Neo.Express
 {
     class DevConsensusNode
     {
+        [JsonProperty("wallet")]
+        [JsonConverter(typeof(DevWalletConverter))]
         public DevWallet Wallet { get; set; }
+
+        [JsonProperty("tcp-port")]
         public ushort TcpPort { get; set; }
+
+        [JsonProperty("ws-port")]
         public ushort WebSocketPort { get; set; }
+
+        [JsonProperty("rpc-port")]
         public ushort RpcPort { get; set; }
 
         //static (ushort tcpPort, ushort webSocketPort, ushort rpcPort) ParsePorts(JsonElement json)

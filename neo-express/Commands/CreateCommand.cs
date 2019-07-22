@@ -1,15 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
 
 namespace Neo.Express.Commands
 {
     [Command("create")]
-    class CreateCommand
+    internal class CreateCommand
     {
-        class ValidNodeCountAttribute : ValidationAttribute
+        [AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false)]
+        private class ValidNodeCountAttribute : ValidationAttribute
         {
             public ValidNodeCountAttribute() : base("The value for {0} must be 1, 4 or 7")
             {
@@ -28,18 +31,18 @@ namespace Neo.Express.Commands
 
         [ValidNodeCount]
         [Option]
-        int Count { get; }
+        private int Count { get; }
 
         [Option]
-        string Output { get; }
+        private string Output { get; }
 
         [Option]
-        bool Force { get; }
+        private bool Force { get; }
 
         [Option]
-        ushort Port { get; }
+        private ushort Port { get; }
 
-        int OnExecute(CommandLineApplication app, IConsole console)
+        private int OnExecute(CommandLineApplication app, IConsole console)
         {
             var output = Program.DefaultPrivatenetFileName(Output);
             if (File.Exists(output) && !Force)
@@ -71,18 +74,23 @@ namespace Neo.Express.Commands
             }
 
             var port = Port == 0 ? (ushort)49152 : Port;
-            //using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
-            //using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
-            //{
-            //    var chain = new DevChain(wallets.Select(t => new DevConsensusNode()
-            //    {
-            //        Wallet = t.wallet,
-            //        TcpPort = port++,
-            //        WebSocketPort = port++,
-            //        RpcPort = port++
-            //    }));
-            //    chain.Write(writer);
-            //}
+            var chain = new DevChain(wallets.Select(t => new DevConsensusNode()
+            {
+                Wallet = t.wallet,
+                TcpPort = port++,
+                WebSocketPort = port++,
+                RpcPort = port++
+            }));
+
+            using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
+            using (var jsonWriter = new JsonTextWriter(new StreamWriter(stream)))
+            {
+                JsonSerializer ser = new JsonSerializer()
+                {
+                    Formatting = Formatting.Indented
+                };
+                ser.Serialize(jsonWriter, chain);
+            }
 
             console.WriteLine($"Created {nodeCount} node privatenet at {output}");
             console.WriteLine("    Note: The private keys for the accounts in this file are stored in the clear.");

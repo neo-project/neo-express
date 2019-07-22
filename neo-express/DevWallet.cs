@@ -5,6 +5,8 @@ using System.Linq;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.Wallets;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Neo.Express
 {
@@ -23,12 +25,14 @@ namespace Neo.Express
             }
         }
 
-        //public static DevWallet Parse(JsonElement json)
-        //{
-        //    return new DevWallet(
-        //        json.GetProperty("name").GetString(), 
-        //        json.GetProperty("accounts").EnumerateArray().Select(DevWalletAccount.Parse));
-        //}
+        public static DevWallet FromJson(JsonReader reader)
+        {
+            var json = JObject.Load(reader);
+
+            var name = json.Value<string>("name");
+            var accounts = json["accounts"].Select(DevWalletAccount.FromJson);
+            return new DevWallet(name, accounts);
+        }
 
         //public static KeyPair ParseKeyPair(JsonElement json)
         //{
@@ -39,22 +43,22 @@ namespace Neo.Express
         //        .HexToBytes());
         //}
 
-        //public void Write(Utf8JsonWriter writer, string propertyName = null)
-        //{
-        //    if (string.IsNullOrEmpty(propertyName))
-        //        writer.WriteStartObject();
-        //    else
-        //        writer.WriteStartObject(propertyName);
 
-        //    writer.WriteString("name", Name);
-        //    writer.WriteStartArray("accounts");
-        //    foreach (var a in accounts.Values)
-        //    {
-        //        a.Write(writer);
-        //    }
-        //    writer.WriteEndArray();
-        //    writer.WriteEndObject();
-        //}
+        public void WriteJson(JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("name");
+            writer.WriteValue(Name);
+            writer.WritePropertyName("accounts");
+            writer.WriteStartArray();
+
+            foreach (var account in accounts.Values)
+            {
+                account.WriteJson(writer);
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
 
         public void Export(string filename, string password)
         {
@@ -115,6 +119,7 @@ namespace Neo.Express
 
         public override bool VerifyPassword(string password) => true;
 
+        [JsonIgnore]
         public override uint WalletHeight => throw new NotImplementedException();
 
         public override event EventHandler<WalletTransactionEventArgs> WalletTransaction

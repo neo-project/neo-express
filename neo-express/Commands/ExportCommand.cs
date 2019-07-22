@@ -1,4 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
 using System.IO;
 using System.Linq;
 
@@ -12,12 +13,12 @@ namespace Neo.Express.Commands
 
         public static DevChain LoadDevChain(string filePath)
         {
-            //using (var stream = System.IO.File.OpenRead(filePath))
-            //{
-            //    var doc = JsonDocument.Parse(stream);
-            //    return DevChain.Parse(doc);
-            //}
-            return null;
+            using (var stream = System.IO.File.OpenRead(filePath))
+            using (var jsonReader = new JsonTextReader(new StreamReader(stream)))
+            {
+                var ser = new JsonSerializer();
+                return ser.Deserialize<DevChain>(jsonReader);
+            }
         }
 
         int OnExecute(CommandLineApplication app, IConsole console)

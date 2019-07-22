@@ -2,6 +2,8 @@
 using System.Linq;
 using Neo.SmartContract;
 using Neo.Wallets;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Neo.Express
 {
@@ -22,54 +24,59 @@ namespace Neo.Express
             return key;
         }
 
+        internal void WriteJson(JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("private-key");
+            writer.WriteValue(key.PrivateKey.ToHexString());
+            writer.WritePropertyName("script-hash");
+            writer.WriteValue(ScriptHash.ToAddress());
+            writer.WritePropertyName("label");
+            writer.WriteValue(Label);
+            writer.WritePropertyName("is-default");
+            writer.WriteValue(IsDefault);
+            writer.WritePropertyName("contract");
+            writer.WriteStartObject();
+            writer.WritePropertyName("script");
+            writer.WriteValue(Contract?.Script.ToHexString());
+            writer.WritePropertyName("parameters");
+            writer.WriteStartArray();
+            foreach (var cpt in Contract?.ParameterList.Select(p => Enum.GetName(typeof(ContractParameterType), p)))
+            {
+                writer.WriteValue(cpt);
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
+
+        internal static DevWalletAccount FromJson(JToken json)
+        {
+            var jsonContract = (JObject)json["contract"];
+            var script = jsonContract.Value<string>("script").HexToBytes();
+            var @params = jsonContract["parameters"]
+                .Select(cpt => Enum.Parse<ContractParameterType>(cpt.Value<string>()));
+
+            var privateKey = json.Value<string>("private-key").HexToBytes();
+            var scriptHash = json.Value<string>("script-hash").ToScriptHash();
+            var label = json.Value<string>("label");
+            var isDefault = json.Value<bool>("is-default");
+
+            return new DevWalletAccount(new KeyPair(privateKey), new Contract
+            {
+                Script = script,
+                ParameterList = @params.ToArray()
+            }, scriptHash)
+            {
+                Label = label,
+                IsDefault = isDefault,
+            };
+        }
+
         //public static string ParsePrivateKey(JsonElement json)
         //{
         //    return json.GetProperty("private-key").GetString();
         //}
 
-        //public static DevWalletAccount Parse(JsonElement json)
-        //{
-        //    var jsonContract = json.GetProperty("contract");
-        //    var contract = new Contract()
-        //    {
-        //        Script = jsonContract
-        //            .GetProperty("script")
-        //            .GetString()
-        //            .HexToBytes(),
-        //        ParameterList = jsonContract
-        //            .GetProperty("parameters")
-        //            .EnumerateArray()
-        //            .Select(cpt => Enum.Parse<ContractParameterType>(cpt.GetString()))
-        //            .ToArray(),
-        //    };
-
-        //    return new DevWalletAccount(
-        //        new KeyPair(json.GetProperty("private-key").GetString().HexToBytes()),
-        //        contract,
-        //        json.GetProperty("script-hash").GetString().ToScriptHash())
-        //    {
-        //        Label = json.GetProperty("label").GetString(),
-        //        IsDefault = json.GetProperty("is-default").GetBoolean()
-        //    };
-        //}
-
-        //public void Write(Utf8JsonWriter writer)
-        //{
-        //    writer.WriteStartObject();
-        //    writer.WriteString("private-key", key.PrivateKey.ToHexString());
-        //    writer.WriteString("script-hash", ScriptHash.ToAddress());
-        //    writer.WriteString("label", Label);
-        //    writer.WriteBoolean("is-default", IsDefault);
-        //    writer.WriteStartObject("contract");
-        //    writer.WriteString("script", Contract?.Script.ToHexString());
-        //    writer.WriteStartArray("parameters");
-        //    foreach (var cpt in Contract?.ParameterList.Select(p => Enum.GetName(typeof(ContractParameterType), p)))
-        //    {
-        //        writer.WriteStringValue(cpt);
-        //    }
-        //    writer.WriteEndArray();
-        //    writer.WriteEndObject();
-        //    writer.WriteEndObject();
-        //}
     }
 }

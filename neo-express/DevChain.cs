@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -30,10 +31,18 @@ namespace Neo.Express
             }
         }
 
+        [JsonProperty("magic")]
         public uint Magic { get; set; }
+
+        [JsonProperty("consensus-nodes")]
         public List<DevConsensusNode> ConsensusNodes { get; set; }
+
+        [JsonIgnore]
+        [JsonProperty("wallets")]
+        [JsonConverter(typeof(DevWalletConverter))]
         public List<DevWallet> Wallets { get; set; }
 
+        [JsonConstructor]
         public DevChain(uint magic, IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
         {
             Magic = magic;

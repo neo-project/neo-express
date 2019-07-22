@@ -37,9 +37,8 @@ namespace Neo.Express
         [JsonProperty("consensus-nodes")]
         public List<DevConsensusNode> ConsensusNodes { get; set; }
 
-        [JsonIgnore]
         [JsonProperty("wallets")]
-        [JsonConverter(typeof(DevWalletConverter))]
+        [JsonConverter(typeof(DevWalletListConverter))]
         public List<DevWallet> Wallets { get; set; }
 
         [JsonConstructor]
@@ -70,21 +69,25 @@ namespace Neo.Express
 
         public static DevChain Load(string filename)
         {
-            return null;
-            //using (var stream = File.OpenRead(filename))
-            //using (var json = JsonDocument.Parse(stream))
-            //{
-            //    return DevChain.Parse(json);
-            //}
+            using (var stream = File.OpenRead(filename))
+            using (var jsonReader = new JsonTextReader(new StreamReader(stream)))
+            {
+                var ser = new JsonSerializer();
+                return ser.Deserialize<DevChain>(jsonReader);
+            }
         }
 
         public void Save(string filename)
         {
-            //using (var stream = File.Open(filename, FileMode.Create, FileAccess.Write))
-            //using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
-            //{
-            //    Write(writer);
-            //}
+            using (var stream = File.Open(filename, FileMode.Create, FileAccess.Write))
+            using (var jsonWriter = new JsonTextWriter(new StreamWriter(stream)))
+            {
+                JsonSerializer ser = new JsonSerializer()
+                {
+                    Formatting = Formatting.Indented
+                };
+                ser.Serialize(jsonWriter, this);
+            }
         }
 
         // InitializeProtocolSettings uses the dev chain's raw JSON information 

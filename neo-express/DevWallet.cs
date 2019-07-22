@@ -25,14 +25,13 @@ namespace Neo.Express
             }
         }
 
-        public static DevWallet FromJson(JsonReader reader)
+        public static DevWallet FromJson(JToken json)
         {
-            var json = JObject.Load(reader);
-
             var name = json.Value<string>("name");
             var accounts = json["accounts"].Select(DevWalletAccount.FromJson);
             return new DevWallet(name, accounts);
         }
+
 
         //public static KeyPair ParseKeyPair(JsonElement json)
         //{

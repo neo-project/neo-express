@@ -11,16 +11,6 @@ namespace Neo.Express.Commands
         [Option]
         string Input { get; }
 
-        public static DevChain LoadDevChain(string filePath)
-        {
-            using (var stream = System.IO.File.OpenRead(filePath))
-            using (var jsonReader = new JsonTextReader(new StreamReader(stream)))
-            {
-                var ser = new JsonSerializer();
-                return ser.Deserialize<DevChain>(jsonReader);
-            }
-        }
-
         int OnExecute(CommandLineApplication app, IConsole console)
         {
             var input = string.IsNullOrEmpty(Input)
@@ -34,7 +24,7 @@ namespace Neo.Express.Commands
                 return 1;
             }
 
-            var chain = LoadDevChain(input);
+            var chain = DevChain.Load(input);
 
             var password = Prompt.GetPassword("Input password to use for exported wallets");
 
@@ -51,68 +41,91 @@ namespace Neo.Express.Commands
 
                 consensusNode.Wallet.Export(walletPath, password);
 
-                //using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{consensusNode.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write))
-                //using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
-                //{
-                //    writer.WriteStartObject();
-                //    writer.WriteStartObject("ApplicationConfiguration");
+                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{consensusNode.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write))
+                using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("ApplicationConfiguration");
+                    writer.WriteStartObject();
 
-                //    writer.WriteStartObject("Paths");
-                //    writer.WriteString("Chain", "Chain_{0}");
-                //    writer.WriteEndObject();
+                    writer.WritePropertyName("Paths");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("Chain");
+                    writer.WriteValue("Chain_{0}");
+                    writer.WriteEndObject();
 
-                //    writer.WriteStartObject("P2P");
-                //    writer.WriteNumber("Port", consensusNode.TcpPort);
-                //    writer.WriteNumber("WsPort", consensusNode.WebSocketPort);
-                //    writer.WriteEndObject();
+                    writer.WritePropertyName("P2P");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("Port");
+                    writer.WriteValue(consensusNode.TcpPort);
+                    writer.WritePropertyName("WsPort");
+                    writer.WriteValue(consensusNode.WebSocketPort);
+                    writer.WriteEndObject();
 
-                //    writer.WriteStartObject("RPC");
-                //    writer.WriteString("BindAddress", "127.0.0.1");
-                //    writer.WriteNumber("Port", consensusNode.RpcPort);
-                //    writer.WriteString("SslCert", "");
-                //    writer.WriteString("SslCertPassword", "");
-                //    writer.WriteEndObject();
+                    writer.WritePropertyName("RPC");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("BindAddress");
+                    writer.WriteValue("127.0.0.1");
+                    writer.WritePropertyName("Port");
+                    writer.WriteValue(consensusNode.RpcPort);
+                    writer.WritePropertyName("SslCert");
+                    writer.WriteValue("");
+                    writer.WritePropertyName("SslCertPassword");
+                    writer.WriteValue("");
+                    writer.WriteEndObject();
 
-                //    writer.WriteStartObject("UnlockWallet");
-                //    writer.WriteString("Path", walletPath);
-                //    writer.WriteString("Password", password);
-                //    writer.WriteBoolean("StartConsensus", true);
-                //    writer.WriteBoolean("IsActive", true);
-                //    writer.WriteEndObject();
+                    writer.WritePropertyName("UnlockWallet");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("Path");
+                    writer.WriteValue(walletPath);
+                    writer.WritePropertyName("Password");
+                    writer.WriteValue(password);
+                    writer.WritePropertyName("StartConsensus");
+                    writer.WriteValue(true);
+                    writer.WritePropertyName("IsActive");
+                    writer.WriteValue(true);
+                    writer.WriteEndObject();
 
-                //    writer.WriteEndObject();
-                //    writer.WriteEndObject();
-                //}
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+
+                }
             }
 
             {
-                //using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), "protocol.json"), FileMode.Create, FileAccess.Write))
-                //using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
-                //{
-                //    writer.WriteStartObject();
-                //    writer.WriteStartObject("ProtocolConfiguration");
+                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), "protocol.json"), FileMode.Create, FileAccess.Write))
+                using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("IsActive");
+                    writer.WriteStartObject();
 
-                //    writer.WriteNumber("Magic", chain.Magic);
-                //    writer.WriteNumber("AddressVersion", 23);
-                //    writer.WriteNumber("SecondsPerBlock", 15);
+                    writer.WritePropertyName("IsActive");
+                    writer.WriteValue(chain.Magic);
+                    writer.WritePropertyName("IsActive");
+                    writer.WriteValue(23);
+                    writer.WritePropertyName("IsActive");
+                    writer.WriteValue(15);
 
-                //    writer.WriteStartArray("StandbyValidators");
-                //    foreach (var conensusNode in chain.ConsensusNodes)
-                //    {
-                //        writer.WriteStringValue(conensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).GetKey().PublicKey.EncodePoint(true).ToHexString());
-                //    }
-                //    writer.WriteEndArray();
+                    writer.WritePropertyName("StandbyValidators");
+                    writer.WriteStartArray();
+                    foreach (var conensusNode in chain.ConsensusNodes)
+                    {
+                        writer.WriteValue(conensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).GetKey().PublicKey.EncodePoint(true).ToHexString());
+                    }
+                    writer.WriteEndArray();
 
-                //    writer.WriteStartArray("SeedList");
-                //    foreach (var node in chain.ConsensusNodes)
-                //    {
-                //        writer.WriteStringValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
-                //    }
-                //    writer.WriteEndArray();
+                    writer.WritePropertyName("SeedList");
+                    writer.WriteStartArray();
+                    foreach (var node in chain.ConsensusNodes)
+                    {
+                        writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
+                    }
+                    writer.WriteEndArray();
 
-                //    writer.WriteEndObject();
-                //    writer.WriteEndObject();
-                //}
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
             }
 
             return 0;

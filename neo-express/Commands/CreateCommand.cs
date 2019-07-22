@@ -82,15 +82,7 @@ namespace Neo.Express.Commands
                 RpcPort = port++
             }));
 
-            using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
-            using (var jsonWriter = new JsonTextWriter(new StreamWriter(stream)))
-            {
-                JsonSerializer ser = new JsonSerializer()
-                {
-                    Formatting = Formatting.Indented
-                };
-                ser.Serialize(jsonWriter, chain);
-            }
+            chain.Save(output);
 
             console.WriteLine($"Created {nodeCount} node privatenet at {output}");
             console.WriteLine("    Note: The private keys for the accounts in this file are stored in the clear.");

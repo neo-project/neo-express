@@ -7,6 +7,7 @@ namespace Neo.Express
     [Command("neo-express")]
     [Subcommand(
         typeof(ClaimCommand),
+        typeof(ContractCommand),
         typeof(CreateCommand),
         typeof(RunCommand),
         typeof(ExportCommand),

@@ -35,16 +35,18 @@ namespace Neo.Express
         public uint Magic { get; set; }
         public List<DevConsensusNode> ConsensusNodes { get; set; }
         public List<DevWallet> Wallets { get; set; }
+        public List<DevContract> Contracts { get; set; }
 
-        public DevChain(uint magic, IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
+        public DevChain(uint magic, IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null, IEnumerable<DevContract> contracts = null)
         {
             Magic = magic;
             ConsensusNodes = consensusNodes.ToList();
             Wallets = wallets == null ? new List<DevWallet>() : wallets.ToList();
+            Contracts = contracts == null ? new List<DevContract>() : contracts.ToList();
         }
 
-        public DevChain(IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null)
-            : this(GenerateMagicValue(), consensusNodes, wallets)
+        public DevChain(IEnumerable<DevConsensusNode> consensusNodes, IEnumerable<DevWallet> wallets = null, IEnumerable<DevContract> contracts = null)
+            : this(GenerateMagicValue(), consensusNodes, wallets, contracts)
         {
         }
 
@@ -117,7 +119,8 @@ namespace Neo.Express
             var magic = json.Value<uint>("magic");
             var consensusNodes = json["consensus-nodes"].Select(DevConsensusNode.FromJson);
             var wallets = json["wallets"].Select(DevWallet.FromJson);
-            return new DevChain(magic, consensusNodes, wallets);
+            var contracts = json["contracts"].Select(DevContract.FromJson);
+            return new DevChain(magic, consensusNodes, wallets, contracts);
         }
 
         public void ToJson(JsonWriter writer)
@@ -125,6 +128,7 @@ namespace Neo.Express
             writer.WriteStartObject();
             writer.WritePropertyName("magic");
             writer.WriteValue(Magic);
+
             writer.WritePropertyName("consensus-nodes");
             writer.WriteStartArray();
             foreach (var conensusNode in ConsensusNodes)
@@ -132,6 +136,7 @@ namespace Neo.Express
                 conensusNode.ToJson(writer);
             }
             writer.WriteEndArray();
+
             writer.WritePropertyName("wallets");
             writer.WriteStartArray();
             foreach (var wallet in Wallets)
@@ -139,6 +144,15 @@ namespace Neo.Express
                 wallet.ToJson(writer);
             }
             writer.WriteEndArray();
+
+            writer.WritePropertyName("contracts");
+            writer.WriteStartArray();
+            foreach (var contract in Contracts)
+            {
+                contract.ToJson(writer);
+            }
+            writer.WriteEndArray();
+
             writer.WriteEndObject();
         }
 

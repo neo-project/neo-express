@@ -13,9 +13,9 @@ namespace Neo.Express.Commands
     [Subcommand(
     //typeof(Deploy),
     //typeof(Get),
-    typeof(ImportCommand)
+    typeof(Import),
     //typeof(Invoke),
-    //typeof(List)
+    typeof(List)
     )]
     internal class ContractCommand
     {
@@ -27,16 +27,15 @@ namespace Neo.Express.Commands
         }
 
         [Command(Name = "import")]
-        private class ImportCommand
+        private class Import
         {
             [Argument(0)]
-            //[Required]
             string ContractPath { get; }
 
-            //[Option]
+            [Option]
             bool Force { get; }
 
-            //[Option]
+            [Option]
             private string Input { get; }
 
             private int ImportContract(string avmFile, IConsole console)
@@ -108,6 +107,41 @@ namespace Neo.Express.Commands
                     }
 
                     return ImportContract(ContractPath, console);
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex.Message);
+                    app.ShowHelp();
+                    return 1;
+                }
+            }
+        }
+
+        [Command(Name = "list")]
+        class List
+        {
+            [Option]
+            private string Input { get; }
+
+            private int OnExecute(CommandLineApplication app, IConsole console)
+            {
+                try
+                {
+                    var input = Program.DefaultPrivatenetFileName(Input);
+                    if (!File.Exists(input))
+                    {
+                        throw new Exception($"{input} input doesn't exist");
+                    }
+
+                    var devchain = DevChain.Load(input);
+
+                    foreach (var c in devchain.Contracts)
+                    {
+                        console.WriteLine($"{c.Name} - {c.Title}");
+                        console.WriteLine($"\t{c.Hash}");
+                    }
+
+                    return 0;
                 }
                 catch (Exception ex)
                 {

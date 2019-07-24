@@ -1,8 +1,9 @@
-param([int]$secondsPerBlock = 1, [switch]$debug)
+param([int]$secondsPerBlock = 1, [switch]$debug, [switch]$reset)
 
 dotnet publish
 function launch($index) {
-	cmd /c start dotnet .\bin\Debug\netcoreapp2.2\publish\neo-express.dll run $index --seconds-per-block $secondsPerBlock
+	$resetArg = if ($reset) { "--reset" } else { "" }
+	cmd /c start dotnet .\bin\Debug\netcoreapp2.2\publish\neo-express.dll run $index --seconds-per-block $secondsPerBlock $resetArg 
 }
 
 $privatenet = Get-Content .\express.privatenet.json | convertfrom-json

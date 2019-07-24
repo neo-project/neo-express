@@ -57,7 +57,5 @@ namespace Neo.Express
                 ReturnType = retType
             };
         }
-
-        public static DevContractFunction FromJson(Neo.IO.Json.JObject json) => FromJson(JToken.Parse(json.ToString()));
     }
 }

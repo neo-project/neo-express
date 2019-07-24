@@ -1,8 +1,11 @@
-﻿using Neo.Wallets;
+﻿using Neo.SmartContract;
+using Neo.Wallets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -74,11 +77,22 @@ namespace Neo.Express
             }
         }
 
-        public static Task<JToken> ExpressDeployContract(Uri uri, DevContract contract, UInt160 hash)
+        public static Task<JToken> ExpressDeployContract(Uri uri, DevContract contract, UInt160 address)
         {
             return RpcCall(uri, "express-deploy-contract", new JArray(
-                ToJToken(contract.ToJson), hash.ToAddress()));
+                ToJToken(contract.ToJson), address.ToAddress()));
         }
+
+        public static Task<JToken> ExpressInvokeContract(Uri uri, UInt160 scriptHash, IEnumerable<ContractParameter> scriptParams, string functionName = null, UInt160 address = null)
+        {
+            var @params = new JArray(scriptParams.Select(p => JObject.Parse(p.ToJson().ToString())));
+            return RpcCall(uri, "express-invoke-contract", new JArray(
+                scriptHash.ToString(),
+                functionName,
+                @params,
+                address?.ToAddress()));
+        }
+
 
         public static Task<JToken> GetContractState(Uri uri, UInt160 scriptHash)
         {

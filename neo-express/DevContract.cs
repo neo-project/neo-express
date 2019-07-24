@@ -102,8 +102,6 @@ namespace Neo.Express
             };
         }
 
-        public static DevContract FromJson(Neo.IO.Json.JObject json) => FromJson(JToken.Parse(json.ToString()));
-
         public static DevContract Load(string avnFile, string abiFile, string mdFile)
         {
             (UInt160 hash, string entrypoint, List<DevContractFunction> functions, List<DevContractFunction> events) LoadAbi()

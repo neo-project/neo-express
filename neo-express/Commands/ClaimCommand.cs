@@ -25,7 +25,7 @@ namespace Neo.Express.Commands
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
-            { 
+            {
                 var input = Program.DefaultPrivatenetFileName(Input);
                 if (!File.Exists(input))
                 {

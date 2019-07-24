@@ -7,6 +7,7 @@ using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Plugins;
 using Neo.SmartContract;
+using Neo.VM;
 using Neo.Wallets;
 using System;
 using System.Collections.Immutable;
@@ -174,6 +175,31 @@ namespace Neo.Express
             }
         }
 
+        private static JObject EngineToJson(ApplicationEngine engine)
+        {
+            var json = new JObject();
+            json["state"] = (byte)engine.State;
+            json["gas-consumed"] = engine.GasConsumed.ToString();
+            json["result-stack"] = new JArray(engine.ResultStack.Select(item => item.ToParameter().ToJson()));
+            return json;
+        }
+
+        public JObject OnDeployContract(JArray @params)
+        {
+            var contract = DevContract.FromJson(@params[0]);
+            var address = @params[1].AsString().ToScriptHash();
+            var addresses = ImmutableHashSet.Create(address);
+
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
+            {
+                var (tx, engine) = NeoUtility.MakeDeploymentTransaction(snapshot, addresses, contract);
+                var context = new ContractParametersContext(tx);
+                var json = CreateContextResponse(context, tx);
+                json["engine-state"] = EngineToJson(engine);
+                return json;
+            }
+        }
+
         public JObject OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
@@ -188,6 +214,8 @@ namespace Neo.Express
                     return OnShowGas(@params);
                 case "express-submit-signatures":
                     return OnSubmitSignatures(@params);
+                case "express-deploy-contract":
+                    return OnDeployContract(@params);
             }
 
             return null;

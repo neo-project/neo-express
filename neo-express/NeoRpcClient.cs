@@ -64,5 +64,25 @@ namespace Neo.Express
         {
             return RpcCall(uri, "express-claim", new JArray(asset, address.ToAddress()));
         }
+
+        private static JToken ToJToken(Action<JsonWriter> action)
+        {
+            using (var writer = new JTokenWriter())
+            {
+                action(writer);
+                return writer.Token;
+            }
+        }
+
+        public static Task<JToken> ExpressDeployContract(Uri uri, DevContract contract, UInt160 hash)
+        {
+            return RpcCall(uri, "express-deploy-contract", new JArray(
+                ToJToken(contract.ToJson), hash.ToAddress()));
+        }
+
+        public static Task<JToken> GetContractState(Uri uri, UInt160 scriptHash)
+        {
+            return RpcCall(uri, "getcontractstate", new JArray(scriptHash.ToString()));
+        }
     }
 }

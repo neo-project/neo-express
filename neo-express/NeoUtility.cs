@@ -2,6 +2,7 @@
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
+using Neo.VM;
 using Neo.Wallets;
 using System;
 using System.Collections.Generic;
@@ -231,6 +232,81 @@ namespace Neo.Express
             }
 
             return null;
+        }
+
+        public static (InvocationTransaction, ApplicationEngine) MakeDeploymentTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, DevContract contract)
+        {
+            var tx = BuildInvocationTx(() => BuildContractCreateScript(contract));
+            var engine = ApplicationEngine.Run(tx.Script, tx, null, true);
+            if ((engine.State & VMState.FAULT) != 0)
+            {
+                throw new Exception();
+            }
+
+            var gas = engine.GasConsumed - Fixed8.FromDecimal(10);
+            tx.Gas = (gas < Fixed8.Zero) ? Fixed8.Zero : gas.Ceiling();
+
+            return (AddTransactionFee(snapshot, addresses, tx), engine);
+        }
+
+        private static InvocationTransaction AddTransactionFee(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, InvocationTransaction tx)
+        {
+            var fee = Fixed8.FromDecimal(0.001m);
+            if (tx.Size > 1024)
+            {
+                fee += Fixed8.FromDecimal(tx.Size * 0.00001m);
+            }
+            fee += tx.SystemFee;
+
+            var coins = GetCoins(snapshot, addresses).Unspent(Blockchain.UtilityToken.Hash);
+            var sum = coins.Sum(c => c.Output.Value);
+            if (sum < fee)
+            {
+                return null;
+            }
+
+            var inputs = GetInputs(coins, Blockchain.UtilityToken.Hash, fee);
+            var outputs = GetOutputs(inputs);
+
+            tx.Inputs = tx.Inputs.Concat(inputs.Select(t => t.coin.Reference)).ToArray();
+            tx.Outputs = tx.Outputs.Concat(outputs).ToArray();
+
+            return tx;
+        }
+
+        private static InvocationTransaction BuildInvocationTx(Func<ScriptBuilder> func)
+        {
+            using (var builder = func())
+            {
+                return new InvocationTransaction
+                {
+                    Version = 1,
+                    Script = builder.ToArray(),
+                    Attributes = new TransactionAttribute[0],
+                    Inputs = new CoinReference[0],
+                    Outputs = new TransactionOutput[0],
+                    Witnesses = new Witness[0],
+                };
+            }
+        }
+
+        private static ScriptBuilder BuildContractCreateScript(DevContract contract)
+        {
+            var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
+            var parameters = entrypoint.Parameters.Select(t => t.type).Cast<byte>();
+
+            var builder = new ScriptBuilder();
+            builder.EmitSysCall("Neo.Contract.Create",
+                contract.ContractData,
+                parameters.ToArray(),
+                entrypoint.ReturnType,
+                contract.ContractPropertyState,
+                contract.Title,
+                contract.Version,
+                contract.Author,
+                contract.Email,
+                contract.Description);
+            return builder;
         }
     }
 }

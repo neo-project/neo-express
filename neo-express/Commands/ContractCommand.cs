@@ -1,4 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -12,7 +14,7 @@ namespace Neo.Express.Commands
     [Command(Name = "contract")]
     [Subcommand(
     typeof(Deploy),
-    //typeof(Get),
+    typeof(Get),
     typeof(Import),
     //typeof(Invoke),
     typeof(List)
@@ -65,19 +67,21 @@ namespace Neo.Express.Commands
                     }
 
                     var uri = devchain.GetUri();
+                    var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
+                    console.WriteLine(result.ToString(Formatting.Indented));
 
-                    //var ctx = await NeoRpcClient.ExpressDeploy(NodeUri(), contract, wallet.GetAccounts().First().ScriptHash);
-                    //WriteJsonOnVerbose(console, ctx, Verbose);
-                    //var engineState = ctx["engine-state"];
-
-                    //var signatures = SignContext(ctx, wallet);
-                    //WriteJsonOnVerbose(console, signatures, Verbose, ConsoleColor.Cyan);
-
-                    //ctx = await NeoRpcClient.ExpressClientSign(NodeUri(),
-                    //    ctx["contract-context"], signatures);
-                    //WriteJsonOnVerbose(console, ctx, Verbose);
-
-                    //Console.WriteLine(engineState.ToString(Formatting.Indented));
+                    var txid = result["txid"];
+                    if (txid != null)
+                    {
+                        console.WriteLine("deployment complete");
+                    }
+                    else
+                    {
+                        var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                        var signatures = new JArray(account.Sign(data));
+                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                        console.WriteLine(result2.ToString(Formatting.Indented));
+                    }
 
                     return 0;
                 }
@@ -90,7 +94,48 @@ namespace Neo.Express.Commands
             }
         }
 
+        [Command(Name = "get")]
+        class Get
+        {
+            [Argument(0)]
+            [Required]
+            string Contract { get; }
 
+            [Option]
+            private string Input { get; }
+
+
+            async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            {
+                try
+                {
+                    var input = Program.DefaultPrivatenetFileName(Input);
+                    if (!File.Exists(input))
+                    {
+                        throw new Exception($"{input} input doesn't exist");
+                    }
+
+                    var devchain = DevChain.Load(input);
+                    var contract = devchain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    if (contract == default)
+                    {
+                        throw new Exception($"Contract {Contract} not found.");
+                    }
+
+                    var uri = devchain.GetUri();
+                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash);
+                    console.WriteLine(result.ToString(Formatting.Indented));
+
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex.Message);
+                    app.ShowHelp();
+                    return 1;
+                }
+            }
+        }
 
         [Command(Name = "import")]
         private class Import

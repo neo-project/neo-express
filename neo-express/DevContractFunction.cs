@@ -17,10 +17,10 @@ namespace Neo.Express
         public List<(string name, ContractParameterType type)> Parameters { get; set; }
         public ContractParameterType ReturnType { get; set; }
 
+        private static string TypeToString(ContractParameterType type) => Enum.GetName(typeof(ContractParameterType), type);
+
         public void ToJson(JsonWriter writer)
         {
-            string TypeToString(ContractParameterType type) => Enum.GetName(typeof(ContractParameterType), type);
-
             writer.WriteStartObject();
             writer.WritePropertyName("name");
             writer.WriteValue(Name);
@@ -49,6 +49,23 @@ namespace Neo.Express
             var name = json.Value<string>("name");
             var retType = TypeParse(json["returntype"]);
             var @params = json["parameters"].Select(j => (j.Value<string>("name"), TypeParse(j["type"])));
+
+            return new DevContractFunction
+            {
+                Name = name,
+                Parameters = @params.ToList(),
+                ReturnType = retType
+            };
+        }
+
+        public static DevContractFunction FromJson(Neo.IO.Json.JObject json)
+        {
+            ContractParameterType TypeParse(Neo.IO.Json.JObject jtoken) => Enum.Parse<ContractParameterType>(jtoken.AsString());
+
+            var name = json["name"].AsString();
+            var retType = TypeParse(json["returntype"]);
+            var @params = ((Neo.IO.Json.JArray)json["parameters"])
+                .Select(j => (j["name"].AsString(), TypeParse(j["type"])));
 
             return new DevContractFunction
             {

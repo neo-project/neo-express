@@ -23,6 +23,9 @@ namespace Neo.Express.Commands
         [Option]
         private uint SecondsPerBlock { get; }
 
+        [Option]
+        private bool Reset { get; }
+
         private class LogPlugin : Plugin, ILogPlugin
         {
             private readonly IConsole console;
@@ -82,11 +85,15 @@ namespace Neo.Express.Commands
             const string ROOT_PATH = @"C:\Users\harry\neoexpress";
             var path = Path.Combine(ROOT_PATH, consensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).Address);
 
-            if (Directory.Exists(path))
+            if (Reset && Directory.Exists(path))
             {
-                Directory.Delete(path, true);
+                Directory.Delete(path);
             }
-            Directory.CreateDirectory(path);
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
 
             Task.Factory.StartNew(() =>
             {

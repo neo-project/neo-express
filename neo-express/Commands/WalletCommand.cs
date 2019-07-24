@@ -1,4 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 
@@ -30,38 +31,41 @@ namespace Neo.Express.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
+                try
                 {
-                    console.WriteLine($"{input} doesn't exist");
+                    var input = Program.DefaultPrivatenetFileName(Input);
+                    if (!File.Exists(input))
+                    {
+                        throw new Exception($"{input} doesn't exist");
+                    }
+
+                    var devchain = DevChain.Load(input);
+                    if (devchain.IsReservedName(Name))
+                    {
+                        throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
+                    }
+
+                    if (!Force && (devchain.GetWallet(Name) != default))
+                    {
+                        throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
+                    }
+
+                    var wallet = new DevWallet(Name);
+                    var account = wallet.CreateAccount();
+                    account.IsDefault = true;
+
+                    console.WriteLine($"{Name}\n\t{account.Address}");
+                    devchain.Wallets.Add(wallet);
+
+                    devchain.Save(input);
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex.Message);
                     app.ShowHelp();
                     return 1;
                 }
-
-                var devchain = DevChain.Load(input);
-                if (devchain.IsReservedName(Name))
-                {
-                    console.WriteLine($"{Name} is a reserved name. Choose a different wallet name.");
-                    app.ShowHelp();
-                    return 1;
-                }
-
-                if (!Force && (devchain.GetWallet(Name) != default))
-                {
-                    console.WriteLine($"{Name} dev wallet already exists. Use --force to overwrite.");
-                    app.ShowHelp();
-                    return 1;
-                }
-
-                var wallet = new DevWallet(Name);
-                var account = wallet.CreateAccount();
-                account.IsDefault = true;
-
-                console.WriteLine($"{Name}\n\t{account.Address}");
-                devchain.Wallets.Add(wallet);
-
-                devchain.Save(input);
-                return 0;
             }
         }
 
@@ -80,35 +84,40 @@ namespace Neo.Express.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
+                try
                 {
-                    console.WriteLine($"{input} doesn't exist");
+                    var input = Program.DefaultPrivatenetFileName(Input);
+                    if (!File.Exists(input))
+                    {
+                        throw new Exception($"{input} doesn't exist");
+                    }
+
+                    var devchain = DevChain.Load(input);
+                    var wallet = devchain.GetWallet(Name);
+                    if (wallet == default)
+                    {
+                        console.WriteLine($"{Name} privatenet wallet not found.");
+                    }
+                    else
+                    {
+                        if (!Force)
+                        {
+                            throw new Exception("You must specify force to delete a privatenet wallet.");
+                        }
+
+                        devchain.Wallets.Remove(wallet);
+                        devchain.Save(input);
+                        console.WriteLine($"{Name} privatenet wallet deleted.");
+                    }
+
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex.Message);
                     app.ShowHelp();
                     return 1;
                 }
-
-                var devchain = DevChain.Load(input);
-                var wallet = devchain.GetWallet(Name);
-                if (wallet == default)
-                {
-                    console.WriteLine($"{Name} privatenet wallet not found.");
-                }
-                else
-                {
-                    if (!Force)
-                    {
-                        console.WriteLine("You must specify force to delete a privatenet wallet.");
-                        app.ShowHelp();
-                        return 1;
-                    }
-
-                    devchain.Wallets.Remove(wallet);
-                    devchain.Save(input);
-                    console.WriteLine($"{Name} privatenet wallet deleted.");
-                }
-
-                return 0;
             }
         }
 
@@ -130,46 +139,51 @@ namespace Neo.Express.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
+                try
                 {
-                    console.WriteLine($"{input} doesn't exist");
-                    app.ShowHelp();
-                    return 1;
-                }
-
-                var output = string.IsNullOrEmpty(Output)
-                   ? Path.Combine(Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
-                   : Output;
-
-                if (File.Exists(output))
-                {
-                    if (Force)
+                    var input = Program.DefaultPrivatenetFileName(Input);
+                    if (!File.Exists(input))
                     {
-                        File.Delete(output);
+                        throw new Exception($"{input} doesn't exist");
+                    }
+
+                    var output = string.IsNullOrEmpty(Output)
+                       ? Path.Combine(Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
+                       : Output;
+
+                    if (File.Exists(output))
+                    {
+                        if (Force)
+                        {
+                            File.Delete(output);
+                        }
+                        else
+                        {
+                            throw new Exception("You must specify force to overwrite an exported wallet.");
+                        }
+                    }
+
+                    var devchain = DevChain.Load(input);
+                    var wallet = devchain.GetWallet(Name);
+                    if (wallet == (default))
+                    {
+                        console.WriteLine($"{Name} privatenet wallet not found.");
                     }
                     else
                     {
-                        console.WriteLine("You must specify force to overwrite an exported wallet.");
-                        app.ShowHelp();
-                        return 1;
+                        var password = Prompt.GetPassword("Input password to use for exported wallet");
+                        wallet.Export(output, password);
+                        console.WriteLine($"{Name} privatenet wallet exported to {output}");
                     }
-                }
 
-                var devchain = DevChain.Load(input);
-                var wallet = devchain.GetWallet(Name);
-                if (wallet == (default))
-                {
-                    console.WriteLine($"{Name} privatenet wallet not found.");
+                    return 0;
                 }
-                else
+                catch (Exception ex)
                 {
-                    var password = Prompt.GetPassword("Input password to use for exported wallet");
-                    wallet.Export(output, password);
-                    console.WriteLine($"{Name} privatenet wallet exported to {output}");
+                    console.WriteLine(ex.Message);
+                    app.ShowHelp();
+                    return 1;
                 }
-
-                return 0;
             }
         }
 
@@ -181,27 +195,34 @@ namespace Neo.Express.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
+                try
                 {
-                    console.WriteLine($"{input} doesn't exist");
+                    var input = Program.DefaultPrivatenetFileName(Input);
+                    if (!File.Exists(input))
+                    {
+                        throw new Exception($"{input} doesn't exist");
+                    }
+
+                    var devchain = DevChain.Load(input);
+                    foreach (var wallet in devchain.Wallets)
+                    {
+                        console.WriteLine(wallet.Name);
+
+                        foreach (var a in wallet.GetAccounts())
+                        {
+                            console.WriteLine($"    {a.Address}");
+                            console.WriteLine($"    {a.ScriptHash}");
+                        }
+                    }
+
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex.Message);
                     app.ShowHelp();
                     return 1;
                 }
-
-                var devchain = DevChain.Load(input);
-                foreach (var wallet in devchain.Wallets)
-                {
-                    console.WriteLine(wallet.Name);
-
-                    foreach (var a in wallet.GetAccounts())
-                    {
-                        console.WriteLine($"    {a.Address}");
-                        console.WriteLine($"    {a.ScriptHash}");
-                    }
-                }
-
-                return 0;
             }
         }
     }

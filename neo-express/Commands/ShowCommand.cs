@@ -21,28 +21,33 @@ namespace Neo.Express.Commands
 
         private static async Task<int> ExecuteAsync(CommandLineApplication app, IConsole console, string Name, string Input, Func<Uri, UInt160, Task<JToken>> func)
         {
-            var input = Program.DefaultPrivatenetFileName(Input);
-            if (!File.Exists(input))
+            try
             {
-                console.WriteLine($"{input} doesn't exist");
+                var input = Program.DefaultPrivatenetFileName(Input);
+                if (!File.Exists(input))
+                {
+                    throw new Exception($"{input} doesn't exist");
+                }
+
+                var devchain = DevChain.Load(input);
+                var account = devchain.GetAccount(Name);
+                if (account == default)
+                {
+                    throw new Exception($"{Name} wallet not found.");
+                }
+
+                var uri = devchain.GetUri();
+                var result = await func(uri, account.ScriptHash).ConfigureAwait(false);
+                console.WriteLine(result.ToString(Formatting.Indented));
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                console.WriteLine(ex.Message);
                 app.ShowHelp();
                 return 1;
             }
-
-            var devchain = DevChain.Load(input);
-            var account = devchain.GetAccount(Name);
-            if (account == default)
-            {
-                console.WriteLine($"{Name} wallet not found.");
-                app.ShowHelp();
-                return 1;
-            }
-
-            var uri = devchain.GetUri();
-            var result = await func(uri, account.ScriptHash).ConfigureAwait(false);
-            console.WriteLine(result.ToString(Formatting.Indented));
-
-            return 0;
         }
 
         [Command("account")]

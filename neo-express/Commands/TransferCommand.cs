@@ -35,17 +35,13 @@ namespace Neo.Express.Commands
             var senderAccount = devchain.GetAccount(Sender);
             if (senderAccount == default)
             {
-                console.WriteLine($"{Sender} sender not found.");
-                app.ShowHelp();
-                return 1;
+                throw new Exception($"{Sender} sender not found.");
             }
 
             var receiverAccount = devchain.GetAccount(Receiver);
             if (receiverAccount == default)
             {
-                console.WriteLine($"{Receiver} receiver not found.");
-                app.ShowHelp();
-                return 1;
+                throw new Exception($"{Receiver} receiver not found.");
             }
 
             var uri = devchain.GetUri();
@@ -68,56 +64,59 @@ namespace Neo.Express.Commands
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
-            var input = Program.DefaultPrivatenetFileName(Input);
-            if (!File.Exists(input))
+            try
             {
-                console.WriteLine($"{input} doesn't exist");
+                var input = Program.DefaultPrivatenetFileName(Input);
+                if (!File.Exists(input))
+                {
+                    throw new Exception($"{input} doesn't exist");
+                }
+
+                var devchain = DevChain.Load(input);
+
+                if (DevChain.IsGenesis(Sender))
+                {
+                    return await GenesisTransferAsync(app, console, devchain);
+                }
+
+                var senderAccount = devchain.GetAccount(Sender);
+                if (senderAccount == default)
+                {
+                    throw new Exception($"{Sender} sender not found.");
+                }
+
+                var receiverAccount = devchain.GetAccount(Receiver);
+                if (receiverAccount == default)
+                {
+                    throw new Exception($"{Receiver} receiver not found.");
+                }
+
+                var uri = devchain.GetUri();
+                var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
+                    .ConfigureAwait(false);
+                console.WriteLine(result.ToString(Formatting.Indented));
+
+                var txid = result["txid"];
+                if (txid != null)
+                {
+                    console.WriteLine("transfer complete");
+                }
+                else
+                {
+                    var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                    var signatures = new JArray(senderAccount.Sign(data));
+                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                    console.WriteLine(result2.ToString(Formatting.Indented));
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                console.WriteLine(ex.Message);
                 app.ShowHelp();
                 return 1;
             }
-
-            var devchain = DevChain.Load(input);
-
-            if (DevChain.IsGenesis(Sender))
-            {
-                return await GenesisTransferAsync(app, console, devchain);
-            }
-
-            var senderAccount = devchain.GetAccount(Sender);
-            if (senderAccount == default)
-            {
-                console.WriteLine($"{Sender} sender not found.");
-                app.ShowHelp();
-                return 1;
-            }
-
-            var receiverAccount = devchain.GetAccount(Receiver);
-            if (receiverAccount == default)
-            {
-                console.WriteLine($"{Receiver} receiver not found.");
-                app.ShowHelp();
-                return 1;
-            }
-
-            var uri = devchain.GetUri();
-            var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
-                .ConfigureAwait(false);
-            console.WriteLine(result.ToString(Formatting.Indented));
-
-            var txid = result["txid"];
-            if (txid != null)
-            {
-                console.WriteLine("transfer complete");
-            }
-            else
-            {
-                var (_, data) = NeoUtility.ParseResultHashesAndData(result);
-                var signatures = new JArray(senderAccount.Sign(data));
-                var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
-                console.WriteLine(result2.ToString(Formatting.Indented));
-            }
-
-            return 0;
         }
     }
 }

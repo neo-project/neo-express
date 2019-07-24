@@ -47,82 +47,87 @@ namespace Neo.Express.Commands
 
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
-            var input = Program.DefaultPrivatenetFileName(Input);
-            if (!File.Exists(input))
+            try
             {
-                console.WriteLine($"{input} doesn't exist");
+                var input = Program.DefaultPrivatenetFileName(Input);
+                if (!File.Exists(input))
+                {
+                    throw new Exception($"{input} doesn't exist");
+                }
+
+                DevChain LoadChain()
+                {
+                    using (var stream = File.OpenRead(input))
+                    using (var reader = new JsonTextReader(new StreamReader(stream)))
+                    {
+                        var json = JObject.Load(reader);
+
+                        if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
+                        {
+                            throw new Exception("Couldn't initialize protocol settings");
+                        }
+
+                        return DevChain.FromJson(json);
+                    }
+                }
+
+                var chain = LoadChain();
+                if (NodeIndex >= chain.ConsensusNodes.Count || NodeIndex < 0)
+                {
+                    throw new Exception("Invalid node index");
+                }
+
+                var consensusNode = chain.ConsensusNodes[NodeIndex];
+                var cts = new CancellationTokenSource();
+
+                const string ROOT_PATH = @"C:\Users\harry\neoexpress";
+                var path = Path.Combine(ROOT_PATH, consensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).Address);
+
+                if (Reset && Directory.Exists(path))
+                {
+                    Directory.Delete(path);
+                }
+
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                Task.Factory.StartNew(() =>
+                {
+                    try
+                    {
+                        using (var store = new Persistence.LevelDB.LevelDBStore(path))
+                        using (var system = new NeoSystem(store))
+                        {
+                            var logPlugin = new LogPlugin(console);
+                            var rpcPlugin = new ExpressNodeRpcPlugin();
+
+                            system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
+                            system.StartConsensus(consensusNode.Wallet);
+                            system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
+
+                            cts.Token.WaitHandle.WaitOne();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        console.WriteLine(ex);
+                        cts.Cancel();
+                    }
+                });
+
+                console.CancelKeyPress += (sender, args) => cts.Cancel();
+
+                cts.Token.WaitHandle.WaitOne();
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                console.WriteLine(ex.Message);
                 app.ShowHelp();
                 return 1;
             }
-
-            DevChain LoadChain()
-            {
-                using (var stream = File.OpenRead(input))
-                using (var reader = new JsonTextReader(new StreamReader(stream)))
-                {
-                    var json = JObject.Load(reader);
-
-                    if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
-                    {
-                        throw new Exception("Couldn't initialize protocol settings");
-                    }
-
-                    return DevChain.FromJson(json);
-                }
-            }
-
-            var chain = LoadChain();
-            if (NodeIndex >= chain.ConsensusNodes.Count || NodeIndex < 0)
-            {
-                console.WriteLine("Invalid node index");
-                app.ShowHelp();
-                return 1;
-            }
-
-            var consensusNode = chain.ConsensusNodes[NodeIndex];
-            var cts = new CancellationTokenSource();
-
-            const string ROOT_PATH = @"C:\Users\harry\neoexpress";
-            var path = Path.Combine(ROOT_PATH, consensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).Address);
-
-            if (Reset && Directory.Exists(path))
-            {
-                Directory.Delete(path);
-            }
-
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {
-                    using (var store = new Persistence.LevelDB.LevelDBStore(path))
-                    using (var system = new NeoSystem(store))
-                    {
-                        var logPlugin = new LogPlugin(console);
-                        var rpcPlugin = new ExpressNodeRpcPlugin();
-
-                        system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
-                        system.StartConsensus(consensusNode.Wallet);
-                        system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
-
-                        cts.Token.WaitHandle.WaitOne();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    console.WriteLine(ex);
-                    cts.Cancel();
-                }
-            });
-
-            console.CancelKeyPress += (sender, args) => cts.Cancel();
-
-            cts.Token.WaitHandle.WaitOne();
-            return 0;
         }
     }
 }

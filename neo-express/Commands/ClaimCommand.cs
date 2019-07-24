@@ -24,42 +24,47 @@ namespace Neo.Express.Commands
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
-            var input = Program.DefaultPrivatenetFileName(Input);
-            if (!File.Exists(input))
+            try
+            { 
+                var input = Program.DefaultPrivatenetFileName(Input);
+                if (!File.Exists(input))
+                {
+                    throw new Exception($"{input} doesn't exist");
+                }
+
+                var devchain = DevChain.Load(input);
+                var account = devchain.GetAccount(Account);
+                if (account == default)
+                {
+                    throw new Exception($"{Account} account not found.");
+                }
+
+                var uri = devchain.GetUri();
+                var result = await NeoRpcClient.ExpressClaim(uri, Asset, account.ScriptHash)
+                    .ConfigureAwait(false);
+                console.WriteLine(result.ToString(Formatting.Indented));
+
+                var txid = result["txid"];
+                if (txid != null)
+                {
+                    console.WriteLine("transfer complete");
+                }
+                else
+                {
+                    var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                    var signatures = new JArray(account.Sign(data));
+                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                    console.WriteLine(result2.ToString(Formatting.Indented));
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
             {
-                console.WriteLine($"{input} doesn't exist");
+                console.WriteLine(ex.Message);
                 app.ShowHelp();
                 return 1;
             }
-
-            var devchain = DevChain.Load(input);
-            var account = devchain.GetAccount(Account);
-            if (account == default)
-            {
-                console.WriteLine($"{Account} account not found.");
-                app.ShowHelp();
-                return 1;
-            }
-
-            var uri = devchain.GetUri();
-            var result = await NeoRpcClient.ExpressClaim(uri, Asset, account.ScriptHash)
-                .ConfigureAwait(false);
-            console.WriteLine(result.ToString(Formatting.Indented));
-
-            var txid = result["txid"];
-            if (txid != null)
-            {
-                console.WriteLine("transfer complete");
-            }
-            else
-            {
-                var (_, data) = NeoUtility.ParseResultHashesAndData(result);
-                var signatures = new JArray(account.Sign(data));
-                var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
-                console.WriteLine(result2.ToString(Formatting.Indented));
-            }
-
-            return 0;
         }
     }
 }

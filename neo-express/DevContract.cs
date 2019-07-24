@@ -69,41 +69,6 @@ namespace Neo.Express
             writer.WriteEndObject();
         }
 
-        public static DevContract FromJson(Neo.IO.Json.JObject json)
-        {
-            var name = json["name"].AsString();
-            var contractData = json["contract-data"].AsString().HexToBytes();
-            var hash = UInt160.Parse(json["hash"].AsString());
-            var entryPoint = json["entrypoint"].AsString();
-            var functions = ((Neo.IO.Json.JArray)json["functions"])
-                .Select(DevContractFunction.FromJson);
-            var events = ((Neo.IO.Json.JArray)json["events"])
-                .Select(DevContractFunction.FromJson);
-
-            var title = json["title"].AsString();
-            var description = json["description"].AsString();
-            var version = json["version"].AsString();
-            var author = json["author"].AsString();
-            var email = json["email"].AsString();
-            var contractPropertyState = (ContractPropertyState)json["contract-property-state"].AsNumber();
-
-            return new DevContract
-            {
-                Name = name,
-                Hash = hash,
-                EntryPoint = entryPoint,
-                ContractData = contractData,
-                Functions = functions.ToList(),
-                Events = events.ToList(),
-                Title = title,
-                Description = description,
-                Author = author,
-                Email = email,
-                Version = version,
-                ContractPropertyState = contractPropertyState
-            };
-        }
-
         public static DevContract FromJson(JToken json)
         {
             var name = json.Value<string>("name");
@@ -136,6 +101,8 @@ namespace Neo.Express
                 ContractPropertyState = contractPropertyState
             };
         }
+
+        public static DevContract FromJson(Neo.IO.Json.JObject json) => FromJson(JToken.Parse(json.ToString()));
 
         public static DevContract Load(string avnFile, string abiFile, string mdFile)
         {

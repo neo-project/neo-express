@@ -30,37 +30,17 @@ namespace Neo.Express.Commands
         [Option]
         private string Input { get; }
 
-        private async Task<int> GenesisTransferAsync(CommandLineApplication app, IConsole console, DevChain devchain)
+        private static JArray GetGenesisSignatures(DevChain devchain, IEnumerable<UInt160> hashes, byte[] data)
         {
-            var senderAccount = devchain.GetAccount(Sender);
-            if (senderAccount == default)
-            {
-                throw new Exception($"{Sender} sender not found.");
-            }
-
-            var receiverAccount = devchain.GetAccount(Receiver);
-            if (receiverAccount == default)
-            {
-                throw new Exception($"{Receiver} receiver not found.");
-            }
-
-            var uri = devchain.GetUri();
-            var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash);
-            console.WriteLine(result.ToString(Formatting.Indented));
-
-            var (hashes, data) = NeoUtility.ParseResultHashesAndData(result);
             var signatures = new JArray();
             foreach (var sig in devchain.ConsensusNodes.SelectMany(n => n.Wallet.Sign(hashes, data)))
             {
                 signatures.Add(sig);
             }
-
-            console.WriteLine(signatures.ToString(Formatting.Indented));
-            var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
-            console.WriteLine(result2.ToString(Formatting.Indented));
-
-            return 0;
+            return signatures;
         }
+
+        private static JArray GetStandardSignatures(DevWalletAccount account, IEnumerable<UInt160> hashes, byte[] data) => new JArray(account.Sign(data));
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
@@ -73,11 +53,6 @@ namespace Neo.Express.Commands
                 }
 
                 var devchain = DevChain.Load(input);
-
-                if (DevChain.IsGenesis(Sender))
-                {
-                    return await GenesisTransferAsync(app, console, devchain);
-                }
 
                 var senderAccount = devchain.GetAccount(Sender);
                 if (senderAccount == default)
@@ -103,8 +78,11 @@ namespace Neo.Express.Commands
                 }
                 else
                 {
-                    var (_, data) = NeoUtility.ParseResultHashesAndData(result);
-                    var signatures = new JArray(senderAccount.Sign(data));
+                    var (hashes, data) = NeoUtility.ParseResultHashesAndData(result);
+                    var signatures = DevChain.IsGenesis(Sender)
+                        ? GetGenesisSignatures(devchain, hashes, data)
+                        : GetStandardSignatures(senderAccount, hashes, data);
+
                     var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
                     console.WriteLine(result2.ToString(Formatting.Indented));
                 }

@@ -5,13 +5,7 @@ using System.Text;
 namespace Neo.Express.Commands
 {
     [Command(Name = "contract")]
-    [Subcommand(
-    typeof(Deploy),
-    typeof(Get),
-    typeof(Import),
-    //typeof(Invoke),
-    typeof(List)
-    )]
+    [Subcommand(typeof(Deploy), typeof(Get), typeof(Import), typeof(List))]
     internal partial class ContractCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)

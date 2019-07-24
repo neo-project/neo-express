@@ -58,21 +58,6 @@ namespace Neo.Express
             };
         }
 
-        public static DevContractFunction FromJson(Neo.IO.Json.JObject json)
-        {
-            ContractParameterType TypeParse(Neo.IO.Json.JObject jtoken) => Enum.Parse<ContractParameterType>(jtoken.AsString());
-
-            var name = json["name"].AsString();
-            var retType = TypeParse(json["returntype"]);
-            var @params = ((Neo.IO.Json.JArray)json["parameters"])
-                .Select(j => (j["name"].AsString(), TypeParse(j["type"])));
-
-            return new DevContractFunction
-            {
-                Name = name,
-                Parameters = @params.ToList(),
-                ReturnType = retType
-            };
-        }
+        public static DevContractFunction FromJson(Neo.IO.Json.JObject json) => FromJson(JToken.Parse(json.ToString()));
     }
 }

@@ -23,20 +23,14 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
-                {
-                    throw new Exception($"{input} doesn't exist");
-                }
-
-                var devchain = DevChain.Load(input);
-                var account = devchain.GetAccount(Name);
+                var (devChain, _) = DevChain.Load(Input);
+                var account = devChain.GetAccount(Name);
                 if (account == default)
                 {
                     throw new Exception($"{Name} wallet not found.");
                 }
 
-                var uri = devchain.GetUri();
+                var uri = devChain.GetUri();
                 var result = await func(uri, account.ScriptHash).ConfigureAwait(false);
                 console.WriteLine(result.ToString(Formatting.Indented));
 

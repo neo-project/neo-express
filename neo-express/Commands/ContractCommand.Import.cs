@@ -23,12 +23,6 @@ namespace Neo.Express.Commands
             {
                 System.Diagnostics.Debug.Assert(File.Exists(avmFile));
 
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
-                {
-                    throw new Exception($"{input} input doesn't exist");
-                }
-
                 var abiJsonFile = Path.ChangeExtension(avmFile, ".abi.json");
                 if (!File.Exists(abiJsonFile))
                 {
@@ -42,15 +36,16 @@ namespace Neo.Express.Commands
                 }
 
                 var contract = DevContract.Load(avmFile, abiJsonFile, mdJsonFile);
-                var devchain = DevChain.Load(input);
+                var (devChain, filename) = DevChain.Load(Input);
 
-                if (!Force && devchain.Contracts.Any(c => c.Name == contract.Name))
+
+                if (!Force && devChain.Contracts.Any(c => c.Name == contract.Name))
                 {
                     throw new Exception($"{contract.Name} dev contract already exists. Use --force to overwrite.");
                 }
 
-                devchain.Contracts.Add(contract);
-                devchain.Save(input);
+                devChain.Contracts.Add(contract);
+                devChain.Save(filename);
 
                 return 0;
             }

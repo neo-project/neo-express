@@ -16,22 +16,12 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var input = string.IsNullOrEmpty(Input)
-                    ? Path.Combine(Directory.GetCurrentDirectory(), "express.privatenet.json")
-                    : Input;
-
-                if (!File.Exists(input))
-                {
-                    throw new Exception($"{input} doesn't exist");
-                }
-
-                var chain = DevChain.Load(input);
-
+                var (devChain, _) = DevChain.Load(Input);
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
 
-                for (var i = 0; i < chain.ConsensusNodes.Count; i++)
+                for (var i = 0; i < devChain.ConsensusNodes.Count; i++)
                 {
-                    var consensusNode = chain.ConsensusNodes[i];
+                    var consensusNode = devChain.ConsensusNodes[i];
                     console.WriteLine($"Exporting {consensusNode.Wallet.Name} Conensus Node wallet");
 
                     var walletPath = Path.Combine(Directory.GetCurrentDirectory(), $"{consensusNode.Wallet.Name}.wallet.json");
@@ -45,7 +35,7 @@ namespace Neo.Express.Commands
                     WriteNodeConfigJson(password, consensusNode, walletPath);
                 }
 
-                WriteProtocolJson(chain);
+                WriteProtocolJson(devChain);
 
                 return 0;
             }

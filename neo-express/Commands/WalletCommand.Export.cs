@@ -27,12 +27,6 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var input = Program.DefaultPrivatenetFileName(Input);
-                    if (!File.Exists(input))
-                    {
-                        throw new Exception($"{input} doesn't exist");
-                    }
-
                     var output = string.IsNullOrEmpty(Output)
                        ? Path.Combine(Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
                        : Output;
@@ -49,8 +43,8 @@ namespace Neo.Express.Commands
                         }
                     }
 
-                    var devchain = DevChain.Load(input);
-                    var wallet = devchain.GetWallet(Name);
+                    var (devChain, _) = DevChain.Load(Input);
+                    var wallet = devChain.GetWallet(Name);
                     if (wallet == default)
                     {
                         console.WriteLine($"{Name} privatenet wallet not found.");

@@ -49,29 +49,13 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
+                var (chainJson, _) = DevChain.LoadJson(Input);
+                if (!DevChain.InitializeProtocolSettings(chainJson, SecondsPerBlock))
                 {
-                    throw new Exception($"{input} doesn't exist");
+                    throw new Exception("Couldn't initialize protocol settings");
                 }
 
-                DevChain LoadChain()
-                {
-                    using (var stream = File.OpenRead(input))
-                    using (var reader = new JsonTextReader(new StreamReader(stream)))
-                    {
-                        var json = JObject.Load(reader);
-
-                        if (!DevChain.InitializeProtocolSettings(json, SecondsPerBlock))
-                        {
-                            throw new Exception("Couldn't initialize protocol settings");
-                        }
-
-                        return DevChain.FromJson(json);
-                    }
-                }
-
-                var chain = LoadChain();
+                var chain = DevChain.FromJson(chainJson);
                 if (NodeIndex >= chain.ConsensusNodes.Count || NodeIndex < 0)
                 {
                     throw new Exception("Invalid node index");

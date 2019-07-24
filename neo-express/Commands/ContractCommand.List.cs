@@ -16,15 +16,8 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var input = Program.DefaultPrivatenetFileName(Input);
-                    if (!File.Exists(input))
-                    {
-                        throw new Exception($"{input} input doesn't exist");
-                    }
-
-                    var devchain = DevChain.Load(input);
-
-                    foreach (var c in devchain.Contracts)
+                    var (devChain, _) = DevChain.Load(Input);
+                    foreach (var c in devChain.Contracts)
                     {
                         console.WriteLine($"{c.Name} - {c.Title}");
                         console.WriteLine($"\t{c.Hash}");

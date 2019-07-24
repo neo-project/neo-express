@@ -156,14 +156,29 @@ namespace Neo.Express
             writer.WriteEndObject();
         }
 
-        public static DevChain Load(string filename)
+        public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
+               ? Path.Combine(Directory.GetCurrentDirectory(), "express.privatenet.json")
+               : filename;
+
+        public static (JObject json, string filename) LoadJson(string filename)
         {
+            filename = GetDefaultFilename(filename);
+            if (!File.Exists(filename))
+            {
+                throw new Exception($"{filename} file doesn't exist");
+            }
+
             using (var stream = File.OpenRead(filename))
             using (var reader = new JsonTextReader(new StreamReader(stream)))
             {
-                var json = JObject.Load(reader);
-                return FromJson(json);
+                return (JObject.Load(reader), filename);
             }
+        }
+
+        public static (DevChain devChain, string filename) Load(string filename)
+        {
+            var (json, _filename) = LoadJson(filename);
+            return (FromJson(json), _filename);
         }
 
         public void Save(string filename)

@@ -46,27 +46,21 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
-                {
-                    throw new Exception($"{input} doesn't exist");
-                }
+                var (devChain, _) = DevChain.Load(Input);
 
-                var devchain = DevChain.Load(input);
-
-                var senderAccount = devchain.GetAccount(Sender);
+                var senderAccount = devChain.GetAccount(Sender);
                 if (senderAccount == default)
                 {
                     throw new Exception($"{Sender} sender not found.");
                 }
 
-                var receiverAccount = devchain.GetAccount(Receiver);
+                var receiverAccount = devChain.GetAccount(Receiver);
                 if (receiverAccount == default)
                 {
                     throw new Exception($"{Receiver} receiver not found.");
                 }
 
-                var uri = devchain.GetUri();
+                var uri = devChain.GetUri();
                 var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
                     .ConfigureAwait(false);
                 console.WriteLine(result.ToString(Formatting.Indented));
@@ -80,7 +74,7 @@ namespace Neo.Express.Commands
                 {
                     var (hashes, data) = NeoUtility.ParseResultHashesAndData(result);
                     var signatures = DevChain.IsGenesis(Sender)
-                        ? GetGenesisSignatures(devchain, hashes, data)
+                        ? GetGenesisSignatures(devChain, hashes, data)
                         : GetStandardSignatures(senderAccount, hashes, data);
 
                     var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);

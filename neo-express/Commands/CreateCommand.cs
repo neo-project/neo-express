@@ -45,7 +45,7 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var output = Program.DefaultPrivatenetFileName(Output);
+                var output = DevChain.GetDefaultFilename(Output);
                 if (File.Exists(output) && !Force)
                 {
                     throw new Exception("You must specify --force to overwrite an existing file");

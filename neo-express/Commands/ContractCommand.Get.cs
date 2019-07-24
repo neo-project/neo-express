@@ -25,20 +25,14 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var input = Program.DefaultPrivatenetFileName(Input);
-                    if (!File.Exists(input))
-                    {
-                        throw new Exception($"{input} input doesn't exist");
-                    }
-
-                    var devchain = DevChain.Load(input);
-                    var contract = devchain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    var (devChain, _) = DevChain.Load(Input);
+                    var contract = devChain.Contracts.SingleOrDefault(c => c.Name == Contract);
                     if (contract == default)
                     {
                         throw new Exception($"Contract {Contract} not found.");
                     }
 
-                    var uri = devchain.GetUri();
+                    var uri = devChain.GetUri();
                     var result = await NeoRpcClient.GetContractState(uri, contract.Hash);
                     console.WriteLine(result.ToString(Formatting.Indented));
 

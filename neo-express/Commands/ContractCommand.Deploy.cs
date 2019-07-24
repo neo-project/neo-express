@@ -30,26 +30,20 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var input = Program.DefaultPrivatenetFileName(Input);
-                    if (!File.Exists(input))
-                    {
-                        throw new Exception($"{input} input doesn't exist");
-                    }
-
-                    var devchain = DevChain.Load(input);
-                    var contract = devchain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    var (devChain, _) = DevChain.Load(Input);
+                    var contract = devChain.Contracts.SingleOrDefault(c => c.Name == Contract);
                     if (contract == default)
                     {
                         throw new Exception($"Contract {Contract} not found.");
                     }
 
-                    var account = devchain.GetAccount(Account);
+                    var account = devChain.GetAccount(Account);
                     if (account == default)
                     {
                         throw new Exception($"Account {Account} not found.");
                     }
 
-                    var uri = devchain.GetUri();
+                    var uri = devChain.GetUri();
                     var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
                     console.WriteLine(result.ToString(Formatting.Indented));
 

@@ -24,19 +24,13 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var input = Program.DefaultPrivatenetFileName(Input);
-                    if (!File.Exists(input))
-                    {
-                        throw new Exception($"{input} doesn't exist");
-                    }
-
-                    var devchain = DevChain.Load(input);
-                    if (devchain.IsReservedName(Name))
+                    var (devChain, filename) = Express.DevChain.Load(Input);
+                    if (devChain.IsReservedName(Name))
                     {
                         throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
                     }
 
-                    if (!Force && (devchain.GetWallet(Name) != default))
+                    if (!Force && (devChain.GetWallet(Name) != default))
                     {
                         throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
                     }
@@ -46,9 +40,9 @@ namespace Neo.Express.Commands
                     account.IsDefault = true;
 
                     console.WriteLine($"{Name}\n\t{account.Address}");
-                    devchain.Wallets.Add(wallet);
+                    devChain.Wallets.Add(wallet);
 
-                    devchain.Save(input);
+                    devChain.Save(filename);
                     return 0;
                 }
                 catch (Exception ex)

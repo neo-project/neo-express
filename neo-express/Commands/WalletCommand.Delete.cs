@@ -24,14 +24,8 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var input = Program.DefaultPrivatenetFileName(Input);
-                    if (!File.Exists(input))
-                    {
-                        throw new Exception($"{input} doesn't exist");
-                    }
-
-                    var devchain = DevChain.Load(input);
-                    var wallet = devchain.GetWallet(Name);
+                    var (devChain, filename) = DevChain.Load(Input);
+                    var wallet = devChain.GetWallet(Name);
                     if (wallet == default)
                     {
                         console.WriteLine($"{Name} privatenet wallet not found.");
@@ -43,8 +37,8 @@ namespace Neo.Express.Commands
                             throw new Exception("You must specify force to delete a privatenet wallet.");
                         }
 
-                        devchain.Wallets.Remove(wallet);
-                        devchain.Save(input);
+                        devChain.Wallets.Remove(wallet);
+                        devChain.Save(filename);
                         console.WriteLine($"{Name} privatenet wallet deleted.");
                     }
 

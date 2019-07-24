@@ -26,20 +26,14 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var input = Program.DefaultPrivatenetFileName(Input);
-                if (!File.Exists(input))
-                {
-                    throw new Exception($"{input} doesn't exist");
-                }
-
-                var devchain = DevChain.Load(input);
-                var account = devchain.GetAccount(Account);
+                var (devChain, _) = DevChain.Load(Input);
+                var account = devChain.GetAccount(Account);
                 if (account == default)
                 {
                     throw new Exception($"{Account} account not found.");
                 }
 
-                var uri = devchain.GetUri();
+                var uri = devChain.GetUri();
                 var result = await NeoRpcClient.ExpressClaim(uri, Asset, account.ScriptHash)
                     .ConfigureAwait(false);
                 console.WriteLine(result.ToString(Formatting.Indented));

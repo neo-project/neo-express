@@ -85,7 +85,7 @@ namespace Neo.Express.Commands
 
                 if (Reset && Directory.Exists(path))
                 {
-                    Directory.Delete(path);
+                    Directory.Delete(path, true);
                 }
 
                 if (!Directory.Exists(path))

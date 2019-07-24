@@ -11,7 +11,7 @@ namespace Neo.Express.Commands
 {
     [Command(Name = "contract")]
     [Subcommand(
-    //typeof(Deploy),
+    typeof(Deploy),
     //typeof(Get),
     typeof(Import),
     //typeof(Invoke),
@@ -25,6 +25,72 @@ namespace Neo.Express.Commands
             app.ShowHelp();
             return 1;
         }
+
+        [Command(Name = "deploy")]
+        class Deploy
+        {
+            [Argument(0)]
+            [Required]
+            string Contract { get; }
+
+            [Argument(1)]
+            [Required]
+            string Account { get; }
+
+            [Option]
+            private string Input { get; }
+
+
+            async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            {
+                try
+                {
+                    var input = Program.DefaultPrivatenetFileName(Input);
+                    if (!File.Exists(input))
+                    {
+                        throw new Exception($"{input} input doesn't exist");
+                    }
+
+                    var devchain = DevChain.Load(input);
+                    var contract = devchain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    if (contract == default)
+                    {
+                        throw new Exception($"Contract {Contract} not found.");
+                    }
+
+                    var account = devchain.GetAccount(Account);
+                    if (account == default)
+                    {
+                        throw new Exception($"Account {Account} not found.");
+                    }
+
+                    var uri = devchain.GetUri();
+
+                    //var ctx = await NeoRpcClient.ExpressDeploy(NodeUri(), contract, wallet.GetAccounts().First().ScriptHash);
+                    //WriteJsonOnVerbose(console, ctx, Verbose);
+                    //var engineState = ctx["engine-state"];
+
+                    //var signatures = SignContext(ctx, wallet);
+                    //WriteJsonOnVerbose(console, signatures, Verbose, ConsoleColor.Cyan);
+
+                    //ctx = await NeoRpcClient.ExpressClientSign(NodeUri(),
+                    //    ctx["contract-context"], signatures);
+                    //WriteJsonOnVerbose(console, ctx, Verbose);
+
+                    //Console.WriteLine(engineState.ToString(Formatting.Indented));
+
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex.Message);
+                    app.ShowHelp();
+                    return 1;
+                }
+            }
+        }
+
+
 
         [Command(Name = "import")]
         private class Import

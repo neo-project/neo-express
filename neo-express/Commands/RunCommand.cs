@@ -6,8 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Neo.Express.Persistence;
 
 namespace Neo.Express.Commands
 {
@@ -81,7 +80,7 @@ namespace Neo.Express.Commands
                 {
                     try
                     {
-                        using (var store = new Persistence.LevelDB.LevelDBStore(path))
+                        using (var store = new DevStore(path))
                         using (var system = new NeoSystem(store))
                         {
                             var logPlugin = new LogPlugin(console);

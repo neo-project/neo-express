@@ -6,6 +6,7 @@ using Neo.Ledger;
 using Neo.Persistence;
 using RocksDbSharp;
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Neo.Express.Persistence
@@ -23,6 +24,7 @@ namespace Neo.Express.Persistence
         public const string UNSPENT_COIN_FAMILY = "st:coin";
         public const string VALIDATOR_FAMILY = "st:validator";
         public const string METADATA_FAMILY = "metadata";
+        public const string CONSENSUS_CONTEXT_FAMILY = "consensus-context";
 
         public const byte VALIDATORS_COUNT_KEY = 0x90;
         public const byte CURRENT_BLOCK_KEY = 0xc0;
@@ -48,6 +50,20 @@ namespace Neo.Express.Persistence
 
         private readonly RocksDb db;
 
+        private readonly DataCache<UInt256, BlockState> blocks;
+        private readonly DataCache<UInt256, TransactionState> transactions;
+        private readonly DataCache<UInt160, AccountState> accounts;
+        private readonly DataCache<UInt256, UnspentCoinState> unspentCoins;
+        private readonly DataCache<UInt256, SpentCoinState> spentCoins;
+        private readonly DataCache<ECPoint, ValidatorState> validators;
+        private readonly DataCache<UInt256, AssetState> assets;
+        private readonly DataCache<UInt160, ContractState> contracts;
+        private readonly DataCache<StorageKey, StorageItem> storages;
+        private readonly DataCache<UInt32Wrapper, HeaderHashList> headerHashList;
+        private readonly MetaDataCache<ValidatorsCountState> validatorsCount;
+        private readonly MetaDataCache<HashIndexState> blockHashIndex;
+        private readonly MetaDataCache<HashIndexState> headerHashIndex;
+
         public DevStore(string path)
         {
             var options = new DbOptions()
@@ -65,9 +81,25 @@ namespace Neo.Express.Persistence
                 { CONTRACT_FAMILY, new ColumnFamilyOptions() },
                 { STORAGE_FAMILY, new ColumnFamilyOptions() },
                 { HEADER_HASH_LIST_FAMILY, new ColumnFamilyOptions() },
-                { METADATA_FAMILY, new ColumnFamilyOptions() }};
+                { METADATA_FAMILY, new ColumnFamilyOptions() },
+                { CONSENSUS_CONTEXT_FAMILY, new ColumnFamilyOptions() }
+            };
 
             db = RocksDb.Open(options, path, columnFamilies);
+
+            blocks = GetDataCache<UInt256, BlockState>(db, BLOCK_FAMILY);
+            transactions = GetDataCache<UInt256, TransactionState>(db, TX_FAMILY);
+            accounts = GetDataCache<UInt160, AccountState>(db, ACCOUNT_FAMILY);
+            unspentCoins = GetDataCache<UInt256, UnspentCoinState>(db, UNSPENT_COIN_FAMILY);
+            spentCoins = GetDataCache<UInt256, SpentCoinState>(db, SPENT_COIN_FAMILY);
+            validators = GetDataCache<ECPoint, ValidatorState>(db, VALIDATOR_FAMILY);
+            assets = GetDataCache<UInt256, AssetState>(db, ASSET_FAMILY);
+            contracts = GetDataCache<UInt160, ContractState>(db, CONTRACT_FAMILY);
+            storages = GetDataCache<StorageKey, StorageItem>(db, STORAGE_FAMILY);
+            headerHashList = GetDataCache<UInt32Wrapper, HeaderHashList>(db, HEADER_HASH_LIST_FAMILY);
+            validatorsCount = GetMetaDataCache<ValidatorsCountState>(db, VALIDATORS_COUNT_KEY);
+            blockHashIndex = GetMetaDataCache<HashIndexState>(db, CURRENT_BLOCK_KEY);
+            headerHashIndex = GetMetaDataCache<HashIndexState>(db, CURRENT_HEADER_KEY);
 
             var writeBatch = new WriteBatch();
             var readOptions = new ReadOptions().SetFillCache(true);
@@ -86,44 +118,31 @@ namespace Neo.Express.Persistence
             db.Dispose();
         }
 
-        public override DataCache<UInt160, AccountState> GetAccounts() => 
-            GetDataCache<UInt160, AccountState>(db, ACCOUNT_FAMILY);
+        public override DataCache<UInt160, AccountState> GetAccounts() => accounts;
 
-        public override DataCache<UInt256, AssetState> GetAssets() =>
-            GetDataCache<UInt256, AssetState>(db, ASSET_FAMILY);
+        public override DataCache<UInt256, AssetState> GetAssets() => assets;
 
-        public override DataCache<UInt256, BlockState> GetBlocks() =>
-            GetDataCache<UInt256, BlockState>(db, BLOCK_FAMILY);
+        public override DataCache<UInt256, BlockState> GetBlocks() => blocks;
 
-        public override DataCache<UInt160, ContractState> GetContracts() =>
-            GetDataCache<UInt160, ContractState>(db, CONTRACT_FAMILY);
+        public override DataCache<UInt160, ContractState> GetContracts() => contracts;
 
-        public override DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() =>
-            GetDataCache<UInt32Wrapper, HeaderHashList>(db, HEADER_HASH_LIST_FAMILY);
+        public override DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() => headerHashList;
 
-        public override DataCache<UInt256, SpentCoinState> GetSpentCoins() =>
-            GetDataCache<UInt256, SpentCoinState>(db, SPENT_COIN_FAMILY);
+        public override DataCache<UInt256, SpentCoinState> GetSpentCoins() => spentCoins;
 
-        public override DataCache<StorageKey, StorageItem> GetStorages() =>
-            GetDataCache<StorageKey, StorageItem>(db, STORAGE_FAMILY);
+        public override DataCache<StorageKey, StorageItem> GetStorages() => storages;
 
-        public override DataCache<UInt256, TransactionState> GetTransactions() =>
-            GetDataCache<UInt256, TransactionState>(db, TX_FAMILY);
+        public override DataCache<UInt256, TransactionState> GetTransactions() => transactions;
 
-        public override DataCache<UInt256, UnspentCoinState> GetUnspentCoins() =>
-            GetDataCache<UInt256, UnspentCoinState>(db, UNSPENT_COIN_FAMILY);
+        public override DataCache<UInt256, UnspentCoinState> GetUnspentCoins() => unspentCoins;
 
-        public override DataCache<ECPoint, ValidatorState> GetValidators() =>
-            GetDataCache<ECPoint, ValidatorState>(db, VALIDATOR_FAMILY);
+        public override DataCache<ECPoint, ValidatorState> GetValidators() => validators;
 
-        public override MetaDataCache<HashIndexState> GetBlockHashIndex() =>
-            GetMetaDataCache<HashIndexState>(db, CURRENT_BLOCK_KEY);
+        public override MetaDataCache<HashIndexState> GetBlockHashIndex() => blockHashIndex;
 
-        public override MetaDataCache<HashIndexState> GetHeaderHashIndex() =>
-            GetMetaDataCache<HashIndexState>(db, CURRENT_HEADER_KEY);
+        public override MetaDataCache<HashIndexState> GetHeaderHashIndex() => headerHashIndex;
 
-        public override MetaDataCache<ValidatorsCountState> GetValidatorsCount() =>
-            GetMetaDataCache<ValidatorsCountState>(db, VALIDATORS_COUNT_KEY);
+        public override MetaDataCache<ValidatorsCountState> GetValidatorsCount() => validatorsCount;
 
         public override Neo.Persistence.Snapshot GetSnapshot() =>
             new DevSnapshot(db);
@@ -138,18 +157,21 @@ namespace Neo.Express.Persistence
 
         public override byte[] Get(byte prefix, byte[] key)
         {
-            return db.Get(GetKey(prefix, key));
+            var columnFamily = db.GetColumnFamily(CONSENSUS_CONTEXT_FAMILY);
+            return db.Get(GetKey(prefix, key), columnFamily);
         }
 
         public override void Put(byte prefix, byte[] key, byte[] value)
         {
-            db.Put(GetKey(prefix, key), value);
+            var columnFamily = db.GetColumnFamily(CONSENSUS_CONTEXT_FAMILY);
+            db.Put(GetKey(prefix, key), value, columnFamily);
         }
 
         public override void PutSync(byte prefix, byte[] key, byte[] value)
         {
-            db.Put(GetKey(prefix, key), value, 
-                writeOptions: new WriteOptions().SetSync(true));
+            var columnFamily = db.GetColumnFamily(CONSENSUS_CONTEXT_FAMILY);
+            db.Put(GetKey(prefix, key), value, columnFamily,
+                new WriteOptions().SetSync(true));
         }
     }
 }

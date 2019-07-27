@@ -31,7 +31,7 @@ namespace Neo.Express.Persistence
         {
             this.db = db;
             snapshot = db.CreateSnapshot();
-            readOptions = new ReadOptions().SetSnapshot(snapshot);
+            readOptions = new ReadOptions().SetSnapshot(snapshot).SetFillCache(false);
             writeBatch = new WriteBatch();
 
             Blocks = DevStore.GetDataCache<UInt256, BlockState>(

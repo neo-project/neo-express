@@ -42,15 +42,13 @@ namespace Neo.Express.Persistence
         {
             using (var iterator = db.NewIterator(familyHandle, readOptions))
             {
-                while (true)
+                iterator.Seek(key_prefix);
+                while (iterator.Valid())
                 {
-                    iterator.Seek(key_prefix);
-                    if (!iterator.Valid())
-                        break;
-
-                    var key = iterator.Key().AsSerializable<TKey>();
-                    var value = iterator.Value().AsSerializable<TValue>();
-                    yield return new KeyValuePair<TKey, TValue>(key, value);
+                    yield return new KeyValuePair<TKey, TValue>(
+                        iterator.Key().AsSerializable<TKey>(), 
+                        iterator.Value().AsSerializable<TValue>());
+                    iterator.Next();
                 }
             }
         }

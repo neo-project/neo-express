@@ -118,6 +118,14 @@ namespace Neo.Express.Persistence
             db.Dispose();
         }
 
+        public void CheckPoint(string path)
+        {
+            using (var checkpoint = db.Checkpoint())
+            {
+                checkpoint.Save(path);
+            }
+        }
+
         public override DataCache<UInt160, AccountState> GetAccounts() => accounts;
 
         public override DataCache<UInt256, AssetState> GetAssets() => assets;

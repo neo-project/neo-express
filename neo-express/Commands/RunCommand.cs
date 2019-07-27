@@ -22,8 +22,11 @@ namespace Neo.Express.Commands
         [Option]
         private uint SecondsPerBlock { get; }
 
-        [Option]
+        [Option(ShortName = "")]
         private bool Reset { get; }
+
+        [Option]
+        private bool ReadOnly { get; }
 
         private class LogPlugin : Plugin, ILogPlugin
         {
@@ -48,19 +51,24 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var (chainJson, _) = DevChain.LoadJson(Input);
-                if (!DevChain.InitializeProtocolSettings(chainJson, SecondsPerBlock))
+                if (ReadOnly && Reset)
+                {
+                    throw new Exception("Cannot specify --reset and --read-only");
+                }
+
+                var (devChainJson, _) = DevChain.LoadJson(Input);
+                if (!DevChain.InitializeProtocolSettings(devChainJson, SecondsPerBlock))
                 {
                     throw new Exception("Couldn't initialize protocol settings");
                 }
 
-                var chain = DevChain.FromJson(chainJson);
-                if (NodeIndex >= chain.ConsensusNodes.Count || NodeIndex < 0)
+                var devChain = DevChain.FromJson(devChainJson);
+                if (NodeIndex >= devChain.ConsensusNodes.Count || NodeIndex < 0)
                 {
                     throw new Exception("Invalid node index");
                 }
 
-                var consensusNode = chain.ConsensusNodes[NodeIndex];
+                var consensusNode = devChain.ConsensusNodes[NodeIndex];
                 var cts = new CancellationTokenSource();
 
                 const string ROOT_PATH = @"C:\Users\harry\neoexpress";
@@ -81,6 +89,7 @@ namespace Neo.Express.Commands
                     try
                     {
                         using (var store = new DevStore(path))
+                        //using (var store = new Neo.Persistence.LevelDB.LevelDBStore(path))
                         using (var system = new NeoSystem(store))
                         {
                             var logPlugin = new LogPlugin(console);

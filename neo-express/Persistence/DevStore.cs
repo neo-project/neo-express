@@ -68,6 +68,17 @@ namespace Neo.Express.Persistence
                 { METADATA_FAMILY, new ColumnFamilyOptions() }};
 
             db = RocksDb.Open(options, path, columnFamilies);
+
+            var writeBatch = new WriteBatch();
+            var readOptions = new ReadOptions().SetFillCache(true);
+            using (Iterator it = db.NewIterator(readOptions: readOptions))
+            {
+                for (it.SeekToFirst(); it.Valid(); it.Next())
+                {
+                    writeBatch.Delete(it.Key());
+                }
+            }
+            db.Write(writeBatch);
         }
 
         public void Dispose()

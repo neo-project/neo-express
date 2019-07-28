@@ -25,10 +25,18 @@ namespace Neo.Express.Commands
                 const string ROOT_PATH = @"C:\Users\harry\neoexpress";
                 var path = Path.Combine(ROOT_PATH, consensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).Address);
 
+                string checkpointTempPath = Path.Combine(
+                    Path.GetTempPath(), Path.GetRandomFileName());
+
                 using (var db = new Persistence.DevStore(path))
                 {
-                    db.CheckPoint(@"C:\Users\harry\neoexpress\checkpoint");
+                    db.CheckPoint(checkpointTempPath);
+                    System.IO.Compression.ZipFile.CreateFromDirectory(
+                        checkpointTempPath,
+                        Path.Combine(ROOT_PATH, $"express-checkpoint-{DateTimeOffset.Now:yyyyMMdd-hhmmss}.zip"));
                 }
+
+                Directory.Delete(checkpointTempPath, true);
 
                 return 0;
             }

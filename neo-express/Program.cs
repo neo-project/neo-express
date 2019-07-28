@@ -17,6 +17,8 @@ namespace Neo.Express
         typeof(WalletCommand))]
     internal class Program
     {
+        public const string ROOT_PATH = @"C:\Users\harry\neoexpress";
+
         private static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
         private int OnExecute(CommandLineApplication app, IConsole console)

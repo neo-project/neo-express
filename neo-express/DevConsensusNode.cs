@@ -1,6 +1,7 @@
 ﻿using Neo.Cryptography.ECC;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace Neo.Express
 {
@@ -10,6 +11,10 @@ namespace Neo.Express
         public ushort TcpPort { get; set; }
         public ushort WebSocketPort { get; set; }
         public ushort RpcPort { get; set; }
+
+        public string BlockchainPath => System.IO.Path.Combine(
+            Program.ROOT_PATH,
+            Wallet.GetAccounts().Single(a => a.IsDefault).Address);
 
         public static DevConsensusNode FromJson(JToken json)
         {

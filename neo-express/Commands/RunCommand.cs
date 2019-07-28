@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System;
 using System.Linq;
 using Neo.Express.Persistence;
+using System.ComponentModel.DataAnnotations;
 
 namespace Neo.Express.Commands
 {
@@ -14,6 +15,7 @@ namespace Neo.Express.Commands
     internal class RunCommand
     {
         [Argument(0)]
+        [Required]
         private int NodeIndex { get; }
 
         [Option]
@@ -71,25 +73,23 @@ namespace Neo.Express.Commands
                 var consensusNode = devChain.ConsensusNodes[NodeIndex];
                 var cts = new CancellationTokenSource();
 
-                const string ROOT_PATH = @"C:\Users\harry\neoexpress";
-                var path = Path.Combine(ROOT_PATH, consensusNode.Wallet.GetAccounts().Single(a => a.IsDefault).Address);
+                var blockchainPath = consensusNode.BlockchainPath;
 
-                if (Reset && Directory.Exists(path))
+                if (Reset && Directory.Exists(blockchainPath))
                 {
-                    Directory.Delete(path, true);
+                    Directory.Delete(blockchainPath, true);
                 }
 
-                if (!Directory.Exists(path))
+                if (!Directory.Exists(blockchainPath))
                 {
-                    Directory.CreateDirectory(path);
+                    Directory.CreateDirectory(blockchainPath);
                 }
 
                 Task.Factory.StartNew(() =>
                 {
                     try
                     {
-                        using (var store = new DevStore(path))
-                        //using (var store = new Neo.Persistence.LevelDB.LevelDBStore(path))
+                        using (var store = new DevStore(blockchainPath))
                         using (var system = new NeoSystem(store))
                         {
                             var logPlugin = new LogPlugin(console);

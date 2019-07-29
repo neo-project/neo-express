@@ -2,6 +2,7 @@
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo.Express.Persistence
 {
@@ -11,14 +12,20 @@ namespace Neo.Express.Persistence
             where TKey : ISerializable, new()
             where TValue : ISerializable, new()
         {
+            return Find<TValue>(db, keyPrefix, columnFamily, readOptions)
+                .Select(kvp => new KeyValuePair<TKey, TValue>(kvp.Key.AsSerializable<TKey>(), kvp.Value));
+        }
+
+        public static IEnumerable<KeyValuePair<byte[], TValue>> Find<TValue>(this RocksDb db, byte[] keyPrefix, ColumnFamilyHandle columnFamily = null, ReadOptions readOptions = null)
+            where TValue : ISerializable, new()
+        {
             using (var iterator = db.NewIterator(columnFamily, readOptions))
             {
                 iterator.Seek(keyPrefix);
                 while (iterator.Valid())
                 {
-                    yield return new KeyValuePair<TKey, TValue>(
-                        iterator.Key().AsSerializable<TKey>(),
-                        iterator.Value().AsSerializable<TValue>());
+                    yield return new KeyValuePair<byte[], TValue>(
+                        iterator.Key(), iterator.Value().AsSerializable<TValue>());
                     iterator.Next();
                 }
             }

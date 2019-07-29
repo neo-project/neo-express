@@ -138,7 +138,7 @@ namespace Neo.Express.Persistence
         public override IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() => blockHashIndex;
         public override IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() => headerHashIndex;
 
-        private static byte[] GetKey(byte prefix, byte[] key)
+        public static byte[] GetKey(byte prefix, byte[] key)
         {
             var tempKey = new byte[key.Length + 1];
             tempKey[0] = prefix;

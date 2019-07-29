@@ -27,10 +27,7 @@ namespace Neo.Express.Persistence
 
             protected override T TryGetInternal()
             {
-                var value = db.Get(key, familyHandle, readOptions);
-                return (value?.Length > 0)
-                    ? value.AsSerializable<T>()
-                    : null;
+                return db.TryGet<T>(key, familyHandle, readOptions);
             }
 
             protected override void AddInternal(T item)

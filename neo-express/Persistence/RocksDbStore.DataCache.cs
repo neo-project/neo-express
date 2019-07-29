@@ -26,35 +26,17 @@ namespace Neo.Express.Persistence
 
             protected override IEnumerable<KeyValuePair<TKey, TValue>> FindInternal(byte[] key_prefix)
             {
-                using (var iterator = db.NewIterator(familyHandle, readOptions))
-                {
-                    iterator.Seek(key_prefix);
-                    while (iterator.Valid())
-                    {
-                        yield return new KeyValuePair<TKey, TValue>(
-                            iterator.Key().AsSerializable<TKey>(),
-                            iterator.Value().AsSerializable<TValue>());
-                        iterator.Next();
-                    }
-                }
+                return db.Find<TKey, TValue>(key_prefix, familyHandle, readOptions);
             }
 
             protected override TValue GetInternal(TKey key)
             {
-                var value = TryGetInternal(key);
-                if (value == null)
-                {
-                    throw new Exception("not found");
-                }
-                return value;
+                return db.Get<TKey, TValue>(key, familyHandle, readOptions);
             }
 
             protected override TValue TryGetInternal(TKey key)
             {
-                var value = db.Get(key.ToArray(), familyHandle, readOptions);
-                return value?.Length > 0
-                    ? value.AsSerializable<TValue>()
-                    : null;
+                return db.TryGet<TKey, TValue>(key, familyHandle, readOptions);
             }
 
             protected override void AddInternal(TKey key, TValue value)

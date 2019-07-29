@@ -9,23 +9,38 @@ namespace Neo.Express.Persistence
 {
     internal partial class RocksDbStore : Neo.Persistence.Store, IDisposable
     {
-        private const string BLOCK_FAMILY = "data:block";
-        private const string TX_FAMILY = "data:transaction";
-        private const string ACCOUNT_FAMILY = "st:account";
-        private const string ASSET_FAMILY = "st:asset";
-        private const string CONTRACT_FAMILY = "st:contract";
-        private const string HEADER_HASH_LIST_FAMILY = "ix:header-hash-list";
-        private const string SPENT_COIN_FAMILY = "st:spent-coin";
-        private const string STORAGE_FAMILY = "st:storage";
-        private const string UNSPENT_COIN_FAMILY = "st:coin";
-        private const string VALIDATOR_FAMILY = "st:validator";
-        private const string METADATA_FAMILY = "metadata";
-        private const string GENERAL_STORAGE_FAMILY = "general-storage";
+        public const string BLOCK_FAMILY = "data:block";
+        public const string TX_FAMILY = "data:transaction";
+        public const string ACCOUNT_FAMILY = "st:account";
+        public const string ASSET_FAMILY = "st:asset";
+        public const string CONTRACT_FAMILY = "st:contract";
+        public const string HEADER_HASH_LIST_FAMILY = "ix:header-hash-list";
+        public const string SPENT_COIN_FAMILY = "st:spent-coin";
+        public const string STORAGE_FAMILY = "st:storage";
+        public const string UNSPENT_COIN_FAMILY = "st:coin";
+        public const string VALIDATOR_FAMILY = "st:validator";
+        public const string METADATA_FAMILY = "metadata";
+        public const string GENERAL_STORAGE_FAMILY = "general-storage";
 
-        private const byte VALIDATORS_COUNT_KEY = 0x90;
-        private const byte CURRENT_BLOCK_KEY = 0xc0;
-        private const byte CURRENT_HEADER_KEY = 0xc1;
+        public const byte VALIDATORS_COUNT_KEY = 0x90;
+        public const byte CURRENT_BLOCK_KEY = 0xc0;
+        public const byte CURRENT_HEADER_KEY = 0xc1;
 
+        public static ColumnFamilies ColumnFamilies => new ColumnFamilies {
+                { BLOCK_FAMILY, new ColumnFamilyOptions() },
+                { TX_FAMILY, new ColumnFamilyOptions() },
+                { ACCOUNT_FAMILY, new ColumnFamilyOptions() },
+                { UNSPENT_COIN_FAMILY, new ColumnFamilyOptions() },
+                { SPENT_COIN_FAMILY, new ColumnFamilyOptions() },
+                { VALIDATOR_FAMILY, new ColumnFamilyOptions() },
+                { ASSET_FAMILY, new ColumnFamilyOptions() },
+                { CONTRACT_FAMILY, new ColumnFamilyOptions() },
+                { STORAGE_FAMILY, new ColumnFamilyOptions() },
+                { HEADER_HASH_LIST_FAMILY, new ColumnFamilyOptions() },
+                { METADATA_FAMILY, new ColumnFamilyOptions() },
+                { GENERAL_STORAGE_FAMILY, new ColumnFamilyOptions() }};
+
+    
         private static DataCache<TKey, TValue> GetDataCache<TKey, TValue>(
             RocksDb db, string familyName, ReadOptions readOptions = null, WriteBatch writeBatch = null)
             where TKey : IEquatable<TKey>, ISerializable, new()
@@ -60,30 +75,13 @@ namespace Neo.Express.Persistence
         private readonly MetaDataCache<HashIndexState> blockHashIndex;
         private readonly MetaDataCache<HashIndexState> headerHashIndex;
 
-        public RocksDbStore(string path, bool readOnly = false)
+        public RocksDbStore(string path)
         {
             var options = new DbOptions()
                 .SetCreateIfMissing(true)
                 .SetCreateMissingColumnFamilies(true);
 
-            var columnFamilies = new ColumnFamilies {
-                { BLOCK_FAMILY, new ColumnFamilyOptions() },
-                { TX_FAMILY, new ColumnFamilyOptions() },
-                { ACCOUNT_FAMILY, new ColumnFamilyOptions() },
-                { UNSPENT_COIN_FAMILY, new ColumnFamilyOptions() },
-                { SPENT_COIN_FAMILY, new ColumnFamilyOptions() },
-                { VALIDATOR_FAMILY, new ColumnFamilyOptions() },
-                { ASSET_FAMILY, new ColumnFamilyOptions() },
-                { CONTRACT_FAMILY, new ColumnFamilyOptions() },
-                { STORAGE_FAMILY, new ColumnFamilyOptions() },
-                { HEADER_HASH_LIST_FAMILY, new ColumnFamilyOptions() },
-                { METADATA_FAMILY, new ColumnFamilyOptions() },
-                { GENERAL_STORAGE_FAMILY, new ColumnFamilyOptions() }
-            };
-
-            db = readOnly
-                ? RocksDb.OpenReadOnly(options, path, columnFamilies, true)
-                : RocksDb.Open(options, path, columnFamilies);
+            db = RocksDb.Open(options, path, ColumnFamilies);
 
             blocks = GetDataCache<UInt256, BlockState>(db, BLOCK_FAMILY);
             transactions = GetDataCache<UInt256, TransactionState>(db, TX_FAMILY);
@@ -99,19 +97,16 @@ namespace Neo.Express.Persistence
             blockHashIndex = GetMetaDataCache<HashIndexState>(db, CURRENT_BLOCK_KEY);
             headerHashIndex = GetMetaDataCache<HashIndexState>(db, CURRENT_HEADER_KEY);
 
-            if (!readOnly)
+            var writeBatch = new WriteBatch();
+            var readOptions = new ReadOptions().SetFillCache(true);
+            using (Iterator it = db.NewIterator(readOptions: readOptions))
             {
-                var writeBatch = new WriteBatch();
-                var readOptions = new ReadOptions().SetFillCache(true);
-                using (Iterator it = db.NewIterator(readOptions: readOptions))
+                for (it.SeekToFirst(); it.Valid(); it.Next())
                 {
-                    for (it.SeekToFirst(); it.Valid(); it.Next())
-                    {
-                        writeBatch.Delete(it.Key());
-                    }
+                    writeBatch.Delete(it.Key());
                 }
-                db.Write(writeBatch);
             }
+            db.Write(writeBatch);
         }
 
         public void Dispose()

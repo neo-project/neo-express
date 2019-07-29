@@ -7,7 +7,7 @@ using RocksDbSharp;
 namespace Neo.Express.Commands
 {
     [Command("checkpoint")]
-    [Subcommand(typeof(Create), typeof(Restore))]
+    [Subcommand(typeof(Create), typeof(Restore), typeof(Run))]
     internal partial class CheckPointCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)

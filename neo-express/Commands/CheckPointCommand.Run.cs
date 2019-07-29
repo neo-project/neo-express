@@ -1,15 +1,16 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using System;
 using System.ComponentModel.DataAnnotations;
+using System;
 using System.IO;
 using System.IO.Compression;
+using Neo.Express.Persistence;
 
 namespace Neo.Express.Commands
 {
-    partial class CheckPointCommand
+    internal partial class CheckPointCommand
     {
-        [Command("restore")]
-        class Restore
+        [Command("run")]
+        class Run
         {
             [Argument(0)]
             [Required]
@@ -19,7 +20,7 @@ namespace Neo.Express.Commands
             private string Input { get; }
 
             [Option]
-            private bool Force { get; }
+            private uint SecondsPerBlock { get; }
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
@@ -32,30 +33,22 @@ namespace Neo.Express.Commands
                         throw new Exception($"Checkpoint {Name} couldn't be found");
                     }
 
-                    if (!Force)
-                    {
-                        throw new Exception("You must specify force to restore a blockchain checkpoint.");
-                    }
-
-                    var (devChain, _) = DevChain.Load(Input);
+                    var devChain = DevChain.Initialize(Input, SecondsPerBlock);
 
                     if (devChain.ConsensusNodes.Count > 1)
                     {
-                        throw new Exception("Checkpoint restore is only supported on single node express instances");
+                        throw new Exception("Checkpoint run is only supported on single node express instances");
                     }
 
                     string checkpointTempPath = Path.Combine(
-                        Path.GetTempPath(), Path.GetRandomFileName());
+                        Path.GetTempPath(), 
+                        $"neo-express-" + Path.GetRandomFileName());
 
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
 
-                    var consensusNode = devChain.ConsensusNodes[0];
-                    var blockchainPath = consensusNode.BlockchainPath;
-
-                    Directory.Delete(blockchainPath, true);
-                    Directory.Move(checkpointTempPath, blockchainPath);
-
-                    console.WriteLine($"Checkpoint {Name} sucessfully restored");
+                    var cts = RunCommand.Run(new CheckpointStore(checkpointTempPath), devChain.ConsensusNodes[0], console);
+                    console.CancelKeyPress += (sender, args) => cts.Cancel();
+                    cts.Token.WaitHandle.WaitOne();
                     return 0;
                 }
                 catch (Exception ex)

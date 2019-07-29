@@ -36,7 +36,7 @@ namespace Neo.Express.Commands
 
                     if (devChain.ConsensusNodes.Count > 1)
                     {
-                        throw new Exception("Checkpoint create and restore is only supported on single node express instances");
+                        throw new Exception("Checkpoint create is only supported on single node express instances");
                     }
 
                     var consensusNode = devChain.ConsensusNodes[0];

@@ -46,7 +46,7 @@ namespace Neo.Express.Persistence
 
         public CheckpointStore(string path)
         {
-            db = RocksDb.OpenReadOnly(new DbOptions(), path, RocksDbStore.ColumnFamilies, true);
+            db = RocksDb.OpenReadOnly(new DbOptions(), path, RocksDbStore.ColumnFamilies, false);
 
             blocks = GetDataCache<UInt256, BlockState>(db, RocksDbStore.BLOCK_FAMILY);
             transactions = GetDataCache<UInt256, TransactionState>(db, RocksDbStore.TX_FAMILY);

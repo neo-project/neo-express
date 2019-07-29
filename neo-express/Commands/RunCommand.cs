@@ -24,11 +24,8 @@ namespace Neo.Express.Commands
         [Option]
         private uint SecondsPerBlock { get; }
 
-        [Option(ShortName = "")]
-        private bool Reset { get; }
-
         [Option]
-        private bool ReadOnly { get; }
+        private bool Reset { get; }
 
         private class LogPlugin : Plugin, ILogPlugin
         {
@@ -49,30 +46,54 @@ namespace Neo.Express.Commands
             }
         }
 
+        public static CancellationTokenSource Run(Neo.Persistence.Store store, DevConsensusNode consensusNode, IConsole console)
+        {
+            var cts = new CancellationTokenSource();
+
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    using (var system = new NeoSystem(store))
+                    {
+                        var logPlugin = new LogPlugin(console);
+                        var rpcPlugin = new ExpressNodeRpcPlugin();
+
+                        system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
+                        system.StartConsensus(consensusNode.Wallet);
+                        system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
+
+                        cts.Token.WaitHandle.WaitOne();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    console.WriteLine(ex);
+                    cts.Cancel();
+                }
+                finally
+                {
+                    if (store is IDisposable disp)
+                    {
+                        disp.Dispose();
+                    }
+                }
+            });
+
+            return cts;
+        }
+
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
-                if (ReadOnly && Reset)
-                {
-                    throw new Exception("Cannot specify --reset and --read-only");
-                }
-
-                var (devChainJson, _) = DevChain.LoadJson(Input);
-                if (!DevChain.InitializeProtocolSettings(devChainJson, SecondsPerBlock))
-                {
-                    throw new Exception("Couldn't initialize protocol settings");
-                }
-
-                var devChain = DevChain.FromJson(devChainJson);
+                var devChain = DevChain.Initialize(Input, SecondsPerBlock);
                 if (NodeIndex >= devChain.ConsensusNodes.Count || NodeIndex < 0)
                 {
                     throw new Exception("Invalid node index");
                 }
 
                 var consensusNode = devChain.ConsensusNodes[NodeIndex];
-                var cts = new CancellationTokenSource();
-
                 var blockchainPath = consensusNode.BlockchainPath;
 
                 if (Reset && Directory.Exists(blockchainPath))
@@ -85,32 +106,8 @@ namespace Neo.Express.Commands
                     Directory.CreateDirectory(blockchainPath);
                 }
 
-                Task.Factory.StartNew(() =>
-                {
-                    try
-                    {
-                        using (var store = new RocksDbStore(blockchainPath))
-                        using (var system = new NeoSystem(store))
-                        {
-                            var logPlugin = new LogPlugin(console);
-                            var rpcPlugin = new ExpressNodeRpcPlugin();
-
-                            system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
-                            system.StartConsensus(consensusNode.Wallet);
-                            system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
-
-                            cts.Token.WaitHandle.WaitOne();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        console.WriteLine(ex);
-                        cts.Cancel();
-                    }
-                });
-
+                var cts = Run(new RocksDbStore(blockchainPath), consensusNode, console);
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
-
                 cts.Token.WaitHandle.WaitOne();
                 return 0;
             }

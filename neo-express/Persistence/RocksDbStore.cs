@@ -9,22 +9,22 @@ namespace Neo.Express.Persistence
 {
     internal partial class RocksDbStore : Neo.Persistence.Store, IDisposable
     {
-        public const string BLOCK_FAMILY = "data:block";
-        public const string TX_FAMILY = "data:transaction";
-        public const string ACCOUNT_FAMILY = "st:account";
-        public const string ASSET_FAMILY = "st:asset";
-        public const string CONTRACT_FAMILY = "st:contract";
-        public const string HEADER_HASH_LIST_FAMILY = "ix:header-hash-list";
-        public const string SPENT_COIN_FAMILY = "st:spent-coin";
-        public const string STORAGE_FAMILY = "st:storage";
-        public const string UNSPENT_COIN_FAMILY = "st:coin";
-        public const string VALIDATOR_FAMILY = "st:validator";
-        public const string METADATA_FAMILY = "metadata";
-        public const string GENERAL_STORAGE_FAMILY = "general-storage";
+        private const string BLOCK_FAMILY = "data:block";
+        private const string TX_FAMILY = "data:transaction";
+        private const string ACCOUNT_FAMILY = "st:account";
+        private const string ASSET_FAMILY = "st:asset";
+        private const string CONTRACT_FAMILY = "st:contract";
+        private const string HEADER_HASH_LIST_FAMILY = "ix:header-hash-list";
+        private const string SPENT_COIN_FAMILY = "st:spent-coin";
+        private const string STORAGE_FAMILY = "st:storage";
+        private const string UNSPENT_COIN_FAMILY = "st:coin";
+        private const string VALIDATOR_FAMILY = "st:validator";
+        private const string METADATA_FAMILY = "metadata";
+        private const string GENERAL_STORAGE_FAMILY = "general-storage";
 
-        public const byte VALIDATORS_COUNT_KEY = 0x90;
-        public const byte CURRENT_BLOCK_KEY = 0xc0;
-        public const byte CURRENT_HEADER_KEY = 0xc1;
+        private const byte VALIDATORS_COUNT_KEY = 0x90;
+        private const byte CURRENT_BLOCK_KEY = 0xc0;
+        private const byte CURRENT_HEADER_KEY = 0xc1;
 
         private static DataCache<TKey, TValue> GetDataCache<TKey, TValue>(
             RocksDb db, string familyName, ReadOptions readOptions = null, WriteBatch writeBatch = null)
@@ -60,7 +60,7 @@ namespace Neo.Express.Persistence
         private readonly MetaDataCache<HashIndexState> blockHashIndex;
         private readonly MetaDataCache<HashIndexState> headerHashIndex;
 
-        public RocksDbStore(string path)
+        public RocksDbStore(string path, bool readOnly = false)
         {
             var options = new DbOptions()
                 .SetCreateIfMissing(true)
@@ -81,7 +81,9 @@ namespace Neo.Express.Persistence
                 { GENERAL_STORAGE_FAMILY, new ColumnFamilyOptions() }
             };
 
-            db = RocksDb.Open(options, path, columnFamilies);
+            db = readOnly
+                ? RocksDb.OpenReadOnly(options, path, columnFamilies, true)
+                : RocksDb.Open(options, path, columnFamilies);
 
             blocks = GetDataCache<UInt256, BlockState>(db, BLOCK_FAMILY);
             transactions = GetDataCache<UInt256, TransactionState>(db, TX_FAMILY);
@@ -97,16 +99,19 @@ namespace Neo.Express.Persistence
             blockHashIndex = GetMetaDataCache<HashIndexState>(db, CURRENT_BLOCK_KEY);
             headerHashIndex = GetMetaDataCache<HashIndexState>(db, CURRENT_HEADER_KEY);
 
-            var writeBatch = new WriteBatch();
-            var readOptions = new ReadOptions().SetFillCache(true);
-            using (Iterator it = db.NewIterator(readOptions: readOptions))
+            if (!readOnly)
             {
-                for (it.SeekToFirst(); it.Valid(); it.Next())
+                var writeBatch = new WriteBatch();
+                var readOptions = new ReadOptions().SetFillCache(true);
+                using (Iterator it = db.NewIterator(readOptions: readOptions))
                 {
-                    writeBatch.Delete(it.Key());
+                    for (it.SeekToFirst(); it.Valid(); it.Next())
+                    {
+                        writeBatch.Delete(it.Key());
+                    }
                 }
+                db.Write(writeBatch);
             }
-            db.Write(writeBatch);
         }
 
         public void Dispose()
@@ -122,34 +127,21 @@ namespace Neo.Express.Persistence
             }
         }
 
-        public override IO.Caching.DataCache<UInt160, AccountState> GetAccounts() => accounts;
-
-        public override IO.Caching.DataCache<UInt256, AssetState> GetAssets() => assets;
+        public override Neo.Persistence.Snapshot GetSnapshot() => new Snapshot(db);
 
         public override IO.Caching.DataCache<UInt256, BlockState> GetBlocks() => blocks;
-
-        public override IO.Caching.DataCache<UInt160, ContractState> GetContracts() => contracts;
-
-        public override IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() => headerHashList;
-
-        public override IO.Caching.DataCache<UInt256, SpentCoinState> GetSpentCoins() => spentCoins;
-
-        public override IO.Caching.DataCache<StorageKey, StorageItem> GetStorages() => storages;
-
         public override IO.Caching.DataCache<UInt256, TransactionState> GetTransactions() => transactions;
-
+        public override IO.Caching.DataCache<UInt160, AccountState> GetAccounts() => accounts;
         public override IO.Caching.DataCache<UInt256, UnspentCoinState> GetUnspentCoins() => unspentCoins;
-
+        public override IO.Caching.DataCache<UInt256, SpentCoinState> GetSpentCoins() => spentCoins;
         public override IO.Caching.DataCache<ECPoint, ValidatorState> GetValidators() => validators;
-
-        public override IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() => blockHashIndex;
-
-        public override IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() => headerHashIndex;
-
+        public override IO.Caching.DataCache<UInt256, AssetState> GetAssets() => assets;
+        public override IO.Caching.DataCache<UInt160, ContractState> GetContracts() => contracts;
+        public override IO.Caching.DataCache<StorageKey, StorageItem> GetStorages() => storages;
+        public override IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() => headerHashList;
         public override IO.Caching.MetaDataCache<ValidatorsCountState> GetValidatorsCount() => validatorsCount;
-
-        public override Neo.Persistence.Snapshot GetSnapshot() =>
-            new Snapshot(db);
+        public override IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() => blockHashIndex;
+        public override IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() => headerHashIndex;
 
         private static byte[] GetKey(byte prefix, byte[] key)
         {

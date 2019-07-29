@@ -24,21 +24,6 @@ namespace Neo.Express.Persistence
                 this.writeBatch = writeBatch;
             }
 
-            public override void DeleteInternal(TKey key)
-            {
-                writeBatch?.Delete(key.ToArray(), familyHandle);
-            }
-
-            protected override void UpdateInternal(TKey key, TValue value)
-            {
-                writeBatch?.Put(key.ToArray(), value.ToArray(), familyHandle);
-            }
-
-            protected override void AddInternal(TKey key, TValue value)
-            {
-                UpdateInternal(key, value);
-            }
-
             protected override IEnumerable<KeyValuePair<TKey, TValue>> FindInternal(byte[] key_prefix)
             {
                 using (var iterator = db.NewIterator(familyHandle, readOptions))
@@ -66,6 +51,21 @@ namespace Neo.Express.Persistence
                 return value?.Length > 0
                     ? value.AsSerializable<TValue>()
                     : null;
+            }
+
+            protected override void AddInternal(TKey key, TValue value)
+            {
+                UpdateInternal(key, value);
+            }
+
+            protected override void UpdateInternal(TKey key, TValue value)
+            {
+                writeBatch?.Put(key.ToArray(), value.ToArray(), familyHandle);
+            }
+
+            public override void DeleteInternal(TKey key)
+            {
+                writeBatch?.Delete(key.ToArray(), familyHandle);
             }
         }
     }

@@ -25,9 +25,12 @@ namespace Neo.Express.Persistence
                 this.writeBatch = writeBatch;
             }
 
-            protected override void UpdateInternal(T item)
+            protected override T TryGetInternal()
             {
-                writeBatch?.Put(key, item.ToArray(), familyHandle);
+                var value = db.Get(key, familyHandle, readOptions);
+                return (value?.Length > 0)
+                    ? value.AsSerializable<T>()
+                    : null;
             }
 
             protected override void AddInternal(T item)
@@ -35,12 +38,9 @@ namespace Neo.Express.Persistence
                 UpdateInternal(item);
             }
 
-            protected override T TryGetInternal()
+            protected override void UpdateInternal(T item)
             {
-                var value = db.Get(key, familyHandle, readOptions);
-                return (value?.Length > 0)
-                    ? value.AsSerializable<T>()
-                    : null;
+                writeBatch?.Put(key, item.ToArray(), familyHandle);
             }
         }
     }

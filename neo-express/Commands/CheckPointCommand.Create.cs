@@ -45,7 +45,7 @@ namespace Neo.Express.Commands
                     string checkpointTempPath = Path.Combine(
                         Path.GetTempPath(), Path.GetRandomFileName());
 
-                    using (var db = new Persistence.DevStore(blockchainPath))
+                    using (var db = new Persistence.RocksDbStore(blockchainPath))
                     {
                         db.CheckPoint(checkpointTempPath);
                         ZipFile.CreateFromDirectory(checkpointTempPath, filename);

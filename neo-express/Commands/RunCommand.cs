@@ -89,7 +89,7 @@ namespace Neo.Express.Commands
                 {
                     try
                     {
-                        using (var store = new DevStore(blockchainPath))
+                        using (var store = new RocksDbStore(blockchainPath))
                         using (var system = new NeoSystem(store))
                         {
                             var logPlugin = new LogPlugin(console);

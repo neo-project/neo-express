@@ -41,8 +41,12 @@ namespace Neo.Express.Persistence
 
             protected override TValue GetInternal(TKey key)
             {
-                return db.Get(key.ToArray(), familyHandle, readOptions)
-                    .AsSerializable<TValue>();
+                var value = TryGetInternal(key);
+                if (value == null)
+                {
+                    throw new Exception("not found");
+                }
+                return value;
             }
 
             protected override TValue TryGetInternal(TKey key)

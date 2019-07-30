@@ -64,7 +64,7 @@ namespace Neo.Express.Commands
                         throw new Exception($"Could not find function {Function}");
                     }
 
-                    return new ContractParameter[2] 
+                    return new ContractParameter[2]
                     {
                         new ContractParameter(Function),
                         new ContractParameter(ParseArguments(function, arguments))

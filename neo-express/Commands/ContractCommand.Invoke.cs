@@ -27,6 +27,9 @@ namespace Neo.Express.Commands
             [Option]
             private string Account { get; }
 
+            [Option]
+            private string Function { get; }
+
             static IEnumerable<ContractParameter> ParseArguments(DevContractFunction function, IEnumerable<string> arguments)
             {
                 if (function.Parameters.Count != arguments.Count())
@@ -45,9 +48,28 @@ namespace Neo.Express.Commands
 
             IEnumerable<ContractParameter> ParseArguments(DevContract contract)
             {
-                var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
                 var arguments = Arguments ?? Enumerable.Empty<string>();
-                return ParseArguments(entrypoint, arguments);
+
+                if (string.IsNullOrEmpty(Function))
+                {
+                    var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
+                    return ParseArguments(entrypoint, arguments);
+                }
+                else
+                {
+                    var function = contract.Functions.SingleOrDefault(f => f.Name == Function);
+
+                    if (function == null)
+                    {
+                        throw new Exception($"Could not find function {Function}");
+                    }
+
+                    return new ContractParameter[2] 
+                    {
+                        new ContractParameter(Function),
+                        new ContractParameter(ParseArguments(function, arguments))
+                    };
+                }
             }
 
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
@@ -65,7 +87,7 @@ namespace Neo.Express.Commands
 
                     var args = ParseArguments(contract);
                     var uri = devChain.GetUri();
-                    var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, null, account?.ScriptHash);
+                    var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
                     console.WriteLine(result.ToString(Formatting.Indented));
 
                     return 0;

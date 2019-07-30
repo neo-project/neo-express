@@ -249,9 +249,9 @@ namespace Neo.Express
             return (AddTransactionFee(snapshot, addresses, tx), engine);
         }
 
-        public static (InvocationTransaction, ApplicationEngine) MakeInvocationTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, UInt160 scriptHash, string functionName, ContractParameter[] parameters)
+        public static (InvocationTransaction, ApplicationEngine) MakeInvocationTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, UInt160 scriptHash, ContractParameter[] parameters)
         {
-            var tx = BuildInvocationTx(() => BuildInvocationScript(scriptHash, functionName, parameters));
+            var tx = BuildInvocationTx(() => BuildInvocationScript(scriptHash, parameters));
             var engine = ApplicationEngine.Run(tx.Script, tx);
             if ((engine.State & VMState.FAULT) != 0)
             {
@@ -302,17 +302,10 @@ namespace Neo.Express
             }
         }
 
-        static ScriptBuilder BuildInvocationScript(UInt160 scriptHash, string functionName, ContractParameter[] parameters)
+        static ScriptBuilder BuildInvocationScript(UInt160 scriptHash, ContractParameter[] parameters)
         {
             var builder = new ScriptBuilder();
-            if (string.IsNullOrEmpty(functionName))
-            {
-                builder.EmitAppCall(scriptHash, parameters);
-            }
-            else
-            {
-                builder.EmitAppCall(scriptHash, functionName, parameters);
-            }
+            builder.EmitAppCall(scriptHash, parameters);
             return builder;
         }
 

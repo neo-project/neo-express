@@ -83,12 +83,11 @@ namespace Neo.Express
                 ToJToken(contract.ToJson), address.ToAddress()));
         }
 
-        public static Task<JToken> ExpressInvokeContract(Uri uri, UInt160 scriptHash, IEnumerable<ContractParameter> scriptParams, string functionName = null, UInt160 address = null)
+        public static Task<JToken> ExpressInvokeContract(Uri uri, UInt160 scriptHash, IEnumerable<ContractParameter> scriptParams, UInt160 address = null)
         {
             var @params = new JArray(scriptParams.Select(p => JObject.Parse(p.ToJson().ToString())));
             return RpcCall(uri, "express-invoke-contract", new JArray(
                 scriptHash.ToString(),
-                functionName,
                 @params,
                 address?.ToAddress()));
         }

@@ -203,15 +203,14 @@ namespace Neo.Express
         public JObject OnInvokeContract(JArray @params)
         {
             var scriptHash = UInt160.Parse(@params[0].AsString());
-            var functionName = @params[1] == JObject.Null ? null : @params[1].AsString();
-            var scriptParams = ((JArray)@params[2]).Select(ContractParameter.FromJson).ToArray();
-            var address = @params[3] == JObject.Null ? null : @params[3].AsString().ToScriptHash();
+            var scriptParams = ((JArray)@params[1]).Select(ContractParameter.FromJson).ToArray();
+            var address = @params[2] == JObject.Null ? null : @params[3].AsString().ToScriptHash();
 
             var addresses = address == null ? ImmutableHashSet<UInt160>.Empty : ImmutableHashSet.Create(address);
 
             using (var snapshot = Blockchain.Singleton.GetSnapshot())
             {
-                var (tx, engine) = NeoUtility.MakeInvocationTransaction(snapshot, addresses, scriptHash, functionName, scriptParams);
+                var (tx, engine) = NeoUtility.MakeInvocationTransaction(snapshot, addresses, scriptHash, scriptParams);
                 var context = new ContractParametersContext(tx);
                 var json = CreateContextResponse(context, tx);
                 json["engine-state"] = EngineToJson(engine);

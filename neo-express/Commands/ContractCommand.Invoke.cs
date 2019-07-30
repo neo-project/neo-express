@@ -67,8 +67,8 @@ namespace Neo.Express.Commands
 
                     return new ContractParameter[2]
                     {
-                        new ContractParameter(Function),
-                        new ContractParameter(ParseArguments(function, arguments))
+                        new ContractParameter(ContractParameterType.String) { Value = Function },
+                        new ContractParameter(ContractParameterType.Array) { Value = ParseArguments(function, arguments).ToList() }
                     };
                 }
             }

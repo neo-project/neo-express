@@ -38,10 +38,15 @@ namespace Neo.Express.Commands
                 var contract = DevContract.Load(avmFile, abiJsonFile, mdJsonFile);
                 var (devChain, filename) = DevChain.Load(Input);
 
-
-                if (!Force && devChain.Contracts.Any(c => c.Name == contract.Name))
+                var existingContract = devChain.Contracts.SingleOrDefault(c => c.Name == contract.Name);
+                if (existingContract != null)
                 {
-                    throw new Exception($"{contract.Name} dev contract already exists. Use --force to overwrite.");
+                    if (!Force)
+                    {
+                        throw new Exception($"{contract.Name} dev contract already exists. Use --force to overwrite.");
+                    }
+
+                    devChain.Contracts.Remove(existingContract);
                 }
 
                 devChain.Contracts.Add(contract);

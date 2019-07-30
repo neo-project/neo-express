@@ -30,9 +30,15 @@ namespace Neo.Express.Commands
                         throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
                     }
 
-                    if (!Force && (devChain.GetWallet(Name) != default))
+                    var existingWallet = devChain.GetWallet(Name);
+                    if (existingWallet != default)
                     {
-                        throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
+                        if (!Force)
+                        {
+                            throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
+                        }
+
+                        devChain.Wallets.Remove(existingWallet);
                     }
 
                     var wallet = new DevWallet(Name);

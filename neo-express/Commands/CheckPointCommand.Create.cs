@@ -27,9 +27,14 @@ namespace Neo.Express.Commands
                         ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}.neo-express"
                         : Name + ".neo-express";
 
-                    if (!Force && File.Exists(filename))
+                    if (File.Exists(filename))
                     {
-                        throw new Exception("You must specify --force to overwrite an existing file");
+                        if (!Force)
+                        {
+                            throw new Exception("You must specify --force to overwrite an existing file");
+                        }
+
+                        File.Delete(filename);
                     }
 
                     var (devChain, _) = DevChain.Load(Input);

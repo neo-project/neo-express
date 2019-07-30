@@ -204,7 +204,7 @@ namespace Neo.Express
         {
             var scriptHash = UInt160.Parse(@params[0].AsString());
             var scriptParams = ((JArray)@params[1]).Select(ContractParameter.FromJson).ToArray();
-            var address = @params[2] == JObject.Null ? null : @params[3].AsString().ToScriptHash();
+            var address = @params[2] == JObject.Null ? null : @params[2].AsString().ToScriptHash();
 
             var addresses = address == null ? ImmutableHashSet<UInt160>.Empty : ImmutableHashSet.Create(address);
 

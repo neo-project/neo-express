@@ -1,6 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Neo.SmartContract;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -90,6 +91,13 @@ namespace Neo.Express.Commands
                     var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
                     console.WriteLine(result.ToString(Formatting.Indented));
 
+                    if (account != null)
+                    {
+                        var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                        var signatures = new JArray(account.Sign(data));
+                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                        console.WriteLine(result2.ToString(Formatting.Indented));
+                    }
                     return 0;
                 }
                 catch (Exception ex)

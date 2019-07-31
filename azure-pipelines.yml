@@ -10,7 +10,7 @@ steps:
   inputs:
     command: 'custom'
     custom: pack
-    arguments: '--version-suffix ngdsea-ci -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
+    arguments: '--version-suffix ngdsea-ci-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
 
 - task: PublishBuildArtifacts@1
   displayName: 'publish build artifacts'

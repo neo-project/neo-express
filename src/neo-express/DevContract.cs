@@ -102,50 +102,73 @@ namespace Neo.Express
             };
         }
 
-        public static DevContract Load(string avnFile, string abiFile, string mdFile)
+        static (UInt160 hash, string entrypoint, List<DevContractFunction> functions, List<DevContractFunction> events) LoadAbi(string abiFile)
         {
-            (UInt160 hash, string entrypoint, List<DevContractFunction> functions, List<DevContractFunction> events) LoadAbi()
+            using (var stream = File.OpenRead(abiFile))
+            using (var reader = new JsonTextReader(new StreamReader(stream)))
             {
-                using (var stream = File.OpenRead(abiFile))
-                using (var reader = new JsonTextReader(new StreamReader(stream)))
-                {
-                    var json = JObject.Load(reader);
+                var json = JObject.Load(reader);
 
-                    var hash = UInt160.Parse(json.Value<string>("hash"));
-                    var entryPoint = json.Value<string>("entrypoint");
-                    var functions = json["functions"].Select(DevContractFunction.FromJson).ToList();
-                    var events = json["events"].Select(DevContractFunction.FromJson).ToList();
+                var hash = UInt160.Parse(json.Value<string>("hash"));
+                var entryPoint = json.Value<string>("entrypoint");
+                var functions = json["functions"].Select(DevContractFunction.FromJson).ToList();
+                var events = json["events"].Select(DevContractFunction.FromJson).ToList();
 
-                    return (hash, entryPoint, functions, events);
-                }
+                return (hash, entryPoint, functions, events);
             }
+        }
 
-            (string title, string description, string version, string author, string email, ContractPropertyState contractPropertyState) LoadMetadata()
+        static (string title, string description, string version, string author, string email, ContractPropertyState contractPropertyState) LoadMetadata(string mdFile)
+        {
+            using (var stream = File.OpenRead(mdFile))
+            using (var reader = new JsonTextReader(new StreamReader(stream)))
             {
-                using (var stream = File.OpenRead(mdFile))
-                using (var reader = new JsonTextReader(new StreamReader(stream)))
-                {
-                    var json = JObject.Load(reader);
+                var json = JObject.Load(reader);
 
-                    var title = json.Value<string>("title");
-                    var description = json.Value<string>("description");
-                    var version = json.Value<string>("version");
-                    var author = json.Value<string>("author");
-                    var email = json.Value<string>("email");
+                var title = json.Value<string>("title");
+                var description = json.Value<string>("description");
+                var version = json.Value<string>("version");
+                var author = json.Value<string>("author");
+                var email = json.Value<string>("email");
 
-                    var contractPropertyState = ContractPropertyState.NoProperty;
-                    if (json.Value<bool>("has-storage")) contractPropertyState |= ContractPropertyState.HasStorage;
-                    if (json.Value<bool>("has-dynamic-invoke")) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
-                    if (json.Value<bool>("is-payable")) contractPropertyState |= ContractPropertyState.Payable;
+                var contractPropertyState = ContractPropertyState.NoProperty;
+                if (json.Value<bool>("has-storage")) contractPropertyState |= ContractPropertyState.HasStorage;
+                if (json.Value<bool>("has-dynamic-invoke")) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
+                if (json.Value<bool>("is-payable")) contractPropertyState |= ContractPropertyState.Payable;
 
-                    return (title, description, version, author, email, contractPropertyState);
-                }
+                return (title, description, version, author, email, contractPropertyState);
             }
+        }
 
+        public static DevContract Load(string avnFile, string abiFile, ContractPropertyState contractPropertyState)
+        {
             var name = Path.GetFileNameWithoutExtension(avnFile);
             var contractData = File.ReadAllBytes(avnFile);
-            var abi = LoadAbi();
-            var md = LoadMetadata();
+            var abi = LoadAbi(abiFile);
+
+            return new DevContract
+            {
+                Name = name,
+                Hash = abi.hash,
+                EntryPoint = abi.entrypoint,
+                ContractData = contractData,
+                Functions = abi.functions.ToList(),
+                Events = abi.events.ToList(),
+                Title = Path.GetFileNameWithoutExtension(avnFile),
+                Description = "No description provided",
+                Author = "No author provided",
+                Email = "nobody@fake.email",
+                Version = "0.0.0",
+                ContractPropertyState = contractPropertyState
+            };
+        }
+
+        public static DevContract Load(string avnFile, string abiFile, string mdFile)
+        {
+            var name = Path.GetFileNameWithoutExtension(avnFile);
+            var contractData = File.ReadAllBytes(avnFile);
+            var abi = LoadAbi(abiFile);
+            var md = LoadMetadata(mdFile);
 
             return new DevContract
             {

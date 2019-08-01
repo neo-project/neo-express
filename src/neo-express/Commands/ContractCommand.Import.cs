@@ -1,4 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using Neo.Ledger;
 using System;
 using System.IO;
 using System.Linq;
@@ -21,21 +22,31 @@ namespace Neo.Express.Commands
 
             private int ImportContract(string avmFile, IConsole console)
             {
+                DevContract LoadDevContract()
+                {
+                    var abiJsonFile = Path.ChangeExtension(avmFile, ".abi.json");
+                    if (!File.Exists(abiJsonFile))
+                    {
+                        throw new Exception($"there is no .abi.json file for {avmFile}.");
+                    }
+
+                    var mdJsonFile = Path.ChangeExtension(avmFile, ".md.json");
+                    if (File.Exists(mdJsonFile))
+                    {
+                        return DevContract.Load(avmFile, abiJsonFile, mdJsonFile);
+                    }
+
+                    var contractPropertyState = ContractPropertyState.NoProperty;
+                    if (Prompt.GetYesNo("Does this contract use storage?", false)) contractPropertyState |= ContractPropertyState.HasStorage;
+                    if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false)) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
+                    if (Prompt.GetYesNo("Is this contract payable?", false)) contractPropertyState |= ContractPropertyState.Payable;
+
+                    return DevContract.Load(avmFile, abiJsonFile, contractPropertyState);
+                }
+
                 System.Diagnostics.Debug.Assert(File.Exists(avmFile));
 
-                var abiJsonFile = Path.ChangeExtension(avmFile, ".abi.json");
-                if (!File.Exists(abiJsonFile))
-                {
-                    throw new Exception($"there is no .abi.json file for {avmFile}.");
-                }
-
-                var mdJsonFile = Path.ChangeExtension(avmFile, ".md.json");
-                if (!File.Exists(mdJsonFile))
-                {
-                    throw new Exception($"there is no .md.json file for {avmFile}.");
-                }
-
-                var contract = DevContract.Load(avmFile, abiJsonFile, mdJsonFile);
+                var contract = LoadDevContract();
                 var (devChain, filename) = DevChain.Load(Input);
 
                 var existingContract = devChain.Contracts.SingleOrDefault(c => c.Name == contract.Name);

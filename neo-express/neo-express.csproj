@@ -7,6 +7,13 @@
     <RootNamespace>Neo.Express</RootNamespace>
     <PackAsTool>true</PackAsTool>
     <LangVersion>7.3</LangVersion>
+    <AssemblyName>neo-express</AssemblyName>
+    <Description>neo-express is a NEO developer blockchain tool</Description>
+    <PackageTags>NEO;Blockchain;Smart Contract</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Neo Global Development Seattle</Authors>
+    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
+    <PackageIconUrl>https://neo-cdn.azureedge.net/images/neo-logo/72.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>

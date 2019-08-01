@@ -32,11 +32,6 @@ namespace Neo.Express.Commands
                         throw new Exception($"Checkpoint {Name} couldn't be found");
                     }
 
-                    if (!Force)
-                    {
-                        throw new Exception("You must specify force to restore a blockchain checkpoint.");
-                    }
-
                     var (devChain, _) = DevChain.Load(Input);
 
                     if (devChain.ConsensusNodes.Count > 1)
@@ -44,15 +39,20 @@ namespace Neo.Express.Commands
                         throw new Exception("Checkpoint restore is only supported on single node express instances");
                     }
 
-                    string checkpointTempPath = Path.Combine(
-                        Path.GetTempPath(), Path.GetRandomFileName());
+                    var blockchainPath = devChain.ConsensusNodes[0].BlockchainPath;
 
+                    if (!Force && Directory.Exists(blockchainPath))
+                    {
+                        throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+                    }
+
+                    string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
 
-                    var consensusNode = devChain.ConsensusNodes[0];
-                    var blockchainPath = consensusNode.BlockchainPath;
-
-                    Directory.Delete(blockchainPath, true);
+                    if (Directory.Exists(blockchainPath))
+                    {
+                        Directory.Delete(blockchainPath, true);
+                    }
                     Directory.Move(checkpointTempPath, blockchainPath);
 
                     console.WriteLine($"Checkpoint {Name} sucessfully restored");

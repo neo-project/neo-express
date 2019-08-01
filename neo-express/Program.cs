@@ -1,5 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Neo.Express.Commands;
+using System;
 using System.IO;
 
 namespace Neo.Express
@@ -17,7 +18,9 @@ namespace Neo.Express
         typeof(WalletCommand))]
     internal class Program
     {
-        public const string ROOT_PATH = @"C:\Users\harry\neoexpress";
+        public static string ROOT_PATH => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "NEO-Express", "blockchain-nodes");
 
         private static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 

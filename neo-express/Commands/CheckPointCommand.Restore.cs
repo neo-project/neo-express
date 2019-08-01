@@ -3,6 +3,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 namespace Neo.Express.Commands
 {
@@ -25,12 +26,7 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var filename = Name + ".neo-express";
-
-                    if (!File.Exists(filename))
-                    {
-                        throw new Exception($"Checkpoint {Name} couldn't be found");
-                    }
+                    var filename = ValidateCheckpointFileName(Name);
 
                     var (devChain, _) = DevChain.Load(Input);
 
@@ -39,20 +35,31 @@ namespace Neo.Express.Commands
                         throw new Exception("Checkpoint restore is only supported on single node express instances");
                     }
 
-                    var blockchainPath = devChain.ConsensusNodes[0].BlockchainPath;
+                    var consensusNode = devChain.ConsensusNodes[0];
 
+                    var blockchainPath = consensusNode.GetBlockchainPath();
                     if (!Force && Directory.Exists(blockchainPath))
                     {
                         throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
                     }
 
-                    string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                    ValidateCheckpointAddress(filename, consensusNode);
+
+                    var checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                    var addressFilePath = Path.Combine(checkpointTempPath, ADDRESS_FILENAME);
+
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
+
+                    if (File.Exists(addressFilePath))
+                    {
+                        File.Delete(addressFilePath);
+                    }
 
                     if (Directory.Exists(blockchainPath))
                     {
                         Directory.Delete(blockchainPath, true);
                     }
+
                     Directory.Move(checkpointTempPath, blockchainPath);
 
                     console.WriteLine($"Checkpoint {Name} sucessfully restored");

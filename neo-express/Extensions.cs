@@ -65,5 +65,35 @@ namespace Neo.Express
         {
             WriteMessage(console, message, ConsoleColor.Yellow);
         }
+
+        public static string GetBlockchainPath(this DevWalletAccount account)
+        {
+            if (account == null)
+            {
+                throw new ArgumentNullException(nameof(account));
+            }
+
+            return System.IO.Path.Combine(Program.ROOT_PATH, account.Address);
+        }
+
+        public static string GetBlockchainPath(this DevWallet wallet)
+        {
+            if (wallet == null)
+            {
+                throw new ArgumentNullException(nameof(wallet));
+            }
+
+            return wallet.DefaultAccount.GetBlockchainPath();
+        }
+
+        public static string GetBlockchainPath(this DevConsensusNode node)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            return node.Wallet.GetBlockchainPath();
+        }
     }
-}
+    }

@@ -24,8 +24,8 @@ namespace Neo.Express.Commands
                 try
                 {
                     var filename = string.IsNullOrEmpty(Name)
-                        ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}.neo-express"
-                        : Name + ".neo-express";
+                        ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}{CHECKPOINT_EXTENSION}"
+                        : Name + CHECKPOINT_EXTENSION;
 
                     if (File.Exists(filename))
                     {
@@ -45,14 +45,20 @@ namespace Neo.Express.Commands
                     }
 
                     var consensusNode = devChain.ConsensusNodes[0];
-                    var blockchainPath = consensusNode.BlockchainPath;
+                    var blockchainAccount = consensusNode.Wallet.DefaultAccount;
+                    var blockchainPath = consensusNode.GetBlockchainPath();
 
-                    string checkpointTempPath = Path.Combine(
-                        Path.GetTempPath(), Path.GetRandomFileName());
+                    string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-                    using (var db = new Persistence.RocksDbStore(blockchainPath))
+                    if (Directory.Exists(checkpointTempPath))
+                    {
+                        Directory.Delete(checkpointTempPath, true);
+                    }
+
+                    using (var db = new Persistence.RocksDbStore(blockchainAccount.GetBlockchainPath()))
                     {
                         db.CheckPoint(checkpointTempPath);
+                        File.WriteAllText(Path.Combine(checkpointTempPath, ADDRESS_FILENAME), blockchainAccount.Address);
                         ZipFile.CreateFromDirectory(checkpointTempPath, filename);
                         console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");
                     }

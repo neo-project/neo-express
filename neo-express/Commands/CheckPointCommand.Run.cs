@@ -26,12 +26,7 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var filename = Name + ".neo-express";
-
-                    if (!File.Exists(filename))
-                    {
-                        throw new Exception($"Checkpoint {Name} couldn't be found");
-                    }
+                    var filename = ValidateCheckpointFileName(Name);
 
                     var devChain = DevChain.Initialize(Input, SecondsPerBlock);
 
@@ -40,15 +35,16 @@ namespace Neo.Express.Commands
                         throw new Exception("Checkpoint run is only supported on single node express instances");
                     }
 
-                    string checkpointTempPath = Path.Combine(
-                        Path.GetTempPath(), 
-                        $"neo-express-" + Path.GetRandomFileName());
+                    var consensusNode = devChain.ConsensusNodes[0];
+                    ValidateCheckpointAddress(filename, consensusNode);
 
+                    string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
 
-                    var cts = RunCommand.Run(new CheckpointStore(checkpointTempPath), devChain.ConsensusNodes[0], console);
+                    var cts = RunCommand.Run(new CheckpointStore(checkpointTempPath), consensusNode, console);
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
                     cts.Token.WaitHandle.WaitOne();
+
                     return 0;
                 }
                 catch (Exception ex)

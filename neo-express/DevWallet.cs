@@ -74,7 +74,7 @@ namespace Neo.Express
             return string.Compare(Name, name, true) == 0;
         }
 
-        public DevWalletAccount DefaultAccount => accounts.Values.Single(a => a.IsDefault);
+        public DevWalletAccount DefaultAccount => accounts.Values.SingleOrDefault(a => a.IsDefault);
 
         public override string Name => name;
 

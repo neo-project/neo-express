@@ -14,7 +14,7 @@ namespace Neo.Express
         public DevWalletAccount(KeyPair key, Contract contract, UInt160 scriptHash) : base(scriptHash)
         {
             this.key = key;
-            this.Contract = contract;
+            Contract = contract;
         }
 
         public override bool HasKey => key != null;

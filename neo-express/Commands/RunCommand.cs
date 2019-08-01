@@ -94,7 +94,7 @@ namespace Neo.Express.Commands
                 }
 
                 var consensusNode = devChain.ConsensusNodes[NodeIndex];
-                var blockchainPath = consensusNode.BlockchainPath;
+                var blockchainPath = consensusNode.GetBlockchainPath();
 
                 if (Reset && Directory.Exists(blockchainPath))
                 {

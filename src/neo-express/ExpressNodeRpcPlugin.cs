@@ -21,17 +21,6 @@ namespace Neo.Express
         {
         }
 
-        private static UInt256 GetAssetId(string asset)
-        {
-            if (string.Compare("neo", asset, true) == 0)
-                return Blockchain.GoverningToken.Hash;
-
-            if (string.Compare("gas", asset, true) == 0)
-                return Blockchain.UtilityToken.Hash;
-
-            return UInt256.Parse(asset);
-        }
-
         private static JObject ToJson(ContractParametersContext context)
         {
             var json = new JObject();
@@ -69,6 +58,17 @@ namespace Neo.Express
 
         private JObject OnTransfer(JArray @params)
         {
+            UInt256 GetAssetId(string asset)
+            {
+                if (string.Compare("neo", asset, true) == 0)
+                    return Blockchain.GoverningToken.Hash;
+
+                if (string.Compare("gas", asset, true) == 0)
+                    return Blockchain.UtilityToken.Hash;
+
+                return UInt256.Parse(asset);
+            }
+
             var assetId = GetAssetId(@params[0].AsString());
             var assetDescriptor = new AssetDescriptor(assetId);
             var quantity = BigDecimal.Parse(@params[1].AsString(), assetDescriptor.Decimals).ToFixed8();
@@ -129,6 +129,14 @@ namespace Neo.Express
 
         private JObject OnClaim(JArray @params)
         {
+            UInt256 GetAssetId(string asset)
+            {
+                if (string.Compare("gas", asset, true) == 0)
+                    return Blockchain.GoverningToken.Hash;
+
+                return UInt256.Parse(asset);
+            }
+
             var assetId = GetAssetId(@params[0].AsString());
             var address = @params[1].AsString().ToScriptHash();
 

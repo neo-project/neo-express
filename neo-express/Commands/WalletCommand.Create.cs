@@ -45,15 +45,18 @@ namespace Neo.Express.Commands
                     var account = wallet.CreateAccount();
                     account.IsDefault = true;
 
-                    console.WriteLine($"{Name}\n\t{account.Address}");
                     devChain.Wallets.Add(wallet);
-
                     devChain.Save(filename);
+
+                    console.WriteLine($"{Name}\n\t{account.Address}");
+                    console.WriteWarning("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
+                    console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    console.WriteLine(ex.Message);
+                    console.WriteError(ex.Message);
                     app.ShowHelp();
                     return 1;
                 }

@@ -9,7 +9,7 @@ namespace Neo.Express.Commands
     {
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
-            console.WriteLine("You must specify at a subcommand.");
+            console.WriteError("You must specify at a subcommand.");
             app.ShowHelp();
             return 1;
         }

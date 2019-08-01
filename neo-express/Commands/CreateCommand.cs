@@ -84,13 +84,13 @@ namespace Neo.Express.Commands
                 chain.Save(output);
 
                 console.WriteLine($"Created {nodeCount} node privatenet at {output}");
-                console.WriteLine("    Note: The private keys for the accounts in this file are stored in the clear.");
-                console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");
+                console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
                 return 0;
             }
             catch (Exception ex)
             {
-                console.WriteLine(ex.Message);
+                console.WriteError(ex.Message);
                 app.ShowHelp();
                 return 1;
             }

@@ -113,7 +113,7 @@ namespace Neo.Express.Commands
             }
             catch (Exception ex)
             {
-                console.WriteLine(ex.Message);
+                console.WriteError(ex.Message);
                 app.ShowHelp();
                 return 1;
             }

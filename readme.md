@@ -105,3 +105,4 @@ You can invoke the tool using the following command: neo-express
 Tool 'neo-express' (version '0.5.0-preview-20190801.3') was successfully installed.
 ```
 
+> Installing on Ubuntu 18.04 requires libsnappy-dev and libc6-dev

@@ -24,6 +24,38 @@ Docs are somewhat limited at this point. Please review the
 [Command Reference](docs\command-reference.md) to get an understanding of
 NEO-Express capabilities.
 
+## A Message from the Engineer
+
+Thanks for checking out NEO-Express! I am eager to hear your opinion of the product.
+
+If you like NEO-Express, please let me know on [Twitter](https://twitter.com/devhawk),
+[email](mailto:devhawk@outlook.com) or the [NEO Discord server](https://discord.gg/G5WEPwC).
+
+If there are things about NEO-Express you don't like, please file issues in our
+[GitHub repo](https://github.com/ngdseattle/neo-express). You can hit me up on
+Twitter, Discord or email as well, but GitHub issues are how we track improvements
+we make to NEO-Express. So don't be shy - file an issue if there is anything
+you'd like to see changed in the product.
+
+Before you get started, I'd just like to point out again that NEO-Express is
+currently in preview. That means that you are more likely to find bugs or run
+across incomplete features than you would in other software. Furthermore, NEO-Express
+may not work in a way that you find intuitive.
+
+Most software is built by teams of people. However, NEO-Express so far has been
+a solo effort. I'm looking forward to having other folks contribute in the future,
+but so far it's just been me. That means that NEO-Express has been designed around
+my experiences and my perspective. I can't help it, my perspective is the only
+one I have! :) So while I find NEO-Express intuitive, I realize that you may not
+feel the same. Please let me know if this is the case! I didn't build NEO-Express
+for me, I built it for the NEO developer community at large. So if there are
+changes we can make to make NEO-Express more accessible, intuitive, easier to
+use or just flat-out better - I want to hear about them.
+
+Thanks again for checking out NEO-Express. I look forward to hearing from you.
+
+\- Harry Pierson (aka [DevHawk](http://devhawk.net)), Chief Architect NGD Seattle
+
 ## Installation
 
 NEO-Express is distributed as a

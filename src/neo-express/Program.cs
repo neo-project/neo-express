@@ -2,6 +2,7 @@
 using Neo.Express.Commands;
 using System;
 using System.IO;
+using System.Reflection;
 
 namespace Neo.Express
 {
@@ -32,8 +33,19 @@ namespace Neo.Express
             }
         }
 
+        [Option]
+        private bool Version { get; }
+
+
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
+            if (Version)
+            {
+                var versionAttribute = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                console.WriteLine(versionAttribute == null ? "unknown version" : versionAttribute.InformationalVersion);
+                return 0;
+            }
+
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp();
             return 1;

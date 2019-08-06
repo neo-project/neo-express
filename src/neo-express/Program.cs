@@ -22,7 +22,15 @@ namespace Neo.Express
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "NEO-Express", "blockchain-nodes");
 
-        private static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
+        private static int Main(string[] args)
+        {
+            using (var app = new CommandLineApplication<Program>())
+            {
+                app.Conventions.UseDefaultConventions();
+                app.UsePagerForHelpText = false;
+                return app.Execute(args);
+            }
+        }
 
         private int OnExecute(CommandLineApplication app, IConsole console)
         {

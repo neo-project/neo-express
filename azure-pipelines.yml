@@ -16,9 +16,11 @@ steps:
     arguments: './src/neo-express/neo-express.csproj --version-suffix preview-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
 
 - publish: '$(Build.ArtifactStagingDirectory)'
+  displayName: 'publish build artifact'
   name: nugetPackage
 
 - task: NuGetCommand@2
+  displayName: 'NuGet push to private feed'
   inputs:
     command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'

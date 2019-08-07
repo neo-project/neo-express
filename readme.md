@@ -60,22 +60,34 @@ Thanks again for checking out NEO-Express. I look forward to hearing from you.
 
 NEO-Express is distributed as a
 [.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
-Global Tools require at least .NET Core 2.1 installed. If you don't have .NET
-Core 2.1 or later installed, you can install it from [the .NET website](https://dotnet.microsoft.com/).
+Global Tools require at least .NET Core 2.2 installed. If you don't have .NET
+Core 2.2 or later installed, you can install it from [the .NET website](https://dotnet.microsoft.com/).
 
-> Note, we need to decide on a distribution channel before completing the install section
+> Note, NEO-Express intends to snap to Long Term Support (LTS) releases of .NET Core.
+> However, the current LTS release of .NET Core (v2.1), can't run neo.dll on the
+> Windows Subsystem for Linux due to a [bug](https://github.com/dotnet/corefx/issues/26476).
+> Because of this bug, NEO-Express is built against .NET Core 2.2.
+>
+> As per the .NET Core [support policy](https://github.com/dotnet/core/blob/master/microsoft-support.md#current-releases)
+> and [road map](https://github.com/dotnet/core/blob/3604c1ca961b61cb32d293056c77b40230f98a67/roadmap.md#upcoming-ship-dates),
+> .NET Core v2.2 support is scheduled to end in December 2019. NEO-Express will move
+> to the next LTS version of .NET Core - scheduled to be v3.1 in November 2019 -
+> as soon as it is available.  
 
-
-Eventually, NEO-Express will be distributed on nuget.org
-
-To install NEO-Express, open a command windows 
+To install NEO-Express, open a terminal window and enter the following command:
 
 ``` shell
-dotnet tool install neo-express -g --add-source https://sleettest.blob.core.windows.net/myfeed2/index.json
-
-
---version <insert version number here>
+dotnet tool install neo-express -g
 ```
+
+> Installing on Ubuntu 18.04 requires libsnappy-dev and libc6-dev
+
+### Install a CI Build
+
+> Note, this section is not complete.
+
+In addition to releases published on nuget.org, NEO-Express publishs
+
 
 Because NEO-Express is currently in preview, you need to specify the version you
 wish to install manually. If you attempt to install neo-express without specifying
@@ -104,5 +116,3 @@ $> dotnet tool install neo-express -g --version 0.5.0-preview-20190801.3
 You can invoke the tool using the following command: neo-express
 Tool 'neo-express' (version '0.5.0-preview-20190801.3') was successfully installed.
 ```
-
-> Installing on Ubuntu 18.04 requires libsnappy-dev and libc6-dev

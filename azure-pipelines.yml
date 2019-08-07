@@ -19,11 +19,8 @@ steps:
     custom: pack
     arguments: '--version-suffix preview-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
 
-- task: PublishBuildArtifacts@1
-  displayName: 'publish build artifacts'
-  inputs:
-    pathToPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: 'nuget package'
+- publish: '$(Build.ArtifactStagingDirectory)'
+  name: nugetPackage
 
 - task: NuGetCommand@2
   inputs:

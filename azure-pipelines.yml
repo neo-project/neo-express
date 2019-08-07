@@ -8,19 +8,12 @@ steps:
 - checkout: self
   submodules: true
   
-# - task: DotNetCoreCLI@2
-#   displayName: 'dotnet restore'
-#   inputs:
-#     command: 'restore'
-#     feedsToUse: 'select'
-#     vstsFeed: 'e4a31b7b-a6f8-4d1e-92d1-92d68bffefe3'
-
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'
   inputs:
     command: 'custom'
     custom: pack
-    arguments: '--version-suffix preview-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
+    arguments: './src/neo-express/neo-express.csproj --version-suffix preview-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
 
 - publish: '$(Build.ArtifactStagingDirectory)'
   name: nugetPackage

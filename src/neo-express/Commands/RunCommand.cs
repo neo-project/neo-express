@@ -15,8 +15,7 @@ namespace Neo.Express.Commands
     internal class RunCommand
     {
         [Argument(0)]
-        [Required]
-        private int NodeIndex { get; }
+        private int? NodeIndex { get; }
 
         [Option]
         private string Input { get; }
@@ -88,12 +87,19 @@ namespace Neo.Express.Commands
             try
             {
                 var devChain = DevChain.Initialize(Input, SecondsPerBlock);
-                if (NodeIndex >= devChain.ConsensusNodes.Count || NodeIndex < 0)
+                var nodeIndex = NodeIndex.GetValueOrDefault();
+
+                if (!NodeIndex.HasValue && devChain.ConsensusNodes.Count > 1)
+                {
+                    throw new Exception("Node index not specified");
+                }
+
+                if (nodeIndex >= devChain.ConsensusNodes.Count || nodeIndex < 0)
                 {
                     throw new Exception("Invalid node index");
                 }
 
-                var consensusNode = devChain.ConsensusNodes[NodeIndex];
+                var consensusNode = devChain.ConsensusNodes[nodeIndex];
                 var blockchainPath = consensusNode.GetBlockchainPath();
 
                 if (Reset && Directory.Exists(blockchainPath))

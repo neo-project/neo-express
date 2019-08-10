@@ -13,7 +13,7 @@ namespace Neo.Express.Commands
     [Subcommand(typeof(Create), typeof(Restore), typeof(Run))]
     internal partial class CheckPointCommand
     {
-        private const string CHECKPOINT_EXTENSION = ".neoexpress-checkpoint";
+        private const string CHECKPOINT_EXTENSION = ".neo-express-checkpoint";
         private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
 
         private int OnExecute(CommandLineApplication app, IConsole console)

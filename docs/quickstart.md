@@ -127,7 +127,7 @@ NEO-Express blockchain with the `create` command.
 
 ``` shell
 $ neo-express create
-Created 1 node privatenet at /home/harry/Source/HelloWorld/neo-express.config.json
+Created 1 node privatenet at /home/harry/Source/HelloWorld/default.neo-express.json
     Note: The private keys for the accounts in this file are are *not* encrypted.
           Do not use these accounts on MainNet or in any other system where security is a concern.
 ```
@@ -140,7 +140,7 @@ of NEO-Express only work on a single node blockchain. You can create a four or
 seven node blockchain with the --count option.
 
 NEO-Express stores all the information about the blockchain instance in the
-neo-express.config.json file. If you look in this file right now, you'll see
+default.neo-express.json file. If you look in this file right now, you'll see
 information about the single consensus node for this blockchain as well testWallet
 account we created.
 

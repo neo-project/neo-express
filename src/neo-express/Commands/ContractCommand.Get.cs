@@ -20,7 +20,6 @@ namespace Neo.Express.Commands
             [Option]
             private string Input { get; }
 
-
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try

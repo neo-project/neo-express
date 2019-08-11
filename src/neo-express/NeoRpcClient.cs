@@ -92,10 +92,15 @@ namespace Neo.Express
                 address?.ToAddress()));
         }
 
-
         public static Task<JToken> GetContractState(Uri uri, UInt160 scriptHash)
         {
             return RpcCall(uri, "getcontractstate", new JArray(scriptHash.ToString()));
         }
+
+        public static Task<JToken> ExpressGetContractStorage(Uri uri, UInt160 scriptHash)
+        {
+            return RpcCall(uri, "express-get-contract-storage", new JArray(scriptHash.ToString()));
+        }
+
     }
 }

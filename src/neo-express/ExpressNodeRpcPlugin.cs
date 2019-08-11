@@ -226,6 +226,29 @@ namespace Neo.Express
             }
         }
 
+        public JObject OnGetContractStorage(JArray @params)
+        {
+            var scriptHash = UInt160.Parse(@params[0].AsString());
+
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
+            {
+                var storages = new JArray();
+                foreach (var kvp in snapshot.Storages.Find())
+                {
+                    if (kvp.Key.ScriptHash == scriptHash)
+                    {
+                        var storage = new JObject();
+                        storage["key"] = kvp.Key.Key.ToHexString();
+                        storage["value"] = kvp.Value.Value.ToHexString();
+                        storage["constant"] = kvp.Value.IsConstant;
+                        storages.Add(storage);
+                    }
+                }
+
+                return storages;
+            }
+        }
+
         public JObject OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
@@ -244,6 +267,8 @@ namespace Neo.Express
                     return OnDeployContract(@params);
                 case "express-invoke-contract":
                     return OnInvokeContract(@params);
+                case "express-get-contract-storage":
+                    return OnGetContractStorage(@params);
             }
 
             return null;

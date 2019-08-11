@@ -157,7 +157,7 @@ namespace Neo.Express
         }
 
         public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
-               ? Path.Combine(Directory.GetCurrentDirectory(), "neo-express.config.json")
+               ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
                : filename;
 
         public static (JObject json, string filename) LoadJson(string filename)

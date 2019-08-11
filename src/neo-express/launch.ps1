@@ -2,7 +2,7 @@ param([int]$secondsPerBlock = 1, [switch]$debug, [switch]$reset, [string]$checkp
 
 dotnet publish
 
-$expressDllPath = '.\bin\Debug\netcoreapp2.1\publish\neo-express.dll'
+$expressDllPath = '.\bin\Debug\netcoreapp2.2\publish\neo-express.dll'
 
 function launch($index) {
 	$resetArg = if ($reset) { "--reset" } else { "" }
@@ -10,7 +10,7 @@ function launch($index) {
 }
 
 if ([string]::IsNullOrEmpty($checkpoint)) {
-	$privatenet = Get-Content .\express.privatenet.json | convertfrom-json
+	$privatenet = Get-Content .\default.neo-express.json | convertfrom-json
 	$lastNodeIndex = $privatenet.'consensus-nodes'.Count - 1
 	$nodes = if ($debug) { 1..$lastNodeIndex } else { 0..$lastNodeIndex }
 	$nodes | ForEach-Object { launch $_ }

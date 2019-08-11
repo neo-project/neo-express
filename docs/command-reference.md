@@ -206,6 +206,13 @@ The `contract deploy` command deploys an imported contract to a running NEO-Expr
 blockchain. This command takes two arguments: the contract to deploy and the wallet
 friendly name that will pay the GAS deployment cost.
 
+### neo-express contract storage
+
+The `contract storage` dumps all the key/value pairs stored in the blockchain for
+this contract. This command takes a single argument: the contract to dump storage
+records for. For each key/value pair, the command shows both the key and the value
+as both a hex-encoded byte array as well as a UTF-8 encoded string.
+
 ### neo-express contract invoke
 
 The `contract invoke` command invokes a deployed contract in a running NEO-Express

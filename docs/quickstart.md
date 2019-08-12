@@ -31,22 +31,22 @@ and change to the folder the packages were downloaded to. Execute the
 following commands to install them:
 
 ``` shell
-dotnet new -i Neo.Contract.Templates.0.1.0.nupkg
+dotnet new -i Neo.Contract.Templates.0.9.0.nupkg
 dotnet tool install -g neo-debug-adapter --add-source .
 dotnet tool install -g neo-express --add-source .
 dotnet tool install -g neon-de --add-source .
-code --install-extension ./neo-contract-debug-0.1.0.vsix  
+code --install-extension ./neo-contract-debug-0.5.0.vsix  
 ```
 
 If this is the first time you've used [.NET Core global tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools),
 you will need to shutdown your terminal windows and reopen it.
 You may need to log out completely and log back in again. Make sure
 your path is correctly set up by running `neo-express --version`.
-It should echo back the version number (0.1.0 for this preview release).
+It should echo back the version number (0.9.0 for this preview release).
 
 ``` shell
 $ neo-express --version
-0.1.0
+0.9.0
 ```
 
 ## Create a new Smart Contract

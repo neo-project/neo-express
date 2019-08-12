@@ -24,93 +24,12 @@ namespace Neo.Express.Commands
         [Option]
         private bool Reset { get; }
 
-        private class LogPlugin : Plugin, ILogPlugin
-        {
-            private readonly IConsole console;
-
-            public LogPlugin(IConsole console)
-            {
-                this.console = console;
-            }
-
-            public override void Configure()
-            {
-            }
-
-            void ILogPlugin.Log(string source, LogLevel level, string message)
-            {
-                console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
-            }
-        }
-
-        public static CancellationTokenSource Run(Neo.Persistence.Store store, DevConsensusNode consensusNode, IConsole console)
-        {
-            var cts = new CancellationTokenSource();
-
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {
-                    using (var system = new NeoSystem(store))
-                    {
-                        var logPlugin = new LogPlugin(console);
-                        var rpcPlugin = new ExpressNodeRpcPlugin();
-
-                        system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
-                        system.StartConsensus(consensusNode.Wallet);
-                        system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
-
-                        cts.Token.WaitHandle.WaitOne();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    console.WriteLine(ex);
-                    cts.Cancel();
-                }
-                finally
-                {
-                    if (store is IDisposable disp)
-                    {
-                        disp.Dispose();
-                    }
-                }
-            });
-
-            return cts;
-        }
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
-                var devChain = DevChain.Initialize(Input, SecondsPerBlock);
-                var nodeIndex = NodeIndex.GetValueOrDefault();
-
-                if (!NodeIndex.HasValue && devChain.ConsensusNodes.Count > 1)
-                {
-                    throw new Exception("Node index not specified");
-                }
-
-                if (nodeIndex >= devChain.ConsensusNodes.Count || nodeIndex < 0)
-                {
-                    throw new Exception("Invalid node index");
-                }
-
-                var consensusNode = devChain.ConsensusNodes[nodeIndex];
-                var blockchainPath = consensusNode.GetBlockchainPath();
-
-                if (Reset && Directory.Exists(blockchainPath))
-                {
-                    Directory.Delete(blockchainPath, true);
-                }
-
-                if (!Directory.Exists(blockchainPath))
-                {
-                    Directory.CreateDirectory(blockchainPath);
-                }
-
-                var cts = Run(new RocksDbStore(blockchainPath), consensusNode, console);
+                var backend = Program.GetBackend();
+                var cts = backend.RunBlockchain(Input, Program.ROOT_PATH, NodeIndex, SecondsPerBlock, Reset, s => console.WriteLine(s));
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
                 cts.Token.WaitHandle.WaitOne();
                 return 0;

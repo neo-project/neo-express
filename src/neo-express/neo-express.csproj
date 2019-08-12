@@ -30,7 +30,6 @@
     <Compile Remove="Commands\ContractCommand.List.cs" />
     <Compile Remove="Commands\ContractCommand.Storage.cs" />
     <Compile Remove="Commands\ExportCommand.cs" />
-    <Compile Remove="Commands\RunCommand.cs" />
     <Compile Remove="Commands\ShowCommand.cs" />
     <Compile Remove="Commands\TransferCommand.cs" />
     <Compile Remove="Commands\WalletCommand.Create.cs" />

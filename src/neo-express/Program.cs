@@ -11,8 +11,8 @@ namespace Neo.Express
         //typeof(CheckPointCommand),
         //typeof(ClaimCommand),
         //typeof(ContractCommand),
-        typeof(CreateCommand)
-        //typeof(RunCommand),
+        typeof(CreateCommand),
+        typeof(RunCommand)
         //typeof(ExportCommand),
         //typeof(ShowCommand),
         //typeof(TransferCommand),

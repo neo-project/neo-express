@@ -1,8 +1,15 @@
 ﻿using Neo.Express.Abstractions;
+using Neo.Express.Backend2.Persistence;
+using Neo.Persistence;
+using Neo.Plugins;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo.Express.Backend2
 {
@@ -45,6 +52,93 @@ namespace Neo.Express.Backend2
             }));
 
             chain.Save(filename);
+        }
+
+        private class LogPlugin : Plugin, ILogPlugin
+        {
+            private readonly Action<string> consoleWrite;
+
+            public LogPlugin(Action<string> consoleWrite)
+            {
+                this.consoleWrite = consoleWrite;
+            }
+
+            public override void Configure()
+            {
+            }
+
+            void ILogPlugin.Log(string source, LogLevel level, string message)
+            {
+                Console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
+            }
+        }
+
+        private static CancellationTokenSource Run(Store store, DevConsensusNode consensusNode, Action<string> consoleWrite)
+        {
+            var cts = new CancellationTokenSource();
+
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    using (var system = new NeoSystem(store))
+                    {
+                        var logPlugin = new LogPlugin(consoleWrite);
+                        var rpcPlugin = new ExpressNodeRpcPlugin();
+
+                        system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
+                        system.StartConsensus(consensusNode.Wallet);
+                        system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
+
+                        cts.Token.WaitHandle.WaitOne();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    consoleWrite(ex.ToString());
+                    cts.Cancel();
+                }
+                finally
+                {
+                    if (store is IDisposable disp)
+                    {
+                        disp.Dispose();
+                    }
+                }
+            });
+
+            return cts;
+        }
+
+        public CancellationTokenSource RunBlockchain(string filename, string storeFolder, int? index, uint secondsPerBlock, bool reset, Action<string> consoleWrite)
+        {
+            var devChain = DevChain.Initialize(filename, secondsPerBlock);
+
+            if (!index.HasValue && devChain.ConsensusNodes.Count > 1)
+            {
+                throw new Exception("Node index not specified");
+            }
+
+            var _index = index ?? 0;
+            if (_index >= devChain.ConsensusNodes.Count || _index < 0)
+            {
+                throw new Exception("Invalid node index");
+            }
+
+            var consensusNode = devChain.ConsensusNodes[_index];
+            var blockchainPath = Path.Combine(storeFolder, consensusNode.Wallet.DefaultAccount.Address);
+
+            if (reset && Directory.Exists(blockchainPath))
+            {
+                Directory.Delete(blockchainPath, true);
+            }
+
+            if (!Directory.Exists(blockchainPath))
+            {
+                Directory.CreateDirectory(blockchainPath);
+            }
+
+            return Run(new RocksDbStore(blockchainPath), consensusNode, consoleWrite);
         }
     }
 }

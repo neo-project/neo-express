@@ -4,6 +4,18 @@ variables:
 pool:
   vmImage: 'windows-2019'
 
+trigger:
+  batch: false
+  branches:
+    include:
+      - master
+    paths:
+      include:
+      - '/'
+      exclude:
+      - 'readme.md'
+      - 'docs/'
+
 steps:
 - checkout: self
   submodules: true

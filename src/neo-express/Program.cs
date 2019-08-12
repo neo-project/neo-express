@@ -1,5 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.Express.Commands;
+//using Neo.Express.Commands;
 using System;
 using System.IO;
 using System.Reflection;
@@ -8,15 +8,16 @@ namespace Neo.Express
 {
     [Command("neo-express")]
     [Subcommand(
-        typeof(CheckPointCommand),
-        typeof(ClaimCommand),
-        typeof(ContractCommand),
-        typeof(CreateCommand),
-        typeof(RunCommand),
-        typeof(ExportCommand),
-        typeof(ShowCommand),
-        typeof(TransferCommand),
-        typeof(WalletCommand))]
+        //typeof(CheckPointCommand),
+        //typeof(ClaimCommand),
+        //typeof(ContractCommand),
+        //typeof(CreateCommand),
+        //typeof(RunCommand),
+        //typeof(ExportCommand),
+        //typeof(ShowCommand),
+        //typeof(TransferCommand),
+        //typeof(WalletCommand)
+        )]
     internal class Program
     {
         public static string ROOT_PATH => Path.Combine(

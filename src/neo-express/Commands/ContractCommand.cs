@@ -1,5 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using System.Text;
 
 namespace Neo.Express.Commands
 {

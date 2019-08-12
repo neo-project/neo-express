@@ -1,11 +1,9 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.SmartContract;
+﻿using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Neo.Express.Backend2
 {
@@ -40,30 +38,6 @@ namespace Neo.Express.Backend2
 
                 yield return Sign(account, data);
             }
-        }
-
-        static void WriteMessage(IConsole console, string message, ConsoleColor color)
-        {
-            var currentColor = console.ForegroundColor;
-            try
-            {
-                console.ForegroundColor = color;
-                console.WriteLine(message);
-            }
-            finally
-            {
-                console.ForegroundColor = currentColor;
-            }
-        }
-
-        public static void WriteError(this IConsole console, string message)
-        {
-            WriteMessage(console, message, ConsoleColor.Red);
-        }
-
-        public static void WriteWarning(this IConsole console, string message)
-        {
-            WriteMessage(console, message, ConsoleColor.Yellow);
         }
     }
 }

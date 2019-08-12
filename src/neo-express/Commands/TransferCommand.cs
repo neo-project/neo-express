@@ -2,11 +2,8 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo.Cryptography;
-using Neo.SmartContract;
 using Neo.Wallets;
 using System.Collections.Generic;
 

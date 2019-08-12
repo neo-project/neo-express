@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Neo.Express.Commands

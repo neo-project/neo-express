@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations;
 using System;
 using System.IO;
 using System.IO.Compression;
-using Neo.Express.Persistence;
 
 namespace Neo.Express.Commands
 {

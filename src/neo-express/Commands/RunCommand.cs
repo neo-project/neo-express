@@ -6,8 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
-using Neo.Express.Persistence;
-using System.ComponentModel.DataAnnotations;
 
 namespace Neo.Express.Commands
 {

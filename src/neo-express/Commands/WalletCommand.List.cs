@@ -1,6 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
-using System.IO;
 
 namespace Neo.Express.Commands
 {

@@ -4,8 +4,6 @@ using Neo.Ledger;
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Text;
 
 namespace Neo.Express.Backend2.Persistence
 {

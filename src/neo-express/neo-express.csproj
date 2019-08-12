@@ -17,14 +17,36 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="OneOf" Version="2.1.150" />
-    <PackageReference Include="RocksDbNative" Version="5.17.2" />
-    <PackageReference Include="RocksDbSharp" Version="5.17.2" />
+    <Compile Remove="Commands\CheckPointCommand.Create.cs" />
+    <Compile Remove="Commands\CheckPointCommand.cs" />
+    <Compile Remove="Commands\CheckPointCommand.Restore.cs" />
+    <Compile Remove="Commands\CheckPointCommand.Run.cs" />
+    <Compile Remove="Commands\ClaimCommand.cs" />
+    <Compile Remove="Commands\ContractCommand.cs" />
+    <Compile Remove="Commands\ContractCommand.Deploy.cs" />
+    <Compile Remove="Commands\ContractCommand.Get.cs" />
+    <Compile Remove="Commands\ContractCommand.Import.cs" />
+    <Compile Remove="Commands\ContractCommand.Invoke.cs" />
+    <Compile Remove="Commands\ContractCommand.List.cs" />
+    <Compile Remove="Commands\ContractCommand.Storage.cs" />
+    <Compile Remove="Commands\CreateCommand.cs" />
+    <Compile Remove="Commands\ExportCommand.cs" />
+    <Compile Remove="Commands\RunCommand.cs" />
+    <Compile Remove="Commands\ShowCommand.cs" />
+    <Compile Remove="Commands\TransferCommand.cs" />
+    <Compile Remove="Commands\WalletCommand.Create.cs" />
+    <Compile Remove="Commands\WalletCommand.cs" />
+    <Compile Remove="Commands\WalletCommand.Delete.cs" />
+    <Compile Remove="Commands\WalletCommand.Export.cs" />
+    <Compile Remove="Commands\WalletCommand.List.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\deps\neo\neo\neo.csproj" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Commands\" />
   </ItemGroup>
 </Project>

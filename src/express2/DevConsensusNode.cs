@@ -1,7 +1,6 @@
 ﻿using Neo.Cryptography.ECC;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Linq;
 
 namespace Neo.Express.Backend2
 {

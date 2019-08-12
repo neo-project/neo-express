@@ -9,6 +9,7 @@ trigger:
   branches:
     include:
       - master
+      - development
   paths:
     include:
     - '*'
@@ -20,12 +21,24 @@ steps:
 - checkout: self
   submodules: true
   
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      $suffix = if ([string]::Equals($env:BUILD_SOURCEBRANCHNAME, "master", [System.StringComparison]::OrdinalIgnoreCase)) {
+        "preview"
+      } else {
+        $env:BUILD_SOURCEBRANCHNAME.ToLower()
+      }
+      Write-Host "##vso[task.setvariable variable=versionSuffix;]$suffix"
+    pwsh: true
+
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'
   inputs:
     command: 'custom'
     custom: pack
-    arguments: './src/neo-express/neo-express.csproj --version-suffix preview-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
+    arguments: './src/neo-express/neo-express.csproj --version-suffix $(versionSuffix)-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
 
 - publish: '$(Build.ArtifactStagingDirectory)'
   displayName: 'publish build artifact'

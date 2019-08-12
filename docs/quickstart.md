@@ -31,11 +31,11 @@ and change to the folder the packages were downloaded to. Execute the
 following commands to install them:
 
 ``` shell
-dotnet new -i Neo.Contract.Templates.0.8.0.nupkg
+dotnet new -i Neo.Contract.Templates.0.1.0.nupkg
 dotnet tool install -g neo-debug-adapter --add-source .
 dotnet tool install -g neo-express --add-source .
 dotnet tool install -g neon-de --add-source .
-code --install-extension ./neo-contract-debug-0.5.0.vsix  
+code --install-extension ./neo-contract-debug-0.1.0.vsix  
 ```
 
 If this is the first time you've used [.NET Core global tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools),

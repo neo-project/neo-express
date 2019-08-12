@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.Express.Backend2;
 
 namespace Neo.Express.Commands
 {
@@ -39,6 +40,7 @@ namespace Neo.Express.Commands
         private bool Force { get; }
 
         [Option]
+        [Range(49152, ushort.MaxValue)]
         private ushort Port { get; }
 
         private int OnExecute(CommandLineApplication app, IConsole console)
@@ -51,39 +53,13 @@ namespace Neo.Express.Commands
                     throw new Exception("You must specify --force to overwrite an existing file");
                 }
 
-                var nodeCount = (Count == 0 ? 1 : Count);
-                //var wallets = new List<(DevWallet wallet, Wallets.WalletAccount account)>();
+                var count = (Count == 0 ? 1 : Count);
+                var port = Port == 0 ? (ushort)49152 : Port;
 
-                //for (int i = 1; i <= nodeCount; i++)
-                //{
-                //    var wallet = new DevWallet($"node{i}");
-                //    var account = wallet.CreateAccount();
-                //    account.IsDefault = true;
-                //    wallets.Add((wallet, account));
-                //}
+                var backend = Program.GetBackend();
+                backend.CreateBlockchain(output, count, port);
 
-                //var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
-
-                //var contract = Neo.SmartContract.Contract.CreateMultiSigContract(keys.Length * 2 / 3 + 1, keys);
-
-                //foreach (var (wallet, account) in wallets)
-                //{
-                //    var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-                //    multiSigContractAccount.Label = "MultiSigContract";
-                //}
-
-                //var port = Port == 0 ? (ushort)49152 : Port;
-                //var chain = new DevChain(wallets.Select(t => new DevConsensusNode()
-                //{
-                //    Wallet = t.wallet,
-                //    TcpPort = port++,
-                //    WebSocketPort = port++,
-                //    RpcPort = port++
-                //}));
-
-                //chain.Save(output);
-
-                console.WriteLine($"Created {nodeCount} node privatenet at {output}");
+                console.WriteLine($"Created {count} node privatenet at {output}");
                 console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");
                 console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
                 return 0;

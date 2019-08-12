@@ -54,5 +54,10 @@ namespace Neo.Express
         public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
            : filename;
+
+        public static Abstractions.INeoBackend GetBackend()
+        {
+            return new Backend2.Neo2Backend();
+        }
     }
 }

@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "neo", "neo", "{05B64FDB-DD5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neo", "deps\neo\neo\neo.csproj", "{41999E37-136B-4D03-93C8-4D7385A6DC92}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A763C5F7-86E5-488D-BECE-3AEC6BA95D46}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "express2", "src\express2\express2.csproj", "{756BCED1-5AB9-496B-AA81-583CA936A86E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +29,10 @@ Global
 		{41999E37-136B-4D03-93C8-4D7385A6DC92}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41999E37-136B-4D03-93C8-4D7385A6DC92}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41999E37-136B-4D03-93C8-4D7385A6DC92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -35,5 +43,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{05B64FDB-DD53-43EE-B148-BAE8E417DAA2} = {ECD5646E-381B-4559-BCCC-218F82462F3C}
 		{41999E37-136B-4D03-93C8-4D7385A6DC92} = {05B64FDB-DD53-43EE-B148-BAE8E417DAA2}
+		{756BCED1-5AB9-496B-AA81-583CA936A86E} = {A763C5F7-86E5-488D-BECE-3AEC6BA95D46}
 	EndGlobalSection
 EndGlobal

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Neo.Express
 {
-    internal class ByteArrayComparer : IEqualityComparer<byte[]>
+    public class ByteArrayComparer : IEqualityComparer<byte[]>
     {
         public bool Equals(byte[] x, byte[] y)
         {

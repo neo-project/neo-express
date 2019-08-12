@@ -1,5 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-//using Neo.Express.Commands;
+using Neo.Express.Commands;
 using System;
 using System.IO;
 using System.Reflection;
@@ -11,7 +11,7 @@ namespace Neo.Express
         //typeof(CheckPointCommand),
         //typeof(ClaimCommand),
         //typeof(ContractCommand),
-        //typeof(CreateCommand),
+        typeof(CreateCommand)
         //typeof(RunCommand),
         //typeof(ExportCommand),
         //typeof(ShowCommand),
@@ -37,7 +37,6 @@ namespace Neo.Express
         [Option]
         private bool Version { get; }
 
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             if (Version)
@@ -51,5 +50,9 @@ namespace Neo.Express
             app.ShowHelp();
             return 1;
         }
+
+        public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
+           ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
+           : filename;
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\deps\neo\neo\neo.csproj" />
-    <ProjectReference Include="..\neo-express\neo-express.csproj" />
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
   </ItemGroup>
 
 </Project>

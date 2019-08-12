@@ -29,7 +29,6 @@
     <Compile Remove="Commands\ContractCommand.Invoke.cs" />
     <Compile Remove="Commands\ContractCommand.List.cs" />
     <Compile Remove="Commands\ContractCommand.Storage.cs" />
-    <Compile Remove="Commands\CreateCommand.cs" />
     <Compile Remove="Commands\ExportCommand.cs" />
     <Compile Remove="Commands\RunCommand.cs" />
     <Compile Remove="Commands\ShowCommand.cs" />
@@ -47,6 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Commands\" />
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
+    <ProjectReference Include="..\express2\express2.csproj" />
   </ItemGroup>
 </Project>

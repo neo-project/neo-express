@@ -9,12 +9,12 @@ trigger:
   branches:
     include:
       - master
-    paths:
-      include:
-      - '/'
-      exclude:
-      - 'readme.md'
-      - 'docs/'
+  paths:
+    include:
+    - '*'
+    exclude:
+    - 'readme.md'
+    - 'docs/*'
 
 steps:
 - checkout: self

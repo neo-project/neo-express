@@ -42,11 +42,11 @@ If this is the first time you've used [.NET Core global tools](https://docs.micr
 you will need to shutdown your terminal windows and reopen it.
 You may need to log out completely and log back in again. Make sure
 your path is correctly set up by running `neo-express --version`.
-It should echo back the version number (0.8.0 as of this writing).
+It should echo back the version number (0.1.0 for this preview release).
 
 ``` shell
 $ neo-express --version
-0.8.0
+0.1.0
 ```
 
 ## Create a new Smart Contract
@@ -141,8 +141,7 @@ seven node blockchain with the --count option.
 
 NEO-Express stores all the information about the blockchain instance in the
 default.neo-express.json file. If you look in this file right now, you'll see
-information about the single consensus node for this blockchain as well testWallet
-account we created.
+information about the single consensus node for this blockchain we created.
 
 Now that you have created the NEO-Express blockchain instance, you can run it.
 Since this is a single-node blockchain, you don't need to specify which node of
@@ -165,6 +164,7 @@ $ neo-express run --seconds-per-block 1
 09:49:42.34 ConsensusService Info send commit
 09:49:42.35 ConsensusService Info relay block: height=2 hash=0x195f354baa79d5cf4f476748fadc82b0fa0ed5e584ec9bd9762e8948a799dbd0 tx=1
 09:49:42.35 ConsensusService Info persist block: height=2 hash=0x195f354baa79d5cf4f476748fadc82b0fa0ed5e584ec9bd9762e8948a799dbd0 tx=1
+...
 ```
 
 You can control the block generation period via the --seconds-per-block option
@@ -241,6 +241,9 @@ Because we transferred all the genesis NEO and the blockchain is creating a new
 block every second, GAS will build up pretty quickly in the testWallet account.
 We can see how much GAS is available with the `show gas` command.
 
+> Note, even at one block every second, it will take a few minutes to build up
+> enough GAS to complete this quickstart. Now is a good time for a coffee break.
+
 ``` shell
 $ neo-express show gas testWallet
 {
@@ -249,9 +252,10 @@ $ neo-express show gas testWallet
 }
 ```
 
-That's plenty of GAS to deploy and invoke our HelloWorld smart contract. However,
-in order to access the GAS, we need to execute another transfer, this time from
-and to the testWallet account.
+Wait until there is over 1000 GAS in the unavailable bucket - that will be plenty
+to experiment with smart contract deployment and invocation. However, in order to
+access the GAS, we need to execute another transfer, this time from and to the
+testWallet account.
 
 ``` shell
 $ neo-express transfer neo 100000000 testWallet testWallet
@@ -367,7 +371,7 @@ $ neo-express contract invoke HelloWorld
 }
 ```
 
-> Note, the Hello World contract has to return value. If it did, we would see
+> Note, the Hello World contract has no return value. If it did, we would see
 > it in the result-stack property.
 
 Invoking a smart contract without specifying a wallet account to pay the invocation

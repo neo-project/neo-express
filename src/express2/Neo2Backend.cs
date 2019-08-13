@@ -1,7 +1,6 @@
 ﻿using Neo.Express.Abstractions;
 using Neo.Express.Backend2.Persistence;
 using Neo.Persistence;
-using Neo.Plugins;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -15,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Neo.Express.Backend2
 {
-    public class Neo2Backend : INeoBackend
+    public partial class Neo2Backend : INeoBackend
     {
         //public static string ROOT_PATH => Path.Combine(
         //    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -82,85 +81,56 @@ namespace Neo.Express.Backend2
             }
         }
 
-        //private class LogPlugin : Plugin, ILogPlugin
-        //{
-        //    private readonly Action<string> consoleWrite;
+        private static CancellationTokenSource Run(Store store, ExpressConsensusNode node, Action<string> writeConsole)
+        {
+            var cts = new CancellationTokenSource();
 
-        //    public LogPlugin(Action<string> consoleWrite)
-        //    {
-        //        this.consoleWrite = consoleWrite;
-        //    }
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    var wallet = DevWallet.FromExpressWallet(node.Wallet);
+                    using (var system = new NeoSystem(store))
+                    {
+                        var logPlugin = new LogPlugin(writeConsole);
+                        var rpcPlugin = new ExpressNodeRpcPlugin();
 
-        //    public override void Configure()
-        //    {
-        //    }
+                        system.StartNode(node.TcpPort, node.WebSocketPort);
+                        system.StartConsensus(wallet);
+                        system.StartRpc(IPAddress.Any, node.RpcPort, wallet);
 
-        //    void ILogPlugin.Log(string source, LogLevel level, string message)
-        //    {
-        //        Console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
-        //    }
-        //}
+                        cts.Token.WaitHandle.WaitOne();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    writeConsole(ex.ToString());
+                    cts.Cancel();
+                }
+                finally
+                {
+                    if (store is IDisposable disp)
+                    {
+                        disp.Dispose();
+                    }
+                }
+            });
 
-        //private static CancellationTokenSource Run(Store store, DevConsensusNode consensusNode, Action<string> consoleWrite)
-        //{
-        //    var cts = new CancellationTokenSource();
+            return cts;
+        }
 
-        //    Task.Factory.StartNew(() =>
-        //    {
-        //        try
-        //        {
-        //            using (var system = new NeoSystem(store))
-        //            {
-        //                var logPlugin = new LogPlugin(consoleWrite);
-        //                var rpcPlugin = new ExpressNodeRpcPlugin();
+        public CancellationTokenSource RunBlockchain(string folder, ExpressChain chain, int index, uint secondsPerBlock, Action<string> writeConsole)
+        {
+            if (index >= chain.ConsensusNodes.Count || index < 0)
+            {
+                throw new Exception("Invalid node index");
+            }
 
-        //                system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
-        //                system.StartConsensus(consensusNode.Wallet);
-        //                system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
+            chain.InitializeProtocolSettings(secondsPerBlock);
 
-        //                cts.Token.WaitHandle.WaitOne();
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            consoleWrite(ex.ToString());
-        //            cts.Cancel();
-        //        }
-        //        finally
-        //        {
-        //            if (store is IDisposable disp)
-        //            {
-        //                disp.Dispose();
-        //            }
-        //        }
-        //    });
+            var node = chain.ConsensusNodes[index];
 
-        //    return cts;
-        //}
-
-        //public CancellationTokenSource RunBlockchain(JObject json, int index, uint secondsPerBlock, bool reset, Action<string> consoleWrite)
-        //{
-        //    var devChain = DevChain.Initialize(json, secondsPerBlock);
-
-        //    if (index >= devChain.ConsensusNodes.Count || index < 0)
-        //    {
-        //        throw new Exception("Invalid node index");
-        //    }
-
-        //    var consensusNode = devChain.ConsensusNodes[index];
-        //    var blockchainPath = Path.Combine(ROOT_PATH, consensusNode.Wallet.DefaultAccount.Address);
-
-        //    if (reset && Directory.Exists(blockchainPath))
-        //    {
-        //        Directory.Delete(blockchainPath, true);
-        //    }
-
-        //    if (!Directory.Exists(blockchainPath))
-        //    {
-        //        Directory.CreateDirectory(blockchainPath);
-        //    }
-
-        //    return Run(new RocksDbStore(blockchainPath), consensusNode, consoleWrite);
-        //}
+            return Run(new RocksDbStore(folder), node, writeConsole);
+        }
     }
 }

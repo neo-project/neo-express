@@ -34,6 +34,12 @@ namespace Neo.Express.Backend2
                     .ToList(),
         };
 
+        public static DevWallet FromExpressWallet(ExpressWallet wallet)
+        {
+            var accounts = wallet.Accounts.Select(DevWalletAccount.FromExpressWalletAccount);
+            return new DevWallet(wallet.Name, accounts);
+        }
+
         public static DevWallet FromJson(JToken json)
         {
             var name = json.Value<string>("name");

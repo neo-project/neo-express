@@ -28,15 +28,37 @@ namespace Neo.Express.Commands
         {
             try
             {
-                var (json, filename) = Program.LoadExpressChain(Input);
+                var (chain, _) = Program.LoadExpressChain(Input);
+                var index = NodeIndex.GetValueOrDefault();
 
-                if (!NodeIndex.HasValue && json["consensus-nodes"].Count() > 1)
+                if (!NodeIndex.HasValue && chain.ConsensusNodes.Count > 1)
                 {
                     throw new Exception("Node index not specified");
                 }
 
-                var backend = Program.GetBackend();
-                var cts = backend.RunBlockchain(json, NodeIndex ?? 0, SecondsPerBlock, Reset, s => console.WriteLine(s));
+                if (index >= chain.ConsensusNodes.Count || index < 0)
+                {
+                    throw new Exception("Invalid node index");
+                }
+
+                var node = chain.ConsensusNodes[index];
+                var folder = Path.Combine(Program.ROOT_PATH,
+                    node.Wallet.Accounts.Single(a => a.IsDefault).ScriptHash);
+
+                if (Reset && Directory.Exists(folder))
+                {
+                    Directory.Delete(folder, true);
+                }
+
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
+                }
+
+                var cts = Program.GetBackend()
+                    .RunBlockchain(folder, chain, index, SecondsPerBlock,
+                                   s => console.WriteLine(s));
+
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
                 cts.Token.WaitHandle.WaitOne();
                 return 0;

@@ -66,6 +66,25 @@ namespace Neo.Express.Backend2
             writer.WriteEndObject();
         }
 
+        public static DevWalletAccount FromExpressWalletAccount(ExpressWalletAccount account)
+        {
+            var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
+            var contract = new Contract()
+            {
+                Script = account.Contract?.Script.HexToBytes(),
+                ParameterList = account.Contract?.Parameters
+                    .Select(Enum.Parse<ContractParameterType>)
+                    .ToArray()
+            };
+            var scriptHash = account.ScriptHash.ToScriptHash();
+
+            return new DevWalletAccount(keyPair, contract, scriptHash)
+            {
+                Label = account.Label,
+                IsDefault = account.IsDefault
+            };
+        }
+
         public static DevWalletAccount FromJson(JToken json)
         {
             var jsonContract = (JObject)json["contract"];

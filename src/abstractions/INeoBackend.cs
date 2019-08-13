@@ -11,6 +11,6 @@ namespace Neo.Express.Abstractions
     {
         ExpressChain CreateBlockchain(int count, ushort port);
         ExpressWallet CreateWallet(string name);
-        //CancellationTokenSource RunBlockchain(JObject json, int index, uint secondsPerBlock, bool reset, Action<string> consoleWrite);
+        CancellationTokenSource RunBlockchain(string folder, ExpressChain chain, int index, uint secondsPerBlock, Action<string> writeConsole);
     }
 }

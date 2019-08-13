@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 namespace Neo.Express.Commands
 {
@@ -37,16 +38,15 @@ namespace Neo.Express.Commands
                         File.Delete(filename);
                     }
 
-                    var (devChain, _) = DevChain.Load(Input);
+                    var (chain, _) = Program.LoadExpressChain(Input);
 
-                    if (devChain.ConsensusNodes.Count > 1)
+                    if (chain.ConsensusNodes.Count > 1)
                     {
                         throw new Exception("Checkpoint create is only supported on single node express instances");
                     }
 
-                    var consensusNode = devChain.ConsensusNodes[0];
-                    var blockchainAccount = consensusNode.Wallet.DefaultAccount;
-                    var blockchainPath = consensusNode.GetBlockchainPath();
+                    var node = chain.ConsensusNodes[0];
+                    var blockchainPath = node.GetBlockchainPath();
 
                     string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
@@ -55,13 +55,11 @@ namespace Neo.Express.Commands
                         Directory.Delete(checkpointTempPath, true);
                     }
 
-                    using (var db = new Persistence.RocksDbStore(blockchainAccount.GetBlockchainPath()))
-                    {
-                        db.CheckPoint(checkpointTempPath);
-                        File.WriteAllText(Path.Combine(checkpointTempPath, ADDRESS_FILENAME), blockchainAccount.Address);
-                        ZipFile.CreateFromDirectory(checkpointTempPath, filename);
-                        console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");
-                    }
+                    Program.GetBackend()
+                        .CreateCheckpoint(chain, blockchainPath, checkpointTempPath);
+
+                    ZipFile.CreateFromDirectory(checkpointTempPath, filename);
+                    console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");
 
                     Directory.Delete(checkpointTempPath, true);
 

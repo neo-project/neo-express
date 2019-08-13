@@ -94,34 +94,36 @@ namespace Neo.Express
             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => name.Equals(w.Name, StringComparison.InvariantCultureIgnoreCase));
 
-        //public static string GetBlockchainPath(this DevWalletAccount account)
-        //{
-        //    if (account == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(account));
-        //    }
+        public static string GetBlockchainPath(this ExpressWalletAccount account)
+        {
+            if (account == null)
+            {
+                throw new ArgumentNullException(nameof(account));
+            }
 
-        //    return System.IO.Path.Combine(Program.ROOT_PATH, account.Address);
-        //}
+            return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
+        }
 
-        //public static string GetBlockchainPath(this DevWallet wallet)
-        //{
-        //    if (wallet == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(wallet));
-        //    }
+        public static string GetBlockchainPath(this ExpressWallet wallet)
+        {
+            if (wallet == null)
+            {
+                throw new ArgumentNullException(nameof(wallet));
+            }
 
-        //    return wallet.DefaultAccount.GetBlockchainPath();
-        //}
+            return wallet.Accounts
+                .Single(a => a.IsDefault)
+                .GetBlockchainPath();
+        }
 
-        //public static string GetBlockchainPath(this DevConsensusNode node)
-        //{
-        //    if (node == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(node));
-        //    }
+        public static string GetBlockchainPath(this ExpressConsensusNode node)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
 
-        //    return node.Wallet.GetBlockchainPath();
-        //}
+            return node.Wallet.GetBlockchainPath();
+        }
     }
 }

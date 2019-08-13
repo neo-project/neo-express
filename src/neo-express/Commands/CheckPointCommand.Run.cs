@@ -23,24 +23,23 @@ namespace Neo.Express.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
+                string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 try
                 {
                     var filename = ValidateCheckpointFileName(Name);
+                    var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var devChain = DevChain.Initialize(Input, SecondsPerBlock);
-
-                    if (devChain.ConsensusNodes.Count > 1)
+                    if (chain.ConsensusNodes.Count > 1)
                     {
                         throw new Exception("Checkpoint run is only supported on single node express instances");
                     }
 
-                    var consensusNode = devChain.ConsensusNodes[0];
-                    ValidateCheckpointAddress(filename, consensusNode);
-
-                    string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
 
-                    var cts = RunCommand.Run(new CheckpointStore(checkpointTempPath), consensusNode, console);
+                    var cts = Program.GetBackend().RunCheckpoint(
+                        checkpointTempPath, chain, SecondsPerBlock,
+                        s => console.WriteLine(s));
+
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
                     cts.Token.WaitHandle.WaitOne();
 
@@ -51,6 +50,10 @@ namespace Neo.Express.Commands
                     console.WriteError(ex.Message);
                     app.ShowHelp();
                     return 1;
+                }
+                finally
+                {
+                    Directory.Delete(checkpointTempPath, true);
                 }
             }
         }

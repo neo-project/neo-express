@@ -81,6 +81,63 @@ namespace Neo.Express.Backend2
             }
         }
 
+        private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
+
+        private static string GetAddressFilePath(string directory) => 
+            Path.Combine(directory, ADDRESS_FILENAME);
+
+        public void CreateCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
+        {
+            using (var db = new RocksDbStore(chainDirectory))
+            {
+                db.CheckPoint(checkPointDirectory);
+            }
+
+            using (var stream = File.OpenWrite(GetAddressFilePath(checkPointDirectory)))
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.WriteLine(chain.Magic);
+                writer.WriteLine(chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+            }
+        }
+
+        public void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
+        {
+            var node = chain.ConsensusNodes[0];
+            ValidateCheckpoint(checkPointDirectory, chain.Magic, node.Wallet.DefaultAccount);
+
+            var addressFile = GetAddressFilePath(checkPointDirectory);
+            if (!File.Exists(addressFile))
+            {
+                File.Delete(addressFile);
+            }
+
+            Directory.Move(checkPointDirectory, chainDirectory);
+        }
+
+        private static void ValidateCheckpoint(string checkPointDirectory, long magic, ExpressWalletAccount account)
+        {
+            var addressFile = GetAddressFilePath(checkPointDirectory);
+            if (!File.Exists(addressFile))
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
+
+            long checkPointMagic;
+            string scriptHash;
+            using (var stream = File.OpenRead(addressFile))
+            using (var reader = new StreamReader(stream))
+            {
+                checkPointMagic = long.Parse(reader.ReadLine());
+                scriptHash = reader.ReadLine();
+            }
+
+            if (magic != checkPointMagic || scriptHash != account.ScriptHash)
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
+        }
+
         private static CancellationTokenSource Run(Store store, ExpressConsensusNode node, Action<string> writeConsole)
         {
             var cts = new CancellationTokenSource();
@@ -119,18 +176,23 @@ namespace Neo.Express.Backend2
             return cts;
         }
 
-        public CancellationTokenSource RunBlockchain(string folder, ExpressChain chain, int index, uint secondsPerBlock, Action<string> writeConsole)
+        public CancellationTokenSource RunBlockchain(string directory, ExpressChain chain, int index, uint secondsPerBlock, Action<string> writeConsole)
         {
-            if (index >= chain.ConsensusNodes.Count || index < 0)
-            {
-                throw new Exception("Invalid node index");
-            }
-
             chain.InitializeProtocolSettings(secondsPerBlock);
 
             var node = chain.ConsensusNodes[index];
 
-            return Run(new RocksDbStore(folder), node, writeConsole);
+            return Run(new RocksDbStore(directory), node, writeConsole);
+        }
+
+        public CancellationTokenSource RunCheckpoint(string directory, ExpressChain chain, uint secondsPerBlock, Action<string> writeConsole)
+        {
+            chain.InitializeProtocolSettings(secondsPerBlock);
+
+            var node = chain.ConsensusNodes[0];
+            ValidateCheckpoint(directory, chain.Magic, node.Wallet.DefaultAccount);
+
+            return Run(new CheckpointStore(directory), node, writeConsole);
         }
     }
 }

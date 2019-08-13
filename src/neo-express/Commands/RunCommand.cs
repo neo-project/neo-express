@@ -42,8 +42,7 @@ namespace Neo.Express.Commands
                 }
 
                 var node = chain.ConsensusNodes[index];
-                var folder = Path.Combine(Program.ROOT_PATH,
-                    node.Wallet.Accounts.Single(a => a.IsDefault).ScriptHash);
+                var folder = node.GetBlockchainPath();
 
                 if (Reset && Directory.Exists(folder))
                 {

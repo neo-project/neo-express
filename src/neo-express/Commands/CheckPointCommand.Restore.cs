@@ -24,43 +24,33 @@ namespace Neo.Express.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
+                string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
                 try
                 {
                     var filename = ValidateCheckpointFileName(Name);
+                    var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var (devChain, _) = DevChain.Load(Input);
-
-                    if (devChain.ConsensusNodes.Count > 1)
+                    if (chain.ConsensusNodes.Count > 1)
                     {
                         throw new Exception("Checkpoint restore is only supported on single node express instances");
                     }
 
-                    var consensusNode = devChain.ConsensusNodes[0];
-
-                    var blockchainPath = consensusNode.GetBlockchainPath();
+                    var node = chain.ConsensusNodes[0];
+                    var blockchainPath = node.GetBlockchainPath();
                     if (!Force && Directory.Exists(blockchainPath))
                     {
                         throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
                     }
 
-                    ValidateCheckpointAddress(filename, consensusNode);
-
-                    var checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-                    var addressFilePath = Path.Combine(checkpointTempPath, ADDRESS_FILENAME);
-
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
-
-                    if (File.Exists(addressFilePath))
-                    {
-                        File.Delete(addressFilePath);
-                    }
 
                     if (Directory.Exists(blockchainPath))
                     {
                         Directory.Delete(blockchainPath, true);
                     }
 
-                    Directory.Move(checkpointTempPath, blockchainPath);
+                    Program.GetBackend().RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
 
                     console.WriteLine($"Checkpoint {Name} sucessfully restored");
                     return 0;
@@ -70,6 +60,13 @@ namespace Neo.Express.Commands
                     console.WriteError(ex.Message);
                     app.ShowHelp();
                     return 1;
+                }
+                finally
+                {
+                    if (Directory.Exists(checkpointTempPath))
+                    {
+                        Directory.Delete(checkpointTempPath, true);
+                    }
                 }
             }
         }

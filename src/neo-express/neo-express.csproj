@@ -17,10 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Commands\CheckPointCommand.Create.cs" />
-    <Compile Remove="Commands\CheckPointCommand.cs" />
-    <Compile Remove="Commands\CheckPointCommand.Restore.cs" />
-    <Compile Remove="Commands\CheckPointCommand.Run.cs" />
     <Compile Remove="Commands\ClaimCommand.cs" />
     <Compile Remove="Commands\ContractCommand.cs" />
     <Compile Remove="Commands\ContractCommand.Deploy.cs" />

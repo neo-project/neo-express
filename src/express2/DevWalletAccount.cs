@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Neo.Express.Abstractions;
 using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json;
@@ -23,6 +24,21 @@ namespace Neo.Express.Backend2
         {
             return key;
         }
+
+        public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
+        {
+            PrivateKey = key.PrivateKey.ToHexString(),
+            ScriptHash = ScriptHash.ToAddress(),
+            Label = Label,
+            IsDefault = IsDefault,
+            Contract = new ExpressWalletAccount.AccountContract()
+            {
+                Script = Contract?.Script.ToHexString(),
+                Parameters = Contract?.ParameterList
+                        .Select(p => Enum.GetName(typeof(ContractParameterType), p))
+                        .ToList()
+            }
+        };
 
         public void ToJson(JsonWriter writer)
         {

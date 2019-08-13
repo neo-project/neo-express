@@ -28,8 +28,15 @@ namespace Neo.Express.Commands
         {
             try
             {
+                var (json, filename) = Program.LoadExpressChain(Input);
+
+                if (!NodeIndex.HasValue && json["consensus-nodes"].Count() > 1)
+                {
+                    throw new Exception("Node index not specified");
+                }
+
                 var backend = Program.GetBackend();
-                var cts = backend.RunBlockchain(Input, Program.ROOT_PATH, NodeIndex, SecondsPerBlock, Reset, s => console.WriteLine(s));
+                var cts = backend.RunBlockchain(json, NodeIndex ?? 0, SecondsPerBlock, Reset, s => console.WriteLine(s));
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
                 cts.Token.WaitHandle.WaitOne();
                 return 0;

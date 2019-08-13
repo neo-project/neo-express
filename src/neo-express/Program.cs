@@ -1,5 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Neo.Express.Commands;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Reflection;
@@ -11,8 +13,8 @@ namespace Neo.Express
         //typeof(CheckPointCommand),
         //typeof(ClaimCommand),
         //typeof(ContractCommand),
-        typeof(CreateCommand),
-        typeof(RunCommand)
+        typeof(CreateCommand)
+        //typeof(RunCommand)
         //typeof(ExportCommand),
         //typeof(ShowCommand),
         //typeof(TransferCommand),
@@ -54,6 +56,21 @@ namespace Neo.Express
         public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
            : filename;
+
+        public static (JObject json, string filename) LoadExpressChain(string filename)
+        {
+            filename = GetDefaultFilename(filename);
+            if (!File.Exists(filename))
+            {
+                throw new Exception($"{filename} file doesn't exist");
+            }
+
+            using (var stream = File.OpenRead(filename))
+            using (var reader = new JsonTextReader(new StreamReader(stream)))
+            {
+                return (JObject.Load(reader), filename);
+            }
+        }
 
         public static Abstractions.INeoBackend GetBackend()
         {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Neo.Express.Abstractions;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.Wallets;
@@ -24,6 +25,14 @@ namespace Neo.Express.Backend2
                 this.accounts.Add(a.ScriptHash, a);
             }
         }
+
+        public ExpressWallet ToExpressWallet() => new ExpressWallet()
+        {
+            Name = name,
+            Accounts = accounts.Values
+                    .Select(a => a.ToExpressWalletAccount())
+                    .ToList(),
+        };
 
         public static DevWallet FromJson(JToken json)
         {

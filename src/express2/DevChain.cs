@@ -192,6 +192,16 @@ namespace Neo.Express.Backend2
             return FromJson(devChainJson);
         }
 
+        public static DevChain Initialize(JObject json, uint secondsPerBlock)
+        {
+            if (!InitializeProtocolSettings(json, secondsPerBlock))
+            {
+                throw new Exception("Couldn't initialize protocol settings");
+            }
+
+            return FromJson(json);
+        }
+
         public void Save(string filename)
         {
             using (var stream = File.Open(filename, FileMode.Create, FileAccess.Write))

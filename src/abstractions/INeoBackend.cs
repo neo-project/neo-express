@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -7,7 +9,7 @@ namespace Neo.Express.Abstractions
 {
     public interface INeoBackend
     {
-        void CreateBlockchain(string filename, int count, ushort Port);
-        CancellationTokenSource RunBlockchain(string filename, string storeFolder, int? index, uint secondsPerBlock, bool reset, Action<string> consoleWrite);
+        ExpressChain CreateBlockchain(int count, ushort port);
+        //CancellationTokenSource RunBlockchain(JObject json, int index, uint secondsPerBlock, bool reset, Action<string> consoleWrite);
     }
 }

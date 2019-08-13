@@ -2,6 +2,8 @@
 using Neo.Express.Backend2.Persistence;
 using Neo.Persistence;
 using Neo.Plugins;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +17,11 @@ namespace Neo.Express.Backend2
 {
     public class Neo2Backend : INeoBackend
     {
-        public void CreateBlockchain(string filename, int count, ushort port)
+        public static string ROOT_PATH => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "NEO-Express", "backend2", "blockchain-nodes");
+
+        public ExpressChain CreateBlockchain(int count, ushort port)
         {
             if ((uint)port + (count * 3) >= ushort.MaxValue)
             {
@@ -43,102 +49,98 @@ namespace Neo.Express.Backend2
                 multiSigContractAccount.Label = "MultiSigContract";
             }
 
-            var chain = new DevChain(wallets.Select(t => new DevConsensusNode()
+            return new ExpressChain()
             {
-                Wallet = t.wallet,
-                TcpPort = port++,
-                WebSocketPort = port++,
-                RpcPort = port++
-            }));
-
-            chain.Save(filename);
-        }
-
-        private class LogPlugin : Plugin, ILogPlugin
-        {
-            private readonly Action<string> consoleWrite;
-
-            public LogPlugin(Action<string> consoleWrite)
-            {
-                this.consoleWrite = consoleWrite;
-            }
-
-            public override void Configure()
-            {
-            }
-
-            void ILogPlugin.Log(string source, LogLevel level, string message)
-            {
-                Console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
-            }
-        }
-
-        private static CancellationTokenSource Run(Store store, DevConsensusNode consensusNode, Action<string> consoleWrite)
-        {
-            var cts = new CancellationTokenSource();
-
-            Task.Factory.StartNew(() =>
-            {
-                try
+                Magic = ExpressChain.GenerateMagicValue(),
+                ConsensusNodes = wallets.Select(t => new ExpressConsensusNode()
                 {
-                    using (var system = new NeoSystem(store))
-                    {
-                        var logPlugin = new LogPlugin(consoleWrite);
-                        var rpcPlugin = new ExpressNodeRpcPlugin();
-
-                        system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
-                        system.StartConsensus(consensusNode.Wallet);
-                        system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
-
-                        cts.Token.WaitHandle.WaitOne();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    consoleWrite(ex.ToString());
-                    cts.Cancel();
-                }
-                finally
-                {
-                    if (store is IDisposable disp)
-                    {
-                        disp.Dispose();
-                    }
-                }
-            });
-
-            return cts;
+                    TcpPort = port++,
+                    WebSocketPort = port++,
+                    RpcPort = port++,
+                    Wallet = t.wallet.ToExpressWallet()
+                }).ToList()
+            };
         }
 
-        public CancellationTokenSource RunBlockchain(string filename, string storeFolder, int? index, uint secondsPerBlock, bool reset, Action<string> consoleWrite)
-        {
-            var devChain = DevChain.Initialize(filename, secondsPerBlock);
+        //private class LogPlugin : Plugin, ILogPlugin
+        //{
+        //    private readonly Action<string> consoleWrite;
 
-            if (!index.HasValue && devChain.ConsensusNodes.Count > 1)
-            {
-                throw new Exception("Node index not specified");
-            }
+        //    public LogPlugin(Action<string> consoleWrite)
+        //    {
+        //        this.consoleWrite = consoleWrite;
+        //    }
 
-            var _index = index ?? 0;
-            if (_index >= devChain.ConsensusNodes.Count || _index < 0)
-            {
-                throw new Exception("Invalid node index");
-            }
+        //    public override void Configure()
+        //    {
+        //    }
 
-            var consensusNode = devChain.ConsensusNodes[_index];
-            var blockchainPath = Path.Combine(storeFolder, consensusNode.Wallet.DefaultAccount.Address);
+        //    void ILogPlugin.Log(string source, LogLevel level, string message)
+        //    {
+        //        Console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
+        //    }
+        //}
 
-            if (reset && Directory.Exists(blockchainPath))
-            {
-                Directory.Delete(blockchainPath, true);
-            }
+        //private static CancellationTokenSource Run(Store store, DevConsensusNode consensusNode, Action<string> consoleWrite)
+        //{
+        //    var cts = new CancellationTokenSource();
 
-            if (!Directory.Exists(blockchainPath))
-            {
-                Directory.CreateDirectory(blockchainPath);
-            }
+        //    Task.Factory.StartNew(() =>
+        //    {
+        //        try
+        //        {
+        //            using (var system = new NeoSystem(store))
+        //            {
+        //                var logPlugin = new LogPlugin(consoleWrite);
+        //                var rpcPlugin = new ExpressNodeRpcPlugin();
 
-            return Run(new RocksDbStore(blockchainPath), consensusNode, consoleWrite);
-        }
+        //                system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
+        //                system.StartConsensus(consensusNode.Wallet);
+        //                system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
+
+        //                cts.Token.WaitHandle.WaitOne();
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            consoleWrite(ex.ToString());
+        //            cts.Cancel();
+        //        }
+        //        finally
+        //        {
+        //            if (store is IDisposable disp)
+        //            {
+        //                disp.Dispose();
+        //            }
+        //        }
+        //    });
+
+        //    return cts;
+        //}
+
+        //public CancellationTokenSource RunBlockchain(JObject json, int index, uint secondsPerBlock, bool reset, Action<string> consoleWrite)
+        //{
+        //    var devChain = DevChain.Initialize(json, secondsPerBlock);
+
+        //    if (index >= devChain.ConsensusNodes.Count || index < 0)
+        //    {
+        //        throw new Exception("Invalid node index");
+        //    }
+
+        //    var consensusNode = devChain.ConsensusNodes[index];
+        //    var blockchainPath = Path.Combine(ROOT_PATH, consensusNode.Wallet.DefaultAccount.Address);
+
+        //    if (reset && Directory.Exists(blockchainPath))
+        //    {
+        //        Directory.Delete(blockchainPath, true);
+        //    }
+
+        //    if (!Directory.Exists(blockchainPath))
+        //    {
+        //        Directory.CreateDirectory(blockchainPath);
+        //    }
+
+        //    return Run(new RocksDbStore(blockchainPath), consensusNode, consoleWrite);
+        //}
     }
 }

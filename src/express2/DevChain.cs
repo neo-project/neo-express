@@ -7,8 +7,9 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
+using Neo;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     public class DevChain
     {

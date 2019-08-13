@@ -1,5 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using System.IO.Compression;
 using System;
 using System.IO;
 

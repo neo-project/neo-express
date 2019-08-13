@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Neo.Express
+namespace NeoExpress.Neo2Backend
 {
-    public class ByteArrayComparer : IEqualityComparer<byte[]>
+    internal class ByteArrayComparer : IEqualityComparer<byte[]>
     {
         public bool Equals(byte[] x, byte[] y)
         {

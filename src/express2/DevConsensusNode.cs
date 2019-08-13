@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     public class DevConsensusNode
     {

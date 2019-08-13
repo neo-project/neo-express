@@ -3,11 +3,11 @@ using OneOf;
 using RocksDbSharp;
 using System;
 
-namespace Neo.Express.Backend2.Persistence
+namespace NeoExpress.Neo2Backend.Persistence
 {
     internal partial class CheckpointStore
     {
-        private class MetaDataCache<T> : IO.Caching.MetaDataCache<T>
+        private class MetaDataCache<T> : Neo.IO.Caching.MetaDataCache<T>
             where T : class, ICloneable<T>, ISerializable, new()
         {
             // value initalized to None to indicate value hasn't been overwritten

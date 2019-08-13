@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     public class DevContractFunction
     {

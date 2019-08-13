@@ -1,11 +1,12 @@
-﻿using Neo.Ledger;
+﻿using Neo;
+using Neo.Ledger;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     public class DevContract
     {

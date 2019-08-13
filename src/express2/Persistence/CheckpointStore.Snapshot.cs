@@ -1,25 +1,26 @@
 ﻿using System;
+using Neo;
 using Neo.Cryptography.ECC;
 using Neo.IO.Wrappers;
 using Neo.Ledger;
 using RocksDbSharp;
 
-namespace Neo.Express.Backend2.Persistence
+namespace NeoExpress.Neo2Backend.Persistence
 {
     internal partial class CheckpointStore
     {
         private class Snapshot : Neo.Persistence.Snapshot
         {
             private static DataCache<TKey, TValue> GetDataCache<TKey, TValue>(RocksDb db, string familyName, DataCache<TKey, TValue> master)
-                where TKey : IEquatable<TKey>, IO.ISerializable, new()
-                where TValue : class, IO.ICloneable<TValue>, IO.ISerializable, new()
+                where TKey : IEquatable<TKey>, Neo.IO.ISerializable, new()
+                where TValue : class, Neo.IO.ICloneable<TValue>, Neo.IO.ISerializable, new()
             {
                 var columnFamily = db.GetColumnFamily(familyName);
                 return new DataCache<TKey, TValue>(db, columnFamily, master.Values, master.Updater);
             }
 
             private static MetaDataCache<T> GetMetaDataCache<T>(RocksDb db, byte key, MetaDataCache<T> master)
-                where T : class, IO.ICloneable<T>, IO.ISerializable, new()
+                where T : class, Neo.IO.ICloneable<T>, Neo.IO.ISerializable, new()
             {
                 var columnFamily = db.GetColumnFamily(RocksDbStore.METADATA_FAMILY);
                 var keyArray = new byte[1] { key };
@@ -44,19 +45,19 @@ namespace Neo.Express.Backend2.Persistence
                 HeaderHashIndex = GetMetaDataCache<HashIndexState>(store.db, RocksDbStore.CURRENT_HEADER_KEY, store.headerHashIndex);
             }
 
-            public override IO.Caching.DataCache<UInt256, BlockState> Blocks { get; }
-            public override IO.Caching.DataCache<UInt256, TransactionState> Transactions { get; }
-            public override IO.Caching.DataCache<UInt160, AccountState> Accounts { get; }
-            public override IO.Caching.DataCache<UInt256, UnspentCoinState> UnspentCoins { get; }
-            public override IO.Caching.DataCache<UInt256, SpentCoinState> SpentCoins { get; }
-            public override IO.Caching.DataCache<ECPoint, ValidatorState> Validators { get; }
-            public override IO.Caching.DataCache<UInt256, AssetState> Assets { get; }
-            public override IO.Caching.DataCache<UInt160, ContractState> Contracts { get; }
-            public override IO.Caching.DataCache<StorageKey, StorageItem> Storages { get; }
-            public override IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> HeaderHashList { get; }
-            public override IO.Caching.MetaDataCache<ValidatorsCountState> ValidatorsCount { get; }
-            public override IO.Caching.MetaDataCache<HashIndexState> BlockHashIndex { get; }
-            public override IO.Caching.MetaDataCache<HashIndexState> HeaderHashIndex { get; }
+            public override Neo.IO.Caching.DataCache<UInt256, BlockState> Blocks { get; }
+            public override Neo.IO.Caching.DataCache<UInt256, TransactionState> Transactions { get; }
+            public override Neo.IO.Caching.DataCache<UInt160, AccountState> Accounts { get; }
+            public override Neo.IO.Caching.DataCache<UInt256, UnspentCoinState> UnspentCoins { get; }
+            public override Neo.IO.Caching.DataCache<UInt256, SpentCoinState> SpentCoins { get; }
+            public override Neo.IO.Caching.DataCache<ECPoint, ValidatorState> Validators { get; }
+            public override Neo.IO.Caching.DataCache<UInt256, AssetState> Assets { get; }
+            public override Neo.IO.Caching.DataCache<UInt160, ContractState> Contracts { get; }
+            public override Neo.IO.Caching.DataCache<StorageKey, StorageItem> Storages { get; }
+            public override Neo.IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> HeaderHashList { get; }
+            public override Neo.IO.Caching.MetaDataCache<ValidatorsCountState> ValidatorsCount { get; }
+            public override Neo.IO.Caching.MetaDataCache<HashIndexState> BlockHashIndex { get; }
+            public override Neo.IO.Caching.MetaDataCache<HashIndexState> HeaderHashIndex { get; }
         }
     }
 }

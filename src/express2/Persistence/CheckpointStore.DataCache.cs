@@ -5,13 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace Neo.Express.Backend2.Persistence
+namespace NeoExpress.Neo2Backend.Persistence
 {
     internal partial class CheckpointStore
     {
-        private class DataCache<TKey, TValue> : IO.Caching.DataCache<TKey, TValue>
-            where TKey : IEquatable<TKey>, IO.ISerializable, new()
-            where TValue : class, ICloneable<TValue>, IO.ISerializable, new()
+        private class DataCache<TKey, TValue> : Neo.IO.Caching.DataCache<TKey, TValue>
+            where TKey : IEquatable<TKey>, Neo.IO.ISerializable, new()
+            where TValue : class, ICloneable<TValue>, Neo.IO.ISerializable, new()
         {
             // dictionary value of None indicates the key has been deleted
             private ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> values;

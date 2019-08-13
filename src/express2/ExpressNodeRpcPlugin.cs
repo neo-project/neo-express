@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Microsoft.AspNetCore.Http;
+using Neo;
 using Neo.Cryptography.ECC;
 using Neo.IO.Json;
 using Neo.Ledger;
@@ -13,7 +14,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin
     {

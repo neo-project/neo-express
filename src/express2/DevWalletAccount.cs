@@ -5,8 +5,9 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Neo;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     public class DevWalletAccount : WalletAccount
     {

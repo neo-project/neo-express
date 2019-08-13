@@ -1,7 +1,7 @@
 ﻿using Neo.Plugins;
 using System;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     public partial class Neo2Backend
     {

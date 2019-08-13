@@ -1,9 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Abstractions;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 

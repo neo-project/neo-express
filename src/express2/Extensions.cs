@@ -7,8 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Neo;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     internal static class Extensions
     {
@@ -17,7 +18,7 @@ namespace Neo.Express.Backend2
             var key = account.GetKey();
             //var publicKey = key.PublicKey.EncodePoint(false).Skip(1).ToArray();
             var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
-            var signature = Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
+            var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
 
             return new JObject
             {

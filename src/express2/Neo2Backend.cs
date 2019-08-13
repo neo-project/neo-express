@@ -1,18 +1,16 @@
 ﻿using NeoExpress.Abstractions;
-using Neo.Express.Backend2.Persistence;
 using Neo.Persistence;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NeoExpress.Neo2Backend.Persistence;
+using Neo;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     public partial class Neo2Backend : INeoBackend
     {
@@ -28,7 +26,7 @@ namespace Neo.Express.Backend2
                 throw new Exception("Invalid port");
             }
 
-            var wallets = new List<(DevWallet wallet, Wallets.WalletAccount account)>(count);
+            var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
 
             try
             {

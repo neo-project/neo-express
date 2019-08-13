@@ -1,4 +1,5 @@
-﻿using Neo.Ledger;
+﻿using Neo;
+using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
@@ -9,7 +10,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace Neo.Express.Backend2
+namespace NeoExpress.Neo2Backend
 {
     internal static class NeoUtility
     {

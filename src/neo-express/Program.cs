@@ -2,8 +2,11 @@
 using NeoExpress.Abstractions;
 using NeoExpress.Commands;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace NeoExpress
@@ -74,7 +77,7 @@ namespace NeoExpress
 
         public static INeoBackend GetBackend()
         {
-            return new NeoExpress.Neo2Backend.Neo2Backend();
+            return new Neo2Backend.Neo2Backend();
         }
     }
 }

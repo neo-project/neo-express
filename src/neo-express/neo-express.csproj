@@ -27,9 +27,7 @@
     <Compile Remove="Commands\ContractCommand.Storage.cs" />
     <Compile Remove="Commands\ExportCommand.cs" />
     <Compile Remove="Commands\ShowCommand.cs" />
-    <Compile Remove="Commands\TransferCommand.cs" />
     <Compile Remove="Commands\WalletCommand.Export.cs" />
-    <Compile Remove="NeoRpcClient.cs" />
   </ItemGroup>
 
   <ItemGroup>

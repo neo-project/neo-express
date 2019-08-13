@@ -36,9 +36,9 @@ namespace NeoExpress
             }
         }
 
-        public static Task<JToken> ExpressTransfer(Uri uri, string asset, string quantity, UInt160 senderAddress, UInt160 receiverAddress)
+        public static Task<JToken> ExpressTransfer(Uri uri, string asset, string quantity, string senderAddress, string receiverAddress)
         {
-            return RpcCall(uri, "express-transfer", new JArray(asset, quantity, senderAddress.ToAddress(), receiverAddress.ToAddress()));
+            return RpcCall(uri, "express-transfer", new JArray(asset, quantity, senderAddress, receiverAddress));
         }
 
         public static Task<JToken> ExpressSubmitSignatures(Uri uri, JToken context, JToken signatures)
@@ -46,24 +46,24 @@ namespace NeoExpress
             return RpcCall(uri, "express-submit-signatures", new JArray(context, signatures));
         }
 
-        public static Task<JToken> GetAccountState(Uri uri, UInt160 address)
+        public static Task<JToken> GetAccountState(Uri uri, string address)
         {
-            return RpcCall(uri, "getaccountstate", new JArray(address.ToAddress()));
+            return RpcCall(uri, "getaccountstate", new JArray(address));
         }
 
-        public static Task<JToken> ExpressShowCoins(Uri uri, UInt160 address)
+        public static Task<JToken> ExpressShowCoins(Uri uri, string address)
         {
-            return RpcCall(uri, "express-show-coins", new JArray(address.ToAddress()));
+            return RpcCall(uri, "express-show-coins", new JArray(address));
         }
 
-        public static Task<JToken> ExpressShowGas(Uri uri, UInt160 address)
+        public static Task<JToken> ExpressShowGas(Uri uri, string address)
         {
-            return RpcCall(uri, "express-show-gas", new JArray(address.ToAddress()));
+            return RpcCall(uri, "express-show-gas", new JArray(address));
         }
 
-        public static Task<JToken> ExpressClaim(Uri uri, string asset, UInt160 address)
+        public static Task<JToken> ExpressClaim(Uri uri, string asset, string address)
         {
-            return RpcCall(uri, "express-claim", new JArray(asset, address.ToAddress()));
+            return RpcCall(uri, "express-claim", new JArray(asset, address));
         }
 
         private static JToken ToJToken(Action<JsonWriter> action)
@@ -75,27 +75,27 @@ namespace NeoExpress
             }
         }
 
-        public static Task<JToken> ExpressDeployContract(Uri uri, DevContract contract, UInt160 address)
-        {
-            return RpcCall(uri, "express-deploy-contract", new JArray(
-                ToJToken(contract.ToJson), address.ToAddress()));
-        }
+        //public static Task<JToken> ExpressDeployContract(Uri uri, NeoExpress.Abstractions.ExpressContract contract, string address)
+        //{
+        //    return RpcCall(uri, "express-deploy-contract", new JArray(
+        //        ToJToken(contract.ToJson), address));
+        //}
 
-        public static Task<JToken> ExpressInvokeContract(Uri uri, UInt160 scriptHash, IEnumerable<ContractParameter> scriptParams, UInt160 address = null)
-        {
-            var @params = new JArray(scriptParams.Select(p => JObject.Parse(p.ToJson().ToString())));
-            return RpcCall(uri, "express-invoke-contract", new JArray(
-                scriptHash.ToString(),
-                @params,
-                address?.ToAddress()));
-        }
+        //public static Task<JToken> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<ContractParameter> scriptParams, string address = null)
+        //{
+        //    var @params = new JArray(scriptParams.Select(p => JObject.Parse(p.ToJson().ToString())));
+        //    return RpcCall(uri, "express-invoke-contract", new JArray(
+        //        scriptHash.ToString(),
+        //        @params,
+        //        address);
+        //}
 
-        public static Task<JToken> GetContractState(Uri uri, UInt160 scriptHash)
+        public static Task<JToken> GetContractState(Uri uri, string scriptHash)
         {
             return RpcCall(uri, "getcontractstate", new JArray(scriptHash.ToString()));
         }
 
-        public static Task<JToken> ExpressGetContractStorage(Uri uri, UInt160 scriptHash)
+        public static Task<JToken> ExpressGetContractStorage(Uri uri, string scriptHash)
         {
             return RpcCall(uri, "express-get-contract-storage", new JArray(scriptHash.ToString()));
         }

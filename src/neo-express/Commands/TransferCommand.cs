@@ -28,15 +28,15 @@ namespace NeoExpress.Commands
         [Option]
         private string Input { get; }
 
-        private static JArray GetGenesisSignatures(ExpressChain chain, IEnumerable<UInt160> hashes, byte[] data)
-        {
-            var signatures = new JArray();
-            //foreach (var sig in chain.ConsensusNodes.SelectMany(n => n.Wallet.Sign(hashes, data)))
-            //{
-            //    signatures.Add(sig);
-            //}
-            return signatures;
-        }
+        //private static JArray GetGenesisSignatures(ExpressChain chain, IEnumerable<UInt160> hashes, byte[] data)
+        //{
+        //    var signatures = new JArray();
+        //    //foreach (var sig in chain.ConsensusNodes.SelectMany(n => n.Wallet.Sign(hashes, data)))
+        //    //{
+        //    //    signatures.Add(sig);
+        //    //}
+        //    return signatures;
+        //}
 
         //private static JArray GetStandardSignatures(ExpressWalletAccount account, IEnumerable<UInt160> hashes, byte[] data) => new JArray(account.Sign(data));
 
@@ -59,25 +59,29 @@ namespace NeoExpress.Commands
                 }
 
                 var uri = chain.GetUri();
-                //var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
-                //    .ConfigureAwait(false);
-                //console.WriteLine(result.ToString(Formatting.Indented));
+                var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
+                    .ConfigureAwait(false);
+                console.WriteLine(result.ToString(Formatting.Indented));
 
-                //var txid = result["txid"];
-                //if (txid != null)
-                //{
-                //    console.WriteLine("transfer complete");
-                //}
-                //else
-                //{
-                //    var (hashes, data) = NeoUtility.ParseResultHashesAndData(result);
-                //    var signatures = DevChain.IsGenesis(Sender)
-                //        ? GetGenesisSignatures(devChain, hashes, data)
-                //        : GetStandardSignatures(senderAccount, hashes, data);
+                var txid = result["txid"];
+                if (txid != null)
+                {
+                    console.WriteLine("transfer complete");
+                }
+                else
+                {
+                    var hashes = result["script-hashes"].Select(t => t.Value<string>());
+                    var data = result.Value<string>("hash-data");
 
-                //    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
-                //    console.WriteLine(result2.ToString(Formatting.Indented));
-                //}
+
+                    //var (hashes, data) = NeoUtility.ParseResultHashesAndData(result);
+                    //var signatures = DevChain.IsGenesis(Sender)
+                    //    ? GetGenesisSignatures(devChain, hashes, data)
+                    //    : GetStandardSignatures(senderAccount, hashes, data);
+
+                    //var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                    //console.WriteLine(result2.ToString(Formatting.Indented));
+                }
 
                 return 0;
             }

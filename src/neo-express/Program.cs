@@ -19,7 +19,7 @@ namespace NeoExpress
         typeof(CreateCommand),
         typeof(RunCommand),
         //typeof(ExportCommand),
-        //typeof(ShowCommand),
+        typeof(ShowCommand),
         //typeof(TransferCommand),
         typeof(WalletCommand))]
     internal class Program

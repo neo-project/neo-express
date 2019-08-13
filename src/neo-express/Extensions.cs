@@ -1,44 +1,67 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Abstractions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace NeoExpress
 {
     internal static class Extensions
     {
-        //public static JObject Sign(this WalletAccount account, byte[] data)
-        //{
-        //    var key = account.GetKey();
-        //    //var publicKey = key.PublicKey.EncodePoint(false).Skip(1).ToArray();
-        //    var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
-        //    var signature = Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
+        public static JObject Sign(this ExpressWalletAccount account, byte[] data, INeoBackend backend = null)
+        {
+            var (signature, publicKey) = (backend ?? Program.GetBackend()).Sign(account, data);
 
-        //    return new JObject
-        //    {
-        //        ["signature"] = signature.ToHexString(),
-        //        ["public-key"] = key.PublicKey.EncodePoint(true).ToHexString(),
-        //        ["contract"] = new JObject
-        //        {
-        //            ["script"] = account.Contract.Script.ToHexString(),
-        //            ["parameters"] = new JArray(account.Contract.ParameterList.Select(cpt => Enum.GetName(typeof(ContractParameterType), cpt)))
-        //        }
-        //    };
-        //}
+            return new JObject
+            {
+                ["signature"] = signature.ToHexString(),
+                ["public-key"] = publicKey.ToHexString(),
+                ["contract"] = new JObject
+                {
+                    ["script"] = account.Contract.Script,
+                    ["parameters"] = new JArray(account.Contract.Parameters)
+                }
+            };
+        }
 
-        //public static IEnumerable<JObject> Sign(this DevWallet wallet, IEnumerable<UInt160> hashes, byte[] data)
-        //{
-        //    foreach (var hash in hashes)
-        //    {
-        //        var account = wallet.GetAccount(hash);
-        //        if (account == null || !account.HasKey)
-        //            continue;
+        public static IEnumerable<JObject> Sign(this ExpressWallet wallet, IEnumerable<string> hashes, byte[] data, INeoBackend backend = null)
+        {
+            backend = backend ?? Program.GetBackend();
+            foreach (var hash in hashes)
+            {
+                var account = wallet.Accounts.SingleOrDefault(a => a.ScriptHash == hash);
+                if (account == null || string.IsNullOrEmpty(account.PrivateKey))
+                    continue;
 
-        //        yield return Sign(account, data);
-        //    }
-        //}
+                yield return account.Sign(data, backend);
+            }
+        }
+
+        public static string ToHexString(this byte[] value)
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < value.Length; i++)
+            {
+                sb.AppendFormat("{0:x2}", value[i]);
+            }
+            return sb.ToString();
+        }
+
+        public static byte[] ToByteArray(this string value)
+        {
+            if (value == null || value.Length == 0)
+                return new byte[0];
+            if (value.Length % 2 == 1)
+                throw new FormatException();
+            byte[] result = new byte[value.Length / 2];
+            for (int i = 0; i < result.Length; i++)
+                result[i] = byte.Parse(value.Substring(i * 2, 2), System.Globalization.NumberStyles.AllowHexSpecifier);
+            return result;
+        }
 
         static void WriteMessage(IConsole console, string message, ConsoleColor color)
         {

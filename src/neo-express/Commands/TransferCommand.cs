@@ -28,17 +28,17 @@ namespace NeoExpress.Commands
         [Option]
         private string Input { get; }
 
-        //private static JArray GetGenesisSignatures(ExpressChain chain, IEnumerable<UInt160> hashes, byte[] data)
-        //{
-        //    var signatures = new JArray();
-        //    //foreach (var sig in chain.ConsensusNodes.SelectMany(n => n.Wallet.Sign(hashes, data)))
-        //    //{
-        //    //    signatures.Add(sig);
-        //    //}
-        //    return signatures;
-        //}
+        private static JArray GetGenesisSignatures(ExpressChain chain, IEnumerable<string> hashes, byte[] data)
+        {
+            var backend = Program.GetBackend();
+            var signatures = chain.ConsensusNodes.SelectMany(n => n.Wallet.Sign(hashes, data, backend));
+            return new JArray(signatures);
+        }
 
-        //private static JArray GetStandardSignatures(ExpressWalletAccount account, IEnumerable<UInt160> hashes, byte[] data) => new JArray(account.Sign(data));
+        private static JArray GetStandardSignatures(ExpressWalletAccount account, byte[] data)
+        {
+            return new JArray(account.Sign(data));
+        }
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
@@ -71,16 +71,13 @@ namespace NeoExpress.Commands
                 else
                 {
                     var hashes = result["script-hashes"].Select(t => t.Value<string>());
-                    var data = result.Value<string>("hash-data");
+                    var data = result.Value<string>("hash-data").ToByteArray();
+                    var signatures = Sender.Equals("genesis", StringComparison.InvariantCultureIgnoreCase)
+                        ? GetGenesisSignatures(chain, hashes, data)
+                        : GetStandardSignatures(senderAccount, data);
 
-
-                    //var (hashes, data) = NeoUtility.ParseResultHashesAndData(result);
-                    //var signatures = DevChain.IsGenesis(Sender)
-                    //    ? GetGenesisSignatures(devChain, hashes, data)
-                    //    : GetStandardSignatures(senderAccount, hashes, data);
-
-                    //var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
-                    //console.WriteLine(result2.ToString(Formatting.Indented));
+                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                    console.WriteLine(result2.ToString(Formatting.Indented));
                 }
 
                 return 0;

@@ -14,10 +14,6 @@ namespace NeoExpress.Neo2Backend
 {
     public partial class Neo2Backend : INeoBackend
     {
-        //public static string ROOT_PATH => Path.Combine(
-        //    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        //    "NEO-Express", "backend2", "blockchain-nodes");
-
         public ExpressChain CreateBlockchain(int count, ushort port)
         {
             if ((uint)port + (count * 3) >= ushort.MaxValue)
@@ -191,6 +187,16 @@ namespace NeoExpress.Neo2Backend
             ValidateCheckpoint(directory, chain.Magic, node.Wallet.DefaultAccount);
 
             return Run(new CheckpointStore(directory), node, writeConsole);
+        }
+
+        public (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data)
+        {
+            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+
+            var key = devAccount.GetKey();
+            var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
+            var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
+            return (signature, key.PublicKey.EncodePoint(true));
         }
     }
 }

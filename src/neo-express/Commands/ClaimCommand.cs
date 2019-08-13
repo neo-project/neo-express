@@ -23,14 +23,14 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (devChain, _) = DevChain.Load(Input);
-                var account = devChain.GetAccount(Account);
+                var (chain, _) = Program.LoadExpressChain(Input);
+                var account = chain.GetAccount(Account);
                 if (account == default)
                 {
                     throw new Exception($"{Account} account not found.");
                 }
 
-                var uri = devChain.GetUri();
+                var uri = chain.GetUri();
                 var result = await NeoRpcClient.ExpressClaim(uri, Asset, account.ScriptHash)
                     .ConfigureAwait(false);
                 console.WriteLine(result.ToString(Formatting.Indented));
@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                    var data = result.Value<string>("hash-data").ToByteArray();
                     var signatures = new JArray(account.Sign(data));
                     var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
                     console.WriteLine(result2.ToString(Formatting.Indented));

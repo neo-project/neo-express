@@ -45,7 +45,6 @@ namespace NeoExpress.Commands
             try
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
-
                 var senderAccount = chain.GetAccount(Sender);
                 if (senderAccount == default)
                 {

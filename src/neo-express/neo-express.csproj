@@ -17,7 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Commands\ClaimCommand.cs" />
     <Compile Remove="Commands\ContractCommand.cs" />
     <Compile Remove="Commands\ContractCommand.Deploy.cs" />
     <Compile Remove="Commands\ContractCommand.Get.cs" />

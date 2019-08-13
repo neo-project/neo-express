@@ -19,25 +19,6 @@ namespace Neo.Express.Commands
             return 1;
         }
 
-        //private static void ValidateCheckpointAddress(string filename, DevConsensusNode account)
-        //{
-        //    var archive = ZipFile.OpenRead(filename);
-        //    var entry = archive.GetEntry(ADDRESS_FILENAME);
-        //    if (entry == null)
-        //    {
-        //        throw new Exception($"{Path.GetFileName(filename)} is not a valid neo-express checkpoint file");
-        //    }
-
-        //    using (var reader = new StreamReader(entry.Open()))
-        //    {
-        //        var address = reader.ReadToEnd();
-        //        if (address != account.Wallet.DefaultAccount.Address)
-        //        {
-        //            throw new Exception($"{Path.GetFileName(filename)} is a checkpoint for a different blockchain ({address})");
-        //        }
-        //    }
-        //}
-
         private static string ValidateCheckpointFileName(string name)
         {
             var filename = name;

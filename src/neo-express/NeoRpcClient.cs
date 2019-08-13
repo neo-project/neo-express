@@ -1,6 +1,4 @@
-﻿using Neo.SmartContract;
-using Neo.Wallets;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -10,7 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Neo.Express.Backend2
+namespace Neo.Express
 {
     static class NeoRpcClient
     {

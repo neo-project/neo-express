@@ -90,9 +90,12 @@ namespace Neo.Express
             return false;
         }
 
+        public static bool NameEquals(this ExpressWallet wallet, string name) =>
+            wallet.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase);
+        
         public static ExpressWallet GetWallet(this ExpressChain chain, string name) => 
             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => name.Equals(w.Name, StringComparison.InvariantCultureIgnoreCase));
+                .SingleOrDefault(w => w.NameEquals(name));
 
         public static string GetBlockchainPath(this ExpressWalletAccount account)
         {
@@ -103,6 +106,32 @@ namespace Neo.Express
 
             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
         }
+
+        public static ExpressWalletAccount GetAccount(this ExpressChain chain, string name)
+        {
+            var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
+            if (wallet != default)
+            {
+                return wallet.DefaultAccount;
+            }
+
+            var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
+            if (node != default)
+            {
+                return node.Wallet.DefaultAccount;
+            }
+
+            if (name.Equals("genesis", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return chain.ConsensusNodes
+                    .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
+                    .SingleOrDefault();
+            }
+
+            return default;
+        }
+
+        public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
 
         public static string GetBlockchainPath(this ExpressWallet wallet)
         {

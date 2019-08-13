@@ -17,9 +17,9 @@ namespace Neo.Express.Backend2
 {
     public class Neo2Backend : INeoBackend
     {
-        public static string ROOT_PATH => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "NEO-Express", "backend2", "blockchain-nodes");
+        //public static string ROOT_PATH => Path.Combine(
+        //    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        //    "NEO-Express", "backend2", "blockchain-nodes");
 
         public ExpressChain CreateBlockchain(int count, ushort port)
         {
@@ -31,35 +31,55 @@ namespace Neo.Express.Backend2
 
             var wallets = new List<(DevWallet wallet, Wallets.WalletAccount account)>(count);
 
-            for (int i = 1; i <= count; i++)
+            try
             {
-                var wallet = new DevWallet($"node{i}");
+                for (int i = 1; i <= count; i++)
+                {
+                    var wallet = new DevWallet($"node{i}");
+                    var account = wallet.CreateAccount();
+                    account.IsDefault = true;
+                    wallets.Add((wallet, account));
+                }
+
+                var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
+
+                var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+
+                foreach (var (wallet, account) in wallets)
+                {
+                    var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
+                    multiSigContractAccount.Label = "MultiSigContract";
+                }
+
+                return new ExpressChain()
+                {
+                    Magic = ExpressChain.GenerateMagicValue(),
+                    ConsensusNodes = wallets.Select(t => new ExpressConsensusNode()
+                    {
+                        TcpPort = port++,
+                        WebSocketPort = port++,
+                        RpcPort = port++,
+                        Wallet = t.wallet.ToExpressWallet()
+                    }).ToList()
+                };
+            }
+            finally
+            {
+                foreach (var (wallet, _) in wallets)
+                {
+                    wallet.Dispose();
+                }
+            }
+        }
+
+        public ExpressWallet CreateWallet(string name)
+        {
+            using (var wallet = new DevWallet(name))
+            {
                 var account = wallet.CreateAccount();
                 account.IsDefault = true;
-                wallets.Add((wallet, account));
+                return wallet.ToExpressWallet();
             }
-
-            var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
-
-            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
-
-            foreach (var (wallet, account) in wallets)
-            {
-                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-                multiSigContractAccount.Label = "MultiSigContract";
-            }
-
-            return new ExpressChain()
-            {
-                Magic = ExpressChain.GenerateMagicValue(),
-                ConsensusNodes = wallets.Select(t => new ExpressConsensusNode()
-                {
-                    TcpPort = port++,
-                    WebSocketPort = port++,
-                    RpcPort = port++,
-                    Wallet = t.wallet.ToExpressWallet()
-                }).ToList()
-            };
         }
 
         //private class LogPlugin : Plugin, ILogPlugin

@@ -13,13 +13,12 @@ namespace Neo.Express
         //typeof(CheckPointCommand),
         //typeof(ClaimCommand),
         //typeof(ContractCommand),
-        typeof(CreateCommand)
+        typeof(CreateCommand),
         //typeof(RunCommand)
         //typeof(ExportCommand),
         //typeof(ShowCommand),
         //typeof(TransferCommand),
-        //typeof(WalletCommand)
-        )]
+        typeof(WalletCommand))]
     internal class Program
     {
         public static string ROOT_PATH => Path.Combine(
@@ -57,7 +56,7 @@ namespace Neo.Express
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
            : filename;
 
-        public static (JObject json, string filename) LoadExpressChain(string filename)
+        public static (Abstractions.ExpressChain chain, string filename) LoadExpressChain(string filename)
         {
             filename = GetDefaultFilename(filename);
             if (!File.Exists(filename))
@@ -65,10 +64,11 @@ namespace Neo.Express
                 throw new Exception($"{filename} file doesn't exist");
             }
 
+            var serializer = new JsonSerializer();
             using (var stream = File.OpenRead(filename))
             using (var reader = new JsonTextReader(new StreamReader(stream)))
             {
-                return (JObject.Load(reader), filename);
+                return (serializer.Deserialize<Abstractions.ExpressChain>(reader), filename);
             }
         }
 

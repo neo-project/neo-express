@@ -56,15 +56,8 @@ namespace Neo.Express.Commands
 
                 var count = (Count == 0 ? 1 : Count);
                 var port = Port == 0 ? (ushort)49152 : Port;
-                var backend = Program.GetBackend();
-                var chain = backend.CreateBlockchain(count, port);
-
-                var serializer = new JsonSerializer();
-                using (var stream = File.Open(output, FileMode.Create, FileAccess.Write))
-                using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
-                {
-                    serializer.Serialize(writer, chain);
-                }
+                var chain = Program.GetBackend().CreateBlockchain(count, port);
+                chain.Save(output);
 
                 console.WriteLine($"Created {count} node privatenet at {output}");
                 console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");

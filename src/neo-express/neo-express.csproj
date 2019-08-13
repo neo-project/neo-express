@@ -33,11 +33,7 @@
     <Compile Remove="Commands\RunCommand.cs" />
     <Compile Remove="Commands\ShowCommand.cs" />
     <Compile Remove="Commands\TransferCommand.cs" />
-    <Compile Remove="Commands\WalletCommand.Create.cs" />
-    <Compile Remove="Commands\WalletCommand.cs" />
-    <Compile Remove="Commands\WalletCommand.Delete.cs" />
     <Compile Remove="Commands\WalletCommand.Export.cs" />
-    <Compile Remove="Commands\WalletCommand.List.cs" />
   </ItemGroup>
 
   <ItemGroup>

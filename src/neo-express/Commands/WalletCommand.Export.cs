@@ -27,34 +27,34 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var output = string.IsNullOrEmpty(Output)
-                       ? Path.Combine(Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
-                       : Output;
+                    //var output = string.IsNullOrEmpty(Output)
+                    //   ? Path.Combine(Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
+                    //   : Output;
 
-                    if (File.Exists(output))
-                    {
-                        if (Force)
-                        {
-                            File.Delete(output);
-                        }
-                        else
-                        {
-                            throw new Exception("You must specify force to overwrite an exported wallet.");
-                        }
-                    }
+                    //if (File.Exists(output))
+                    //{
+                    //    if (Force)
+                    //    {
+                    //        File.Delete(output);
+                    //    }
+                    //    else
+                    //    {
+                    //        throw new Exception("You must specify force to overwrite an exported wallet.");
+                    //    }
+                    //}
 
-                    var (devChain, _) = DevChain.Load(Input);
-                    var wallet = devChain.GetWallet(Name);
-                    if (wallet == default)
-                    {
-                        console.WriteLine($"{Name} privatenet wallet not found.");
-                    }
-                    else
-                    {
-                        var password = Prompt.GetPassword("Input password to use for exported wallet");
-                        wallet.Export(output, password);
-                        console.WriteLine($"{Name} privatenet wallet exported to {output}");
-                    }
+                    //var (devChain, _) = DevChain.Load(Input);
+                    //var wallet = devChain.GetWallet(Name);
+                    //if (wallet == default)
+                    //{
+                    //    console.WriteLine($"{Name} privatenet wallet not found.");
+                    //}
+                    //else
+                    //{
+                    //    var password = Prompt.GetPassword("Input password to use for exported wallet");
+                    //    wallet.Export(output, password);
+                    //    console.WriteLine($"{Name} privatenet wallet exported to {output}");
+                    //}
 
                     return 0;
                 }

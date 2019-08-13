@@ -1,7 +1,10 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using Neo.Express.Abstractions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Neo.Express
@@ -62,6 +65,34 @@ namespace Neo.Express
         {
             WriteMessage(console, message, ConsoleColor.Yellow);
         }
+
+        public static void Save(this ExpressChain chain, string fileName)
+        {
+            var serializer = new JsonSerializer();
+            using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
+            using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
+            {
+                serializer.Serialize(writer, chain);
+            }
+        }
+
+        public static bool IsReservedName(this ExpressChain chain, string name)
+        {
+            if (name.Equals("genesis", StringComparison.InvariantCultureIgnoreCase))
+                return true;
+
+            foreach (var node in chain.ConsensusNodes)
+            {
+                if (name.Equals(node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static ExpressWallet GetWallet(this ExpressChain chain, string name) => 
+            (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                .SingleOrDefault(w => name.Equals(w.Name, StringComparison.InvariantCultureIgnoreCase));
 
         //public static string GetBlockchainPath(this DevWalletAccount account)
         //{

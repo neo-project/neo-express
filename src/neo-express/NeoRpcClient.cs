@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Neo.Express
+namespace NeoExpress
 {
     static class NeoRpcClient
     {

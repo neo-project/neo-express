@@ -2,7 +2,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class WalletCommand
     {

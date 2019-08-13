@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class CheckPointCommand
     {

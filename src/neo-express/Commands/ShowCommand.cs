@@ -5,7 +5,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("show")]
     [Subcommand(typeof(Account), typeof(Coins), typeof(Gas))]

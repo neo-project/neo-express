@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("export")]
     internal class ExportCommand

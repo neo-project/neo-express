@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System;
 using System.Linq;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("run")]
     internal class RunCommand

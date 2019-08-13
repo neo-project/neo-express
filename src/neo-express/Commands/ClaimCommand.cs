@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("claim")]
 

@@ -3,7 +3,7 @@ using System.IO.Compression;
 using System;
 using System.IO;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("checkpoint")]
     [Subcommand(typeof(Create), typeof(Restore), typeof(Run))]

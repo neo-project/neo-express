@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class ContractCommand
     {

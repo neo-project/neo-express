@@ -1,7 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class ContractCommand
     {

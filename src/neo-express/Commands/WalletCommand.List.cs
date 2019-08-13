@@ -3,7 +3,7 @@ using Neo.Express.Abstractions;
 using System;
 using System.Linq;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class WalletCommand
     {

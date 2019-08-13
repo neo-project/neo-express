@@ -7,7 +7,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo.Express.Backend2;
 using Newtonsoft.Json;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("create")]
     internal class CreateCommand

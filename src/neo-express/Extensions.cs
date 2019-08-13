@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Neo.Express
+namespace NeoExpress
 {
     internal static class Extensions
     {

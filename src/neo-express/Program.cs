@@ -1,13 +1,13 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Neo.Express.Abstractions;
-using Neo.Express.Commands;
+using NeoExpress.Commands;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Reflection;
 
-namespace Neo.Express
+namespace NeoExpress
 {
     [Command("neo-express")]
     [Subcommand(
@@ -75,7 +75,7 @@ namespace Neo.Express
 
         public static INeoBackend GetBackend()
         {
-            return new Backend2.Neo2Backend();
+            return new Neo.Express.Backend2.Neo2Backend();
         }
     }
 }

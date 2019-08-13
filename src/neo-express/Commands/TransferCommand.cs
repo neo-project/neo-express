@@ -8,7 +8,7 @@ using Neo.Wallets;
 using System.Collections.Generic;
 using Neo.Express.Abstractions;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("transfer")]
     internal class TransferCommand

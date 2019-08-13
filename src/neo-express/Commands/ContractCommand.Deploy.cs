@@ -29,20 +29,20 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (devChain, _) = DevChain.Load(Input);
-                    var contract = devChain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var contract = chain.GetContract(Contract);
                     if (contract == default)
                     {
                         throw new Exception($"Contract {Contract} not found.");
                     }
 
-                    var account = devChain.GetAccount(Account);
+                    var account = chain.GetAccount(Account);
                     if (account == default)
                     {
                         throw new Exception($"Account {Account} not found.");
                     }
 
-                    var uri = devChain.GetUri();
+                    var uri = chain.GetUri();
                     var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
                     console.WriteLine(result.ToString(Formatting.Indented));
 
@@ -53,9 +53,9 @@ namespace NeoExpress.Commands
                     }
                     else
                     {
-                        var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                        var data = result.Value<string>("hash-data").ToByteArray();
                         var signatures = new JArray(account.Sign(data));
-                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures).ConfigureAwait(false);
                         console.WriteLine(result2.ToString(Formatting.Indented));
                     }
 

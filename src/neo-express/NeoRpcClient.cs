@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using NeoExpress.Abstractions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -66,20 +67,20 @@ namespace NeoExpress
             return RpcCall(uri, "express-claim", new JArray(asset, address));
         }
 
-        private static JToken ToJToken(Action<JsonWriter> action)
+        private static JToken SerializeToJToken<T>(T obj)
         {
+            var serializer = new JsonSerializer();
             using (var writer = new JTokenWriter())
             {
-                action(writer);
+                serializer.Serialize(writer, obj);
                 return writer.Token;
             }
         }
 
-        //public static Task<JToken> ExpressDeployContract(Uri uri, NeoExpress.Abstractions.ExpressContract contract, string address)
-        //{
-        //    return RpcCall(uri, "express-deploy-contract", new JArray(
-        //        ToJToken(contract.ToJson), address));
-        //}
+        public static Task<JToken> ExpressDeployContract(Uri uri, ExpressContract contract, string address)
+        {
+            return RpcCall(uri, "express-deploy-contract", new JArray(SerializeToJToken(contract), address));
+        }
 
         //public static Task<JToken> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<ContractParameter> scriptParams, string address = null)
         //{
@@ -87,7 +88,7 @@ namespace NeoExpress
         //    return RpcCall(uri, "express-invoke-contract", new JArray(
         //        scriptHash.ToString(),
         //        @params,
-        //        address);
+        //        address));
         //}
 
         public static Task<JToken> GetContractState(Uri uri, string scriptHash)

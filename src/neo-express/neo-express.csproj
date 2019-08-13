@@ -17,13 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Commands\ContractCommand.cs" />
-    <Compile Remove="Commands\ContractCommand.Deploy.cs" />
-    <Compile Remove="Commands\ContractCommand.Get.cs" />
-    <Compile Remove="Commands\ContractCommand.Import.cs" />
-    <Compile Remove="Commands\ContractCommand.Invoke.cs" />
-    <Compile Remove="Commands\ContractCommand.List.cs" />
-    <Compile Remove="Commands\ContractCommand.Storage.cs" />
     <Compile Remove="Commands\ExportCommand.cs" />
     <Compile Remove="Commands\WalletCommand.Export.cs" />
   </ItemGroup>

@@ -24,22 +24,22 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (devChain, _) = DevChain.Load(Input);
-                    var contract = devChain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var contract = chain.GetContract(Contract);
                     if (contract == default)
                     {
                         throw new Exception($"Contract {Contract} not found.");
                     }
 
-                    var uri = devChain.GetUri();
+                    var uri = chain.GetUri();
                     var result = await NeoRpcClient.ExpressGetContractStorage(uri, contract.Hash);
 
                     if (result != null && result.Any())
                     {
                         foreach (var kvp in result)
                         {
-                            var key = kvp.Value<string>("key").HexToBytes();
-                            var value = kvp.Value<string>("value").HexToBytes();
+                            var key = kvp.Value<string>("key").ToByteArray();
+                            var value = kvp.Value<string>("value").ToByteArray();
                             var constant = kvp.Value<bool>("constant");
 
                             console.Write("0x");

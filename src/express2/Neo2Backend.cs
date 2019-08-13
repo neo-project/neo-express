@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NeoExpress.Neo2Backend.Persistence;
 using Neo;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Neo2Backend
 {
@@ -197,6 +198,57 @@ namespace NeoExpress.Neo2Backend
             var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
             var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
             return (signature, key.PublicKey.EncodePoint(true));
+        }
+
+        private static ExpressContract.Parameter ToExpressContractParameter(AbiContract.Parameter parameter) => new ExpressContract.Parameter
+        {
+            Name = parameter.Name,
+            Type = parameter.Type
+        };
+
+        private static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function) => new ExpressContract.Function
+        {
+            Name = function.Name,
+            ReturnType = function.ReturnType,
+            Parameters = function.Parameters.Select(ToExpressContractParameter).ToList()
+        };
+
+        public ExpressContract ImportContract(string avmFile)
+        {
+            AbiContract GetAbiContract(string filename)
+            {
+                if (!File.Exists(filename))
+                {
+                    throw new Exception($"there is no .abi.json file for {avmFile}.");
+                }
+
+                var serializer = new JsonSerializer();
+                using (var stream = File.OpenRead(filename))
+                using (var reader = new JsonTextReader(new StreamReader(stream)))
+                {
+                    return serializer.Deserialize<AbiContract>(reader);
+                }
+            }
+
+            System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+            var abiContract = GetAbiContract(Path.ChangeExtension(avmFile, ".abi.json"));
+
+            var name = Path.GetFileNameWithoutExtension(avmFile);
+            return new ExpressContract()
+            {
+                Name = name,
+                Hash = abiContract.Hash,
+                Entrypoint = abiContract.Entrypoint,
+                ContractData = File.ReadAllBytes(avmFile).ToHexString(),
+                Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
+                Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
+                Title = name,
+                Description = "No description provided",
+                Author = "No author provided",
+                Email = "nobody@fake.email",
+                Version = "0.1.0",
+                // TODO: ContractPropertyState (HasStorage, HasDynamicInvoke, Payable)
+            };
         }
     }
 }

@@ -12,5 +12,6 @@ namespace NeoExpress.Abstractions
         CancellationTokenSource RunCheckpoint(string directory, ExpressChain chain, uint secondsPerBlock, Action<string> writeConsole);
         void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory);
         (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data);
+        ExpressContract ImportContract(string avmFile);
     }
 }

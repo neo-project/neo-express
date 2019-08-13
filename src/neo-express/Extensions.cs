@@ -128,6 +128,16 @@ namespace NeoExpress
             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
         }
 
+        public static ExpressContract GetContract(this ExpressChain chain, string name)
+        {
+            if (chain.Contracts != null)
+            {
+                return chain.Contracts.SingleOrDefault(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            }
+
+            return default;
+        }
+
         public static ExpressWalletAccount GetAccount(this ExpressChain chain, string name)
         {
             var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));

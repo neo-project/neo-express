@@ -6,7 +6,7 @@
 //
 //    var expressChain = ExpressChain.FromJson(jsonString);
 
-namespace Neo.Express.Abstractions
+namespace NeoExpress.Abstractions
 {
     using System;
     using System.Collections.Generic;

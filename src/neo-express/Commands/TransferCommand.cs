@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo.Wallets;
 using System.Collections.Generic;
-using Neo.Express.Abstractions;
+using NeoExpress.Abstractions;
 
 namespace NeoExpress.Commands
 {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Newtonsoft.Json;
 
-namespace Neo.Express.Abstractions
+namespace NeoExpress.Abstractions
 {
     public class ExpressChain
     {

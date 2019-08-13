@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Neo.Express.Abstractions
+namespace NeoExpress.Abstractions
 {
     public interface INeoBackend
     {

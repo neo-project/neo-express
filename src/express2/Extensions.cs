@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Neo.Express.Abstractions;
+using NeoExpress.Abstractions;
 using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;

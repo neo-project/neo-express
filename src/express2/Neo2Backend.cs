@@ -1,4 +1,4 @@
-﻿using Neo.Express.Abstractions;
+﻿using NeoExpress.Abstractions;
 using Neo.Express.Backend2.Persistence;
 using Neo.Persistence;
 using Newtonsoft.Json;

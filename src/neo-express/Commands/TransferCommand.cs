@@ -69,6 +69,7 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
+                    // TODO: DRY + standardize genesis vs. standard signing
                     var hashes = result["script-hashes"].Select(t => t.Value<string>());
                     var data = result.Value<string>("hash-data").ToByteArray();
                     var signatures = Sender.Equals("genesis", StringComparison.InvariantCultureIgnoreCase)

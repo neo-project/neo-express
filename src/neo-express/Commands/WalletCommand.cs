@@ -3,7 +3,7 @@
 namespace NeoExpress.Commands
 {
     [Command("wallet")]
-    [Subcommand(typeof(Create), typeof(Delete), /*typeof(Export), */typeof(List))]
+    [Subcommand(typeof(Create), typeof(Delete), typeof(Export), typeof(List))]
     internal partial class WalletCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)

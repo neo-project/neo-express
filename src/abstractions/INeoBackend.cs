@@ -13,5 +13,7 @@ namespace NeoExpress.Abstractions
         void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory);
         (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data);
         ExpressContract ImportContract(string avmFile);
+        void ExportWallet(ExpressWallet wallet, string filename, string password);
+        void ExportChain(ExpressChain chain, string folder, string password, Action<string> writeConsole);
     }
 }

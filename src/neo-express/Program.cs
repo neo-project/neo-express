@@ -18,7 +18,7 @@ namespace NeoExpress
         typeof(ContractCommand),
         typeof(CreateCommand),
         typeof(RunCommand),
-        //typeof(ExportCommand),
+        typeof(ExportCommand),
         typeof(ShowCommand),
         typeof(TransferCommand),
         typeof(WalletCommand))]

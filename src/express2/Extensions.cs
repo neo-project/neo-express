@@ -16,7 +16,6 @@ namespace NeoExpress.Neo2Backend
         public static JObject Sign(this WalletAccount account, byte[] data)
         {
             var key = account.GetKey();
-            //var publicKey = key.PublicKey.EncodePoint(false).Skip(1).ToArray();
             var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
             var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
 

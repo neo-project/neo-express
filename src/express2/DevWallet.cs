@@ -41,39 +41,6 @@ namespace NeoExpress.Neo2Backend
             return new DevWallet(wallet.Name, accounts);
         }
 
-        public static DevWallet FromJson(JToken json)
-        {
-            var name = json.Value<string>("name");
-            var accounts = json["accounts"].Select(DevWalletAccount.FromJson);
-            return new DevWallet(name, accounts);
-        }
-
-        public static KeyPair KeyPairFromJson(JToken json)
-        {
-            var privateKey = json["accounts"]
-                .Select(DevWalletAccount.PrivateKeyFromJson)
-                .Distinct()
-                .Single()
-                .HexToBytes();
-            return new KeyPair(privateKey);
-        }
-
-        public void ToJson(JsonWriter writer)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName("name");
-            writer.WriteValue(Name);
-            writer.WritePropertyName("accounts");
-            writer.WriteStartArray();
-
-            foreach (var account in accounts.Values)
-            {
-                account.ToJson(writer);
-            }
-            writer.WriteEndArray();
-            writer.WriteEndObject();
-        }
-
         public void Export(string filename, string password)
         {
             var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(null, filename, Name);
@@ -84,13 +51,6 @@ namespace NeoExpress.Neo2Backend
             }
             nep6Wallet.Save();
         }
-
-        public bool NameMatches(string name)
-        {
-            return string.Compare(Name, name, true) == 0;
-        }
-
-        public DevWalletAccount DefaultAccount => accounts.Values.SingleOrDefault(a => a.IsDefault);
 
         public override string Name => name;
 

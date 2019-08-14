@@ -210,7 +210,7 @@ namespace NeoExpress.Neo2Backend
         {
             void WriteNodeConfigJson(ExpressConsensusNode _node, string walletPath)
             {
-                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), $"{_node.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write))
+                using (var stream = File.Open(Path.Combine(folder, $"{_node.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write))
                 using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
                 {
                     writer.WriteStartObject();
@@ -262,7 +262,7 @@ namespace NeoExpress.Neo2Backend
 
             void WriteProtocolJson()
             {
-                using (var stream = File.Open(Path.Combine(Directory.GetCurrentDirectory(), "protocol.json"), FileMode.Create, FileAccess.Write))
+                using (var stream = File.Open(Path.Combine(folder, "protocol.json"), FileMode.Create, FileAccess.Write))
                 using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
                 {
                     writer.WriteStartObject();
@@ -316,17 +316,15 @@ namespace NeoExpress.Neo2Backend
             WriteProtocolJson();
         }
 
-        private static ExpressContract.Parameter ToExpressContractParameter(AbiContract.Parameter parameter) => new ExpressContract.Parameter
-        {
-            Name = parameter.Name,
-            Type = parameter.Type
-        };
-
         private static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function) => new ExpressContract.Function
         {
             Name = function.Name,
             ReturnType = function.ReturnType,
-            Parameters = function.Parameters.Select(ToExpressContractParameter).ToList()
+            Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
+            {
+                Name = p.Name,
+                Type = p.Type
+            }).ToList()
         };
 
         public ExpressContract ImportContract(string avmFile)

@@ -23,16 +23,5 @@ namespace NeoExpress.Neo2Backend
                 Console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
             }
         }
-
-
-
-
-
-
-
-
-
-
-
     }
 }

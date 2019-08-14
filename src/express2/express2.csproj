@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DevChain.cs" />
+    <Compile Remove="DevConsensusNode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="OneOf" Version="2.1.150" />
     <PackageReference Include="RocksDbNative" Version="5.17.2" />

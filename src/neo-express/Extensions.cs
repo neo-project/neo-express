@@ -41,6 +41,24 @@ namespace NeoExpress
             }
         }
 
+        public static JArray Sign(this ExpressWalletAccount account, IEnumerable<ExpressConsensusNode> nodes, JToken json, INeoBackend backend = null)
+        {
+            backend = backend ?? Program.GetBackend();
+            var data = json.Value<string>("hash-data").ToByteArray();
+
+            // TODO: better way to identify the genesis MultiSigContract?
+            if (account.Label == "MultiSigContract")
+            {
+                var hashes = json["script-hashes"].Select(t => t.Value<string>());
+                var signatures = nodes.SelectMany(n => n.Wallet.Sign(hashes, data, backend));
+                return new JArray(signatures);
+            }
+            else
+            {
+                return new JArray(account.Sign(data, backend));
+            }
+        }
+
         public static string ToHexString(this byte[] value)
         {
             StringBuilder sb = new StringBuilder();

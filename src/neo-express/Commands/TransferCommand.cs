@@ -69,13 +69,8 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    // TODO: DRY + standardize genesis vs. standard signing
-                    var hashes = result["script-hashes"].Select(t => t.Value<string>());
                     var data = result.Value<string>("hash-data").ToByteArray();
-                    var signatures = Sender.Equals("genesis", StringComparison.InvariantCultureIgnoreCase)
-                        ? GetGenesisSignatures(chain, hashes, data)
-                        : GetStandardSignatures(senderAccount, data);
-
+                    var signatures = senderAccount.Sign(chain.ConsensusNodes, result);
                     var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
                     console.WriteLine(result2.ToString(Formatting.Indented));
                 }

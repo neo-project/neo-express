@@ -101,9 +101,7 @@ namespace NeoExpress.Commands
 
                     if (account != null)
                     {
-                        // TODO: DRY + standardize genesis vs. standard signing
-                        var data = result.Value<string>("hash-data").ToByteArray();
-                        var signatures = new JArray(account.Sign(data));
+                        var signatures = account.Sign(chain.ConsensusNodes, result);
                         var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures).ConfigureAwait(false);
                         console.WriteLine(result2.ToString(Formatting.Indented));
                     }

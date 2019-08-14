@@ -19,7 +19,7 @@ namespace NeoExpress.Abstractions
             [JsonProperty("name")]
             public string Name { get; set; }
 
-            [JsonProperty("returntype")]
+            [JsonProperty("return-type")]
             public string ReturnType { get; set; }
 
             [JsonProperty("parameters")]
@@ -32,28 +32,14 @@ namespace NeoExpress.Abstractions
         [JsonProperty("hash")]
         public string Hash { get; set; }
 
-        [JsonProperty("entrypoint")]
-        public string Entrypoint { get; set; }
+        [JsonProperty("entry-point")]
+        public string EntryPoint { get; set; }
 
         [JsonProperty("contract-data")]
         public string ContractData { get; set; }
 
-        [JsonProperty("title")]
-        public string Title { get; set; }
-
-        [JsonProperty("description")]
-        public string Description { get; set; }
-
-        [JsonProperty("version")]
-        public string Version { get; set; }
-
-        [JsonProperty("author")]
-        public string Author { get; set; }
-
-        [JsonProperty("email")]
-        public string Email { get; set; }
-
-        // TODO: ContractPropertyState
+        [JsonProperty("properties")]
+        public Dictionary<string, string> Properties { get; set; }
 
         [JsonProperty("functions")]
         public List<Function> Functions { get; set; }

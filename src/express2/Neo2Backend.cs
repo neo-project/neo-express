@@ -238,16 +238,11 @@ namespace NeoExpress.Neo2Backend
             {
                 Name = name,
                 Hash = abiContract.Hash,
-                Entrypoint = abiContract.Entrypoint,
+                EntryPoint = abiContract.Entrypoint,
                 ContractData = File.ReadAllBytes(avmFile).ToHexString(),
                 Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
                 Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
-                Title = name,
-                Description = "No description provided",
-                Author = "No author provided",
-                Email = "nobody@fake.email",
-                Version = "0.1.0",
-                // TODO: ContractPropertyState (HasStorage, HasDynamicInvoke, Payable)
+                Properties = new Dictionary<string, string>()
             };
         }
     }

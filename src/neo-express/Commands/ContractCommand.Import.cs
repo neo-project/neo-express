@@ -46,6 +46,18 @@ namespace NeoExpress.Commands
                     }
                 }
 
+                // temporarily ask about storage and dynamic invoke
+                // this will change with NEO2 compiler improvements and/or NEO3 manifect
+                if (Prompt.GetYesNo("Does this contract use storage?", false))
+                {
+                    contract.Properties.Add("has-storage", "true");
+                }
+
+                if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
+                {
+                    contract.Properties.Add("has-dynamic-invoke", "true");
+                }
+
                 chain.Contracts.Add(contract);
                 chain.Save(filename);
 

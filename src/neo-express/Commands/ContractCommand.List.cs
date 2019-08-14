@@ -18,7 +18,7 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
                     foreach (var c in chain.Contracts)
                     {
-                        console.WriteLine($"{c.Name} - {c.Title}");
+                        console.WriteLine($"{c.Name}");
                         console.WriteLine($"\t{c.Hash}");
                     }
 

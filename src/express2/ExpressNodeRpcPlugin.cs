@@ -195,7 +195,7 @@ namespace NeoExpress.Neo2Backend
 
         public JObject OnDeployContract(JArray @params)
         {
-            var contract = DevContract.FromJson(Newtonsoft.Json.Linq.JToken.Parse(@params[0].ToString()));
+            var contract = Newtonsoft.Json.Linq.JToken.Parse(@params[0].ToString());
             var address = @params[1].AsString().ToScriptHash();
             var addresses = ImmutableHashSet.Create(address);
 

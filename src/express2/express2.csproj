@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <RootNamespace>Neo.Express.Backend2</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DevChain.cs" />
+    <Compile Remove="DevConsensusNode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="OneOf" Version="2.1.150" />
+    <PackageReference Include="RocksDbNative" Version="5.17.2" />
+    <PackageReference Include="RocksDbSharp" Version="5.17.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\deps\neo\neo\neo.csproj" />
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

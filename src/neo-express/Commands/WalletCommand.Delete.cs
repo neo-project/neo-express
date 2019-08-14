@@ -1,9 +1,8 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class WalletCommand
     {
@@ -24,8 +23,9 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var (devChain, filename) = DevChain.Load(Input);
-                    var wallet = devChain.GetWallet(Name);
+                    var (chain, filename) = Program.LoadExpressChain(Input);
+                    var wallet = chain.GetWallet(Name);
+
                     if (wallet == default)
                     {
                         console.WriteLine($"{Name} privatenet wallet not found.");
@@ -37,8 +37,8 @@ namespace Neo.Express.Commands
                             throw new Exception("You must specify force to delete a privatenet wallet.");
                         }
 
-                        devChain.Wallets.Remove(wallet);
-                        devChain.Save(filename);
+                        chain.Wallets.Remove(wallet);
+                        chain.Save(filename);
                         console.WriteLine($"{Name} privatenet wallet deleted.");
                     }
 

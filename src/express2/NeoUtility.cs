@@ -1,15 +1,17 @@
-﻿using Neo.Ledger;
+﻿using Neo;
+using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace Neo.Express
+namespace NeoExpress.Neo2Backend
 {
     internal static class NeoUtility
     {
@@ -234,7 +236,7 @@ namespace Neo.Express
             return null;
         }
 
-        public static (InvocationTransaction, ApplicationEngine) MakeDeploymentTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, DevContract contract)
+        public static (InvocationTransaction, ApplicationEngine) MakeDeploymentTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, Newtonsoft.Json.Linq.JToken contract)
         {
             var tx = BuildInvocationTx(() => BuildContractCreateScript(contract));
             var engine = ApplicationEngine.Run(tx.Script, tx, null, true);
@@ -309,22 +311,39 @@ namespace Neo.Express
             return builder;
         }
 
-        private static ScriptBuilder BuildContractCreateScript(DevContract contract)
+        private static ScriptBuilder BuildContractCreateScript(JToken json)
         {
-            var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
-            var parameters = entrypoint.Parameters.Select(t => t.type).Cast<byte>();
+            ContractParameterType TypeParse(JToken jtoken) => Enum.Parse<ContractParameterType>(jtoken.Value<string>());
+
+            var contractData = json.Value<string>("contract-data").HexToBytes();
+
+            var entryPoint = json.Value<string>("entry-point");
+            var entryFunction = json["functions"].Single(t => t.Value<string>("name") == entryPoint);
+            var entryParameters = entryFunction["parameters"].Select(t => TypeParse(t.Value<string>("type")));
+            var entryReturnType = TypeParse(entryFunction["return-type"]);
+
+            var props = json["properties"];
+            var title = props.Value<string>("title") ?? json.Value<string>("name");
+            var description = json.Value<string>("description") ?? "no description provided";
+            var version = json.Value<string>("version") ?? "0.1.0";
+            var author = json.Value<string>("author") ?? "no description provided";
+            var email = json.Value<string>("email") ?? "nobody@fake.email";
+
+            var contractPropertyState = ContractPropertyState.NoProperty;
+            if (props.Value<bool?>("has-storage") == true) contractPropertyState |= ContractPropertyState.HasStorage;
+            if (props.Value<bool?>("has-dynamic-invoke") == true) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
 
             var builder = new ScriptBuilder();
             builder.EmitSysCall("Neo.Contract.Create",
-                contract.ContractData,
-                parameters.ToArray(),
-                entrypoint.ReturnType,
-                contract.ContractPropertyState,
-                contract.Title,
-                contract.Version,
-                contract.Author,
-                contract.Email,
-                contract.Description);
+                contractData,
+                entryParameters.ToArray(),
+                entryReturnType,
+                contractPropertyState,
+                title,
+                version,
+                author,
+                email,
+                description);
             return builder;
         }
     }

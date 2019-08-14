@@ -3,7 +3,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class WalletCommand
     {
@@ -43,8 +43,8 @@ namespace Neo.Express.Commands
                         }
                     }
 
-                    var (devChain, _) = DevChain.Load(Input);
-                    var wallet = devChain.GetWallet(Name);
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var wallet = chain.GetWallet(Name);
                     if (wallet == default)
                     {
                         console.WriteLine($"{Name} privatenet wallet not found.");
@@ -52,7 +52,7 @@ namespace Neo.Express.Commands
                     else
                     {
                         var password = Prompt.GetPassword("Input password to use for exported wallet");
-                        wallet.Export(output, password);
+                        Program.GetBackend().ExportWallet(wallet, output, password);
                         console.WriteLine($"{Name} privatenet wallet exported to {output}");
                     }
 

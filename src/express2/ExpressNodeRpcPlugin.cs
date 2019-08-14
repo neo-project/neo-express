@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Microsoft.AspNetCore.Http;
+using Neo;
 using Neo.Cryptography.ECC;
 using Neo.IO.Json;
 using Neo.Ledger;
@@ -13,7 +14,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace Neo.Express
+namespace NeoExpress.Neo2Backend
 {
     internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin
     {
@@ -194,7 +195,7 @@ namespace Neo.Express
 
         public JObject OnDeployContract(JArray @params)
         {
-            var contract = DevContract.FromJson(Newtonsoft.Json.Linq.JToken.Parse(@params[0].ToString()));
+            var contract = Newtonsoft.Json.Linq.JToken.Parse(@params[0].ToString());
             var address = @params[1].AsString().ToScriptHash();
             var addresses = ImmutableHashSet.Create(address);
 

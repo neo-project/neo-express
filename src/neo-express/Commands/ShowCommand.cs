@@ -3,10 +3,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.Threading.Tasks;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("show")]
     [Subcommand(typeof(Account), typeof(Coins), typeof(Gas))]
@@ -19,18 +18,18 @@ namespace Neo.Express.Commands
             return 1;
         }
 
-        private static async Task<int> ExecuteAsync(CommandLineApplication app, IConsole console, string Name, string Input, Func<Uri, UInt160, Task<JToken>> func)
+        private static async Task<int> ExecuteAsync(CommandLineApplication app, IConsole console, string Name, string Input, Func<Uri, string, Task<JToken>> func)
         {
             try
             {
-                var (devChain, _) = DevChain.Load(Input);
-                var account = devChain.GetAccount(Name);
+                var (chain, _) = Program.LoadExpressChain(Input);
+                var account = chain.GetAccount(Name);
                 if (account == default)
                 {
                     throw new Exception($"{Name} wallet not found.");
                 }
 
-                var uri = devChain.GetUri();
+                var uri = chain.GetUri();
                 var result = await func(uri, account.ScriptHash).ConfigureAwait(false);
                 console.WriteLine(result.ToString(Formatting.Indented));
 

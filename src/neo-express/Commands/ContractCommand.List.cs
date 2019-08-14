@@ -1,8 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
-using System.IO;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class ContractCommand
     {
@@ -16,10 +15,10 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var (devChain, _) = DevChain.Load(Input);
-                    foreach (var c in devChain.Contracts)
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    foreach (var c in chain.Contracts)
                     {
-                        console.WriteLine($"{c.Name} - {c.Title}");
+                        console.WriteLine($"{c.Name}");
                         console.WriteLine($"\t{c.Hash}");
                     }
 

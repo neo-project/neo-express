@@ -1,5 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Neo.SmartContract;
+using NeoExpress.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -8,7 +9,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class ContractCommand
     {
@@ -31,7 +32,7 @@ namespace Neo.Express.Commands
             [Option]
             private string Function { get; }
 
-            static IEnumerable<ContractParameter> ParseArguments(DevContractFunction function, IEnumerable<string> arguments)
+            static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
             {
                 if (function.Parameters.Count != arguments.Count())
                 {
@@ -39,15 +40,14 @@ namespace Neo.Express.Commands
                 }
 
                 return function.Parameters.Zip(arguments,
-                    (paramTuple, argValue) =>
+                    (param, argValue) => new JObject()
                     {
-                        var p = new ContractParameter(paramTuple.type);
-                        p.SetValue(argValue);
-                        return p;
+                        ["type"] = param.Type,
+                        ["value"] = argValue
                     });
             }
 
-            IEnumerable<ContractParameter> ParseArguments(DevContract contract)
+            IEnumerable<JObject> ParseArguments(ExpressContract contract)
             {
                 var arguments = Arguments ?? Enumerable.Empty<string>();
 
@@ -65,10 +65,18 @@ namespace Neo.Express.Commands
                         throw new Exception($"Could not find function {Function}");
                     }
 
-                    return new ContractParameter[2]
+                    return new JObject[2]
                     {
-                        new ContractParameter(ContractParameterType.String) { Value = Function },
-                        new ContractParameter(ContractParameterType.Array) { Value = ParseArguments(function, arguments).ToList() }
+                        new JObject()
+                        {
+                            ["type"] = "String",
+                            ["value"] = Function
+                        },
+                        new JObject()
+                        {
+                            ["type"] = "Array",
+                            ["value"] = new JArray(ParseArguments(function, arguments))
+                        }
                     };
                 }
             }
@@ -77,25 +85,26 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var (devChain, _) = DevChain.Load(Input);
-                    var contract = devChain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var contract = chain.GetContract(Contract);
                     if (contract == default)
                     {
                         throw new Exception($"Contract {Contract} not found.");
                     }
 
-                    var account = devChain.GetAccount(Account);
+                    var account = chain.GetAccount(Account);
 
                     var args = ParseArguments(contract);
-                    var uri = devChain.GetUri();
+                    var uri = chain.GetUri();
                     var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
                     console.WriteLine(result.ToString(Formatting.Indented));
 
                     if (account != null)
                     {
-                        var (_, data) = NeoUtility.ParseResultHashesAndData(result);
+                        // TODO: DRY + standardize genesis vs. standard signing
+                        var data = result.Value<string>("hash-data").ToByteArray();
                         var signatures = new JArray(account.Sign(data));
-                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
+                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures).ConfigureAwait(false);
                         console.WriteLine(result2.ToString(Formatting.Indented));
                     }
                     return 0;

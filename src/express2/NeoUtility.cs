@@ -319,7 +319,7 @@ namespace NeoExpress.Neo2Backend
 
             var entryPoint = json.Value<string>("entry-point");
             var entryFunction = json["functions"].Single(t => t.Value<string>("name") == entryPoint);
-            var entryParameters = entryFunction["parameters"].Select(TypeParse);
+            var entryParameters = entryFunction["parameters"].Select(t => TypeParse(t.Value<string>("type")));
             var entryReturnType = TypeParse(entryFunction["return-type"]);
 
             var props = json["properties"];

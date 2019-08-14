@@ -152,7 +152,7 @@ namespace NeoExpress
                 return node.Wallet.DefaultAccount;
             }
 
-            if (name.Equals("genesis", StringComparison.InvariantCultureIgnoreCase))
+            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
             {
                 return chain.ConsensusNodes
                     .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))

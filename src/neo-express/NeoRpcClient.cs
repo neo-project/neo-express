@@ -67,29 +67,24 @@ namespace NeoExpress
             return RpcCall(uri, "express-claim", new JArray(asset, address));
         }
 
-        private static JToken SerializeToJToken<T>(T obj)
-        {
-            var serializer = new JsonSerializer();
-            using (var writer = new JTokenWriter())
-            {
-                serializer.Serialize(writer, obj);
-                return writer.Token;
-            }
-        }
-
         public static Task<JToken> ExpressDeployContract(Uri uri, ExpressContract contract, string address)
         {
-            return RpcCall(uri, "express-deploy-contract", new JArray(SerializeToJToken(contract), address));
+            JToken SerializeContract()
+            {
+                var serializer = new JsonSerializer();
+                using (var writer = new JTokenWriter())
+                {
+                    serializer.Serialize(writer, contract);
+                    return writer.Token;
+                }
+            }
+            return RpcCall(uri, "express-deploy-contract", new JArray(SerializeContract(), address));
         }
 
-        //public static Task<JToken> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<ContractParameter> scriptParams, string address = null)
-        //{
-        //    var @params = new JArray(scriptParams.Select(p => JObject.Parse(p.ToJson().ToString())));
-        //    return RpcCall(uri, "express-invoke-contract", new JArray(
-        //        scriptHash.ToString(),
-        //        @params,
-        //        address));
-        //}
+        public static Task<JToken> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<JObject> @params, string address = null)
+        {
+            return RpcCall(uri, "express-invoke-contract", new JArray(scriptHash, new JArray(@params), address));
+        }
 
         public static Task<JToken> GetContractState(Uri uri, string scriptHash)
         {

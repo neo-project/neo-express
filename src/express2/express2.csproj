@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="neo" Version="2.10.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="OneOf" Version="2.1.150" />
     <PackageReference Include="RocksDbNative" Version="5.17.2" />
@@ -19,7 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\deps\neo\neo\neo.csproj" />
     <ProjectReference Include="..\abstractions\abstractions.csproj" />
   </ItemGroup>
 

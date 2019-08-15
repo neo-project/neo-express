@@ -1,4 +1,0 @@
-[submodule "deps/neo"]
-	path = deps/neo
-	url = https://github.com/neo-project/neo.git
-	branch = master-2.x

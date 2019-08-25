@@ -1,0 +1,12 @@
+variables:
+  configuration: Release
+
+pool:
+  vmImage: 'windows-2019'
+
+trigger: none
+
+steps:
+- template: steps-build.yml
+  parameters:
+    configuration: $(configuration) 

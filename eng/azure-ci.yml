@@ -20,9 +20,6 @@ trigger:
 name: $(Year:yy)$(DayOfYear)$(Rev:.r)
 
 steps:
-- checkout: self
-  submodules: true
-  
 - task: PowerShell@2
   inputs:
     targetType: 'inline'
@@ -35,7 +32,7 @@ steps:
       Write-Host "##vso[task.setvariable variable=versionSuffix;]$suffix"
     pwsh: true
 
-- template: eng/build.yml
+- template: steps-build.yml
   parameters:
     versionSuffix: $(versionSuffix)
     configuration: $(configuration) 

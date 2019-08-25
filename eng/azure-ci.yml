@@ -38,9 +38,9 @@ steps:
     configuration: $(configuration) 
 
 - task: NuGetCommand@2
-  displayName: 'NuGet push to private feed'
+  displayName: 'NuGet push to NeoDevPackages feed'
   inputs:
     command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
     nuGetFeedType: 'internal'
-    publishVstsFeed: 'e4a31b7b-a6f8-4d1e-92d1-92d68bffefe3'
+    publishVstsFeed: '176ef395-dca6-4e1c-a5e7-cb4f884a7fdf'

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Neo.Express
+namespace NeoExpress.Neo2Backend
 {
     internal class ByteArrayComparer : IEqualityComparer<byte[]>
     {

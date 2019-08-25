@@ -1,9 +1,10 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class WalletCommand
     {
@@ -24,13 +25,13 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var (devChain, filename) = Express.DevChain.Load(Input);
-                    if (devChain.IsReservedName(Name))
+                    var (chain, filename) = Program.LoadExpressChain(Input);
+                    if (chain.IsReservedName(Name))
                     {
                         throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
                     }
 
-                    var existingWallet = devChain.GetWallet(Name);
+                    var existingWallet = chain.GetWallet(Name);
                     if (existingWallet != default)
                     {
                         if (!Force)
@@ -38,17 +39,19 @@ namespace Neo.Express.Commands
                             throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
                         }
 
-                        devChain.Wallets.Remove(existingWallet);
+                        chain.Wallets.Remove(existingWallet);
                     }
 
-                    var wallet = new DevWallet(Name);
-                    var account = wallet.CreateAccount();
-                    account.IsDefault = true;
+                    var wallet = Program.GetBackend().CreateWallet(Name);
+                    (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
+                        .Add(wallet);
+                    chain.Save(filename);
 
-                    devChain.Wallets.Add(wallet);
-                    devChain.Save(filename);
-
-                    console.WriteLine($"{Name}\n\t{account.Address}");
+                    console.WriteLine(Name);
+                    foreach (var account in wallet.Accounts)
+                    {
+                        console.WriteLine($"    {account.ScriptHash}");
+                    }
                     console.WriteWarning("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
                     console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 

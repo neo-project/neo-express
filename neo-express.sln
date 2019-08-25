@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29009.5
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neo-express", "src\neo-express\neo-express.csproj", "{5809F258-A23E-44B6-9AE5-93276E158EEA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neo-express", "src\neo-express\neo-express.csproj", "{5809F258-A23E-44B6-9AE5-93276E158EEA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "express2", "src\express2\express2.csproj", "{756BCED1-5AB9-496B-AA81-583CA936A86E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "abstractions", "src\abstractions\abstractions.csproj", "{6CF589F1-AA51-4770-8F00-33336676E802}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,13 +19,19 @@ Global
 		{5809F258-A23E-44B6-9AE5-93276E158EEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5809F258-A23E-44B6-9AE5-93276E158EEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5809F258-A23E-44B6-9AE5-93276E158EEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{756BCED1-5AB9-496B-AA81-583CA936A86E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CF589F1-AA51-4770-8F00-33336676E802}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CF589F1-AA51-4770-8F00-33336676E802}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CF589F1-AA51-4770-8F00-33336676E802}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CF589F1-AA51-4770-8F00-33336676E802}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E7C2B62D-925B-40C4-BB87-FFDE03FF4CF4}
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 EndGlobal

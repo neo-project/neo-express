@@ -1,7 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using System.Text;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command(Name = "contract")]
     [Subcommand(

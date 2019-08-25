@@ -2,11 +2,10 @@
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class ContractCommand
     {
@@ -24,15 +23,15 @@ namespace Neo.Express.Commands
             {
                 try
                 {
-                    var (devChain, _) = DevChain.Load(Input);
-                    var contract = devChain.Contracts.SingleOrDefault(c => c.Name == Contract);
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var contract = chain.GetContract(Contract);
                     if (contract == default)
                     {
                         throw new Exception($"Contract {Contract} not found.");
                     }
 
-                    var uri = devChain.GetUri();
-                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash);
+                    var uri = chain.GetUri();
+                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
                     console.WriteLine(result.ToString(Formatting.Indented));
 
                     return 0;

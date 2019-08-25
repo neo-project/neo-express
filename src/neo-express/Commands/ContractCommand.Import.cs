@@ -1,10 +1,12 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.Ledger;
+using NeoExpress.Abstractions;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     internal partial class ContractCommand
     {
@@ -22,46 +24,42 @@ namespace Neo.Express.Commands
 
             private int ImportContract(string avmFile, IConsole console)
             {
-                DevContract LoadDevContract()
-                {
-                    var abiJsonFile = Path.ChangeExtension(avmFile, ".abi.json");
-                    if (!File.Exists(abiJsonFile))
-                    {
-                        throw new Exception($"there is no .abi.json file for {avmFile}.");
-                    }
-
-                    var mdJsonFile = Path.ChangeExtension(avmFile, ".md.json");
-                    if (File.Exists(mdJsonFile))
-                    {
-                        return DevContract.Load(avmFile, abiJsonFile, mdJsonFile);
-                    }
-
-                    var contractPropertyState = ContractPropertyState.NoProperty;
-                    if (Prompt.GetYesNo("Does this contract use storage?", false)) contractPropertyState |= ContractPropertyState.HasStorage;
-                    if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false)) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
-                    if (Prompt.GetYesNo("Is this contract payable?", false)) contractPropertyState |= ContractPropertyState.Payable;
-
-                    return DevContract.Load(avmFile, abiJsonFile, contractPropertyState);
-                }
-
                 System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+                var (chain, filename) = Program.LoadExpressChain(Input);
+                var contract = Program.GetBackend().ImportContract(avmFile);
 
-                var contract = LoadDevContract();
-                var (devChain, filename) = DevChain.Load(Input);
-
-                var existingContract = devChain.Contracts.SingleOrDefault(c => c.Name == contract.Name);
-                if (existingContract != null)
+                if (chain.Contracts == null)
                 {
-                    if (!Force)
+                    chain.Contracts = new List<ExpressContract>(1);
+                }
+                else
+                {
+                    var existingContract = chain.Contracts.SingleOrDefault(c => c.Name.Equals(contract.Name, StringComparison.InvariantCultureIgnoreCase));
+                    if (existingContract != null)
                     {
-                        throw new Exception($"{contract.Name} dev contract already exists. Use --force to overwrite.");
-                    }
+                        if (!Force)
+                        {
+                            throw new Exception($"{contract.Name} dev contract already exists. Use --force to overwrite.");
+                        }
 
-                    devChain.Contracts.Remove(existingContract);
+                        chain.Contracts.Remove(existingContract);
+                    }
                 }
 
-                devChain.Contracts.Add(contract);
-                devChain.Save(filename);
+                // temporarily ask about storage and dynamic invoke
+                // this will change with NEO2 compiler improvements and/or NEO3 manifect
+                if (Prompt.GetYesNo("Does this contract use storage?", false))
+                {
+                    contract.Properties.Add("has-storage", "true");
+                }
+
+                if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
+                {
+                    contract.Properties.Add("has-dynamic-invoke", "true");
+                }
+
+                chain.Contracts.Add(contract);
+                chain.Save(filename);
 
                 return 0;
             }
@@ -72,6 +70,7 @@ namespace Neo.Express.Commands
                 {
                     if ((File.GetAttributes(ContractPath) & FileAttributes.Directory) != 0)
                     {
+                        // extension changes to .nvm in NEO 3
                         var avmFiles = Directory.EnumerateFiles(ContractPath, "*.avm");
                         var avmFileCount = avmFiles.Count();
 

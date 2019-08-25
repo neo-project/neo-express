@@ -1,10 +1,15 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.Express.Commands;
+using NeoExpress.Abstractions;
+using NeoExpress.Commands;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
-namespace Neo.Express
+namespace NeoExpress
 {
     [Command("neo-express")]
     [Subcommand(
@@ -36,7 +41,6 @@ namespace Neo.Express
         [Option]
         private bool Version { get; }
 
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             if (Version)
@@ -49,6 +53,31 @@ namespace Neo.Express
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp();
             return 1;
+        }
+
+        public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
+           ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
+           : filename;
+
+        public static (ExpressChain chain, string filename) LoadExpressChain(string filename)
+        {
+            filename = GetDefaultFilename(filename);
+            if (!File.Exists(filename))
+            {
+                throw new Exception($"{filename} file doesn't exist");
+            }
+
+            var serializer = new JsonSerializer();
+            using (var stream = File.OpenRead(filename))
+            using (var reader = new JsonTextReader(new StreamReader(stream)))
+            {
+                return (serializer.Deserialize<ExpressChain>(reader), filename);
+            }
+        }
+
+        public static INeoBackend GetBackend()
+        {
+            return new Neo2Backend.Neo2Backend();
         }
     }
 }

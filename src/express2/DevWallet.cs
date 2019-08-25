@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using NeoExpress.Abstractions;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Neo;
 
-namespace Neo.Express
+namespace NeoExpress.Neo2Backend
 {
     public class DevWallet : Wallet
     {
@@ -25,37 +27,18 @@ namespace Neo.Express
             }
         }
 
-        public static DevWallet FromJson(JToken json)
+        public ExpressWallet ToExpressWallet() => new ExpressWallet()
         {
-            var name = json.Value<string>("name");
-            var accounts = json["accounts"].Select(DevWalletAccount.FromJson);
-            return new DevWallet(name, accounts);
-        }
+            Name = name,
+            Accounts = accounts.Values
+                    .Select(a => a.ToExpressWalletAccount())
+                    .ToList(),
+        };
 
-        public static KeyPair KeyPairFromJson(JToken json)
+        public static DevWallet FromExpressWallet(ExpressWallet wallet)
         {
-            var privateKey = json["accounts"]
-                .Select(DevWalletAccount.PrivateKeyFromJson)
-                .Distinct()
-                .Single()
-                .HexToBytes();
-            return new KeyPair(privateKey);
-        }
-
-        public void ToJson(JsonWriter writer)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName("name");
-            writer.WriteValue(Name);
-            writer.WritePropertyName("accounts");
-            writer.WriteStartArray();
-
-            foreach (var account in accounts.Values)
-            {
-                account.ToJson(writer);
-            }
-            writer.WriteEndArray();
-            writer.WriteEndObject();
+            var accounts = wallet.Accounts.Select(DevWalletAccount.FromExpressWalletAccount);
+            return new DevWallet(wallet.Name, accounts);
         }
 
         public void Export(string filename, string password)
@@ -68,13 +51,6 @@ namespace Neo.Express
             }
             nep6Wallet.Save();
         }
-
-        public bool NameMatches(string name)
-        {
-            return string.Compare(Name, name, true) == 0;
-        }
-
-        public DevWalletAccount DefaultAccount => accounts.Values.SingleOrDefault(a => a.IsDefault);
 
         public override string Name => name;
 

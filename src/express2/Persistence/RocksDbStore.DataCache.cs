@@ -3,11 +3,11 @@ using RocksDbSharp;
 using System;
 using System.Collections.Generic;
 
-namespace Neo.Express.Persistence
+namespace NeoExpress.Neo2Backend.Persistence
 {
     internal partial class RocksDbStore
     {
-        private class DataCache<TKey, TValue> : IO.Caching.DataCache<TKey, TValue>
+        private class DataCache<TKey, TValue> : Neo.IO.Caching.DataCache<TKey, TValue>
             where TKey : IEquatable<TKey>, ISerializable, new()
             where TValue : class, ICloneable<TValue>, ISerializable, new()
         {

@@ -1,0 +1,24 @@
+parameters: # defaults for any parameters that aren't specified
+  versionSuffix: ''
+  configuration: 'Release'
+
+steps:
+- ${{ if eq(parameters.versionSuffix, '') }}:
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet pack'
+    inputs:
+      command: 'custom'
+      custom: pack
+      arguments: './src/neo-express/neo-express.csproj -c ${{ parameters.configuration }} -o $(Build.ArtifactStagingDirectory) --include-symbols'
+
+- ${{ if ne(parameters.versionSuffix, '') }}:
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet pack'
+    inputs:
+      command: 'custom'
+      custom: pack
+      arguments: './src/neo-express/neo-express.csproj --version-suffix ${{ parameters.versionSuffix }}-$(Build.BuildNumber) -c ${{ parameters.configuration }} -o $(Build.ArtifactStagingDirectory) --include-symbols'
+
+- publish: '$(Build.ArtifactStagingDirectory)'
+  displayName: 'publish build artifact'
+  name: nugetPackage

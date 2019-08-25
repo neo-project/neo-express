@@ -1,5 +1,5 @@
 variables:
-  configuration: release
+  configuration: Release
 
 pool:
   vmImage: 'windows-2019'
@@ -17,10 +17,9 @@ trigger:
     - 'readme.md'
     - 'docs/*'
 
+name: $(Year:yy)$(DayOfYear)$(Rev:.r)
+
 steps:
-- checkout: self
-  submodules: true
-  
 - task: PowerShell@2
   inputs:
     targetType: 'inline'
@@ -33,16 +32,10 @@ steps:
       Write-Host "##vso[task.setvariable variable=versionSuffix;]$suffix"
     pwsh: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet pack'
-  inputs:
-    command: 'custom'
-    custom: pack
-    arguments: './src/neo-express/neo-express.csproj --version-suffix $(versionSuffix)-$(Build.BuildNumber) -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
-
-- publish: '$(Build.ArtifactStagingDirectory)'
-  displayName: 'publish build artifact'
-  name: nugetPackage
+- template: steps-build.yml
+  parameters:
+    versionSuffix: $(versionSuffix)
+    configuration: $(configuration) 
 
 - task: NuGetCommand@2
   displayName: 'NuGet push to private feed'

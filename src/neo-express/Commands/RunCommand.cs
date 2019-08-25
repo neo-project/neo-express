@@ -1,15 +1,8 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.Plugins;
 using System.IO;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using System;
-using System.Linq;
-using Neo.Express.Persistence;
-using System.ComponentModel.DataAnnotations;
 
-namespace Neo.Express.Commands
+namespace NeoExpress.Commands
 {
     [Command("run")]
     internal class RunCommand
@@ -26,93 +19,40 @@ namespace Neo.Express.Commands
         [Option]
         private bool Reset { get; }
 
-        private class LogPlugin : Plugin, ILogPlugin
-        {
-            private readonly IConsole console;
-
-            public LogPlugin(IConsole console)
-            {
-                this.console = console;
-            }
-
-            public override void Configure()
-            {
-            }
-
-            void ILogPlugin.Log(string source, LogLevel level, string message)
-            {
-                console.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
-            }
-        }
-
-        public static CancellationTokenSource Run(Neo.Persistence.Store store, DevConsensusNode consensusNode, IConsole console)
-        {
-            var cts = new CancellationTokenSource();
-
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {
-                    using (var system = new NeoSystem(store))
-                    {
-                        var logPlugin = new LogPlugin(console);
-                        var rpcPlugin = new ExpressNodeRpcPlugin();
-
-                        system.StartNode(consensusNode.TcpPort, consensusNode.WebSocketPort);
-                        system.StartConsensus(consensusNode.Wallet);
-                        system.StartRpc(IPAddress.Any, consensusNode.RpcPort, consensusNode.Wallet);
-
-                        cts.Token.WaitHandle.WaitOne();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    console.WriteLine(ex);
-                    cts.Cancel();
-                }
-                finally
-                {
-                    if (store is IDisposable disp)
-                    {
-                        disp.Dispose();
-                    }
-                }
-            });
-
-            return cts;
-        }
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
-                var devChain = DevChain.Initialize(Input, SecondsPerBlock);
-                var nodeIndex = NodeIndex.GetValueOrDefault();
+                var (chain, _) = Program.LoadExpressChain(Input);
+                var index = NodeIndex.GetValueOrDefault();
 
-                if (!NodeIndex.HasValue && devChain.ConsensusNodes.Count > 1)
+                if (!NodeIndex.HasValue && chain.ConsensusNodes.Count > 1)
                 {
                     throw new Exception("Node index not specified");
                 }
 
-                if (nodeIndex >= devChain.ConsensusNodes.Count || nodeIndex < 0)
+                if (index >= chain.ConsensusNodes.Count || index < 0)
                 {
                     throw new Exception("Invalid node index");
                 }
 
-                var consensusNode = devChain.ConsensusNodes[nodeIndex];
-                var blockchainPath = consensusNode.GetBlockchainPath();
+                var node = chain.ConsensusNodes[index];
+                var folder = node.GetBlockchainPath();
 
-                if (Reset && Directory.Exists(blockchainPath))
+                if (Reset && Directory.Exists(folder))
                 {
-                    Directory.Delete(blockchainPath, true);
+                    Directory.Delete(folder, true);
                 }
 
-                if (!Directory.Exists(blockchainPath))
+                if (!Directory.Exists(folder))
                 {
-                    Directory.CreateDirectory(blockchainPath);
+                    Directory.CreateDirectory(folder);
                 }
 
-                var cts = Run(new RocksDbStore(blockchainPath), consensusNode, console);
+                var cts = Program.GetBackend()
+                    .RunBlockchain(folder, chain, index, SecondsPerBlock,
+                                   s => console.WriteLine(s));
+
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
                 cts.Token.WaitHandle.WaitOne();
                 return 0;

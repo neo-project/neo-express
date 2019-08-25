@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo.Express.Persistence
+namespace NeoExpress.Neo2Backend.Persistence
 {
     internal static class RocksDbExtensions
     {

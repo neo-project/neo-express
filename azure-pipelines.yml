@@ -17,6 +17,8 @@ trigger:
     - 'readme.md'
     - 'docs/*'
 
+name: $(Year:yy)$(DayOfYear)$(Rev:.r)
+
 steps:
 - checkout: self
   submodules: true

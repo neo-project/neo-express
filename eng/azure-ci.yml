@@ -9,7 +9,6 @@ trigger:
   branches:
     include:
       - master
-      - development
   paths:
     include:
     - '*'
@@ -17,25 +16,17 @@ trigger:
     - 'readme.md'
     - 'docs/*'
 
-name: $(Year:yy)$(DayOfYear)$(Rev:.r)
-
 steps:
-- task: PowerShell@2
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack'
   inputs:
-    targetType: 'inline'
-    script: |
-      $suffix = if ([string]::Equals($env:BUILD_SOURCEBRANCHNAME, "master", [System.StringComparison]::OrdinalIgnoreCase)) {
-        "preview"
-      } else {
-        $env:BUILD_SOURCEBRANCHNAME.ToLower()
-      }
-      Write-Host "##vso[task.setvariable variable=versionSuffix;]$suffix"
-    pwsh: true
+    command: 'custom'
+    custom: pack
+    arguments: './src/neo-express/neo-express.csproj -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
 
-- template: steps-build.yml
-  parameters:
-    versionSuffix: $(versionSuffix)
-    configuration: $(configuration) 
+- publish: '$(Build.ArtifactStagingDirectory)'
+  displayName: 'publish build artifact'
+  name: nugetPackage
 
 - task: NuGetCommand@2
   displayName: 'NuGet push to NeoDevPackages feed'

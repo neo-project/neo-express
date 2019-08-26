@@ -3,16 +3,15 @@
   "version": "0.8-preview",
   "publicReleaseRefSpec": [
     "^refs/heads/master$",
-    "^refs/heads/v\\d+(?:\\.\\d+)?$"
+    "^refs/heads/release/v\\d+(?:\\.\\d+)?$"
   ],
-  "release": {
-    "branchName" : "release/v{version}",
-    "versionIncrement" : "minor",
-    "firstUnstableTag" : "preview"
-  },
   "cloudBuild": {
     "buildNumber": {
       "enabled": true
     }
+  },
+  "release": {
+    "branchName": "release/v{version}",
+    "firstUnstableTag": "preview"
   }
 }

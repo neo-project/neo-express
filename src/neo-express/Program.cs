@@ -45,8 +45,7 @@ namespace NeoExpress
         {
             if (Version)
             {
-                var versionAttribute = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-                console.WriteLine(versionAttribute == null ? "unknown version" : versionAttribute.InformationalVersion);
+                console.WriteLine(ThisAssembly.AssemblyInformationalVersion);
                 return 0;
             }
 

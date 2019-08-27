@@ -17,11 +17,10 @@ to use NEO-Express.
 > these packages will be distributed via nuget.org and the VSCode marketplace.
 
 Download all the files from the [NEO Early Access Preview folder](http://tinyurl.com/neo-dev-eap).
-In addition to this quickstart, there are four nuget packages (.nupkg) and
-a VSCode extension (.vsix).
+In addition to this quickstart, there are three nuget packages (.nupkg), a
+VSCode extension (.vsix) and a command reference document (.md):
 
 - NEO Smart contract templates for dotnet new
-- Debug Adapter for NEO contract debugger for VSCode
 - NEO-Express developer blockchain
 - NEON-DE fork of NEON compiler (DE stands for "debugger enhancements")
 - NEO contract debugger for VSCode
@@ -31,22 +30,50 @@ and change to the folder the packages were downloaded to. Execute the
 following commands to install them:
 
 ``` shell
-dotnet new -i Neo.Contract.Templates.0.9.0.nupkg
-dotnet tool install -g neo-debug-adapter --add-source .
+dotnet new -i Neo.Contract.Templates.<version number>.nupkg
 dotnet tool install -g neo-express --add-source .
 dotnet tool install -g neon-de --add-source .
-code --install-extension ./neo-contract-debug-0.5.0.vsix  
+code --install-extension ./neo-contract-debug-<version number>.vsix  
 ```
 
-If this is the first time you've used [.NET Core global tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools),
-you will need to shutdown your terminal windows and reopen it.
-You may need to log out completely and log back in again. Make sure
-your path is correctly set up by running `neo-express --version`.
-It should echo back the version number (0.9.0 for this preview release).
+> Note, you can install the VSCode extension from inside the VSCode if you wish.
+> Please see the official VSCode docs on
+> [installing VSIX files](https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix)
+> for more information.
+
+If the neo-express or neon-de .nupkg files you are using have "-preview"
+in the name, you will need to specify the version string on the command line.
+when you install them. For example,
+`dotnet tool install -g neo-express --add-source . --version 0.8.3-preview`.
+If you try to install the tool without specifying the version in this case, the
+tool will fail to install, but the error message will explain how to fix the problem:
+
+``` shell
+$ dotnet tool install -g neo-express --add-source .
+error NU1103: Unable to find a stable package neo-express with version
+error NU1103:   - Found 1 version(s) in C:\Users\username\Downloads [ Nearest version: 0.8.3-preview ]
+error NU1103:   - Found 0 version(s) in Microsoft Visual Studio Offline Packages
+error NU1103:   - Found 0 version(s) in C:\Program Files\dotnet\sdk\NuGetFallbackFolder
+error NU1103:   - Found 0 version(s) in nuget.org
+The tool package could not be restored.
+Tool 'neo-express' failed to install. This failure may have been caused by:
+
+* You are attempting to install a preview release and did not use the --version option to specify the version.
+* A package by this name was found, but it was not a .NET Core tool.
+* The required NuGet feed cannot be accessed, perhaps because of an Internet connection problem.
+* You mistyped the name of the tool.
+```
+
+If this is the first time you've used
+[.NET Core global tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools),
+you will need to shutdown your terminal windows and reopen it. You may need to
+log out completely and log back in again. Make sure your path is correctly set
+up by running `neo-express --version`. It should echo back the version number.
+It will looks something (but not exactly) like this:
 
 ``` shell
 $ neo-express --version
-0.9.0
+0.8.3-preview+c21fa4e3a9
 ```
 
 ## Create a new Smart Contract

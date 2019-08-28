@@ -18,7 +18,7 @@ NEO-Express provides the following features:
 
 Please note, NEO-Express is in preview. There is more work to be done and there
 are assuredly bugs in the product. Please let us know of any issues you find via
-our [GitHub repo](https://github.com/ngdseattle/neo-express).
+our [GitHub repo](https://github.com/neo-project/neo-express/issues).
 
 Docs are somewhat limited at this point. Please review the
 [Command Reference](docs\command-reference.md) to get an understanding of
@@ -32,7 +32,7 @@ If you like NEO-Express, please let me know on [Twitter](https://twitter.com/dev
 [email](mailto:devhawk@outlook.com) or the [NEO Discord server](https://discord.gg/G5WEPwC).
 
 If there are things about NEO-Express you don't like, please file issues in our
-[GitHub repo](https://github.com/ngdseattle/neo-express). You can hit me up on
+[GitHub repo](https://github.com/neo-project/neo-express/issues). You can hit me up on
 Twitter, Discord or email as well, but GitHub issues are how we track improvements
 we make to NEO-Express. So don't be shy - file an issue if there is anything
 you'd like to see changed in the product.
@@ -82,37 +82,17 @@ dotnet tool install neo-express -g
 
 > Installing on Ubuntu 18.04 requires libsnappy-dev and libc6-dev
 
-### Install a CI Build
+### Install a Preview Build
 
-> Note, this section is not complete.
+> Note, the public artifact feed is not yet available. This section will be updated
+> when that feed goes public. 
 
-In addition to releases published on nuget.org, NEO-Express publishs
-
-
-Because NEO-Express is currently in preview, you need to specify the version you
-wish to install manually. If you attempt to install neo-express without specifying
-the version, the dotnet CLI tool will report the most recent version it could find.
-You can then specify the version to install when you re-run the install command. 
-
-> Note, the current version of NEO-Express as of this writing is `0.5.0-preview-20190801.3`.
-> However, a later version may be available when you go to install it.
+In addition to releases published on nuget.org, NEO-Express publishes preview
+releases on our Azure DevOps Artifacts feed (link to be added). If you wish
+to install one of these releases, you need to specify the feed source as well
+as the version number. For example, if you wanted to install the 0.8.3-preview
+release, you would execute the following command:
 
 ``` shell
-$> dotnet tool install neo-express -g 
-error NU1103: Unable to find a stable package neo-express with version
-error NU1103:   - Found 0 version(s) in Microsoft Visual Studio Offline Packages
-error NU1103:   - Found 0 version(s) in C:\Program Files\dotnet\sdk\NuGetFallbackFolder
-error NU1103:   - Found 2 version(s) in nuget.org
-                  [ Nearest version: 0.5.0-preview-20190801.3 ]
-The tool package could not be restored.
-Tool 'neo-express' failed to install. This failure may have been caused by:
-
-* You are attempting to install a preview release and did not use the --version option to specify the version.
-* A package by this name was found, but it was not a .NET Core tool.
-* The required NuGet feed cannot be accessed, perhaps because of an Internet connection problem.
-* You mistyped the name of the tool.
-
-$> dotnet tool install neo-express -g --version 0.5.0-preview-20190801.3
-You can invoke the tool using the following command: neo-express
-Tool 'neo-express' (version '0.5.0-preview-20190801.3') was successfully installed.
+dotnet tool install -g neo-express --add-source (link to be added) --version 0.8.3-preview
 ```

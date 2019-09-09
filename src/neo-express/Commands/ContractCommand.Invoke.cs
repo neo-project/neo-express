@@ -1,5 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.SmartContract;
 using NeoExpress.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

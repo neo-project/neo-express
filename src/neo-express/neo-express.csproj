@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
-    <PackageReference Include="neo" Version="2.10.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>
 

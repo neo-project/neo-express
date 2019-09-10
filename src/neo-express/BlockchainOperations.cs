@@ -6,7 +6,7 @@ using System.Text;
 
 namespace NeoExpress
 {
-    internal class BlockchainOperations
+    internal static class BlockchainOperations
     {
         public static ExpressChain CreateBlockchain(int count)
         {
@@ -48,6 +48,22 @@ namespace NeoExpress
                     wallet.Dispose();
                 }
             }
+        }
+
+        public static ExpressWallet CreateWallet(string name)
+        {
+            using (var wallet = new DevWallet(name))
+            {
+                var account = wallet.CreateAccount();
+                account.IsDefault = true;
+                return wallet.ToExpressWallet();
+            }
+        }
+
+        public static void ExportWallet(ExpressWallet wallet, string filename, string password)
+        {
+            var devWallet = DevWallet.FromExpressWallet(wallet);
+            devWallet.Export(filename, password);
         }
     }
 }

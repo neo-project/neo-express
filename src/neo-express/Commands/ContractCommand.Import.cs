@@ -1,4 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -21,44 +22,88 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; }
 
+            private static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function) => new ExpressContract.Function
+            {
+                Name = function.Name,
+                ReturnType = function.ReturnType,
+                Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
+                {
+                    Name = p.Name,
+                    Type = p.Type
+                }).ToList()
+            };
+
+            public ExpressContract ImportContract(string avmFile)
+            {
+                AbiContract GetAbiContract(string filename)
+                {
+                    if (!File.Exists(filename))
+                    {
+                        throw new Exception($"there is no .abi.json file for {avmFile}.");
+                    }
+
+                    var serializer = new JsonSerializer();
+                    using (var stream = File.OpenRead(filename))
+                    using (var reader = new JsonTextReader(new StreamReader(stream)))
+                    {
+                        return serializer.Deserialize<AbiContract>(reader);
+                    }
+                }
+
+                System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+                var abiContract = GetAbiContract(Path.ChangeExtension(avmFile, ".abi.json"));
+
+                var name = Path.GetFileNameWithoutExtension(avmFile);
+                return new ExpressContract()
+                {
+                    Name = name,
+                    Hash = abiContract.Hash,
+                    EntryPoint = abiContract.Entrypoint,
+                    ContractData = File.ReadAllBytes(avmFile).ToHexString(),
+                    Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
+                    Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
+                    Properties = new Dictionary<string, string>()
+                };
+            }
+
             private int ImportContract(string avmFile, IConsole console)
             {
-                //System.Diagnostics.Debug.Assert(File.Exists(avmFile));
-                //var (chain, filename) = Program.LoadExpressChain(Input);
-                //var contract = Program.GetBackend().ImportContract(avmFile);
+                System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+                var (chain, filename) = Program.LoadExpressChain(Input);
+                var contract = ImportContract(avmFile);
 
-                //if (chain.Contracts == null)
-                //{
-                //    chain.Contracts = new List<ExpressContract>(1);
-                //}
-                //else
-                //{
-                //    var existingContract = chain.Contracts.SingleOrDefault(c => c.Name.Equals(contract.Name, StringComparison.InvariantCultureIgnoreCase));
-                //    if (existingContract != null)
-                //    {
-                //        if (!Force)
-                //        {
-                //            throw new Exception($"{contract.Name} dev contract already exists. Use --force to overwrite.");
-                //        }
+                if (chain.Contracts == null)
+                {
+                    chain.Contracts = new List<ExpressContract>(1);
+                }
+                else
+                {
+                    var existingContract = chain.Contracts.SingleOrDefault(c => c.Name.Equals(contract.Name, StringComparison.InvariantCultureIgnoreCase));
+                    if (existingContract != null)
+                    {
+                        if (!Force)
+                        {
+                            throw new Exception($"{contract.Name} dev contract already exists. Use --force to overwrite.");
+                        }
 
-                //        chain.Contracts.Remove(existingContract);
-                //    }
-                //}
+                        chain.Contracts.Remove(existingContract);
+                    }
+                }
 
-                //// temporarily ask about storage and dynamic invoke
-                //// this will change with NEO2 compiler improvements and/or NEO3 manifect
-                //if (Prompt.GetYesNo("Does this contract use storage?", false))
-                //{
-                //    contract.Properties.Add("has-storage", "true");
-                //}
+                // temporarily ask about storage and dynamic invoke
+                // this will change with NEO2 compiler improvements and/or NEO3 manifect
+                if (Prompt.GetYesNo("Does this contract use storage?", false))
+                {
+                    contract.Properties.Add("has-storage", "true");
+                }
 
-                //if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
-                //{
-                //    contract.Properties.Add("has-dynamic-invoke", "true");
-                //}
+                if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
+                {
+                    contract.Properties.Add("has-dynamic-invoke", "true");
+                }
 
-                //chain.Contracts.Add(contract);
-                //chain.Save(filename);
+                chain.Contracts.Add(contract);
+                chain.Save(filename);
 
                 return 0;
             }

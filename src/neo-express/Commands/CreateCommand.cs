@@ -52,8 +52,8 @@ namespace NeoExpress.Commands
 
                 var count = (Count == 0 ? 1 : Count);
                 var port = Port == 0 ? (ushort)49152 : Port;
-                var chain = Program.GetBackend().CreateBlockchain(count, port);
-                chain.Save(output);
+                //var chain = Program.GetBackend().CreateBlockchain(count, port);
+                //chain.Save(output);
 
                 console.WriteLine($"Created {count} node privatenet at {output}");
                 console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");

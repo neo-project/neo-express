@@ -1,5 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
 using System;
 using System.Linq;
 
@@ -18,15 +17,15 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-                    foreach (var wallet in chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                    {
-                        console.WriteLine(wallet.Name);
+                    //foreach (var wallet in chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                    //{
+                    //    console.WriteLine(wallet.Name);
 
-                        foreach (var account in wallet.Accounts)
-                        {
-                            console.WriteLine($"    {account.ScriptHash}");
-                        }
-                    }
+                    //    foreach (var account in wallet.Accounts)
+                    //    {
+                    //        console.WriteLine($"    {account.ScriptHash}");
+                    //    }
+                    //}
 
                     return 0;
                 }

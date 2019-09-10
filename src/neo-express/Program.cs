@@ -1,6 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
 using NeoExpress.Commands;
+using NeoExpress.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -72,11 +72,6 @@ namespace NeoExpress
             {
                 return (serializer.Deserialize<ExpressChain>(reader), filename);
             }
-        }
-
-        public static INeoBackend GetBackend()
-        {
-            return new Neo2Backend.Neo2Backend();
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -42,16 +41,16 @@ namespace NeoExpress.Commands
                         chain.Wallets.Remove(existingWallet);
                     }
 
-                    var wallet = Program.GetBackend().CreateWallet(Name);
-                    (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
-                        .Add(wallet);
-                    chain.Save(filename);
+                    //var wallet = Program.GetBackend().CreateWallet(Name);
+                    //(chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
+                    //    .Add(wallet);
+                    //chain.Save(filename);
 
                     console.WriteLine(Name);
-                    foreach (var account in wallet.Accounts)
-                    {
-                        console.WriteLine($"    {account.ScriptHash}");
-                    }
+                    //foreach (var account in wallet.Accounts)
+                    //{
+                    //    console.WriteLine($"    {account.ScriptHash}");
+                    //}
                     console.WriteWarning("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
                     console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 

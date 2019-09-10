@@ -1,8 +1,14 @@
-﻿using NeoExpress.Models;
+﻿using Neo;
+using NeoExpress.Models;
+using NeoExpress.Node;
+using NeoExpress.Persistence;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace NeoExpress
 {
@@ -32,11 +38,17 @@ namespace NeoExpress
                     multiSigContractAccount.Label = "MultiSigContract";
                 }
 
+                // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
+                // http://www.iana.org/assignments/port-numbers
+                ushort port = 49152;
                 return new ExpressChain()
                 {
                     Magic = ExpressChain.GenerateMagicValue(),
                     ConsensusNodes = wallets.Select(t => new ExpressConsensusNode()
                     {
+                        TcpPort = port++,
+                        WebSocketPort = port++,
+                        RpcPort = port++,
                         Wallet = t.wallet.ToExpressWallet()
                     }).ToList()
                 };
@@ -64,6 +76,29 @@ namespace NeoExpress
         {
             var devWallet = DevWallet.FromExpressWallet(wallet);
             devWallet.Export(filename, password);
+        }
+
+        public static CancellationTokenSource RunBlockchain(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, ushort startingPort = 0)
+        {
+            if (startingPort != 0)
+            {
+                foreach (var consensusNode in chain.ConsensusNodes)
+                {
+
+                    consensusNode.TcpPort = startingPort++;
+                    consensusNode.WebSocketPort = startingPort++;
+                    consensusNode.RpcPort = startingPort++;
+                }
+            }
+
+            chain.InitializeProtocolSettings(secondsPerBlock);
+
+            var node = chain.ConsensusNodes[index];
+
+#pragma warning disable IDE0067 // Dispose objects before losing scope
+            // NodeUtility.Run disposes the store when it's done
+            return NodeUtility.Run(new RocksDbStore(directory), node, writer);
+#pragma warning restore IDE0067 // Dispose objects before losing scope
         }
     }
 }

@@ -49,12 +49,10 @@ namespace NeoExpress.Commands
                     Directory.CreateDirectory(folder);
                 }
 
-                //var cts = Program.GetBackend()
-                //    .RunBlockchain(folder, chain, index, SecondsPerBlock,
-                //                   s => console.WriteLine(s));
-
-                //console.CancelKeyPress += (sender, args) => cts.Cancel();
-                //cts.Token.WaitHandle.WaitOne();
+                var cts = BlockchainOperations.RunBlockchain(
+                    folder, chain, index, SecondsPerBlock, console.Out);
+                console.CancelKeyPress += (sender, args) => cts.Cancel();
+                cts.Token.WaitHandle.WaitOne();
                 return 0;
             }
             catch (Exception ex)

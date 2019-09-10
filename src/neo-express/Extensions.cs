@@ -18,52 +18,47 @@ namespace NeoExpress
     {
         public static JObject Sign(this ExpressWalletAccount account, byte[] data)
         {
-            return null;
-            //var (signature, publicKey) = (backend ?? Program.GetBackend()).Sign(account, data);
+            var (signature, publicKey) = BlockchainOperations.Sign(account, data);
 
-            //return new JObject
-            //{
-            //    ["signature"] = signature.ToHexString(),
-            //    ["public-key"] = publicKey.ToHexString(),
-            //    ["contract"] = new JObject
-            //    {
-            //        ["script"] = account.Contract.Script,
-            //        ["parameters"] = new JArray(account.Contract.Parameters)
-            //    }
-            //};
+            return new JObject
+            {
+                ["signature"] = signature.ToHexString(),
+                ["public-key"] = publicKey.ToHexString(),
+                ["contract"] = new JObject
+                {
+                    ["script"] = account.Contract.Script,
+                    ["parameters"] = new JArray(account.Contract.Parameters)
+                }
+            };
         }
 
         public static IEnumerable<JObject> Sign(this ExpressWallet wallet, IEnumerable<string> hashes, byte[] data)
         {
-            return null;
-            //backend = backend ?? Program.GetBackend();
-            //foreach (var hash in hashes)
-            //{
-            //    var account = wallet.Accounts.SingleOrDefault(a => a.ScriptHash == hash);
-            //    if (account == null || string.IsNullOrEmpty(account.PrivateKey))
-            //        continue;
+            foreach (var hash in hashes)
+            {
+                var account = wallet.Accounts.SingleOrDefault(a => a.ScriptHash == hash);
+                if (account == null || string.IsNullOrEmpty(account.PrivateKey))
+                    continue;
 
-            //    yield return account.Sign(data, backend);
-            //}
+                yield return account.Sign(data);
+            }
         }
 
         public static JArray Sign(this ExpressWalletAccount account, IEnumerable<ExpressConsensusNode> nodes, JToken json)
         {
-            return null;
-            //backend = backend ?? Program.GetBackend();
-            //var data = json.Value<string>("hash-data").ToByteArray();
+            var data = json.Value<string>("hash-data").ToByteArray();
 
-            //// TODO: better way to identify the genesis MultiSigContract?
-            //if (account.Label == "MultiSigContract")
-            //{
-            //    var hashes = json["script-hashes"].Select(t => t.Value<string>());
-            //    var signatures = nodes.SelectMany(n => n.Wallet.Sign(hashes, data, backend));
-            //    return new JArray(signatures);
-            //}
-            //else
-            //{
-            //    return new JArray(account.Sign(data, backend));
-            //}
+            // TODO: better way to identify the genesis MultiSigContract?
+            if (account.Label == "MultiSigContract")
+            {
+                var hashes = json["script-hashes"].Select(t => t.Value<string>());
+                var signatures = nodes.SelectMany(n => n.Wallet.Sign(hashes, data));
+                return new JArray(signatures);
+            }
+            else
+            {
+                return new JArray(account.Sign(data));
+            }
         }
 
         public static string ToHexString(this byte[] value)
@@ -165,10 +160,13 @@ namespace NeoExpress
 
         public static ExpressWalletAccount GetAccount(this ExpressChain chain, string name)
         {
-            var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
-            if (wallet != default)
+            if (chain.Wallets != null)
             {
-                return wallet.DefaultAccount;
+                var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
+                if (wallet != default)
+                {
+                    return wallet.DefaultAccount;
+                }
             }
 
             var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
@@ -187,7 +185,7 @@ namespace NeoExpress
             return default;
         }
 
-        public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri("http://localhost"); // new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
+        public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
 
         public static string GetBlockchainPath(this ExpressWallet wallet)
         {

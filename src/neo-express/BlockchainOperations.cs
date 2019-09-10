@@ -78,6 +78,16 @@ namespace NeoExpress
             devWallet.Export(filename, password);
         }
 
+        public static (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data)
+        {
+            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+
+            var key = devAccount.GetKey();
+            var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
+            var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
+            return (signature, key.PublicKey.EncodePoint(true));
+        }
+
         public static CancellationTokenSource RunBlockchain(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, ushort startingPort = 0)
         {
             if (startingPort != 0)

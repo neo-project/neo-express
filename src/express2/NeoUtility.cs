@@ -106,7 +106,6 @@ namespace NeoExpress.Neo2Backend
             return ret;
         }
 
-
         public static IEnumerable<Coin> Unclaimed(this IEnumerable<Coin> coins, UInt256 assetId = null)
         {
             var ret = coins.Where(CoinUnclaimed);
@@ -265,9 +264,10 @@ namespace NeoExpress.Neo2Backend
 
         private static InvocationTransaction AddTransactionFee(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, InvocationTransaction tx)
         {
-            var fee = Fixed8.FromDecimal(0.001m);
+            var fee = Fixed8.Zero;
             if (tx.Size > 1024)
             {
+                fee = Fixed8.FromDecimal(0.001m);
                 fee += Fixed8.FromDecimal(tx.Size * 0.00001m);
             }
             fee += tx.SystemFee;

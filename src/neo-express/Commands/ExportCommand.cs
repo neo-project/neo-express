@@ -19,7 +19,7 @@ namespace NeoExpress.Commands
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
 
-                //Program.GetBackend().ExportChain(chain, Directory.GetCurrentDirectory(), password, msg => console.WriteLine(msg));
+                BlockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, msg => console.WriteLine(msg));
 
                 return 0;
             }

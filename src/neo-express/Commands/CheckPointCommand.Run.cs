@@ -36,12 +36,12 @@ namespace NeoExpress.Commands
 
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
 
-                    //var cts = Program.GetBackend().RunCheckpoint(
-                    //    checkpointTempPath, chain, SecondsPerBlock,
-                    //    s => console.WriteLine(s));
+                    var cts = BlockchainOperations.RunCheckpoint(
+                        checkpointTempPath, chain, SecondsPerBlock,
+                        console.Out);
 
-                    //console.CancelKeyPress += (sender, args) => cts.Cancel();
-                    //cts.Token.WaitHandle.WaitOne();
+                    console.CancelKeyPress += (sender, args) => cts.Cancel();
+                    cts.Token.WaitHandle.WaitOne();
 
                     return 0;
                 }

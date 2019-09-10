@@ -49,7 +49,7 @@ namespace NeoExpress.Commands
                         Directory.Delete(blockchainPath, true);
                     }
 
-                    //Program.GetBackend().RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
+                    BlockchainOperations.RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
 
                     console.WriteLine($"Checkpoint {Name} sucessfully restored");
                     return 0;

@@ -199,27 +199,85 @@ namespace NeoExpress
             return (signature, key.PublicKey.EncodePoint(true));
         }
 
-        public static CancellationTokenSource RunBlockchain(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, ushort startingPort = 0)
-        {
-            if (startingPort != 0)
-            {
-                foreach (var consensusNode in chain.ConsensusNodes)
-                {
+        private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
 
-                    consensusNode.TcpPort = startingPort++;
-                    consensusNode.WebSocketPort = startingPort++;
-                    consensusNode.RpcPort = startingPort++;
-                }
+        private static string GetAddressFilePath(string directory) =>
+            Path.Combine(directory, ADDRESS_FILENAME);
+
+        public static void CreateCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
+        {
+            using (var db = new RocksDbStore(chainDirectory))
+            {
+                db.CheckPoint(checkPointDirectory);
             }
 
+            using (var stream = File.OpenWrite(GetAddressFilePath(checkPointDirectory)))
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.WriteLine(chain.Magic);
+                writer.WriteLine(chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+            }
+        }
+
+        public static void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
+        {
+            var node = chain.ConsensusNodes[0];
+            ValidateCheckpoint(checkPointDirectory, chain.Magic, node.Wallet.DefaultAccount);
+
+            var addressFile = GetAddressFilePath(checkPointDirectory);
+            if (!File.Exists(addressFile))
+            {
+                File.Delete(addressFile);
+            }
+
+            Directory.Move(checkPointDirectory, chainDirectory);
+        }
+
+        private static void ValidateCheckpoint(string checkPointDirectory, long magic, ExpressWalletAccount account)
+        {
+            var addressFile = GetAddressFilePath(checkPointDirectory);
+            if (!File.Exists(addressFile))
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
+
+            long checkPointMagic;
+            string scriptHash;
+            using (var stream = File.OpenRead(addressFile))
+            using (var reader = new StreamReader(stream))
+            {
+                checkPointMagic = long.Parse(reader.ReadLine());
+                scriptHash = reader.ReadLine();
+            }
+
+            if (magic != checkPointMagic || scriptHash != account.ScriptHash)
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
+        }
+
+        public static CancellationTokenSource RunBlockchain(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer)
+        {
             chain.InitializeProtocolSettings(secondsPerBlock);
 
             var node = chain.ConsensusNodes[index];
 
-#pragma warning disable IDE0067 // Dispose objects before losing scope
-            // NodeUtility.Run disposes the store when it's done
+#pragma warning disable IDE0067 // NodeUtility.Run disposes the store when it's done
             return NodeUtility.Run(new RocksDbStore(directory), node, writer);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
+
+        public static CancellationTokenSource RunCheckpoint(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer)
+        {
+            chain.InitializeProtocolSettings(secondsPerBlock);
+
+            var node = chain.ConsensusNodes[0];
+            ValidateCheckpoint(directory, chain.Magic, node.Wallet.DefaultAccount);
+
+#pragma warning disable IDE0067 // NodeUtility.Run disposes the store when it's done
+            return NodeUtility.Run(new CheckpointStore(directory), node, writer);
+#pragma warning restore IDE0067 // Dispose objects before losing scope
+        }
+
     }
 }

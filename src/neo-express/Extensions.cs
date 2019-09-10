@@ -48,7 +48,7 @@ namespace NeoExpress
         {
             var data = json.Value<string>("hash-data").ToByteArray();
 
-            // TODO: better way to identify the genesis MultiSigContract?
+            // TODO: better way to identify the genesis account?
             if (account.Label == "MultiSigContract")
             {
                 var hashes = json["script-hashes"].Select(t => t.Value<string>());

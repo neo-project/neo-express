@@ -183,7 +183,7 @@ namespace NeoExpress
             return default;
         }
 
-        public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
+        public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri("http://localhost"); // new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
 
         public static string GetBlockchainPath(this ExpressWallet wallet)
         {

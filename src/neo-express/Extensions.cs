@@ -5,6 +5,7 @@ using Neo.Wallets;
 using NeoExpress.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OneOf;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,6 +15,8 @@ using System.Text;
 
 namespace NeoExpress
 {
+    using StringError = OneOf.Types.Error<string>;
+
     internal static class Extensions
     {
         public static JObject Sign(this ExpressWalletAccount account, byte[] data)
@@ -119,21 +122,24 @@ namespace NeoExpress
 
         public static bool IsReservedName(this ExpressChain chain, string name)
         {
-            if (name.Equals("genesis", StringComparison.InvariantCultureIgnoreCase))
+            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
                 return true;
 
             foreach (var node in chain.ConsensusNodes)
             {
-                if (name.Equals(node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(name, node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
                     return true;
             }
 
             return false;
         }
 
+        public static bool NameEquals(this ExpressContract contract, string name) =>
+            string.Equals(contract.Name, name, StringComparison.InvariantCultureIgnoreCase);
+
         public static bool NameEquals(this ExpressWallet wallet, string name) =>
-            wallet.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase);
-        
+            string.Equals(wallet.Name, name, StringComparison.InvariantCultureIgnoreCase);
+
         public static ExpressWallet GetWallet(this ExpressChain chain, string name) => 
             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => w.NameEquals(name));
@@ -146,16 +152,6 @@ namespace NeoExpress
             }
 
             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
-        }
-
-        public static ExpressContract GetContract(this ExpressChain chain, string name)
-        {
-            if (chain.Contracts != null)
-            {
-                return chain.Contracts.SingleOrDefault(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
-            }
-
-            return default;
         }
 
         public static ExpressWalletAccount GetAccount(this ExpressChain chain, string name)
@@ -241,6 +237,99 @@ namespace NeoExpress
                 .Build();
 
             return ProtocolSettings.Initialize(config);
+        }
+        
+        public static ExpressContract GetContract(this ExpressChain chain, string nameOrPath)
+        {
+            OneOf<string, StringError> GetContractFile(string path)
+            {
+                if (!File.Exists(path))
+                {
+                    return new StringError($"{path} is not a valid file path");
+                }
+
+                if ((File.GetAttributes(path) & FileAttributes.Directory) != 0)
+                {
+                    var avmFiles = Directory.EnumerateFiles(path, "*.avm");
+                    var avmFileCount = avmFiles.Count();
+
+                    if (avmFileCount == 0)
+                    {
+                        return new StringError($"There are no .avm files in {path}");
+                    }
+
+                    if (avmFileCount > 1)
+                    {
+                        return new StringError($"There are more than one .avm files in {path}. Please specify file name directly");
+                    }
+
+                    return avmFiles.Single();
+                }
+
+                if (Path.GetExtension(path) != ".avm")
+                {
+                    return new StringError($"{path} is not an .avm file.");
+                }
+
+                return path;
+            }
+
+            return GetContractFile(nameOrPath).Match(
+                avmFile =>
+                {
+                    System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+
+                    ExpressContract.Function ToExpressContractFunction(AbiContract.Function function) => new ExpressContract.Function
+                    {
+                        Name = function.Name,
+                        ReturnType = function.ReturnType,
+                        Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
+                        {
+                            Name = p.Name,
+                            Type = p.Type
+                        }).ToList()
+                    };
+
+                    string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
+                    if (!File.Exists(abiFile))
+                    {
+                        throw new Exception($"there is no .abi.json file for {avmFile}.");
+                    }
+
+                    AbiContract abiContract;
+                    var serializer = new JsonSerializer();
+                    using (var stream = File.OpenRead(abiFile))
+                    using (var reader = new JsonTextReader(new StreamReader(stream)))
+                    {
+                        abiContract = serializer.Deserialize<AbiContract>(reader);
+                    }
+
+                    var name = Path.GetFileNameWithoutExtension(avmFile);
+                    return new ExpressContract()
+                    {
+                        Name = name,
+                        Hash = abiContract.Hash,
+                        EntryPoint = abiContract.Entrypoint,
+                        ContractData = File.ReadAllBytes(avmFile).ToHexString(),
+                        Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
+                        Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
+                        Properties = new Dictionary<string, string>()
+                    };
+                },
+                error =>
+                {
+                    // if the file can't be found, see if the path is 
+                    // actually the name of an existing contract
+                    foreach (var contract in chain.Contracts)
+                    {
+                        if (contract.NameEquals(nameOrPath))
+                        {
+                            return contract;
+                        }
+                    }
+
+                    throw new Exception(error.Value);
+                });
         }
     }
 }

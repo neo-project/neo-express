@@ -6,7 +6,6 @@ namespace NeoExpress.Commands
     [Subcommand(
         typeof(Deploy),
         typeof(Get),
-        typeof(Import),
         typeof(Invoke),
         typeof(List),
         typeof(Storage))]

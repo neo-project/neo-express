@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using NeoExpress.Abstractions;
+using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
@@ -26,18 +26,6 @@ namespace NeoExpress.Commands
 
         [Option]
         private string Input { get; }
-
-        private static JArray GetGenesisSignatures(ExpressChain chain, IEnumerable<string> hashes, byte[] data)
-        {
-            var backend = Program.GetBackend();
-            var signatures = chain.ConsensusNodes.SelectMany(n => n.Wallet.Sign(hashes, data, backend));
-            return new JArray(signatures);
-        }
-
-        private static JArray GetStandardSignatures(ExpressWalletAccount account, byte[] data)
-        {
-            return new JArray(account.Sign(data));
-        }
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {

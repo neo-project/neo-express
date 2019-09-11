@@ -49,10 +49,8 @@ namespace NeoExpress.Commands
                     Directory.CreateDirectory(folder);
                 }
 
-                var cts = Program.GetBackend()
-                    .RunBlockchain(folder, chain, index, SecondsPerBlock,
-                                   s => console.WriteLine(s));
-
+                var cts = BlockchainOperations.RunBlockchain(
+                    folder, chain, index, SecondsPerBlock, console.Out);
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
                 cts.Token.WaitHandle.WaitOne();
                 return 0;

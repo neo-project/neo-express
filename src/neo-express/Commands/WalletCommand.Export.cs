@@ -52,7 +52,7 @@ namespace NeoExpress.Commands
                     else
                     {
                         var password = Prompt.GetPassword("Input password to use for exported wallet");
-                        Program.GetBackend().ExportWallet(wallet, output, password);
+                        BlockchainOperations.ExportWallet(wallet, output, password);
                         console.WriteLine($"{Name} privatenet wallet exported to {output}");
                     }
 

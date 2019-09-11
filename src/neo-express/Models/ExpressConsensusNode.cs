@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace NeoExpress.Abstractions
+namespace NeoExpress.Models
 {
     public class ExpressConsensusNode
     {

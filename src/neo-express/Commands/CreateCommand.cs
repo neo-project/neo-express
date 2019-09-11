@@ -36,10 +36,6 @@ namespace NeoExpress.Commands
         [Option]
         private bool Force { get; }
 
-        [Option]
-        [Range(49152, ushort.MaxValue)]
-        private ushort Port { get; }
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
@@ -51,8 +47,7 @@ namespace NeoExpress.Commands
                 }
 
                 var count = (Count == 0 ? 1 : Count);
-                var port = Port == 0 ? (ushort)49152 : Port;
-                var chain = Program.GetBackend().CreateBlockchain(count, port);
+                var chain = BlockchainOperations.CreateBlockchain(count);
                 chain.Save(output);
 
                 console.WriteLine($"Created {count} node privatenet at {output}");

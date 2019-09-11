@@ -1,5 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
+using System.Linq;
 
 namespace NeoExpress.Commands
 {
@@ -16,10 +17,17 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    foreach (var c in chain.Contracts)
+                    if (chain.Contracts == null || !chain.Contracts.Any())
                     {
-                        console.WriteLine($"{c.Name}");
-                        console.WriteLine($"\t{c.Hash}");
+                        console.WriteLine("No contracts deployed");
+                    }
+                    else
+                    {
+                        foreach (var c in chain.Contracts)
+                        {
+                            console.WriteLine($"{c.Name}");
+                            console.WriteLine($"\t{c.Hash}");
+                        }
                     }
 
                     return 0;

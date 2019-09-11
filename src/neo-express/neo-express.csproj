@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <VersionPrefix>0.8.0</VersionPrefix>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <RootNamespace>Neo.Express</RootNamespace>
+    <RootNamespace>NeoExpress</RootNamespace>
     <PackAsTool>true</PackAsTool>
     <LangVersion>7.3</LangVersion>
     <AssemblyName>neo-express</AssemblyName>
@@ -18,11 +18,10 @@
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
+    <PackageReference Include="Neo" Version="2.10.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\abstractions\abstractions.csproj" />
-    <ProjectReference Include="..\express2\express2.csproj" />
+    <PackageReference Include="OneOf" Version="2.1.150" />
+    <PackageReference Include="RocksDbNative" Version="6.2.2" />
+    <PackageReference Include="RocksDbSharp" Version="6.2.2" />
   </ItemGroup>
 </Project>

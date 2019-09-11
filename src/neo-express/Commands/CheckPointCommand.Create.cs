@@ -54,8 +54,8 @@ namespace NeoExpress.Commands
                         Directory.Delete(checkpointTempPath, true);
                     }
 
-                    Program.GetBackend()
-                        .CreateCheckpoint(chain, blockchainPath, checkpointTempPath);
+                    BlockchainOperations.CreateCheckpoint(
+                        chain, blockchainPath, checkpointTempPath);
 
                     ZipFile.CreateFromDirectory(checkpointTempPath, filename);
                     console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");

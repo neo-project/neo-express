@@ -13,6 +13,12 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
+## [0.9] - Unreleased
+
+- Refactored neo-express to merge abstraction and express2 libraries back into
+  neo-express. This separation was originally done to enable neo-express to support
+  NEO 2 and 3, however this approach would not work, so it was undone.
+
 ## [0.8] - 2019-09-13
 
 Initial Release

@@ -15,6 +15,7 @@ trigger:
     - '*'
     exclude:
     - 'readme.md'
+    - 'changelog.md'
     - 'docs/*'
 
 steps:

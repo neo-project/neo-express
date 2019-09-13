@@ -9,6 +9,7 @@
     <LangVersion>7.3</LangVersion>
     <AssemblyName>neo-express</AssemblyName>
     <Description>neo-express is a NEO developer blockchain tool</Description>
+    <PackageId>Neo.Express</PackageId>
     <PackageTags>NEO;Blockchain;Smart Contract</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>Neo Global Development Seattle</Authors>

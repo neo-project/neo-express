@@ -77,22 +77,7 @@ Core 2.2 or later installed, you can install it from [the .NET website](https://
 To install NEO-Express, open a terminal window and enter the following command:
 
 ``` shell
-dotnet tool install neo-express -g
+dotnet tool install Neo.Express -g
 ```
 
 > Installing on Ubuntu 18.04 requires libsnappy-dev and libc6-dev
-
-### Install a Preview Build
-
-> Note, the public artifact feed is not yet available. This section will be updated
-> when that feed goes public. 
-
-In addition to releases published on nuget.org, NEO-Express publishes preview
-releases on our Azure DevOps Artifacts feed (link to be added). If you wish
-to install one of these releases, you need to specify the feed source as well
-as the version number. For example, if you wanted to install the 0.8.3-preview
-release, you would execute the following command:
-
-``` shell
-dotnet tool install -g neo-express --add-source (link to be added) --version 0.8.3-preview
-```

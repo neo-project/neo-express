@@ -1,20 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <VersionPrefix>0.8.0</VersionPrefix>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
-    <RootNamespace>Neo.Express</RootNamespace>
-    <PackAsTool>true</PackAsTool>
-    <LangVersion>7.3</LangVersion>
     <AssemblyName>neo-express</AssemblyName>
-    <Description>neo-express is a NEO developer blockchain tool</Description>
-    <PackageId>Neo.Express</PackageId>
-    <PackageTags>NEO;Blockchain;Smart Contract</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>Neo Global Development Seattle</Authors>
-    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
+    <Company>The Neo Project</Company>
+    <Copyright>2015-2019 The Neo Project</Copyright>
+    <Description>neo-express is a NEO developer blockchain tool</Description>
+    <LangVersion>7.3</LangVersion>
+    <OutputType>Exe</OutputType>
     <PackageIconUrl>https://neo-cdn.azureedge.net/images/neo-logo/72.png</PackageIconUrl>
+    <PackageId>Neo.Express</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
+    <PackageTags>NEO;Blockchain;Smart Contract</PackageTags>
+    <PackAsTool>true</PackAsTool>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
+    <RootNamespace>Neo.Express</RootNamespace>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

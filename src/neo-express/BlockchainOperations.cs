@@ -20,9 +20,11 @@ namespace NeoExpress
         {
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
 
+            ushort GetPortNumber(int index, ushort portNumber) => (ushort)((49000 + (index * 1000)) + portNumber);
+
             try
             {
-                for (int i = 1; i <= count; i++)
+                for (var i = 1; i <= count; i++)
                 {
                     var wallet = new DevWallet($"node{i}");
                     var account = wallet.CreateAccount();
@@ -42,17 +44,23 @@ namespace NeoExpress
 
                 // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
                 // http://www.iana.org/assignments/port-numbers
-                ushort port = 49152;
+                var nodes = new List<ExpressConsensusNode>(count);
+                for (var i = 0; i < count; i++)
+                {
+                    nodes.Add(new ExpressConsensusNode()
+                    {
+                        TcpPort = GetPortNumber(i, 333),
+                        WebSocketPort = GetPortNumber(i, 334),
+                        RpcPort = GetPortNumber(i, 332),
+                        DebugPort = GetPortNumber(i, 335),
+                        Wallet = wallets[i].wallet.ToExpressWallet()
+                    });
+                }
+
                 return new ExpressChain()
                 {
                     Magic = ExpressChain.GenerateMagicValue(),
-                    ConsensusNodes = wallets.Select(t => new ExpressConsensusNode()
-                    {
-                        TcpPort = port++,
-                        WebSocketPort = port++,
-                        RpcPort = port++,
-                        Wallet = t.wallet.ToExpressWallet()
-                    }).ToList()
+                    ConsensusNodes = nodes,
                 };
             }
             finally

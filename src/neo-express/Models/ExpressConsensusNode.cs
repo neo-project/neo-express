@@ -13,6 +13,9 @@ namespace NeoExpress.Models
         [JsonProperty("rpc-port")]
         public ushort RpcPort { get; set; }
 
+        [JsonProperty("debug-port")]
+        public ushort DebugPort { get; set; }
+
         [JsonProperty("wallet")]
         public ExpressWallet Wallet { get; set; }
     }

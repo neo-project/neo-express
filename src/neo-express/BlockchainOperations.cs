@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoExpress
 {
@@ -256,26 +257,26 @@ namespace NeoExpress
             }
         }
 
-        public static CancellationTokenSource RunBlockchain(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer)
+        public static Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             chain.InitializeProtocolSettings(secondsPerBlock);
 
             var node = chain.ConsensusNodes[index];
 
-#pragma warning disable IDE0067 // NodeUtility.Run disposes the store when it's done
-            return NodeUtility.Run(new RocksDbStore(directory), node, writer);
+#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
+            return NodeUtility.RunAsync(new RocksDbStore(directory), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 
-        public static CancellationTokenSource RunCheckpoint(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer)
+        public static Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             chain.InitializeProtocolSettings(secondsPerBlock);
 
             var node = chain.ConsensusNodes[0];
             ValidateCheckpoint(directory, chain.Magic, node.Wallet.DefaultAccount);
 
-#pragma warning disable IDE0067 // NodeUtility.Run disposes the store when it's done
-            return NodeUtility.Run(new CheckpointStore(directory), node, writer);
+#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
+            return NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 

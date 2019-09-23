@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace NeoExpress.Commands
 {
@@ -21,7 +23,7 @@ namespace NeoExpress.Commands
             [Option]
             private uint SecondsPerBlock { get; }
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 try
@@ -36,13 +38,14 @@ namespace NeoExpress.Commands
 
                     ZipFile.ExtractToDirectory(filename, checkpointTempPath);
 
-                    var cts = BlockchainOperations.RunCheckpoint(
-                        checkpointTempPath, chain, SecondsPerBlock,
-                        console.Out);
+                    using (var cts = new CancellationTokenSource())
+                    {
+                        console.CancelKeyPress += (sender, args) => cts.Cancel();
 
-                    console.CancelKeyPress += (sender, args) => cts.Cancel();
-                    cts.Token.WaitHandle.WaitOne();
-
+                        await BlockchainOperations.RunCheckpointAsync(checkpointTempPath, chain, SecondsPerBlock,
+                                                                      console.Out, cts.Token)
+                            .ConfigureAwait(false);
+                    }
                     return 0;
                 }
                 catch (Exception ex)

@@ -20,11 +20,11 @@ namespace NeoExpress.Node
 {
     internal static class NodeUtility
     {
-        public static CancellationTokenSource Run(Store store, ExpressConsensusNode node, TextWriter writer)
+        public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
         {
-            var cts = new CancellationTokenSource();
+            var tcs = new TaskCompletionSource<bool>();
 
-            Task.Factory.StartNew(() =>
+            ThreadPool.QueueUserWorkItem(_ =>
             {
                 try
                 {
@@ -38,13 +38,12 @@ namespace NeoExpress.Node
                         system.StartConsensus(wallet);
                         system.StartRpc(IPAddress.Any, node.RpcPort, wallet);
 
-                        cts.Token.WaitHandle.WaitOne();
+                        cancellationToken.WaitHandle.WaitOne();
                     }
                 }
                 catch (Exception ex)
                 {
-                    writer.WriteLine(ex.ToString());
-                    cts.Cancel();
+                    tcs.SetException(ex);
                 }
                 finally
                 {
@@ -52,17 +51,11 @@ namespace NeoExpress.Node
                     {
                         disp.Dispose();
                     }
+                    tcs.TrySetResult(true);
                 }
             });
 
-            return cts;
-        }
-
-        public static (IEnumerable<UInt160> hashes, byte[] data) ParseResultHashesAndData(Newtonsoft.Json.Linq.JToken result)
-        {
-            var hashes = result["script-hashes"].Select(t => ((string)t).ToScriptHash());
-            var data = result.Value<string>("hash-data").HexToBytes();
-            return (hashes, data);
+            return tcs.Task;
         }
 
         private static bool CoinUnspent(Coin c)
@@ -347,7 +340,7 @@ namespace NeoExpress.Node
             }
         }
 
-        static ScriptBuilder BuildInvocationScript(UInt160 scriptHash, ContractParameter[] parameters)
+        private static ScriptBuilder BuildInvocationScript(UInt160 scriptHash, ContractParameter[] parameters)
         {
             var builder = new ScriptBuilder();
             builder.EmitAppCall(scriptHash, parameters);

@@ -44,7 +44,6 @@ namespace NeoExpress.Node
             {
                 tx.Witnesses = context.GetWitnesses();
 
-                //ImmutableInterlocked.TryAdd(ref unconfirmed, tx.Hash, tx);
                 System.LocalNode.Tell(new LocalNode.Relay { Inventory = tx });
 
                 JObject json = new JObject();

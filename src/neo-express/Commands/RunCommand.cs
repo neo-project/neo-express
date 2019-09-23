@@ -1,6 +1,8 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System.IO;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -19,7 +21,7 @@ namespace NeoExpress.Commands
         [Option]
         private bool Reset { get; }
 
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -49,10 +51,15 @@ namespace NeoExpress.Commands
                     Directory.CreateDirectory(folder);
                 }
 
-                var cts = BlockchainOperations.RunBlockchain(
-                    folder, chain, index, SecondsPerBlock, console.Out);
-                console.CancelKeyPress += (sender, args) => cts.Cancel();
-                cts.Token.WaitHandle.WaitOne();
+                using (var cts = new CancellationTokenSource())
+                {
+                    console.CancelKeyPress += (sender, args) => cts.Cancel();
+
+                    await BlockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock, console.Out,
+                                                                  cts.Token)
+                        .ConfigureAwait(false);
+                }
+
                 return 0;
             }
             catch (Exception ex)

@@ -17,10 +17,11 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
     <RootNamespace>NeoExpress</RootNamespace>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- can't upgrade to CommandLineUtils 2.4.1 due to https://github.com/natemcmaster/CommandLineUtils/issues/286 -->
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
     <PackageReference Include="Neo" Version="2.10.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />

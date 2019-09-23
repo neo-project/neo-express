@@ -19,6 +19,11 @@ trigger:
     - 'docs/*'
 
 steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    useGlobalJson: true
+
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'
   inputs:

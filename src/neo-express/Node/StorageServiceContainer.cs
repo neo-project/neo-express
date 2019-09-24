@@ -1,13 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
-using Neo.SmartContract;
-using Neo.VM;
-using NeoDebug;
-using NeoDebug.Models;
 using NeoDebug.VariableContainers;
-using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 
 namespace NeoExpress.Node
 {
@@ -26,7 +20,7 @@ namespace NeoExpress.Node
                 item = kvp.Value;
             }
 
-            public IEnumerable<Variable> GetVariables(VariablesArguments args)
+            public IEnumerable<Variable> GetVariables()
             {
                 yield return ByteArrayContainer.GetVariable(key.Key, session, "key");
                 yield return ByteArrayContainer.GetVariable(item.Value, session, "value");
@@ -50,7 +44,7 @@ namespace NeoExpress.Node
             this.scriptHash = scriptHash;
         }
 
-        public IEnumerable<Variable> GetVariables(VariablesArguments args)
+        public IEnumerable<Variable> GetVariables()
         {
             foreach (var kvp in snapshot.Storages.Find())
             {

@@ -243,12 +243,7 @@ namespace NeoExpress
         {
             OneOf<string, StringError> GetContractFile(string path)
             {
-                if (!File.Exists(path))
-                {
-                    return new StringError($"{path} is not a valid file path");
-                }
-
-                if ((File.GetAttributes(path) & FileAttributes.Directory) != 0)
+                if (Directory.Exists(path))
                 {
                     var avmFiles = Directory.EnumerateFiles(path, "*.avm");
                     var avmFileCount = avmFiles.Count();
@@ -266,7 +261,7 @@ namespace NeoExpress
                     return avmFiles.Single();
                 }
 
-                if (Path.GetExtension(path) != ".avm")
+                if (!File.Exists(path) || Path.GetExtension(path) != ".avm")
                 {
                     return new StringError($"{path} is not an .avm file.");
                 }
@@ -320,7 +315,7 @@ namespace NeoExpress
                 {
                     // if the file can't be found, see if the path is 
                     // actually the name of an existing contract
-                    foreach (var contract in chain.Contracts)
+                    foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
                     {
                         if (contract.NameEquals(nameOrPath))
                         {

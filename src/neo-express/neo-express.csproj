@@ -8,7 +8,7 @@
     <Description>neo-express is a NEO developer blockchain tool</Description>
     <LangVersion>7.3</LangVersion>
     <OutputType>Exe</OutputType>
-    <PackageIconUrl>https://neo-cdn.azureedge.net/images/neo-logo/72.png</PackageIconUrl>
+    <PackageIcon>neo-logo-72.png</PackageIcon>
     <PackageId>Neo.Express</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
@@ -21,9 +21,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- can't upgrade to CommandLineUtils 2.4.1 due to https://github.com/natemcmaster/CommandLineUtils/issues/286 -->
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
     <PackageReference Include="Neo" Version="2.10.3" />
+    <PackageReference Include="neo.debug" Version="0.6.22-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="OneOf" Version="2.1.150" />
     <PackageReference Include="RocksDbNative" Version="6.2.2" />

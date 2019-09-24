@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AssemblyName>neo-express</AssemblyName>
@@ -28,7 +28,7 @@
     <!-- can't upgrade to CommandLineUtils 2.4.1 due to https://github.com/natemcmaster/CommandLineUtils/issues/286 -->
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.4" />
     <PackageReference Include="Neo" Version="2.10.3" />
-    <PackageReference Include="neo.debug" Version="0.6.11-preview" />
+    <PackageReference Include="neo.debug" Version="0.6.22-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="OneOf" Version="2.1.150" />
     <PackageReference Include="RocksDbNative" Version="6.2.2" />

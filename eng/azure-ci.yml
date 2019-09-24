@@ -20,9 +20,16 @@ trigger:
 
 steps:
 - task: UseDotNet@2
+  displayName: 'use .NET Core SDK from global.json'
   inputs:
     packageType: 'sdk'
     useGlobalJson: true
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore (using azure artifacts feed)'
+  inputs:
+    command: 'restore'
+    feedsToUse: 'select'
+    vstsFeed: '176ef395-dca6-4e1c-a5e7-cb4f884a7fdf'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'

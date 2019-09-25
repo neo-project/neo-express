@@ -87,6 +87,8 @@ namespace NeoExpress
                     writer.WriteStartObject();
                     writer.WritePropertyName("Chain");
                     writer.WriteValue("Chain_{0}");
+                    writer.WritePropertyName("Index");
+                    writer.WriteValue("Index_{0}");
                     writer.WriteEndObject();
 
                     writer.WritePropertyName("P2P");

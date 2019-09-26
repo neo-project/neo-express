@@ -1,8 +1,8 @@
 param([int]$secondsPerBlock = 1, [switch]$debug, [switch]$reset, [string]$checkpoint)
 
-dotnet publish
+dotnet publish -o .\bin\launch
 
-$expressDllPath = '.\bin\Debug\netcoreapp2.2\publish\neo-express.dll'
+$expressDllPath = '.\bin\launch\neo-express.dll'
 
 function launch($index) {
 	$resetArg = if ($reset) { "--reset" } else { "" }

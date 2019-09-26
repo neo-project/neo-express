@@ -62,9 +62,9 @@ namespace NeoExpress
             return RpcCall(uri, "express-show-coins", new JArray(address));
         }
 
-        public static Task<JToken> ExpressShowGas(Uri uri, string address)
+        public static Task<JToken> GetUnclaimedGas(Uri uri, string address)
         {
-            return RpcCall(uri, "express-show-gas", new JArray(address));
+            return RpcCall(uri, "getunclaimedgas ", new JArray(address));
         }
 
         public static Task<JToken> ExpressClaim(Uri uri, string asset, string address)

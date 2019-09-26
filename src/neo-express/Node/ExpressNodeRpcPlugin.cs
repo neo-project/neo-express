@@ -309,6 +309,7 @@ namespace NeoExpress.Node
                 case "express-show-coins":
                     return OnShowCoins(@params);
                 case "express-show-gas":
+                case "getunclaimedgas":
                     return OnShowGas(@params);
                 case "express-submit-signatures":
                     return OnSubmitSignatures(@params);

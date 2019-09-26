@@ -1,4 +1,4 @@
-using Akka.Actor;
+﻿using Akka.Actor;
 using Microsoft.AspNetCore.Http;
 using Neo;
 using Neo.Cryptography.ECC;
@@ -96,8 +96,8 @@ namespace NeoExpress.Node
                 return new JArray(coins.Select(c =>
                 {
                     var j = new JObject();
-                    j["address"] = c.Address;
-                    j["state"] = c.State.ToString();
+                    j["state"] = (byte)c.State;
+                    j["state-label"] = c.State.ToString();
                     j["reference"] = c.Reference.ToJson();
                     j["output"] = c.Output.ToJson(0);
                     return j;

@@ -1,4 +1,4 @@
-﻿using NeoExpress.Models;
+using NeoExpress.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -50,6 +50,11 @@ namespace NeoExpress
         public static Task<JToken> GetAccountState(Uri uri, string address)
         {
             return RpcCall(uri, "getaccountstate", new JArray(address));
+        }
+
+        public static Task<JToken> GetUnspents(Uri uri, string address)
+        {
+            return RpcCall(uri, "getunspents", new JArray(address));
         }
 
         public static Task<JToken> ExpressShowCoins(Uri uri, string address)

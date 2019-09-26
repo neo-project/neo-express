@@ -1,4 +1,4 @@
-﻿using Akka.Actor;
+using Akka.Actor;
 using Microsoft.AspNetCore.Http;
 using Neo;
 using Neo.Cryptography.ECC;
@@ -11,6 +11,7 @@ using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -249,10 +250,58 @@ namespace NeoExpress.Node
             }
         }
 
+        public JObject OnGetUnspents(JArray @params)
+        {
+            JObject GetBalance(IEnumerable<Coin> coins, UInt256 assetId, string symbol)
+            {
+                var unspents = new JArray();
+                var total = Fixed8.Zero;
+                foreach (var coin in coins.Where(c => c.Output.AssetId == assetId))
+                {
+                    var unspent = new JObject();
+                    unspent["txid"] = coin.Reference.PrevHash.ToString();
+                    unspent["n"] = coin.Reference.PrevIndex;
+                    unspent["value"] = (double)(decimal)coin.Output.Value;
+
+                    total += coin.Output.Value;
+                    unspents.Add(unspent);
+                }
+
+                var balance = new JObject();
+                balance["asset_hash"] = assetId.ToString().Substring(2);
+                balance["asset_symbol"] = balance["asset"] = symbol;
+                balance["amount"] = (double)(decimal)total;
+                balance["unspent"] = unspents;
+
+                return balance;
+            }
+
+            var address = @params[0].AsString().ToScriptHash();
+            string[] nativeAssetNames = { "GAS", "NEO" };
+            UInt256[] nativeAssetIds = { Blockchain.UtilityToken.Hash, Blockchain.GoverningToken.Hash };
+
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
+            {
+                var coins = NodeUtility.GetCoins(snapshot, ImmutableHashSet.Create(address)).Unspent();
+
+                var neoCoins = coins.Where(c => c.Output.AssetId == Blockchain.GoverningToken.Hash);
+                var gasCoins = coins.Where(c => c.Output.AssetId == Blockchain.UtilityToken.Hash);
+
+                JObject json = new JObject();
+                json["address"] = address.ToAddress();
+                json["balance"] = new JArray(
+                    GetBalance(coins, Blockchain.GoverningToken.Hash, "NEO"),
+                    GetBalance(coins, Blockchain.UtilityToken.Hash, "GAS"));
+                return json;
+            }
+        }
+
         public JObject OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
             {
+                case "getunspents":
+                    return OnGetUnspents(@params);
                 case "express-transfer":
                     return OnTransfer(@params);
                 case "express-claim":

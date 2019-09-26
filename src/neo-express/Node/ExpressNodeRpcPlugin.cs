@@ -105,7 +105,7 @@ namespace NeoExpress.Node
             }
         }
 
-        private JObject OnShowGas(JArray @params)
+        private JObject OnShowGas(JArray @params, bool showUnclaimed = false)
         {
             var address = @params[0].AsString().ToScriptHash();
 
@@ -124,6 +124,10 @@ namespace NeoExpress.Node
                 JObject json = new JObject();
                 json["unavailable"] = (double)(decimal)unavailable;
                 json["available"] = (double)(decimal)available;
+                if (showUnclaimed)
+                {
+                    json["unclaimed"] = (double)(decimal)(available + unavailable);
+                }
                 return json;
             }
         }
@@ -311,6 +315,8 @@ namespace NeoExpress.Node
                 case "express-show-gas":
                 case "getunclaimedgas":
                     return OnShowGas(@params);
+                case "getunclaimed":
+                    return OnShowGas(@params, true);
                 case "express-submit-signatures":
                     return OnSubmitSignatures(@params);
                 case "express-deploy-contract":

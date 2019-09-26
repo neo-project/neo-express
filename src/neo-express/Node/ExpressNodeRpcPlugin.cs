@@ -213,17 +213,52 @@ namespace NeoExpress.Node
             }
         }
 
+        private static CoinReference CoinReferenceFromJson(JObject json)
+        {
+            var txid = UInt256.Parse(json["txid"].AsString());
+            var vout = (ushort)json["vout"].AsNumber();
+
+            return new CoinReference()
+            {
+                PrevHash = txid,
+                PrevIndex = vout
+            };
+        }
+
+        private static TransactionOutput TransactionOutputFromJson(JObject json)
+        {
+            var asset = UInt256.Parse(json["asset"].AsString());
+            var value = (decimal)json["value"].AsNumber();
+            var address = json["address"].AsString().ToScriptHash();
+
+            return new TransactionOutput()
+            {
+                AssetId = asset,
+                Value = Fixed8.FromDecimal(value),
+                ScriptHash = address
+            };
+        }
+
         public JObject OnInvokeContract(JArray @params)
         {
             var scriptHash = UInt160.Parse(@params[0].AsString());
             var scriptParams = ((JArray)@params[1]).Select(ContractParameter.FromJson).ToArray();
             var address = @params[2] == JObject.Null ? null : @params[2].AsString().ToScriptHash();
 
+            IEnumerable<CoinReference> inputs = null;
+            IEnumerable<TransactionOutput> outputs = null;
+
+            if (@params.Count == 5)
+            {
+                inputs = ((JArray)@params[3]).Select(CoinReferenceFromJson);
+                outputs = ((JArray)@params[4]).Select(TransactionOutputFromJson);
+            }
+
             var addresses = address == null ? ImmutableHashSet<UInt160>.Empty : ImmutableHashSet.Create(address);
 
             using (var snapshot = Blockchain.Singleton.GetSnapshot())
             {
-                var (tx, engine) = NodeUtility.MakeInvocationTransaction(snapshot, addresses, scriptHash, scriptParams);
+                var (tx, engine) = NodeUtility.MakeInvocationTransaction(snapshot, addresses, scriptHash, scriptParams, inputs, outputs);
                 var context = new ContractParametersContext(tx);
                 var json = CreateContextResponse(context, tx);
                 json["engine-state"] = EngineToJson(engine);

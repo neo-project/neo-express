@@ -258,8 +258,8 @@ namespace NeoExpress.Node
                             ScriptHash = receiver
                         }
                     },
-                    Attributes = new TransactionAttribute[0],
-                    Witnesses = new Witness[0],
+                    Attributes = Array.Empty<TransactionAttribute>(),
+                    Witnesses = Array.Empty<Witness>(),
                 };
             }
 
@@ -280,8 +280,8 @@ namespace NeoExpress.Node
             {
                 Inputs = inputs.Select(t => t.coin.Reference).ToArray(),
                 Outputs = outputs.ToArray(),
-                Attributes = new TransactionAttribute[0],
-                Witnesses = new Witness[0],
+                Attributes = Array.Empty<TransactionAttribute>(),
+                Witnesses = Array.Empty<Witness>(),
             };
         }
 
@@ -297,8 +297,8 @@ namespace NeoExpress.Node
                 return new ClaimTransaction
                 {
                     Claims = coinReferences.ToArray(),
-                    Attributes = new TransactionAttribute[0],
-                    Inputs = new CoinReference[0],
+                    Attributes = Array.Empty<TransactionAttribute>(),
+                    Inputs = Array.Empty<CoinReference>(),
                     Outputs = new[]
                     {
                         new TransactionOutput
@@ -329,9 +329,9 @@ namespace NeoExpress.Node
             return (AddTransactionFee(snapshot, addresses, tx), engine);
         }
 
-        public static (InvocationTransaction, ApplicationEngine) MakeInvocationTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, UInt160 scriptHash, ContractParameter[] parameters)
+        public static (InvocationTransaction, ApplicationEngine) MakeInvocationTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, UInt160 scriptHash, ContractParameter[] parameters, IEnumerable<CoinReference> inputs = null, IEnumerable<TransactionOutput> outputs = null)
         {
-            var tx = BuildInvocationTx(() => BuildInvocationScript(scriptHash, parameters));
+            var tx = BuildInvocationTx(() => BuildInvocationScript(scriptHash, parameters), inputs, outputs);
             var engine = ApplicationEngine.Run(tx.Script, tx);
             if ((engine.State & VMState.FAULT) != 0)
             {
@@ -367,7 +367,7 @@ namespace NeoExpress.Node
             return tx;
         }
 
-        private static InvocationTransaction BuildInvocationTx(Func<ScriptBuilder> func)
+        private static InvocationTransaction BuildInvocationTx(Func<ScriptBuilder> func, IEnumerable<CoinReference> inputs = null, IEnumerable<TransactionOutput> outputs = null)
         {
             using (var builder = func())
             {
@@ -375,10 +375,10 @@ namespace NeoExpress.Node
                 {
                     Version = 1,
                     Script = builder.ToArray(),
-                    Attributes = new TransactionAttribute[0],
-                    Inputs = new CoinReference[0],
-                    Outputs = new TransactionOutput[0],
-                    Witnesses = new Witness[0],
+                    Attributes = Array.Empty<TransactionAttribute>(),
+                    Inputs = inputs?.ToArray() ?? Array.Empty<CoinReference>(),
+                    Outputs = outputs?.ToArray() ?? Array.Empty<TransactionOutput>(),
+                    Witnesses = Array.Empty<Witness>(),
                 };
             }
         }

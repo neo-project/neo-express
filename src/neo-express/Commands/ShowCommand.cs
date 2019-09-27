@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace NeoExpress.Commands
 {
     [Command("show")]
-    [Subcommand(typeof(Account), typeof(Coins), typeof(Gas))]
+    [Subcommand(typeof(Account), typeof(Coins), typeof(Gas), typeof(Unspents))]
     class ShowCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)
@@ -87,7 +87,23 @@ namespace NeoExpress.Commands
 
             private Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
-                return ExecuteAsync(app, console, Name, Input, NeoRpcClient.ExpressShowGas);
+                return ExecuteAsync(app, console, Name, Input, NeoRpcClient.GetUnclaimedGas);
+            }
+        }
+
+        [Command("unspents")]
+        private class Unspents
+        {
+            [Argument(0)]
+            [Required]
+            private string Name { get; }
+
+            [Option]
+            private string Input { get; }
+
+            private Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            {
+                return ExecuteAsync(app, console, Name, Input, NeoRpcClient.GetUnspents);
             }
         }
     }

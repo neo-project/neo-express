@@ -11,6 +11,7 @@ using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -95,8 +96,8 @@ namespace NeoExpress.Node
                 return new JArray(coins.Select(c =>
                 {
                     var j = new JObject();
-                    j["address"] = c.Address;
-                    j["state"] = c.State.ToString();
+                    j["state"] = (byte)c.State;
+                    j["state-label"] = c.State.ToString();
                     j["reference"] = c.Reference.ToJson();
                     j["output"] = c.Output.ToJson(0);
                     return j;
@@ -104,7 +105,7 @@ namespace NeoExpress.Node
             }
         }
 
-        private JObject OnShowGas(JArray @params)
+        private JObject OnShowGas(JArray @params, bool showUnclaimed = false)
         {
             var address = @params[0].AsString().ToScriptHash();
 
@@ -123,6 +124,10 @@ namespace NeoExpress.Node
                 JObject json = new JObject();
                 json["unavailable"] = (double)(decimal)unavailable;
                 json["available"] = (double)(decimal)available;
+                if (showUnclaimed)
+                {
+                    json["unclaimed"] = (double)(decimal)(available + unavailable);
+                }
                 return json;
             }
         }
@@ -208,17 +213,52 @@ namespace NeoExpress.Node
             }
         }
 
+        private static CoinReference CoinReferenceFromJson(JObject json)
+        {
+            var txid = UInt256.Parse(json["txid"].AsString());
+            var vout = (ushort)json["vout"].AsNumber();
+
+            return new CoinReference()
+            {
+                PrevHash = txid,
+                PrevIndex = vout
+            };
+        }
+
+        private static TransactionOutput TransactionOutputFromJson(JObject json)
+        {
+            var asset = UInt256.Parse(json["asset"].AsString());
+            var value = (decimal)json["value"].AsNumber();
+            var address = json["address"].AsString().ToScriptHash();
+
+            return new TransactionOutput()
+            {
+                AssetId = asset,
+                Value = Fixed8.FromDecimal(value),
+                ScriptHash = address
+            };
+        }
+
         public JObject OnInvokeContract(JArray @params)
         {
             var scriptHash = UInt160.Parse(@params[0].AsString());
             var scriptParams = ((JArray)@params[1]).Select(ContractParameter.FromJson).ToArray();
             var address = @params[2] == JObject.Null ? null : @params[2].AsString().ToScriptHash();
 
+            IEnumerable<CoinReference> inputs = null;
+            IEnumerable<TransactionOutput> outputs = null;
+
+            if (@params.Count == 5)
+            {
+                inputs = ((JArray)@params[3]).Select(CoinReferenceFromJson);
+                outputs = ((JArray)@params[4]).Select(TransactionOutputFromJson);
+            }
+
             var addresses = address == null ? ImmutableHashSet<UInt160>.Empty : ImmutableHashSet.Create(address);
 
             using (var snapshot = Blockchain.Singleton.GetSnapshot())
             {
-                var (tx, engine) = NodeUtility.MakeInvocationTransaction(snapshot, addresses, scriptHash, scriptParams);
+                var (tx, engine) = NodeUtility.MakeInvocationTransaction(snapshot, addresses, scriptHash, scriptParams, inputs, outputs);
                 var context = new ContractParametersContext(tx);
                 var json = CreateContextResponse(context, tx);
                 json["engine-state"] = EngineToJson(engine);
@@ -249,10 +289,58 @@ namespace NeoExpress.Node
             }
         }
 
+        public JObject OnGetUnspents(JArray @params)
+        {
+            JObject GetBalance(IEnumerable<Coin> coins, UInt256 assetId, string symbol)
+            {
+                var unspents = new JArray();
+                var total = Fixed8.Zero;
+                foreach (var coin in coins.Where(c => c.Output.AssetId == assetId))
+                {
+                    var unspent = new JObject();
+                    unspent["txid"] = coin.Reference.PrevHash.ToString().Substring(2);
+                    unspent["n"] = coin.Reference.PrevIndex;
+                    unspent["value"] = (double)(decimal)coin.Output.Value;
+
+                    total += coin.Output.Value;
+                    unspents.Add(unspent);
+                }
+
+                var balance = new JObject();
+                balance["asset_hash"] = assetId.ToString().Substring(2);
+                balance["asset_symbol"] = balance["asset"] = symbol;
+                balance["amount"] = (double)(decimal)total;
+                balance["unspent"] = unspents;
+
+                return balance;
+            }
+
+            var address = @params[0].AsString().ToScriptHash();
+            string[] nativeAssetNames = { "GAS", "NEO" };
+            UInt256[] nativeAssetIds = { Blockchain.UtilityToken.Hash, Blockchain.GoverningToken.Hash };
+
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
+            {
+                var coins = NodeUtility.GetCoins(snapshot, ImmutableHashSet.Create(address)).Unspent();
+
+                var neoCoins = coins.Where(c => c.Output.AssetId == Blockchain.GoverningToken.Hash);
+                var gasCoins = coins.Where(c => c.Output.AssetId == Blockchain.UtilityToken.Hash);
+
+                JObject json = new JObject();
+                json["address"] = address.ToAddress();
+                json["balance"] = new JArray(
+                    GetBalance(coins, Blockchain.GoverningToken.Hash, "NEO"),
+                    GetBalance(coins, Blockchain.UtilityToken.Hash, "GAS"));
+                return json;
+            }
+        }
+
         public JObject OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
             {
+                case "getunspents":
+                    return OnGetUnspents(@params);
                 case "express-transfer":
                     return OnTransfer(@params);
                 case "express-claim":
@@ -260,7 +348,10 @@ namespace NeoExpress.Node
                 case "express-show-coins":
                     return OnShowCoins(@params);
                 case "express-show-gas":
+                case "getunclaimedgas":
                     return OnShowGas(@params);
+                case "getunclaimed":
+                    return OnShowGas(@params, true);
                 case "express-submit-signatures":
                     return OnSubmitSignatures(@params);
                 case "express-deploy-contract":

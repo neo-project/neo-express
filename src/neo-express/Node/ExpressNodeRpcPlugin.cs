@@ -298,7 +298,7 @@ namespace NeoExpress.Node
                 foreach (var coin in coins.Where(c => c.Output.AssetId == assetId))
                 {
                     var unspent = new JObject();
-                    unspent["txid"] = coin.Reference.PrevHash.ToString();
+                    unspent["txid"] = coin.Reference.PrevHash.ToString().Substring(2);
                     unspent["n"] = coin.Reference.PrevIndex;
                     unspent["value"] = (double)(decimal)coin.Output.Value;
 

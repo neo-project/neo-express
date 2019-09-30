@@ -1,11 +1,11 @@
 ﻿using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using Neo;
-using Neo.Cryptography.ECC;
-using Neo.IO.Caching;
-using Neo.IO.Wrappers;
+
 using Neo.Ledger;
+using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
+using Neo.Wallets;
 using NeoDebug;
 using NeoDebug.VariableContainers;
 using System;
@@ -26,8 +26,34 @@ namespace NeoExpress.Node
             this.snapshot = snapshot;
         }
 
-        public static IExecutionEngine CreateExecutionEngine(NeoDebug.Models.Contract contract, LaunchArguments __)
+        public static IExecutionEngine CreateExecutionEngine(NeoDebug.Models.Contract contract, LaunchArguments arguments)
         {
+            UInt160 ParseAddress(string address) =>
+                UInt160.TryParse(address, out var result) ? result : address.ToScriptHash();
+
+            (IEnumerable<CoinReference> inputs, IEnumerable<TransactionOutput> outputs) GetUtxo()
+            {
+                if (arguments.ConfigurationProperties.TryGetValue("utxo", out var utxo))
+                {
+                    var _inputs = utxo["inputs"]?.Select(t => new CoinReference()
+                        {
+                            PrevHash = UInt256.Parse(t.Value<string>("txid")),
+                            PrevIndex = t.Value<ushort>("value")
+                        });
+
+                    var _outputs = utxo["outputs"]?.Select(t => new TransactionOutput()
+                        {
+                            AssetId = NodeUtility.GetAssetId(t.Value<string>("asset")),
+                            Value = Fixed8.FromDecimal(t.Value<decimal>("value")),
+                            ScriptHash = ParseAddress(t.Value<string>("address"))
+                        });
+
+                    return (_inputs, _outputs);
+                }
+
+                return (null, null);
+            }
+
             var scriptHash = new UInt160(contract.ScriptHash);
 
             var snapshot = Blockchain.Singleton.GetSnapshot();
@@ -35,10 +61,22 @@ namespace NeoExpress.Node
                     ? new DebugSnapshot(contract, Blockchain.Singleton.GetSnapshot())
                     : snapshot;
 
+            var (inputs, outputs) = GetUtxo();
+
+            var tx = new InvocationTransaction
+            {
+                Version = 1,
+                Script = contract.Script,
+                Attributes = Array.Empty<TransactionAttribute>(),
+                Inputs = inputs?.ToArray() ?? Array.Empty<CoinReference>(),
+                Outputs = outputs?.ToArray() ?? Array.Empty<TransactionOutput>(),
+                Witnesses = Array.Empty<Witness>(),
+            };
+
             return new DebugExecutionEngine(
                 scriptHash,
                 TriggerType.Application,
-                null,
+                tx,
                 snapshot,
                 default,
                 true);

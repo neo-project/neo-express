@@ -101,6 +101,17 @@ namespace NeoExpress.Node
             });
         }
 
+        public static UInt256 GetAssetId(string asset)
+        {
+            if (string.Compare("neo", asset, true) == 0)
+                return Blockchain.GoverningToken.Hash;
+
+            if (string.Compare("gas", asset, true) == 0)
+                return Blockchain.UtilityToken.Hash;
+
+            return UInt256.Parse(asset);
+        }
+
         private static bool CoinUnspent(Coin c)
         {
             return (c.State & CoinState.Confirmed) != 0

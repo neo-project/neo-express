@@ -59,18 +59,7 @@ namespace NeoExpress.Node
 
         private JObject OnTransfer(JArray @params)
         {
-            UInt256 GetAssetId(string asset)
-            {
-                if (string.Compare("neo", asset, true) == 0)
-                    return Blockchain.GoverningToken.Hash;
-
-                if (string.Compare("gas", asset, true) == 0)
-                    return Blockchain.UtilityToken.Hash;
-
-                return UInt256.Parse(asset);
-            }
-
-            var assetId = GetAssetId(@params[0].AsString());
+            var assetId = NodeUtility.GetAssetId(@params[0].AsString());
             var assetDescriptor = new AssetDescriptor(assetId);
             var quantity = BigDecimal.Parse(@params[1].AsString(), assetDescriptor.Decimals).ToFixed8();
             var sender = @params[2].AsString().ToScriptHash();

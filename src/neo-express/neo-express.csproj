@@ -27,7 +27,6 @@
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.4.2" />
     <PackageReference Include="Neo" Version="2.10.3" />
-    <PackageReference Include="Neo.Debug" Version="0.6.27-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="OneOf" Version="2.1.150" />
     <PackageReference Include="RocksDbNative" Version="6.2.2" />

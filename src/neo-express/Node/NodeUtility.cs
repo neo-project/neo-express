@@ -38,7 +38,6 @@ namespace NeoExpress.Node
                         system.StartNode(node.TcpPort, node.WebSocketPort);
                         system.StartConsensus(wallet);
                         system.StartRpc(IPAddress.Loopback, node.RpcPort, wallet);
-                        StartDebug(new IPEndPoint(IPAddress.Loopback, node.DebugPort), writer, cancellationToken);
 
                         cancellationToken.WaitHandle.WaitOne();
                     }
@@ -58,47 +57,6 @@ namespace NeoExpress.Node
             });
 
             return tcs.Task;
-        }
-
-
-        private static void StartDebug(IPEndPoint endPoint, TextWriter writer, CancellationToken cancellationToken)
-        {
-            Task.Run(async () =>
-            {
-                writer.WriteLine($"DEBUGGER listening on {endPoint}");
-                var listener = new TcpListener(endPoint);
-                listener.Start();
-
-                // TcpListener.AcceptSocketAsync doesn't support CancellationToken, so Stop the listener when 
-                // cancellationToken is triggered
-                using (cancellationToken.Register(() => listener.Stop()))
-                {
-                    while (true)
-                    {
-                        var clientSocket = await listener.AcceptSocketAsync().ConfigureAwait(false);
-
-                        ThreadPool.QueueUserWorkItem(_ =>
-                        {
-                            using (clientSocket)
-                            using (var stream = new NetworkStream(clientSocket))
-                            {
-                                var adapter = new NeoDebug.DebugAdapter(stream, stream,
-                                    DebugExecutionEngine.CreateExecutionEngine,
-                                    Neo.Cryptography.Crypto.Default.Hash160,
-                                    (cat, msg) => writer.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} DEBUGGER {cat} {msg}"));
-
-                                // DebugAdapter.Run doesn't support CancellationToken, so Stop the Protocol when 
-                                // cancellationToken is triggered
-                                using (cancellationToken.Register(() => adapter.Protocol.Stop()))
-                                {
-                                    adapter.Run();
-                                    adapter.Protocol.WaitForReader();
-                                }
-                            }
-                        });
-                    }
-                }
-            });
         }
 
         public static UInt256 GetAssetId(string asset)

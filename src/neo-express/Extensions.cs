@@ -140,7 +140,7 @@ namespace NeoExpress
         public static bool NameEquals(this ExpressWallet wallet, string name) =>
             string.Equals(wallet.Name, name, StringComparison.InvariantCultureIgnoreCase);
 
-        public static ExpressWallet GetWallet(this ExpressChain chain, string name) => 
+        public static ExpressWallet GetWallet(this ExpressChain chain, string name) =>
             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => w.NameEquals(name));
 
@@ -238,7 +238,7 @@ namespace NeoExpress
 
             return ProtocolSettings.Initialize(config);
         }
-        
+
         public static ExpressContract GetContract(this ExpressChain chain, string nameOrPath)
         {
             OneOf<string, StringError> GetContractFile(string path)

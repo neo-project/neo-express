@@ -41,7 +41,7 @@ namespace NeoExpress.Persistence
                 { METADATA_FAMILY, new ColumnFamilyOptions() },
                 { GENERAL_STORAGE_FAMILY, new ColumnFamilyOptions() }};
 
-    
+
         private static DataCache<TKey, TValue> GetDataCache<TKey, TValue>(
             RocksDb db, string familyName, ReadOptions readOptions = null, WriteBatch writeBatch = null)
             where TKey : IEquatable<TKey>, ISerializable, new()

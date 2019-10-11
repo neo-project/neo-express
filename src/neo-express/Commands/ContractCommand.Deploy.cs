@@ -59,7 +59,7 @@ namespace NeoExpress.Commands
             private static (bool storage, bool dynamicInvoke) GetContractProps(JToken result)
             {
                 var properties = result["properties"];
-                return (storage: properties.Value<bool>("storage"), 
+                return (storage: properties.Value<bool>("storage"),
                     dynamicInvoke: properties.Value<bool>("dynamic_invoke"));
             }
 

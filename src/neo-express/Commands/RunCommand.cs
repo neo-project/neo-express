@@ -13,7 +13,7 @@ namespace NeoExpress.Commands
         private int? NodeIndex { get; }
 
         [Option]
-        private string Input { get; }
+        private string Input { get; } = string.Empty;
 
         [Option]
         private uint SecondsPerBlock { get; }

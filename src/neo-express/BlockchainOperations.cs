@@ -149,7 +149,11 @@ namespace NeoExpress
                     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                     {
                         var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount);
-                        writer.WriteValue(account.GetKey().PublicKey.EncodePoint(true).ToHexString());
+                        var key = account.GetKey();
+                        if (key != null)
+                        {
+                            writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
+                        }
                     }
                     writer.WriteEndArray();
 
@@ -157,7 +161,7 @@ namespace NeoExpress
                     writer.WriteStartArray();
                     foreach (var node in chain.ConsensusNodes)
                     {
-                        writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
+                        writer.WriteValue($"{IPAddress.Loopback}:{node.TcpPort}");
                     }
                     writer.WriteEndArray();
 
@@ -205,6 +209,9 @@ namespace NeoExpress
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
 
             var key = devAccount.GetKey();
+            if (key == null)
+                throw new InvalidOperationException();
+
             var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
             var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
             return (signature, key.PublicKey.EncodePoint(true));
@@ -257,8 +264,8 @@ namespace NeoExpress
             using (var stream = File.OpenRead(addressFile))
             using (var reader = new StreamReader(stream))
             {
-                checkPointMagic = long.Parse(reader.ReadLine());
-                scriptHash = reader.ReadLine();
+                checkPointMagic = long.Parse(reader.ReadLine() ?? string.Empty);
+                scriptHash = reader.ReadLine() ?? string.Empty;
             }
 
             if (magic != checkPointMagic || scriptHash != account.ScriptHash)

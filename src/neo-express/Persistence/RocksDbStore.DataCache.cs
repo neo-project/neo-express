@@ -13,10 +13,10 @@ namespace NeoExpress.Persistence
         {
             private readonly RocksDb db;
             private readonly ColumnFamilyHandle familyHandle;
-            private readonly ReadOptions readOptions;
-            private readonly WriteBatch writeBatch;
+            private readonly ReadOptions? readOptions;
+            private readonly WriteBatch? writeBatch;
 
-            public DataCache(RocksDb db, ColumnFamilyHandle familyHandle, ReadOptions readOptions, WriteBatch writeBatch)
+            public DataCache(RocksDb db, ColumnFamilyHandle familyHandle, ReadOptions? readOptions, WriteBatch? writeBatch)
             {
                 this.db = db;
                 this.familyHandle = familyHandle;
@@ -34,7 +34,11 @@ namespace NeoExpress.Persistence
                 return db.Get<TKey, TValue>(key, familyHandle, readOptions);
             }
 
-            protected override TValue TryGetInternal(TKey key)
+#pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
+            // NEO 2.x is not compiled with C# 8, so not sure why C# compiler thinks
+            // TryGetInternal can't return null. But it can so supress the warning.
+            protected override TValue? TryGetInternal(TKey key)
+#pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
             {
                 return db.TryGet<TKey, TValue>(key, familyHandle, readOptions);
             }

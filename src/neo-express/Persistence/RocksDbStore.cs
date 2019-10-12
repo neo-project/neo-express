@@ -41,9 +41,8 @@ namespace NeoExpress.Persistence
                 { METADATA_FAMILY, new ColumnFamilyOptions() },
                 { GENERAL_STORAGE_FAMILY, new ColumnFamilyOptions() }};
 
-
         private static DataCache<TKey, TValue> GetDataCache<TKey, TValue>(
-            RocksDb db, string familyName, ReadOptions readOptions = null, WriteBatch writeBatch = null)
+            RocksDb db, string familyName, ReadOptions? readOptions = null, WriteBatch? writeBatch = null)
             where TKey : IEquatable<TKey>, ISerializable, new()
             where TValue : class, ICloneable<TValue>, ISerializable, new()
         {
@@ -52,7 +51,7 @@ namespace NeoExpress.Persistence
         }
 
         private static MetaDataCache<T> GetMetaDataCache<T>(
-            RocksDb db, byte key, ReadOptions readOptions = null, WriteBatch writeBatch = null)
+            RocksDb db, byte key, ReadOptions? readOptions = null, WriteBatch? writeBatch = null)
             where T : class, ICloneable<T>, ISerializable, new()
         {
             var columnFamily = db.GetColumnFamily(METADATA_FAMILY);

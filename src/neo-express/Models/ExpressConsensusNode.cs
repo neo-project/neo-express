@@ -17,6 +17,6 @@ namespace NeoExpress.Models
         public ushort DebugPort { get; set; }
 
         [JsonProperty("wallet")]
-        public ExpressWallet Wallet { get; set; }
+        public ExpressWallet Wallet { get; set; } = new ExpressWallet();
     }
 }

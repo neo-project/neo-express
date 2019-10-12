@@ -13,7 +13,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -144,7 +143,7 @@ namespace NeoExpress.Node
             return coinIndex.Select(kvp => kvp.Value);
         }
 
-        public static IEnumerable<Coin> Unspent(this IEnumerable<Coin> coins, UInt256 assetId = null)
+        public static IEnumerable<Coin> Unspent(this IEnumerable<Coin> coins, UInt256? assetId = null)
         {
             var ret = coins.Where(CoinUnspent);
             if (assetId != null)
@@ -154,7 +153,7 @@ namespace NeoExpress.Node
             return ret;
         }
 
-        public static IEnumerable<Coin> Unclaimed(this IEnumerable<Coin> coins, UInt256 assetId = null)
+        public static IEnumerable<Coin> Unclaimed(this IEnumerable<Coin> coins, UInt256? assetId = null)
         {
             var ret = coins.Where(CoinUnclaimed);
             if (assetId != null)
@@ -200,7 +199,7 @@ namespace NeoExpress.Node
                 });
         }
 
-        public static ContractTransaction MakeTransferTransaction(Snapshot snapshot,
+        public static ContractTransaction? MakeTransferTransaction(Snapshot snapshot,
             ImmutableHashSet<UInt160> senderAddresses,
             UInt160 receiver, UInt256 assetId, Fixed8? amount = null)
         {
@@ -254,7 +253,7 @@ namespace NeoExpress.Node
             };
         }
 
-        public static ClaimTransaction MakeClaimTransaction(Snapshot snapshot, UInt160 address, UInt256 assetId)
+        public static ClaimTransaction? MakeClaimTransaction(Snapshot snapshot, UInt160 address, UInt256 assetId)
         {
             var coinReferences = GetCoins(snapshot, ImmutableHashSet.Create(address))
                 .Unclaimed(assetId)
@@ -283,7 +282,7 @@ namespace NeoExpress.Node
             return null;
         }
 
-        public static (InvocationTransaction, ApplicationEngine) MakeDeploymentTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, Newtonsoft.Json.Linq.JToken contract)
+        public static (InvocationTransaction?, ApplicationEngine) MakeDeploymentTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, Newtonsoft.Json.Linq.JToken contract)
         {
             var tx = BuildInvocationTx(() => BuildContractCreateScript(contract));
             var engine = ApplicationEngine.Run(tx.Script, tx, null, true);
@@ -298,7 +297,7 @@ namespace NeoExpress.Node
             return (AddTransactionFee(snapshot, addresses, tx), engine);
         }
 
-        public static (InvocationTransaction, ApplicationEngine) MakeInvocationTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, UInt160 scriptHash, ContractParameter[] parameters, IEnumerable<CoinReference> inputs = null, IEnumerable<TransactionOutput> outputs = null)
+        public static (InvocationTransaction?, ApplicationEngine) MakeInvocationTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, UInt160 scriptHash, ContractParameter[] parameters, IEnumerable<CoinReference>? inputs = null, IEnumerable<TransactionOutput>? outputs = null)
         {
             var tx = BuildInvocationTx(() => BuildInvocationScript(scriptHash, parameters), inputs, outputs);
             var engine = ApplicationEngine.Run(tx.Script, tx);
@@ -310,7 +309,7 @@ namespace NeoExpress.Node
             return addresses.IsEmpty ? (null, engine) : (AddTransactionFee(snapshot, addresses, tx), engine);
         }
 
-        private static InvocationTransaction AddTransactionFee(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, InvocationTransaction tx)
+        private static InvocationTransaction? AddTransactionFee(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, InvocationTransaction tx)
         {
             var fee = Fixed8.Zero;
             if (tx.Size > 1024)
@@ -336,7 +335,7 @@ namespace NeoExpress.Node
             return tx;
         }
 
-        private static InvocationTransaction BuildInvocationTx(Func<ScriptBuilder> func, IEnumerable<CoinReference> inputs = null, IEnumerable<TransactionOutput> outputs = null)
+        private static InvocationTransaction BuildInvocationTx(Func<ScriptBuilder> func, IEnumerable<CoinReference>? inputs = null, IEnumerable<TransactionOutput>? outputs = null)
         {
             using (var builder = func())
             {

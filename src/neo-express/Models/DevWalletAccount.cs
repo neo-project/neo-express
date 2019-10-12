@@ -8,9 +8,9 @@ namespace NeoExpress.Models
 {
     public class DevWalletAccount : WalletAccount
     {
-        private readonly KeyPair key;
+        private readonly KeyPair? key;
 
-        public DevWalletAccount(KeyPair key, Contract contract, UInt160 scriptHash) : base(scriptHash)
+        public DevWalletAccount(KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash)
         {
             this.key = key;
             Contract = contract;
@@ -18,22 +18,22 @@ namespace NeoExpress.Models
 
         public override bool HasKey => key != null;
 
-        public override KeyPair GetKey()
+        public override KeyPair? GetKey()
         {
             return key;
         }
 
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
-            PrivateKey = key.PrivateKey.ToHexString(),
+            PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
             ScriptHash = ScriptHash.ToAddress(),
             Label = Label,
             IsDefault = IsDefault,
             Contract = new ExpressWalletAccount.AccountContract()
             {
-                Script = Contract?.Script.ToHexString(),
-                Parameters = Contract?.ParameterList
-                        .Select(p => Enum.GetName(typeof(ContractParameterType), p))
+                Script = Contract.Script.ToHexString(),
+                Parameters = Contract.ParameterList
+                        .Select(p => Enum.GetName(typeof(ContractParameterType), p) ?? string.Empty)
                         .ToList()
             }
         };

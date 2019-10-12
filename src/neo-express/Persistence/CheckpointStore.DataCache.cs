@@ -18,7 +18,7 @@ namespace NeoExpress.Persistence
 
             private readonly RocksDb db;
             private readonly ColumnFamilyHandle columnFamily;
-            private readonly Action<TKey, OneOf<TValue, OneOf.Types.None>> updater;
+            private readonly Action<TKey, OneOf<TValue, OneOf.Types.None>>? updater;
 
             public ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> Values => values;
             public Action<TKey, OneOf<TValue, OneOf.Types.None>> Updater => (key, value) => values = values.SetItem(key.ToArray(), value);
@@ -41,7 +41,7 @@ namespace NeoExpress.Persistence
                 this.updater = updater;
             }
 
-            private TValue GetHelper(TKey key, bool @throw)
+            private TValue? GetHelper(TKey key, bool @throw)
             {
                 var keyArray = key.ToArray();
                 if (values.TryGetValue(keyArray, out var value))
@@ -89,9 +89,11 @@ namespace NeoExpress.Persistence
                 }
             }
 
-            protected override TValue GetInternal(TKey key) => GetHelper(key, @throw: true);
+            protected override TValue GetInternal(TKey key) => GetHelper(key, @throw: true)!;
 
-            protected override TValue TryGetInternal(TKey key) => GetHelper(key, @throw: false);
+#pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
+            protected override TValue? TryGetInternal(TKey key) => GetHelper(key, @throw: false);
+#pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
 
             protected override void AddInternal(TKey key, TValue value)
             {

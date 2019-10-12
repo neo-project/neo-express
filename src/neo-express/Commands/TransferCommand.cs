@@ -13,19 +13,19 @@ namespace NeoExpress.Commands
     internal class TransferCommand
     {
         [Argument(0)]
-        private string Asset { get; }
+        private string Asset { get; } = string.Empty;
 
         [Argument(1)]
-        private string Quantity { get; }
+        private string Quantity { get; } = string.Empty;
 
         [Argument(2)]
-        private string Sender { get; }
+        private string Sender { get; } = string.Empty;
 
         [Argument(3)]
-        private string Receiver { get; }
+        private string Receiver { get; } = string.Empty;
 
         [Option]
-        private string Input { get; }
+        private string Input { get; } = string.Empty;
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {

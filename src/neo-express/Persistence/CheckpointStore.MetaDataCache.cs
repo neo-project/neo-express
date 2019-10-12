@@ -16,12 +16,12 @@ namespace NeoExpress.Persistence
             private readonly RocksDb db;
             private readonly byte[] key;
             private readonly ColumnFamilyHandle columnFamily;
-            private readonly Action<T> updater;
+            private readonly Action<T>? updater;
 
             public OneOf<T, OneOf.Types.None> Value => value;
             public Action<T> Updater => item => value = item;
 
-            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle columnFamily, Func<T> factory = null) : base(factory)
+            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle columnFamily, Func<T>? factory = null) : base(factory)
             {
                 value = new OneOf.Types.None();
 
@@ -30,7 +30,7 @@ namespace NeoExpress.Persistence
                 this.columnFamily = columnFamily;
             }
 
-            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle columnFamily, OneOf<T, OneOf.Types.None> value, Action<T> updater, Func<T> factory = null) : base(factory)
+            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle columnFamily, OneOf<T, OneOf.Types.None> value, Action<T> updater, Func<T>? factory = null) : base(factory)
             {
                 this.value = value;
                 this.updater = updater;
@@ -40,7 +40,9 @@ namespace NeoExpress.Persistence
                 this.columnFamily = columnFamily;
             }
 
-            protected override T TryGetInternal()
+#pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
+            protected override T? TryGetInternal()
+#pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
             {
                 if (value.IsT0)
                     return value.AsT0;

@@ -11,13 +11,13 @@ namespace NeoExpress.Commands
     class ClaimCommand
     {
         [Argument(0)]
-        private string Asset { get; }
+        private string Asset { get; } = string.Empty;
 
         [Argument(1)]
-        private string Account { get; }
+        private string Account { get; } = string.Empty;
 
         [Option]
-        private string Input { get; }
+        private string Input { get; } = string.Empty;
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {

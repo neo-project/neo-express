@@ -10,7 +10,7 @@ namespace NeoExpress.Commands
         private class List
         {
             [Option]
-            private string Input { get; }
+            private string Input { get; } = string.Empty;
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {

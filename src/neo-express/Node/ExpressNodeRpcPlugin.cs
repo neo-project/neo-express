@@ -34,7 +34,7 @@ namespace NeoExpress.Node
             return json;
         }
 
-        private JObject CreateContextResponse(ContractParametersContext context, Transaction tx)
+        private JObject CreateContextResponse(ContractParametersContext context, Transaction? tx)
         {
             if (tx == null)
             {
@@ -234,8 +234,8 @@ namespace NeoExpress.Node
             var scriptParams = ((JArray)@params[1]).Select(ContractParameter.FromJson).ToArray();
             var address = @params[2] == JObject.Null ? null : @params[2].AsString().ToScriptHash();
 
-            IEnumerable<CoinReference> inputs = null;
-            IEnumerable<TransactionOutput> outputs = null;
+            IEnumerable<CoinReference> inputs = Enumerable.Empty<CoinReference>();
+            IEnumerable<TransactionOutput> outputs = Enumerable.Empty<TransactionOutput>();
 
             if (@params.Count == 5)
             {
@@ -324,7 +324,7 @@ namespace NeoExpress.Node
             }
         }
 
-        public JObject OnProcess(HttpContext context, string method, JArray @params)
+        public JObject? OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
             {

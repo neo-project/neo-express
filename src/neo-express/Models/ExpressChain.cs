@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Newtonsoft.Json;
 
-#nullable enable
-
 namespace NeoExpress.Models
 {
     public class ExpressChain

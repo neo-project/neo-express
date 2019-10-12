@@ -86,7 +86,7 @@ namespace NeoExpress
             return RpcCall(uri, "express-deploy-contract", new JArray(SerializeContract(), address));
         }
 
-        public static Task<JToken> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<JObject> @params, string address = null)
+        public static Task<JToken> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<JObject> @params, string? address = null)
         {
             return RpcCall(uri, "express-invoke-contract", new JArray(scriptHash, new JArray(@params), address));
         }

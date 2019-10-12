@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
         private int Count { get; }
 
         [Option]
-        private string Output { get; }
+        private string Output { get; } = string.Empty;
 
         [Option]
         private bool Force { get; }

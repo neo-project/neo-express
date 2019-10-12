@@ -6,8 +6,6 @@ using Neo.Ledger;
 using RocksDbSharp;
 using System;
 
-#nullable enable
-
 namespace NeoExpress.Persistence
 {
     internal partial class RocksDbStore : Neo.Persistence.Store, IDisposable

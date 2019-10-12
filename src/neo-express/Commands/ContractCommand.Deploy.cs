@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,17 +20,17 @@ namespace NeoExpress.Commands
         {
             [Argument(0)]
             [Required]
-            string Contract { get; }
+            string Contract { get; } = string.Empty;
 
             [Argument(1)]
             [Required]
-            string Account { get; }
+            string Account { get; } = string.Empty;
 
             [Option]
-            private string Input { get; }
+            private string Input { get; } = string.Empty;
 
             [Option]
-            private string Name { get; }
+            private string Name { get; } = string.Empty;
 
             enum DeployedStatus
             {
@@ -38,7 +39,7 @@ namespace NeoExpress.Commands
                 NotDeployed
             }
 
-            private static async Task<(DeployedStatus, JToken)> GetContractState(Uri uri, ExpressContract contract)
+            private static async Task<(DeployedStatus, JToken?)> GetContractState(Uri uri, ExpressContract contract)
             {
                 try
                 {
@@ -121,6 +122,7 @@ namespace NeoExpress.Commands
 
                     if (state == DeployedStatus.Deployed)
                     {
+                        Debug.Assert(result != null);
                         console.WriteLine($"Contract matching {contract.Name} script hash already deployed.");
                         var (storage, dynamicInvoke) = GetContractProps(result);
                         contract.Properties["has-storage"] = storage.ToString();

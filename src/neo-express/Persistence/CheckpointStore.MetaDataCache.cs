@@ -3,8 +3,6 @@ using OneOf;
 using RocksDbSharp;
 using System;
 
-#nullable enable
-
 namespace NeoExpress.Persistence
 {
     internal partial class CheckpointStore

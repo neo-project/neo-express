@@ -6,8 +6,6 @@ using RocksDbSharp;
 using System;
 using System.Collections.Generic;
 
-#nullable enable
-
 namespace NeoExpress.Persistence
 {
     internal partial class CheckpointStore : Neo.Persistence.Store, IDisposable

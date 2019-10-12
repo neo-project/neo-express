@@ -17,19 +17,19 @@ namespace NeoExpress.Commands
         {
             [Argument(0)]
             [Required]
-            string Contract { get; }
+            string Contract { get; } = string.Empty;
 
             [Argument(1)]
-            string[] Arguments { get; }
+            string[] Arguments { get; } = Array.Empty<string>();
 
             [Option]
-            private string Input { get; }
+            private string Input { get; } = string.Empty;
 
             [Option]
-            private string Account { get; }
+            private string Account { get; } = string.Empty;
 
             [Option]
-            private string Function { get; }
+            private string Function { get; } = string.Empty;
 
             static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
             {

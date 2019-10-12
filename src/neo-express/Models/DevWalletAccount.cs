@@ -4,8 +4,6 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Neo;
 
-#nullable enable
-
 namespace NeoExpress.Models
 {
     public class DevWalletAccount : WalletAccount

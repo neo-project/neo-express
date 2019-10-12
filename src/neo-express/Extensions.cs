@@ -154,7 +154,7 @@ namespace NeoExpress
             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
         }
 
-        public static ExpressWalletAccount GetAccount(this ExpressChain chain, string name)
+        public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
         {
             if (chain.Wallets != null)
             {
@@ -178,7 +178,7 @@ namespace NeoExpress
                     .SingleOrDefault();
             }
 
-            return default;
+            return null;
         }
 
         public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");

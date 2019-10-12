@@ -8,8 +8,6 @@ using Neo.Wallets;
 using Newtonsoft.Json;
 using Neo;
 
-#nullable enable
-
 namespace NeoExpress.Models
 {
     public class DevWallet : Wallet

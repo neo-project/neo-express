@@ -13,10 +13,10 @@ namespace NeoExpress.Commands
         {
             [Argument(0)]
             [Required]
-            private string Name { get; }
+            private string Name { get; } = string.Empty;
 
             [Option]
-            private string Input { get; }
+            private string Input { get; } = string.Empty;
 
             [Option]
             private bool Force { get; }

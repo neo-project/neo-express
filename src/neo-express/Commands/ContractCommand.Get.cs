@@ -16,10 +16,10 @@ namespace NeoExpress.Commands
         {
             [Argument(0)]
             [Required]
-            string Contract { get; }
+            string Contract { get; } = string.Empty;
 
             [Option]
-            private string Input { get; }
+            private string Input { get; } = string.Empty;
 
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {

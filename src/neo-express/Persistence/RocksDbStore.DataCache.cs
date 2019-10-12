@@ -3,8 +3,6 @@ using RocksDbSharp;
 using System;
 using System.Collections.Generic;
 
-#nullable enable
-
 namespace NeoExpress.Persistence
 {
     internal partial class RocksDbStore

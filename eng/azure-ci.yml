@@ -1,5 +1,5 @@
 variables:
-  configuration: Release
+  BuildConfiguration: Release
 
 pool:
   vmImage: 'windows-2019'
@@ -24,19 +24,14 @@ steps:
   inputs:
     packageType: 'sdk'
     useGlobalJson: true
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet restore (using azure artifacts feed)'
-  inputs:
-    command: 'restore'
-    feedsToUse: 'select'
-    vstsFeed: '176ef395-dca6-4e1c-a5e7-cb4f884a7fdf'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'
   inputs:
-    command: 'custom'
-    custom: pack
-    arguments: './src/neo-express/neo-express.csproj -c $(configuration) -o $(Build.ArtifactStagingDirectory) --include-symbols'
+    command: 'pack'
+    packagesToPack: './src/neo-express/neo-express.csproj'
+    includesymbols: true
+    versioningScheme: 'off'
 
 - publish: '$(Build.ArtifactStagingDirectory)'
   displayName: 'publish build artifact'

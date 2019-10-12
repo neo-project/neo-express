@@ -15,14 +15,15 @@ may not exactly match a publicly released version.
 
 ## [0.9] - Unreleased
 
-- Refactored neo-express to merge abstraction and express2 libraries back into
-  neo-express. This separation was originally done to enable neo-express to support
-  NEO 2 and 3, however this approach would not work, so it was undone.
 - added [getunspents](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunspents.html),
   [getunclaimed](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html)
   and [getunclaimedgas](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimedgas.html)
   RPC endpoints.
 - added support for attaching UTXO inputs/outputs to express-invoke-contract RPC endpoint
+- Refactored neo-express to merge abstraction and express2 libraries back into
+  neo-express. This separation was originally done to enable neo-express to support
+  NEO 2 and 3, however this approach would not work, so it was undone.
+- Updated to netcore 3.0 and C# 8 (with nullable types enabled)
 
 ## [0.8] - 2019-09-13
 

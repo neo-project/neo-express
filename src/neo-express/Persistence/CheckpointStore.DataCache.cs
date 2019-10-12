@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
+//#nullable enable
+
 namespace NeoExpress.Persistence
 {
     internal partial class CheckpointStore

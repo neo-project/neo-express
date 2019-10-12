@@ -5,6 +5,8 @@ using Neo.IO.Wrappers;
 using Neo.Ledger;
 using RocksDbSharp;
 
+#nullable enable
+
 namespace NeoExpress.Persistence
 {
     internal partial class CheckpointStore

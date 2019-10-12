@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Newtonsoft.Json;
 
+#nullable enable
+
 namespace NeoExpress.Models
 {
     public class ExpressChain
@@ -32,12 +34,12 @@ namespace NeoExpress.Models
         public long Magic { get; set; }
 
         [JsonProperty("consensus-nodes")]
-        public List<ExpressConsensusNode> ConsensusNodes { get; set; }
+        public List<ExpressConsensusNode> ConsensusNodes { get; set; } = new List<ExpressConsensusNode>();
 
         [JsonProperty("wallets")]
-        public List<ExpressWallet> Wallets { get; set; }
+        public List<ExpressWallet> Wallets { get; set; } = new List<ExpressWallet>();
 
         [JsonProperty("contracts")]
-        public List<ExpressContract> Contracts { get; set; }
+        public List<ExpressContract> Contracts { get; set; } = new List<ExpressContract>();
     }
 }

@@ -8,6 +8,8 @@ using Neo.Wallets;
 using Newtonsoft.Json;
 using Neo;
 
+#nullable enable
+
 namespace NeoExpress.Models
 {
     public class DevWallet : Wallet
@@ -15,7 +17,7 @@ namespace NeoExpress.Models
         private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
 
-        public DevWallet(string name, IEnumerable<DevWalletAccount> accounts = null)
+        public DevWallet(string name, IEnumerable<DevWalletAccount>? accounts = null)
         {
             this.name = name;
 
@@ -52,7 +54,7 @@ namespace NeoExpress.Models
 
         public override string Name => name;
 
-        public override Version Version => null;
+        public override Version? Version => null;
 
         public override bool Contains(UInt160 scriptHash) => accounts.ContainsKey(scriptHash);
 
@@ -78,7 +80,7 @@ namespace NeoExpress.Models
             return AddAccount(account);
         }
 
-        public override WalletAccount CreateAccount(Contract contract, KeyPair key = null)
+        public override WalletAccount CreateAccount(Contract contract, KeyPair? key = null)
         {
             var account = new DevWalletAccount(key, contract, contract.ScriptHash);
             return AddAccount(account);
@@ -92,7 +94,7 @@ namespace NeoExpress.Models
 
         public override bool DeleteAccount(UInt160 scriptHash) => accounts.Remove(scriptHash);
 
-        public override WalletAccount GetAccount(UInt160 scriptHash) => accounts.GetValueOrDefault(scriptHash);
+        public override WalletAccount? GetAccount(UInt160 scriptHash) => accounts.GetValueOrDefault(scriptHash);
 
         public override IEnumerable<WalletAccount> GetAccounts() => accounts.Values;
 

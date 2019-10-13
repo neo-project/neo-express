@@ -19,6 +19,16 @@ namespace NeoExpress.Node
 {
     internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin
     {
+        private readonly Persistence.RocksDbStore? store;
+
+        public ExpressNodeRpcPlugin(Neo.Persistence.Store store)
+        {
+            if (store is Persistence.RocksDbStore rocksDbStore)
+            {
+                this.store = rocksDbStore;
+            }
+        }
+
         public override void Configure()
         {
         }
@@ -324,6 +334,31 @@ namespace NeoExpress.Node
             }
         }
 
+        public JObject OnCheckpointCreate(JArray @params)
+        {
+            string filename = @params[0].AsString();
+
+            if (ProtocolSettings.Default.StandbyValidators.Length > 1)
+            {
+                throw new Exception("Checkpoint create is only supported on single node express instances");
+            }
+
+            if (store == null)
+            {
+                throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
+            }
+
+            var defaultAccount = System.RpcServer.Wallet.GetAccounts()
+                .Single(a => a.IsDefault);
+            BlockchainOperations.CreateCheckpoint(
+                store,
+                filename,
+                ProtocolSettings.Default.Magic,
+                defaultAccount.ScriptHash.ToAddress());
+
+            return JObject.Null;
+        }
+
         public JObject? OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
@@ -349,6 +384,8 @@ namespace NeoExpress.Node
                     return OnInvokeContract(@params);
                 case "express-get-contract-storage":
                     return OnGetContractStorage(@params);
+                case "express-create-checkpoint":
+                    return OnCheckpointCreate(@params);
             }
 
             return null;

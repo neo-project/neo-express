@@ -32,7 +32,7 @@ namespace NeoExpress.Node
                     using (var system = new NeoSystem(store))
                     {
                         var logPlugin = new LogPlugin(writer);
-                        var rpcPlugin = new ExpressNodeRpcPlugin();
+                        var rpcPlugin = new ExpressNodeRpcPlugin(store);
 
                         system.StartNode(node.TcpPort, node.WebSocketPort);
                         system.StartConsensus(wallet);

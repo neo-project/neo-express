@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace NeoExpress
 {
-    static class NeoRpcClient
+    internal static class NeoRpcClient
     {
         static async Task<JToken> RpcCall(Uri uri, string methodName, JArray paramList)
         {
@@ -101,5 +101,9 @@ namespace NeoExpress
             return RpcCall(uri, "express-get-contract-storage", new JArray(scriptHash.ToString()));
         }
 
+        public static Task<JToken> ExpressCreateCheckpoint(Uri uri, string checkpointPath)
+        {
+            return RpcCall(uri, "express-create-checkpoint", new JArray(checkpointPath));
+        }
     }
 }

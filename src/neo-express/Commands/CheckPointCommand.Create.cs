@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -19,13 +20,18 @@ namespace NeoExpress.Commands
             [Option]
             private bool Force { get; }
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            [Option]
+            private bool Online { get; }
+
+            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var filename = string.IsNullOrEmpty(Name)
                         ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}{CHECKPOINT_EXTENSION}"
                         : Name + CHECKPOINT_EXTENSION;
+
+                    filename = Path.GetFullPath(filename);
 
                     if (File.Exists(filename))
                     {
@@ -44,11 +50,19 @@ namespace NeoExpress.Commands
                         throw new Exception("Checkpoint create is only supported on single node express instances");
                     }
 
-                    var node = chain.ConsensusNodes[0];
-                    var blockchainPath = node.GetBlockchainPath();
+                    if (Online)
+                    {
+                        var uri = chain.GetUri();
+                        var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var blockchainPath = chain.ConsensusNodes[0].GetBlockchainPath();
 
-                    BlockchainOperations.CreateCheckpoint(
-                        chain, blockchainPath, filename);
+                        BlockchainOperations.CreateCheckpoint(
+                            chain, blockchainPath, filename);
+                    }
 
                     console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");
 

@@ -222,18 +222,41 @@ namespace NeoExpress
         private static string GetAddressFilePath(string directory) =>
             Path.Combine(directory, ADDRESS_FILENAME);
 
-        public static void CreateCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
+        public static void CreateCheckpoint(ExpressChain chain, string blockChainStoreDirectory, string checkPointFileName)
         {
-            using (var db = new RocksDbStore(chainDirectory))
-            {
-                db.CheckPoint(checkPointDirectory);
-            }
+            using var db = new RocksDbStore(blockChainStoreDirectory);
+            CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+        }
 
-            using (var stream = File.OpenWrite(GetAddressFilePath(checkPointDirectory)))
-            using (var writer = new StreamWriter(stream))
+        public static void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, string scriptHash)
+        {
+            string tempPath;
+            do
             {
-                writer.WriteLine(chain.Magic);
-                writer.WriteLine(chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+                tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            }
+            while (Directory.Exists(tempPath));
+
+            try
+            {
+                db.CheckPoint(tempPath);
+
+                using (var stream = File.OpenWrite(GetAddressFilePath(tempPath)))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.WriteLine(magic);
+                    writer.WriteLine(scriptHash);
+                }
+
+                if (File.Exists(checkPointFileName))
+                {
+                    throw new InvalidOperationException(checkPointFileName + " checkpoint file already exists");
+                }
+                System.IO.Compression.ZipFile.CreateFromDirectory(tempPath, checkPointFileName);
+            }
+            finally
+            {
+                Directory.Delete(tempPath, true);
             }
         }
 

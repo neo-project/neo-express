@@ -47,20 +47,10 @@ namespace NeoExpress.Commands
                     var node = chain.ConsensusNodes[0];
                     var blockchainPath = node.GetBlockchainPath();
 
-                    string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-
-                    if (Directory.Exists(checkpointTempPath))
-                    {
-                        Directory.Delete(checkpointTempPath, true);
-                    }
-
                     BlockchainOperations.CreateCheckpoint(
-                        chain, blockchainPath, checkpointTempPath);
+                        chain, blockchainPath, filename);
 
-                    ZipFile.CreateFromDirectory(checkpointTempPath, filename);
                     console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");
-
-                    Directory.Delete(checkpointTempPath, true);
 
                     return 0;
                 }

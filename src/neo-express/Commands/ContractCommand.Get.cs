@@ -34,7 +34,7 @@ namespace NeoExpress.Commands
 
                     var uri = chain.GetUri();
                     var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
-                    console.WriteLine(result.ToString(Formatting.Indented));
+                    console.WriteResult(result);
 
                     return 0;
                 }

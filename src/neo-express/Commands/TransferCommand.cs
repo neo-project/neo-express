@@ -47,19 +47,18 @@ namespace NeoExpress.Commands
                 var uri = chain.GetUri();
                 var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
                     .ConfigureAwait(false);
-                console.WriteLine(result.ToString(Formatting.Indented));
+                console.WriteResult(result);
 
-                var txid = result["txid"];
+                var txid = result?["txid"];
                 if (txid != null)
                 {
                     console.WriteLine("transfer complete");
                 }
                 else
                 {
-                    var data = result.Value<string>("hash-data").ToByteArray();
                     var signatures = senderAccount.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
-                    console.WriteLine(result2.ToString(Formatting.Indented));
+                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
+                    console.WriteResult(result2);
                 }
 
                 return 0;

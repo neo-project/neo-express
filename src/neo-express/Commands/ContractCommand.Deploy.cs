@@ -83,9 +83,9 @@ namespace NeoExpress.Commands
                 }
 
                 var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
-                console.WriteLine(result.ToString(Formatting.Indented));
+                console.WriteResult(result);
 
-                var txid = result["txid"];
+                var txid = result?["txid"];
                 if (txid != null)
                 {
                     console.WriteLine("deployment complete");
@@ -93,8 +93,8 @@ namespace NeoExpress.Commands
                 else
                 {
                     var signatures = account.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures).ConfigureAwait(false);
-                    console.WriteLine(result2.ToString(Formatting.Indented));
+                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
+                    console.WriteResult(result2);
                 }
 
                 return contract;

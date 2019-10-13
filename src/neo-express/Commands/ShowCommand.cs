@@ -18,7 +18,7 @@ namespace NeoExpress.Commands
             return 1;
         }
 
-        private static async Task<int> ExecuteAsync(CommandLineApplication app, IConsole console, string Name, string Input, Func<Uri, string, Task<JToken>> func)
+        private static async Task<int> ExecuteAsync(CommandLineApplication app, IConsole console, string Name, string Input, Func<Uri, string, Task<JToken?>> func)
         {
             try
             {
@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
 
                 var uri = chain.GetUri();
                 var result = await func(uri, account.ScriptHash).ConfigureAwait(false);
-                console.WriteLine(result.ToString(Formatting.Indented));
+                console.WriteResult(result);
 
                 return 0;
             }

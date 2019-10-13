@@ -47,8 +47,13 @@ namespace NeoExpress
             }
         }
 
-        public static JArray Sign(this ExpressWalletAccount account, IEnumerable<ExpressConsensusNode> nodes, JToken json)
+        public static JArray Sign(this ExpressWalletAccount account, IEnumerable<ExpressConsensusNode> nodes, JToken? json)
         {
+            if (json == null)
+            {
+                throw new ArgumentException(nameof(json));
+            }
+
             var data = json.Value<string>("hash-data").ToByteArray();
 
             // TODO: better way to identify the genesis account?
@@ -108,6 +113,18 @@ namespace NeoExpress
         public static void WriteWarning(this IConsole console, string message)
         {
             WriteMessage(console, message, ConsoleColor.Yellow);
+        }
+
+        public static void WriteResult(this IConsole console, JToken? result)
+        {
+            if (result != null)
+            {
+                console.WriteLine(result.ToString(Formatting.Indented));
+            }
+            else
+            {
+                console.WriteLine("<no result provided>");
+            }
         }
 
         public static void Save(this ExpressChain chain, string fileName)

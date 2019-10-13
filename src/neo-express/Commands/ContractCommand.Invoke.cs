@@ -96,13 +96,12 @@ namespace NeoExpress.Commands
                     var args = ParseArguments(contract);
                     var uri = chain.GetUri();
                     var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
-                    console.WriteLine(result.ToString(Formatting.Indented));
-
+                    console.WriteResult(result);
                     if (account != null)
                     {
                         var signatures = account.Sign(chain.ConsensusNodes, result);
-                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures).ConfigureAwait(false);
-                        console.WriteLine(result2.ToString(Formatting.Indented));
+                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
+                        console.WriteResult(result2);
                     }
                     return 0;
                 }

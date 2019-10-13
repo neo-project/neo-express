@@ -33,9 +33,9 @@ namespace NeoExpress.Commands
                 var uri = chain.GetUri();
                 var result = await NeoRpcClient.ExpressClaim(uri, Asset, account.ScriptHash)
                     .ConfigureAwait(false);
-                console.WriteLine(result.ToString(Formatting.Indented));
+                console.WriteResult(result);
 
-                var txid = result["txid"];
+                var txid = result?["txid"];
                 if (txid != null)
                 {
                     console.WriteLine("transfer complete");
@@ -43,8 +43,8 @@ namespace NeoExpress.Commands
                 else
                 {
                     var signatures = account.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result["contract-context"], signatures);
-                    console.WriteLine(result2.ToString(Formatting.Indented));
+                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
+                    console.WriteResult(result2);
                 }
 
                 return 0;

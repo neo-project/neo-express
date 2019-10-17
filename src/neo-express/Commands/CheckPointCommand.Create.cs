@@ -55,6 +55,7 @@ namespace NeoExpress.Commands
                         var uri = chain.GetUri();
                         var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
                             .ConfigureAwait(false);
+                        console.WriteResult(result);
                     }
                     else
                     {

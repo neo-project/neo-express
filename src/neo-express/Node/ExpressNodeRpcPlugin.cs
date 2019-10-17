@@ -356,7 +356,7 @@ namespace NeoExpress.Node
                 ProtocolSettings.Default.Magic,
                 defaultAccount.ScriptHash.ToAddress());
 
-            return JObject.Null;
+            return filename;
         }
 
         public JObject? OnProcess(HttpContext context, string method, JArray @params)

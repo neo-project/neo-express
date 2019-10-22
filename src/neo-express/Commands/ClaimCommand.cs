@@ -25,7 +25,7 @@ namespace NeoExpress.Commands
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var account = chain.GetAccount(Account);
-                if (account == default)
+                if (account == null)
                 {
                     throw new Exception($"{Account} account not found.");
                 }

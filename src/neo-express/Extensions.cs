@@ -176,14 +176,14 @@ namespace NeoExpress
             if (chain.Wallets != null)
             {
                 var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
-                if (wallet != default)
+                if (wallet != null)
                 {
                     return wallet.DefaultAccount;
                 }
             }
 
             var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
-            if (node != default)
+            if (node != null)
             {
                 return node.Wallet.DefaultAccount;
             }

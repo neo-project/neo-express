@@ -67,7 +67,7 @@ namespace NeoExpress.Commands
             private async Task<ExpressContract> DeployContract(ExpressChain chain, ExpressContract contract, Uri uri, IConsole console)
             {
                 var account = chain.GetAccount(Account);
-                if (account == default)
+                if (account == null)
                 {
                     throw new Exception($"Account {Account} not found.");
                 }

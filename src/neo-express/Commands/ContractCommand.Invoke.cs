@@ -86,7 +86,7 @@ namespace NeoExpress.Commands
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var contract = chain.GetContract(Contract);
-                    if (contract == default)
+                    if (contract == null)
                     {
                         throw new Exception($"Contract {Contract} not found.");
                     }

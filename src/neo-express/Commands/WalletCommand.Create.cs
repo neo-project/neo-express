@@ -32,7 +32,7 @@ namespace NeoExpress.Commands
                     }
 
                     var existingWallet = chain.GetWallet(Name);
-                    if (existingWallet != default)
+                    if (existingWallet != null)
                     {
                         if (!Force)
                         {

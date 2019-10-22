@@ -33,13 +33,13 @@ namespace NeoExpress.Commands
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var senderAccount = chain.GetAccount(Sender);
-                if (senderAccount == default)
+                if (senderAccount == null)
                 {
                     throw new Exception($"{Sender} sender not found.");
                 }
 
                 var receiverAccount = chain.GetAccount(Receiver);
-                if (receiverAccount == default)
+                if (receiverAccount == null)
                 {
                     throw new Exception($"{Receiver} receiver not found.");
                 }

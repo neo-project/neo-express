@@ -24,7 +24,7 @@ namespace NeoExpress.Commands
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var account = chain.GetAccount(Name);
-                if (account == default)
+                if (account == null)
                 {
                     throw new Exception($"{Name} wallet not found.");
                 }

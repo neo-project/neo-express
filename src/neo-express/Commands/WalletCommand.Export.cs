@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
 
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var wallet = chain.GetWallet(Name);
-                    if (wallet == default)
+                    if (wallet == null)
                     {
                         console.WriteLine($"{Name} privatenet wallet not found.");
                     }

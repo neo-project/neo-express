@@ -26,7 +26,7 @@ may not exactly match a publicly released version.
 
 ### Changed
 
-- Updated to netcore 3.0 and C# 8 (with nullable types enabled)
+- Updated to .NET Core 3.0 and C# 8 (with nullable types enabled)
 - Refactored neo-express to merge abstraction and express2 libraries back into
   neo-express.
   - This separation was originally done to enable neo-express to support

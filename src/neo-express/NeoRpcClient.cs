@@ -11,6 +11,16 @@ using System.Threading.Tasks;
 
 namespace NeoExpress
 {
+    class JsonRpcException : Exception
+    {
+        public int Code { get; }
+
+        public JsonRpcException(int code, string? message) : base(message)
+        {
+            Code = code;
+        }
+    }
+
     internal static class NeoRpcClient
     {
         private static async Task<JToken?> RpcCall(Uri uri, string methodName, JArray paramList)
@@ -33,7 +43,23 @@ namespace NeoExpress
             using (var reader = new JsonTextReader(streamReader))
             {
                 var j = await JToken.ReadFromAsync(reader).ConfigureAwait(false);
-                return j["result"];
+
+                JToken? error = j["error"];
+                if (error != null)
+                {
+                    var code = error.Value<int>("code");
+                    var message = error.Value<string>("message");
+
+                    throw new JsonRpcException(code, message);
+                }
+
+                JToken? result = j["result"];
+                if (result == null)
+                {
+                    throw new Exception("Invalid JSON RPC Response");
+                }
+
+                return result;
             }
         }
 

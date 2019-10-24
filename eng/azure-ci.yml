@@ -8,8 +8,8 @@ trigger:
   batch: false
   branches:
     include:
-      - master
-      - release/*
+    - master
+    - release/*
   paths:
     include:
     - '*'

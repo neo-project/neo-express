@@ -17,20 +17,38 @@ may not exactly match a publicly released version.
 
 ### Added
 
-- [getunspents](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunspents.html),
-  [getunclaimed](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html)
-  and [getunclaimedgas](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimedgas.html)
-  RPC endpoints.
-- Create checkpoint while neo-express is running
-- Support for UTXO inputs/outputs on express-invoke-contract RPC endpoint
+- Added RPC endpoint to mirror behavior of
+  [ApplicationLogs](https://github.com/neo-project/neo-plugins/tree/b5388d753a2da1d59583dd9c66835e29ca7fd6f3/ApplicationLogs)
+  plugin.
+  - [`getapplicationlog`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getapplicationlog.html)
+- Added RPC endpoint to mirror behavior of
+  [RpcSystemAssetTracker](https://github.com/neo-project/neo-plugins/tree/b5388d753a2da1d59583dd9c66835e29ca7fd6f3/RpcSystemAssetTracker)
+  plugin.
+  - [`getclaimable`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getclaimable.html),
+    [`getunclaimed`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html) and
+    [`getunspents`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunspents.html)
+- Added `--online` option to `checkpoint create` command to create a checkpoint while neo-express is running.
+- Added `show claimable` and `show unspents` commands.
+- Support for UTXO inputs/outputs on express-invoke-contract RPC endpoint.
 
 ### Changed
 
-- Updated to .NET Core 3.0 and C# 8 (with nullable types enabled)
+- Changed `show gas` command to `show unclaimed` to match
+  [RpcSystemAssetTracker](https://github.com/neo-project/neo-plugins/tree/b5388d753a2da1d59583dd9c66835e29ca7fd6f3/RpcSystemAssetTracker)
+  [`getunclaimed`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html)
+  RPC endpoint name.
+- Updated to .NET Core 3.0 and C# 8 (with nullable types enabled).
 - Refactored neo-express to merge abstraction and express2 libraries back into
   neo-express.
   - This separation was originally done to enable neo-express to support
     NEO 2 and 3. However, this approach would not work, so it was undone.
+
+### Removed
+
+- Removed custom `express-show-gas` RPC endpoint in favor of
+  [RpcSystemAssetTracker](https://github.com/neo-project/neo-plugins/tree/b5388d753a2da1d59583dd9c66835e29ca7fd6f3/RpcSystemAssetTracker)
+  plugin compatible [`getunclaimed`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html)
+  RPC endpoint.
 
 ## [0.8] - 2019-09-13
 

@@ -6,6 +6,7 @@ using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
+using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.VM;
@@ -14,19 +15,18 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 
 namespace NeoExpress.Node
 {
-    internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin
+    internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin, IPersistencePlugin
     {
-        private readonly Persistence.RocksDbStore? store;
+        private readonly Store store;
+        private const byte APP_LOGS_PREFIX = 0x40;
 
-        public ExpressNodeRpcPlugin(Neo.Persistence.Store store)
+        public ExpressNodeRpcPlugin(Store store)
         {
-            if (store is Persistence.RocksDbStore rocksDbStore)
-            {
-                this.store = rocksDbStore;
-            }
+            this.store = store;
         }
 
         public override void Configure()
@@ -343,28 +343,45 @@ namespace NeoExpress.Node
                 throw new Exception("Checkpoint create is only supported on single node express instances");
             }
 
-            if (store == null)
+            if (store is Persistence.RocksDbStore rocksDbStore)
+            {
+                var defaultAccount = System.RpcServer.Wallet.GetAccounts().Single(a => a.IsDefault);
+                BlockchainOperations.CreateCheckpoint(
+                    rocksDbStore,
+                    filename,
+                    ProtocolSettings.Default.Magic,
+                    defaultAccount.ScriptHash.ToAddress());
+
+                return filename;
+            }
+            else
             {
                 throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
             }
-
-            var defaultAccount = System.RpcServer.Wallet.GetAccounts()
-                .Single(a => a.IsDefault);
-            BlockchainOperations.CreateCheckpoint(
-                store,
-                filename,
-                ProtocolSettings.Default.Magic,
-                defaultAccount.ScriptHash.ToAddress());
-
-            return filename;
         }
 
-        public JObject? OnProcess(HttpContext context, string method, JArray @params)
+        public JObject OnGetApplicationLog(JArray @params)
+        {
+            var hash = UInt256.Parse(@params[0].AsString());
+            var value = store.Get(APP_LOGS_PREFIX, hash.ToArray());
+
+            if (value != null && value.Length > 0)
+            {
+                var json = Encoding.UTF8.GetString(value);
+                return JObject.Parse(json);
+            }
+
+            throw new Exception("Unknown transaction");
+        }
+
+        JObject? IRpcPlugin.OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
             {
                 case "getunspents":
                     return OnGetUnspents(@params);
+                case "getapplicationlog":
+                    return OnGetApplicationLog(@params);
                 case "express-transfer":
                     return OnTransfer(@params);
                 case "express-claim":
@@ -391,12 +408,67 @@ namespace NeoExpress.Node
             return null;
         }
 
-        public void PostProcess(HttpContext context, string method, JArray @params, JObject result)
+        void IRpcPlugin.PreProcess(HttpContext context, string method, JArray _params)
         {
         }
 
-        public void PreProcess(HttpContext context, string method, JArray @params)
+        void IRpcPlugin.PostProcess(HttpContext context, string method, JArray _params, JObject result)
         {
         }
+
+        private static JObject Convert(Blockchain.ApplicationExecuted appExec)
+        {
+            JObject json = new JObject();
+            json["txid"] = appExec.Transaction.Hash.ToString();
+            json["executions"] = appExec.ExecutionResults.Select(p =>
+            {
+                JObject execution = new JObject();
+                execution["trigger"] = p.Trigger;
+                execution["contract"] = p.ScriptHash.ToString();
+                execution["vmstate"] = p.VMState;
+                execution["gas_consumed"] = p.GasConsumed.ToString();
+                try
+                {
+                    execution["stack"] = p.Stack.Select(q => q.ToParameter().ToJson()).ToArray();
+                }
+                catch (InvalidOperationException)
+                {
+                    execution["stack"] = "error: recursive reference";
+                }
+                execution["notifications"] = p.Notifications.Select(q =>
+                {
+                    JObject notification = new JObject();
+                    notification["contract"] = q.ScriptHash.ToString();
+                    try
+                    {
+                        notification["state"] = q.State.ToParameter().ToJson();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        notification["state"] = "error: recursive reference";
+                    }
+                    return notification;
+                }).ToArray();
+                return execution;
+            }).ToArray();
+            return json;
+        }
+
+        void IPersistencePlugin.OnPersist(Snapshot snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        {
+            foreach (var appExec in applicationExecutedList)
+            {
+                var json = Convert(appExec);
+                var key = appExec.Transaction.Hash.ToArray();
+                var value = Encoding.UTF8.GetBytes(json.ToString());
+                store.Put(APP_LOGS_PREFIX, key, value);
+            }
+        }
+
+        void IPersistencePlugin.OnCommit(Snapshot snapshot)
+        {
+        }
+
+        bool IPersistencePlugin.ShouldThrowExceptionFromCommit(Exception ex) => false;
     }
 }

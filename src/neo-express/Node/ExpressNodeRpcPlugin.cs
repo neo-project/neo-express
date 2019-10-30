@@ -104,33 +104,6 @@ namespace NeoExpress.Node
             }
         }
 
-        private JObject OnShowGas(JArray @params, bool showUnclaimed = false)
-        {
-            var address = @params[0].AsString().ToScriptHash();
-
-            using (var snapshot = Blockchain.Singleton.GetSnapshot())
-            {
-                var coins = NodeUtility.GetCoins(snapshot, ImmutableHashSet.Create(address));
-
-                var unclaimedCoins = coins.Unclaimed(Blockchain.GoverningToken.Hash);
-                var unspentCoins = coins.Unspent(Blockchain.GoverningToken.Hash);
-
-                var unavailable = snapshot.CalculateBonus(
-                    unspentCoins.Select(c => c.Reference),
-                    snapshot.Height + 1);
-                var available = snapshot.CalculateBonus(unclaimedCoins.Select(c => c.Reference));
-
-                JObject json = new JObject();
-                json["unavailable"] = (double)(decimal)unavailable;
-                json["available"] = (double)(decimal)available;
-                if (showUnclaimed)
-                {
-                    json["unclaimed"] = (double)(decimal)(available + unavailable);
-                }
-                return json;
-            }
-        }
-
         private JObject OnClaim(JArray @params)
         {
             UInt256 GetAssetId(string asset)
@@ -288,6 +261,46 @@ namespace NeoExpress.Node
             }
         }
 
+        public JObject OnCheckpointCreate(JArray @params)
+        {
+            string filename = @params[0].AsString();
+
+            if (ProtocolSettings.Default.StandbyValidators.Length > 1)
+            {
+                throw new Exception("Checkpoint create is only supported on single node express instances");
+            }
+
+            if (store is Persistence.RocksDbStore rocksDbStore)
+            {
+                var defaultAccount = System.RpcServer.Wallet.GetAccounts().Single(a => a.IsDefault);
+                BlockchainOperations.CreateCheckpoint(
+                    rocksDbStore,
+                    filename,
+                    ProtocolSettings.Default.Magic,
+                    defaultAccount.ScriptHash.ToAddress());
+
+                return filename;
+            }
+            else
+            {
+                throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
+            }
+        }
+
+        public JObject OnGetApplicationLog(JArray @params)
+        {
+            var hash = UInt256.Parse(@params[0].AsString());
+            var value = store.Get(APP_LOGS_PREFIX, hash.ToArray());
+
+            if (value != null && value.Length > 0)
+            {
+                var json = Encoding.UTF8.GetString(value);
+                return JObject.Parse(json);
+            }
+
+            throw new Exception("Unknown transaction");
+        }
+
         public JObject OnGetUnspents(JArray @params)
         {
             JObject GetBalance(IEnumerable<Coin> coins, UInt256 assetId, string symbol)
@@ -334,65 +347,93 @@ namespace NeoExpress.Node
             }
         }
 
-        public JObject OnCheckpointCreate(JArray @params)
+        private JObject GetUnclaimed(JArray @params)
         {
-            string filename = @params[0].AsString();
+            var address = @params[0].AsString().ToScriptHash();
 
-            if (ProtocolSettings.Default.StandbyValidators.Length > 1)
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
             {
-                throw new Exception("Checkpoint create is only supported on single node express instances");
-            }
+                var coins = NodeUtility.GetCoins(snapshot, ImmutableHashSet.Create(address));
 
-            if (store is Persistence.RocksDbStore rocksDbStore)
-            {
-                var defaultAccount = System.RpcServer.Wallet.GetAccounts().Single(a => a.IsDefault);
-                BlockchainOperations.CreateCheckpoint(
-                    rocksDbStore,
-                    filename,
-                    ProtocolSettings.Default.Magic,
-                    defaultAccount.ScriptHash.ToAddress());
+                var unclaimedCoins = coins.Unclaimed(Blockchain.GoverningToken.Hash);
+                var unspentCoins = coins.Unspent(Blockchain.GoverningToken.Hash);
 
-                return filename;
-            }
-            else
-            {
-                throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
+                var unavailable = snapshot.CalculateBonus(
+                    unspentCoins.Select(c => c.Reference),
+                    snapshot.Height + 1);
+                var available = snapshot.CalculateBonus(unclaimedCoins.Select(c => c.Reference));
+
+                JObject json = new JObject();
+                json["unavailable"] = (double)(decimal)unavailable;
+                json["available"] = (double)(decimal)available;
+                json["unclaimed"] = (double)(decimal)(available + unavailable);
+                return json;
             }
         }
 
-        public JObject OnGetApplicationLog(JArray @params)
+        private JObject GetClaimable(JArray @params)
         {
-            var hash = UInt256.Parse(@params[0].AsString());
-            var value = store.Get(APP_LOGS_PREFIX, hash.ToArray());
+            var address = @params[0].AsString().ToScriptHash();
 
-            if (value != null && value.Length > 0)
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
             {
-                var json = Encoding.UTF8.GetString(value);
-                return JObject.Parse(json);
-            }
+                var coins = NodeUtility.GetCoins(snapshot, ImmutableHashSet.Create(address));
+                var unclaimedCoins = coins.Unclaimed(Blockchain.GoverningToken.Hash);
 
-            throw new Exception("Unknown transaction");
+                var totalUnclaimed = Fixed8.Zero;
+                var claimable = new JArray();
+                foreach (var coin in unclaimedCoins)
+                {
+                    var spentCoinState = snapshot.SpentCoins.TryGet(coin.Reference.PrevHash);
+                    var startHeight = spentCoinState.TransactionHeight;
+                    var endHeight = spentCoinState.Items[coin.Reference.PrevIndex];
+                    var (generated, sysFee) = NodeUtility.CalculateClaimable(snapshot, coin.Output.Value, startHeight, endHeight);
+                    var unclaimed = generated + sysFee;
+                    totalUnclaimed += unclaimed;
+
+                    var utxo = new JObject();
+                    utxo["txid"] = coin.Reference.PrevHash.ToString();
+                    utxo["n"] = coin.Reference.PrevIndex;
+                    utxo["start_height"] = startHeight;
+                    utxo["end_height"] = endHeight;
+                    utxo["generated"] = (double)(decimal)generated;
+                    utxo["sys_fee"] = (double)(decimal)sysFee;
+                    utxo["unclaimed"] = (double)(decimal)(unclaimed);
+
+                    claimable.Add(utxo);
+                }
+
+                JObject json = new JObject();
+                json["claimable"] = claimable;
+                json["address"] = address.ToAddress();
+                json["unclaimed"] = (double)(decimal)totalUnclaimed;
+                return json;
+            }
         }
 
         JObject? IRpcPlugin.OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
             {
-                case "getunspents":
-                    return OnGetUnspents(@params);
+                // ApplicationLogs plugin compatible RPC endpoints
                 case "getapplicationlog":
                     return OnGetApplicationLog(@params);
+
+                // RpcSystemAssetTracker plugin compatible RPC endpoints
+                case "getclaimable":
+                    return GetClaimable(@params);
+                case "getunclaimed":
+                    return GetUnclaimed(@params);
+                case "getunspents":
+                    return OnGetUnspents(@params);
+
+                // custom Neo-Express RPC Endpoints
                 case "express-transfer":
                     return OnTransfer(@params);
                 case "express-claim":
                     return OnClaim(@params);
                 case "express-show-coins":
                     return OnShowCoins(@params);
-                case "express-show-gas":
-                case "getunclaimedgas":
-                    return OnShowGas(@params);
-                case "getunclaimed":
-                    return OnShowGas(@params, true);
                 case "express-submit-signatures":
                     return OnSubmitSignatures(@params);
                 case "express-deploy-contract":

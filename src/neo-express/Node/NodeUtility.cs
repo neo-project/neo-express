@@ -199,6 +199,50 @@ namespace NeoExpress.Node
                 });
         }
 
+        public static (Fixed8 generated, Fixed8 sysFee) CalculateClaimable(Snapshot snapshot, Fixed8 value, uint startHeight, uint endHeight)
+        {
+            static long GetSysFeeAmountForHeight(Snapshot snapshot, uint height)
+            {
+                return snapshot.Blocks.TryGet(Blockchain.Singleton.GetBlockHash(height)).SystemFeeAmount;
+            }
+
+            var decrementInterval = Blockchain.DecrementInterval;
+            var generationAmountLength = Blockchain.GenerationAmount.Length;
+
+            uint amount = 0;
+            uint ustart = startHeight / decrementInterval;
+            if (ustart < generationAmountLength)
+            {
+                uint istart = startHeight % decrementInterval;
+                uint uend = endHeight / decrementInterval;
+                uint iend = endHeight % decrementInterval;
+                if (uend >= generationAmountLength)
+                {
+                    uend = (uint)generationAmountLength;
+                    iend = 0;
+                }
+                if (iend == 0)
+                {
+                    uend--;
+                    iend = decrementInterval;
+                }
+                while (ustart < uend)
+                {
+                    amount += (decrementInterval - istart) * Blockchain.GenerationAmount[ustart];
+                    ustart++;
+                    istart = 0;
+                }
+                amount += (iend - istart) * Blockchain.GenerationAmount[ustart];
+            }
+
+            Fixed8 fractionalShare = value / 100000000;
+            var generated = fractionalShare * amount;
+            var sysFee = fractionalShare * (GetSysFeeAmountForHeight(snapshot, endHeight - 1) -
+                     (startHeight == 0 ? 0 : GetSysFeeAmountForHeight(snapshot, startHeight - 1)));
+
+            return (generated, sysFee);
+        }
+
         public static ContractTransaction? MakeTransferTransaction(Snapshot snapshot,
             ImmutableHashSet<UInt160> senderAddresses,
             UInt160 receiver, UInt256 assetId, Fixed8? amount = null)

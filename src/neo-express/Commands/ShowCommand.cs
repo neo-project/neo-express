@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace NeoExpress.Commands
 {
     [Command("show")]
-    [Subcommand(typeof(Account), typeof(Coins), typeof(Gas), typeof(Unspents))]
+    [Subcommand(typeof(Account), typeof(Claimable), typeof(Coins), typeof(Unclaimed), typeof(Unspents))]
     class ShowCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)
@@ -59,6 +59,22 @@ namespace NeoExpress.Commands
             }
         }
 
+        [Command("claimable")]
+        private class Claimable
+        {
+            [Argument(0)]
+            [Required]
+            private string Name { get; } = string.Empty;
+
+            [Option]
+            private string Input { get; } = string.Empty;
+
+            private Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            {
+                return ExecuteAsync(app, console, Name, Input, NeoRpcClient.GetClaimable);
+            }
+        }
+
         [Command("coins")]
         private class Coins
         {
@@ -75,8 +91,8 @@ namespace NeoExpress.Commands
             }
         }
 
-        [Command("gas")]
-        private class Gas
+        [Command("unclaimed")]
+        private class Unclaimed
         {
             [Argument(0)]
             [Required]
@@ -87,7 +103,7 @@ namespace NeoExpress.Commands
 
             private Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
-                return ExecuteAsync(app, console, Name, Input, NeoRpcClient.GetUnclaimedGas);
+                return ExecuteAsync(app, console, Name, Input, NeoRpcClient.GetUnclaimed);
             }
         }
 

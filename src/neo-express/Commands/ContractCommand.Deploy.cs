@@ -32,28 +32,21 @@ namespace NeoExpress.Commands
             [Option]
             private string Name { get; } = string.Empty;
 
-            enum DeployedStatus
-            {
-                Unknown,
-                Deployed,
-                NotDeployed
-            }
-
-            private static async Task<(DeployedStatus, JToken?)> GetContractState(Uri uri, ExpressContract contract)
+            private static async Task<(bool deployed, JToken? result)> GetContractState(Uri uri, ExpressContract contract)
             {
                 try
                 {
                     var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
                     if (result != null)
                     {
-                        return (DeployedStatus.Deployed, result);
+                        return (true, result);
                     }
 
-                    return (DeployedStatus.NotDeployed, null);
+                    return (false, null);
                 }
                 catch (Exception)
                 {
-                    return (DeployedStatus.Unknown, null);
+                    return (false, null);
                 }
             }
 
@@ -74,12 +67,20 @@ namespace NeoExpress.Commands
 
                 if (Prompt.GetYesNo("Does this contract use storage?", false))
                 {
-                    contract.Properties.Add("has-storage", "true");
+                    contract.Properties["has-storage"] = "true";
+                }
+                else
+                {
+                    contract.Properties.Remove("has-storage");
                 }
 
                 if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
                 {
-                    contract.Properties.Add("has-dynamic-invoke", "true");
+                    contract.Properties["has-dynamic-invoke"] = "true";
+                }
+                else
+                {
+                    contract.Properties.Remove("has-dynamic-invoke");
                 }
 
                 var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
@@ -118,9 +119,9 @@ namespace NeoExpress.Commands
                     }
 
                     var uri = chain.GetUri();
-                    var (state, result) = await GetContractState(uri, contract).ConfigureAwait(false);
+                    var (deployed, result) = await GetContractState(uri, contract).ConfigureAwait(false);
 
-                    if (state == DeployedStatus.Deployed)
+                    if (deployed)
                     {
                         Debug.Assert(result != null);
                         console.WriteLine($"Contract matching {contract.Name} script hash already deployed.");
@@ -128,7 +129,7 @@ namespace NeoExpress.Commands
                         contract.Properties["has-storage"] = storage.ToString();
                         contract.Properties["has-dynamic-invoke"] = dynamicInvoke.ToString();
                     }
-                    else if (state == DeployedStatus.NotDeployed)
+                    else
                     {
                         console.WriteLine($"Deploying {contract.Name} contract.");
                         contract = await DeployContract(chain, contract, uri, console);

@@ -49,6 +49,9 @@ may not exactly match a publicly released version.
   [RpcSystemAssetTracker](https://github.com/neo-project/neo-plugins/tree/b5388d753a2da1d59583dd9c66835e29ca7fd6f3/RpcSystemAssetTracker)
   plugin compatible [`getunclaimed`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html)
   RPC endpoint.
+- Removed `contract import` command. `contract deploy` now accepts a path to a NEO VM .avm file,
+  a path to a directory containing the .avm file, or a contract short name for a previously deployed
+  smart contract.
 
 ## [0.8] - 2019-09-13
 

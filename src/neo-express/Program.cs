@@ -26,7 +26,7 @@ namespace NeoExpress
     {
         public static string ROOT_PATH => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "NEO-Express", "blockchain-nodes");
+            "Neo-Express", "blockchain-nodes");
 
         private static int Main(string[] args)
         {

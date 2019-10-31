@@ -1,29 +1,29 @@
 <!-- markdownlint-enable -->
-# NEO-Express Command Reference
+# Neo-Express Command Reference
 
 Note, you can pass -?|-h|--help to show a list of supported commands or to show
 help information about a specific command.
 
-> Remember, NEO-Express is in preview. You will find bugs and/or missing functionality
+> Remember, Neo-Express is in preview. You will find bugs and/or missing functionality
 > as you use it. Please let us know of any issues you find via our
 > [GitHub repo](https://github.com/ngdseattle/neo-express).
 
 ## neo-express create
 
-The `create` command is used to create a new NEO-Express blockchain instance. In
+The `create` command is used to create a new Neo-Express blockchain instance. In
 particular, the create command creates one or more consensus node wallets as well
 as the multi-signature contracts needed for the management of genesis assets.
 
 Note, the wallets created for a new blockchain instance are not encrypted in the
 blockchain instance file. This simplifies the developer workflow by eliminating
-the need to manage passwords. However, it also means that all NEO-Express wallets
+the need to manage passwords. However, it also means that all Neo-Express wallets
 are insecure and should never be used in a production context.
 
-By default, the `create` command creates a single node NEO-Express blockchain
+By default, the `create` command creates a single node Neo-Express blockchain
 instance. While a single node blockchain can handle most developer scenarios, it
 is also possible to create a four or seven node blockchain via the `--count|-c` option.
 
-All of the information about a NEO-Express blockchain instance is stored in a
+All of the information about a Neo-Express blockchain instance is stored in a
 single JSON file. By default, this file is named "express.privatenet.json", but
 this can be overridden with the `--output|-o` option. For all commands that read the
 blockchain instance file, a non-default blockchain instance file can be specified
@@ -32,7 +32,7 @@ via the `--input|-i` option.
 If the user wants to overwrite an existing blockchain instance file, they must
 specify the `--force|-f` option.
 
-By default, NEO-Express will pick port numbers for the consensus nodes in the
+By default, Neo-Express will pick port numbers for the consensus nodes in the
 blockchain instance by starting at 49152 and incrementing for each new port number
 that needs to be specified. Multiple blockchain instances cannot use the same set
 of ports. The user can specify the starting port when creating a blockchain via the
@@ -63,8 +63,8 @@ can still be restored.
 
 The `export` command saves all consensus node wallets in NEP-6 format. It also saves
 config.json files for each consensus node as well as a protocol.json file for the
-blockchain itself. This allows for standard NEO clients such as NEO-CLI or NEO-GUI
-to connect to a running NEO-Express blockchain,
+blockchain itself. This allows for standard Neo clients such as Neo-CLI or Neo-GUI
+to connect to a running Neo-Express blockchain,
 
 Note, NEP-6 format encrypts wallet information, so the user has to provide a password.
 However, since this same information is still stored unencrypted in the blockchain
@@ -76,7 +76,7 @@ instance files.
 ## neo-express wallet
 
 The `wallet` command has a series of subcommands for the management of standard
-wallets and accounts for use in the NEO-Express blockchain. As stated above, wallet
+wallets and accounts for use in the Neo-Express blockchain. As stated above, wallet
 accounts are stored unencrypted and should never be used in a production context.
 
 All `wallet` subcommands support the `--input` argument for non-default blockchain
@@ -106,12 +106,12 @@ assets associated with that wallet are not changed.
 ### neo-express wallet export
 
 Similar the top-level `export` command described above, `wallet export` saves an
-existing NEO-Express wallet in the NEP-6 format that can be read by standard NEO
+existing Neo-Express wallet in the NEP-6 format that can be read by standard Neo
 tools.
 
 ## neo-express transfer
 
-The `transfer` command is used to transfer assets between accounts in a NEO-Express
+The `transfer` command is used to transfer assets between accounts in a Neo-Express
 blockchain. The transfer command has four required arguments
 
 - The asset to transfer. This can be 'neo', 'gas' or the hash of a NEP-5 token
@@ -119,7 +119,7 @@ blockchain. The transfer command has four required arguments
 - the friendly name of the sending account
 - the friendly name of the receiving account
 
-Note, NEO-Express reserves the friendly name 'genesis' to refer to the account
+Note, Neo-Express reserves the friendly name 'genesis' to refer to the account
 holding the tokens created in the genesis block. 'genesis' can be used as any
 other friendly name for transfers. For example, to transfer a million genesis neo
 tokens to the alice account, execute the command
@@ -163,15 +163,15 @@ instance files.
 ## neo-express contract
 
 The `contract` command has a series of subcomands for managing smart contracts
-on a NEO-Express blockchain
+on a Neo-Express blockchain
 
 All `contract` subcommands support the `--input` argument for non-default blockchain
 instance files.
 
 ### neo-express contract deploy
 
-The `contract deploy` command deploys a smart contract to a NEO-Express blockchain.
-The command takes a path to an .AVM file generated by a NEO contract
+The `contract deploy` command deploys a smart contract to a Neo-Express blockchain.
+The command takes a path to an .AVM file generated by a Neo contract
 compiler like [neon compiler for .NET](https://github.com/neo-project/neo-devpack-dotnet).
 
 Deploying a contract also reads the .abi.json file generated by the neon compiler.
@@ -200,7 +200,7 @@ The `contract list` command writes out a list of all contracts that have been im
 ### neo-express contract get
 
 The `contract get` command retrieves information about a deployed contract from
-a running NEO-Express blockchain
+a running Neo-Express blockchain
 (aka [getcontractstate](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getcontractstate.html)).
 
 ### neo-express contract storage
@@ -212,7 +212,7 @@ as both a hex-encoded byte array as well as a UTF-8 encoded string.
 
 ### neo-express contract invoke
 
-The `contract invoke` command invokes a deployed contract in a running NEO-Express
+The `contract invoke` command invokes a deployed contract in a running Neo-Express
 blockchain. This command has two required arguments: the contract to invoke and
 argument values to pass to the contract. This command also has two optional arguments
 as well:
@@ -235,12 +235,12 @@ as well:
 ## neo-express checkpoint
 
 The `checkpoint` command has a series of subcomands for managing the state of a
-NEO-Express blockchain. In particular, allowing a blockchain to be reverted to a
+Neo-Express blockchain. In particular, allowing a blockchain to be reverted to a
 previous known state. While this is never something you would do on a production
-blockchain, the ability to revert changes to a NEO-Express blockchain enables a
+blockchain, the ability to revert changes to a Neo-Express blockchain enables a
 variety of debug and test scenarios.
 
-Note, all `checkpoint` subcommands require a single-node NEO-Express blockchain.
+Note, all `checkpoint` subcommands require a single-node Neo-Express blockchain.
 Multi-node blockchains cannot be check pointed.
 
 All `contract` subcommands support the `--input` argument for non-default blockchain
@@ -248,7 +248,7 @@ instance files.
 
 ### neo-express checkpoint create
 
-The `checkpoint create` enables the user to create a checkpoint of a NEO-express
+The `checkpoint create` enables the user to create a checkpoint of a Neo-express
 blockchain *that is not currently running*. This command has a single optional
 argument: the name of the checkpoint. If a name is not provided, a default name
 based on the current time and date will be used. If the user wants to overwrite
@@ -256,12 +256,12 @@ a checkpoint that has already been created, they must specify the `--force|-f`
 option.
 
 > Note, the ability to checkpoint a running blockchain will be added in a future
-> version of NEO-Express
+> version of Neo-Express
 
 ### neo-express checkpoint restore
 
 The `checkpoint restore` command enables the user to discard the current state
-of a NEO-Express blockchain and replace it with the state from the checkpoint.
+of a Neo-Express blockchain and replace it with the state from the checkpoint.
 If there is no existing blockchain state, restore essentially works as an import.
 If there is existing blockchain state, the user must specify the `--force|-f`
 option.
@@ -280,7 +280,7 @@ standard `run` command, the user can control the speed at which the blockchain
 mints blocks via the `--seconds-per-block|-s` argument.
 
 `checkpoint run` is of particular use in test scenarios, where the resulting state
-of the NEO-Express blockchain is not important beyond validating that all tests pass.
+of the Neo-Express blockchain is not important beyond validating that all tests pass.
 
 > Note, once a checkpoint is run, there is no way to save changes made to that
 > running instance.

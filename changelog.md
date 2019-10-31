@@ -1,4 +1,4 @@
-# NEO Express Change Log
+# Neo Express Change Log
 
 All notable changes to this project will be documented in this file.
 
@@ -41,7 +41,8 @@ may not exactly match a publicly released version.
 - Refactored neo-express to merge abstraction and express2 libraries back into
   neo-express.
   - This separation was originally done to enable neo-express to support
-    NEO 2 and 3. However, this approach would not work, so it was undone.
+    Neo 2 and 3. However, this approach would not work, so it was undone.
+- updated Neo branding as per https://neo.org/presskit
 
 ### Removed
 
@@ -49,7 +50,7 @@ may not exactly match a publicly released version.
   [RpcSystemAssetTracker](https://github.com/neo-project/neo-plugins/tree/b5388d753a2da1d59583dd9c66835e29ca7fd6f3/RpcSystemAssetTracker)
   plugin compatible [`getunclaimed`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html)
   RPC endpoint.
-- Removed `contract import` command. `contract deploy` now accepts a path to a NEO VM .avm file,
+- Removed `contract import` command. `contract deploy` now accepts a path to a Neo VM .avm file,
   a path to a directory containing the .avm file, or a contract short name for a previously deployed
   smart contract.
 

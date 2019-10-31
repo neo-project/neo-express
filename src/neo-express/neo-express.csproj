@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AssemblyName>neo-express</AssemblyName>
     <Authors>Neo Global Development Seattle</Authors>
     <Company>The Neo Project</Company>
     <Copyright>2015-2019 The Neo Project</Copyright>
-    <Description>neo-express is a NEO developer blockchain tool</Description>
+    <Description>neo-express is a Neo developer blockchain tool</Description>
     <LangVersion>8</LangVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
@@ -13,7 +13,7 @@
     <PackageId>Neo.Express</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
-    <PackageTags>NEO;Blockchain;Smart Contract</PackageTags>
+    <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>
     <PackAsTool>true</PackAsTool>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>

@@ -8,10 +8,10 @@ namespace NeoExpress.Models
     public class ExpressChain
     {
         private readonly static ImmutableArray<uint> KNOWN_MAGIC_NUMBERS = ImmutableArray.Create(
-            /* NEO 2 MainNet */ 7630401u,
-            /* NEO 2 TestNet */ 1953787457u,
-            /* NEO 3 Preview 1 MainNet */ 5195086u,
-            /* NEO 3 Preview 1 TestNet */ 1951352142u);
+            /* Neo 2 MainNet */ 7630401u,
+            /* Neo 2 TestNet */ 1953787457u,
+            /* Neo 3 Preview 1 MainNet */ 5195086u,
+            /* Neo 3 Preview 1 TestNet */ 1951352142u);
 
         public static uint GenerateMagicValue()
         {

@@ -144,14 +144,24 @@ namespace NeoExpress.Commands
                         }
                         else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            console.WriteWarning($"Contract named {c.Name} already exists. Cannot save contract info to .neo-express.json file");
-                            return 1;
+                            console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
+                            
+                            if (Prompt.GetYesNo("Overwrite?", false))
+                            {
+                                chain.Contracts.RemoveAt(i);
+                            }
+                            else
+                            {
+                                console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
+                                return 0;
+                            }
+                            
                         }
                     }
 
                     chain.Contracts.Add(contract);
                     chain.Save(filename);
-                    console.WriteLine($"Contract {contract.Name} info saved to .neo-express.json file");
+                    console.WriteLine($"Contract {contract.Name} info saved to {Path.GetFileName(filename)}");
                     return 0;
                 }
                 catch (Exception ex)

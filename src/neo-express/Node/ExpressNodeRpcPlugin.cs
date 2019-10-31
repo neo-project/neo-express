@@ -69,9 +69,24 @@ namespace NeoExpress.Node
 
         private JObject OnTransfer(JArray @params)
         {
+            static Fixed8? GetQuantity(UInt256 assetId, string quantity)
+            {
+                if (quantity.Equals("all", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                var assetDescriptor = new AssetDescriptor(assetId);
+                if (BigDecimal.TryParse(quantity, assetDescriptor.Decimals, out var result))
+                {
+                    return result.ToFixed8();
+                }
+
+                throw new ArgumentException(nameof(quantity));
+            }
+
             var assetId = NodeUtility.GetAssetId(@params[0].AsString());
-            var assetDescriptor = new AssetDescriptor(assetId);
-            var quantity = BigDecimal.Parse(@params[1].AsString(), assetDescriptor.Decimals).ToFixed8();
+            var quantity = GetQuantity(assetId, @params[1].AsString());
             var sender = @params[2].AsString().ToScriptHash();
             var receiver = @params[3].AsString().ToScriptHash();
 

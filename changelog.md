@@ -29,6 +29,7 @@ may not exactly match a publicly released version.
     [`getunspents`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunspents.html)
 - Added `--online` option to `checkpoint create` command to create a checkpoint while neo-express is running.
 - Added `show claimable` and `show unspents` commands.
+- Added `all` quantity support for `transfer` command.
 - Support for UTXO inputs/outputs on express-invoke-contract RPC endpoint.
 
 ### Changed

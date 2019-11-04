@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.Wallets;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

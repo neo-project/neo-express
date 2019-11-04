@@ -1,13 +1,9 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Commands;
-using NeoExpress.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 
 namespace NeoExpress
 {

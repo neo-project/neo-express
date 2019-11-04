@@ -1,6 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 

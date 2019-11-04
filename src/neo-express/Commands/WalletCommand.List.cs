@@ -1,5 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
+using NeoExpress.Abstractions.Models;
 using System;
 using System.Linq;
 

@@ -2,7 +2,7 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace NeoExpress.Models
+namespace NeoExpress.Abstractions.Models
 {
     public class ExpressWallet
     {

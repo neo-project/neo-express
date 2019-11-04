@@ -1,4 +1,4 @@
-﻿using Neo;
+﻿using NeoExpress.Abstractions.Models;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using NeoExpress.Persistence;
@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 

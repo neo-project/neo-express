@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>neo-express.abstractions</AssemblyName>
+    <Authors>Neo Global Development Seattle</Authors>
+    <Company>The Neo Project</Company>
+    <Copyright>2015-2019 The Neo Project</Copyright>
+    <LangVersion>8</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageId>Neo.Express.Abstractions</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
+    <PackageTags>NEO;Blockchain;Smart Contract</PackageTags>
+    <PackAsTool>true</PackAsTool>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
+    <RootNamespace>NeoExpress.Abstractions</RootNamespace>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.6.0" />
+  </ItemGroup>
+
+</Project>

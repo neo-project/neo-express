@@ -1,8 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
 using System;
 using System.IO;
-using System.Linq;
 
 namespace NeoExpress.Commands
 {

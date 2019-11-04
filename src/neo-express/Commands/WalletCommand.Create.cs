@@ -26,32 +26,32 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-                    //if (chain.IsReservedName(Name))
-                    //{
-                    //    throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
-                    //}
+                    if (chain.IsReservedName(Name))
+                    {
+                        throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
+                    }
 
-                    //var existingWallet = chain.GetWallet(Name);
-                    //if (existingWallet != null)
-                    //{
-                    //    if (!Force)
-                    //    {
-                    //        throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
-                    //    }
+                    var existingWallet = chain.GetWallet(Name);
+                    if (existingWallet != null)
+                    {
+                        if (!Force)
+                        {
+                            throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
+                        }
 
-                    //    chain.Wallets.Remove(existingWallet);
-                    //}
+                        chain.Wallets.Remove(existingWallet);
+                    }
 
-                    //var wallet = Program.BlockchainOperations.CreateWallet(Name);
-                    //(chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
-                    //    .Add(wallet);
-                    //chain.Save(filename);
+                    var wallet = Program.BlockchainOperations.CreateWallet(Name);
+                    (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
+                        .Add(wallet);
+                    chain.Save(filename);
 
                     console.WriteLine(Name);
-                    //foreach (var account in wallet.Accounts)
-                    //{
-                    //    console.WriteLine($"    {account.ScriptHash}");
-                    //}
+                    foreach (var account in wallet.Accounts)
+                    {
+                        console.WriteLine($"    {account.ScriptHash}");
+                    }
                     console.WriteWarning("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
                     console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 

@@ -44,17 +44,17 @@ namespace NeoExpress.Commands
                     }
 
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    //var wallet = chain.GetWallet(Name);
-                    //if (wallet == null)
-                    //{
-                    //    console.WriteLine($"{Name} privatenet wallet not found.");
-                    //}
-                    //else
-                    //{
-                    //    var password = Prompt.GetPassword("Input password to use for exported wallet");
-                    //    Program.BlockchainOperations.ExportWallet(wallet, output, password);
-                    //    console.WriteLine($"{Name} privatenet wallet exported to {output}");
-                    //}
+                    var wallet = chain.GetWallet(Name);
+                    if (wallet == null)
+                    {
+                        console.WriteLine($"{Name} privatenet wallet not found.");
+                    }
+                    else
+                    {
+                        var password = Prompt.GetPassword("Input password to use for exported wallet");
+                        Program.BlockchainOperations.ExportWallet(wallet, output, password);
+                        console.WriteLine($"{Name} privatenet wallet exported to {output}");
+                    }
 
                     return 0;
                 }

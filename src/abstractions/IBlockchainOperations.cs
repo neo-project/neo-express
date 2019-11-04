@@ -14,7 +14,7 @@ namespace NeoExpress.Abstractions
         void ExportBlockchain(ExpressChain chain, string folder, string password, Action<string> writeConsole);
         ExpressWallet CreateWallet(string name);
         void ExportWallet(ExpressWallet wallet, string filename, string password);
-        (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data);
+        //(byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data);
         void CreateCheckpoint(ExpressChain chain, string blockChainStoreDirectory, string checkPointFileName);
         void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory);
         Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken);

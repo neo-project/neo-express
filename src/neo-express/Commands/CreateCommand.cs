@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
 
 namespace NeoExpress.Commands
 {
@@ -48,7 +49,7 @@ namespace NeoExpress.Commands
 
                 var count = (Count == 0 ? 1 : Count);
                 var chain = Program.BlockchainOperations.CreateBlockchain(count);
-                //chain.Save(output);
+                chain.Save(output);
 
                 console.WriteLine($"Created {count} node privatenet at {output}");
                 console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");

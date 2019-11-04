@@ -127,49 +127,49 @@ namespace NeoExpress
             }
         }
 
-        //public static void Save(this ExpressChain chain, string fileName)
-        //{
-        //    var serializer = new JsonSerializer();
-        //    using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
-        //    using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
-        //    {
-        //        serializer.Serialize(writer, chain);
-        //    }
-        //}
+        public static void Save(this ExpressChain chain, string fileName)
+        {
+            var serializer = new JsonSerializer();
+            using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
+            using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
+            {
+                serializer.Serialize(writer, chain);
+            }
+        }
 
-        //public static bool IsReservedName(this ExpressChain chain, string name)
-        //{
-        //    if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
-        //        return true;
+        public static bool IsReservedName(this ExpressChain chain, string name)
+        {
+            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
+                return true;
 
-        //    foreach (var node in chain.ConsensusNodes)
-        //    {
-        //        if (string.Equals(name, node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
-        //            return true;
-        //    }
+            foreach (var node in chain.ConsensusNodes)
+            {
+                if (string.Equals(name, node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
 
-        //    return false;
-        //}
+            return false;
+        }
 
         //public static bool NameEquals(this ExpressContract contract, string name) =>
         //    string.Equals(contract.Name, name, StringComparison.InvariantCultureIgnoreCase);
 
-        //public static bool NameEquals(this ExpressWallet wallet, string name) =>
-        //    string.Equals(wallet.Name, name, StringComparison.InvariantCultureIgnoreCase);
+        public static bool NameEquals(this ExpressWallet wallet, string name) =>
+            string.Equals(wallet.Name, name, StringComparison.InvariantCultureIgnoreCase);
 
-        //public static ExpressWallet GetWallet(this ExpressChain chain, string name) =>
-        //    (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-        //        .SingleOrDefault(w => w.NameEquals(name));
+        public static ExpressWallet GetWallet(this ExpressChain chain, string name) =>
+            (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                .SingleOrDefault(w => w.NameEquals(name));
 
-        //public static string GetBlockchainPath(this ExpressWalletAccount account)
-        //{
-        //    if (account == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(account));
-        //    }
+        public static string GetBlockchainPath(this ExpressWalletAccount account)
+        {
+            if (account == null)
+            {
+                throw new ArgumentNullException(nameof(account));
+            }
 
-        //    return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
-        //}
+            return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
+        }
 
         //public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
         //{
@@ -200,27 +200,27 @@ namespace NeoExpress
 
         //public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
 
-        //public static string GetBlockchainPath(this ExpressWallet wallet)
-        //{
-        //    if (wallet == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(wallet));
-        //    }
+        public static string GetBlockchainPath(this ExpressWallet wallet)
+        {
+            if (wallet == null)
+            {
+                throw new ArgumentNullException(nameof(wallet));
+            }
 
-        //    return wallet.Accounts
-        //        .Single(a => a.IsDefault)
-        //        .GetBlockchainPath();
-        //}
+            return wallet.Accounts
+                .Single(a => a.IsDefault)
+                .GetBlockchainPath();
+        }
 
-        //public static string GetBlockchainPath(this ExpressConsensusNode node)
-        //{
-        //    if (node == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(node));
-        //    }
+        public static string GetBlockchainPath(this ExpressConsensusNode node)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
 
-        //    return node.Wallet.GetBlockchainPath();
-        //}
+            return node.Wallet.GetBlockchainPath();
+        }
 
         //public static bool InitializeProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
         //{

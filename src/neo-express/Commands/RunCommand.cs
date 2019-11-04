@@ -39,26 +39,26 @@ namespace NeoExpress.Commands
                 }
 
                 var node = chain.ConsensusNodes[index];
-                //var folder = node.GetBlockchainPath();
+                var folder = node.GetBlockchainPath();
 
-                //if (Reset && Directory.Exists(folder))
-                //{
-                //    Directory.Delete(folder, true);
-                //}
+                if (Reset && Directory.Exists(folder))
+                {
+                    Directory.Delete(folder, true);
+                }
 
-                //if (!Directory.Exists(folder))
-                //{
-                //    Directory.CreateDirectory(folder);
-                //}
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
+                }
 
-                //using (var cts = new CancellationTokenSource())
-                //{
-                //    console.CancelKeyPress += (sender, args) => cts.Cancel();
+                using (var cts = new CancellationTokenSource())
+                {
+                    console.CancelKeyPress += (sender, args) => cts.Cancel();
 
-                //    await Program.BlockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock, console.Out,
-                //                                                  cts.Token)
-                //        .ConfigureAwait(false);
-                //}
+                    await Program.BlockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock,
+                                                                          console.Out, cts.Token)
+                        .ConfigureAwait(false);
+                }
 
                 return 0;
             }

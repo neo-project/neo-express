@@ -205,18 +205,18 @@ namespace Neo2Express
             devWallet.Export(filename, password);
         }
 
-        public (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data)
-        {
-            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+        //public (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data)
+        //{
+        //    var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
 
-            var key = devAccount.GetKey();
-            if (key == null)
-                throw new InvalidOperationException();
+        //    var key = devAccount.GetKey();
+        //    if (key == null)
+        //        throw new InvalidOperationException();
 
-            var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
-            var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
-            return (signature, key.PublicKey.EncodePoint(true));
-        }
+        //    var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
+        //    var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
+        //    return (signature, key.PublicKey.EncodePoint(true));
+        //}
 
         private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
 

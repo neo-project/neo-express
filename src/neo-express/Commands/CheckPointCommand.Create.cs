@@ -49,20 +49,21 @@ namespace NeoExpress.Commands
                         throw new Exception("Checkpoint create is only supported on single node express instances");
                     }
 
-                    //if (Online)
-                    //{
-                    //    var uri = chain.GetUri();
-                    //    var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
-                    //        .ConfigureAwait(false);
-                    //    console.WriteResult(result);
-                    //}
-                    //else
-                    //{
-                    //    var blockchainPath = chain.ConsensusNodes[0].GetBlockchainPath();
+                    if (Online)
+                    {
+                        throw new NotImplementedException();
+                        //var uri = chain.GetUri();
+                        //var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
+                        //    .ConfigureAwait(false);
+                        //console.WriteResult(result);
+                    }
+                    else
+                    {
+                        var blockchainPath = chain.ConsensusNodes[0].GetBlockchainPath();
 
-                    //    Program.BlockchainOperations.CreateCheckpoint(
-                    //        chain, blockchainPath, filename);
-                    //}
+                        Program.BlockchainOperations.CreateCheckpoint(
+                            chain, blockchainPath, filename);
+                    }
 
                     console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");
 

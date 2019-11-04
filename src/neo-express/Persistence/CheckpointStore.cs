@@ -2,6 +2,7 @@
 using Neo.Cryptography.ECC;
 using Neo.IO.Wrappers;
 using Neo.Ledger;
+using NeoExpress.Abstractions.Utility;
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;

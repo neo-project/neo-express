@@ -1,4 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Commands;
 using Newtonsoft.Json;
@@ -69,5 +70,10 @@ namespace NeoExpress
                 return (serializer.Deserialize<ExpressChain>(reader), filename);
             }
         }
+
+        private static Lazy<IBlockchainOperations> blockchainOperations = 
+            new Lazy<IBlockchainOperations>(() => new Neo2Express.BlockchainOperations());
+
+        public static IBlockchainOperations BlockchainOperations => blockchainOperations.Value;
     }
 }

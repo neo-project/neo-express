@@ -25,38 +25,38 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
-                    if (contract == null)
-                    {
-                        throw new Exception($"Contract {Contract} not found.");
-                    }
+                    //var contract = chain.GetContract(Contract);
+                    //if (contract == null)
+                    //{
+                    //    throw new Exception($"Contract {Contract} not found.");
+                    //}
 
-                    var uri = chain.GetUri();
-                    var result = await NeoRpcClient.ExpressGetContractStorage(uri, contract.Hash);
+                    //var uri = chain.GetUri();
+                    //var result = await NeoRpcClient.ExpressGetContractStorage(uri, contract.Hash);
 
-                    if (result != null && result.Any())
-                    {
-                        foreach (var kvp in result)
-                        {
-                            var key = kvp.Value<string>("key").ToByteArray();
-                            var value = kvp.Value<string>("value").ToByteArray();
-                            var constant = kvp.Value<bool>("constant");
+                    //if (result != null && result.Any())
+                    //{
+                    //    foreach (var kvp in result)
+                    //    {
+                    //        var key = kvp.Value<string>("key").ToByteArray();
+                    //        var value = kvp.Value<string>("value").ToByteArray();
+                    //        var constant = kvp.Value<bool>("constant");
 
-                            console.Write("0x");
-                            console.WriteLine(key.ToHexString());
-                            console.Write("  key (as string)   : ");
-                            console.WriteLine(Encoding.UTF8.GetString(key));
-                            console.Write("  value (as bytes)  : 0x");
-                            console.WriteLine(value.ToHexString());
-                            console.Write("        (as string) : ");
-                            console.WriteLine(Encoding.UTF8.GetString(value));
-                            console.WriteLine($"  constant value    : {constant}");
-                        }
-                    }
-                    else
-                    {
-                        console.WriteLine($"no storages for {Contract} contract");
-                    }
+                    //        console.Write("0x");
+                    //        console.WriteLine(key.ToHexString());
+                    //        console.Write("  key (as string)   : ");
+                    //        console.WriteLine(Encoding.UTF8.GetString(key));
+                    //        console.Write("  value (as bytes)  : 0x");
+                    //        console.WriteLine(value.ToHexString());
+                    //        console.Write("        (as string) : ");
+                    //        console.WriteLine(Encoding.UTF8.GetString(value));
+                    //        console.WriteLine($"  constant value    : {constant}");
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    console.WriteLine($"no storages for {Contract} contract");
+                    //}
 
                     return 0;
                 }

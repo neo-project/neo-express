@@ -26,35 +26,35 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chain, _) = Program.LoadExpressChain(Input);
-                var senderAccount = chain.GetAccount(Sender);
-                if (senderAccount == null)
-                {
-                    throw new Exception($"{Sender} sender not found.");
-                }
+                //var (chain, _) = Program.LoadExpressChain(Input);
+                //var senderAccount = chain.GetAccount(Sender);
+                //if (senderAccount == null)
+                //{
+                //    throw new Exception($"{Sender} sender not found.");
+                //}
 
-                var receiverAccount = chain.GetAccount(Receiver);
-                if (receiverAccount == null)
-                {
-                    throw new Exception($"{Receiver} receiver not found.");
-                }
+                //var receiverAccount = chain.GetAccount(Receiver);
+                //if (receiverAccount == null)
+                //{
+                //    throw new Exception($"{Receiver} receiver not found.");
+                //}
 
-                var uri = chain.GetUri();
-                var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
-                    .ConfigureAwait(false);
-                console.WriteResult(result);
+                //var uri = chain.GetUri();
+                //var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
+                //    .ConfigureAwait(false);
+                //console.WriteResult(result);
 
-                var txid = result?["txid"];
-                if (txid != null)
-                {
-                    console.WriteLine("transfer complete");
-                }
-                else
-                {
-                    var signatures = senderAccount.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-                    console.WriteResult(result2);
-                }
+                //var txid = result?["txid"];
+                //if (txid != null)
+                //{
+                //    console.WriteLine("transfer complete");
+                //}
+                //else
+                //{
+                //    var signatures = senderAccount.Sign(chain.ConsensusNodes, result);
+                //    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
+                //    console.WriteResult(result2);
+                //}
 
                 return 0;
             }

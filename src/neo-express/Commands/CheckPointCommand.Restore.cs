@@ -36,22 +36,22 @@ namespace NeoExpress.Commands
                     }
 
                     var node = chain.ConsensusNodes[0];
-                    var blockchainPath = node.GetBlockchainPath();
-                    if (!Force && Directory.Exists(blockchainPath))
-                    {
-                        throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
-                    }
+                    //var blockchainPath = node.GetBlockchainPath();
+                    //if (!Force && Directory.Exists(blockchainPath))
+                    //{
+                    //    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+                    //}
 
-                    ZipFile.ExtractToDirectory(filename, checkpointTempPath);
+                    //ZipFile.ExtractToDirectory(filename, checkpointTempPath);
 
-                    if (Directory.Exists(blockchainPath))
-                    {
-                        Directory.Delete(blockchainPath, true);
-                    }
+                    //if (Directory.Exists(blockchainPath))
+                    //{
+                    //    Directory.Delete(blockchainPath, true);
+                    //}
 
-                    BlockchainOperations.RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
+                    //Program.BlockchainOperations.RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
 
-                    console.WriteLine($"Checkpoint {Name} sucessfully restored");
+                    //console.WriteLine($"Checkpoint {Name} sucessfully restored");
                     return 0;
                 }
                 catch (Exception ex)

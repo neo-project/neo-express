@@ -47,8 +47,8 @@ namespace NeoExpress.Commands
                 }
 
                 var count = (Count == 0 ? 1 : Count);
-                var chain = BlockchainOperations.CreateBlockchain(count);
-                chain.Save(output);
+                var chain = Program.BlockchainOperations.CreateBlockchain(count);
+                //chain.Save(output);
 
                 console.WriteLine($"Created {count} node privatenet at {output}");
                 console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");

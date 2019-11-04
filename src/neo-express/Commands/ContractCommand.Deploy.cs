@@ -58,44 +58,44 @@ namespace NeoExpress.Commands
 
             private async Task<ExpressContract> DeployContract(ExpressChain chain, ExpressContract contract, Uri uri, IConsole console)
             {
-                var account = chain.GetAccount(Account);
-                if (account == null)
-                {
-                    throw new Exception($"Account {Account} not found.");
-                }
+                //var account = chain.GetAccount(Account);
+                //if (account == null)
+                //{
+                //    throw new Exception($"Account {Account} not found.");
+                //}
 
-                if (Prompt.GetYesNo("Does this contract use storage?", false))
-                {
-                    contract.Properties["has-storage"] = "true";
-                }
-                else
-                {
-                    contract.Properties.Remove("has-storage");
-                }
+                //if (Prompt.GetYesNo("Does this contract use storage?", false))
+                //{
+                //    contract.Properties["has-storage"] = "true";
+                //}
+                //else
+                //{
+                //    contract.Properties.Remove("has-storage");
+                //}
 
-                if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
-                {
-                    contract.Properties["has-dynamic-invoke"] = "true";
-                }
-                else
-                {
-                    contract.Properties.Remove("has-dynamic-invoke");
-                }
+                //if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
+                //{
+                //    contract.Properties["has-dynamic-invoke"] = "true";
+                //}
+                //else
+                //{
+                //    contract.Properties.Remove("has-dynamic-invoke");
+                //}
 
-                var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
-                console.WriteResult(result);
+                //var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
+                //console.WriteResult(result);
 
-                var txid = result?["txid"];
-                if (txid != null)
-                {
-                    console.WriteLine("deployment complete");
-                }
-                else
-                {
-                    var signatures = account.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                    console.WriteResult(result2);
-                }
+                //var txid = result?["txid"];
+                //if (txid != null)
+                //{
+                //    console.WriteLine("deployment complete");
+                //}
+                //else
+                //{
+                //    var signatures = account.Sign(chain.ConsensusNodes, result);
+                //    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
+                //    console.WriteResult(result2);
+                //}
 
                 return contract;
             }
@@ -104,63 +104,63 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
+                    //var (chain, filename) = Program.LoadExpressChain(Input);
+                    //var contract = chain.GetContract(Contract);
 
-                    if (chain.Contracts == null)
-                    {
-                        chain.Contracts = new List<ExpressContract>(1);
-                    }
+                    //if (chain.Contracts == null)
+                    //{
+                    //    chain.Contracts = new List<ExpressContract>(1);
+                    //}
 
-                    if (!string.IsNullOrEmpty(Name))
-                    {
-                        contract.Name = Name;
-                    }
+                    //if (!string.IsNullOrEmpty(Name))
+                    //{
+                    //    contract.Name = Name;
+                    //}
 
-                    var uri = chain.GetUri();
-                    var (deployed, result) = await GetContractState(uri, contract).ConfigureAwait(false);
+                    //var uri = chain.GetUri();
+                    //var (deployed, result) = await GetContractState(uri, contract).ConfigureAwait(false);
 
-                    if (deployed)
-                    {
-                        Debug.Assert(result != null);
-                        console.WriteLine($"Contract matching {contract.Name} script hash already deployed.");
-                        var (storage, dynamicInvoke) = GetContractProps(result);
-                        contract.Properties["has-storage"] = storage.ToString();
-                        contract.Properties["has-dynamic-invoke"] = dynamicInvoke.ToString();
-                    }
-                    else
-                    {
-                        console.WriteLine($"Deploying {contract.Name} contract.");
-                        contract = await DeployContract(chain, contract, uri, console);
-                    }
+                    //if (deployed)
+                    //{
+                    //    Debug.Assert(result != null);
+                    //    console.WriteLine($"Contract matching {contract.Name} script hash already deployed.");
+                    //    var (storage, dynamicInvoke) = GetContractProps(result);
+                    //    contract.Properties["has-storage"] = storage.ToString();
+                    //    contract.Properties["has-dynamic-invoke"] = dynamicInvoke.ToString();
+                    //}
+                    //else
+                    //{
+                    //    console.WriteLine($"Deploying {contract.Name} contract.");
+                    //    contract = await DeployContract(chain, contract, uri, console);
+                    //}
 
-                    for (var i = chain.Contracts.Count - 1; i >= 0; i--)
-                    {
-                        var c = chain.Contracts[i];
-                        if (string.Equals(contract.Hash, c.Hash))
-                        {
-                            chain.Contracts.RemoveAt(i);
-                        }
-                        else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
+                    //for (var i = chain.Contracts.Count - 1; i >= 0; i--)
+                    //{
+                    //    var c = chain.Contracts[i];
+                    //    if (string.Equals(contract.Hash, c.Hash))
+                    //    {
+                    //        chain.Contracts.RemoveAt(i);
+                    //    }
+                    //    else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
+                    //    {
+                    //        console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
                             
-                            if (Prompt.GetYesNo("Overwrite?", false))
-                            {
-                                chain.Contracts.RemoveAt(i);
-                            }
-                            else
-                            {
-                                console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
-                                return 0;
-                            }
+                    //        if (Prompt.GetYesNo("Overwrite?", false))
+                    //        {
+                    //            chain.Contracts.RemoveAt(i);
+                    //        }
+                    //        else
+                    //        {
+                    //            console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
+                    //            return 0;
+                    //        }
                             
-                        }
-                    }
+                    //    }
+                    //}
 
-                    chain.Contracts.Add(contract);
-                    chain.Save(filename);
-                    console.WriteLine($"Contract {contract.Name} info saved to {Path.GetFileName(filename)}");
+                    //chain.Contracts.Add(contract);
+                    //chain.Save(filename);
+                    //console.WriteLine($"Contract {contract.Name} info saved to {Path.GetFileName(filename)}");
                     return 0;
                 }
                 catch (Exception ex)

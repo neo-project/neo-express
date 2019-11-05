@@ -22,29 +22,17 @@ namespace NeoExpress.Commands
             try
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
-                //var account = chain.GetAccount(Account);
-                //if (account == null)
-                //{
-                //    throw new Exception($"{Account} account not found.");
-                //}
+                var account = chain.GetAccount(Account);
+                if (account == null)
+                {
+                    throw new Exception($"{Account} account not found.");
+                }
 
-                //var uri = chain.GetUri();
-                //var result = await NeoRpcClient.ExpressClaim(uri, Asset, account.ScriptHash)
-                //    .ConfigureAwait(false);
-                //console.WriteResult(result);
-
-                //var txid = result?["txid"];
-                //if (txid != null)
-                //{
-                //    console.WriteLine("transfer complete");
-                //}
-                //else
-                //{
-                //    var signatures = account.Sign(chain.ConsensusNodes, result);
-                //    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                //    console.WriteResult(result2);
-                //}
-
+                var results = await Program.BlockchainOperations.Claim(chain, Asset, account);
+                foreach (var result in results)
+                {
+                    console.WriteResult(result);
+                }
                 return 0;
             }
             catch (Exception ex)

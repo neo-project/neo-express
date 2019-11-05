@@ -1,4 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -22,16 +23,16 @@ namespace NeoExpress.Commands
         {
             try
             {
-                //var (chain, _) = Program.LoadExpressChain(Input);
-                //var account = chain.GetAccount(Name);
-                //if (account == null)
-                //{
-                //    throw new Exception($"{Name} wallet not found.");
-                //}
+                var (chain, _) = Program.LoadExpressChain(Input);
+                var account = chain.GetAccount(Name);
+                if (account == null)
+                {
+                    throw new Exception($"{Name} wallet not found.");
+                }
 
-                //var uri = chain.GetUri();
-                //var result = await func(uri, account.ScriptHash).ConfigureAwait(false);
-                //console.WriteResult(result);
+                var uri = chain.GetUri();
+                var result = await func(uri, account.ScriptHash).ConfigureAwait(false);
+                console.WriteResult(result);
 
                 return 0;
             }

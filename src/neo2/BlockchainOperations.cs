@@ -345,11 +345,9 @@ namespace Neo2Express
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 
-        static Uri GetUri(ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
-
         public Task<JToken?> CreateCheckpointOnline(ExpressChain chain, string checkPointFileName)
         {
-            var uri = GetUri(chain);
+            var uri = chain.GetUri();
             return NeoRpcClient.ExpressCreateCheckpoint(uri, checkPointFileName);
         }
 
@@ -440,7 +438,7 @@ namespace Neo2Express
             var txid = result?["txid"];
             if (txid == null)
             {
-                var uri = GetUri(chain);
+                var uri = chain.GetUri();
                 var signatures = Sign(account, chain.ConsensusNodes, result);
                 var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
 
@@ -454,7 +452,7 @@ namespace Neo2Express
 
         public async Task<JArray> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
-            var uri = GetUri(chain);
+            var uri = chain.GetUri();
             var result = await NeoRpcClient.ExpressTransfer(uri, asset, quantity, sender.ScriptHash, receiver.ScriptHash)
                 .ConfigureAwait(false);
 
@@ -463,7 +461,7 @@ namespace Neo2Express
 
         public async Task<JArray> Claim(ExpressChain chain, string asset, ExpressWalletAccount account)
         {
-            var uri = GetUri(chain);
+            var uri = chain.GetUri();
             var result = await NeoRpcClient.ExpressClaim(uri, asset, account.ScriptHash)
                 .ConfigureAwait(false);
 

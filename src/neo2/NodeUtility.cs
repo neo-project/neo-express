@@ -5,7 +5,8 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
-using NeoExpress.Models;
+using NeoExpress.Abstractions.Models;
+using Neo2Express.Models;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NeoExpress.Node
+namespace Neo2Express
 {
     internal static class NodeUtility
     {

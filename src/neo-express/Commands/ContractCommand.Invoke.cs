@@ -1,5 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
+using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -92,17 +92,16 @@ namespace NeoExpress.Commands
                     }
 
                     var account = chain.GetAccount(Account);
-
                     var args = ParseArguments(contract);
-                    var uri = chain.GetUri();
-                    var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
-                    console.WriteResult(result);
-                    if (account != null)
+
+                    var results = await Program.BlockchainOperations.InvokeContract(chain, contract, args, account)
+                        .ConfigureAwait(false);
+
+                    foreach (var result in results)
                     {
-                        var signatures = account.Sign(chain.ConsensusNodes, result);
-                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                        console.WriteResult(result2);
+                        console.WriteResult(result);
                     }
+
                     return 0;
                 }
                 catch (Exception ex)

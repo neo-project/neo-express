@@ -2,7 +2,7 @@
 using RocksDbSharp;
 using System;
 
-namespace NeoExpress.Persistence
+namespace Neo2Express.Persistence
 {
     internal partial class RocksDbStore
     {

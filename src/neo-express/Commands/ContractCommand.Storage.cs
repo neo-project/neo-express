@@ -1,5 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
+using NeoExpress.Abstractions.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;

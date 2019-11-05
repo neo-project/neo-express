@@ -3,8 +3,9 @@ using System.Linq;
 using Neo.SmartContract;
 using Neo.Wallets;
 using Neo;
+using NeoExpress.Abstractions.Models;
 
-namespace NeoExpress.Models
+namespace Neo2Express.Models
 {
     public class DevWalletAccount : WalletAccount
     {

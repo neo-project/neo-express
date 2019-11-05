@@ -1,5 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
+using NeoExpress.Abstractions.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
                         chain.Wallets.Remove(existingWallet);
                     }
 
-                    var wallet = BlockchainOperations.CreateWallet(Name);
+                    var wallet = Program.BlockchainOperations.CreateWallet(Name);
                     (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
                         .Add(wallet);
                     chain.Save(filename);

@@ -2,11 +2,13 @@
 using Neo.Cryptography.ECC;
 using Neo.IO.Wrappers;
 using Neo.Ledger;
+using NeoExpress;
+using NeoExpress.Abstractions.Utility;
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;
 
-namespace NeoExpress.Persistence
+namespace Neo2Express.Persistence
 {
     internal partial class CheckpointStore : Neo.Persistence.Store, IDisposable
     {

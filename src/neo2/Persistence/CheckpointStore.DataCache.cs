@@ -1,11 +1,13 @@
 ﻿using Neo.IO;
+using NeoExpress;
+using NeoExpress.Abstractions.Utility;
 using OneOf;
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace NeoExpress.Persistence
+namespace Neo2Express.Persistence
 {
     internal partial class CheckpointStore
     {

@@ -22,15 +22,32 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\**" />
+    <Compile Remove="Node\**" />
+    <Compile Remove="Persistence\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <EmbeddedResource Remove="Node\**" />
+    <EmbeddedResource Remove="Persistence\**" />
+    <None Remove="Models\**" />
+    <None Remove="Node\**" />
+    <None Remove="Persistence\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="BlockchainOperations.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.4.2" />
-    <PackageReference Include="Neo" Version="2.10.3" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.4.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="OneOf" Version="2.1.150" />
-    <PackageReference Include="RocksDbNative" Version="6.2.2" />
-    <PackageReference Include="RocksDbSharp" Version="6.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
+    <ProjectReference Include="..\neo2\neo-2-express.csproj" />
   </ItemGroup>
 </Project>

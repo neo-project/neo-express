@@ -1,7 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
@@ -52,8 +51,7 @@ namespace NeoExpress.Commands
 
                     if (Online)
                     {
-                        var uri = chain.GetUri();
-                        var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
+                        var result = await Program.BlockchainOperations.CreateCheckpointOnline(chain, filename)
                             .ConfigureAwait(false);
                         console.WriteResult(result);
                     }
@@ -61,7 +59,7 @@ namespace NeoExpress.Commands
                     {
                         var blockchainPath = chain.ConsensusNodes[0].GetBlockchainPath();
 
-                        BlockchainOperations.CreateCheckpoint(
+                        Program.BlockchainOperations.CreateCheckpoint(
                             chain, blockchainPath, filename);
                     }
 

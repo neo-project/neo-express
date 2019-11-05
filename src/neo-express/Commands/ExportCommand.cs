@@ -1,8 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
 using System;
 using System.IO;
-using System.Linq;
 
 namespace NeoExpress.Commands
 {
@@ -19,7 +17,7 @@ namespace NeoExpress.Commands
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
 
-                BlockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, msg => console.WriteLine(msg));
+                Program.BlockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, msg => console.WriteLine(msg));
 
                 return 0;
             }

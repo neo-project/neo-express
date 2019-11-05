@@ -1,11 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
@@ -35,32 +30,23 @@ namespace NeoExpress.Commands
                 var senderAccount = chain.GetAccount(Sender);
                 if (senderAccount == null)
                 {
-                    throw new Exception($"{Sender} sender not found.");
+                   throw new Exception($"{Sender} sender not found.");
                 }
 
                 var receiverAccount = chain.GetAccount(Receiver);
                 if (receiverAccount == null)
                 {
-                    throw new Exception($"{Receiver} receiver not found.");
+                   throw new Exception($"{Receiver} receiver not found.");
                 }
 
-                var uri = chain.GetUri();
-                var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
+                var results = await Program.BlockchainOperations.Transfer(chain, Asset, Quantity, 
+                                                                          senderAccount, receiverAccount)
                     .ConfigureAwait(false);
-                console.WriteResult(result);
 
-                var txid = result?["txid"];
-                if (txid != null)
+                foreach (var result in results)
                 {
-                    console.WriteLine("transfer complete");
+                    console.WriteResult(result);
                 }
-                else
-                {
-                    var signatures = senderAccount.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-                    console.WriteResult(result2);
-                }
-
                 return 0;
             }
             catch (Exception ex)

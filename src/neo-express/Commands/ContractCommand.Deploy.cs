@@ -1,5 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
+using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
@@ -57,60 +56,16 @@ namespace NeoExpress.Commands
                     dynamicInvoke: properties.Value<bool>("dynamic_invoke"));
             }
 
-            private async Task<ExpressContract> DeployContract(ExpressChain chain, ExpressContract contract, Uri uri, IConsole console)
-            {
-                var account = chain.GetAccount(Account);
-                if (account == null)
-                {
-                    throw new Exception($"Account {Account} not found.");
-                }
-
-                if (Prompt.GetYesNo("Does this contract use storage?", false))
-                {
-                    contract.Properties["has-storage"] = "true";
-                }
-                else
-                {
-                    contract.Properties.Remove("has-storage");
-                }
-
-                if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
-                {
-                    contract.Properties["has-dynamic-invoke"] = "true";
-                }
-                else
-                {
-                    contract.Properties.Remove("has-dynamic-invoke");
-                }
-
-                var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
-                console.WriteResult(result);
-
-                var txid = result?["txid"];
-                if (txid != null)
-                {
-                    console.WriteLine("deployment complete");
-                }
-                else
-                {
-                    var signatures = account.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                    console.WriteResult(result2);
-                }
-
-                return contract;
-            }
-
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
 
-                    if (chain.Contracts == null)
+                    var contract = chain.GetContract(Contract);
+                    if (contract == null)
                     {
-                        chain.Contracts = new List<ExpressContract>(1);
+                        contract = Program.BlockchainOperations.LoadContract(Contract, (prompt, @default) => Prompt.GetYesNo(prompt, @default));
                     }
 
                     if (!string.IsNullOrEmpty(Name))
@@ -119,20 +74,32 @@ namespace NeoExpress.Commands
                     }
 
                     var uri = chain.GetUri();
-                    var (deployed, result) = await GetContractState(uri, contract).ConfigureAwait(false);
+                    var (deployed, getContractStateResult) = await GetContractState(uri, contract).ConfigureAwait(false);
 
                     if (deployed)
                     {
-                        Debug.Assert(result != null);
+                        Debug.Assert(getContractStateResult != null);
                         console.WriteLine($"Contract matching {contract.Name} script hash already deployed.");
-                        var (storage, dynamicInvoke) = GetContractProps(result);
+
+                        // I have a sneaking suspicion these will have to change with Neo3, but leaving in for now
+                        var (storage, dynamicInvoke) = GetContractProps(getContractStateResult);
                         contract.Properties["has-storage"] = storage.ToString();
                         contract.Properties["has-dynamic-invoke"] = dynamicInvoke.ToString();
                     }
                     else
                     {
+                        var account = chain.GetAccount(Account);
+                        if (account == null)
+                        {
+                            throw new Exception($"Account {Account} not found.");
+                        }
+
                         console.WriteLine($"Deploying {contract.Name} contract.");
-                        contract = await DeployContract(chain, contract, uri, console);
+                        var results = await Program.BlockchainOperations.DeployContract(chain, contract, account).ConfigureAwait(false);
+                        foreach (var result in results)
+                        {
+                            console.WriteResult(result);
+                        }
                     }
 
                     for (var i = chain.Contracts.Count - 1; i >= 0; i--)
@@ -145,7 +112,7 @@ namespace NeoExpress.Commands
                         else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
                             console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
-                            
+
                             if (Prompt.GetYesNo("Overwrite?", false))
                             {
                                 chain.Contracts.RemoveAt(i);
@@ -155,7 +122,6 @@ namespace NeoExpress.Commands
                                 console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
                                 return 0;
                             }
-                            
                         }
                     }
 

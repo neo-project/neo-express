@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 
-namespace NeoExpress.Node
+namespace Neo2Express
 {
     internal class LogPlugin : Plugin, ILogPlugin
     {

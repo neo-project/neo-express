@@ -4,7 +4,7 @@ using Neo.IO.Wrappers;
 using Neo.Ledger;
 using RocksDbSharp;
 
-namespace NeoExpress.Persistence
+namespace Neo2Express.Persistence
 {
     internal partial class RocksDbStore
     {

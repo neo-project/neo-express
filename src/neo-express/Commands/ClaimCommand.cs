@@ -1,6 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 
@@ -30,23 +28,11 @@ namespace NeoExpress.Commands
                     throw new Exception($"{Account} account not found.");
                 }
 
-                var uri = chain.GetUri();
-                var result = await NeoRpcClient.ExpressClaim(uri, Asset, account.ScriptHash)
-                    .ConfigureAwait(false);
-                console.WriteResult(result);
-
-                var txid = result?["txid"];
-                if (txid != null)
+                var results = await Program.BlockchainOperations.Claim(chain, Asset, account);
+                foreach (var result in results)
                 {
-                    console.WriteLine("transfer complete");
+                    console.WriteResult(result);
                 }
-                else
-                {
-                    var signatures = account.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                    console.WriteResult(result2);
-                }
-
                 return 0;
             }
             catch (Exception ex)

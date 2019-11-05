@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace NeoExpress
+namespace NeoExpress.Abstractions.Utility
 {
-    internal class ByteArrayComparer : IEqualityComparer<byte[]>
+    public class ByteArrayComparer : IEqualityComparer<byte[]>
     {
         public bool Equals([AllowNull] byte[] x, [AllowNull] byte[] y)
         {

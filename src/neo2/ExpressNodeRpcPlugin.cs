@@ -17,7 +17,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace NeoExpress.Node
+namespace Neo2Express
 {
     internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin, IPersistencePlugin
     {

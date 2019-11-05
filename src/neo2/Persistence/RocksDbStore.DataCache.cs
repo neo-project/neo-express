@@ -3,7 +3,7 @@ using RocksDbSharp;
 using System;
 using System.Collections.Generic;
 
-namespace NeoExpress.Persistence
+namespace Neo2Express.Persistence
 {
     internal partial class RocksDbStore
     {

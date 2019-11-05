@@ -5,6 +5,12 @@ VisualStudioVersion = 16.0.29009.5
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neo-express", "src\neo-express\neo-express.csproj", "{5809F258-A23E-44B6-9AE5-93276E158EEA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0056E5A1-62D7-4D4F-A197-F05178B8256D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "abstractions", "src\abstractions\abstractions.csproj", "{958EA395-63D5-4792-8801-E418136719EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neo-2-express", "src\neo2\neo-2-express.csproj", "{A5B1D17C-BA14-442C-94D9-C6DB4B7B9FB3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,9 +21,22 @@ Global
 		{5809F258-A23E-44B6-9AE5-93276E158EEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5809F258-A23E-44B6-9AE5-93276E158EEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5809F258-A23E-44B6-9AE5-93276E158EEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{958EA395-63D5-4792-8801-E418136719EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{958EA395-63D5-4792-8801-E418136719EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{958EA395-63D5-4792-8801-E418136719EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{958EA395-63D5-4792-8801-E418136719EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5B1D17C-BA14-442C-94D9-C6DB4B7B9FB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5B1D17C-BA14-442C-94D9-C6DB4B7B9FB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5B1D17C-BA14-442C-94D9-C6DB4B7B9FB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5B1D17C-BA14-442C-94D9-C6DB4B7B9FB3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5809F258-A23E-44B6-9AE5-93276E158EEA} = {0056E5A1-62D7-4D4F-A197-F05178B8256D}
+		{958EA395-63D5-4792-8801-E418136719EE} = {0056E5A1-62D7-4D4F-A197-F05178B8256D}
+		{A5B1D17C-BA14-442C-94D9-C6DB4B7B9FB3} = {0056E5A1-62D7-4D4F-A197-F05178B8256D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E7C2B62D-925B-40C4-BB87-FFDE03FF4CF4}

@@ -85,24 +85,23 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    //var contract = chain.GetContract(Contract);
-                    //if (contract == null)
-                    //{
-                    //    throw new Exception($"Contract {Contract} not found.");
-                    //}
+                    var contract = chain.GetContract(Contract);
+                    if (contract == null)
+                    {
+                        throw new Exception($"Contract {Contract} not found.");
+                    }
 
-                    //var account = chain.GetAccount(Account);
+                    var account = chain.GetAccount(Account);
+                    var args = ParseArguments(contract);
 
-                    //var args = ParseArguments(contract);
-                    //var uri = chain.GetUri();
-                    //var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
-                    //console.WriteResult(result);
-                    //if (account != null)
-                    //{
-                    //    var signatures = account.Sign(chain.ConsensusNodes, result);
-                    //    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                    //    console.WriteResult(result2);
-                    //}
+                    var results = await Program.BlockchainOperations.Invoke(chain, contract, args, account)
+                        .ConfigureAwait(false);
+
+                    foreach (var result in results)
+                    {
+                        console.WriteResult(result);
+                    }
+
                     return 0;
                 }
                 catch (Exception ex)

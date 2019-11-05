@@ -440,9 +440,9 @@ namespace Neo2Express
             {
                 var uri = chain.GetUri();
                 var signatures = Sign(account, chain.ConsensusNodes, result);
-                var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
+                var submitSignaturesResult = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
 
-                return new JArray(result, result2);
+                return new JArray(result, submitSignaturesResult);
             }
             else
             {
@@ -466,6 +466,22 @@ namespace Neo2Express
                 .ConfigureAwait(false);
 
             return await SignResult(result, chain, account).ConfigureAwait(false);
+        }
+
+        public async Task<JArray> Invoke(ExpressChain chain, ExpressContract contract, IEnumerable<JObject> args, ExpressWalletAccount? account)
+        {
+            var uri = chain.GetUri();
+            var invokeResult = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
+            if (account == null)
+            {
+                return new JArray(invokeResult);
+            }
+            else
+            {
+                var signatures = Sign(account, chain.ConsensusNodes, invokeResult);
+                var signatureSubmissionResult = await NeoRpcClient.ExpressSubmitSignatures(uri, invokeResult?["contract-context"], signatures).ConfigureAwait(false);
+                return new JArray(invokeResult, signatureSubmissionResult);
+            }
         }
     }
 }

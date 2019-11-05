@@ -6,8 +6,6 @@ using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OneOf;
-using OneOf.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -468,7 +466,7 @@ namespace Neo2Express
             return await SignResult(result, chain, account).ConfigureAwait(false);
         }
 
-        public async Task<JArray> Invoke(ExpressChain chain, ExpressContract contract, IEnumerable<JObject> args, ExpressWalletAccount? account)
+        public async Task<JArray> InvokeContract(ExpressChain chain, ExpressContract contract, IEnumerable<JObject> args, ExpressWalletAccount? account)
         {
             var uri = chain.GetUri();
             var invokeResult = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
@@ -482,6 +480,97 @@ namespace Neo2Express
                 var signatureSubmissionResult = await NeoRpcClient.ExpressSubmitSignatures(uri, invokeResult?["contract-context"], signatures).ConfigureAwait(false);
                 return new JArray(invokeResult, signatureSubmissionResult);
             }
+        }
+
+        public ExpressContract LoadContract(string filepath, Func<string, bool, bool> promptYesNo)
+        {
+            static string GetContractFile(string path)
+            {
+                if (Directory.Exists(path))
+                {
+                    var avmFiles = Directory.EnumerateFiles(path, "*.avm");
+                    var avmFileCount = avmFiles.Count();
+
+                    if (avmFileCount == 0)
+                    {
+                        throw new ArgumentException($"There are no .avm files in {path}");
+                    }
+
+                    if (avmFileCount > 1)
+                    {
+                        throw new ArgumentException($"There are more than one .avm files in {path}. Please specify file name directly");
+                    }
+
+                    return avmFiles.Single();
+                }
+
+                if (!File.Exists(path) || Path.GetExtension(path) != ".avm")
+                {
+                    throw new ArgumentException($"{path} is not an .avm file.");
+                }
+
+                return path;
+            }
+
+            static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function) => new ExpressContract.Function
+            {
+                Name = function.Name,
+                ReturnType = function.ReturnType,
+                Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
+                {
+                    Name = p.Name,
+                    Type = p.Type
+                }).ToList()
+            };
+
+            var avmFile = GetContractFile(filepath);
+            System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+
+            string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
+            if (!File.Exists(abiFile))
+            {
+                throw new ArgumentException($"there is no .abi.json file for {avmFile}.");
+            }
+
+            AbiContract abiContract;
+            var serializer = new JsonSerializer();
+            using (var stream = File.OpenRead(abiFile))
+            using (var reader = new JsonTextReader(new StreamReader(stream)))
+            {
+                abiContract = serializer.Deserialize<AbiContract>(reader);
+            }
+
+            var properties = new Dictionary<string, string>();
+
+            if (promptYesNo("Does this contract use storage?", false))
+            {
+                properties["has-storage"] = "true";
+            }
+
+            if (promptYesNo("Does this contract use dynamic invoke?", false))
+            {
+                properties["has-dynamic-invoke"] = "true";
+            }
+
+            var name = Path.GetFileNameWithoutExtension(avmFile);
+            return new ExpressContract()
+            {
+                Name = name,
+                Hash = abiContract.Hash,
+                EntryPoint = abiContract.Entrypoint,
+                ContractData = File.ReadAllBytes(avmFile).ToHexString(),
+                Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
+                Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
+                Properties = properties,
+            };
+        }
+
+        public async Task<JArray> DeployContract(ExpressChain chain, ExpressContract contract, ExpressWalletAccount account)
+        {
+            var uri = chain.GetUri();
+            var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
+
+            return await SignResult(result, chain, account).ConfigureAwait(false);
         }
     }
 }

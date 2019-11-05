@@ -94,7 +94,7 @@ namespace NeoExpress.Commands
                     var account = chain.GetAccount(Account);
                     var args = ParseArguments(contract);
 
-                    var results = await Program.BlockchainOperations.Invoke(chain, contract, args, account)
+                    var results = await Program.BlockchainOperations.InvokeContract(chain, contract, args, account)
                         .ConfigureAwait(false);
 
                     foreach (var result in results)

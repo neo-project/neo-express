@@ -22,6 +22,8 @@ namespace NeoExpress.Abstractions
         Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken);
         Task<JArray> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver);
         Task<JArray> Claim(ExpressChain chain, string asset, ExpressWalletAccount address);
-        Task<JArray> Invoke(ExpressChain chain, ExpressContract contract, IEnumerable<JObject> @params, ExpressWalletAccount? account);
+        Task<JArray> InvokeContract(ExpressChain chain, ExpressContract contract, IEnumerable<JObject> @params, ExpressWalletAccount? account);
+        ExpressContract LoadContract(string filepath, Func<string, bool, bool> promptYesNo);
+        Task<JArray> DeployContract(ExpressChain chain, ExpressContract contract, ExpressWalletAccount account);
     }
 }

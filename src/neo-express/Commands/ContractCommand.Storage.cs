@@ -21,25 +21,12 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
-            ExpressContract? GetContract(ExpressChain chain)
-            {
-                foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
-                {
-                    if (string.Equals(Contract, contract.Name, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        return contract;
-                    }
-                }
-
-                return null;
-            }
-
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var contract = GetContract(chain);
+                    var contract = chain.GetContract(Contract);
                     if (contract == null)
                     {
                         throw new Exception($"Contract {Contract} not found.");

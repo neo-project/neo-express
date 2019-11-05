@@ -110,6 +110,19 @@ namespace NeoExpress
             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
         }
 
+        public static ExpressContract? GetContract(this ExpressChain chain, string name)
+        {
+            foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
+            {
+                if (string.Equals(name, contract.Name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return contract;
+                }
+            }
+
+            return null;
+        }
+
         public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
         {
             if (chain.Wallets != null)

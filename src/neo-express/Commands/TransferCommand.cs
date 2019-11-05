@@ -26,36 +26,27 @@ namespace NeoExpress.Commands
         {
             try
             {
-                //var (chain, _) = Program.LoadExpressChain(Input);
-                //var senderAccount = chain.GetAccount(Sender);
-                //if (senderAccount == null)
-                //{
-                //    throw new Exception($"{Sender} sender not found.");
-                //}
+                var (chain, _) = Program.LoadExpressChain(Input);
+                var senderAccount = chain.GetAccount(Sender);
+                if (senderAccount == null)
+                {
+                   throw new Exception($"{Sender} sender not found.");
+                }
 
-                //var receiverAccount = chain.GetAccount(Receiver);
-                //if (receiverAccount == null)
-                //{
-                //    throw new Exception($"{Receiver} receiver not found.");
-                //}
+                var receiverAccount = chain.GetAccount(Receiver);
+                if (receiverAccount == null)
+                {
+                   throw new Exception($"{Receiver} receiver not found.");
+                }
 
-                //var uri = chain.GetUri();
-                //var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
-                //    .ConfigureAwait(false);
-                //console.WriteResult(result);
+                var results = await Program.BlockchainOperations.Transfer(chain, Asset, Quantity, 
+                                                                          senderAccount, receiverAccount)
+                    .ConfigureAwait(false);
 
-                //var txid = result?["txid"];
-                //if (txid != null)
-                //{
-                //    console.WriteLine("transfer complete");
-                //}
-                //else
-                //{
-                //    var signatures = senderAccount.Sign(chain.ConsensusNodes, result);
-                //    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-                //    console.WriteResult(result2);
-                //}
-
+                foreach (var result in results)
+                {
+                    console.WriteResult(result);
+                }
                 return 0;
             }
             catch (Exception ex)

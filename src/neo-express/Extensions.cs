@@ -15,7 +15,6 @@ using System.Text;
 
 namespace NeoExpress
 {
-    using StringError = OneOf.Types.Error<string>;
 
     internal static class Extensions
     {
@@ -171,32 +170,32 @@ namespace NeoExpress
             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
         }
 
-        //public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
-        //{
-        //    if (chain.Wallets != null)
-        //    {
-        //        var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
-        //        if (wallet != null)
-        //        {
-        //            return wallet.DefaultAccount;
-        //        }
-        //    }
+        public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
+        {
+            if (chain.Wallets != null)
+            {
+                var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
+                if (wallet != null)
+                {
+                    return wallet.DefaultAccount;
+                }
+            }
 
-        //    var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
-        //    if (node != null)
-        //    {
-        //        return node.Wallet.DefaultAccount;
-        //    }
+            var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
+            if (node != null)
+            {
+                return node.Wallet.DefaultAccount;
+            }
 
-        //    if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
-        //    {
-        //        return chain.ConsensusNodes
-        //            .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
-        //            .SingleOrDefault();
-        //    }
+            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return chain.ConsensusNodes
+                    .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
+                    .SingleOrDefault();
+            }
 
-        //    return null;
-        //}
+            return null;
+        }
 
         //public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
 
@@ -256,92 +255,5 @@ namespace NeoExpress
         //    return ProtocolSettings.Initialize(config);
         //}
 
-        //public static ExpressContract GetContract(this ExpressChain chain, string nameOrPath)
-        //{
-        //    OneOf<string, StringError> GetContractFile(string path)
-        //    {
-        //        if (Directory.Exists(path))
-        //        {
-        //            var avmFiles = Directory.EnumerateFiles(path, "*.avm");
-        //            var avmFileCount = avmFiles.Count();
-
-        //            if (avmFileCount == 0)
-        //            {
-        //                return new StringError($"There are no .avm files in {path}");
-        //            }
-
-        //            if (avmFileCount > 1)
-        //            {
-        //                return new StringError($"There are more than one .avm files in {path}. Please specify file name directly");
-        //            }
-
-        //            return avmFiles.Single();
-        //        }
-
-        //        if (!File.Exists(path) || Path.GetExtension(path) != ".avm")
-        //        {
-        //            return new StringError($"{path} is not an .avm file.");
-        //        }
-
-        //        return path;
-        //    }
-
-        //    return GetContractFile(nameOrPath).Match(
-        //        avmFile =>
-        //        {
-        //            System.Diagnostics.Debug.Assert(File.Exists(avmFile));
-
-        //            ExpressContract.Function ToExpressContractFunction(AbiContract.Function function) => new ExpressContract.Function
-        //            {
-        //                Name = function.Name,
-        //                ReturnType = function.ReturnType,
-        //                Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
-        //                {
-        //                    Name = p.Name,
-        //                    Type = p.Type
-        //                }).ToList()
-        //            };
-
-        //            string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
-        //            if (!File.Exists(abiFile))
-        //            {
-        //                throw new Exception($"there is no .abi.json file for {avmFile}.");
-        //            }
-
-        //            AbiContract abiContract;
-        //            var serializer = new JsonSerializer();
-        //            using (var stream = File.OpenRead(abiFile))
-        //            using (var reader = new JsonTextReader(new StreamReader(stream)))
-        //            {
-        //                abiContract = serializer.Deserialize<AbiContract>(reader);
-        //            }
-
-        //            var name = Path.GetFileNameWithoutExtension(avmFile);
-        //            return new ExpressContract()
-        //            {
-        //                Name = name,
-        //                Hash = abiContract.Hash,
-        //                EntryPoint = abiContract.Entrypoint,
-        //                ContractData = File.ReadAllBytes(avmFile).ToHexString(),
-        //                Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
-        //                Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
-        //                Properties = new Dictionary<string, string>()
-        //            };
-        //        },
-        //        error =>
-        //        {
-        //            // if the file can't be found, see if the path is 
-        //            // actually the name of an existing contract
-        //            foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
-        //            {
-        //                if (contract.NameEquals(nameOrPath))
-        //                {
-        //                    return contract;
-        //                }
-        //            }
-
-        //            throw new Exception(error.Value);
-        //        });
-        //}
     }
 }

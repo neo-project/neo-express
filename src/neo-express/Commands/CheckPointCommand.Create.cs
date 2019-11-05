@@ -51,11 +51,9 @@ namespace NeoExpress.Commands
 
                     if (Online)
                     {
-                        throw new NotImplementedException();
-                        //var uri = chain.GetUri();
-                        //var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
-                        //    .ConfigureAwait(false);
-                        //console.WriteResult(result);
+                        var result = await Program.BlockchainOperations.CreateCheckpointOnline(chain, filename)
+                            .ConfigureAwait(false);
+                        console.WriteResult(result);
                     }
                     else
                     {

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NeoExpress.Abstractions.Models;
+using Newtonsoft.Json.Linq;
 
 namespace NeoExpress.Abstractions
 {
@@ -14,11 +15,12 @@ namespace NeoExpress.Abstractions
         void ExportBlockchain(ExpressChain chain, string folder, string password, Action<string> writeConsole);
         ExpressWallet CreateWallet(string name);
         void ExportWallet(ExpressWallet wallet, string filename, string password);
-        //(byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data);
         void CreateCheckpoint(ExpressChain chain, string blockChainStoreDirectory, string checkPointFileName);
+        Task<JToken?> CreateCheckpointOnline(ExpressChain chain, string checkPointFileName);
         void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory);
         Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken);
         Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken);
-
+        Task<JArray> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver);
+        Task<JArray> Claim(ExpressChain chain, string asset, ExpressWalletAccount address);
     }
 }

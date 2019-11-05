@@ -5,6 +5,9 @@ using Neo2Express.Persistence;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using OneOf;
+using OneOf.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -205,19 +208,6 @@ namespace Neo2Express
             devWallet.Export(filename, password);
         }
 
-        //public (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data)
-        //{
-        //    var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-
-        //    var key = devAccount.GetKey();
-        //    if (key == null)
-        //        throw new InvalidOperationException();
-
-        //    var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
-        //    var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
-        //    return (signature, key.PublicKey.EncodePoint(true));
-        //}
-
         private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
 
         private static string GetAddressFilePath(string directory) =>
@@ -353,6 +343,131 @@ namespace Neo2Express
 #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
             return NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
+        }
+
+        static Uri GetUri(ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
+
+        public Task<JToken?> CreateCheckpointOnline(ExpressChain chain, string checkPointFileName)
+        {
+            var uri = GetUri(chain);
+            return NeoRpcClient.ExpressCreateCheckpoint(uri, checkPointFileName);
+        }
+
+        internal static (byte[] signature, byte[] publicKey) Sign2(ExpressWalletAccount account, byte[] data)
+        {
+            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+
+            var key = devAccount.GetKey();
+            if (key == null)
+                throw new InvalidOperationException();
+
+            var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
+            var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
+            return (signature, key.PublicKey.EncodePoint(true));
+        }
+
+        static JObject Sign(ExpressWalletAccount account, byte[] data)
+        {
+            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+
+            var key = devAccount.GetKey();
+            if (key == null)
+                throw new InvalidOperationException();
+
+            var publicKey = key.PublicKey.EncodePoint(false).AsSpan().Slice(1).ToArray();
+            var signature = Neo.Cryptography.Crypto.Default.Sign(data, key.PrivateKey, publicKey);
+
+            return new JObject
+            {
+                ["signature"] = signature.ToHexString(),
+                ["public-key"] = key.PublicKey.EncodePoint(true).ToHexString(),
+                ["contract"] = new JObject
+                {
+                    ["script"] = account.Contract.Script,
+                    ["parameters"] = new JArray(account.Contract.Parameters)
+                }
+            };
+        }
+
+        static IEnumerable<JObject> Sign(ExpressWallet wallet, IEnumerable<string> hashes, byte[] data)
+        {
+            foreach (var hash in hashes)
+            {
+                var account = wallet.Accounts.SingleOrDefault(a => a.ScriptHash == hash);
+                if (account == null || string.IsNullOrEmpty(account.PrivateKey))
+                    continue;
+
+                yield return Sign(account, data);
+            }
+        }
+
+        static byte[] ToByteArray(string value)
+        {
+            if (value == null || value.Length == 0)
+                return Array.Empty<byte>();
+            if (value.Length % 2 == 1)
+                throw new FormatException();
+            byte[] result = new byte[value.Length / 2];
+            for (int i = 0; i < result.Length; i++)
+                result[i] = byte.Parse(value.Substring(i * 2, 2), System.Globalization.NumberStyles.AllowHexSpecifier);
+            return result;
+        }
+
+        static JArray Sign(ExpressWalletAccount account, IEnumerable<ExpressConsensusNode> nodes, JToken? json)
+        {
+            if (json == null)
+            {
+                throw new ArgumentException(nameof(json));
+            }
+
+            var data = ToByteArray(json.Value<string>("hash-data"));
+
+            // TODO: better way to identify the genesis account?
+            if (account.Label == "MultiSigContract")
+            {
+                var hashes = json["script-hashes"].Select(t => t.Value<string>());
+                var signatures = nodes.SelectMany(n => Sign(n.Wallet, hashes, data));
+                return new JArray(signatures);
+            }
+            else
+            {
+                return new JArray(Sign(account, data));
+            }
+        }
+
+        static async Task<JArray> SignResult(JToken? result, ExpressChain chain, ExpressWalletAccount account)
+        {
+            var txid = result?["txid"];
+            if (txid == null)
+            {
+                var uri = GetUri(chain);
+                var signatures = Sign(account, chain.ConsensusNodes, result);
+                var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
+
+                return new JArray(result, result2);
+            }
+            else
+            {
+                return new JArray(result);
+            }
+        }
+
+        public async Task<JArray> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        {
+            var uri = GetUri(chain);
+            var result = await NeoRpcClient.ExpressTransfer(uri, asset, quantity, sender.ScriptHash, receiver.ScriptHash)
+                .ConfigureAwait(false);
+
+            return await SignResult(result, chain, sender).ConfigureAwait(false);
+        }
+
+        public async Task<JArray> Claim(ExpressChain chain, string asset, ExpressWalletAccount account)
+        {
+            var uri = GetUri(chain);
+            var result = await NeoRpcClient.ExpressClaim(uri, asset, account.ScriptHash)
+                .ConfigureAwait(false);
+
+            return await SignResult(result, chain, account).ConfigureAwait(false);
         }
     }
 }

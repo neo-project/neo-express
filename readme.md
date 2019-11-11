@@ -93,3 +93,20 @@ dotnet tool update Neo.Express -g
 ```
 
 > Installing on Ubuntu 18.04 requires libsnappy-dev and libc6-dev
+
+### Install Preview Releases
+
+Neo-Express has a public [build server](https://dev.azure.com/NGDSeattle/Public/_build?definitionId=24)
+and [NuGet feed](https://dev.azure.com/NGDSeattle/Public/_packaging?_a=package&feed=NeoPublicPackages&package=Neo.Express&protocolType=NuGet).
+You can install preview builds of Neo-express by specifying the nuget feed source
+when running the dotnet tool install or update command.
+
+``` shell
+dotnet tool install Neo.Express -g --add-source https://pkgs.dev.azure.com/NGDSeattle/Public/_packaging/NeoPublicPackages/nuget/v3/index.json --version <insert version>
+```
+
+Note, if the version isn't specified, the most recent release branch build will
+be installed. For preview releases, the explicit version must be specified.
+For more information, please see the
+[dotnet tool install command](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-tool-install#options)
+documentation.

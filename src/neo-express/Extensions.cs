@@ -192,7 +192,7 @@ namespace NeoExpress
             {
                 return chain.ConsensusNodes
                     .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
-                    .SingleOrDefault();
+                    .FirstOrDefault();
             }
 
             return null;

@@ -13,7 +13,20 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [0.9] - Unreleased
+## [0.9.92] - unreleased
+
+### Added
+
+- Added ``--json`` argument to ``contract storage`` command. This dumps the contract
+  storage to the console in JSON that is compatible with the
+  [Neo Smart Contract Debugger](https://github.com/neo-project/neo-debugger).
+
+### Changed
+
+- Fixed ExpressChain.GetAccount extension method to work as expected for
+  genesis account on an neo-express instance with more than one node.
+
+## [0.9] - 2019-11-11
 
 ### Added
 

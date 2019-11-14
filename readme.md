@@ -22,41 +22,11 @@ Please note, Neo-Express is in preview. There is more work to be done and there
 are assuredly bugs in the product. Please let us know of any issues you find via
 our [GitHub repo](https://github.com/neo-project/neo-express/issues).
 
-Docs are somewhat limited at this point. Please review the
-[Command Reference](docs\command-reference.md) to get an understanding of
-Neo-Express capabilities.
-
-## A Message from the Engineer
-
-Thanks for checking out Neo-Express! I am eager to hear your opinion of the product.
-
-If you like Neo-Express, please let me know on [Twitter](https://twitter.com/devhawk),
-[email](mailto:devhawk@outlook.com) or the [Neo Discord server](https://discord.gg/G5WEPwC).
-
-If there are things about Neo-Express you don't like, please file issues in our
-[GitHub repo](https://github.com/neo-project/neo-express/issues). You can hit me up on
-Twitter, Discord or email as well, but GitHub issues are how we track improvements
-we make to Neo-Express. So don't be shy - file an issue if there is anything
-you'd like to see changed in the product.
-
-Before you get started, I'd just like to point out again that Neo-Express is
-currently in preview. That means that you are more likely to find bugs or run
-across incomplete features than you would in other software. Furthermore, Neo-Express
-may not work in a way that you find intuitive.
-
-Most software is built by teams of people. However, Neo-Express so far has been
-a solo effort. I'm looking forward to having other folks contribute in the future,
-but so far it's just been me. That means that Neo-Express has been designed around
-my experiences and my perspective. I can't help it, my perspective is the only
-one I have! :) So while I find Neo-Express intuitive, I realize that you may not
-feel the same. Please let me know if this is the case! I didn't build Neo-Express
-for me, I built it for the Neo developer community at large. So if there are
-changes we can make to make Neo-Express more accessible, intuitive, easier to
-use or just flat-out better - I want to hear about them.
-
-Thanks again for checking out Neo-Express. I look forward to hearing from you.
-
-\- Harry Pierson (aka [DevHawk](http://devhawk.net)), Chief Architect NGD Seattle
+Docs are somewhat limited at this point. Please see the
+[Neo Blockchain Toolkit Quickstart](https://github.com/neo-project/neo-blockchain-toolkit/blob/master/quickstart.md)
+for an overview of Neo-Express along with the other tools in the Neo Blockchain
+Toolkit. Please review the [Command Reference](docs/command-reference.md) for
+information on about all of the Neo-Express commands.
 
 ## Installation
 
@@ -110,3 +80,35 @@ be installed. For preview releases, the explicit version must be specified.
 For more information, please see the
 [dotnet tool install command](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-tool-install#options)
 documentation.
+
+## A Message from the Engineer
+
+Thanks for checking out Neo-Express! I am eager to hear your opinion of the product.
+
+If you like Neo-Express, please let me know on [Twitter](https://twitter.com/devhawk),
+[email](mailto:devhawk@outlook.com) or the [Neo Discord server](https://discord.gg/G5WEPwC).
+
+If there are things about Neo-Express you don't like, please file issues in our
+[GitHub repo](https://github.com/neo-project/neo-express/issues). You can hit me up on
+Twitter, Discord or email as well, but GitHub issues are how we track improvements
+we make to Neo-Express. So don't be shy - file an issue if there is anything
+you'd like to see changed in the product.
+
+Before you get started, I'd just like to point out again that Neo-Express is
+currently in preview. That means that you are more likely to find bugs or run
+across incomplete features than you would in other software. Furthermore, Neo-Express
+may not work in a way that you find intuitive.
+
+Most software is built by teams of people. However, Neo-Express so far has been
+a solo effort. I'm looking forward to having other folks contribute in the future,
+but so far it's just been me. That means that Neo-Express has been designed around
+my experiences and my perspective. I can't help it, my perspective is the only
+one I have! :) So while I find Neo-Express intuitive, I realize that you may not
+feel the same. Please let me know if this is the case! I didn't build Neo-Express
+for me, I built it for the Neo developer community at large. So if there are
+changes we can make to make Neo-Express more accessible, intuitive, easier to
+use or just flat-out better - I want to hear about them.
+
+Thanks again for checking out Neo-Express. I look forward to hearing from you.
+
+\- Harry Pierson (aka [DevHawk](http://devhawk.net)), Chief Architect NGD Seattle

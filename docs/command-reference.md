@@ -5,8 +5,8 @@ Note, you can pass -?|-h|--help to show a list of supported commands or to show
 help information about a specific command.
 
 > Remember, Neo-Express is in preview. You will find bugs and/or missing functionality
-> as you use it. Please let us know of any issues you find via our
-> [GitHub repo](https://github.com/ngdseattle/neo-express).
+> as you use it. Please let us know of any issues you find or enhancements you
+> would like to see via our [GitHub repo](https://github.com/neo-project/neo-express).
 
 ## neo-express create
 
@@ -24,26 +24,34 @@ instance. While a single node blockchain can handle most developer scenarios, it
 is also possible to create a four or seven node blockchain via the `--count|-c` option.
 
 All of the information about a Neo-Express blockchain instance is stored in a
-single JSON file. By default, this file is named "express.privatenet.json", but
-this can be overridden with the `--output|-o` option. For all commands that read the
-blockchain instance file, a non-default blockchain instance file can be specified
+single JSON file. By default, this file is named "default.neo-express.json", but
+this can be overridden with the `--output|-o` option. For all commands that read
+the blockchain instance file, a non-default blockchain instance file can be specified
 via the `--input|-i` option.
 
 If the user wants to overwrite an existing blockchain instance file, they must
 specify the `--force|-f` option.
 
-By default, Neo-Express will pick port numbers for the consensus nodes in the
-blockchain instance by starting at 49152 and incrementing for each new port number
-that needs to be specified. Multiple blockchain instances cannot use the same set
-of ports. The user can specify the starting port when creating a blockchain via the
-`--ports|-p` option.
+By default, Neo-Express will pick a set of default port numbers for the consensus
+nodes in the blockchain instance. These ports will all be in the
+[IANA Dynamic Ports range](https://tools.ietf.org/html/rfc6335#section-8.1.2)
+(49152-65535) but may collide with ports used by other software running on
+a user's machine (including other instances of neo-express). If needed, the user
+can modify the `tcp-port`, `ws-port` and `rpc-port` values stored in the .neo-express.json
+file manually to values that do not collide with existing usage. Users are recommended
+to choose port numbers in the IANA Dynamic Ports range.
+
+> Note, the `debug-port` setting is not used and can be ignored. It will be removed
+> in a future version of neo-express.
 
 ## neo-express run
 
 Once created, a blockchain instance can be started by using the `run` command.
-The consensus node index to be run must be passed as an argument to the run command.
-So for a single node blockchain, the user would call `neo-express run 0`. Note,
-each node of a multi-node block chain must be run separately.
+For multi-node blockchains, the consensus node index to be run must be passed as
+an argument to the run command. For a single node blockchain the index is optional
+so the user can just call `neo-express run`.
+
+> Note, each node of a multi-node block chain must be run separately.
 
 The `run` command supports the `--input` argument for non-default blockchain
 instance files.
@@ -57,7 +65,8 @@ must use the same value when running.
 
 A blockchain can be reset to the genesis block via the `--reset|-r` argument. Note,
 resetting a blockchain is irreversible, though any checkpoints that were made
-can still be restored.
+can still be restored. When resetting a multi-node blockchain, `--reset` must be
+passed when starting each running node.
 
 ### neo-express export
 
@@ -114,10 +123,11 @@ tools.
 The `transfer` command is used to transfer assets between accounts in a Neo-Express
 blockchain. The transfer command has four required arguments
 
-- The asset to transfer. This can be 'neo', 'gas' or the hash of a NEP-5 token
-- the amount to transfer as an integer
-- the friendly name of the sending account
-- the friendly name of the receiving account
+- The asset to transfer. This can be `neo`, `gas` or the hash of a NEP-5 token
+- The amount to transfer as an integer. Optionally accepts `all` as a shortcut
+  for all the assets of a given type.
+- The friendly name of the sending account
+- The friendly name of the receiving account
 
 Note, Neo-Express reserves the friendly name 'genesis' to refer to the account
 holding the tokens created in the genesis block. 'genesis' can be used as any
@@ -137,11 +147,18 @@ The `show` command will display information about an account in the blockchain.
 There are three subcommands representing the different account information that
 is available:
 
-- account, to see top level account information for a specific account
+- `account`, to see top level account information for a specific account
   (aka [getaccountstate](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getaccountstate.html))
-- coins, to see a list of all coins - including spent coins - associated with a
+- `claimable`, to see detailed information about claimable GAS for a specific account
+  (aka [getclaimable](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getclaimable.html))
+- `coins`, to see a list of all coins - including spent coins - associated with a
   specific account
-- gas, to see the available and unavailable gas for a specific account.
+- `unclaimed`, to see the available, unavailable and unclaimed gas for a specific
+   account (aka [getunclaimed](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunclaimed.html))
+- `unspents`, to see detailed information about unspent assets for a specific account
+  (aka [getunspents ](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getunspents.html))
+
+> Note, the `show gas` command has been replaced with `show unclaimed` as of v0.9.
 
 All show subcommands take a wallet account friendly name as a required argument
 and supports the `--input` argument for non-default blockchain instance files.
@@ -160,6 +177,15 @@ $> neo-express claim gas alice
 The `claim` command supports the `--input` argument for non-default blockchain
 instance files.
 
+> Note, GAS in any Neo blockchain (including Neo-Express) is generated on every
+> block for all NEO holders. However, this GAS starts in the unavailable state
+> and cannot be claimed. To make GAS available, the associated NEO must be transferred,
+> though it can be transferred to the same account to unlock the GAS like this:
+
+```shell
+$> neo-express transfer neo all <walletName> <walletName>
+```
+
 ## neo-express contract
 
 The `contract` command has a series of subcomands for managing smart contracts
@@ -167,6 +193,11 @@ on a Neo-Express blockchain
 
 All `contract` subcommands support the `--input` argument for non-default blockchain
 instance files.
+
+> Note, `contract import` command was removed as of v0.9. The `contract deploy` command
+> now accepts a path to an .AVM file, a path to a directory containing a single .AVM
+> file or the short name of a previously deployed contract. This makes initial contract
+> deployment a single-step process instead of a two-step process.
 
 ### neo-express contract deploy
 
@@ -210,7 +241,16 @@ this contract. This command takes a single argument: the contract to dump storag
 records for. For each key/value pair, the command shows both the key and the value
 as both a hex-encoded byte array as well as a UTF-8 encoded string.
 
+The `contract storage` command takes an optional `--json|-j` argument that causes
+the storage vales to be printed in a JSON format. This JSON format is compatible
+with the `storage` value a `launch.json` configuration for the
+[Neo Smart Contract Debugger](https://github.com/neo-project/neo-debugger).
+
 ### neo-express contract invoke
+
+> Note, the `contract invoke` command is extremely rudimentary. The
+> [Neo Visual DevTracker](https://marketplace.visualstudio.com/items?itemName=ngd-seattle.neo-visual-devtracker)
+> has a much more full-featured contract invocation UI coming in the next version.
 
 The `contract invoke` command invokes a deployed contract in a running Neo-Express
 blockchain. This command has two required arguments: the contract to invoke and
@@ -227,11 +267,6 @@ as well:
   charge associated with the contract invocation and will allow the contract to
   make durable changes to the blockchain.
 
-> Note, contract invocation is an area of neo-express that will likely require
-> significant improvement as it is tested by users on more real-world contracts.
-> Please remember to let us know of any issues you find via our
-> [GitHub repo](https://github.com/ngdseattle/neo-express).
-
 ## neo-express checkpoint
 
 The `checkpoint` command has a series of subcomands for managing the state of a
@@ -243,20 +278,21 @@ variety of debug and test scenarios.
 Note, all `checkpoint` subcommands require a single-node Neo-Express blockchain.
 Multi-node blockchains cannot be check pointed.
 
-All `contract` subcommands support the `--input` argument for non-default blockchain
+All `checkpoint` subcommands support the `--input` argument for non-default blockchain
 instance files.
 
 ### neo-express checkpoint create
 
 The `checkpoint create` enables the user to create a checkpoint of a Neo-express
-blockchain *that is not currently running*. This command has a single optional
-argument: the name of the checkpoint. If a name is not provided, a default name
-based on the current time and date will be used. If the user wants to overwrite
-a checkpoint that has already been created, they must specify the `--force|-f`
-option.
+blockchain. This command has an optional argument to specify the name of the
+checkpoint. If a name is not provided, a default name based on the current time
+and date will be used. If the user wants to overwrite a checkpoint that has already
+been created, they must specify the `--force|-f` option.
 
-> Note, the ability to checkpoint a running blockchain will be added in a future
-> version of Neo-Express
+Checkpoints can be created if the blockchain is running or not. If the blockchain
+is running, the user must pass the `--online|-o` argument to the `checkpoint create`
+command. If the blockchain is not running, the user simply leaves off the `--online`
+argument.
 
 ### neo-express checkpoint restore
 

@@ -407,7 +407,7 @@ namespace Neo2Express
                     totalUnclaimed += unclaimed;
 
                     var utxo = new JObject();
-                    utxo["txid"] = coin.Reference.PrevHash.ToString();
+                    utxo["txid"] = coin.Reference.PrevHash.ToString().Substring(2);
                     utxo["n"] = coin.Reference.PrevIndex;
                     utxo["start_height"] = startHeight;
                     utxo["end_height"] = endHeight;

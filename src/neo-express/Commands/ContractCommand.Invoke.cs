@@ -99,10 +99,19 @@ namespace NeoExpress.Commands
                     console.WriteResult(result);
                     if (account != null)
                     {
-                        var signatures = account.Sign(chain.ConsensusNodes, result);
-                        var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                        console.WriteResult(result2);
+                        var txid = result?["txid"];
+                        if (txid != null)
+                        {
+                            console.WriteLine("invocation complete");
+                        }
+                        else
+                        {
+                            var signatures = account.Sign(chain.ConsensusNodes, result);
+                            var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
+                            console.WriteResult(result2);
+                        }
                     }
+
                     return 0;
                 }
                 catch (Exception ex)

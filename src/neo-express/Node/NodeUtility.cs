@@ -329,6 +329,7 @@ namespace NeoExpress.Node
         public static (InvocationTransaction?, ApplicationEngine) MakeDeploymentTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, Newtonsoft.Json.Linq.JToken contract)
         {
             var tx = BuildInvocationTx(() => BuildContractCreateScript(contract));
+            tx.Version = 1;
             var engine = ApplicationEngine.Run(tx.Script, tx, null, true);
             if ((engine.State & VMState.FAULT) != 0)
             {
@@ -363,6 +364,11 @@ namespace NeoExpress.Node
             }
             fee += tx.SystemFee;
 
+            if (fee == Fixed8.Zero)
+            {
+                return tx;
+            }
+
             var coins = GetCoins(snapshot, addresses).Unspent(Blockchain.UtilityToken.Hash);
             var sum = coins.Sum(c => c.Output.Value);
             if (sum < fee)
@@ -385,7 +391,6 @@ namespace NeoExpress.Node
             {
                 return new InvocationTransaction
                 {
-                    Version = 1,
                     Script = builder.ToArray(),
                     Attributes = Array.Empty<TransactionAttribute>(),
                     Inputs = inputs?.ToArray() ?? Array.Empty<CoinReference>(),

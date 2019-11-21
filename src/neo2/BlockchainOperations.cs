@@ -476,9 +476,8 @@ namespace Neo2Express
             }
             else
             {
-                var signatures = Sign(account, chain.ConsensusNodes, invokeResult);
-                var signatureSubmissionResult = await NeoRpcClient.ExpressSubmitSignatures(uri, invokeResult?["contract-context"], signatures).ConfigureAwait(false);
-                return new JArray(invokeResult, signatureSubmissionResult);
+                var signResult = await SignResult(invokeResult, chain, account).ConfigureAwait(false);
+                return new JArray(invokeResult, signResult);
             }
         }
 

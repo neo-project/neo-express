@@ -13,7 +13,14 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [0.9.92] - 2019-11-13
+## [0.9.85] - Unreleased
+
+### Fixed
+
+- [don't attach tx input/outputs to invocations with zero fee](https://github.com/neo-project/neo-express/issues/12)
+- [getclaimable txid prefixed with `0x`](https://github.com/neo-project/neo-express/issues/13)
+
+## [0.9.82] - 2019-11-13
 
 ### Added
 

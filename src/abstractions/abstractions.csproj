@@ -11,7 +11,6 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
     <PackageTags>NEO;Blockchain;Smart Contract</PackageTags>
-    <PackAsTool>true</PackAsTool>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
     <RootNamespace>NeoExpress.Abstractions</RootNamespace>

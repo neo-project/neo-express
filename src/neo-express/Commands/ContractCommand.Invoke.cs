@@ -99,17 +99,7 @@ namespace NeoExpress.Commands
 
                     foreach (var result in results)
                     {
-                        var txid = result?["txid"];
-                        if (txid != null)
-                        {
-                            console.WriteLine("invocation complete");
-                        }
-                        else
-                        {
-                            var signatures = account.Sign(chain.ConsensusNodes, result);
-                            var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-                            console.WriteResult(result2);
-                        }
+                        console.WriteResult(result);
                     }
 
                     return 0;

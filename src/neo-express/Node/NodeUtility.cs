@@ -333,7 +333,7 @@ namespace NeoExpress.Node
             var engine = ApplicationEngine.Run(tx.Script, tx, null, true);
             if ((engine.State & VMState.FAULT) != 0)
             {
-                throw new Exception();
+                throw new Exception("NeoVM Faulted");
             }
 
             var gas = engine.GasConsumed - Fixed8.FromDecimal(10);
@@ -348,7 +348,7 @@ namespace NeoExpress.Node
             var engine = ApplicationEngine.Run(tx.Script, tx);
             if ((engine.State & VMState.FAULT) != 0)
             {
-                throw new Exception();
+                throw new Exception("NeoVM Faulted");
             }
 
             return addresses.IsEmpty ? (null, engine) : (AddTransactionFee(snapshot, addresses, tx), engine);

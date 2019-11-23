@@ -1,65 +1,47 @@
 ﻿using Neo;
 using Neo.Cryptography.ECC;
+using Neo.IO;
 using Neo.IO.Wrappers;
 using Neo.Ledger;
+using OneOf;
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace NeoExpress.Persistence
 {
     internal partial class CheckpointStore : Neo.Persistence.Store, IDisposable
     {
+        internal readonly static OneOf.Types.None noneInstance = new OneOf.Types.None();
+
         private readonly RocksDb db;
 
-        private readonly DataCache<UInt256, BlockState> blocks;
-        private readonly DataCache<UInt256, TransactionState> transactions;
-        private readonly DataCache<UInt160, AccountState> accounts;
-        private readonly DataCache<UInt256, UnspentCoinState> unspentCoins;
-        private readonly DataCache<UInt256, SpentCoinState> spentCoins;
-        private readonly DataCache<ECPoint, ValidatorState> validators;
-        private readonly DataCache<UInt256, AssetState> assets;
-        private readonly DataCache<UInt160, ContractState> contracts;
-        private readonly DataCache<StorageKey, StorageItem> storages;
-        private readonly DataCache<UInt32Wrapper, HeaderHashList> headerHashList;
-        private readonly MetaDataCache<ValidatorsCountState> validatorsCount;
-        private readonly MetaDataCache<HashIndexState> blockHashIndex;
-        private readonly MetaDataCache<HashIndexState> headerHashIndex;
+        private static ImmutableDictionary<byte[], OneOf<T, OneOf.Types.None>> InitChangeTracker<T>() => 
+            ImmutableDictionary<byte[], OneOf<T, OneOf.Types.None>>.Empty.WithComparers(new ByteArrayComparer());
 
-        private static DataCache<TKey, TValue> GetDataCache<TKey, TValue>(RocksDb db, string familyName)
-            where TKey : IEquatable<TKey>, Neo.IO.ISerializable, new()
-            where TValue : class, Neo.IO.ICloneable<TValue>, Neo.IO.ISerializable, new()
-        {
-            var columnFamily = db.GetColumnFamily(familyName);
-            return new DataCache<TKey, TValue>(db, columnFamily);
-        }
+        // dictionary value of None indicates the key has been deleted
+        private ImmutableDictionary<byte[], OneOf<BlockState, OneOf.Types.None>> blocksTracker = InitChangeTracker<BlockState>();
+        private ImmutableDictionary<byte[], OneOf<TransactionState, OneOf.Types.None>> transactionsTracker = InitChangeTracker<TransactionState>();
+        private ImmutableDictionary<byte[], OneOf<AccountState, OneOf.Types.None>> accountsTracker = InitChangeTracker<AccountState>();
+        private ImmutableDictionary<byte[], OneOf<UnspentCoinState, OneOf.Types.None>> unspentCoinsTracker = InitChangeTracker<UnspentCoinState>();
+        private ImmutableDictionary<byte[], OneOf<SpentCoinState, OneOf.Types.None>> spentCoinsTracker = InitChangeTracker<SpentCoinState>();
+        private ImmutableDictionary<byte[], OneOf<ValidatorState, OneOf.Types.None>> validatorsTracker = InitChangeTracker<ValidatorState>();
+        private ImmutableDictionary<byte[], OneOf<AssetState, OneOf.Types.None>> assetsTracker = InitChangeTracker<AssetState>();
+        private ImmutableDictionary<byte[], OneOf<ContractState, OneOf.Types.None>> contractsTracker = InitChangeTracker<ContractState>();
+        private ImmutableDictionary<byte[], OneOf<StorageItem, OneOf.Types.None>> storagesTracker = InitChangeTracker<StorageItem>();
+        private ImmutableDictionary<byte[], OneOf<HeaderHashList, OneOf.Types.None>> headerHashListTracker = InitChangeTracker<HeaderHashList>();
 
-        private static MetaDataCache<T> GetMetaDataCache<T>(
-            RocksDb db, byte key)
-            where T : class, Neo.IO.ICloneable<T>, Neo.IO.ISerializable, new()
-        {
-            var columnFamily = db.GetColumnFamily(RocksDbStore.METADATA_FAMILY);
-            var keyArray = new byte[1] { key };
-            return new MetaDataCache<T>(db, keyArray, columnFamily);
-        }
+        // value initalized to None to indicate value hasn't been overwritten
+        private OneOf<ValidatorsCountState, OneOf.Types.None> validatorsCountTracker = noneInstance;
+        private OneOf<HashIndexState, OneOf.Types.None> blockHashIndexTracker = noneInstance;
+        private OneOf<HashIndexState, OneOf.Types.None> headerHashIndexTracker = noneInstance;
+
+        private readonly Dictionary<byte[], byte[]> generalStorage = new Dictionary<byte[], byte[]>(new ByteArrayComparer());
 
         public CheckpointStore(string path)
         {
             db = RocksDb.OpenReadOnly(new DbOptions(), path, RocksDbStore.ColumnFamilies, false);
-
-            blocks = GetDataCache<UInt256, BlockState>(db, RocksDbStore.BLOCK_FAMILY);
-            transactions = GetDataCache<UInt256, TransactionState>(db, RocksDbStore.TX_FAMILY);
-            accounts = GetDataCache<UInt160, AccountState>(db, RocksDbStore.ACCOUNT_FAMILY);
-            unspentCoins = GetDataCache<UInt256, UnspentCoinState>(db, RocksDbStore.UNSPENT_COIN_FAMILY);
-            spentCoins = GetDataCache<UInt256, SpentCoinState>(db, RocksDbStore.SPENT_COIN_FAMILY);
-            validators = GetDataCache<ECPoint, ValidatorState>(db, RocksDbStore.VALIDATOR_FAMILY);
-            assets = GetDataCache<UInt256, AssetState>(db, RocksDbStore.ASSET_FAMILY);
-            contracts = GetDataCache<UInt160, ContractState>(db, RocksDbStore.CONTRACT_FAMILY);
-            storages = GetDataCache<StorageKey, StorageItem>(db, RocksDbStore.STORAGE_FAMILY);
-            headerHashList = GetDataCache<UInt32Wrapper, HeaderHashList>(db, RocksDbStore.HEADER_HASH_LIST_FAMILY);
-            validatorsCount = GetMetaDataCache<ValidatorsCountState>(db, RocksDbStore.VALIDATORS_COUNT_KEY);
-            blockHashIndex = GetMetaDataCache<HashIndexState>(db, RocksDbStore.CURRENT_BLOCK_KEY);
-            headerHashIndex = GetMetaDataCache<HashIndexState>(db, RocksDbStore.CURRENT_HEADER_KEY);
         }
 
         public void Dispose()
@@ -72,21 +54,33 @@ namespace NeoExpress.Persistence
             return new Snapshot(this);
         }
 
-        public override Neo.IO.Caching.DataCache<UInt256, BlockState> GetBlocks() => blocks;
-        public override Neo.IO.Caching.DataCache<UInt256, TransactionState> GetTransactions() => transactions;
-        public override Neo.IO.Caching.DataCache<UInt160, AccountState> GetAccounts() => accounts;
-        public override Neo.IO.Caching.DataCache<UInt256, UnspentCoinState> GetUnspentCoins() => unspentCoins;
-        public override Neo.IO.Caching.DataCache<UInt256, SpentCoinState> GetSpentCoins() => spentCoins;
-        public override Neo.IO.Caching.DataCache<ECPoint, ValidatorState> GetValidators() => validators;
-        public override Neo.IO.Caching.DataCache<UInt256, AssetState> GetAssets() => assets;
-        public override Neo.IO.Caching.DataCache<UInt160, ContractState> GetContracts() => contracts;
-        public override Neo.IO.Caching.DataCache<StorageKey, StorageItem> GetStorages() => storages;
-        public override Neo.IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() => headerHashList;
-        public override Neo.IO.Caching.MetaDataCache<ValidatorsCountState> GetValidatorsCount() => validatorsCount;
-        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() => blockHashIndex;
-        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() => headerHashIndex;
+        public override Neo.IO.Caching.DataCache<UInt256, BlockState> GetBlocks() => new DataCache<UInt256, BlockState>(db, RocksDbStore.BLOCK_FAMILY, blocksTracker);
+        public override Neo.IO.Caching.DataCache<UInt256, TransactionState> GetTransactions() => new DataCache<UInt256, TransactionState>(db, RocksDbStore.TX_FAMILY, transactionsTracker);
+        public override Neo.IO.Caching.DataCache<UInt160, AccountState> GetAccounts() => new DataCache<UInt160, AccountState>(db, RocksDbStore.ACCOUNT_FAMILY, accountsTracker);
+        public override Neo.IO.Caching.DataCache<UInt256, UnspentCoinState> GetUnspentCoins() => new DataCache<UInt256, UnspentCoinState>(db, RocksDbStore.UNSPENT_COIN_FAMILY, unspentCoinsTracker);
+        public override Neo.IO.Caching.DataCache<UInt256, SpentCoinState> GetSpentCoins() => new DataCache<UInt256, SpentCoinState>(db, RocksDbStore.SPENT_COIN_FAMILY, spentCoinsTracker);
+        public override Neo.IO.Caching.DataCache<ECPoint, ValidatorState> GetValidators() => new DataCache<ECPoint, ValidatorState>(db, RocksDbStore.VALIDATOR_FAMILY, validatorsTracker);
+        public override Neo.IO.Caching.DataCache<UInt256, AssetState> GetAssets() => new DataCache<UInt256, AssetState>(db, RocksDbStore.ASSET_FAMILY, assetsTracker);
+        public override Neo.IO.Caching.DataCache<UInt160, ContractState> GetContracts() => new DataCache<UInt160, ContractState>(db, RocksDbStore.CONTRACT_FAMILY, contractsTracker);
+        public override Neo.IO.Caching.DataCache<StorageKey, StorageItem> GetStorages() => new DataCache<StorageKey, StorageItem>(db, RocksDbStore.STORAGE_FAMILY, storagesTracker);
+        public override Neo.IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() => new DataCache<UInt32Wrapper, HeaderHashList>(db, RocksDbStore.HEADER_HASH_LIST_FAMILY, headerHashListTracker);
+        public override Neo.IO.Caching.MetaDataCache<ValidatorsCountState> GetValidatorsCount() => new MetaDataCache<ValidatorsCountState>(db, RocksDbStore.VALIDATORS_COUNT_KEY, validatorsCountTracker);
+        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() => new MetaDataCache<HashIndexState>(db, RocksDbStore.CURRENT_BLOCK_KEY, blockHashIndexTracker);
+        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() => new MetaDataCache<HashIndexState>(db, RocksDbStore.CURRENT_HEADER_KEY, headerHashIndexTracker);
 
-        private readonly Dictionary<byte[], byte[]> generalStorage = new Dictionary<byte[], byte[]>(new ByteArrayComparer());
+        private void UpdateBlocks(UInt256 key, OneOf<BlockState, OneOf.Types.None> value) => blocksTracker = blocksTracker.SetItem(key.ToArray(), value);
+        private void UpdateTransactions(UInt256 key, OneOf<TransactionState, OneOf.Types.None> value) => transactionsTracker = transactionsTracker.SetItem(key.ToArray(), value);
+        private void UpdateAccounts(UInt160 key, OneOf<AccountState, OneOf.Types.None> value) => accountsTracker = accountsTracker.SetItem(key.ToArray(), value);
+        private void UpdateUnspentCoins(UInt256 key, OneOf<UnspentCoinState, OneOf.Types.None> value) => unspentCoinsTracker = unspentCoinsTracker.SetItem(key.ToArray(), value);
+        private void UpdateSpentCoins(UInt256 key, OneOf<SpentCoinState, OneOf.Types.None> value) => spentCoinsTracker = spentCoinsTracker.SetItem(key.ToArray(), value);
+        private void UpdateValidators(ECPoint key, OneOf<ValidatorState, OneOf.Types.None> value) => validatorsTracker = validatorsTracker.SetItem(key.ToArray(), value);
+        private void UpdateAssets(UInt256 key, OneOf<AssetState, OneOf.Types.None> value) => assetsTracker = assetsTracker.SetItem(key.ToArray(), value);
+        private void UpdateContracts(UInt160 key, OneOf<ContractState, OneOf.Types.None> value) => contractsTracker = contractsTracker.SetItem(key.ToArray(), value);
+        private void UpdateStorages(StorageKey key, OneOf<StorageItem, OneOf.Types.None> value) => storagesTracker = storagesTracker.SetItem(key.ToArray(), value);
+        private void UpdateHeaderHashList(UInt32Wrapper key, OneOf<HeaderHashList, OneOf.Types.None> value) => headerHashListTracker = headerHashListTracker.SetItem(key.ToArray(), value);
+        private void UpdateValidatorsCount(ValidatorsCountState value) => validatorsCountTracker = value;
+        private void UpdateBlockHashIndex(HashIndexState value) => blockHashIndexTracker = value;
+        private void UpdateHeaderHashIndex(HashIndexState value) => headerHashIndexTracker = value;
 
         public override byte[] Get(byte prefix, byte[] key)
         {

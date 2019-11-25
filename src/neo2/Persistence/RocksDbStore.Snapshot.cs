@@ -3,6 +3,7 @@ using Neo.Cryptography.ECC;
 using Neo.IO.Wrappers;
 using Neo.Ledger;
 using RocksDbSharp;
+using System;
 
 namespace Neo2Express.Persistence
 {
@@ -22,37 +23,25 @@ namespace Neo2Express.Persistence
                 readOptions = new ReadOptions().SetSnapshot(snapshot).SetFillCache(false);
                 writeBatch = new WriteBatch();
 
-                Blocks = GetDataCache<UInt256, BlockState>(
-                    db, BLOCK_FAMILY, readOptions, writeBatch);
-                Transactions = GetDataCache<UInt256, TransactionState>(
-                    db, TX_FAMILY, readOptions, writeBatch);
-                Accounts = GetDataCache<UInt160, AccountState>(
-                    db, ACCOUNT_FAMILY, readOptions, writeBatch);
-                UnspentCoins = GetDataCache<UInt256, UnspentCoinState>(
-                    db, UNSPENT_COIN_FAMILY, readOptions, writeBatch);
-                SpentCoins = GetDataCache<UInt256, SpentCoinState>(
-                    db, SPENT_COIN_FAMILY, readOptions, writeBatch);
-                Validators = GetDataCache<ECPoint, ValidatorState>(
-                    db, VALIDATOR_FAMILY, readOptions, writeBatch);
-                Assets = GetDataCache<UInt256, AssetState>(
-                    db, ASSET_FAMILY, readOptions, writeBatch);
-                Contracts = GetDataCache<UInt160, ContractState>(
-                    db, CONTRACT_FAMILY, readOptions, writeBatch);
-                Storages = GetDataCache<StorageKey, StorageItem>(
-                    db, STORAGE_FAMILY, readOptions, writeBatch);
-                HeaderHashList = GetDataCache<UInt32Wrapper, HeaderHashList>(
-                    db, HEADER_HASH_LIST_FAMILY, readOptions, writeBatch);
-                ValidatorsCount = GetMetaDataCache<ValidatorsCountState>(
-                    db, VALIDATORS_COUNT_KEY, readOptions, writeBatch);
-                BlockHashIndex = GetMetaDataCache<HashIndexState>(
-                    db, CURRENT_BLOCK_KEY, readOptions, writeBatch);
-                HeaderHashIndex = GetMetaDataCache<HashIndexState>(
-                    db, CURRENT_HEADER_KEY, readOptions, writeBatch);
+                Blocks = new DataCache<UInt256, BlockState>(db, BLOCK_FAMILY, readOptions, writeBatch);
+                Transactions = new DataCache<UInt256, TransactionState>(db, TX_FAMILY, readOptions, writeBatch);
+                Accounts = new DataCache<UInt160, AccountState>(db, ACCOUNT_FAMILY, readOptions, writeBatch);
+                UnspentCoins = new DataCache<UInt256, UnspentCoinState>(db, UNSPENT_COIN_FAMILY, readOptions, writeBatch);
+                SpentCoins = new DataCache<UInt256, SpentCoinState>(db, SPENT_COIN_FAMILY, readOptions, writeBatch);
+                Validators = new DataCache<ECPoint, ValidatorState>(db, VALIDATOR_FAMILY, readOptions, writeBatch);
+                Assets = new DataCache<UInt256, AssetState>(db, ASSET_FAMILY, readOptions, writeBatch);
+                Contracts = new DataCache<UInt160, ContractState>(db, CONTRACT_FAMILY, readOptions, writeBatch);
+                Storages = new DataCache<StorageKey, StorageItem>(db, STORAGE_FAMILY, readOptions, writeBatch);
+                HeaderHashList = new DataCache<UInt32Wrapper, HeaderHashList>(db, HEADER_HASH_LIST_FAMILY, readOptions, writeBatch);
+                ValidatorsCount = new MetaDataCache<ValidatorsCountState>(db, VALIDATORS_COUNT_KEY, readOptions, writeBatch);
+                BlockHashIndex = new MetaDataCache<HashIndexState>(db, CURRENT_BLOCK_KEY, readOptions, writeBatch);
+                HeaderHashIndex = new MetaDataCache<HashIndexState>(db, CURRENT_HEADER_KEY, readOptions, writeBatch);
             }
 
             public override void Dispose()
             {
                 snapshot.Dispose();
+                writeBatch.Dispose();
             }
 
             public override void Commit()

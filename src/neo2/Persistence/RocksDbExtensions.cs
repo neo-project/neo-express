@@ -46,24 +46,5 @@ namespace Neo2Express.Persistence
                 ? value.AsSerializable<TValue>()
                 : null;
         }
-
-        public static TValue Get<TKey, TValue>(this RocksDb db, TKey key, ColumnFamilyHandle? columnFamily = null, ReadOptions? readOptions = null)
-            where TKey : ISerializable
-            where TValue : class, ISerializable, new()
-        {
-            return Get<TValue>(db, key.ToArray(), columnFamily, readOptions);
-        }
-
-        public static TValue Get<TValue>(this RocksDb db, byte[] key, ColumnFamilyHandle? columnFamily = null, ReadOptions? readOptions = null)
-            where TValue : class, ISerializable, new()
-        {
-            var value = db.Get(key, columnFamily, readOptions);
-            if (value?.Length > 0)
-            {
-                return value.AsSerializable<TValue>();
-            }
-
-            throw new Exception("not found");
-        }
     }
 }

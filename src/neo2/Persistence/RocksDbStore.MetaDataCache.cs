@@ -15,7 +15,12 @@ namespace Neo2Express.Persistence
             private readonly ReadOptions? readOptions;
             private readonly WriteBatch? writeBatch;
 
-            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle familyHandle, ReadOptions? readOptions, WriteBatch? writeBatch, Func<T>? factory = null)
+            public MetaDataCache(RocksDb db, byte key, ReadOptions? readOptions = null, WriteBatch? writeBatch = null, Func<T>? factory = null)
+                : this(db, new byte[] { key }, db.GetColumnFamily(METADATA_FAMILY), readOptions, writeBatch, factory)
+            {
+            }
+
+            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle familyHandle, ReadOptions? readOptions = null, WriteBatch? writeBatch = null, Func<T>? factory = null)
                 : base(factory)
             {
                 this.db = db;
@@ -41,7 +46,10 @@ namespace Neo2Express.Persistence
 
             protected override void UpdateInternal(T item)
             {
-                writeBatch?.Put(key, item.ToArray(), familyHandle);
+                if (writeBatch == null)
+                    throw new InvalidOperationException();
+
+                writeBatch.Put(key, item.ToArray(), familyHandle);
             }
         }
     }

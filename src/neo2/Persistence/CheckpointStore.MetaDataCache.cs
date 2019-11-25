@@ -10,54 +10,41 @@ namespace Neo2Express.Persistence
         private class MetaDataCache<T> : Neo.IO.Caching.MetaDataCache<T>
             where T : class, ICloneable<T>, ISerializable, new()
         {
-            // value initalized to None to indicate value hasn't been overwritten
-            private OneOf<T, OneOf.Types.None> value;
+            private readonly MetadataTracker<T> tracker;
+            private readonly OneOf<T, OneOf.Types.None>? snapshot = null;
+            private readonly Action<T>? updater = null;
 
-            private readonly RocksDb db;
-            private readonly byte[] key;
-            private readonly ColumnFamilyHandle columnFamily;
-            private readonly Action<T>? updater;
-
-            public OneOf<T, OneOf.Types.None> Value => value;
-            public Action<T> Updater => item => value = item;
-
-            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle columnFamily, Func<T>? factory = null) : base(factory)
+            public MetaDataCache(MetadataTracker<T> tracker, Func<T>? factory = null) : base(factory)
             {
-                value = new OneOf.Types.None();
-
-                this.db = db;
-                this.key = key;
-                this.columnFamily = columnFamily;
+                this.tracker = tracker;
             }
 
-            public MetaDataCache(RocksDb db, byte[] key, ColumnFamilyHandle columnFamily, OneOf<T, OneOf.Types.None> value, Action<T> updater, Func<T>? factory = null) : base(factory)
+            public MetaDataCache(MetadataTracker<T> tracker, OneOf<T, OneOf.Types.None> snapshot, Action<T> updater, Func<T>? factory = null) 
+                : base(factory)
             {
-                this.value = value;
+                this.tracker = tracker;
+                this.snapshot = snapshot;
                 this.updater = updater;
-
-                this.db = db;
-                this.key = key;
-                this.columnFamily = columnFamily;
             }
 
 #pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
             protected override T? TryGetInternal()
 #pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
             {
-                if (value.IsT0)
-                    return value.AsT0;
-
-                return db.TryGet<T>(key, columnFamily);
+                return tracker.TryGet(snapshot);
             }
 
             protected override void AddInternal(T item)
             {
-                updater?.Invoke(item);
+                UpdateInternal(item);
             }
 
             protected override void UpdateInternal(T item)
             {
-                updater?.Invoke(item);
+                if (updater == null)
+                    throw new InvalidOperationException();
+
+                updater(item);
             }
         }
     }

@@ -16,7 +16,12 @@ namespace Neo2Express.Persistence
             private readonly ReadOptions? readOptions;
             private readonly WriteBatch? writeBatch;
 
-            public DataCache(RocksDb db, ColumnFamilyHandle familyHandle, ReadOptions? readOptions, WriteBatch? writeBatch)
+            public DataCache(RocksDb db, string familyName, ReadOptions? readOptions = null, WriteBatch? writeBatch = null)
+                : this(db, db.GetColumnFamily(familyName), readOptions, writeBatch)
+            {
+            }
+
+            public DataCache(RocksDb db, ColumnFamilyHandle familyHandle, ReadOptions? readOptions = null, WriteBatch? writeBatch = null)
             {
                 this.db = db;
                 this.familyHandle = familyHandle;
@@ -29,11 +34,6 @@ namespace Neo2Express.Persistence
                 return db.Find<TKey, TValue>(key_prefix, familyHandle, readOptions);
             }
 
-            protected override TValue GetInternal(TKey key)
-            {
-                return db.Get<TKey, TValue>(key, familyHandle, readOptions);
-            }
-
 #pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
             // Neo 2.x is not compiled with C# 8, so not sure why C# compiler thinks
             // TryGetInternal can't return null. But it can so supress the warning.
@@ -43,6 +43,19 @@ namespace Neo2Express.Persistence
                 return db.TryGet<TKey, TValue>(key, familyHandle, readOptions);
             }
 
+            protected override TValue GetInternal(TKey key)
+            {
+                var value = TryGetInternal(key);
+                if (value == null)
+                {
+                    throw new Exception("not found");
+                }
+                else
+                {
+                    return value;
+                }
+            }
+
             protected override void AddInternal(TKey key, TValue value)
             {
                 UpdateInternal(key, value);
@@ -50,12 +63,18 @@ namespace Neo2Express.Persistence
 
             protected override void UpdateInternal(TKey key, TValue value)
             {
-                writeBatch?.Put(key.ToArray(), value.ToArray(), familyHandle);
+                if (writeBatch == null)
+                    throw new InvalidOperationException();
+
+                writeBatch.Put(key.ToArray(), value.ToArray(), familyHandle);
             }
 
             public override void DeleteInternal(TKey key)
             {
-                writeBatch?.Delete(key.ToArray(), familyHandle);
+                if (writeBatch == null)
+                    throw new InvalidOperationException();
+
+                writeBatch.Delete(key.ToArray(), familyHandle);
             }
         }
     }

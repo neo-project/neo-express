@@ -16,20 +16,20 @@ namespace NeoExpress.Persistence
         {
             public Snapshot(CheckpointStore store)
             {
-                Blocks = store._blocks.GetSnapshot();
-                Transactions = store._transactions.GetSnapshot();
-                Accounts = store._accounts.GetSnapshot();
+                Blocks = store.blocks.GetSnapshot();
+                Transactions = store.transactions.GetSnapshot();
+                Accounts = store.accounts.GetSnapshot();
                 UnspentCoins = store._unspentCoins.GetSnapshot();
-                SpentCoins = store._spentCoins.GetSnapshot();
-                Validators = store._validators.GetSnapshot();
-                Assets = store._assets.GetSnapshot();
-                Contracts = store._contracts.GetSnapshot();
-                Storages = store._storages.GetSnapshot();
-                HeaderHashList = store._headerHashList.GetSnapshot();
+                SpentCoins = store.spentCoins.GetSnapshot();
+                Validators = store.validators.GetSnapshot();
+                Assets = store.assets.GetSnapshot();
+                Contracts = store.contracts.GetSnapshot();
+                Storages = store.storages.GetSnapshot();
+                HeaderHashList = store.headerHashList.GetSnapshot();
 
-                ValidatorsCount = store._validatorsCount.GetSnapshot();
-                BlockHashIndex = store._blockHashIndex.GetSnapshot();
-                HeaderHashIndex = store._headerHashIndex.GetSnapshot();
+                ValidatorsCount = store.validatorsCount.GetSnapshot();
+                BlockHashIndex = store.blockHashIndex.GetSnapshot();
+                HeaderHashIndex = store.headerHashIndex.GetSnapshot();
             }
 
             public override Neo.IO.Caching.DataCache<UInt256, BlockState> Blocks { get; }

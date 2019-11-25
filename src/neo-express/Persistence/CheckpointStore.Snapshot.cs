@@ -16,20 +16,20 @@ namespace NeoExpress.Persistence
         {
             public Snapshot(CheckpointStore store)
             {
-                Blocks = new DataCache<UInt256, BlockState>(store.db, RocksDbStore.BLOCK_FAMILY, store.blocksTracker, store.UpdateBlocks);
-                Transactions = new DataCache<UInt256, TransactionState>(store.db, RocksDbStore.TX_FAMILY, store.transactionsTracker, store.UpdateTransactions);
-                Accounts = new DataCache<UInt160, AccountState>(store.db, RocksDbStore.ACCOUNT_FAMILY, store.accountsTracker, store.UpdateAccounts);
-                UnspentCoins = new DataCache<UInt256, UnspentCoinState>(store.db, RocksDbStore.UNSPENT_COIN_FAMILY, store.unspentCoinsTracker, store.UpdateUnspentCoins);
-                SpentCoins = new DataCache<UInt256, SpentCoinState>(store.db, RocksDbStore.SPENT_COIN_FAMILY, store.spentCoinsTracker, store.UpdateSpentCoins);
-                Validators = new DataCache<ECPoint, ValidatorState>(store.db, RocksDbStore.VALIDATOR_FAMILY, store.validatorsTracker, store.UpdateValidators);
-                Assets = new DataCache<UInt256, AssetState>(store.db, RocksDbStore.ASSET_FAMILY, store.assetsTracker, store.UpdateAssets);
-                Contracts = new DataCache<UInt160, ContractState>(store.db, RocksDbStore.CONTRACT_FAMILY, store.contractsTracker, store.UpdateContracts);
-                Storages = new DataCache<StorageKey, StorageItem>(store.db, RocksDbStore.STORAGE_FAMILY, store.storagesTracker, store.UpdateStorages);
-                HeaderHashList = new DataCache<UInt32Wrapper, HeaderHashList>(store.db, RocksDbStore.HEADER_HASH_LIST_FAMILY, store.headerHashListTracker, store.UpdateHeaderHashList);
+                Blocks = store._blocks.GetSnapshot();
+                Transactions = store._transactions.GetSnapshot();
+                Accounts = store._accounts.GetSnapshot();
+                UnspentCoins = store._unspentCoins.GetSnapshot();
+                SpentCoins = store._spentCoins.GetSnapshot();
+                Validators = store._validators.GetSnapshot();
+                Assets = store._assets.GetSnapshot();
+                Contracts = store._contracts.GetSnapshot();
+                Storages = store._storages.GetSnapshot();
+                HeaderHashList = store._headerHashList.GetSnapshot();
 
-                ValidatorsCount = new MetaDataCache<ValidatorsCountState>(store.db, RocksDbStore.VALIDATORS_COUNT_KEY, store.validatorsCountTracker, store.UpdateValidatorsCount);
-                BlockHashIndex = new MetaDataCache<HashIndexState>(store.db, RocksDbStore.CURRENT_BLOCK_KEY, store.blockHashIndexTracker, store.UpdateBlockHashIndex);
-                HeaderHashIndex = new MetaDataCache<HashIndexState>(store.db, RocksDbStore.CURRENT_HEADER_KEY, store.headerHashIndexTracker, store.UpdateHeaderHashIndex);
+                ValidatorsCount = store._validatorsCount.GetSnapshot();
+                BlockHashIndex = store._blockHashIndex.GetSnapshot();
+                HeaderHashIndex = store._headerHashIndex.GetSnapshot();
             }
 
             public override Neo.IO.Caching.DataCache<UInt256, BlockState> Blocks { get; }

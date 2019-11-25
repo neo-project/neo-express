@@ -1,6 +1,5 @@
 ﻿using Neo.IO;
 using OneOf;
-using RocksDbSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -13,62 +12,27 @@ namespace NeoExpress.Persistence
             where TKey : IEquatable<TKey>, ISerializable, new()
             where TValue : class, ICloneable<TValue>, ISerializable, new()
         {
-            private readonly RocksDb db;
-            private readonly ColumnFamilyHandle columnFamily;
-            // dictionary value of None indicates the key has been deleted
-            private ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> values;
-            private readonly Action<TKey, OneOf<TValue, OneOf.Types.None>>? updater;
+            private readonly DataTracker<TKey, TValue> tracker;
+            private readonly ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>>? snapshot = null;
+            private readonly Action<TKey, OneOf<TValue, OneOf.Types.None>>? updater = null;
 
-            public DataCache(RocksDb db, string familyName, ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> values)
+            public DataCache(DataTracker<TKey, TValue> tracker)
             {
-                this.db = db;
-                columnFamily = db.GetColumnFamily(familyName);
-                this.values = values;
+                this.tracker = tracker;
             }
 
-            public DataCache(RocksDb db, string familyName, ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> values,
+            public DataCache(DataTracker<TKey, TValue> tracker,
+                ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> values,
                 Action<TKey, OneOf<TValue, OneOf.Types.None>> updater)
-                : this(db, familyName, values)
             {
+                this.tracker = tracker;
+                this.snapshot = values;
                 this.updater = updater;
             }
 
-            protected override IEnumerable<KeyValuePair<TKey, TValue>> FindInternal(byte[] keyPrefix)
+            protected override IEnumerable<KeyValuePair<TKey, TValue>> FindInternal(byte[] key_prefix)
             {
-                static bool PrefixEquals(byte[] prefix, byte[] value) => prefix.AsSpan().SequenceEqual(value.AsSpan().Slice(0, prefix.Length));
-
-                foreach (var kvp in values)
-                {
-                    if (PrefixEquals(keyPrefix, kvp.Key) && kvp.Value.IsT0)
-                    {
-                        yield return new KeyValuePair<TKey, TValue>(
-                            kvp.Key.AsSerializable<TKey>(),
-                            kvp.Value.AsT0);
-                    }
-                }
-
-                foreach (var kvp in db.Find<TValue>(keyPrefix, columnFamily))
-                {
-                    if (!values.ContainsKey(kvp.Key))
-                    {
-                        yield return new KeyValuePair<TKey, TValue>(
-                            kvp.Key.AsSerializable<TKey>(),
-                            kvp.Value);
-                    }
-                }
-            }
-
-#pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
-            protected override TValue? TryGetInternal(TKey key)
-#pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
-            {
-                var keyArray = key.ToArray();
-                if (values.TryGetValue(keyArray, out var value))
-                {
-                    return value.Match<TValue?>(v => v, _ => null);
-                }
-
-                return db.TryGet<TValue>(keyArray, columnFamily);
+                return tracker.Find(key_prefix, snapshot);
             }
 
             protected override TValue GetInternal(TKey key)
@@ -84,6 +48,21 @@ namespace NeoExpress.Persistence
                 }
             }
 
+#pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
+            protected override TValue? TryGetInternal(TKey key)
+#pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
+            {
+                return tracker.TryGet(key, snapshot);
+            }
+
+            public override void DeleteInternal(TKey key)
+            {
+                if (updater == null)
+                    throw new InvalidOperationException();
+
+                updater(key, NONE_INSTANCE);
+            }
+
             protected override void AddInternal(TKey key, TValue value)
             {
                 UpdateInternal(key, value);
@@ -94,17 +73,7 @@ namespace NeoExpress.Persistence
                 if (updater == null)
                     throw new InvalidOperationException();
 
-                values = values.SetItem(key.ToArray(), value);
                 updater(key, value);
-            }
-
-            public override void DeleteInternal(TKey key)
-            {
-                if (updater == null)
-                    throw new InvalidOperationException();
-
-                values = values.SetItem(key.ToArray(), noneInstance);
-                updater(key, noneInstance);
             }
         }
     }

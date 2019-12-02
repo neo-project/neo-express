@@ -441,25 +441,6 @@ namespace Neo2Express
             return populatedBlocks;
         }
 
-        private JObject OnListContracts(JArray @params)
-        {
-            var contracts = new JArray();
-            using var snapshot = Blockchain.Singleton.GetSnapshot();
-            foreach (var kvp in snapshot.Contracts.Find())
-            {
-                var json = new JObject();
-                foreach (var prop in kvp.Value.ToJson().Properties)
-                {
-                    if (prop.Key != "script")
-                    {
-                        json[prop.Key] = prop.Value;
-                    }
-                }
-                contracts.Add(json);
-            }
-            return contracts;
-        }
-
         JObject? IRpcPlugin.OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
@@ -495,8 +476,6 @@ namespace Neo2Express
                     return OnCheckpointCreate(@params);
                 case "express-get-populated-blocks":
                     return OnGetPopulatedBlocks(@params);
-                case "express-list-contracts":
-                    return OnListContracts(@params);
             }
 
             return null;

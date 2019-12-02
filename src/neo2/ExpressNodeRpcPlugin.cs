@@ -426,6 +426,23 @@ namespace Neo2Express
             }
         }
 
+        private JObject OnGetPopulatedBlocks(JArray @params)
+        {
+            var populatedBlocks = new JArray();
+            using (var snapshot = Blockchain.Singleton.GetSnapshot())
+            {
+                foreach (var kvp in snapshot.Blocks.Find())
+                {
+                    var block = kvp.Value.TrimmedBlock;
+                    if (block.Hashes.Length > 1)
+                    {
+                        populatedBlocks.Add(block.Index);
+                    }
+                }
+            }
+            return populatedBlocks;
+        }
+
         JObject? IRpcPlugin.OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
@@ -459,6 +476,8 @@ namespace Neo2Express
                     return OnGetContractStorage(@params);
                 case "express-create-checkpoint":
                     return OnCheckpointCreate(@params);
+                case "express-get-populated-blocks":
+                    return OnGetPopulatedBlocks(@params);
             }
 
             return null;

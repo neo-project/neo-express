@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace NeoExpress.Commands
 {
     [Command("show")]
-    [Subcommand(typeof(Account), typeof(Claimable), typeof(Coins), typeof(Unclaimed), typeof(Unspents))]
+    [Subcommand(typeof(Account), typeof(Claimable), typeof(Coins), typeof(Gas), typeof(Unspents))]
     class ShowCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)
@@ -44,7 +44,9 @@ namespace NeoExpress.Commands
             }
         }
 
-        [Command("account")]
+        [Command("account", Description="show account state", ExtendedHelpText = @"
+Remarks:
+  For more info, please see https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getaccountstate.html")]
         private class Account
         {
             [Argument(0)]
@@ -60,7 +62,7 @@ namespace NeoExpress.Commands
             }
         }
 
-        [Command("claimable")]
+        [Command("claimable", Description = "Show claimable GAS")]
         private class Claimable
         {
             [Argument(0)]
@@ -76,7 +78,7 @@ namespace NeoExpress.Commands
             }
         }
 
-        [Command("coins")]
+        [Command("coins", Description = "show all UTXO asset transactions for an account")]
         private class Coins
         {
             [Argument(0)]
@@ -92,8 +94,11 @@ namespace NeoExpress.Commands
             }
         }
 
-        [Command("unclaimed")]
-        private class Unclaimed
+        [Command("gas", "unclaimed", Description="Show unclaimed GAS (alias \"unclaimed\")", ExtendedHelpText = @"
+Remarks:
+  Unavailable GAS can be converted to available GAS by transfering NEO.
+  For more info, please see https://github.com/neo-project/neo-express/blob/master/docs/command-reference.md#neo-express-claim")]
+        private class Gas
         {
             [Argument(0)]
             [Required]
@@ -108,7 +113,7 @@ namespace NeoExpress.Commands
             }
         }
 
-        [Command("unspents")]
+        [Command("unspents", "unspent", Description = "Show unspent assets (alias \"unspent\")")]
         private class Unspents
         {
             [Argument(0)]

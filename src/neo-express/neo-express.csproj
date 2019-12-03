@@ -23,18 +23,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Models\**" />
-    <Compile Remove="Node\**" />
-    <Compile Remove="Persistence\**" />
-    <EmbeddedResource Remove="Models\**" />
-    <EmbeddedResource Remove="Node\**" />
-    <EmbeddedResource Remove="Persistence\**" />
-    <None Remove="Models\**" />
-    <None Remove="Node\**" />
-    <None Remove="Persistence\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Remove="BlockchainOperations.cs" />
   </ItemGroup>
 

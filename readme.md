@@ -66,9 +66,9 @@ Different versions of Neo-Express require different versions of .NET Core.
 
 |Neo-Express Version|.NET Core Version|
 |-------------------|-----------------|
-| v0.8  | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
-| v0.9  | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
 | v0.10 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
+| v0.9  | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
+| v0.8  | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
 
 > As of v0.10, Neo-Express has snapped to a Long Term Support (LTS) release of
 > .NET Core. .NET Core LTS releases are

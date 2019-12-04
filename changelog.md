@@ -19,12 +19,17 @@ may not exactly match a publicly released version.
 
 - Added `express-get-populated-blocks` RPC endpoint for use by [Neo Visual DevTracker](https://github.com/neo-project/neo-visual-tracker)
 - Modified `show` commands to provide user friendly output. Added --json argument to support automation scenarios.
-- Stopped writing  deprecated `debug-port` property to .neo-express.json file. Existing files with a
-  non-zero `debug-port` value will maintain the specified value, but Neo-Express ignores this property.
+- added `show gas` as an alias for `show unclaimed`
+- added `show unspent` as an alias for `show unspents`
 
 ### Changed
 
 - Updated to .NET Core 3.1
+
+### Removed
+
+- Stopped writing  deprecated `debug-port` property to .neo-express.json file. Existing files with a
+  non-zero `debug-port` value will maintain the specified value, but Neo-Express ignores this property.
 
 ## [0.9.95] - 2019-12-02
 

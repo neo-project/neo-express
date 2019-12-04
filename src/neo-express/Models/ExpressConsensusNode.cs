@@ -13,7 +13,7 @@ namespace NeoExpress.Models
         [JsonProperty("rpc-port")]
         public ushort RpcPort { get; set; }
 
-        [JsonProperty("debug-port")]
+        [JsonProperty("debug-port", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public ushort DebugPort { get; set; }
 
         [JsonProperty("wallet")]

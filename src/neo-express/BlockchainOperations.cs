@@ -52,7 +52,6 @@ namespace NeoExpress
                         TcpPort = GetPortNumber(i, 333),
                         WebSocketPort = GetPortNumber(i, 334),
                         RpcPort = GetPortNumber(i, 332),
-                        DebugPort = GetPortNumber(i, 335),
                         Wallet = wallets[i].wallet.ToExpressWallet()
                     });
                 }

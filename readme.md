@@ -60,24 +60,34 @@ Thanks again for checking out Neo-Express. I look forward to hearing from you.
 
 Neo-Express is distributed as a
 [.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
-Global Tools require at least .NET Core 2.2 installed. If you don't have .NET
-Core 2.2 or later installed, you can install it from [the .NET website](https://dotnet.microsoft.com/).
+Different versions of Neo-Express require different versions of .NET Core.
+
+|Neo-Express Version|.NET Core Version|
+|-------------------|-----------------|
+| v0.8 | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
+| v0.9 | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
 
 > Note, Neo-Express intends to snap to Long Term Support (LTS) releases of .NET Core.
-> However, the current LTS release of .NET Core (v2.1), can't run neo.dll on the
-> Windows Subsystem for Linux due to a [bug](https://github.com/dotnet/corefx/issues/26476).
-> Because of this bug, Neo-Express is built against .NET Core 2.2.
+> However, the current LTS release of .NET Core (v2.1) as of Neo-Express v0.9,
+> can't run neo.dll on the Windows Subsystem for Linux due to a
+> [bug](https://github.com/dotnet/corefx/issues/26476). Because of this bug,
+> Neo-Express is built against later versions .NET Core.
 >
 > As per the .NET Core [support policy](https://github.com/dotnet/core/blob/master/microsoft-support.md#current-releases)
-> and [road map](https://github.com/dotnet/core/blob/3604c1ca961b61cb32d293056c77b40230f98a67/roadmap.md#upcoming-ship-dates),
-> .NET Core v2.2 support is scheduled to end in December 2019. Neo-Express will move
-> to the next LTS version of .NET Core - scheduled to be v3.1 in November 2019 -
-> as soon as it is available.  
+> and [road map](https://github.com/dotnet/core/blob/master/roadmap.md#upcoming-ship-dates),
+> the next LTS version of .NET Core is scheduled to be v3.1 in December 2019.
+> Neo-Express will be moving to .NET Core 3.1 as soon as it is available.  
 
 To install Neo-Express, open a terminal window and enter the following command:
 
 ``` shell
 dotnet tool install Neo.Express -g
+```
+
+To upgrade Neo-Express, enter the following command in a terminal window:
+
+``` shell
+dotnet tool update Neo.Express -g
 ```
 
 > Installing on Ubuntu 18.04 requires libsnappy-dev and libc6-dev

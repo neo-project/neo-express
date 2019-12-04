@@ -13,7 +13,29 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [0.9] - Unreleased
+## [0.9.92] - Unreleased
+
+### Fixed
+
+- [don't attach tx input/outputs to invocations with zero fee](https://github.com/neo-project/neo-express/issues/12)
+- [getclaimable txid prefixed with `0x`](https://github.com/neo-project/neo-express/issues/13)
+- [neo-express can return stale data from getaccountstate](https://github.com/neo-project/neo-express/issues/21)
+- [need better error message when vm faults during smart contract invocation](https://github.com/neo-project/neo-express/issues/11)
+
+## [0.9.82] - 2019-11-13
+
+### Added
+
+- Added ``--json`` argument to ``contract storage`` command. This dumps the contract
+  storage to the console in JSON that is compatible with the
+  [Neo Smart Contract Debugger](https://github.com/neo-project/neo-debugger).
+
+### Changed
+
+- Fixed ExpressChain.GetAccount extension method to work as expected for
+  genesis account on an neo-express instance with more than one node.
+
+## [0.9] - 2019-11-11
 
 ### Added
 

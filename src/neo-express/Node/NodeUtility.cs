@@ -329,10 +329,11 @@ namespace NeoExpress.Node
         public static (InvocationTransaction?, ApplicationEngine) MakeDeploymentTransaction(Snapshot snapshot, ImmutableHashSet<UInt160> addresses, Newtonsoft.Json.Linq.JToken contract)
         {
             var tx = BuildInvocationTx(() => BuildContractCreateScript(contract));
+            tx.Version = 1;
             var engine = ApplicationEngine.Run(tx.Script, tx, null, true);
             if ((engine.State & VMState.FAULT) != 0)
             {
-                throw new Exception();
+                throw new Exception("NeoVM Faulted");
             }
 
             var gas = engine.GasConsumed - Fixed8.FromDecimal(10);
@@ -347,7 +348,7 @@ namespace NeoExpress.Node
             var engine = ApplicationEngine.Run(tx.Script, tx);
             if ((engine.State & VMState.FAULT) != 0)
             {
-                throw new Exception();
+                throw new Exception("NeoVM Faulted");
             }
 
             return addresses.IsEmpty ? (null, engine) : (AddTransactionFee(snapshot, addresses, tx), engine);
@@ -362,6 +363,11 @@ namespace NeoExpress.Node
                 fee += Fixed8.FromDecimal(tx.Size * 0.00001m);
             }
             fee += tx.SystemFee;
+
+            if (fee == Fixed8.Zero)
+            {
+                return tx;
+            }
 
             var coins = GetCoins(snapshot, addresses).Unspent(Blockchain.UtilityToken.Hash);
             var sum = coins.Sum(c => c.Output.Value);
@@ -385,7 +391,6 @@ namespace NeoExpress.Node
             {
                 return new InvocationTransaction
                 {
-                    Version = 1,
                     Script = builder.ToArray(),
                     Attributes = Array.Empty<TransactionAttribute>(),
                     Inputs = inputs?.ToArray() ?? Array.Empty<CoinReference>(),

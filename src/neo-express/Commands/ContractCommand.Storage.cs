@@ -1,5 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -20,8 +21,51 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
+            [Option]
+            private bool Json { get; } = false;
+
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
+                void WriteStorage(JToken results)
+                {
+                    foreach (var kvp in results)
+                    {
+                        var key = kvp.Value<string>("key").ToByteArray();
+                        var value = kvp.Value<string>("value").ToByteArray();
+
+                        console.Write("0x");
+                        console.WriteLine(key.ToHexString(true));
+                        console.Write("  key (as string)   : ");
+                        console.WriteLine(Encoding.UTF8.GetString(key));
+                        console.Write("  value (as bytes)  : 0x");
+                        console.WriteLine(value.ToHexString(true));
+                        console.Write("        (as string) : ");
+                        console.WriteLine(Encoding.UTF8.GetString(value));
+                        console.WriteLine($"  constant value    : {kvp.Value<bool>("constant")}");
+                    }
+                }
+
+                void WriteStorageAsJson(JToken results)
+                {
+                    console.WriteLine("\"storage\": [");
+
+                    foreach (var kvp in results)
+                    {
+                        var key = kvp.Value<string>("key").ToByteArray();
+                        var value = kvp.Value<string>("value").ToByteArray();
+
+                        console.WriteLine("  {");
+                        if (kvp.Value<bool>("constant"))
+                        {
+                            console.WriteLine($"    \"constant\": true,");
+                        }
+                        console.WriteLine($"    \"key\": \"0x{key.ToHexString(true)}\",");
+                        console.WriteLine($"    \"value\": \"0x{value.ToHexString(true)}\"");
+                        console.WriteLine("  },");
+                    }
+                    console.WriteLine("],");
+                }
+
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
@@ -36,21 +80,13 @@ namespace NeoExpress.Commands
 
                     if (result != null && result.Any())
                     {
-                        foreach (var kvp in result)
+                        if (Json)
                         {
-                            var key = kvp.Value<string>("key").ToByteArray();
-                            var value = kvp.Value<string>("value").ToByteArray();
-                            var constant = kvp.Value<bool>("constant");
-
-                            console.Write("0x");
-                            console.WriteLine(key.ToHexString());
-                            console.Write("  key (as string)   : ");
-                            console.WriteLine(Encoding.UTF8.GetString(key));
-                            console.Write("  value (as bytes)  : 0x");
-                            console.WriteLine(value.ToHexString());
-                            console.Write("        (as string) : ");
-                            console.WriteLine(Encoding.UTF8.GetString(value));
-                            console.WriteLine($"  constant value    : {constant}");
+                            WriteStorageAsJson(result);
+                        }
+                        else
+                        {
+                            WriteStorage(result);
                         }
                     }
                     else

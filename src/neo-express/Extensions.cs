@@ -69,12 +69,23 @@ namespace NeoExpress
             }
         }
 
-        public static string ToHexString(this byte[] value)
+        public static string ToHexString(this byte[] value, bool reverse = false)
         {
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < value.Length; i++)
+
+            if (reverse)
             {
-                sb.AppendFormat("{0:x2}", value[i]);
+                for (int i = value.Length - 1; i >= 0; i--)
+                {
+                    sb.AppendFormat("{0:x2}", value[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < value.Length; i++)
+                {
+                    sb.AppendFormat("{0:x2}", value[i]);
+                }
             }
             return sb.ToString();
         }
@@ -192,7 +203,7 @@ namespace NeoExpress
             {
                 return chain.ConsensusNodes
                     .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
-                    .SingleOrDefault();
+                    .FirstOrDefault();
             }
 
             return null;

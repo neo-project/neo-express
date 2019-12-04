@@ -13,7 +13,20 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [0.9.92] - Unreleased
+## [0.10] - Unreleased
+
+### Added
+
+- Added `express-get-populated-blocks` RPC endpoint for use by [Neo Visual DevTracker](https://github.com/neo-project/neo-visual-tracker)
+- Modified `show` commands to provide user friendly output. Added --json argument to support automation scenarios.
+- Stopped writing  deprecated `debug-port` property to .neo-express.json file. Existing files with a
+  non-zero `debug-port` value will maintain the specified value, but Neo-Express ignores this property.
+
+### Changed
+
+- Updated to .NET Core 3.1
+
+## [0.9.95] - 2019-12-02
 
 ### Fixed
 

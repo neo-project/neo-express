@@ -5,6 +5,33 @@ namespace NeoExpress.Models
 {
     public class AbiContract
     {
+        public class ContractMetadata
+        {
+            [JsonProperty("title")]
+            public string Title { get; set; } = string.Empty;
+
+            [JsonProperty("description")]
+            public string Description { get; set; } = string.Empty;
+
+            [JsonProperty("version")]
+            public string Version { get; set; } = string.Empty;
+
+            [JsonProperty("author")]
+            public string Author { get; set; } = string.Empty;
+
+            [JsonProperty("email")]
+            public string Email { get; set; } = string.Empty;
+
+            [JsonProperty("has-storage")]
+            public bool HasStorage { get; set; }
+
+            [JsonProperty("has-dynamic-invoke")]
+            public bool HasDynamicInvoke { get; set; }
+
+            [JsonProperty("is-payable")]
+            public bool IsPayable { get; set; }
+        }
+
         public class Parameter
         {
             [JsonProperty("name")]
@@ -28,6 +55,9 @@ namespace NeoExpress.Models
 
         [JsonProperty("hash")]
         public string Hash { get; set; } = string.Empty;
+
+        [JsonProperty("metadata")]
+        public ContractMetadata? Metadata { get; set; }
 
         [JsonProperty("entrypoint")]
         public string Entrypoint { get; set; } = string.Empty;

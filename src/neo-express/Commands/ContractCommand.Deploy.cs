@@ -32,6 +32,10 @@ namespace NeoExpress.Commands
             [Option]
             private string Name { get; } = string.Empty;
 
+            [Option]
+            private bool Overwrite { get; }
+
+
             private static async Task<(bool deployed, JToken? result)> GetContractState(Uri uri, ExpressContract contract)
             {
                 try
@@ -65,22 +69,16 @@ namespace NeoExpress.Commands
                     throw new Exception($"Account {Account} not found.");
                 }
 
-                if (Prompt.GetYesNo("Does this contract use storage?", false))
+                if (!contract.Properties.ContainsKey("has-storage"))
                 {
-                    contract.Properties["has-storage"] = "true";
-                }
-                else
-                {
-                    contract.Properties.Remove("has-storage");
+                    var hasStorage = Prompt.GetYesNo("Does this contract use storage?", false);
+                    contract.Properties.Add("has-storage", hasStorage.ToString());
                 }
 
-                if (Prompt.GetYesNo("Does this contract use dynamic invoke?", false))
+                if (!contract.Properties.ContainsKey("has-dynamic-invoke"))
                 {
-                    contract.Properties["has-dynamic-invoke"] = "true";
-                }
-                else
-                {
-                    contract.Properties.Remove("has-dynamic-invoke");
+                    var hasStorage = Prompt.GetYesNo("Does this contract use dynamic invoke?", false);
+                    contract.Properties.Add("has-dynamic-invoke", hasStorage.ToString());
                 }
 
                 var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
@@ -144,18 +142,24 @@ namespace NeoExpress.Commands
                         }
                         else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
-
-                            if (Prompt.GetYesNo("Overwrite?", false))
+                            if (Overwrite)
                             {
+                                console.WriteWarning($"Overriting contract named {c.Name} that already exists with a different hash value.");
                                 chain.Contracts.RemoveAt(i);
                             }
                             else
                             {
-                                console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
-                                return 0;
+                                console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
+                                if (Prompt.GetYesNo("Overwrite?", false))
+                                {
+                                    chain.Contracts.RemoveAt(i);
+                                }
+                                else
+                                {
+                                    console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
+                                    return 0;
+                                }
                             }
-
                         }
                     }
 

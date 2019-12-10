@@ -19,7 +19,7 @@ namespace NeoExpress.Persistence
             {
                 this.db = db;
                 this.key = new byte[] { key };
-                this.columnFamily = columnFamily; 
+                this.columnFamily = columnFamily;
             }
 
             public Neo.IO.Caching.MetaDataCache<T> GetCache()
@@ -32,7 +32,7 @@ namespace NeoExpress.Persistence
             {
                 snapshotValue ??= updatedValue;
                 return snapshotValue.Value.Match(
-                    v => v, 
+                    v => v,
                     _ => db.TryGet<T>(key, columnFamily));
             }
 

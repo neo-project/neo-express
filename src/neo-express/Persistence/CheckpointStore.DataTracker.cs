@@ -35,9 +35,9 @@ namespace NeoExpress.Persistence
 
             public IEnumerable<KeyValuePair<TKey, TValue>> Find(byte[] keyPrefix, ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>>? snapshotValues)
             {
-                static bool PrefixEquals(byte[] prefix, byte[] value) 
-                    => prefix.Length == 0 
-                        ? true 
+                static bool PrefixEquals(byte[] prefix, byte[] value)
+                    => prefix.Length == 0
+                        ? true
                         : prefix.AsSpan().SequenceEqual(value.AsSpan().Slice(0, prefix.Length));
 
                 snapshotValues ??= updatedValues;
@@ -75,7 +75,7 @@ namespace NeoExpress.Persistence
                 return db.TryGet<TValue>(keyArray, columnFamily);
             }
 
-            private void Update(TKey key, OneOf<TValue, OneOf.Types.None> value) 
+            private void Update(TKey key, OneOf<TValue, OneOf.Types.None> value)
                 => updatedValues = updatedValues.SetItem(key.ToArray(), value);
         }
     }

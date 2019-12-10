@@ -62,31 +62,31 @@ namespace NeoExpress.Persistence
             return new Snapshot(this);
         }
 
-        public override Neo.IO.Caching.DataCache<UInt256, BlockState> GetBlocks() 
+        public override Neo.IO.Caching.DataCache<UInt256, BlockState> GetBlocks()
             => blocks.GetCache();
-        public override Neo.IO.Caching.DataCache<UInt256, TransactionState> GetTransactions() 
+        public override Neo.IO.Caching.DataCache<UInt256, TransactionState> GetTransactions()
             => transactions.GetCache();
-        public override Neo.IO.Caching.DataCache<UInt160, AccountState> GetAccounts() 
+        public override Neo.IO.Caching.DataCache<UInt160, AccountState> GetAccounts()
             => accounts.GetCache();
-        public override Neo.IO.Caching.DataCache<UInt256, UnspentCoinState> GetUnspentCoins() 
+        public override Neo.IO.Caching.DataCache<UInt256, UnspentCoinState> GetUnspentCoins()
             => _unspentCoins.GetCache();
-        public override Neo.IO.Caching.DataCache<UInt256, SpentCoinState> GetSpentCoins() 
+        public override Neo.IO.Caching.DataCache<UInt256, SpentCoinState> GetSpentCoins()
             => spentCoins.GetCache();
         public override Neo.IO.Caching.DataCache<ECPoint, ValidatorState> GetValidators()
             => validators.GetCache();
-        public override Neo.IO.Caching.DataCache<UInt256, AssetState> GetAssets() 
+        public override Neo.IO.Caching.DataCache<UInt256, AssetState> GetAssets()
             => assets.GetCache();
         public override Neo.IO.Caching.DataCache<UInt160, ContractState> GetContracts()
             => contracts.GetCache();
-        public override Neo.IO.Caching.DataCache<StorageKey, StorageItem> GetStorages() 
+        public override Neo.IO.Caching.DataCache<StorageKey, StorageItem> GetStorages()
             => storages.GetCache();
-        public override Neo.IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() 
+        public override Neo.IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList()
             => headerHashList.GetCache();
-        public override Neo.IO.Caching.MetaDataCache<ValidatorsCountState> GetValidatorsCount() 
+        public override Neo.IO.Caching.MetaDataCache<ValidatorsCountState> GetValidatorsCount()
             => validatorsCount.GetCache();
-        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() 
+        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex()
             => blockHashIndex.GetCache();
-        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() 
+        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex()
             => headerHashIndex.GetCache();
 
         public override byte[] Get(byte prefix, byte[] key)

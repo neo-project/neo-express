@@ -19,7 +19,7 @@ namespace NeoExpress.Persistence
                 this.tracker = tracker;
             }
 
-            public MetaDataCache(MetadataTracker<T> tracker, OneOf<T, OneOf.Types.None> snapshot, Action<T> updater, Func<T>? factory = null) 
+            public MetaDataCache(MetadataTracker<T> tracker, OneOf<T, OneOf.Types.None> snapshot, Action<T> updater, Func<T>? factory = null)
                 : base(factory)
             {
                 this.tracker = tracker;

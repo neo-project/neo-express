@@ -145,7 +145,7 @@ namespace NeoExpress.Commands
                         else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
                             console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
-                            
+
                             if (Prompt.GetYesNo("Overwrite?", false))
                             {
                                 chain.Contracts.RemoveAt(i);
@@ -155,7 +155,7 @@ namespace NeoExpress.Commands
                                 console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
                                 return 0;
                             }
-                            
+
                         }
                     }
 

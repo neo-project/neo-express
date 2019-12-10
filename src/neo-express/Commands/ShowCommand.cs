@@ -55,7 +55,7 @@ namespace NeoExpress.Commands
             }
         }
 
-        [Command("account", Description="show account state", ExtendedHelpText = @"
+        [Command("account", Description = "show account state", ExtendedHelpText = @"
 Remarks:
   For more info, please see https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getaccountstate.html")]
         private class Account
@@ -131,7 +131,7 @@ Remarks:
             }
         }
 
-        [Command("gas", "unclaimed", Description="Show unclaimed GAS (alias \"unclaimed\")", ExtendedHelpText = @"
+        [Command("gas", "unclaimed", Description = "Show unclaimed GAS (alias \"unclaimed\")", ExtendedHelpText = @"
 Remarks:
   Unavailable GAS can be converted to available GAS by transfering NEO.
   For more info, please see https://github.com/neo-project/neo-express/blob/master/docs/command-reference.md#neo-express-claim")]

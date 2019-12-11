@@ -313,6 +313,22 @@ namespace NeoExpress
                         }).ToList()
                     };
 
+                    static Dictionary<string, string> ToExpressContractProperties(AbiContract.ContractMetadata? metadata)
+                    {
+                        return metadata == null
+                            ? new Dictionary<string, string>()
+                            : new Dictionary<string, string>()
+                            {
+                                { "title", metadata.Title },
+                                { "description", metadata.Description },
+                                { "version", metadata.Version },
+                                { "email", metadata.Email },
+                                { "author", metadata.Author },
+                                { "has-storage", metadata.HasStorage.ToString() },
+                                { "has-dynamic-invoke", metadata.HasDynamicInvoke.ToString() },
+                            };
+                    }
+
                     string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
                     if (!File.Exists(abiFile))
                     {
@@ -336,7 +352,7 @@ namespace NeoExpress
                         ContractData = File.ReadAllBytes(avmFile).ToHexString(),
                         Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
                         Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
-                        Properties = new Dictionary<string, string>()
+                        Properties = ToExpressContractProperties(abiContract.Metadata),
                     };
                 },
                 error =>

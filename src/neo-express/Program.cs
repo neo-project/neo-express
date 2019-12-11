@@ -67,11 +67,12 @@ namespace NeoExpress
             }
 
             var serializer = new JsonSerializer();
-            using (var stream = File.OpenRead(filename))
-            using (var reader = new JsonTextReader(new StreamReader(stream)))
-            {
-                return (serializer.Deserialize<ExpressChain>(reader), filename);
-            }
+            using var stream = File.OpenRead(filename);
+            using var reader = new JsonTextReader(new StreamReader(stream));
+            var chain = serializer.Deserialize<ExpressChain>(reader)
+                ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
+
+            return (chain, filename);
         }
     }
 }

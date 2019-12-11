@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using OneOf;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -267,58 +268,72 @@ namespace NeoExpress
             return ProtocolSettings.Initialize(config);
         }
 
-        public static ExpressContract GetContract(this ExpressChain chain, string nameOrPath)
+        private static bool TryGetContractFile(string path, [NotNullWhen(true)] out string? contractPath, [MaybeNullWhen(true)] out string errorMessage)
         {
-            OneOf<string, StringError> GetContractFile(string path)
+            if (Directory.Exists(path))
             {
-                if (Directory.Exists(path))
+                var avmFiles = Directory.EnumerateFiles(path, "*.avm");
+                var avmFileCount = avmFiles.Count();
+                if (avmFileCount == 1)
                 {
-                    var avmFiles = Directory.EnumerateFiles(path, "*.avm");
-                    var avmFileCount = avmFiles.Count();
-
-                    if (avmFileCount == 0)
-                    {
-                        return new StringError($"There are no .avm files in {path}");
-                    }
-
-                    if (avmFileCount > 1)
-                    {
-                        return new StringError($"There are more than one .avm files in {path}. Please specify file name directly");
-                    }
-
-                    return avmFiles.Single();
+                    contractPath = avmFiles.Single();
+                    errorMessage = null!;
+                    return true;
                 }
 
-                if (!File.Exists(path) || Path.GetExtension(path) != ".avm")
-                {
-                    return new StringError($"{path} is not an .avm file.");
-                }
-
-                return path;
+                contractPath = null;
+                errorMessage = avmFileCount == 0
+                    ? $"There are no .avm files in {path}"
+                    : $"There is more than one .avm file in {path}. Please specify file name directly";
+                return false;
             }
 
-            return GetContractFile(nameOrPath).Match(
-                avmFile =>
+            if (File.Exists(path) && Path.GetExtension(path) == ".avm")
+            {
+                contractPath = path;
+                errorMessage = null!;
+                return true;
+            }
+
+            contractPath = null;
+            errorMessage = $"{path} is not an .avm file.";
+            return false;
+        }
+
+        public static ExpressContract GetContract(this ExpressChain chain, string nameOrPath)
+        {
+            static AbiContract LoadAbiContract(string avmFile)
+            {
+                string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
+                if (!File.Exists(abiFile))
                 {
-                    System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+                    throw new ApplicationException($"there is no .abi.json file for {avmFile}.");
+                }
 
-                    ExpressContract.Function ToExpressContractFunction(AbiContract.Function function) => new ExpressContract.Function
-                    {
-                        Name = function.Name,
-                        ReturnType = function.ReturnType,
-                        Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
-                        {
-                            Name = p.Name,
-                            Type = p.Type
-                        }).ToList()
-                    };
+                var serializer = new JsonSerializer();
+                using var stream = File.OpenRead(abiFile);
+                using var reader = new JsonTextReader(new StreamReader(stream));
+                return serializer.Deserialize<AbiContract>(reader)
+                    ?? throw new ApplicationException($"Cannot load contract abi information from {abiFile}");
+            }
 
-                    static Dictionary<string, string> ToExpressContractProperties(AbiContract.ContractMetadata? metadata)
+            static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function)
+                => new ExpressContract.Function
+                {
+                    Name = function.Name,
+                    ReturnType = function.ReturnType,
+                    Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
                     {
-                        return metadata == null
-                            ? new Dictionary<string, string>()
-                            : new Dictionary<string, string>()
-                            {
+                        Name = p.Name,
+                        Type = p.Type
+                    }).ToList()
+                };
+
+            static Dictionary<string, string> ToExpressContractProperties(AbiContract.ContractMetadata? metadata)
+                => metadata == null
+                    ? new Dictionary<string, string>()
+                    : new Dictionary<string, string>()
+                    {
                                 { "title", metadata.Title },
                                 { "description", metadata.Description },
                                 { "version", metadata.Version },
@@ -326,49 +341,38 @@ namespace NeoExpress
                                 { "author", metadata.Author },
                                 { "has-storage", metadata.HasStorage.ToString() },
                                 { "has-dynamic-invoke", metadata.HasDynamicInvoke.ToString() },
-                            };
-                    }
-
-                    string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
-                    if (!File.Exists(abiFile))
-                    {
-                        throw new Exception($"there is no .abi.json file for {avmFile}.");
-                    }
-
-                    AbiContract abiContract;
-                    var serializer = new JsonSerializer();
-                    using (var stream = File.OpenRead(abiFile))
-                    using (var reader = new JsonTextReader(new StreamReader(stream)))
-                    {
-                        abiContract = serializer.Deserialize<AbiContract>(reader);
-                    }
-
-                    var name = Path.GetFileNameWithoutExtension(avmFile);
-                    return new ExpressContract()
-                    {
-                        Name = name,
-                        Hash = abiContract.Hash,
-                        EntryPoint = abiContract.Entrypoint,
-                        ContractData = File.ReadAllBytes(avmFile).ToHexString(),
-                        Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
-                        Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
-                        Properties = ToExpressContractProperties(abiContract.Metadata),
+                                { "is-payable", metadata.IsPayable.ToString() }
                     };
-                },
-                error =>
-                {
-                    // if the file can't be found, see if the path is 
-                    // actually the name of an existing contract
-                    foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
-                    {
-                        if (contract.NameEquals(nameOrPath))
-                        {
-                            return contract;
-                        }
-                    }
 
-                    throw new Exception(error.Value);
-                });
+            if (TryGetContractFile(nameOrPath, out var avmFile, out var errorMessage))
+            {
+                System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+
+                var abiContract = LoadAbiContract(avmFile);
+                var name = Path.GetFileNameWithoutExtension(avmFile);
+                return new ExpressContract()
+                {
+                    Name = name,
+                    Hash = abiContract.Hash,
+                    EntryPoint = abiContract.Entrypoint,
+                    ContractData = File.ReadAllBytes(avmFile).ToHexString(),
+                    Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
+                    Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
+                    Properties = ToExpressContractProperties(abiContract.Metadata),
+                };
+            }
+
+            // if the file can't be found, see if the path is 
+            // actually the name of an existing contract
+            foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
+            {
+                if (contract.NameEquals(nameOrPath))
+                {
+                    return contract;
+                }
+            }
+
+            throw new ApplicationException(errorMessage);
         }
     }
 }

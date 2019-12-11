@@ -409,25 +409,28 @@ namespace NeoExpress.Node
 
         private static ScriptBuilder BuildContractCreateScript(JToken json)
         {
-            ContractParameterType TypeParse(JToken jtoken) => Enum.Parse<ContractParameterType>(jtoken.Value<string>());
+            static ContractParameterType TypeParse(JToken jtoken) => Enum.Parse<ContractParameterType>(jtoken.Value<string>());
 
             var contractData = json.Value<string>("contract-data").HexToBytes();
 
             var entryPoint = json.Value<string>("entry-point");
             var entryFunction = json["functions"].Single(t => t.Value<string>("name") == entryPoint);
             var entryParameters = entryFunction["parameters"].Select(t => TypeParse(t.Value<string>("type")));
-            var entryReturnType = TypeParse(entryFunction["return-type"]);
+            var entryReturnType = TypeParse(entryFunction.Value<string>("return-type"));
+
+            var qqq = entryFunction.Value<string>("return-type");
 
             var props = json["properties"];
-            var title = props.Value<string>("title") ?? json.Value<string>("name");
-            var description = json.Value<string>("description") ?? "no description provided";
-            var version = json.Value<string>("version") ?? "0.1.0";
-            var author = json.Value<string>("author") ?? "no description provided";
-            var email = json.Value<string>("email") ?? "nobody@fake.email";
+            var title = props?.Value<string>("title") ?? json.Value<string>("name");
+            var description = props?.Value<string>("description") ?? "no description provided";
+            var version = props?.Value<string>("version") ?? "0.1.0";
+            var author = props?.Value<string>("author") ?? "no description provided";
+            var email = props?.Value<string>("email") ?? "nobody@fake.email";
 
             var contractPropertyState = ContractPropertyState.NoProperty;
-            if (props.Value<bool?>("has-storage") == true) contractPropertyState |= ContractPropertyState.HasStorage;
-            if (props.Value<bool?>("has-dynamic-invoke") == true) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
+            if (props?.Value<bool?>("has-storage") ?? false) contractPropertyState |= ContractPropertyState.HasStorage;
+            if (props?.Value<bool?>("has-dynamic-invoke") ?? false) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
+            if (props?.Value<bool?>("is-payable") ?? false) contractPropertyState |= ContractPropertyState.Payable;
 
             var builder = new ScriptBuilder();
             builder.EmitSysCall("Neo.Contract.Create",

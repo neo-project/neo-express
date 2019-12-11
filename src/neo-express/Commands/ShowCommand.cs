@@ -74,7 +74,8 @@ Remarks:
             {
                 void WriteResponse(JToken token)
                 {
-                    var response = token.ToObject<AccountResponse>();
+                    var response = token.ToObject<AccountResponse>() 
+                        ?? throw new ApplicationException($"Cannot convert response to {nameof(AccountResponse)}");
                     console.WriteLine($"Account information for {Name}:");
                     foreach (var balance in response.Balances)
                     {
@@ -103,7 +104,8 @@ Remarks:
             {
                 void WriteResponse(JToken token)
                 {
-                    var response = token.ToObject<ClaimableResponse>();
+                    var response = token.ToObject<ClaimableResponse>()
+                        ?? throw new ApplicationException($"Cannot convert response to {nameof(ClaimableResponse)}");
                     console.WriteLine($"Claimable GAS for {Name}: {response.Unclaimed}");
                     foreach (var tx in response.Transactions)
                     {
@@ -151,7 +153,8 @@ Remarks:
             {
                 void WriteResponse(JToken token)
                 {
-                    var response = token.ToObject<UnclaimedResponse>();
+                    var response = token.ToObject<UnclaimedResponse>()
+                        ?? throw new ApplicationException($"Cannot convert response to {nameof(UnclaimedResponse)}");
                     console.WriteLine($"Unclaimed GAS for {Name}: {response.Unclaimed}");
                     console.WriteLine($"    Available GAS: {response.Available}");
                     console.WriteLine($"  Unavailable GAS: {response.Unavailable}");
@@ -178,7 +181,8 @@ Remarks:
             {
                 void WriteResponse(JToken token)
                 {
-                    var response = token.ToObject<UnspentsResponse>();
+                    var response = token.ToObject<UnspentsResponse>()
+                        ?? throw new ApplicationException($"Cannot convert response to {nameof(UnspentsResponse)}");
                     console.WriteLine($"Unspent assets for {Name}");
                     foreach (var balance in response.Balance)
                     {

@@ -75,26 +75,23 @@ namespace NeoExpress
 
         public static Task<JToken?> ExpressDeployContract(Uri uri, ExpressContract contract, string address)
         {
-            JToken SerializeContract()
-            {
-                var serializer = new JsonSerializer();
-                using (var writer = new JTokenWriter())
-                {
-                    serializer.Serialize(writer, contract);
-                    return writer.Token;
-                }
-            }
-            return RpcCall(uri, "express-deploy-contract", new JArray(SerializeContract(), address));
+            var serializer = new JsonSerializer();
+            using var writer = new JTokenWriter();
+            serializer.Serialize(writer, contract);
+            if (writer.Token == null)
+                throw new ApplicationException($"Could not serialize {nameof(ExpressContract)} for deployment");
+
+            return RpcCall(uri, "express-deploy-contract", new JArray(writer.Token, address));
         }
 
         public static Task<JToken?> ExpressGetContractStorage(Uri uri, string scriptHash)
         {
-            return RpcCall(uri, "express-get-contract-storage", new JArray(scriptHash.ToString()));
+            return RpcCall(uri, "express-get-contract-storage", new JArray(scriptHash));
         }
 
         public static Task<JToken?> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<JObject> @params, string? address = null)
         {
-            return RpcCall(uri, "express-invoke-contract", new JArray(scriptHash, new JArray(@params), address));
+            return RpcCall(uri, "express-invoke-contract", new JArray(scriptHash, new JArray(@params), address == null ? JValue.CreateNull() : JValue.CreateString(address)));
         }
 
         public static Task<JToken?> ExpressShowCoins(Uri uri, string address)

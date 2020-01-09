@@ -13,7 +13,7 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [0.10] - Unreleased
+## [1.0] - Unreleased
 
 ### Added
 
@@ -28,6 +28,7 @@ may not exactly match a publicly released version.
 ### Changed
 
 - Updated to .NET Core 3.1
+- Bumped version number for official release of Neo Blockchain Toolkit 1.0
 
 ### Removed
 

@@ -21,11 +21,14 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
+            [Option]
+            private bool Overwrite { get; }
+
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var (chain, filename) = Program.LoadExpressChain(Input);
                     var contract = chain.GetContract(Contract);
                     if (contract == null)
                     {
@@ -36,6 +39,7 @@ namespace NeoExpress.Commands
                     var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
                     console.WriteResult(result);
 
+                    chain.SaveContract(contract, filename, console, Overwrite);
                     return 0;
                 }
                 catch (Exception ex)

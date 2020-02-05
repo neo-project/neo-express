@@ -133,39 +133,7 @@ namespace NeoExpress.Commands
                         contract = await DeployContract(chain, contract, uri, console);
                     }
 
-                    for (var i = chain.Contracts.Count - 1; i >= 0; i--)
-                    {
-                        var c = chain.Contracts[i];
-                        if (string.Equals(contract.Hash, c.Hash))
-                        {
-                            chain.Contracts.RemoveAt(i);
-                        }
-                        else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            if (Overwrite)
-                            {
-                                console.WriteWarning($"Overriting contract named {c.Name} that already exists with a different hash value.");
-                                chain.Contracts.RemoveAt(i);
-                            }
-                            else
-                            {
-                                console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
-                                if (Prompt.GetYesNo("Overwrite?", false))
-                                {
-                                    chain.Contracts.RemoveAt(i);
-                                }
-                                else
-                                {
-                                    console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
-                                    return 0;
-                                }
-                            }
-                        }
-                    }
-
-                    chain.Contracts.Add(contract);
-                    chain.Save(filename);
-                    console.WriteLine($"Contract {contract.Name} info saved to {Path.GetFileName(filename)}");
+                    chain.SaveContract(contract, filename, console, Overwrite);
                     return 0;
                 }
                 catch (Exception ex)

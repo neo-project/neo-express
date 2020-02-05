@@ -31,6 +31,9 @@ namespace NeoExpress.Commands
             [Option]
             private string Function { get; } = string.Empty;
 
+            [Option]
+            private bool Overwrite { get; }
+
             static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
             {
                 if (function.Parameters.Count != arguments.Count())
@@ -84,7 +87,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var (chain, filename) = Program.LoadExpressChain(Input);
                     var contract = chain.GetContract(Contract);
                     if (contract == null)
                     {
@@ -112,6 +115,7 @@ namespace NeoExpress.Commands
                         }
                     }
 
+                    chain.SaveContract(contract, filename, console, Overwrite);
                     return 0;
                 }
                 catch (Exception ex)

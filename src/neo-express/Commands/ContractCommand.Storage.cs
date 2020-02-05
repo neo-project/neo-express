@@ -24,6 +24,9 @@ namespace NeoExpress.Commands
             [Option]
             private bool Json { get; } = false;
 
+            [Option]
+            private bool Overwrite { get; }
+
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 void WriteStorage(JToken results)
@@ -68,7 +71,7 @@ namespace NeoExpress.Commands
 
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var (chain, filename) = Program.LoadExpressChain(Input);
                     var contract = chain.GetContract(Contract);
                     if (contract == null)
                     {
@@ -94,6 +97,7 @@ namespace NeoExpress.Commands
                         console.WriteLine($"no storages for {Contract} contract");
                     }
 
+                    chain.SaveContract(contract, filename, console, Overwrite);
                     return 0;
                 }
                 catch (Exception ex)

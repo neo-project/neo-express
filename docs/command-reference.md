@@ -134,17 +134,22 @@ instance files.
 ## neo-express show
 
 The `show` command will display information about an account in the blockchain.
-There are three subcommands representing the different account information that
+There are multiple subcommands representing the different account information that
 is available:
 
 - account, to see top level account information for a specific account
   (aka [getaccountstate](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/getaccountstate.html))
+- unspent, to see a list of all unspent native token transactions associated
+  with a specific account.
+- gas, to see the available and unavailable gas for a specific account.
 - coins, to see a list of all coins - including spent coins - associated with a
   specific account
-- gas, to see the available and unavailable gas for a specific account.
 
 All show subcommands take a wallet account friendly name as a required argument
 and supports the `--input` argument for non-default blockchain instance files.
+For automation scenarios, `show` commands also support a `--json` argument to return
+information in an easy-to-parse format for tools rather than the easy for humans
+to understand default text format
 
 ## neo-express claim
 

@@ -18,10 +18,6 @@ Neo-Express provides the following features:
 - Smart contract management
 - Blockchain checkpoint and rollback
 
-Please note, Neo-Express is in preview. There is more work to be done and there
-are assuredly bugs in the product. Please let us know of any issues you find via
-our [GitHub repo](https://github.com/neo-project/neo-express/issues).
-
 Docs are somewhat limited at this point. Please review the
 [Command Reference](docs\command-reference.md) to get an understanding of
 Neo-Express capabilities.
@@ -38,11 +34,6 @@ If there are things about Neo-Express you don't like, please file issues in our
 Twitter, Discord or email as well, but GitHub issues are how we track improvements
 we make to Neo-Express. So don't be shy - file an issue if there is anything
 you'd like to see changed in the product.
-
-Before you get started, I'd just like to point out again that Neo-Express is
-currently in preview. That means that you are more likely to find bugs or run
-across incomplete features than you would in other software. Furthermore, Neo-Express
-may not work in a way that you find intuitive.
 
 Most software is built by teams of people. However, Neo-Express so far has been
 a solo effort. I'm looking forward to having other folks contribute in the future,
@@ -66,11 +57,11 @@ Different versions of Neo-Express require different versions of .NET Core.
 
 |Neo-Express Version|.NET Core Version|
 |-------------------|-----------------|
-| v0.10 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
-| v0.9  | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
-| v0.8  | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
+| v1.0 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
+| v0.9 | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
+| v0.8 | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
 
-> As of v0.10, Neo-Express has snapped to a Long Term Support (LTS) release of
+> As of v1.0, Neo-Express has snapped to a Long Term Support (LTS) release of
 > .NET Core. .NET Core LTS releases are
 > [supported for three years](https://github.com/dotnet/core/blob/master/microsoft-support.md#long-term-support-lts-releases).
 > The next LTS release of .NET Core isn't projected be released until

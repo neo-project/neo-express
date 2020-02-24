@@ -31,14 +31,6 @@ namespace NeoExpress.Node
             return System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(nonce);
         }
 
-        static bool PreloadValid()
-        {
-            using var snapshot = Blockchain.Singleton.GetSnapshot();
-            var lastBlock = Blockchain.Singleton.GetBlock(snapshot.CurrentBlockHash);
-            var validators = snapshot.GetValidators();
-            return lastBlock.Index == 0 && validators.Length == 1;
-        }
-
         // Since ConensusContext's constructor is internal, it can't be used from neo-express.
         // CreatePreloadBlock replicates the following logic for creating an empty block with ConensusContext
 
@@ -131,8 +123,23 @@ namespace NeoExpress.Node
             return block;
         }
 
-        public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, uint preloadGas, CancellationToken cancellationToken)
         {
+            static bool PreloadValid()
+            {
+                using var snapshot = Blockchain.Singleton.GetSnapshot();
+                var lastBlock = Blockchain.Singleton.GetBlock(snapshot.CurrentBlockHash);
+                var validators = snapshot.GetValidators();
+                return lastBlock.Index == 0 && validators.Length == 1;
+            }
+
+            static uint CalculateGas(uint preloadGas)
+            {
+                var generationAmount = Blockchain.GenerationAmount[0];
+                var gas = preloadGas / generationAmount;
+                return preloadGas % generationAmount == 0 ? gas : gas + 1;
+            }
+
             var tcs = new TaskCompletionSource<bool>();
 
             Task.Run(() =>
@@ -149,10 +156,10 @@ namespace NeoExpress.Node
 
                         using (var snapshot = Blockchain.Singleton.GetSnapshot())
                         {
-                            if (PreloadValid())
+                            if (PreloadValid() && preloadGas > 0)
                             {
-                                var preloadCount = 125;
-                                Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload GAS");
+                                var preloadCount = CalculateGas(preloadGas);
+                                Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload {preloadGas} GAS");
                                 for (int i = 0; i < preloadCount; i++)
                                 {
                                     var block = CreatePreloadBlock(wallet);

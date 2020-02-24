@@ -149,12 +149,11 @@ namespace NeoExpress.Node
 
                         using (var snapshot = Blockchain.Singleton.GetSnapshot())
                         {
-                            var lastBlock = Blockchain.Singleton.GetBlock(snapshot.CurrentBlockHash);
-                            var validators = snapshot.GetValidators();
-                            if (lastBlock.Index == 0 && validators.Length == 1)
+                            if (PreloadValid())
                             {
-                                Plugin.Log("neo-express", LogLevel.Info, "Creating 1000 empty blocks to preload GAS");
-                                for (int i = 0; i < 125; i++)
+                                var preloadCount = 125;
+                                Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload GAS");
+                                for (int i = 0; i < preloadCount; i++)
                                 {
                                     var block = CreatePreloadBlock(wallet);
                                     var reason = system.Blockchain.Ask<RelayResultReason>(block).Result;

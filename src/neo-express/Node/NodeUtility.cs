@@ -31,53 +31,6 @@ namespace NeoExpress.Node
             return System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(nonce);
         }
 
-
-        // private static void foo()
-        // {
-        //     using var snapshot = Blockchain.Singleton.GetSnapshot();
-        //     var lastBlock = Blockchain.Singleton.GetBlock(Blockchain.Singleton.CurrentBlockHash);
-
-        //     var nonce = GetNonce();
-        //     MinerTransaction tx = new MinerTransaction
-        //     {
-        //         Nonce = (uint)(nonce % (uint.MaxValue + 1ul)),
-        //         Attributes = new TransactionAttribute[0],
-        //         Inputs = new CoinReference[0],
-        //         Outputs = new TransactionOutput[0],
-        //         Witnesses = new Witness[0]
-        //     };
-        //     List<Transaction> transactions = new List<Transaction>();
-        //     var transactionHashes = transactions.Select(p => p.Hash).ToArray();
-        //     var _transactions = transactions.ToDictionary(p => p.Hash);
-        //     var nextConsensus = Blockchain.GetConsensusAddress(snapshot.GetValidators(transactions).ToArray());
-        //     var timestamp = Math.Max(TimeProvider.Current.UtcNow.ToTimestamp(), lastBlock.Header.Timestamp + 1);
-
-        //     var block = new Block
-        //     {
-        //         Version = 0,
-        //         PrevHash = lastBlock.Hash,
-        //         MerkleRoot = MerkleTree.ComputeRoot(transactionHashes),
-        //         Timestamp = timestamp,
-        //         Index = lastBlock.Index + 1,
-        //         ConsensusData = tx.Nonce,
-        //         NextConsensus = nextConsensus,
-        //         Transactions = new Transaction[0]
-        //     };
-
-        //     var validators = snapshot.GetValidators();
-        //     var m = validators.Length - ((validators.Length - 1) / 3);
-        //     Contract contract = Contract.CreateMultiSigContract(m, validators);
-        //     ContractParametersContext sc = new ContractParametersContext(block);
-        //     for (int i = 0, j = 0; i < validators.Length && j < m; i++)
-        //     {
-        //         sc.AddSignature(contract, validators[i], CommitPayloads[i].GetDeserializedMessage<Commit>().Signature);
-        //         j++;
-        //     }
-        //     block.Witness = sc.GetWitnesses()[0];
-        //     block.Transactions = transactionHashes.Select(p => _transactions[p]).ToArray();
-
-        // }
-
         static bool PreloadValid()
         {
             using var snapshot = Blockchain.Singleton.GetSnapshot();
@@ -85,6 +38,16 @@ namespace NeoExpress.Node
             var validators = snapshot.GetValidators();
             return lastBlock.Index == 0 && validators.Length == 1;
         }
+
+        // Since ConensusContext's constructor is internal, it can't be used from neo-express.
+        // CreatePreloadBlock replicates the following logic for creating an empty block with ConensusContext
+
+        // var ctx = new Neo.Consensus.ConsensusContext(wallet, store);
+        // ctx.Reset(0);
+        // ctx.MakePrepareRequest();
+        // ctx.MakeCommit();
+        // ctx.Save();
+        // Block block = ctx.CreateBlock();
 
         static Block CreatePreloadBlock(Neo.Wallets.Wallet wallet)
         {
@@ -144,7 +107,7 @@ namespace NeoExpress.Node
                 PrevHash = prevHash,
                 BlockIndex = block.Index,
                 ValidatorIndex = (ushort)0,
-                ConsensusMessage = commit
+                Data = Neo.IO.Helper.ToArray(commit)
             };
 
             {
@@ -191,14 +154,8 @@ namespace NeoExpress.Node
                             if (lastBlock.Index == 0 && validators.Length == 1)
                             {
                                 Plugin.Log("neo-express", LogLevel.Info, "Creating 1000 empty blocks to preload GAS");
-                                var ctx = new Neo.Consensus.ConsensusContext(wallet, store);
                                 for (int i = 0; i < 125; i++)
                                 {
-                                    // ctx.Reset(0);
-                                    // ctx.MakePrepareRequest();
-                                    // ctx.MakeCommit();
-                                    // ctx.Save();
-                                    // Block block = ctx.CreateBlock();
                                     var block = CreatePreloadBlock(wallet);
                                     var reason = system.Blockchain.Ask<RelayResultReason>(block).Result;
                                 }

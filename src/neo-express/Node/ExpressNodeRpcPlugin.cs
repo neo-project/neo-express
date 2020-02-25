@@ -428,30 +428,14 @@ namespace NeoExpress.Node
 
         private JObject OnGetPopulatedBlocks(JArray @params)
         {
-            using var snapshot = Blockchain.Singleton.GetSnapshot();
-
-            var count = @params.Count >= 1 ? uint.Parse(@params[0].AsString()) : 20;
-            count = count > 100 ? 100 : count;
-
-            var start = @params.Count >= 2 ? uint.Parse(@params[1].AsString()) : snapshot.Height;
-            start = start > snapshot.Height ? snapshot.Height : start;
-
             var populatedBlocks = new JArray();
-            while (populatedBlocks.Count < count)
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            foreach (var kvp in snapshot.Blocks.Find())
             {
-                var block = snapshot.GetBlock(start);
-                if (block.Transactions.Length > 1)
+                var block = kvp.Value.TrimmedBlock;
+                if (block.Hashes.Length > 1)
                 {
                     populatedBlocks.Add(block.Index);
-                }
-
-                if (start == 0)
-                {
-                    break;
-                }
-                else
-                {
-                    start--;
                 }
             }
             return populatedBlocks;

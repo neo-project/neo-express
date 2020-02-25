@@ -32,8 +32,10 @@ namespace NeoExpress
         {
             using (var app = new CommandLineApplication<Program>())
             {
-                app.Conventions.UseDefaultConventions();
+                // TODO: remove explicitly setting UsePagerForHelpText once version of CommandLineUtils with
+                //       https://github.com/natemcmaster/CommandLineUtils/pull/347 ships
                 app.UsePagerForHelpText = false;
+                app.Conventions.UseDefaultConventions();
                 return app.Execute(args);
             }
         }

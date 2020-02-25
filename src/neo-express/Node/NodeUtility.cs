@@ -11,6 +11,7 @@ using Neo.Wallets;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -23,14 +24,6 @@ namespace NeoExpress.Node
 {
     internal static class NodeUtility
     {
-        private static ulong GetNonce()
-        {
-            Span<byte> nonce = stackalloc byte[sizeof(ulong)];
-            Random rand = new Random();
-            rand.NextBytes(nonce);
-            return System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(nonce);
-        }
-
         // Since ConensusContext's constructor is internal, it can't be used from neo-express.
         // CreatePreloadBlock replicates the following logic for creating an empty block with ConensusContext
 
@@ -41,7 +34,7 @@ namespace NeoExpress.Node
         // ctx.Save();
         // Block block = ctx.CreateBlock();
 
-        static Block CreatePreloadBlock(Neo.Wallets.Wallet wallet)
+        static Block CreatePreloadBlock(Neo.Wallets.Wallet wallet, ulong nonce)
         {
             using var snapshot = Blockchain.Singleton.GetSnapshot();
             var validators = snapshot.GetValidators();
@@ -60,7 +53,6 @@ namespace NeoExpress.Node
             var prevHash = snapshot.CurrentBlockHash;
             var prevBlock = snapshot.GetBlock(prevHash);
 
-            ulong nonce = GetNonce();
             var minerTx = new MinerTransaction
             {
                 Nonce = (uint)(nonce % (uint.MaxValue + 1ul)),
@@ -160,10 +152,23 @@ namespace NeoExpress.Node
                             {
                                 var preloadCount = CalculateGas(preloadGas);
                                 Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload {preloadGas} GAS");
-                                for (int i = 0; i < preloadCount; i++)
+                                Random random = new Random();
+                                Span<byte> nonceSpan = stackalloc byte[sizeof(ulong)];
+                                for (int i = 1; i <= preloadCount; i++)
                                 {
-                                    var block = CreatePreloadBlock(wallet);
+                                    if (i % 100 == 0)
+                                    {
+                                        Plugin.Log("neo-express", LogLevel.Info, $"Creating Block {i}");
+                                    }
+                                    random.NextBytes(nonceSpan);
+                                    var nonce = BinaryPrimitives.ReadUInt64LittleEndian(nonceSpan);
+                                    var block = CreatePreloadBlock(wallet, nonce);
                                     var reason = system.Blockchain.Ask<RelayResultReason>(block).Result;
+
+                                    if (reason != RelayResultReason.Succeed)
+                                    {
+                                        throw new Exception($"Preload block {i} failed {reason}");
+                                    }
                                 }
                             }
                         }

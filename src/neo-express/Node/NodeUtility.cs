@@ -24,6 +24,13 @@ namespace NeoExpress.Node
 {
     internal static class NodeUtility
     {
+        static ulong NextNonce(Random random)
+        {
+            Span<byte> nonceSpan = stackalloc byte[sizeof(ulong)];
+            random.NextBytes(nonceSpan);
+            return BinaryPrimitives.ReadUInt64LittleEndian(nonceSpan);
+        }
+
         // Since ConensusContext's constructor is internal, it can't be used from neo-express.
         // CreatePreloadBlock replicates the following logic for creating an empty block with ConensusContext
 
@@ -34,7 +41,7 @@ namespace NeoExpress.Node
         // ctx.Save();
         // Block block = ctx.CreateBlock();
 
-        static Block CreatePreloadBlock(Neo.Wallets.Wallet wallet, ulong nonce)
+        static Block CreatePreloadBlock(Neo.Wallets.Wallet wallet, Random random, Transaction? transaction = null)
         {
             using var snapshot = Blockchain.Singleton.GetSnapshot();
             var validators = snapshot.GetValidators();
@@ -52,6 +59,7 @@ namespace NeoExpress.Node
             var keyPair = wallet.GetAccount(validators[0]).GetKey();
             var prevHash = snapshot.CurrentBlockHash;
             var prevBlock = snapshot.GetBlock(prevHash);
+            var nonce = NextNonce(random);
 
             var minerTx = new MinerTransaction
             {
@@ -62,10 +70,10 @@ namespace NeoExpress.Node
                 Witnesses = Array.Empty<Witness>()
             };
 
-            var transactions = new Transaction[] { minerTx };
-            var txHashes = new UInt256[] { minerTx.Hash };
+            var blockTransactions = transaction == null ? new Transaction[] { minerTx } : new Transaction[] { minerTx, transaction };
+            var txHashes = blockTransactions.Select(tx => tx.Hash).ToArray();
             var merkleRoot = MerkleTree.ComputeRoot(txHashes);
-            var nextConsensus = Blockchain.GetConsensusAddress(snapshot.GetValidators(transactions).ToArray());
+            var nextConsensus = Blockchain.GetConsensusAddress(snapshot.GetValidators(blockTransactions).ToArray());
             var consensusData = nonce;
 
             var block = new Block()
@@ -110,9 +118,58 @@ namespace NeoExpress.Node
                     j++;
                 }
                 block.Witness = sc.GetWitnesses()[0];
-                block.Transactions = transactions;
+                block.Transactions = blockTransactions;
             }
             return block;
+        }
+
+        public static void ClaimPreloadGas(NeoSystem system, Neo.Wallets.Wallet wallet, Random random)
+        {
+            void SubmitTransaction(Func<Snapshot, WalletAccount, Transaction?> factory)
+            {
+                using var snapshot = Blockchain.Singleton.GetSnapshot();
+                var validators = snapshot.GetValidators();
+                if (validators.Length != 1)
+                {
+                    throw new InvalidOperationException("Preload only supported for single-node blockchains");
+                }
+
+                var account = wallet.GetAccounts().Single(a => a.Label == "MultiSigContract");
+
+                var tx = factory(snapshot, account);
+                if (tx == null)
+                {
+                    throw new Exception("Attempted to submit null preload transaction");
+                }
+                var context = new ContractParametersContext(tx);
+                wallet.Sign(context);
+                if (!context.Completed)
+                {
+                    throw new InvalidOperationException("could not complete signing of preload transaction");
+                }
+
+                var block = CreatePreloadBlock(wallet, random, tx);
+                var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
+
+                if (result != RelayResultReason.Succeed)
+                {
+                    throw new Exception($"Preload {tx.Type} transaction failed {result}");
+                }
+            }
+
+            SubmitTransaction((snapshot, account) => NodeUtility.MakeTransferTransaction(snapshot,
+                ImmutableHashSet.Create(account.ScriptHash), account.ScriptHash, Blockchain.GoverningToken.Hash, null));
+
+            // There needs to be least one block after the transfer transaction before submitting a GAS claim
+            var block = CreatePreloadBlock(wallet, random);
+            var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
+            if (result != RelayResultReason.Succeed)
+            {
+                throw new Exception($"Preload transfer suffix block failed {result}");
+            }
+
+            SubmitTransaction((snapshot, account) => NodeUtility.MakeClaimTransaction(snapshot, account.ScriptHash,
+                Blockchain.GoverningToken.Hash));
         }
 
         public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, uint preloadGas, CancellationToken cancellationToken)
@@ -146,31 +203,27 @@ namespace NeoExpress.Node
 
                         system.StartNode(node.TcpPort, node.WebSocketPort);
 
-                        using (var snapshot = Blockchain.Singleton.GetSnapshot())
+                        if (PreloadValid() && preloadGas > 0)
                         {
-                            if (PreloadValid() && preloadGas > 0)
+                            var preloadCount = CalculateGas(preloadGas);
+                            Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload {preloadGas} GAS");
+                            Random random = new Random();
+                            for (int i = 1; i <= preloadCount; i++)
                             {
-                                var preloadCount = CalculateGas(preloadGas);
-                                Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload {preloadGas} GAS");
-                                Random random = new Random();
-                                Span<byte> nonceSpan = stackalloc byte[sizeof(ulong)];
-                                for (int i = 1; i <= preloadCount; i++)
+                                if (i % 100 == 0)
                                 {
-                                    if (i % 100 == 0)
-                                    {
-                                        Plugin.Log("neo-express", LogLevel.Info, $"Creating Block {i}");
-                                    }
-                                    random.NextBytes(nonceSpan);
-                                    var nonce = BinaryPrimitives.ReadUInt64LittleEndian(nonceSpan);
-                                    var block = CreatePreloadBlock(wallet, nonce);
-                                    var reason = system.Blockchain.Ask<RelayResultReason>(block).Result;
+                                    Plugin.Log("neo-express", LogLevel.Info, $"Creating Block {i}");
+                                }
+                                var block = CreatePreloadBlock(wallet, random);
+                                var relayResult = system.Blockchain.Ask<RelayResultReason>(block).Result;
 
-                                    if (reason != RelayResultReason.Succeed)
-                                    {
-                                        throw new Exception($"Preload block {i} failed {reason}");
-                                    }
+                                if (relayResult != RelayResultReason.Succeed)
+                                {
+                                    throw new Exception($"Preload block {i} failed {relayResult}");
                                 }
                             }
+
+                            ClaimPreloadGas(system, wallet, random);
                         }
                         
                         system.StartConsensus(wallet);
@@ -457,7 +510,8 @@ namespace NeoExpress.Node
                             Value = snapshot.CalculateBonus(coinReferences),
                             ScriptHash = address
                         }
-                    }
+                    },
+                    Witnesses = Array.Empty<Witness>()
                 };
             }
 

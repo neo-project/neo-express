@@ -134,7 +134,7 @@ namespace NeoExpress.Node
                     throw new InvalidOperationException("Preload only supported for single-node blockchains");
                 }
 
-                var account = wallet.GetAccounts().Single(a => a.Label == "MultiSigContract");
+                var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
 
                 var tx = factory(snapshot, account);
                 if (tx == null)

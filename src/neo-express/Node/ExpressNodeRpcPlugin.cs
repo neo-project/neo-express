@@ -313,7 +313,7 @@ namespace NeoExpress.Node
                 return JObject.Parse(json);
             }
 
-            throw new Exception("Unknown transaction");
+            return JObject.Null;
         }
 
         public JObject OnGetUnspents(JArray @params)

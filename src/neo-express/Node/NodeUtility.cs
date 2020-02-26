@@ -1,13 +1,17 @@
-﻿using Neo;
+﻿using Akka.Actor;
+using Neo;
+using Neo.Cryptography;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -20,8 +24,171 @@ namespace NeoExpress.Node
 {
     internal static class NodeUtility
     {
-        public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        static ulong NextNonce(Random random)
         {
+            Span<byte> nonceSpan = stackalloc byte[sizeof(ulong)];
+            random.NextBytes(nonceSpan);
+            return BinaryPrimitives.ReadUInt64LittleEndian(nonceSpan);
+        }
+
+        // Since ConensusContext's constructor is internal, it can't be used from neo-express.
+        // CreatePreloadBlock replicates the following logic for creating an empty block with ConensusContext
+
+        // var ctx = new Neo.Consensus.ConsensusContext(wallet, store);
+        // ctx.Reset(0);
+        // ctx.MakePrepareRequest();
+        // ctx.MakeCommit();
+        // ctx.Save();
+        // Block block = ctx.CreateBlock();
+
+        static Block CreatePreloadBlock(Neo.Wallets.Wallet wallet, Random random, Transaction? transaction = null)
+        {
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            var validators = snapshot.GetValidators();
+            if (validators.Length != 1)
+            {
+                throw new InvalidOperationException("Preload only supported for single-node blockchains");
+            }
+
+            var amountNetFee = Block.CalculateNetFee(Enumerable.Empty<Transaction>());
+            if (amountNetFee != Fixed8.Zero)
+            {
+                throw new InvalidOperationException("amountNetFee must be zero");
+            }
+
+            var keyPair = wallet.GetAccount(validators[0]).GetKey();
+            var prevHash = snapshot.CurrentBlockHash;
+            var prevBlock = snapshot.GetBlock(prevHash);
+            var nonce = NextNonce(random);
+
+            var minerTx = new MinerTransaction
+            {
+                Nonce = (uint)(nonce % (uint.MaxValue + 1ul)),
+                Attributes = Array.Empty<TransactionAttribute>(),
+                Inputs = Array.Empty<CoinReference>(),
+                Outputs = Array.Empty<TransactionOutput>(),
+                Witnesses = Array.Empty<Witness>()
+            };
+
+            var blockTransactions = transaction == null ? new Transaction[] { minerTx } : new Transaction[] { minerTx, transaction };
+            var txHashes = blockTransactions.Select(tx => tx.Hash).ToArray();
+            var merkleRoot = MerkleTree.ComputeRoot(txHashes);
+            var nextConsensus = Blockchain.GetConsensusAddress(snapshot.GetValidators(blockTransactions).ToArray());
+            var consensusData = nonce;
+
+            var block = new Block()
+            {
+                Version = 0,
+                PrevHash = prevHash,
+                MerkleRoot = merkleRoot,
+                Timestamp = prevBlock.Timestamp + 1,
+                Index = prevBlock.Index + 1,
+                ConsensusData = nonce,
+                NextConsensus = nextConsensus,
+                Transactions = Array.Empty<Transaction>(),
+            };
+
+            var commit = new Neo.Consensus.Commit()
+            {
+                ViewNumber = 0,
+                Signature = block.Sign(keyPair)
+            };
+            var payload = new ConsensusPayload
+            {
+                Version = 0,
+                PrevHash = prevHash,
+                BlockIndex = block.Index,
+                ValidatorIndex = (ushort)0,
+                Data = Neo.IO.Helper.ToArray(commit)
+            };
+
+            {
+                var sc = new ContractParametersContext(payload);
+                wallet.Sign(sc);
+                payload.Witness = sc.GetWitnesses()[0];
+            }
+
+            {
+                var m = validators.Length - ((validators.Length - 1) / 3);
+                Contract contract = Contract.CreateMultiSigContract(m, validators);
+                ContractParametersContext sc = new ContractParametersContext(block);
+                for (int i = 0, j = 0; i < validators.Length && j < m; i++)
+                {
+                    sc.AddSignature(contract, validators[0], payload.GetDeserializedMessage<Neo.Consensus.Commit>().Signature);
+                    j++;
+                }
+                block.Witness = sc.GetWitnesses()[0];
+                block.Transactions = blockTransactions;
+            }
+            return block;
+        }
+
+        public static void ClaimPreloadGas(NeoSystem system, Neo.Wallets.Wallet wallet, Random random)
+        {
+            void SubmitTransaction(Func<Snapshot, WalletAccount, Transaction?> factory)
+            {
+                using var snapshot = Blockchain.Singleton.GetSnapshot();
+                var validators = snapshot.GetValidators();
+                if (validators.Length != 1)
+                {
+                    throw new InvalidOperationException("Preload only supported for single-node blockchains");
+                }
+
+                var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
+
+                var tx = factory(snapshot, account);
+                if (tx == null)
+                {
+                    throw new Exception("Attempted to submit null preload transaction");
+                }
+                var context = new ContractParametersContext(tx);
+                wallet.Sign(context);
+                if (!context.Completed)
+                {
+                    throw new InvalidOperationException("could not complete signing of preload transaction");
+                }
+
+                var block = CreatePreloadBlock(wallet, random, tx);
+                var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
+
+                if (result != RelayResultReason.Succeed)
+                {
+                    throw new Exception($"Preload {tx.Type} transaction failed {result}");
+                }
+            }
+
+            SubmitTransaction((snapshot, account) => NodeUtility.MakeTransferTransaction(snapshot,
+                ImmutableHashSet.Create(account.ScriptHash), account.ScriptHash, Blockchain.GoverningToken.Hash, null));
+
+            // There needs to be least one block after the transfer transaction before submitting a GAS claim
+            var block = CreatePreloadBlock(wallet, random);
+            var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
+            if (result != RelayResultReason.Succeed)
+            {
+                throw new Exception($"Preload transfer suffix block failed {result}");
+            }
+
+            SubmitTransaction((snapshot, account) => NodeUtility.MakeClaimTransaction(snapshot, account.ScriptHash,
+                Blockchain.GoverningToken.Hash));
+        }
+
+        public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, uint preloadGas, CancellationToken cancellationToken)
+        {
+            static bool PreloadValid()
+            {
+                using var snapshot = Blockchain.Singleton.GetSnapshot();
+                var lastBlock = Blockchain.Singleton.GetBlock(snapshot.CurrentBlockHash);
+                var validators = snapshot.GetValidators();
+                return lastBlock.Index == 0 && validators.Length == 1;
+            }
+
+            static uint CalculateGas(uint preloadGas)
+            {
+                var generationAmount = Blockchain.GenerationAmount[0];
+                var gas = preloadGas / generationAmount;
+                return preloadGas % generationAmount == 0 ? gas : gas + 1;
+            }
+
             var tcs = new TaskCompletionSource<bool>();
 
             Task.Run(() =>
@@ -35,6 +202,30 @@ namespace NeoExpress.Node
                         var rpcPlugin = new ExpressNodeRpcPlugin(store);
 
                         system.StartNode(node.TcpPort, node.WebSocketPort);
+
+                        if (PreloadValid() && preloadGas > 0)
+                        {
+                            var preloadCount = CalculateGas(preloadGas);
+                            Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload {preloadGas} GAS");
+                            Random random = new Random();
+                            for (int i = 1; i <= preloadCount; i++)
+                            {
+                                if (i % 100 == 0)
+                                {
+                                    Plugin.Log("neo-express", LogLevel.Info, $"Creating Block {i}");
+                                }
+                                var block = CreatePreloadBlock(wallet, random);
+                                var relayResult = system.Blockchain.Ask<RelayResultReason>(block).Result;
+
+                                if (relayResult != RelayResultReason.Succeed)
+                                {
+                                    throw new Exception($"Preload block {i} failed {relayResult}");
+                                }
+                            }
+
+                            ClaimPreloadGas(system, wallet, random);
+                        }
+                        
                         system.StartConsensus(wallet);
                         system.StartRpc(IPAddress.Loopback, node.RpcPort, wallet);
 
@@ -319,7 +510,8 @@ namespace NeoExpress.Node
                             Value = snapshot.CalculateBonus(coinReferences),
                             ScriptHash = address
                         }
-                    }
+                    },
+                    Witnesses = Array.Empty<Witness>()
                 };
             }
 

@@ -13,7 +13,18 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [1.0] - Unreleased
+## [1.1] - Unreleased
+
+- Added `--preload-gas` option to the `run` command that generates and claims a
+  specified amount of GAS in the genesis account.
+
+## [1.0.8] - 2019-02-25
+
+### Fixed
+
+- [don't block waiting for the user to hit 'q' when neo-express run/checkpoint run fails](https://github.com/neo-project/neo-express/issues/39)
+
+## [1.0] - 2019-02-06
 
 ### Added
 

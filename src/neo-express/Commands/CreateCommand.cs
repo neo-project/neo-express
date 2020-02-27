@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
         private uint PreloadGas { get; }
 
 
-        private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace NeoExpress.Commands
 
                     using var cts = new CancellationTokenSource();
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
-                    await BlockchainOperations.PreloadGasAsync(folder, chain, 0, PreloadGas, console.Out, cts.Token);
+                    BlockchainOperations.PreloadGas(folder, chain, 0, PreloadGas, console.Out, cts.Token);
                 }
                 
                 return 0;

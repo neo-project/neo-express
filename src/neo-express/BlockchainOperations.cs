@@ -299,7 +299,6 @@ namespace NeoExpress
 
         public static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
         {
-            Debug.Assert(preloadGasAmount > 0);
             if (!chain.InitializeProtocolSettings())
             {
                 throw new Exception("could not initialize protocol settings");

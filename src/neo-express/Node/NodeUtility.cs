@@ -130,10 +130,10 @@ namespace NeoExpress.Node
             {
                 using var snapshot = Blockchain.Singleton.GetSnapshot();
                 var validators = snapshot.GetValidators();
-                // if (validators.Length != 1)
-                // {
-                //     throw new InvalidOperationException("Preload only supported for single-node blockchains");
-                // }
+                if (validators.Length != 1)
+                {
+                    throw new InvalidOperationException("Preload only supported for single-node blockchains");
+                }
 
                 var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
 
@@ -173,45 +173,59 @@ namespace NeoExpress.Node
                 Blockchain.GoverningToken.Hash));
         }
 
-        public static void Preload(uint preloadGasAmount, Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        public static Task PreloadAsync(uint preloadGasAmount, Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
         {
-            static uint CalculateGas(uint preloadGas)
-            {
-                var generationAmount = Blockchain.GenerationAmount[0];
-                var gas = preloadGas / generationAmount;
-                return preloadGas % generationAmount == 0 ? gas : gas + 1;
-            }
-
             Debug.Assert(preloadGasAmount > 0);
-            
-            var wallet = DevWallet.FromExpressWallet(node.Wallet);
-            using var system = new NeoSystem(store);
-            var logPlugin = new LogPlugin(writer);
 
-            system.StartNode(node.TcpPort, node.WebSocketPort);
+            var tcs = new TaskCompletionSource<bool>();
 
-            var preloadCount = CalculateGas(preloadGasAmount);
-            Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload {preloadGasAmount} GAS");
-            Random random = new Random();
-            for (int i = 1; i <= preloadCount; i++)
+            Task.Run(() =>
             {
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                if (i % 100 == 0)
+                try
                 {
-                    Plugin.Log("neo-express", LogLevel.Info, $"Creating Block {i}");
-                }
-                var block = CreatePreloadBlock(wallet, random);
-                var relayResult = system.Blockchain.Ask<RelayResultReason>(block).Result;
+                    var wallet = DevWallet.FromExpressWallet(node.Wallet);
+                    using var system = new NeoSystem(store);
+                    var logPlugin = new LogPlugin(writer);
 
-                if (relayResult != RelayResultReason.Succeed)
+                    system.StartNode(node.TcpPort, node.WebSocketPort);
+
+                    var generationAmount = Blockchain.GenerationAmount[0];
+                    var gas = preloadGasAmount / generationAmount;
+                    var preloadCount = preloadGasAmount % generationAmount == 0 ? gas : gas + 1;
+                    Plugin.Log("neo-express", LogLevel.Info, $"Creating {preloadCount} empty blocks to preload {preloadGasAmount} GAS");
+                    Random random = new Random();
+                    for (int i = 1; i <= preloadCount; i++)
+                    {
+                        if (i % 100 == 0)
+                        {
+                            Plugin.Log("neo-express", LogLevel.Info, $"Creating Block {i}");
+                        }
+                        var block = CreatePreloadBlock(wallet, random);
+                        var relayResult = system.Blockchain.Ask<RelayResultReason>(block).Result;
+
+                        if (relayResult != RelayResultReason.Succeed)
+                        {
+                            throw new Exception($"Preload block {i} failed {relayResult}");
+                        }
+                    }
+
+                    ClaimPreloadGas(system, wallet, random);
+                }
+                catch (Exception ex)
                 {
-                    throw new Exception($"Preload block {i} failed {relayResult}");
+                    tcs.SetException(ex);
                 }
-            }
+                finally
+                {
+                    if (store is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                    tcs.TrySetResult(true);
+                }
+            });
 
-            ClaimPreloadGas(system, wallet, random);
+            return tcs.Task;
         }
 
         public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
@@ -242,9 +256,9 @@ namespace NeoExpress.Node
                 }
                 finally
                 {
-                    if (store is IDisposable disp)
+                    if (store is IDisposable disposable)
                     {
-                        disp.Dispose();
+                        disposable.Dispose();
                     }
                     tcs.TrySetResult(true);
                 }

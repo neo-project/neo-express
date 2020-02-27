@@ -297,14 +297,15 @@ namespace NeoExpress
             }
         }
 
-        public static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
+        public static Task PreloadGasAsync(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
         {
             Debug.Assert(preloadGasAmount > 0);
 
             chain.InitializeProtocolSettings(15);
             var node = chain.ConsensusNodes[index];
-            using var store = new RocksDbStore(directory);
-            NodeUtility.Preload(preloadGasAmount, store, node, writer, cancellationToken);
+#pragma warning disable IDE0067 // NodeUtility.PreloadAsync disposes the store when it's done
+            return NodeUtility.PreloadAsync(preloadGasAmount, new RocksDbStore(directory), node, writer, cancellationToken);
+#pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 
         public static Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)

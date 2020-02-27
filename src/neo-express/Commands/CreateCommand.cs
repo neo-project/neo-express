@@ -53,6 +53,11 @@ namespace NeoExpress.Commands
                 }
 
                 var count = (Count == 0 ? 1 : Count);
+                if (PreloadGas > 0 && count != 1)
+                {
+                    throw new Exception("you can only specify --preload-gas for a single node neo-express blockchain");
+                }
+
                 var chain = BlockchainOperations.CreateBlockchain(count);
                 chain.Save(output);
 

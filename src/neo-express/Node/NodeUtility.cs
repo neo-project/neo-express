@@ -46,10 +46,10 @@ namespace NeoExpress.Node
         {
             using var snapshot = Blockchain.Singleton.GetSnapshot();
             var validators = snapshot.GetValidators();
-            // if (validators.Length != 1)
-            // {
-            //     throw new InvalidOperationException("Preload only supported for single-node blockchains");
-            // }
+            if (validators.Length != 1)
+            {
+                throw new InvalidOperationException("Preload only supported for single-node blockchains");
+            }
 
             var amountNetFee = Block.CalculateNetFee(Enumerable.Empty<Transaction>());
             if (amountNetFee != Fixed8.Zero)

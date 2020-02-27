@@ -28,6 +28,8 @@ namespace NeoExpress.Models
             }
         }
 
+        public const byte AddressVersion = (byte)0x17;
+
         [JsonProperty("magic")]
         public long Magic { get; set; }
 

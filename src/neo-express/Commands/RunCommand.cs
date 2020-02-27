@@ -19,9 +19,6 @@ namespace NeoExpress.Commands
         private uint SecondsPerBlock { get; }
 
         [Option]
-        private uint PreloadGas { get; }
-
-        [Option]
         private bool Reset { get; }
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
@@ -58,7 +55,7 @@ namespace NeoExpress.Commands
                 {
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
 
-                    await BlockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock, PreloadGas, 
+                    await BlockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock, 
                                                                   console.Out, cts.Token)
                         .ConfigureAwait(false);
                 }

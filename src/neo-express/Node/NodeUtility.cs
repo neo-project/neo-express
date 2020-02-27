@@ -191,7 +191,7 @@ namespace NeoExpress.Node
             {
                 if (i % 100 == 0)
                 {
-                    Plugin.Log("neo-express", LogLevel.Info, $"Creating Block {i}");
+                    writer.WriteLine($"  Creating Block {i}");
                 }
                 var block = CreatePreloadBlock(wallet, random);
                 var relayResult = system.Blockchain.Ask<RelayResultReason>(block).Result;
@@ -204,7 +204,7 @@ namespace NeoExpress.Node
 
             ClaimPreloadGas(system, wallet, random);
 
-            writer.WriteLine($"Preload complete");
+            writer.WriteLine($"Preload complete. {preloadCount * generationAmount} GAS loaded into genesis account.");
         }
 
         public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)

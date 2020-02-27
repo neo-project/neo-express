@@ -5,6 +5,7 @@ using NeoExpress.Persistence;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -296,14 +297,24 @@ namespace NeoExpress
             }
         }
 
-        public static Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, uint preloadGas, TextWriter writer, CancellationToken cancellationToken)
+        public static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
+        {
+            Debug.Assert(preloadGasAmount > 0);
+
+            chain.InitializeProtocolSettings(15);
+            var node = chain.ConsensusNodes[index];
+            using var store = new RocksDbStore(directory);
+            NodeUtility.Preload(preloadGasAmount, store, node, writer, cancellationToken);
+        }
+
+        public static Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             chain.InitializeProtocolSettings(secondsPerBlock);
 
             var node = chain.ConsensusNodes[index];
 
 #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new RocksDbStore(directory), node, writer, preloadGas, cancellationToken);
+            return NodeUtility.RunAsync(new RocksDbStore(directory), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 
@@ -315,7 +326,7 @@ namespace NeoExpress
             ValidateCheckpoint(directory, chain.Magic, node.Wallet.DefaultAccount);
 
 #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, 0, cancellationToken);
+            return NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 

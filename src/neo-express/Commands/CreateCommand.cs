@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.Threading;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
@@ -36,6 +37,10 @@ namespace NeoExpress.Commands
         [Option]
         private bool Force { get; }
 
+        [Option]
+        private uint PreloadGas { get; }
+
+
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
@@ -53,6 +58,22 @@ namespace NeoExpress.Commands
                 console.WriteLine($"Created {count} node privatenet at {output}");
                 console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");
                 console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+
+                if (PreloadGas > 0)
+                {
+                    var node = chain.ConsensusNodes[0];
+                    var folder = node.GetBlockchainPath();
+
+                    if (!Directory.Exists(folder))
+                    {
+                        Directory.CreateDirectory(folder);
+                    }
+
+                    using var cts = new CancellationTokenSource();
+                    console.CancelKeyPress += (sender, args) => cts.Cancel();
+                    BlockchainOperations.PreloadGas(folder, chain, 0, PreloadGas, console.Out, cts.Token);
+                }
+                
                 return 0;
             }
             catch (Exception ex)

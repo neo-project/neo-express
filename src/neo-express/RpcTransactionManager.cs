@@ -231,8 +231,10 @@ namespace NeoExpress
             throw new ArgumentException(nameof(quantity));
         }
 
-        public static InvocationTransaction CreateDeploymentTransaction(ExpressContract contract, ExpressWalletAccount sender, UnspentsResponse unspents, UInt256 gasAssetId)
+        public static InvocationTransaction CreateDeploymentTransaction(ExpressContract contract, ExpressWalletAccount sender, UnspentsResponse unspents)
         {
+            var gasAssetId = Neo.Ledger.Blockchain.UtilityToken.Hash;
+            
             using var builder = BuildContractCreateScript(contract);
             var contractPropertyState = GetContractPropertyState(contract);
 

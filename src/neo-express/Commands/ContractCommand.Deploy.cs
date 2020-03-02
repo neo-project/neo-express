@@ -80,7 +80,6 @@ namespace NeoExpress.Commands
                     contract.Properties.Add("has-dynamic-invoke", hasStorage.ToString());
                 }
 
-                var (_, gasHash) = await NeoRpcClient.GetStandardAssetHashes(uri);
                 var unspents = (await NeoRpcClient.GetUnspents(uri, account.ScriptHash)
                     .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
                 if (unspents == null)
@@ -89,7 +88,7 @@ namespace NeoExpress.Commands
                 }
 
                 var tx = RpcTransactionManager.CreateDeploymentTransaction(contract, 
-                    account, unspents, Neo.UInt256.Parse(gasHash));
+                    account, unspents);
                 tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
                 var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
                 if (sendResult == null || !sendResult.Value<bool>())

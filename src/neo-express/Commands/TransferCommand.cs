@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using NeoExpress.Models;
+using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -53,7 +54,7 @@ namespace NeoExpress.Commands
                     throw new Exception($"could not retrieve unspents for {Sender}");
                 }
 
-                var assetId = await NeoRpcClient.GetAssetId(uri, Asset);
+                var assetId = NodeUtility.GetAssetId(Asset);
                 var tx = RpcTransactionManager.CreateContractTransaction(
                         assetId, Quantity, unspents, senderAccount, receiverAccount);
 

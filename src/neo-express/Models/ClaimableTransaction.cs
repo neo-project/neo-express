@@ -9,24 +9,24 @@ namespace NeoExpress.Models
         public string TransactionId { get; set; } = string.Empty;
 
         [JsonProperty("n")]
-        public long Index { get; set; }
+        public ushort Index { get; set; }
 
         [JsonProperty("value")]
         public decimal Value { get; set; }
 
         [JsonProperty("start_height")]
-        public long StartHeight { get; set; }
+        public uint StartHeight { get; set; }
 
         [JsonProperty("end_height")]
-        public long EndHeight { get; set; }
+        public uint EndHeight { get; set; }
 
         [JsonProperty("generated")]
-        public double Generated { get; set; }
+        public decimal Generated { get; set; }
 
         [JsonProperty("sys_fee")]
-        public double SystemFee { get; set; }
+        public decimal SystemFee { get; set; }
 
         [JsonProperty("unclaimed")]
-        public double Unclaimed { get; set; }
+        public decimal Unclaimed { get; set; }
     }
 }

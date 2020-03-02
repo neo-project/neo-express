@@ -1,4 +1,5 @@
 using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 
@@ -22,15 +23,18 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var uri = chain.GetUri();
 
-                    var response = await NeoRpcClient.GetRawTransaction(uri, TransactionId);
-                    if (response == null)
+                    var rawTxResponseTask = NeoRpcClient.GetRawTransaction(uri, TransactionId);
+                    var appLogResponseTask = NeoRpcClient.GetApplicationLog(uri, TransactionId);
+                    await Task.WhenAll(rawTxResponseTask, appLogResponseTask);
+
+                    console.WriteResult(rawTxResponseTask.Result);
+                    var appLogResponse = appLogResponseTask.Result ?? JValue.CreateString(string.Empty);
+                    if (appLogResponse.Type != JTokenType.String
+                        || appLogResponse.Value<string>().Length != 0)
                     {
-                        console.WriteWarning("Requested transaction does not exist or has not been processed.");
+                        console.WriteResult(appLogResponse);
                     }
-                    else
-                    {
-                        console.WriteResult(response);
-                    }
+
                     return 0;
                 }
                 catch (Exception ex)

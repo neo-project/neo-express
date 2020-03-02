@@ -150,9 +150,9 @@ namespace NeoExpress
             return RpcCall(uri, "sendrawtransaction", new JArray(txData));
         }
 
-        public static Task<JToken?> GetRawTransaction(Uri uri, string txid)
+        public static Task<JToken?> GetRawTransaction(Uri uri, string txid, bool verbose = true)
         {
-            return RpcCall(uri, "getrawtransaction", new JArray(txid));            
+            return RpcCall(uri, "getrawtransaction", new JArray(txid, verbose ? 1 : 0));            
         }
     }
 }

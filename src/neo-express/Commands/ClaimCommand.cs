@@ -41,7 +41,8 @@ namespace NeoExpress.Commands
                     throw new Exception($"could not retrieve claimable for {Account}");
                 }
 
-                var tx = RpcTransactionManager.CreateClaimTransaction(account, claimable);
+                var (_, gasHash) = await NeoRpcClient.GetStandardAssetHashes(uri);
+                var tx = RpcTransactionManager.CreateClaimTransaction(account, claimable, Neo.UInt256.Parse(gasHash));
                 tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
                 var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
                 if (sendResult == null || !sendResult.Value<bool>())

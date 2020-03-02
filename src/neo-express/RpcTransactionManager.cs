@@ -92,10 +92,7 @@ namespace NeoExpress
             }
         }
 
-        // TODO: retrieve token hash from genesis block
-        const string GAS_TOKEN_HASH = "602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7";
-
-        public static ClaimTransaction CreateClaimTransaction(ExpressWalletAccount account, ClaimableResponse claimable)
+        public static ClaimTransaction CreateClaimTransaction(ExpressWalletAccount account, ClaimableResponse claimable, UInt256 assetId)
         {
             const int MAX_CLAIMS_AMOUNT = 50;
 
@@ -117,7 +114,7 @@ namespace NeoExpress
                 {
                     new TransactionOutput
                     {
-                        AssetId = Neo.UInt256.Parse(GAS_TOKEN_HASH),
+                        AssetId = assetId,
                         Value = Neo.Fixed8.FromDecimal(claimable.Unclaimed),
                         ScriptHash = Neo.Wallets.Helper.ToScriptHash(account.ScriptHash)
                     }

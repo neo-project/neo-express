@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using NeoExpress.Models;
-using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -54,7 +53,7 @@ namespace NeoExpress.Commands
                     throw new Exception($"could not retrieve unspents for {Sender}");
                 }
 
-                var assetId = NodeUtility.GetAssetId(Asset);
+                var assetId = await NeoRpcClient.GetAssetId(uri, Asset);
                 var balance = unspents.Balance.SingleOrDefault(b => Neo.UInt256.Parse(b.AssetHash) == assetId);
                 if (balance == null)
                     throw new Exception($"{Sender} does not have any {Asset}");

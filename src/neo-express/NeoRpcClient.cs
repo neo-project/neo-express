@@ -154,5 +154,51 @@ namespace NeoExpress
         {
             return RpcCall(uri, "getrawtransaction", new JArray(txid, verbose ? 1 : 0));            
         }
+
+        public static async Task<Neo.UInt256> GetAssetId(Uri uri, string asset)
+        {
+            var (neo, gas) = await GetStandardAssetHashes(uri);
+            if (string.Compare("neo", asset, true) == 0)
+                return Neo.UInt256.Parse(neo);
+
+            if (string.Compare("gas", asset, true) == 0)
+                return Neo.UInt256.Parse(gas);
+
+            return Neo.UInt256.Parse(asset);
+        }
+
+        public static async Task<(string, string)> GetStandardAssetHashes(Uri uri)
+        {
+            var genesisBlock = await RpcCall(uri, "getblock", new JArray(0, 1));
+            if (genesisBlock == null)
+            {
+                throw new Exception("genesis block could not be retrieved");
+            }
+
+            string neoHash = string.Empty, gasHash = string.Empty;
+            foreach (var tx in genesisBlock["tx"] ?? Enumerable.Empty<JToken>())
+            {
+                if (tx.Value<string>("type") == "RegisterTransaction")
+                {
+                    var asset = tx["asset"]?.Value<string>("type") ?? string.Empty;
+                    if (asset == "GoverningToken")
+                    {
+                        neoHash = tx.Value<string>("txid");
+                    }
+                    else if (asset == "UtilityToken")
+                    {
+                        gasHash = tx.Value<string>("txid");
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(neoHash) 
+                || string.IsNullOrEmpty(gasHash))
+            {
+                throw new Exception("Genesis block was missing NEO or GAS RegisterTransaction");
+            }
+
+            return (neoHash, gasHash);
+        }
     }
 }

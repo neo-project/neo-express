@@ -35,7 +35,6 @@ namespace NeoExpress.Commands
             [Option]
             private bool Overwrite { get; }
 
-
             private static async Task<(bool deployed, JToken? result)> GetContractState(Uri uri, ExpressContract contract)
             {
                 try
@@ -81,21 +80,24 @@ namespace NeoExpress.Commands
                     contract.Properties.Add("has-dynamic-invoke", hasStorage.ToString());
                 }
 
-                var result = await NeoRpcClient.ExpressDeployContract(uri, contract, account.ScriptHash).ConfigureAwait(false);
-                console.WriteResult(result);
-
-                var txid = result?["txid"];
-                if (txid != null)
+                var (_, gasHash) = await NeoRpcClient.GetStandardAssetHashes(uri);
+                var unspents = (await NeoRpcClient.GetUnspents(uri, account.ScriptHash)
+                    .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
+                if (unspents == null)
                 {
-                    console.WriteLine("deployment complete");
-                }
-                else
-                {
-                    var signatures = account.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures).ConfigureAwait(false);
-                    console.WriteResult(result2);
+                    throw new Exception($"could not retrieve unspents for {Account}");
                 }
 
+                var tx = RpcTransactionManager.CreateDeploymentTransaction(contract, 
+                    account, unspents, Neo.UInt256.Parse(gasHash));
+                tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+                var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+                if (sendResult == null || !sendResult.Value<bool>())
+                {
+                    throw new Exception("SendRawTransaction failed");
+                }
+
+                console.WriteLine($"Contract Deployment {tx.Hash} submitted");
                 return contract;
             }
 

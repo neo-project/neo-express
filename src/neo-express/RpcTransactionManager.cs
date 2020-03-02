@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Neo;
+using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
+using Neo.VM;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
 
@@ -106,8 +109,6 @@ namespace NeoExpress
 
             return new ClaimTransaction()
             {
-                Version = 0,
-                Claims = claims.ToArray(),
                 Attributes = Array.Empty<TransactionAttribute>(),
                 Inputs = Array.Empty<CoinReference>(),
                 Outputs = new[]
@@ -118,52 +119,76 @@ namespace NeoExpress
                         Value = Neo.Fixed8.FromDecimal(claimable.Unclaimed),
                         ScriptHash = Neo.Wallets.Helper.ToScriptHash(account.ScriptHash)
                     }
-                }
+                },
+                Claims = claims.ToArray(),
             };
         }
 
-        public static ContractTransaction CreateContractTransaction(UInt256 assetId, string quantity, UnspentTransaction[] transactions, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        private static IEnumerable<(UnspentTransaction tx, decimal amount)> GetInputTransactions(IEnumerable<UnspentTransaction> transactions, decimal amount)
         {
-            static CoinReference ConvertUnspentTransaction(UnspentTransaction t) => new CoinReference()
+            foreach (var tx in transactions.OrderByDescending(t => t.Value))
             {
-                PrevHash = UInt256.Parse(t.TransactionId),
-                PrevIndex = t.Index
-            };
-
-            IEnumerable<UnspentTransaction> GetInputs(decimal amount)
-            {
-                foreach (var tx in transactions.OrderByDescending(t => t.Value))
+                if (amount < tx.Value)
                 {
-                    if (amount < tx.Value)
-                    {
-                        yield return tx;
-                    }
-                    else
-                    {
-                        yield return tx;
-                    }
+                    yield return (tx, amount);
+                }
+                else
+                {
+                    yield return (tx, tx.Value);
+                }
 
-                    amount -= tx.Value;
-                    if (amount <= decimal.Zero)
-                    {
-                        break;
-                    }
+                amount -= tx.Value;
+                if (amount <= decimal.Zero)
+                {
+                    break;
+                }
+            }
+        }
+
+        private static CoinReference ConvertInput((UnspentTransaction tx, decimal amount) inputTx)
+        {
+            return new CoinReference()
+            {
+                PrevHash = UInt256.Parse(inputTx.tx.TransactionId),
+                PrevIndex = inputTx.tx.Index
+            };
+        }
+
+        static UnspentTransaction[] GetUnspentAssets(UInt256 assetId, UnspentsResponse unspents)
+        {
+            for (int i = 0; i < unspents.Balance.Length; i++)
+            {
+                var balance = unspents.Balance[i];
+                if (UInt256.TryParse(balance.AssetHash, out var balanceAsset)
+                    && balanceAsset == assetId)
+                {
+                    return balance.Transactions;
                 }
             }
 
-            var sum = transactions.Sum(t => t.Value);
+            return Array.Empty<UnspentTransaction>();
+        }
+
+        public static ContractTransaction CreateContractTransaction(UInt256 assetId, string quantity, UnspentsResponse unspents, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        {
+            var assets = GetUnspentAssets(assetId, unspents);
+            var sum = assets.Sum(t => t.Value);
 
             if (quantity.Equals("all", StringComparison.OrdinalIgnoreCase))
             {
                 return new ContractTransaction()
                 {
                     Attributes = Array.Empty<TransactionAttribute>(),
-                    Inputs = transactions.Select(ConvertUnspentTransaction).ToArray(),
+                    Inputs = assets.Select(t => new CoinReference
+                        {
+                            PrevHash= UInt256.Parse(t.TransactionId),
+                            PrevIndex = t.Index
+                        }).ToArray(),
                     Outputs = new TransactionOutput[] {
                         new TransactionOutput
                         {
                             AssetId = assetId,
-                            Value = Neo.Fixed8.FromDecimal(sum),
+                            Value = Fixed8.FromDecimal(sum),
                             ScriptHash = Neo.Wallets.Helper.ToScriptHash(receiver.ScriptHash)
                         }
                     }
@@ -175,13 +200,17 @@ namespace NeoExpress
                 if (sum < result)
                     throw new ApplicationException("Insufficient funds for transfer");
 
-                var inputs = GetInputs(result);
-                sum = inputs.Sum(t => t.Value);
+                var inputs = GetInputTransactions(assets, result);
+                sum = inputs.Sum(t => t.tx.Value);
 
                 return new ContractTransaction()
                 {
                     Attributes = Array.Empty<TransactionAttribute>(),
-                    Inputs = inputs.Select(ConvertUnspentTransaction).ToArray(),
+                    Inputs = inputs.Select(t => new CoinReference
+                        {
+                            PrevHash = UInt256.Parse(t.tx.TransactionId),
+                            PrevIndex = t.tx.Index
+                        }).ToArray(),
                     Outputs = new TransactionOutput[] {
                         new TransactionOutput
                         {
@@ -200,6 +229,104 @@ namespace NeoExpress
             }
 
             throw new ArgumentException(nameof(quantity));
+        }
+
+        public static InvocationTransaction CreateDeploymentTransaction(ExpressContract contract, ExpressWalletAccount sender, UnspentsResponse unspents, UInt256 gasAssetId)
+        {
+            using var builder = BuildContractCreateScript(contract);
+            var contractPropertyState = GetContractPropertyState(contract);
+
+            decimal fee = 100 - 10; // first 10 GAS is free
+
+            if (contractPropertyState.HasFlag(ContractPropertyState.HasStorage))
+            {
+                fee += 400;
+            }
+
+            if (contractPropertyState.HasFlag(ContractPropertyState.HasDynamicInvoke))
+            {
+                fee += 500;
+            }
+
+            var assets = GetUnspentAssets(gasAssetId, unspents);
+            var sum = assets.Sum(t => t.Value);
+
+            if (sum < fee)
+                throw new ApplicationException("Insufficient funds for deployment");
+
+            var inputs = GetInputTransactions(assets, fee);
+            sum = inputs.Sum(t => t.tx.Value);
+
+            return new InvocationTransaction
+            {
+                Version = 1,
+                Attributes = Array.Empty<TransactionAttribute>(),
+                Inputs = inputs.Select(t => new CoinReference
+                    {
+                        PrevHash = UInt256.Parse(t.tx.TransactionId),
+                        PrevIndex = t.tx.Index
+                    }).ToArray(),
+                Outputs = new TransactionOutput[] {
+                    new TransactionOutput
+                    {
+                        AssetId = gasAssetId,
+                        Value = Neo.Fixed8.FromDecimal(sum - fee),
+                        ScriptHash = Neo.Wallets.Helper.ToScriptHash(sender.ScriptHash)
+                    },
+                },
+                Script = builder.ToArray(),
+                Gas = Fixed8.FromDecimal(fee),
+            };
+        }
+
+        static ContractPropertyState GetContractPropertyState(ExpressContract contract)
+        {
+            bool GetBoolValue(string keyName)
+            {
+                if (contract.Properties.TryGetValue(keyName, out var value))
+                {
+                    return bool.Parse(value);
+                }
+
+                return false;
+            }
+
+            var contractPropertyState = ContractPropertyState.NoProperty;
+            if (GetBoolValue("has-storage")) contractPropertyState |= ContractPropertyState.HasStorage;
+            if (GetBoolValue("has-dynamic-invoke")) contractPropertyState |= ContractPropertyState.HasDynamicInvoke;
+            if (GetBoolValue("is-payable")) contractPropertyState |= ContractPropertyState.Payable;
+
+            return contractPropertyState;
+        }
+
+        private static ScriptBuilder BuildContractCreateScript(ExpressContract contract)
+        {
+            var contractData = contract.ContractData.HexToBytes();
+
+            var entryFunction =contract.Functions.Single(f => f.Name == contract.EntryPoint);
+           
+            var entryParameters = entryFunction.Parameters.Select(p => Enum.Parse<ContractParameterType>(p.Type));
+            var entryReturnType = Enum.Parse<ContractParameterType>(entryFunction.ReturnType); 
+
+            var title = contract.Properties.GetValueOrDefault("title", contract.Name);  
+            var description = contract.Properties.GetValueOrDefault("description", "no description provided");
+            var version = contract.Properties.GetValueOrDefault("version", "0.1.0");
+            var author = contract.Properties.GetValueOrDefault("author", "no description provided");
+            var email = contract.Properties.GetValueOrDefault("email", "nobody@fake.email");
+            var contractPropertyState = GetContractPropertyState(contract);
+
+            var builder = new ScriptBuilder();
+            builder.EmitSysCall("Neo.Contract.Create",
+                contractData,
+                entryParameters.ToArray(),
+                entryReturnType,
+                contractPropertyState,
+                title,
+                version,
+                author,
+                email,
+                description);
+            return builder;
         }
     }
 }

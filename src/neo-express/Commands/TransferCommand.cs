@@ -54,12 +54,8 @@ namespace NeoExpress.Commands
                 }
 
                 var assetId = await NeoRpcClient.GetAssetId(uri, Asset);
-                var balance = unspents.Balance.SingleOrDefault(b => Neo.UInt256.Parse(b.AssetHash) == assetId);
-                if (balance == null)
-                    throw new Exception($"{Sender} does not have any {Asset}");
-
                 var tx = RpcTransactionManager.CreateContractTransaction(
-                        assetId, Quantity, balance.Transactions, senderAccount, receiverAccount);
+                        assetId, Quantity, unspents, senderAccount, receiverAccount);
 
                 tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, senderAccount) };
                 var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);

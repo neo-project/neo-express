@@ -51,7 +51,7 @@ namespace NeoExpress.Commands
                     .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
                 if (unspents == null)
                 {
-                    throw new Exception("could not retrieve unspents");
+                    throw new Exception($"could not retrieve unspents for {Sender}");
                 }
 
                 var assetId = NodeUtility.GetAssetId(Asset);

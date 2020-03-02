@@ -92,6 +92,39 @@ namespace NeoExpress
             }
         }
 
+        // TODO: retrieve token hash from genesis block
+        const string GAS_TOKEN_HASH = "602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7";
+
+        public static ClaimTransaction CreateClaimTransaction(ExpressWalletAccount account, ClaimableResponse claimable)
+        {
+            const int MAX_CLAIMS_AMOUNT = 50;
+
+            var claims = claimable.Transactions
+                .Take(MAX_CLAIMS_AMOUNT)
+                .Select(_tx => new CoinReference()
+                {
+                    PrevHash = Neo.UInt256.Parse(_tx.TransactionId),
+                    PrevIndex = _tx.Index,
+                });
+
+            return new ClaimTransaction()
+            {
+                Version = 0,
+                Claims = claims.ToArray(),
+                Attributes = Array.Empty<TransactionAttribute>(),
+                Inputs = Array.Empty<CoinReference>(),
+                Outputs = new[]
+                {
+                    new TransactionOutput
+                    {
+                        AssetId = Neo.UInt256.Parse(GAS_TOKEN_HASH),
+                        Value = Neo.Fixed8.FromDecimal(claimable.Unclaimed),
+                        ScriptHash = Neo.Wallets.Helper.ToScriptHash(account.ScriptHash)
+                    }
+                }
+            };
+        }
+
         public static ContractTransaction CreateContractTransaction(UInt256 assetId, string quantity, UnspentTransaction[] transactions, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
             static CoinReference ConvertUnspentTransaction(UnspentTransaction t) => new CoinReference()

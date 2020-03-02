@@ -15,7 +15,7 @@ may not exactly match a publicly released version.
 
 ## [1.1] - Unreleased
 
-- Added `--preload-gas` option to the `run` command that generates and claims a
+- Added `--preload-gas` option to the `create` command that generates and claims a
   specified amount of GAS in the genesis account.
 
 ## [1.0.8] - 2019-02-25

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using NeoExpress.Models;
+using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -45,22 +46,30 @@ namespace NeoExpress.Commands
                 }
 
                 var uri = chain.GetUri();
-                var result = await NeoRpcClient.ExpressTransfer(uri, Asset, Quantity, senderAccount.ScriptHash, receiverAccount.ScriptHash)
-                    .ConfigureAwait(false);
-                console.WriteResult(result);
 
-                var txid = result?["txid"];
-                if (txid != null)
+                var unspents = (await NeoRpcClient.GetUnspents(uri, senderAccount.ScriptHash)
+                    .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
+                if (unspents == null)
                 {
-                    console.WriteLine("transfer complete");
-                }
-                else
-                {
-                    var signatures = senderAccount.Sign(chain.ConsensusNodes, result);
-                    var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-                    console.WriteResult(result2);
+                    throw new Exception("could not retrieve unspents");
                 }
 
+                var assetId = NodeUtility.GetAssetId(Asset);
+                var balance = unspents.Balance.SingleOrDefault(b => Neo.UInt256.Parse(b.AssetHash) == assetId);
+                if (balance == null)
+                    throw new Exception($"{Sender} does not have any {Asset}");
+
+                var tx = RpcTransactionManager.CreateContractTransaction(
+                        assetId, Quantity, balance.Transactions, senderAccount, receiverAccount);
+
+                tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, senderAccount) };
+                var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+                if (sendResult == null || !sendResult.Value<bool>())
+                {
+                    throw new Exception("SendRawTransaction failed");
+                }
+
+                console.WriteLine($"Transfer Transaction {tx.Hash} submitted");
                 return 0;
             }
             catch (Exception ex)

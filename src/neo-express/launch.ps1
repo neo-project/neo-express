@@ -1,4 +1,4 @@
-param([int]$secondsPerBlock = 1, [switch]$debug, [switch]$reset, [string]$checkpoint)
+param([int]$secondsPerBlock = 5, [switch]$debug, [switch]$reset, [string]$checkpoint)
 
 dotnet publish -o .\bin\launch
 

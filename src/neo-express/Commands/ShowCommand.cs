@@ -9,8 +9,13 @@ using System.Threading.Tasks;
 namespace NeoExpress.Commands
 {
     [Command("show")]
-    [Subcommand(typeof(Account), typeof(Claimable), typeof(Coins), typeof(Gas), typeof(Unspents))]
-    class ShowCommand
+    [Subcommand(typeof(Account), 
+        typeof(Claimable), 
+        typeof(Coins), 
+        typeof(Gas), 
+        typeof(Transaction), 
+        typeof(Unspents))]
+    partial class ShowCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)
         {

@@ -143,5 +143,16 @@ namespace NeoExpress
         {
             return RpcCall(uri, "getunspents", new JArray(address));
         }
+
+        public static Task<JToken?> SendRawTransaction(Uri uri, Neo.Network.P2P.Payloads.Transaction tx)
+        {
+            var txData = Neo.Helper.ToHexString(Neo.IO.Helper.ToArray(tx));
+            return RpcCall(uri, "sendrawtransaction", new JArray(txData));
+        }
+
+        public static Task<JToken?> GetRawTransaction(Uri uri, string txid, bool verbose = true)
+        {
+            return RpcCall(uri, "getrawtransaction", new JArray(txid, verbose ? 1 : 0));            
+        }
     }
 }

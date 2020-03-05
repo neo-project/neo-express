@@ -334,6 +334,5 @@ namespace NeoExpress
             return NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
-
     }
 }

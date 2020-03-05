@@ -9,7 +9,7 @@ namespace NeoExpress.Models
         public string TransactionId { get; set; } = string.Empty;
 
         [JsonProperty("n")]
-        public long Index { get; set; }
+        public ushort Index { get; set; }
 
         [JsonProperty("value")]
         public decimal Value { get; set; }

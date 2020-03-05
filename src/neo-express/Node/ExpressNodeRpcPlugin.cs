@@ -313,7 +313,13 @@ namespace NeoExpress.Node
                 return JObject.Parse(json);
             }
 
-            return JObject.Null;
+            // I'd rather be returning JObject.Null here, but Neo's RPC plugin
+            // infrastructure can't distingish between null return meaning 
+            // "this plugin doesn't support this method" and JObject.Null return
+            // meaning "this plugin does support this method, but there was a null
+            // return value". So I'm using an empty string as the null response. 
+
+            return string.Empty;
         }
 
         public JObject OnGetUnspents(JArray @params)

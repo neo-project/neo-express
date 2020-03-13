@@ -37,7 +37,6 @@ namespace NeoExpress.Neo2
             }
 
             var chain = BlockchainOperations.CreateBlockchain(count);
-            // chain.Save(output);
 
             writer.WriteLine($"Created {count} node privatenet at {output.FullName}");
             writer.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
@@ -351,16 +350,33 @@ namespace NeoExpress.Neo2
             NodeUtility.Preload(preloadGasAmount, store, node, writer, cancellationToken);
         }
 
-        public Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
         {
+            if (index >= chain.ConsensusNodes.Count)
+            {
+                throw new ArgumentException(nameof(index));
+            }
+
+            var node = chain.ConsensusNodes[index];
+            var folder = node.GetBlockchainPath();
+
+            if (reset && Directory.Exists(folder))
+            {
+                Directory.Delete(folder, true);
+            }
+
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
             if (!chain.InitializeProtocolSettings(secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
             }
-            var node = chain.ConsensusNodes[index];
 
 #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new RocksDbStore(directory), node, writer, cancellationToken);
+            return NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 

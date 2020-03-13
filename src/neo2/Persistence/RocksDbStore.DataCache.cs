@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace NeoExpress.Neo2.Persistence
 {
-    internal partial class RocksDbStore
+    partial class RocksDbStore
     {
         private class DataCache<TKey, TValue> : Neo.IO.Caching.DataCache<TKey, TValue>
             where TKey : IEquatable<TKey>, ISerializable, new()

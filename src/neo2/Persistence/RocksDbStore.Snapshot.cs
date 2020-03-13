@@ -7,7 +7,7 @@ using System;
 
 namespace NeoExpress.Neo2.Persistence
 {
-    internal partial class RocksDbStore
+    partial class RocksDbStore
     {
         private class Snapshot : Neo.Persistence.Snapshot
         {

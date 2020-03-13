@@ -180,8 +180,6 @@ namespace NeoExpress.Node
             var wallet = DevWallet.FromExpressWallet(node.Wallet);
             using var system = new NeoSystem(store);
 
-            system.StartNode(node.TcpPort, node.WebSocketPort);
-
             var generationAmount = Blockchain.GenerationAmount[0];
             var gas = preloadGasAmount / generationAmount;
             var preloadCount = preloadGasAmount % generationAmount == 0 ? gas : gas + 1;

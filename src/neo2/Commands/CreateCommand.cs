@@ -58,7 +58,8 @@ namespace NeoExpress.Neo2.Commands
                     throw new Exception("you can only specify --preload-gas for a single node neo-express blockchain");
                 }
 
-                var chain = BlockchainOperations.CreateBlockchain(count);
+                var blockchainOperations = new BlockchainOperations();
+                var chain = blockchainOperations.CreateBlockchain(count);
                 chain.Save(output);
 
                 console.WriteLine($"Created {count} node privatenet at {output}");
@@ -77,7 +78,7 @@ namespace NeoExpress.Neo2.Commands
 
                     using var cts = new CancellationTokenSource();
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
-                    BlockchainOperations.PreloadGas(folder, chain, 0, PreloadGas, console.Out, cts.Token);
+                    blockchainOperations.PreloadGas(folder, chain, 0, PreloadGas, console.Out, cts.Token);
                 }
                 
                 return 0;

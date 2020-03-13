@@ -55,7 +55,8 @@ namespace NeoExpress.Neo2.Commands
                 {
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
 
-                    await BlockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock, 
+                    var blockchainOperations = new BlockchainOperations();
+                    await blockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock, 
                                                                   console.Out, cts.Token)
                         .ConfigureAwait(false);
                 }

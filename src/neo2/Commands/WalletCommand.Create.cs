@@ -42,7 +42,8 @@ namespace NeoExpress.Neo2.Commands
                         chain.Wallets.Remove(existingWallet);
                     }
 
-                    var wallet = BlockchainOperations.CreateWallet(Name);
+                    var blockchainOperations = new BlockchainOperations();
+                    var wallet = blockchainOperations.CreateWallet(Name);
                     (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
                         .Add(wallet);
                     chain.Save(filename);

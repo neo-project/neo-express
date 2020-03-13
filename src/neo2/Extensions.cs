@@ -22,7 +22,8 @@ namespace NeoExpress.Neo2
     {
         public static JObject Sign(this ExpressWalletAccount account, byte[] data)
         {
-            var (signature, publicKey) = BlockchainOperations.Sign(account, data);
+            var blockchainOperations = new BlockchainOperations();
+            var (signature, publicKey) = blockchainOperations.Sign(account, data);
 
             return new JObject
             {

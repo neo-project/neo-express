@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 
 namespace NeoExpress.Neo2
 {
-    internal static class BlockchainOperations
+
+    class BlockchainOperations
     {
-        public static ExpressChain CreateBlockchain(int count)
+        public  ExpressChain CreateBlockchain(int count)
         {
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
 
@@ -72,7 +73,7 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public static void ExportBlockchain(ExpressChain chain, string folder, string password, Action<string> writeConsole)
+        public  void ExportBlockchain(ExpressChain chain, string folder, string password, Action<string> writeConsole)
         {
             void WriteNodeConfigJson(ExpressConsensusNode _node, string walletPath)
             {
@@ -188,7 +189,7 @@ namespace NeoExpress.Neo2
             WriteProtocolJson();
         }
 
-        public static ExpressWallet CreateWallet(string name)
+        public  ExpressWallet CreateWallet(string name)
         {
             using (var wallet = new DevWallet(name))
             {
@@ -198,13 +199,13 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public static void ExportWallet(ExpressWallet wallet, string filename, string password)
+        public  void ExportWallet(ExpressWallet wallet, string filename, string password)
         {
             var devWallet = DevWallet.FromExpressWallet(wallet);
             devWallet.Export(filename, password);
         }
 
-        public static (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data)
+        public  (byte[] signature, byte[] publicKey) Sign(ExpressWalletAccount account, byte[] data)
         {
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
 
@@ -222,13 +223,13 @@ namespace NeoExpress.Neo2
         private static string GetAddressFilePath(string directory) =>
             Path.Combine(directory, ADDRESS_FILENAME);
 
-        public static void CreateCheckpoint(ExpressChain chain, string blockChainStoreDirectory, string checkPointFileName)
+        public  void CreateCheckpoint(ExpressChain chain, string blockChainStoreDirectory, string checkPointFileName)
         {
             using var db = new RocksDbStore(blockChainStoreDirectory);
             CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
         }
 
-        public static void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, string scriptHash)
+        public  void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, string scriptHash)
         {
             string tempPath;
             do
@@ -260,7 +261,7 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public static void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
+        public  void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
         {
             var node = chain.ConsensusNodes[0];
             ValidateCheckpoint(checkPointDirectory, chain.Magic, node.Wallet.DefaultAccount);
@@ -297,7 +298,7 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
+        public  void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
         {
             if (!chain.InitializeProtocolSettings())
             {
@@ -308,7 +309,7 @@ namespace NeoExpress.Neo2
             NodeUtility.Preload(preloadGasAmount, store , node, writer, cancellationToken);
         }
 
-        public static Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public  Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             if (!chain.InitializeProtocolSettings(secondsPerBlock))
             {
@@ -321,7 +322,7 @@ namespace NeoExpress.Neo2
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 
-        public static Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public  Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             if (!chain.InitializeProtocolSettings(secondsPerBlock))
             {

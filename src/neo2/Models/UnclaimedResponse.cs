@@ -3,7 +3,7 @@ using System;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class UnclaimedResponse
+    class UnclaimedResponse
     {
         [JsonProperty("unavailable")]
         public decimal Unavailable { get; set; }

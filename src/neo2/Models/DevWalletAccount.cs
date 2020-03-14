@@ -6,7 +6,7 @@ using Neo;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class DevWalletAccount : WalletAccount
+    class DevWalletAccount : WalletAccount
     {
         private readonly KeyPair? key;
 

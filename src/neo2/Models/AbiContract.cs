@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class AbiContract
+    class AbiContract
     {
         public class ContractMetadata
         {

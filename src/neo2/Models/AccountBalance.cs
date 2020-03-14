@@ -3,7 +3,7 @@ using System;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class AccountBalance
+    class AccountBalance
     {
         [JsonProperty("asset")]
         public string Asset { get; set; } = string.Empty;

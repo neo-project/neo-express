@@ -3,7 +3,7 @@ using System;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class UnspentBalance
+    class UnspentBalance
     {
         [JsonProperty("asset_hash")]
         public string AssetHash { get; set; } = string.Empty;

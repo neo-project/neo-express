@@ -4,7 +4,7 @@ using System;
 namespace NeoExpress.Neo2.Models
 {
 
-    public class UnspentsResponse
+    class UnspentsResponse
     {
         [JsonProperty("address")]
         public string Address { get; set; } = string.Empty;

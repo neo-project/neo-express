@@ -3,7 +3,7 @@ using System;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class ClaimableTransaction
+    class ClaimableTransaction
     {
         [JsonProperty("txid")]
         public string TransactionId { get; set; } = string.Empty;

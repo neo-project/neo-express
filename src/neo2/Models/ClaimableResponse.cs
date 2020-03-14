@@ -3,7 +3,7 @@ using System;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class ClaimableResponse
+    class ClaimableResponse
     {
         [JsonProperty("claimable")]
         public ClaimableTransaction[] Transactions { get; set; } = Array.Empty<ClaimableTransaction>();

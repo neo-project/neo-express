@@ -10,7 +10,7 @@ using Neo;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class DevWallet : Wallet
+    class DevWallet : Wallet
     {
         private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();

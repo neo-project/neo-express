@@ -3,7 +3,7 @@ using System;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class UnspentTransaction
+    class UnspentTransaction
     {
         [JsonProperty("txid")]
         public string TransactionId { get; set; } = string.Empty;

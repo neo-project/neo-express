@@ -3,7 +3,7 @@ using System;
 
 namespace NeoExpress.Neo2.Models
 {
-    public class AccountResponse
+    class AccountResponse
     {
         [JsonProperty("version")]
         public long Version { get; set; }

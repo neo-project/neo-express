@@ -1,6 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Commands;
-using NeoExpress.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -13,15 +12,16 @@ namespace NeoExpress
 {
     [Command("neo-express")]
     [Subcommand(
-        typeof(CheckPointCommand),
-        typeof(ClaimCommand),
-        typeof(ContractCommand),
+    //     typeof(CheckPointCommand),
+    //     typeof(ClaimCommand),
+    //     typeof(ContractCommand),
         typeof(CreateCommand),
-        typeof(RunCommand),
-        typeof(ExportCommand),
-        typeof(ShowCommand),
-        typeof(TransferCommand),
-        typeof(WalletCommand))]
+        typeof(RunCommand)
+    //     typeof(ExportCommand),
+    //     typeof(ShowCommand),
+    //     typeof(TransferCommand),
+    //     typeof(WalletCommand))
+    )]
     internal class Program
     {
         public static string ROOT_PATH => Path.Combine(
@@ -60,7 +60,7 @@ namespace NeoExpress
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
            : filename;
 
-        public static (ExpressChain chain, string filename) LoadExpressChain(string filename)
+        public static (Neo2.Models.ExpressChain chain, string filename) LoadExpressChain(string filename)
         {
             filename = GetDefaultFilename(filename);
             if (!File.Exists(filename))
@@ -71,7 +71,7 @@ namespace NeoExpress
             var serializer = new JsonSerializer();
             using var stream = File.OpenRead(filename);
             using var reader = new JsonTextReader(new StreamReader(stream));
-            var chain = serializer.Deserialize<ExpressChain>(reader)
+            var chain = serializer.Deserialize<Neo2.Models.ExpressChain>(reader)
                 ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
 
             return (chain, filename);

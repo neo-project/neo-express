@@ -174,6 +174,10 @@ namespace NeoExpress.Neo2
             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => w.NameEquals(name));
 
+       public static string ROOT_PATH => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Neo-Express", "blockchain-nodes");
+
         public static string GetBlockchainPath(this ExpressWalletAccount account)
         {
             if (account == null)
@@ -181,7 +185,7 @@ namespace NeoExpress.Neo2
                 throw new ArgumentNullException(nameof(account));
             }
 
-            return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
+            return Path.Combine(ROOT_PATH, account.ScriptHash);
         }
 
         public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)

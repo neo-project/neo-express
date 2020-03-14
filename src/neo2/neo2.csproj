@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- TEMPORARILY EMIT EXE-->
-    <OutputType>Exe</OutputType>
-
     <LangVersion>8</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NeoExpress.Neo2</RootNamespace>

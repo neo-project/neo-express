@@ -23,6 +23,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Commands\**" />
+    <EmbeddedResource Remove="Commands\**" />
+    <None Remove="Commands\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Commands\CreateCommand.cs" />
+    <Compile Include="Commands\RunCommand.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 
@@ -33,5 +44,9 @@
     <PackageReference Include="OneOf" Version="2.1.151" />
     <PackageReference Include="RocksDbNative" Version="6.2.2" />
     <PackageReference Include="RocksDbSharp" Version="6.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\neo2\neo2.csproj" />
   </ItemGroup>
 </Project>

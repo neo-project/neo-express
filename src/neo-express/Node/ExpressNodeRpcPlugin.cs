@@ -287,14 +287,16 @@ namespace NeoExpress.Node
 
             if (store is Persistence.RocksDbStore rocksDbStore)
             {
-                var defaultAccount = System.RpcServer.Wallet.GetAccounts().Single(a => a.IsDefault);
-                BlockchainOperations.CreateCheckpoint(
-                    rocksDbStore,
-                    filename,
-                    ProtocolSettings.Default.Magic,
-                    defaultAccount.ScriptHash.ToAddress());
+                throw new Exception();
+                // var defaultAccount = System.RpcServer.Wallet.GetAccounts().Single(a => a.IsDefault);
+                // var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations(); 
+                // blockchainOperations.CreateCheckpoint(
+                //     rocksDbStore,
+                //     filename,
+                //     ProtocolSettings.Default.Magic,
+                //     defaultAccount.ScriptHash.ToAddress());
 
-                return filename;
+                // return filename;
             }
             else
             {

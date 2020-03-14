@@ -61,7 +61,8 @@ namespace NeoExpress.Commands
                     {
                         var blockchainPath = chain.ConsensusNodes[0].GetBlockchainPath();
 
-                        BlockchainOperations.CreateCheckpoint(
+                        var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                        blockchainOperations.CreateCheckpoint(
                             chain, blockchainPath, filename);
                     }
 

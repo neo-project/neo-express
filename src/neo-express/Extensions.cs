@@ -22,12 +22,12 @@ namespace NeoExpress
     {
         public static JObject Sign(this ExpressWalletAccount account, byte[] data)
         {
-            var (signature, publicKey) = BlockchainOperations.Sign(account, data);
+            // var (signature, publicKey) = BlockchainOperations.Sign(account, data);
 
             return new JObject
             {
-                ["signature"] = signature.ToHexString(),
-                ["public-key"] = publicKey.ToHexString(),
+                // ["signature"] = signature.ToHexString(),
+                // ["public-key"] = publicKey.ToHexString(),
                 ["contract"] = new JObject
                 {
                     ["script"] = account.Contract.Script,

@@ -49,7 +49,8 @@ namespace NeoExpress.Commands
                         Directory.Delete(blockchainPath, true);
                     }
 
-                    BlockchainOperations.RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
+                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                    blockchainOperations.RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
 
                     console.WriteLine($"Checkpoint {Name} sucessfully restored");
                     return 0;

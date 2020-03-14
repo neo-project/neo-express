@@ -16,12 +16,11 @@ namespace NeoExpress
     //     typeof(ClaimCommand),
     //     typeof(ContractCommand),
         typeof(CreateCommand),
-        typeof(RunCommand)
-    //     typeof(ExportCommand),
+        typeof(RunCommand),
+        typeof(ExportCommand),
     //     typeof(ShowCommand),
     //     typeof(TransferCommand),
-    //     typeof(WalletCommand))
-    )]
+        typeof(WalletCommand))]
     internal class Program
     {
         public static string ROOT_PATH => Path.Combine(

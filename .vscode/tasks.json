@@ -2,16 +2,20 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build neo2",
+            "label": "build",
             "command": "dotnet",
             "type": "shell",
             "args": [
                 "build",
-                "${workspaceFolder}/src/neo2/neo2.csproj",
+                "--no-restore",
+                "${workspaceFolder}",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
-            "group": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "presentation": {
                 "reveal": "silent"
             },

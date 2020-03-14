@@ -20,7 +20,7 @@ namespace NeoExpress.Commands
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
 
                 var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
-                blockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, msg => console.WriteLine(msg));
+                blockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, console.Out);
 
                 return 0;
             }

@@ -114,7 +114,7 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public void ExportBlockchain(ExpressChain chain, string folder, string password, Action<string> writeConsole)
+        public void ExportBlockchain(ExpressChain chain, string folder, string password, TextWriter writer)
         {
             void WriteNodeConfigJson(ExpressConsensusNode _node, string walletPath)
             {
@@ -215,7 +215,7 @@ namespace NeoExpress.Neo2
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var node = chain.ConsensusNodes[i];
-                writeConsole($"Exporting {node.Wallet.Name} Conensus Node wallet");
+                writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node wallet");
 
                 var walletPath = Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
                 if (File.Exists(walletPath))

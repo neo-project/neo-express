@@ -30,7 +30,9 @@
 
   <ItemGroup>
     <Compile Include="Commands\CreateCommand.cs" />
+    <Compile Include="Commands\ExportCommand.cs" />
     <Compile Include="Commands\RunCommand.cs" />
+    <Compile Include="Commands\WalletCommand*.cs" />
   </ItemGroup>
 
   <ItemGroup>

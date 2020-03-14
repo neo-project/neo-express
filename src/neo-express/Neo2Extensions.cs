@@ -38,5 +38,32 @@ namespace NeoExpress
         public static ExpressWallet GetWallet(this ExpressChain chain, string name) =>
             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => w.NameEquals(name));
+
+        public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
+        {
+            if (chain.Wallets != null)
+            {
+                var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
+                if (wallet != null)
+                {
+                    return wallet.DefaultAccount;
+                }
+            }
+
+            var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
+            if (node != null)
+            {
+                return node.Wallet.DefaultAccount;
+            }
+
+            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return chain.ConsensusNodes
+                    .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
+                    .FirstOrDefault();
+            }
+
+            return null;
+        }
     }
 }

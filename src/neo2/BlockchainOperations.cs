@@ -1,16 +1,15 @@
-﻿using Neo;
+﻿using Neo.Network.P2P.Payloads;
 using NeoExpress.Neo2.Models;
 using NeoExpress.Neo2.Node;
 using NeoExpress.Neo2.Persistence;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -450,5 +449,53 @@ namespace NeoExpress.Neo2
                 }
             }
         }
+
+        public async Task<ContractTransaction> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        {
+            var uri = chain.GetUri();
+
+            var unspents = (await NeoRpcClient.GetUnspents(uri, sender.ScriptHash)
+                .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
+            if (unspents == null)
+            {
+                throw new Exception($"could not retrieve unspents for {nameof(sender)}");
+            }
+
+            var assetId = NodeUtility.GetAssetId(asset);
+            var tx = RpcTransactionManager.CreateContractTransaction(
+                    assetId, quantity, unspents, sender, receiver);
+
+            tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, sender) };
+            var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+            if (sendResult == null || !sendResult.Value<bool>())
+            {
+                throw new Exception("SendRawTransaction failed");
+            }
+
+            return tx;
+        }
+
+        public async Task<ClaimTransaction> Claim(ExpressChain chain, ExpressWalletAccount account)
+        {
+            var uri = chain.GetUri();
+            var claimable = (await NeoRpcClient.GetClaimable(uri, account.ScriptHash)
+                .ConfigureAwait(false))?.ToObject<ClaimableResponse>();
+            if (claimable == null)
+            {
+                throw new Exception($"could not retrieve claimable for {nameof(account)}");
+            }
+
+            var gasHash = Neo.Ledger.Blockchain.UtilityToken.Hash;
+            var tx = RpcTransactionManager.CreateClaimTransaction(account, claimable, gasHash);
+            tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+            var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+            if (sendResult == null || !sendResult.Value<bool>())
+            {
+                throw new Exception("SendRawTransaction failed");
+            }
+
+            return tx;
+        }
+
     }
 }

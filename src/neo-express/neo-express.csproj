@@ -30,9 +30,11 @@
 
   <ItemGroup>
     <Compile Include="Commands\CheckpointCommand*.cs" />
+    <Compile Include="Commands\ClaimCommand.cs" />
     <Compile Include="Commands\CreateCommand.cs" />
     <Compile Include="Commands\ExportCommand.cs" />
     <Compile Include="Commands\RunCommand.cs" />
+    <Compile Include="Commands\TransferCommand.cs" />
     <Compile Include="Commands\WalletCommand*.cs" />
   </ItemGroup>
 

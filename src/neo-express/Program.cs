@@ -13,13 +13,13 @@ namespace NeoExpress
     [Command("neo-express")]
     [Subcommand(
         typeof(CheckPointCommand),
-    //     typeof(ClaimCommand),
+        typeof(ClaimCommand),
     //     typeof(ContractCommand),
         typeof(CreateCommand),
         typeof(RunCommand),
         typeof(ExportCommand),
     //     typeof(ShowCommand),
-    //     typeof(TransferCommand),
+        typeof(TransferCommand),
         typeof(WalletCommand))]
     internal class Program
     {

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using NeoExpress.Models;
+using NeoExpress.Neo2;
 
 namespace NeoExpress.Commands
 {
@@ -44,25 +45,12 @@ namespace NeoExpress.Commands
                     throw new Exception($"{Receiver} receiver not found.");
                 }
 
-                var uri = chain.GetUri();
-
-                var unspents = (await NeoRpcClient.GetUnspents(uri, senderAccount.ScriptHash)
-                    .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
-                if (unspents == null)
-                {
-                    throw new Exception($"could not retrieve unspents for {Sender}");
-                }
-
-                var assetId = NodeUtility.GetAssetId(Asset);
-                var tx = RpcTransactionManager.CreateContractTransaction(
-                        assetId, Quantity, unspents, senderAccount, receiverAccount);
-
-                tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, senderAccount) };
-                var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
-                if (sendResult == null || !sendResult.Value<bool>())
-                {
-                    throw new Exception("SendRawTransaction failed");
-                }
+                var blockchainOperations = new BlockchainOperations();
+                var tx = await blockchainOperations.Transfer(chain,
+                                                             Asset,
+                                                             Quantity,
+                                                             senderAccount,
+                                                             receiverAccount);
 
                 console.WriteLine($"Transfer Transaction {tx.Hash} submitted");
                 return 0;

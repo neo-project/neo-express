@@ -27,11 +27,15 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var filename = string.IsNullOrEmpty(Name)
-                        ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}{CHECKPOINT_EXTENSION}"
-                        : Name + CHECKPOINT_EXTENSION;
+                    var (chain, _) = Program.LoadExpressChain(Input);
 
-                    filename = Path.GetFullPath(filename);
+                    if (chain.ConsensusNodes.Count > 1)
+                    {
+                        throw new Exception("Checkpoint create is only supported on single node express instances");
+                    }
+
+                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                    var filename = blockchainOperations.ResolveCheckpointFileName(Name); 
 
                     if (File.Exists(filename))
                     {
@@ -43,33 +47,7 @@ namespace NeoExpress.Commands
                         File.Delete(filename);
                     }
 
-                    var (chain, _) = Program.LoadExpressChain(Input);
-
-                    if (chain.ConsensusNodes.Count > 1)
-                    {
-                        throw new Exception("Checkpoint create is only supported on single node express instances");
-                    }
-
-                    if (Online)
-                    {
-                        // temporarily disable online checkpoint until
-                        // RPC operations are moved to BlockchainOperations
-
-                        await Task.Delay(0);
-                        throw new Exception();
-
-                        // var uri = chain.GetUri();
-                        // var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
-                        //     .ConfigureAwait(false);
-                        // console.WriteResult(result);
-                    }
-                    else
-                    {
-                        var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
-                        blockchainOperations.CreateCheckpoint(chain, filename);
-                    }
-
-                    console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");
+                    await blockchainOperations.CreateCheckpoint(chain, filename, Online, Console.Out);
 
                     return 0;
                 }

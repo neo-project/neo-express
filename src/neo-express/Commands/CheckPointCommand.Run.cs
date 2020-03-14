@@ -27,13 +27,19 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                    var filename = blockchainOperations.ResolveCheckpointFileName(Name);
+                    if (!File.Exists(filename))
+                    {
+                        throw new Exception($"Checkpoint {filename} couldn't be found");
+                    }
+
                     var (chain, _) = Program.LoadExpressChain(Input);
                     using var cts = new CancellationTokenSource();
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
 
-                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
                     await blockchainOperations.RunCheckpointAsync(chain,
-                                                                  Name,
+                                                                  filename,
                                                                   SecondsPerBlock,
                                                                   console.Out,
                                                                   cts.Token)

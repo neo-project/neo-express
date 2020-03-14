@@ -214,25 +214,21 @@ namespace NeoExpress.Neo2.Node
                 try
                 {
                     var wallet = DevWallet.FromExpressWallet(node.Wallet);
-                    using (var system = new NeoSystem(store))
-                    {
-                        var logPlugin = new LogPlugin(writer);
-                        var rpcPlugin = new ExpressNodeRpcPlugin(store);
+                    var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
 
-                        system.StartNode(node.TcpPort, node.WebSocketPort);
+                    // create a named mutex so that checkpoint create command
+                    // can detect if blockchain is running automatically
+                    using var mutex = new Mutex(true, account.Address);
 
-                        system.StartConsensus(wallet);
-                        system.StartRpc(IPAddress.Loopback, node.RpcPort, wallet);
+                    using var system = new NeoSystem(store);
+                    var logPlugin = new LogPlugin(writer);
+                    var rpcPlugin = new ExpressNodeRpcPlugin(store);
 
-                        {
-                            using var snapshot = Blockchain.Singleton.GetSnapshot();
-                            var validators = snapshot.GetValidators();
+                    system.StartNode(node.TcpPort, node.WebSocketPort);
+                    system.StartConsensus(wallet);
+                    system.StartRpc(IPAddress.Loopback, node.RpcPort, wallet);
 
-                            ;
-                        }
-
-                        cancellationToken.WaitHandle.WaitOne();
-                    }
+                    cancellationToken.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)
                 {

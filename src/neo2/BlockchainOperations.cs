@@ -1,4 +1,5 @@
 ﻿using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
 using NeoExpress.Neo2.Models;
 using NeoExpress.Neo2.Node;
 using NeoExpress.Neo2.Persistence;
@@ -271,12 +272,32 @@ namespace NeoExpress.Neo2
         }
 
         private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
+        private const string CHECKPOINT_EXTENSION = ".neo-express-checkpoint";
 
         private static string GetAddressFilePath(string directory) =>
             Path.Combine(directory, ADDRESS_FILENAME);
 
-        public void CreateCheckpoint(ExpressChain chain, string checkPointFileName)
+        public string ResolveCheckpointFileName(string? checkPointFileName)
         {
+            checkPointFileName = string.IsNullOrEmpty(checkPointFileName)
+                ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}{CHECKPOINT_EXTENSION}"
+                : checkPointFileName;
+
+            if (!Path.GetExtension(checkPointFileName).Equals(CHECKPOINT_EXTENSION))
+            {
+                checkPointFileName = checkPointFileName + CHECKPOINT_EXTENSION;
+            }
+
+            return Path.GetFullPath(checkPointFileName);
+        }
+
+        public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, bool online, TextWriter writer)
+        {
+            if (File.Exists(checkPointFileName))
+            {
+                throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
+            }
+
             if (chain.ConsensusNodes.Count != 1)
             {
                 throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
@@ -285,8 +306,34 @@ namespace NeoExpress.Neo2
             var node = chain.ConsensusNodes[0];
             var folder = node.GetBlockchainPath();
 
-            using var db = new RocksDbStore(folder);
-            CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+            if (!online)
+            {
+                // Check to see if there's a neo-express blockchain currently running
+                // by attempting to open a mutex with the multisig account address for 
+                // a name. If so, do an online checkpoint instead of offline.
+
+                var wallet = DevWallet.FromExpressWallet(node.Wallet);
+                var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
+
+                if (Mutex.TryOpenExisting(account.Address, out var _))
+                {
+                    online = true;
+                }
+            }
+
+            if (online)
+            {
+                var uri = chain.GetUri();
+                await NeoRpcClient.ExpressCreateCheckpoint(uri, checkPointFileName)
+                    .ConfigureAwait(false);
+                writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
+            }
+            else 
+            {
+                using var db = new RocksDbStore(folder);
+                CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+                writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
+            }
         }
 
         public void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, string scriptHash)

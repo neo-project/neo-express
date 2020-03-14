@@ -544,5 +544,118 @@ namespace NeoExpress.Neo2
             return tx;
         }
 
+        public async Task ShowTransaction(ExpressChain chain, string transactionId, TextWriter writer)
+        {
+            var uri = chain.GetUri();
+
+            var rawTxResponseTask = NeoRpcClient.GetRawTransaction(uri, transactionId);
+            var appLogResponseTask = NeoRpcClient.GetApplicationLog(uri, transactionId);
+            await Task.WhenAll(rawTxResponseTask, appLogResponseTask);
+
+            writer.WriteResult(rawTxResponseTask.Result);
+            var appLogResponse = appLogResponseTask.Result ?? JValue.CreateString(string.Empty);
+            if (appLogResponse.Type != JTokenType.String
+                || appLogResponse.Value<string>().Length != 0)
+            {
+                writer.WriteResult(appLogResponse);
+            }
+        }
+
+        static async Task Show(ExpressChain chain, string accountName, TextWriter writer, Func<Uri, string, Task<JToken?>> func, bool showJson = true, Action<JToken>? writeResponse = null)
+        {
+            var account = chain.GetAccount(accountName);
+            if (account == null)
+            {
+                throw new Exception($"{accountName} wallet not found.");
+            }
+
+            var uri = chain.GetUri();
+            var response = await func(uri, account.ScriptHash).ConfigureAwait(false);
+            if (response == null)
+            {
+                throw new ApplicationException("no response from RPC server");
+            }
+
+            if (showJson || writeResponse == null)
+            {
+                writer.WriteResult(response);
+            }
+            else
+            {
+                writeResponse(response);
+            }
+        }
+
+        public Task ShowAccount(ExpressChain chain, string name, bool showJson, TextWriter writer)
+        {
+            void WriteResponse(JToken token)
+            {
+                var response = token.ToObject<AccountResponse>() 
+                    ?? throw new ApplicationException($"Cannot convert response to {nameof(AccountResponse)}");
+                writer.WriteLine($"Account information for {name}:");
+                foreach (var balance in response.Balances)
+                {
+                    writer.WriteLine($"  Asset {balance.Asset}: {balance.Value}");
+                }
+            }
+
+            return Show(chain, name, writer, NeoRpcClient.GetAccountState, showJson, WriteResponse);
+        }
+
+        public Task ShowClaimable(ExpressChain chain, string name, bool showJson, TextWriter writer)
+        {
+                void WriteResponse(JToken token)
+                {
+                    var response = token.ToObject<ClaimableResponse>()
+                        ?? throw new ApplicationException($"Cannot convert response to {nameof(ClaimableResponse)}");
+                    writer.WriteLine($"Claimable GAS for {name}: {response.Unclaimed}");
+                    foreach (var tx in response.Transactions)
+                    {
+                        writer.WriteLine($"  transaction {tx.TransactionId}({tx.Index}): {tx.Unclaimed}");
+                    }
+                }
+            return Show(chain, name, writer, NeoRpcClient.GetClaimable, showJson, WriteResponse);
+        }
+
+        public Task ShowCoins(ExpressChain chain, string name, bool showJson, TextWriter writer)
+        {
+            return Show(chain, name, writer, NeoRpcClient.ExpressShowCoins);
+        }
+
+        public Task ShowGas(ExpressChain chain, string name, bool showJson, TextWriter writer)
+        {
+            void WriteResponse(JToken token)
+            {
+                var response = token.ToObject<UnclaimedResponse>()
+                    ?? throw new ApplicationException($"Cannot convert response to {nameof(UnclaimedResponse)}");
+                writer.WriteLine($"Unclaimed GAS for {name}: {response.Unclaimed}");
+                writer.WriteLine($"    Available GAS: {response.Available}");
+                writer.WriteLine($"  Unavailable GAS: {response.Unavailable}");
+            }
+
+            return Show(chain, name, writer, NeoRpcClient.GetUnclaimed, showJson, WriteResponse);
+        }
+
+        public Task ShowUnspent(ExpressChain chain, string name, bool showJson, TextWriter writer)
+        {
+            void WriteResponse(JToken token)
+            {
+                var response = token.ToObject<UnspentsResponse>()
+                    ?? throw new ApplicationException($"Cannot convert response to {nameof(UnspentsResponse)}");
+                writer.WriteLine($"Unspent assets for {name}");
+                foreach (var balance in response.Balance)
+                {
+                    writer.WriteLine($"  {balance.AssetSymbol}: {balance.Amount}");
+                    writer.WriteLine($"    asset hash: {balance.AssetHash}");
+                    writer.WriteLine("    transactions:");
+                    foreach (var tx in balance.Transactions)
+                    {
+                        writer.WriteLine($"      {tx.TransactionId}({tx.Index}): {tx.Value}");
+                    }
+                }
+            }
+
+            return Show(chain, name, writer, NeoRpcClient.GetUnspents, showJson, WriteResponse);
+        }
     }
 }

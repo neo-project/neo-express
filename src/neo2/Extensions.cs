@@ -140,6 +140,18 @@ namespace NeoExpress.Neo2
             }
         }
 
+        public static void WriteResult(this TextWriter writer, JToken? result)
+        {
+            if (result != null)
+            {
+                writer.WriteLine(result.ToString(Formatting.Indented));
+            }
+            else
+            {
+                writer.WriteLine("<no result provided>");
+            }
+        }
+
         public static void Save(this ExpressChain chain, string fileName)
         {
             var serializer = new JsonSerializer();

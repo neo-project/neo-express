@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -112,6 +113,17 @@ namespace NeoExpress.Neo2
                     wallet.Dispose();
                 }
             }
+        }
+
+        static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
+        {
+            if (!chain.InitializeProtocolSettings())
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+            var node = chain.ConsensusNodes[index];
+            using var store = new RocksDbStore(directory);
+            NodeUtility.Preload(preloadGasAmount, store, node, writer, cancellationToken);
         }
 
         public void ExportBlockchain(ExpressChain chain, string folder, string password, TextWriter writer)
@@ -264,9 +276,17 @@ namespace NeoExpress.Neo2
         private static string GetAddressFilePath(string directory) =>
             Path.Combine(directory, ADDRESS_FILENAME);
 
-        public void CreateCheckpoint(ExpressChain chain, string blockChainStoreDirectory, string checkPointFileName)
+        public void CreateCheckpoint(ExpressChain chain, string checkPointFileName)
         {
-            using var db = new RocksDbStore(blockChainStoreDirectory);
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            var folder = node.GetBlockchainPath();
+
+            using var db = new RocksDbStore(folder);
             CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
         }
 
@@ -302,18 +322,48 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public void RestoreCheckpoint(ExpressChain chain, string chainDirectory, string checkPointDirectory)
+        public void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force)
         {
-            var node = chain.ConsensusNodes[0];
-            ValidateCheckpoint(checkPointDirectory, chain.Magic, node.Wallet.DefaultAccount);
+            string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            var addressFile = GetAddressFilePath(checkPointDirectory);
-            if (!File.Exists(addressFile))
+            try
             {
-                File.Delete(addressFile);
-            }
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+                }
 
-            Directory.Move(checkPointDirectory, chainDirectory);
+                var node = chain.ConsensusNodes[0];
+                var blockchainDataPath = node.GetBlockchainPath();
+
+                if (!force && Directory.Exists(blockchainDataPath))
+                {
+                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+                }
+
+                ZipFile.ExtractToDirectory(checkPointArchive, checkpointTempPath);
+                ValidateCheckpoint(checkpointTempPath, chain.Magic, node.Wallet.DefaultAccount);
+
+                var addressFile = GetAddressFilePath(checkpointTempPath);
+                if (File.Exists(addressFile))
+                {
+                    File.Delete(addressFile);
+                }
+
+                if (Directory.Exists(blockchainDataPath))
+                {
+                    Directory.Delete(blockchainDataPath, true);
+                }
+
+                Directory.Move(checkpointTempPath, blockchainDataPath);
+            }
+            finally
+            {
+                if (Directory.Exists(checkpointTempPath))
+                {
+                    Directory.Delete(checkpointTempPath, true);
+                }
+            }
         }
 
         private static void ValidateCheckpoint(string checkPointDirectory, long magic, ExpressWalletAccount account)
@@ -337,17 +387,6 @@ namespace NeoExpress.Neo2
             {
                 throw new Exception("Invalid Checkpoint");
             }
-        }
-
-        static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
-        {
-            if (!chain.InitializeProtocolSettings())
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
-            var node = chain.ConsensusNodes[index];
-            using var store = new RocksDbStore(directory);
-            NodeUtility.Preload(preloadGasAmount, store, node, writer, cancellationToken);
         }
 
         public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
@@ -380,18 +419,36 @@ namespace NeoExpress.Neo2
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 
-        public Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
-            if (!chain.InitializeProtocolSettings(secondsPerBlock))
+            string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
             {
-                throw new Exception("could not initialize protocol settings");
-            }
-            var node = chain.ConsensusNodes[0];
-            ValidateCheckpoint(directory, chain.Magic, node.Wallet.DefaultAccount);
+                if (!chain.InitializeProtocolSettings(secondsPerBlock))
+                {
+                    throw new Exception("could not initialize protocol settings");
+                }
 
-#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
-#pragma warning restore IDE0067 // Dispose objects before losing scope
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+                }
+
+                var node = chain.ConsensusNodes[0];
+                ZipFile.ExtractToDirectory(checkPointArchive, checkpointTempPath);
+                ValidateCheckpoint(checkpointTempPath, chain.Magic, node.Wallet.DefaultAccount);
+
+    #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
+                return NodeUtility.RunAsync(new CheckpointStore(checkpointTempPath), node, writer, cancellationToken);
+    #pragma warning restore IDE0067 // Dispose objects before losing scope
+            }
+            finally
+            {
+                if (Directory.Exists(checkpointTempPath))
+                {
+                    Directory.Delete(checkpointTempPath, true);
+                }
+            }
         }
     }
 }

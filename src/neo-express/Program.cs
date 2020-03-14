@@ -12,7 +12,7 @@ namespace NeoExpress
 {
     [Command("neo-express")]
     [Subcommand(
-    //     typeof(CheckPointCommand),
+        typeof(CheckPointCommand),
     //     typeof(ClaimCommand),
     //     typeof(ContractCommand),
         typeof(CreateCommand),

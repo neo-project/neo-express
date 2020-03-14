@@ -25,28 +25,20 @@ namespace NeoExpress.Commands
 
             private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
-                string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 try
                 {
-                    var filename = ValidateCheckpointFileName(Name);
                     var (chain, _) = Program.LoadExpressChain(Input);
+                    using var cts = new CancellationTokenSource();
+                    console.CancelKeyPress += (sender, args) => cts.Cancel();
 
-                    if (chain.ConsensusNodes.Count > 1)
-                    {
-                        throw new Exception("Checkpoint run is only supported on single node express instances");
-                    }
-
-                    ZipFile.ExtractToDirectory(filename, checkpointTempPath);
-
-                    using (var cts = new CancellationTokenSource())
-                    {
-                        console.CancelKeyPress += (sender, args) => cts.Cancel();
-
-                        var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
-                        await blockchainOperations.RunCheckpointAsync(checkpointTempPath, chain, SecondsPerBlock,
-                                                                      console.Out, cts.Token)
+                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                    await blockchainOperations.RunCheckpointAsync(chain,
+                                                                  Name,
+                                                                  SecondsPerBlock,
+                                                                  console.Out,
+                                                                  cts.Token)
                             .ConfigureAwait(false);
-                    }
+
                     return 0;
                 }
                 catch (Exception ex)
@@ -54,10 +46,6 @@ namespace NeoExpress.Commands
                     console.WriteError(ex.Message);
                     app.ShowHelp();
                     return 1;
-                }
-                finally
-                {
-                    Directory.Delete(checkpointTempPath, true);
                 }
             }
         }

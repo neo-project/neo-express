@@ -52,18 +52,21 @@ namespace NeoExpress.Commands
 
                     if (Online)
                     {
-                        var uri = chain.GetUri();
-                        var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
-                            .ConfigureAwait(false);
-                        console.WriteResult(result);
+                        // temporarily disable online checkpoint until
+                        // RPC operations are moved to BlockchainOperations
+
+                        await Task.Delay(0);
+                        throw new Exception();
+
+                        // var uri = chain.GetUri();
+                        // var result = await NeoRpcClient.ExpressCreateCheckpoint(uri, filename)
+                        //     .ConfigureAwait(false);
+                        // console.WriteResult(result);
                     }
                     else
                     {
-                        var blockchainPath = chain.ConsensusNodes[0].GetBlockchainPath();
-
                         var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
-                        blockchainOperations.CreateCheckpoint(
-                            chain, blockchainPath, filename);
+                        blockchainOperations.CreateCheckpoint(chain, filename);
                     }
 
                     console.WriteLine($"created checkpoint {Path.GetFileName(filename)}");

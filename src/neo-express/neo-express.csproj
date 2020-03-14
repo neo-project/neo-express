@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Commands\CheckpointCommand*.cs" />
     <Compile Include="Commands\CreateCommand.cs" />
     <Compile Include="Commands\ExportCommand.cs" />
     <Compile Include="Commands\RunCommand.cs" />

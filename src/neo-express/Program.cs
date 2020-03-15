@@ -14,7 +14,7 @@ namespace NeoExpress
     [Subcommand(
         typeof(CheckPointCommand),
         typeof(ClaimCommand),
-    //     typeof(ContractCommand),
+        typeof(ContractCommand),
         typeof(CreateCommand),
         typeof(RunCommand),
         typeof(ExportCommand),

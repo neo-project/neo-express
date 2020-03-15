@@ -752,31 +752,27 @@ namespace NeoExpress.Neo2
             return false;
         }
 
-        public async Task<(bool deployed, ExpressContract? result)> GetContractState(Uri uri, ExpressContract contract)
+        public async Task<InvocationTransaction> DeployContract(ExpressChain chain, ExpressContract contract, ExpressWalletAccount account)
         {
-            // try
-            // {
-            //     var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
-            //     if (result != null)
-            //     {
-            //         JToken
-            //         var deployedContract = new ExpressContract()
-            //         {
-            //             Hash = result.Value<string>("hash"),
-            //             Name = result.Value<string>("name"),
-            //             Properties = result["properties"].Select(t => t.k)                  
+            var uri = chain.GetUri();
 
-            //         }
-            //         result.Value<s
-            //         return (true, result);
-            //     }
+            var unspents = (await NeoRpcClient.GetUnspents(uri, account.ScriptHash)
+                .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
+            if (unspents == null)
+            {
+                throw new Exception($"could not retrieve unspents for account");
+            }
 
-                return (false, null);
-            // }
-            // catch (Exception)
-            // {
-            //     return (false, null);
-            // }
+            var tx = RpcTransactionManager.CreateDeploymentTransaction(contract, 
+                account, unspents);
+            tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+            var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+            if (sendResult == null || !sendResult.Value<bool>())
+            {
+                throw new Exception("SendRawTransaction failed");
+            }
+
+            return tx;
         }
     }
 }

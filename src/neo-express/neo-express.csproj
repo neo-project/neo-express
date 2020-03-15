@@ -23,10 +23,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Commands\Contract*" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 

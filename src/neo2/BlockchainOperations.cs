@@ -754,7 +754,30 @@ namespace NeoExpress.Neo2
 
         public async Task<InvocationTransaction> DeployContract(ExpressChain chain, ExpressContract contract, ExpressWalletAccount account)
         {
+            static async Task<bool> GetContractState(Uri uri, ExpressContract contract)
+            {
+                try
+                {
+                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
+                    if (result != null)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+
             var uri = chain.GetUri();
+
+            if (await GetContractState(uri, contract).ConfigureAwait(false))
+            {
+                throw new Exception($"Contract {contract.Name} ({contract.Hash}) already deployed");
+            }
 
             var unspents = (await NeoRpcClient.GetUnspents(uri, account.ScriptHash)
                 .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
@@ -766,6 +789,8 @@ namespace NeoExpress.Neo2
             var tx = RpcTransactionManager.CreateDeploymentTransaction(contract, 
                 account, unspents);
             tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+
+            
             var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
             if (sendResult == null || !sendResult.Value<bool>())
             {
@@ -773,6 +798,12 @@ namespace NeoExpress.Neo2
             }
 
             return tx;
+        }
+
+        public Task<JToken?> GetContract(ExpressChain chain, string scriptHash)
+        {
+            var uri = chain.GetUri();
+            return NeoRpcClient.GetContractState(uri, scriptHash);
         }
     }
 }

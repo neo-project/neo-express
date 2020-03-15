@@ -34,7 +34,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
+                    var (chain, _) = Program.LoadExpressChain(Input);
 
                     var account = chain.GetAccount(Account);
                     if (account == null)
@@ -45,6 +45,7 @@ namespace NeoExpress.Commands
                     var blockchainOperations = new BlockchainOperations();
                     if (blockchainOperations.TryLoadContract(Contract, out var contract, out var errorMessage))
                     {
+                        console.WriteLine($"Deploying contract {contract.Name} ({contract.Hash})");
                         var tx = await blockchainOperations.DeployContract(chain, contract, account);
                         console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
                     }

@@ -285,7 +285,7 @@ namespace NeoExpress.Neo2
             return ProtocolSettings.Initialize(config);
         }
 
-        private static bool TryGetContractFile(string path, [NotNullWhen(true)] out string? contractPath, [MaybeNullWhen(true)] out string errorMessage)
+        public static bool TryGetContractFile(string path, [NotNullWhen(true)] out string? contractPath, [MaybeNullWhen(true)] out string errorMessage)
         {
             if (Directory.Exists(path))
             {

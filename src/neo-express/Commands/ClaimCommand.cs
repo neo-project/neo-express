@@ -1,11 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using Neo.Network.P2P.Payloads;
-using NeoExpress.Models;
 using NeoExpress.Neo2;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeoExpress.Commands

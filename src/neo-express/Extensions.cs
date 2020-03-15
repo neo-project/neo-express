@@ -15,7 +15,10 @@
 // using System.Text;
 
 using System;
+using System.IO;
+using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Neo2.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -144,39 +147,39 @@ namespace NeoExpress
             }
         }
 
-//         public static void Save(this ExpressChain chain, string fileName)
-//         {
-//             var serializer = new JsonSerializer();
-//             using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
-//             using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
-//             {
-//                 serializer.Serialize(writer, chain);
-//             }
-//         }
+        public static void Save(this ExpressChain chain, string fileName)
+        {
+            var serializer = new JsonSerializer();
+            using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
+            using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
+            {
+                serializer.Serialize(writer, chain);
+            }
+        }
 
-//         public static bool IsReservedName(this ExpressChain chain, string name)
-//         {
-//             if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
-//                 return true;
+        public static bool IsReservedName(this ExpressChain chain, string name)
+        {
+            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
+                return true;
 
-//             foreach (var node in chain.ConsensusNodes)
-//             {
-//                 if (string.Equals(name, node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
-//                     return true;
-//             }
+            foreach (var node in chain.ConsensusNodes)
+            {
+                if (string.Equals(name, node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
 
-//             return false;
-//         }
+            return false;
+        }
 
-//         public static bool NameEquals(this ExpressContract contract, string name) =>
-//             string.Equals(contract.Name, name, StringComparison.InvariantCultureIgnoreCase);
+        public static bool NameEquals(this ExpressContract contract, string name) =>
+            string.Equals(contract.Name, name, StringComparison.InvariantCultureIgnoreCase);
 
-//         public static bool NameEquals(this ExpressWallet wallet, string name) =>
-//             string.Equals(wallet.Name, name, StringComparison.InvariantCultureIgnoreCase);
+        public static bool NameEquals(this ExpressWallet wallet, string name) =>
+            string.Equals(wallet.Name, name, StringComparison.InvariantCultureIgnoreCase);
 
-//         public static ExpressWallet GetWallet(this ExpressChain chain, string name) =>
-//             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-//                 .SingleOrDefault(w => w.NameEquals(name));
+        public static ExpressWallet GetWallet(this ExpressChain chain, string name) =>
+            (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                .SingleOrDefault(w => w.NameEquals(name));
 
 //         public static string GetBlockchainPath(this ExpressWalletAccount account)
 //         {
@@ -188,32 +191,32 @@ namespace NeoExpress
 //             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
 //         }
 
-//         public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
-//         {
-//             if (chain.Wallets != null)
-//             {
-//                 var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
-//                 if (wallet != null)
-//                 {
-//                     return wallet.DefaultAccount;
-//                 }
-//             }
+        public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
+        {
+            if (chain.Wallets != null)
+            {
+                var wallet = chain.Wallets.SingleOrDefault(w => w.NameEquals(name));
+                if (wallet != null)
+                {
+                    return wallet.DefaultAccount;
+                }
+            }
 
-//             var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
-//             if (node != null)
-//             {
-//                 return node.Wallet.DefaultAccount;
-//             }
+            var node = chain.ConsensusNodes.SingleOrDefault(n => n.Wallet.NameEquals(name));
+            if (node != null)
+            {
+                return node.Wallet.DefaultAccount;
+            }
 
-//             if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
-//             {
-//                 return chain.ConsensusNodes
-//                     .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
-//                     .FirstOrDefault();
-//             }
+            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return chain.ConsensusNodes
+                    .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))
+                    .FirstOrDefault();
+            }
 
-//             return null;
-//         }
+            return null;
+        }
 
 //         public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
 
@@ -227,50 +230,6 @@ namespace NeoExpress
 //             return wallet.Accounts
 //                 .Single(a => a.IsDefault)
 //                 .GetBlockchainPath();
-//         }
-
-//         public static string GetBlockchainPath(this ExpressConsensusNode node)
-//         {
-//             if (node == null)
-//             {
-//                 throw new ArgumentNullException(nameof(node));
-//             }
-
-//             return node.Wallet.GetBlockchainPath();
-//         }
-
-//         public static bool InitializeProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
-//         {
-//             secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
-
-//             IEnumerable<KeyValuePair<string, string>> settings()
-//             {
-//                 yield return new KeyValuePair<string, string>(
-//                     "ProtocolConfiguration:Magic", $"{chain.Magic}");
-//                 yield return new KeyValuePair<string, string>(
-//                     "ProtocolConfiguration:AddressVersion", $"{ExpressChain.AddressVersion}");
-//                 yield return new KeyValuePair<string, string>(
-//                     "ProtocolConfiguration:SecondsPerBlock", $"{secondsPerBlock}");
-
-//                 foreach (var (node, index) in chain.ConsensusNodes.Select((n, i) => (n, i)))
-//                 {
-//                     var privateKey = node.Wallet.Accounts
-//                         .Select(a => a.PrivateKey)
-//                         .Distinct().Single().HexToBytes();
-//                     var encodedPublicKey = new KeyPair(privateKey).PublicKey
-//                         .EncodePoint(true).ToHexString();
-//                     yield return new KeyValuePair<string, string>(
-//                         $"ProtocolConfiguration:StandbyValidators:{index}", encodedPublicKey);
-//                     yield return new KeyValuePair<string, string>(
-//                         $"ProtocolConfiguration:SeedList:{index}", $"{IPAddress.Loopback}:{node.TcpPort}");
-//                 }
-//             }
-
-//             var config = new ConfigurationBuilder()
-//                 .AddInMemoryCollection(settings())
-//                 .Build();
-
-//             return ProtocolSettings.Initialize(config);
 //         }
 
 //         private static bool TryGetContractFile(string path, [NotNullWhen(true)] out string? contractPath, [MaybeNullWhen(true)] out string errorMessage)

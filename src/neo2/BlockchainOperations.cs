@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -16,7 +17,6 @@ using System.Threading.Tasks;
 
 namespace NeoExpress.Neo2
 {
-
     public class BlockchainOperations
     {
         public ExpressChain CreateBlockchain(FileInfo output, int count, uint preloadGas, TextWriter writer, CancellationToken token = default)
@@ -461,6 +461,7 @@ namespace NeoExpress.Neo2
             }
 
 #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
+            writer.WriteLine(folder);
             return NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
@@ -656,6 +657,126 @@ namespace NeoExpress.Neo2
             }
 
             return Show(chain, name, writer, NeoRpcClient.GetUnspents, showJson, WriteResponse);
+        }
+
+        static ExpressContract LoadContract(string avmFile)
+        {
+            static AbiContract LoadAbiContract(string avmFile)
+            {
+                string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
+                if (!File.Exists(abiFile))
+                {
+                    throw new ApplicationException($"there is no .abi.json file for {avmFile}.");
+                }
+
+                var serializer = new JsonSerializer();
+                using var stream = File.OpenRead(abiFile);
+                using var reader = new JsonTextReader(new StreamReader(stream));
+                return serializer.Deserialize<AbiContract>(reader)
+                    ?? throw new ApplicationException($"Cannot load contract abi information from {abiFile}");
+            }
+
+            static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function)
+                => new ExpressContract.Function
+                {
+                    Name = function.Name,
+                    ReturnType = function.ReturnType,
+                    Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
+                    {
+                        Name = p.Name,
+                        Type = p.Type
+                    }).ToList()
+                };
+            
+            static Dictionary<string, string> ToExpressContractProperties(AbiContract.ContractMetadata? metadata)
+                => metadata == null
+                    ? new Dictionary<string, string>()
+                    : new Dictionary<string, string>()
+                    {
+                                { "title", metadata.Title },
+                                { "description", metadata.Description },
+                                { "version", metadata.Version },
+                                { "email", metadata.Email },
+                                { "author", metadata.Author },
+                                { "has-storage", metadata.HasStorage.ToString() },
+                                { "has-dynamic-invoke", metadata.HasDynamicInvoke.ToString() },
+                                { "is-payable", metadata.IsPayable.ToString() }
+                    };
+
+            System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+
+            var abiContract = LoadAbiContract(avmFile);
+            var name = Path.GetFileNameWithoutExtension(avmFile);
+            return new ExpressContract()
+            {
+                Name = name,
+                Hash = abiContract.Hash,
+                EntryPoint = abiContract.Entrypoint,
+                ContractData = File.ReadAllBytes(avmFile).ToHexString(),
+                Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
+                Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
+                Properties = ToExpressContractProperties(abiContract.Metadata),
+            };
+
+        }
+
+        public bool TryLoadContract(string path, [MaybeNullWhen(false)] out ExpressContract contract, [MaybeNullWhen(true)] out string errorMessage)
+        {
+            if (Directory.Exists(path))
+            {
+                var avmFiles = Directory.EnumerateFiles(path, "*.avm");
+                var avmFileCount = avmFiles.Count();
+                if (avmFileCount == 1)
+                {
+                    contract = LoadContract(avmFiles.Single());
+                    errorMessage = null!;
+                    return true;
+                }
+
+                contract = null!;
+                errorMessage = avmFileCount == 0
+                    ? $"There are no .avm files in {path}"
+                    : $"There is more than one .avm file in {path}. Please specify file name directly";
+                return false;
+            }
+
+            if (File.Exists(path) && Path.GetExtension(path) == ".avm")
+            {
+                contract = LoadContract(path);
+                errorMessage = null!;
+                return true;
+            }
+
+            contract = null!;
+            errorMessage = $"{path} is not an .avm file.";
+            return false;
+        }
+
+        public async Task<(bool deployed, ExpressContract? result)> GetContractState(Uri uri, ExpressContract contract)
+        {
+            // try
+            // {
+            //     var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
+            //     if (result != null)
+            //     {
+            //         JToken
+            //         var deployedContract = new ExpressContract()
+            //         {
+            //             Hash = result.Value<string>("hash"),
+            //             Name = result.Value<string>("name"),
+            //             Properties = result["properties"].Select(t => t.k)                  
+
+            //         }
+            //         result.Value<s
+            //         return (true, result);
+            //     }
+
+                return (false, null);
+            // }
+            // catch (Exception)
+            // {
+            //     return (false, null);
+            // }
         }
     }
 }

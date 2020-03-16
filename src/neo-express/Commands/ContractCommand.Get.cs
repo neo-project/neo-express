@@ -27,22 +27,6 @@ namespace NeoExpress.Commands
 
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
-                static string GetScriptHash(string contract)
-                {
-                    if (UInt160.TryParse(contract, out var _))
-                    {
-                        return contract;
-                    }
-
-                    var blockchainOperations = new BlockchainOperations();
-                    if (blockchainOperations.TryLoadContract(contract, out var contract, out var errorMessage))
-                    {
-                        return contract.Hash;
-                    }
-
-                    throw new Exception(errorMessage);
-                }
-
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);

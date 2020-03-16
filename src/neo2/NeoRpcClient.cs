@@ -172,5 +172,9 @@ namespace NeoExpress.Neo2
             return RpcCall(uri, "express-get-contract-metadata", new JArray(scriptHash));
         } 
 
+        public static Task<JToken?> ListContracts(Uri uri)
+        {
+            return RpcCall(uri, "express-list-contract-metadata", new JArray());
+        } 
     }
 }

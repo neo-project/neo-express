@@ -490,7 +490,7 @@ namespace NeoExpress.Neo2.Node
 
         private JObject OnListContractMetadata(JArray _)
         {
-            var contracts = new JObject();
+            var contracts = new JArray();
             using var snapshot = Blockchain.Singleton.GetSnapshot();
             foreach (var kvp in snapshot.Contracts.Find())
             {
@@ -498,11 +498,14 @@ namespace NeoExpress.Neo2.Node
                 if (metadata != null && metadata.Length > 0)
                 {
                     var json = JObject.Parse(Encoding.UTF8.GetString(metadata));
-                    contracts[kvp.Key.ToString()] = json;
+                    json["type"] = "metadata";
+                    contracts.Add(json);
                 }
                 else
                 {
-                    contracts[kvp.Key.ToString()] = JObject.Null;
+                    var json = kvp.Value.ToJson();
+                    json["type"] = "state";
+                    contracts.Add(json);
                 }
             }
             return contracts;

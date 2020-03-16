@@ -1,6 +1,9 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Neo2;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -12,33 +15,34 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
-            // private int OnExecute(CommandLineApplication app, IConsole console)
-            // {
-            //     try
-            //     {
-            //         var (chain, _) = Program.LoadExpressChain(Input);
-            //         if (chain.Contracts == null || !chain.Contracts.Any())
-            //         {
-            //             console.WriteLine("No contracts deployed");
-            //         }
-            //         else
-            //         {
-            //             foreach (var c in chain.Contracts)
-            //             {
-            //                 console.WriteLine($"{c.Name}");
-            //                 console.WriteLine($"\t{c.Hash}");
-            //             }
-            //         }
+            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            {
+                try
+                {
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var blockchainOperations = new BlockchainOperations();
+                    var contracts = await blockchainOperations.ListContracts(chain);
+                    for (int i = 0; i < contracts.Count; i++)
+                    {
+                        Neo2.Models.ExpressContract contract = contracts[i];
+                        var json = JsonConvert.SerializeObject(contract, Formatting.Indented);
+                        console.WriteLine(json);
+                    }
 
-            //         return 0;
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         console.WriteError(ex.Message);
-            //         app.ShowHelp();
-            //         return 1;
-            //     }
-            // }
+                    if (contracts.Count == 0)
+                    {
+                        console.WriteLine("no contracts deployed");
+                    }
+
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    console.WriteError(ex.Message);
+                    app.ShowHelp();
+                    return 1;
+                }
+            }
         }
     }
 }

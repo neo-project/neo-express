@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
@@ -941,6 +942,61 @@ namespace NeoExpress.Neo2
             }
 
             throw new Exception($"Contract {scriptHash} not deployed");
+        }
+
+        public async Task<List<ExpressContract>> ListContracts(ExpressChain chain)
+        {
+            var uri = chain.GetUri();
+            var json = await NeoRpcClient.ListContracts(uri);
+
+            if (json != null && json is JArray jObject)
+            {
+                var contracts = new List<ExpressContract>(jObject.Count);
+                foreach (var obj in jObject)
+                {
+                    var type = obj.Value<string>("type");
+                    if (type == "metadata")
+                    {
+                        var contract = obj.ToObject<AbiContract>();
+                        Debug.Assert(contract != null);
+                        contracts.Add(Convert(contract!));
+                    }
+                    else
+                    {
+                        Debug.Assert(type == "state");
+                        var contract = obj.ToObject<ContractState>();
+                        Debug.Assert(contract != null);
+                        contracts.Add(Convert(contract!));
+                    }
+                }
+                
+                return contracts;
+            }
+
+            return new List<ExpressContract>(0);
+        }
+
+        public async Task<List<ExpressStorage>> GetStorage(ExpressChain chain, string scriptHash)
+        {
+            var uri = chain.GetUri();
+            var json = await NeoRpcClient.ExpressGetContractStorage(uri, scriptHash);
+            if (json != null && json is JArray array)
+            {
+                var storages = new List<ExpressStorage>(array.Count);
+                foreach (var s in array)
+                {
+                    var storage = new ExpressStorage()
+                    {
+                        Key = s.Value<string>("key"),
+                        Value = s.Value<string>("value"),
+                        Constant = s.Value<bool>("constant")
+                    };
+                    storages.Add(storage);
+                }
+                return storages;
+            }
+
+            return new List<ExpressStorage>(0);
         }
     }
 }

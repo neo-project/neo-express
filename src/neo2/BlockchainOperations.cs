@@ -676,6 +676,51 @@ namespace NeoExpress.Neo2
                     ?? throw new ApplicationException($"Cannot load contract abi information from {abiFile}");
             }
 
+            System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+
+            var abiContract = LoadAbiContract(avmFile);
+            var name = Path.GetFileNameWithoutExtension(avmFile);
+            var contractData = File.ReadAllBytes(avmFile).ToHexString();
+            return Convert(abiContract, name, contractData);
+        }
+
+        static ExpressContract Convert(ContractState contractState)
+        {
+            var properties = new Dictionary<string, string>()
+            {
+                { "has-dynamic-invoke", contractState.Properties.DynamicInvoke.ToString() },
+                { "has-storage", contractState.Properties.Storage.ToString() }
+            };
+
+            var entrypoint = "Main"; 
+            var @params = contractState.Parameters.Select((type, index) => 
+                new ExpressContract.Parameter()
+                {
+                    Name = $"parameter{index}",
+                    Type = type
+                }
+            );
+
+            var function = new ExpressContract.Function()
+            {
+                Name = entrypoint,
+                Parameters = @params.ToList(),
+                ReturnType = contractState.ReturnType,
+            };
+
+            return new ExpressContract()
+            {
+                Name = contractState.Name,
+                Hash = contractState.Hash,
+                EntryPoint = entrypoint,
+                ContractData = contractState.Script,
+                Functions = new List<ExpressContract.Function>() { function },                
+                Properties = properties
+            };
+
+        }
+        static ExpressContract Convert(AbiContract abiContract, string? name = null, string? contractData = null)
+        {
             static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function)
                 => new ExpressContract.Function
                 {
@@ -688,36 +733,96 @@ namespace NeoExpress.Neo2
                     }).ToList()
                 };
             
-            static Dictionary<string, string> ToExpressContractProperties(AbiContract.ContractMetadata? metadata)
-                => metadata == null
-                    ? new Dictionary<string, string>()
-                    : new Dictionary<string, string>()
-                    {
-                                { "title", metadata.Title },
-                                { "description", metadata.Description },
-                                { "version", metadata.Version },
-                                { "email", metadata.Email },
-                                { "author", metadata.Author },
-                                { "has-storage", metadata.HasStorage.ToString() },
-                                { "has-dynamic-invoke", metadata.HasDynamicInvoke.ToString() },
-                                { "is-payable", metadata.IsPayable.ToString() }
-                    };
+            var properties = abiContract.Metadata == null
+                ? new Dictionary<string, string>()
+                : new Dictionary<string, string>()
+                {
+                    { "title", abiContract.Metadata.Title },
+                    { "description", abiContract.Metadata.Description },
+                    { "version", abiContract.Metadata.Version },
+                    { "email", abiContract.Metadata.Email },
+                    { "author", abiContract.Metadata.Author },
+                    { "has-storage", abiContract.Metadata.HasStorage.ToString() },
+                    { "has-dynamic-invoke", abiContract.Metadata.HasDynamicInvoke.ToString() },
+                    { "is-payable", abiContract.Metadata.IsPayable.ToString() }
+                };
 
-            System.Diagnostics.Debug.Assert(File.Exists(avmFile));
-
-            var abiContract = LoadAbiContract(avmFile);
-            var name = Path.GetFileNameWithoutExtension(avmFile);
             return new ExpressContract()
             {
-                Name = name,
+                Name = name ?? abiContract.Metadata?.Title ?? string.Empty,
                 Hash = abiContract.Hash,
                 EntryPoint = abiContract.Entrypoint,
-                ContractData = File.ReadAllBytes(avmFile).ToHexString(),
+                ContractData = contractData ?? string.Empty,
                 Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
                 Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
-                Properties = ToExpressContractProperties(abiContract.Metadata),
+                Properties = properties
             };
+        }
 
+        static AbiContract Convert(ExpressContract contract)
+        {
+            static AbiContract.Function ToAbiContractFunction(ExpressContract.Function function)
+                => new AbiContract.Function
+                {
+                    Name = function.Name,
+                    ReturnType = function.ReturnType,
+                    Parameters = function.Parameters.Select(p => new AbiContract.Parameter
+                    {
+                        Name = p.Name,
+                        Type = p.Type
+                    }).ToList()
+                };
+
+            static AbiContract.ContractMetadata ToAbiContractMetadata(Dictionary<string, string> metadata)
+            {
+                var contractMetadata = new AbiContract.ContractMetadata();
+                if (metadata.TryGetValue("title", out var title))
+                {
+                    contractMetadata.Title = title;
+                }
+                if (metadata.TryGetValue("description", out var description))
+                {
+                    contractMetadata.Description = description;
+                }
+                if (metadata.TryGetValue("version", out var version))
+                {
+                    contractMetadata.Version = version;
+                }
+                if (metadata.TryGetValue("email", out var email))
+                {
+                    contractMetadata.Description = email;
+                }
+                if (metadata.TryGetValue("author", out var author))
+                {
+                    contractMetadata.Author = author;
+                }
+                if (metadata.TryGetValue("has-storage", out var hasStorageString)
+                    && bool.TryParse(hasStorageString, out var hasStorage))
+                {
+                    contractMetadata.HasStorage = hasStorage;
+                }
+                if (metadata.TryGetValue("has-dynamic-invoke", out var hasDynamicInvokeString)
+                    && bool.TryParse(hasDynamicInvokeString, out var hasDynamicInvoke))
+                {
+                    contractMetadata.HasDynamicInvoke = hasDynamicInvoke;
+                }
+                if (metadata.TryGetValue("is-payable", out var isPayableString)
+                    && bool.TryParse(hasStorageString, out var isPayable))
+                {
+                    contractMetadata.IsPayable = isPayable;
+                }
+
+                return contractMetadata;
+            }
+
+            return new AbiContract()
+            {
+                Hash = contract.Hash,
+                Entrypoint = contract.EntryPoint,
+                Functions = contract.Functions.Select(ToAbiContractFunction).ToList(),
+                Events = contract.Events.Select(ToAbiContractFunction).ToList(),
+                Metadata = ToAbiContractMetadata(contract.Properties)
+            };
         }
 
         public bool TryLoadContract(string path, [MaybeNullWhen(false)] out ExpressContract contract, [MaybeNullWhen(true)] out string errorMessage)
@@ -752,29 +857,14 @@ namespace NeoExpress.Neo2
             return false;
         }
 
-        public async Task<InvocationTransaction> DeployContract(ExpressChain chain, ExpressContract contract, ExpressWalletAccount account)
+        public async Task<InvocationTransaction> DeployContract(ExpressChain chain, ExpressContract contract, ExpressWalletAccount account, bool saveMetadata = true)
         {
-            static async Task<bool> GetContractState(Uri uri, ExpressContract contract)
-            {
-                try
-                {
-                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
-                    if (result != null)
-                    {
-                        return true;
-                    }
-
-                    return false;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }
-
             var uri = chain.GetUri();
 
-            if (await GetContractState(uri, contract).ConfigureAwait(false))
+            var contractState = await SwallowException(NeoRpcClient.GetContractState(uri, contract.Hash))
+                .ConfigureAwait(false);
+
+            if (contractState != null)
             {
                 throw new Exception($"Contract {contract.Name} ({contract.Hash}) already deployed");
             }
@@ -790,20 +880,67 @@ namespace NeoExpress.Neo2
                 account, unspents);
             tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
 
-            
             var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
             if (sendResult == null || !sendResult.Value<bool>())
             {
                 throw new Exception("SendRawTransaction failed");
             }
 
+            if (saveMetadata)
+            {
+                var abiContract = Convert(contract);
+                await NeoRpcClient.SaveContractMetadata(uri, abiContract.Hash, abiContract);
+            }
+
             return tx;
         }
 
-        public Task<JToken?> GetContract(ExpressChain chain, string scriptHash)
+        static Task<T?> SwallowException<T>(Task<T?> task)
+            where T : class
+        {
+            return task.ContinueWith(t => {
+                if (task.IsCompletedSuccessfully)
+                {
+                    return task.Result;
+                }
+                else
+                {
+                    return null;
+                }
+            });
+        }
+
+        public async Task<ExpressContract?> GetContract(ExpressChain chain, string scriptHash)
         {
             var uri = chain.GetUri();
-            return NeoRpcClient.GetContractState(uri, scriptHash);
+
+            var getContractStateTask = SwallowException(NeoRpcClient.GetContractState(uri, scriptHash));
+            var getContractMetadataTask = SwallowException(NeoRpcClient.GetContractMetadata(uri, scriptHash));
+            await Task.WhenAll(getContractStateTask, getContractMetadataTask);
+
+            if (getContractStateTask.Result != null
+                && getContractMetadataTask.Result != null)
+            {
+                var contractData = getContractMetadataTask.Result.Value<string>("script");
+                var name = getContractMetadataTask.Result.Value<string>("name");
+                var abiContract = getContractMetadataTask.Result.ToObject<AbiContract>();
+
+                if (abiContract != null)
+                {
+                    return Convert(abiContract, name, contractData);
+                }
+            }
+
+            if (getContractStateTask.Result != null)
+            {
+                var contractState = getContractStateTask.Result.ToObject<ContractState>();
+                if (contractState != null)
+                {
+                    return Convert(contractState);
+                }
+            }
+
+            throw new Exception($"Contract {scriptHash} not deployed");
         }
     }
 }

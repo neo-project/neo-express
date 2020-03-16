@@ -24,11 +24,8 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
-            [Option]
-            private string Name { get; } = string.Empty;
-
-            [Option]
-            private bool Overwrite { get; }
+            [Option(CommandOptionType.SingleValue)]
+            private bool SaveMetadata { get; } = true;
 
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
@@ -45,8 +42,8 @@ namespace NeoExpress.Commands
                     var blockchainOperations = new BlockchainOperations();
                     if (blockchainOperations.TryLoadContract(Contract, out var contract, out var errorMessage))
                     {
-                        console.WriteLine($"Deploying contract {contract.Name} ({contract.Hash})");
-                        var tx = await blockchainOperations.DeployContract(chain, contract, account);
+                        console.WriteLine($"Deploying contract {contract.Name} ({contract.Hash}) {(SaveMetadata ? "and contract metadata" : "")}");
+                        var tx = await blockchainOperations.DeployContract(chain, contract, account, SaveMetadata);
                         console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
                     }
                     else

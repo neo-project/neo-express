@@ -1,4 +1,5 @@
-﻿using NeoExpress.Neo2.Models;
+﻿using Neo;
+using NeoExpress.Neo2.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -154,5 +155,22 @@ namespace NeoExpress.Neo2
         {
             return RpcCall(uri, "getrawtransaction", new JArray(txid, verbose ? 1 : 0));            
         }
+
+        public static Task<JToken?> SaveContractMetadata(Uri uri, string scriptHash, AbiContract contractMetadata)
+        {
+            var serializer = new JsonSerializer();
+            using var writer = new JTokenWriter();
+            serializer.Serialize(writer, contractMetadata);
+            if (writer.Token == null)
+                throw new ApplicationException($"Could not serialize {nameof(contractMetadata)}");
+
+            return RpcCall(uri, "express-save-contract-metadata", new JArray(scriptHash, writer.Token));
+        } 
+
+        public static Task<JToken?> GetContractMetadata(Uri uri, string scriptHash)
+        {
+            return RpcCall(uri, "express-get-contract-metadata", new JArray(scriptHash));
+        } 
+
     }
 }

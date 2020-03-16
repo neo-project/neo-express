@@ -22,7 +22,8 @@ namespace NeoExpress.Neo2.Node
     internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin, IPersistencePlugin
     {
         private readonly Store store;
-        private const byte APP_LOGS_PREFIX = 0x40;
+        private const byte APP_LOGS_PREFIX = 0xf1;
+        private const byte CONTRACT_METADATA_PREFIX = 0xf1;
 
         public ExpressNodeRpcPlugin(Store store)
         {
@@ -464,6 +465,29 @@ namespace NeoExpress.Neo2.Node
             return populatedBlocks;
         }
 
+        private JObject OnSaveContractMetadata(JArray @params)
+        {
+            var abiJson = @params[0];
+            var scriptHash = UInt160.Parse(abiJson["hash"].AsString());
+            var value = Encoding.UTF8.GetBytes(abiJson.ToString());
+            store.Put(CONTRACT_METADATA_PREFIX, scriptHash.ToArray(), value);
+            return true;
+        }
+
+        private JObject OnGetContractMetadata(JArray @params)
+        {
+            var scriptHash = UInt160.Parse(@params[0].AsString());
+            var value = store.Get(CONTRACT_METADATA_PREFIX, scriptHash.ToArray());
+
+            if (value != null && value.Length > 0)
+            {
+                var json = Encoding.UTF8.GetString(value);
+                return JObject.Parse(json);
+            }
+
+            throw new Exception("Unknown Contract Metadata");
+        }
+
         JObject? IRpcPlugin.OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
@@ -499,6 +523,10 @@ namespace NeoExpress.Neo2.Node
                     return OnCheckpointCreate(@params);
                 case "express-get-populated-blocks":
                     return OnGetPopulatedBlocks(@params);
+                case "express-save-contract-metadata":
+                    return OnSaveContractMetadata(@params);
+                case "express-get-contract-metadata":
+                    return OnGetContractMetadata(@params);
             }
 
             return null;

@@ -467,9 +467,9 @@ namespace NeoExpress.Neo2.Node
 
         private JObject OnSaveContractMetadata(JArray @params)
         {
-            var abiJson = @params[0];
-            var scriptHash = UInt160.Parse(abiJson["hash"].AsString());
-            var value = Encoding.UTF8.GetBytes(abiJson.ToString());
+            var scriptHash = UInt160.Parse(@params[0].AsString());
+            var metadata = @params[1];
+            var value = Encoding.UTF8.GetBytes(metadata.ToString());
             store.Put(CONTRACT_METADATA_PREFIX, scriptHash.ToArray(), value);
             return true;
         }
@@ -486,6 +486,26 @@ namespace NeoExpress.Neo2.Node
             }
 
             throw new Exception("Unknown Contract Metadata");
+        }
+
+        private JObject OnListContractMetadata(JArray _)
+        {
+            var contracts = new JObject();
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            foreach (var kvp in snapshot.Contracts.Find())
+            {
+                var metadata = store.Get(CONTRACT_METADATA_PREFIX, kvp.Key.ToArray());
+                if (metadata != null && metadata.Length > 0)
+                {
+                    var json = JObject.Parse(Encoding.UTF8.GetString(metadata));
+                    contracts[kvp.Key.ToString()] = json;
+                }
+                else
+                {
+                    contracts[kvp.Key.ToString()] = JObject.Null;
+                }
+            }
+            return contracts;
         }
 
         JObject? IRpcPlugin.OnProcess(HttpContext context, string method, JArray @params)
@@ -505,16 +525,16 @@ namespace NeoExpress.Neo2.Node
                     return OnGetUnspents(@params);
 
                 // custom Neo-Express RPC Endpoints
-                case "express-transfer":
-                    return OnTransfer(@params);
-                case "express-claim":
-                    return OnClaim(@params);
+                // case "express-transfer":
+                //     return OnTransfer(@params);
+                // case "express-claim":
+                //     return OnClaim(@params);
                 case "express-show-coins":
                     return OnShowCoins(@params);
                 case "express-submit-signatures":
                     return OnSubmitSignatures(@params);
-                case "express-deploy-contract":
-                    return OnDeployContract(@params);
+                // case "express-deploy-contract":
+                //     return OnDeployContract(@params);
                 case "express-invoke-contract":
                     return OnInvokeContract(@params);
                 case "express-get-contract-storage":
@@ -527,6 +547,9 @@ namespace NeoExpress.Neo2.Node
                     return OnSaveContractMetadata(@params);
                 case "express-get-contract-metadata":
                     return OnGetContractMetadata(@params);
+                case "express-list-contract-metadata":
+                    return OnListContractMetadata(@params);
+
             }
 
             return null;

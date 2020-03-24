@@ -2,8 +2,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
 using NeoExpress.Neo2;
 
 namespace NeoExpress.Commands

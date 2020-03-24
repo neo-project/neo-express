@@ -65,25 +65,9 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public static Task<JToken?> ExpressClaim(Uri uri, string asset, string address)
-        {
-            return RpcCall(uri, "express-claim", new JArray(asset, address));
-        }
-
         public static Task<JToken?> ExpressCreateCheckpoint(Uri uri, string checkpointPath)
         {
             return RpcCall(uri, "express-create-checkpoint", new JArray(checkpointPath));
-        }
-
-        public static Task<JToken?> ExpressDeployContract(Uri uri, ExpressContract contract, string address)
-        {
-            var serializer = new JsonSerializer();
-            using var writer = new JTokenWriter();
-            serializer.Serialize(writer, contract);
-            if (writer.Token == null)
-                throw new ApplicationException($"Could not serialize {nameof(ExpressContract)} for deployment");
-
-            return RpcCall(uri, "express-deploy-contract", new JArray(writer.Token, address));
         }
 
         public static Task<JToken?> ExpressGetContractStorage(Uri uri, string scriptHash)
@@ -91,29 +75,9 @@ namespace NeoExpress.Neo2
             return RpcCall(uri, "express-get-contract-storage", new JArray(scriptHash));
         }
 
-        public static Task<JToken?> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<JObject> @params, string? address = null)
-        {
-            return RpcCall(uri, "express-invoke-contract", new JArray(scriptHash, new JArray(@params), address == null ? JValue.CreateNull() : JValue.CreateString(address)));
-        }
-
         public static Task<JToken?> ExpressShowCoins(Uri uri, string address)
         {
             return RpcCall(uri, "express-show-coins", new JArray(address));
-        }
-
-        public static Task<JToken?> ExpressSubmitSignatures(Uri uri, JToken? context, JToken signatures)
-        {
-            if (context == null)
-            {
-                throw new ArgumentException(nameof(context));
-            }
-
-            return RpcCall(uri, "express-submit-signatures", new JArray(context, signatures));
-        }
-
-        public static Task<JToken?> ExpressTransfer(Uri uri, string asset, string quantity, string senderAddress, string receiverAddress)
-        {
-            return RpcCall(uri, "express-transfer", new JArray(asset, quantity, senderAddress, receiverAddress));
         }
 
         public static Task<JToken?> GetAccountState(Uri uri, string address)

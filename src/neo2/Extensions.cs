@@ -49,28 +49,6 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public static JArray Sign(this ExpressWalletAccount account, IEnumerable<ExpressConsensusNode> nodes, JToken? json)
-        {
-            if (json == null)
-            {
-                throw new ArgumentException(nameof(json));
-            }
-
-            var data = json.Value<string>("hash-data").ToByteArray();
-
-            // TODO: better way to identify the genesis account?
-            if (account.Label == "MultiSigContract")
-            {
-                var hashes = json["script-hashes"].Select(t => t.Value<string>());
-                var signatures = nodes.SelectMany(n => n.Wallet.Sign(hashes, data));
-                return new JArray(signatures);
-            }
-            else
-            {
-                return new JArray(account.Sign(data));
-            }
-        }
-
         public static string ToHexString(this byte[] value, bool reverse = false)
         {
             var sb = new StringBuilder();
@@ -116,39 +94,11 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public static void Save(this ExpressChain chain, string fileName)
-        {
-            var serializer = new JsonSerializer();
-            using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
-            using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
-            {
-                serializer.Serialize(writer, chain);
-            }
-        }
-
-        public static bool IsReservedName(this ExpressChain chain, string name)
-        {
-            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
-                return true;
-
-            foreach (var node in chain.ConsensusNodes)
-            {
-                if (string.Equals(name, node.Wallet.Name, StringComparison.InvariantCultureIgnoreCase))
-                    return true;
-            }
-
-            return false;
-        }
-
         public static bool NameEquals(this ExpressContract contract, string name) =>
             string.Equals(contract.Name, name, StringComparison.InvariantCultureIgnoreCase);
 
         public static bool NameEquals(this ExpressWallet wallet, string name) =>
             string.Equals(wallet.Name, name, StringComparison.InvariantCultureIgnoreCase);
-
-        public static ExpressWallet GetWallet(this ExpressChain chain, string name) =>
-            (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => w.NameEquals(name));
 
        public static string ROOT_PATH => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -279,81 +229,6 @@ namespace NeoExpress.Neo2
             contractPath = null;
             errorMessage = $"{path} is not an .avm file.";
             return false;
-        }
-
-        public static ExpressContract GetContract(this ExpressChain chain, string nameOrPath)
-        {
-            static AbiContract LoadAbiContract(string avmFile)
-            {
-                string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
-                if (!File.Exists(abiFile))
-                {
-                    throw new ApplicationException($"there is no .abi.json file for {avmFile}.");
-                }
-
-                var serializer = new JsonSerializer();
-                using var stream = File.OpenRead(abiFile);
-                using var reader = new JsonTextReader(new StreamReader(stream));
-                return serializer.Deserialize<AbiContract>(reader)
-                    ?? throw new ApplicationException($"Cannot load contract abi information from {abiFile}");
-            }
-
-            static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function)
-                => new ExpressContract.Function
-                {
-                    Name = function.Name,
-                    ReturnType = function.ReturnType,
-                    Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
-                    {
-                        Name = p.Name,
-                        Type = p.Type
-                    }).ToList()
-                };
-
-            static Dictionary<string, string> ToExpressContractProperties(AbiContract.ContractMetadata? metadata)
-                => metadata == null
-                    ? new Dictionary<string, string>()
-                    : new Dictionary<string, string>()
-                    {
-                                { "title", metadata.Title },
-                                { "description", metadata.Description },
-                                { "version", metadata.Version },
-                                { "email", metadata.Email },
-                                { "author", metadata.Author },
-                                { "has-storage", metadata.HasStorage.ToString() },
-                                { "has-dynamic-invoke", metadata.HasDynamicInvoke.ToString() },
-                                { "is-payable", metadata.IsPayable.ToString() }
-                    };
-
-            if (TryGetContractFile(nameOrPath, out var avmFile, out var errorMessage))
-            {
-                System.Diagnostics.Debug.Assert(File.Exists(avmFile));
-
-                var abiContract = LoadAbiContract(avmFile);
-                var name = Path.GetFileNameWithoutExtension(avmFile);
-                return new ExpressContract()
-                {
-                    Name = name,
-                    Hash = abiContract.Hash,
-                    EntryPoint = abiContract.Entrypoint,
-                    ContractData = File.ReadAllBytes(avmFile).ToHexString(),
-                    Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
-                    Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
-                    Properties = ToExpressContractProperties(abiContract.Metadata),
-                };
-            }
-
-            // if the file can't be found, see if the path is 
-            // actually the name of an existing contract
-            foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
-            {
-                if (contract.NameEquals(nameOrPath))
-                {
-                    return contract;
-                }
-            }
-
-            throw new ApplicationException(errorMessage);
         }
     }
 }

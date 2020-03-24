@@ -1,10 +1,9 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
 using NeoExpress.Neo2;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 

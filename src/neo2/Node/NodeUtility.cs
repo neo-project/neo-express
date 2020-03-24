@@ -4,7 +4,6 @@ using Neo.Cryptography;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
-using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;

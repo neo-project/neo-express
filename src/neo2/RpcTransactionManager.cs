@@ -146,15 +146,6 @@ namespace NeoExpress.Neo2
             }
         }
 
-        private static CoinReference ConvertInput((UnspentTransaction tx, decimal amount) inputTx)
-        {
-            return new CoinReference()
-            {
-                PrevHash = UInt256.Parse(inputTx.tx.TransactionId),
-                PrevIndex = inputTx.tx.Index
-            };
-        }
-
         static UnspentTransaction[] GetUnspentAssets(UInt256 assetId, UnspentsResponse unspents)
         {
             for (int i = 0; i < unspents.Balance.Length; i++)

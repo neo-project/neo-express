@@ -1,6 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using System;
 using System.Threading.Tasks;
+using NeoExpress.Abstractions;
 using NeoExpress.Neo2;
 
 namespace NeoExpress.Commands

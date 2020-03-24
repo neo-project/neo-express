@@ -15,7 +15,7 @@ namespace NeoExpress.Commands
         private class Invoke
         {
             [Argument(0)]
-            [Required]
+            // [Required]
             string Contract { get; } = string.Empty;
 
             [Argument(1)]
@@ -32,6 +32,12 @@ namespace NeoExpress.Commands
 
             [Option]
             private bool Overwrite { get; }
+
+            int OnExecute(CommandLineApplication app, IConsole console)
+            {
+                console.WriteWarning("Updated contract invoke command currently not available");
+                return 1;
+            }
 
             // static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
             // {

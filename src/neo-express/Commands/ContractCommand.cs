@@ -9,7 +9,7 @@ namespace NeoExpress.Commands
     [Subcommand(
         typeof(Deploy),
         typeof(Get),
-        // typeof(Invoke),
+        typeof(Invoke),
         typeof(List),
         typeof(Storage))]
     internal partial class ContractCommand

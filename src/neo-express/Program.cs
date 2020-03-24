@@ -66,13 +66,7 @@ namespace NeoExpress
             {
                 throw new Exception($"{filename} file doesn't exist");
             }
-
-            var serializer = new JsonSerializer();
-            using var stream = File.OpenRead(filename);
-            using var reader = new JsonTextReader(new StreamReader(stream));
-            var chain = serializer.Deserialize<Abstractions.Models.ExpressChain>(reader)
-                ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
-
+            var chain = Abstractions.Models.ExpressChain.Load(filename);
             return (chain, filename);
         }
     }

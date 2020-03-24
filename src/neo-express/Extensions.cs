@@ -35,18 +35,5 @@ namespace NeoExpress
         {
             WriteMessage(console, message, ConsoleColor.Yellow);
         }
-
-        public static void WriteResult(this IConsole console, JToken? result)
-        {
-            if (result != null)
-            {
-                console.WriteLine(result.ToString(Formatting.Indented));
-            }
-            else
-            {
-                console.WriteLine("<no result provided>");
-            }
-        }
-
     }
 }

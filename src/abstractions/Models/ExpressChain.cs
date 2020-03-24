@@ -28,6 +28,16 @@ namespace NeoExpress.Abstractions.Models
             }
         }
 
+        public static ExpressChain Load(string filename)
+        {
+            var serializer = new JsonSerializer();
+            using var stream = System.IO.File.OpenRead(filename);
+            using var reader = new JsonTextReader(new System.IO.StreamReader(stream));
+            return serializer.Deserialize<Abstractions.Models.ExpressChain>(reader)
+                ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
+        }
+
+
         public const byte AddressVersion = (byte)0x17;
 
         [JsonProperty("magic")]

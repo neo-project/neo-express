@@ -59,7 +59,7 @@ namespace NeoExpress
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
            : filename;
 
-        public static (Neo2.Models.ExpressChain chain, string filename) LoadExpressChain(string filename)
+        public static (Abstractions.Models.ExpressChain chain, string filename) LoadExpressChain(string filename)
         {
             filename = GetDefaultFilename(filename);
             if (!File.Exists(filename))
@@ -70,7 +70,7 @@ namespace NeoExpress
             var serializer = new JsonSerializer();
             using var stream = File.OpenRead(filename);
             using var reader = new JsonTextReader(new StreamReader(stream));
-            var chain = serializer.Deserialize<Neo2.Models.ExpressChain>(reader)
+            var chain = serializer.Deserialize<Abstractions.Models.ExpressChain>(reader)
                 ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
 
             return (chain, filename);

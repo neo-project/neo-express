@@ -8,7 +8,7 @@ using System;
 
 namespace NeoExpress.Neo2.Persistence
 {
-    public partial class RocksDbStore : Neo.Persistence.Store, IDisposable
+    internal partial class RocksDbStore : Neo.Persistence.Store, IDisposable
     {
         public const string BLOCK_FAMILY = "data:block";
         public const string TX_FAMILY = "data:transaction";

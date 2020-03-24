@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D75A7A77-40E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neo2", "src\neo2\neo2.csproj", "{B5B3D2D5-379A-4131-B9B4-113F5C840225}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "abstractions", "src\abstractions\abstractions.csproj", "{945E794F-24B8-47DF-B852-332A0BB8E73E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{B5B3D2D5-379A-4131-B9B4-113F5C840225}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B5B3D2D5-379A-4131-B9B4-113F5C840225}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B5B3D2D5-379A-4131-B9B4-113F5C840225}.Release|Any CPU.Build.0 = Release|Any CPU
+		{945E794F-24B8-47DF-B852-332A0BB8E73E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{945E794F-24B8-47DF-B852-332A0BB8E73E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{945E794F-24B8-47DF-B852-332A0BB8E73E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{945E794F-24B8-47DF-B852-332A0BB8E73E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,5 +38,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B5B3D2D5-379A-4131-B9B4-113F5C840225} = {D75A7A77-40E7-4266-8999-A4D33FD28DCC}
+		{945E794F-24B8-47DF-B852-332A0BB8E73E} = {D75A7A77-40E7-4266-8999-A4D33FD28DCC}
 	EndGlobalSection
 EndGlobal

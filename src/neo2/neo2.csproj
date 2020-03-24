@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>NeoExpress.Neo2</RootNamespace>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>	
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,5 +14,9 @@
     <PackageReference Include="OneOf" Version="2.1.151" />
     <PackageReference Include="RocksDbNative" Version="6.2.2" />
     <PackageReference Include="RocksDbSharp" Version="6.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
   </ItemGroup>
 </Project>

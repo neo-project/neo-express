@@ -6,6 +6,7 @@ using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
 using Newtonsoft.Json.Linq;
 

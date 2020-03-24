@@ -1,4 +1,5 @@
 ﻿using Neo;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

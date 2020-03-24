@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace NeoExpress.Neo2.Models
+namespace NeoExpress.Abstractions.Models
 {
     public class ExpressWalletAccount
     {

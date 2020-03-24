@@ -1,5 +1,6 @@
 ﻿using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
 using NeoExpress.Neo2.Node;
 using NeoExpress.Neo2.Persistence;
@@ -337,7 +338,7 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, string scriptHash)
+        internal void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, string scriptHash)
         {
             string tempPath;
             do

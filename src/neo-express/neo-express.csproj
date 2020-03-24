@@ -33,5 +33,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\neo2\neo2.csproj" />
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
   </ItemGroup>
 </Project>

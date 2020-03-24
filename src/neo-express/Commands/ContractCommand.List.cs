@@ -24,7 +24,7 @@ namespace NeoExpress.Commands
                     var contracts = await blockchainOperations.ListContracts(chain);
                     for (int i = 0; i < contracts.Count; i++)
                     {
-                        Neo2.Models.ExpressContract contract = contracts[i];
+                        var contract = contracts[i];
                         var json = JsonConvert.SerializeObject(contract, Formatting.Indented);
                         console.WriteLine(json);
                     }

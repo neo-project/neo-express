@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

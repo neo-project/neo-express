@@ -8,6 +8,7 @@ using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
 using Newtonsoft.Json.Linq;
 using System;

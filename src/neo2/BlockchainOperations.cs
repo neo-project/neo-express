@@ -1,5 +1,9 @@
-﻿using Neo.Network.P2P.Payloads;
+﻿using Microsoft.Extensions.Configuration;
+using Neo;
+using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
+using Neo.Wallets;
+using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
 using NeoExpress.Neo2.Node;
@@ -119,7 +123,7 @@ namespace NeoExpress.Neo2
 
         static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
         {
-            if (!chain.InitializeProtocolSettings())
+            if (!InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");
             }
@@ -457,7 +461,7 @@ namespace NeoExpress.Neo2
                 Directory.CreateDirectory(folder);
             }
 
-            if (!chain.InitializeProtocolSettings(secondsPerBlock))
+            if (!InitializeProtocolSettings(chain, secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
             }
@@ -473,7 +477,7 @@ namespace NeoExpress.Neo2
             string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                if (!chain.InitializeProtocolSettings(secondsPerBlock))
+                if (!InitializeProtocolSettings(chain, secondsPerBlock))
                 {
                     throw new Exception("could not initialize protocol settings");
                 }
@@ -998,6 +1002,40 @@ namespace NeoExpress.Neo2
             }
 
             return new List<ExpressStorage>(0);
+        }
+
+        static bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0)
+        {
+            secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
+
+            IEnumerable<KeyValuePair<string, string>> settings()
+            {
+                yield return new KeyValuePair<string, string>(
+                    "ProtocolConfiguration:Magic", $"{chain.Magic}");
+                yield return new KeyValuePair<string, string>(
+                    "ProtocolConfiguration:AddressVersion", $"{ExpressChain.AddressVersion}");
+                yield return new KeyValuePair<string, string>(
+                    "ProtocolConfiguration:SecondsPerBlock", $"{secondsPerBlock}");
+
+                foreach (var (node, index) in chain.ConsensusNodes.Select((n, i) => (n, i)))
+                {
+                    var privateKey = node.Wallet.Accounts
+                        .Select(a => a.PrivateKey)
+                        .Distinct().Single().HexToBytes();
+                    var encodedPublicKey = new KeyPair(privateKey).PublicKey
+                        .EncodePoint(true).ToHexString();
+                    yield return new KeyValuePair<string, string>(
+                        $"ProtocolConfiguration:StandbyValidators:{index}", encodedPublicKey);
+                    yield return new KeyValuePair<string, string>(
+                        $"ProtocolConfiguration:SeedList:{index}", $"{IPAddress.Loopback}:{node.TcpPort}");
+                }
+            }
+
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(settings())
+                .Build();
+
+            return ProtocolSettings.Initialize(config);
         }
     }
 }

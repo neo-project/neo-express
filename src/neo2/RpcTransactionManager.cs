@@ -6,17 +6,14 @@ using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
+using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
-using Newtonsoft.Json.Linq;
 
 namespace NeoExpress.Neo2
 {
     static class RpcTransactionManager
     {
-        private static bool IsMultiSigContract(ExpressWalletAccount account) =>
-            Neo.SmartContract.Helper.IsMultiSigContract(account.Contract.Script.ToByteArray());
-
         static byte[] Sign(byte[] hashData, DevWalletAccount account)
         {
             var key = account.GetKey();
@@ -29,13 +26,12 @@ namespace NeoExpress.Neo2
             return Neo.Cryptography.Crypto.Default.Sign(hashData, key.PrivateKey, publicKey);
         }
 
-
         public static Witness GetWitness(Transaction tx, ExpressChain chain, ExpressWalletAccount account)
         {
             var txHashData = Neo.Network.P2P.Helper.GetHashData(tx);
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
 
-            if (IsMultiSigContract(account))
+            if (account.Contract.Script.ToByteArray().IsMultiSigContract())
             {
                 // neo-express only uses multi sig contracts for consensus nodes
                 var verification = devAccount.Contract.Script;

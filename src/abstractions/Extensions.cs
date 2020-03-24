@@ -52,9 +52,11 @@ namespace NeoExpress.Abstractions
             }
         }
 
+        private const string GENESIS = "genesis";
+        
         public static bool IsReservedName(this ExpressChain chain, string name)
         {
-            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            if (GENESIS.Equals(name, StringComparison.InvariantCultureIgnoreCase))
                 return true;
 
             foreach (var node in chain.ConsensusNodes)
@@ -93,7 +95,7 @@ namespace NeoExpress.Abstractions
                 return node.Wallet.DefaultAccount;
             }
 
-            if ("genesis".Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            if (GENESIS.Equals(name, StringComparison.InvariantCultureIgnoreCase))
             {
                 return chain.ConsensusNodes
                     .Select(n => n.Wallet.Accounts.Single(a => a.Label == "MultiSigContract"))

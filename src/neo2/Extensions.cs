@@ -1,5 +1,4 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.Wallets;
 using NeoExpress.Neo2.Models;
@@ -73,7 +72,7 @@ namespace NeoExpress.Neo2
 
         public static string ToHexString(this byte[] value, bool reverse = false)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             if (reverse)
             {
@@ -102,42 +101,6 @@ namespace NeoExpress.Neo2
             for (int i = 0; i < result.Length; i++)
                 result[i] = byte.Parse(value.Substring(i * 2, 2), System.Globalization.NumberStyles.AllowHexSpecifier);
             return result;
-        }
-
-        static void WriteMessage(IConsole console, string message, ConsoleColor color)
-        {
-            var currentColor = console.ForegroundColor;
-            try
-            {
-                console.ForegroundColor = color;
-                console.WriteLine(message);
-            }
-            finally
-            {
-                console.ForegroundColor = currentColor;
-            }
-        }
-
-        public static void WriteError(this IConsole console, string message)
-        {
-            WriteMessage(console, message, ConsoleColor.Red);
-        }
-
-        public static void WriteWarning(this IConsole console, string message)
-        {
-            WriteMessage(console, message, ConsoleColor.Yellow);
-        }
-
-        public static void WriteResult(this IConsole console, JToken? result)
-        {
-            if (result != null)
-            {
-                console.WriteLine(result.ToString(Formatting.Indented));
-            }
-            else
-            {
-                console.WriteLine("<no result provided>");
-            }
         }
 
         public static void WriteResult(this TextWriter writer, JToken? result)
@@ -390,43 +353,6 @@ namespace NeoExpress.Neo2
             }
 
             throw new ApplicationException(errorMessage);
-        }
-
-        public static void SaveContract(this ExpressChain chain, ExpressContract contract, string filename, IConsole console, bool overwrite)
-        {
-            for (var i = chain.Contracts.Count - 1; i >= 0; i--)
-            {
-                var c = chain.Contracts[i];
-                if (string.Equals(contract.Hash, c.Hash))
-                {
-                    chain.Contracts.RemoveAt(i);
-                }
-                else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    if (overwrite)
-                    {
-                        console.WriteWarning($"Overriting contract named {c.Name} that already exists with a different hash value.");
-                        chain.Contracts.RemoveAt(i);
-                    }
-                    else
-                    {
-                        console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
-                        if (Prompt.GetYesNo("Overwrite?", false))
-                        {
-                            chain.Contracts.RemoveAt(i);
-                        }
-                        else
-                        {
-                            console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
-                            return;
-                        }
-                    }
-                }
-            }
-
-            chain.Contracts.Add(contract);
-            chain.Save(filename);
-            console.WriteLine($"Contract {contract.Name} info saved to {Path.GetFileName(filename)}");
         }
     }
 }

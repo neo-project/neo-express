@@ -1,22 +1,7 @@
-﻿// using McMaster.Extensions.CommandLineUtils;
-// using Microsoft.Extensions.Configuration;
-// using Neo;
-// using Neo.Wallets;
-// using NeoExpress.Models;
-// using Newtonsoft.Json;
-// using Newtonsoft.Json.Linq;
-// using OneOf;
-// using System;
-// using System.Collections.Generic;
-// using System.Diagnostics.CodeAnalysis;
-// using System.IO;
-// using System.Linq;
-// using System.Net;
-// using System.Text;
-
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Neo2.Models;
 using Newtonsoft.Json;
@@ -24,63 +9,11 @@ using Newtonsoft.Json.Linq;
 
 namespace NeoExpress
 {
-//     using StringError = OneOf.Types.Error<string>;
-
     internal static class Extensions
     {
-//         public static JObject Sign(this ExpressWalletAccount account, byte[] data)
-//         {
-//             // var (signature, publicKey) = BlockchainOperations.Sign(account, data);
-
-//             return new JObject
-//             {
-//                 // ["signature"] = signature.ToHexString(),
-//                 // ["public-key"] = publicKey.ToHexString(),
-//                 ["contract"] = new JObject
-//                 {
-//                     ["script"] = account.Contract.Script,
-//                     ["parameters"] = new JArray(account.Contract.Parameters)
-//                 }
-//             };
-//         }
-
-//         public static IEnumerable<JObject> Sign(this ExpressWallet wallet, IEnumerable<string> hashes, byte[] data)
-//         {
-//             foreach (var hash in hashes)
-//             {
-//                 var account = wallet.Accounts.SingleOrDefault(a => a.ScriptHash == hash);
-//                 if (account == null || string.IsNullOrEmpty(account.PrivateKey))
-//                     continue;
-
-//                 yield return account.Sign(data);
-//             }
-//         }
-
-//         public static JArray Sign(this ExpressWalletAccount account, IEnumerable<ExpressConsensusNode> nodes, JToken? json)
-//         {
-//             if (json == null)
-//             {
-//                 throw new ArgumentException(nameof(json));
-//             }
-
-//             var data = json.Value<string>("hash-data").ToByteArray();
-
-//             // TODO: better way to identify the genesis account?
-//             if (account.Label == "MultiSigContract")
-//             {
-//                 var hashes = json["script-hashes"].Select(t => t.Value<string>());
-//                 var signatures = nodes.SelectMany(n => n.Wallet.Sign(hashes, data));
-//                 return new JArray(signatures);
-//             }
-//             else
-//             {
-//                 return new JArray(account.Sign(data));
-//             }
-//         }
-
         public static string ToHexString(this byte[] value, bool reverse = false)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             if (reverse)
             {
@@ -181,16 +114,6 @@ namespace NeoExpress
             (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => w.NameEquals(name));
 
-//         public static string GetBlockchainPath(this ExpressWalletAccount account)
-//         {
-//             if (account == null)
-//             {
-//                 throw new ArgumentNullException(nameof(account));
-//             }
-
-//             return Path.Combine(Program.ROOT_PATH, account.ScriptHash);
-//         }
-
         public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
         {
             if (chain.Wallets != null)
@@ -217,163 +140,5 @@ namespace NeoExpress
 
             return null;
         }
-
-//         public static Uri GetUri(this ExpressChain chain, int node = 0) => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
-
-//         public static string GetBlockchainPath(this ExpressWallet wallet)
-//         {
-//             if (wallet == null)
-//             {
-//                 throw new ArgumentNullException(nameof(wallet));
-//             }
-
-//             return wallet.Accounts
-//                 .Single(a => a.IsDefault)
-//                 .GetBlockchainPath();
-//         }
-
-//         private static bool TryGetContractFile(string path, [NotNullWhen(true)] out string? contractPath, [MaybeNullWhen(true)] out string errorMessage)
-//         {
-//             if (Directory.Exists(path))
-//             {
-//                 var avmFiles = Directory.EnumerateFiles(path, "*.avm");
-//                 var avmFileCount = avmFiles.Count();
-//                 if (avmFileCount == 1)
-//                 {
-//                     contractPath = avmFiles.Single();
-//                     errorMessage = null!;
-//                     return true;
-//                 }
-
-//                 contractPath = null;
-//                 errorMessage = avmFileCount == 0
-//                     ? $"There are no .avm files in {path}"
-//                     : $"There is more than one .avm file in {path}. Please specify file name directly";
-//                 return false;
-//             }
-
-//             if (File.Exists(path) && Path.GetExtension(path) == ".avm")
-//             {
-//                 contractPath = path;
-//                 errorMessage = null!;
-//                 return true;
-//             }
-
-//             contractPath = null;
-//             errorMessage = $"{path} is not an .avm file.";
-//             return false;
-//         }
-
-//         public static ExpressContract GetContract(this ExpressChain chain, string nameOrPath)
-//         {
-//             static AbiContract LoadAbiContract(string avmFile)
-//             {
-//                 string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
-//                 if (!File.Exists(abiFile))
-//                 {
-//                     throw new ApplicationException($"there is no .abi.json file for {avmFile}.");
-//                 }
-
-//                 var serializer = new JsonSerializer();
-//                 using var stream = File.OpenRead(abiFile);
-//                 using var reader = new JsonTextReader(new StreamReader(stream));
-//                 return serializer.Deserialize<AbiContract>(reader)
-//                     ?? throw new ApplicationException($"Cannot load contract abi information from {abiFile}");
-//             }
-
-//             static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function)
-//                 => new ExpressContract.Function
-//                 {
-//                     Name = function.Name,
-//                     ReturnType = function.ReturnType,
-//                     Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
-//                     {
-//                         Name = p.Name,
-//                         Type = p.Type
-//                     }).ToList()
-//                 };
-
-//             static Dictionary<string, string> ToExpressContractProperties(AbiContract.ContractMetadata? metadata)
-//                 => metadata == null
-//                     ? new Dictionary<string, string>()
-//                     : new Dictionary<string, string>()
-//                     {
-//                                 { "title", metadata.Title },
-//                                 { "description", metadata.Description },
-//                                 { "version", metadata.Version },
-//                                 { "email", metadata.Email },
-//                                 { "author", metadata.Author },
-//                                 { "has-storage", metadata.HasStorage.ToString() },
-//                                 { "has-dynamic-invoke", metadata.HasDynamicInvoke.ToString() },
-//                                 { "is-payable", metadata.IsPayable.ToString() }
-//                     };
-
-//             if (TryGetContractFile(nameOrPath, out var avmFile, out var errorMessage))
-//             {
-//                 System.Diagnostics.Debug.Assert(File.Exists(avmFile));
-
-//                 var abiContract = LoadAbiContract(avmFile);
-//                 var name = Path.GetFileNameWithoutExtension(avmFile);
-//                 return new ExpressContract()
-//                 {
-//                     Name = name,
-//                     Hash = abiContract.Hash,
-//                     EntryPoint = abiContract.Entrypoint,
-//                     ContractData = File.ReadAllBytes(avmFile).ToHexString(),
-//                     Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
-//                     Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
-//                     Properties = ToExpressContractProperties(abiContract.Metadata),
-//                 };
-//             }
-
-//             // if the file can't be found, see if the path is 
-//             // actually the name of an existing contract
-//             foreach (var contract in chain.Contracts ?? Enumerable.Empty<ExpressContract>())
-//             {
-//                 if (contract.NameEquals(nameOrPath))
-//                 {
-//                     return contract;
-//                 }
-//             }
-
-//             throw new ApplicationException(errorMessage);
-//         }
-
-//         public static void SaveContract(this ExpressChain chain, ExpressContract contract, string filename, IConsole console, bool overwrite)
-//         {
-//             for (var i = chain.Contracts.Count - 1; i >= 0; i--)
-//             {
-//                 var c = chain.Contracts[i];
-//                 if (string.Equals(contract.Hash, c.Hash))
-//                 {
-//                     chain.Contracts.RemoveAt(i);
-//                 }
-//                 else if (string.Equals(contract.Name, c.Name, StringComparison.InvariantCultureIgnoreCase))
-//                 {
-//                     if (overwrite)
-//                     {
-//                         console.WriteWarning($"Overriting contract named {c.Name} that already exists with a different hash value.");
-//                         chain.Contracts.RemoveAt(i);
-//                     }
-//                     else
-//                     {
-//                         console.WriteWarning($"Contract named {c.Name} already exists with a different hash value.");
-//                         if (Prompt.GetYesNo("Overwrite?", false))
-//                         {
-//                             chain.Contracts.RemoveAt(i);
-//                         }
-//                         else
-//                         {
-//                             console.WriteWarning($"{Path.GetFileName(filename)} not updated with new {c.Name} contract info.");
-//                             return;
-//                         }
-//                     }
-//                 }
-//             }
-
-//             chain.Contracts.Add(contract);
-//             chain.Save(filename);
-//             console.WriteLine($"Contract {contract.Name} info saved to {Path.GetFileName(filename)}");
-//         }
     }
 }

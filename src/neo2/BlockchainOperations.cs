@@ -59,7 +59,13 @@ namespace NeoExpress.Neo2
                     Directory.CreateDirectory(folder);
                 }
 
-                PreloadGas(folder, chain, 0, preloadGas, writer, token);
+                if (!NodeUtility.InitializeProtocolSettings(chain))
+                {
+                    throw new Exception("could not initialize protocol settings");
+                }
+
+                using var store = new RocksDbStore(folder);
+                NodeUtility.Preload(preloadGas, store, node, writer, token);
             }
 
             return chain;
@@ -119,17 +125,6 @@ namespace NeoExpress.Neo2
                     wallet.Dispose();
                 }
             }
-        }
-
-        static void PreloadGas(string directory, ExpressChain chain, int index, uint preloadGasAmount, TextWriter writer, CancellationToken cancellationToken)
-        {
-            if (!InitializeProtocolSettings(chain))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
-            var node = chain.ConsensusNodes[index];
-            using var store = new RocksDbStore(directory);
-            NodeUtility.Preload(preloadGasAmount, store, node, writer, cancellationToken);
         }
 
         public void ExportBlockchain(ExpressChain chain, string folder, string password, TextWriter writer)
@@ -248,8 +243,47 @@ namespace NeoExpress.Neo2
             WriteProtocolJson();
         }
 
-        public ExpressWallet CreateWallet(string name)
+        private const string GENESIS = "genesis";
+        
+
+        static bool EqualsIgnoreCase(string a, string b)
+            => string.Equals(a, b, StringComparison.InvariantCultureIgnoreCase);
+
+        public ExpressWallet CreateWallet(ExpressChain chain, string name, bool force)
         {
+            bool IsReservedName()
+            {
+                if (EqualsIgnoreCase(GENESIS, name)) 
+                    return true;
+
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    if (EqualsIgnoreCase(name, node.Wallet.Name))
+                        return true;
+                }
+
+                return false;
+            }
+
+            if (IsReservedName())
+            {
+                throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
+            }
+
+            if (chain.Wallets != null)
+            {
+                var existingWallet = chain.GetWallet(name);
+                if (existingWallet != null)
+                {
+                    if (!force)
+                    {
+                        throw new Exception($"{name} dev wallet already exists. Use --force to overwrite.");
+                    }
+
+                    chain.Wallets.Remove(existingWallet);
+                }
+            }
+
             using (var wallet = new DevWallet(name))
             {
                 var account = wallet.CreateAccount();
@@ -461,7 +495,7 @@ namespace NeoExpress.Neo2
                 Directory.CreateDirectory(folder);
             }
 
-            if (!InitializeProtocolSettings(chain, secondsPerBlock))
+            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
             }
@@ -477,7 +511,7 @@ namespace NeoExpress.Neo2
             string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                if (!InitializeProtocolSettings(chain, secondsPerBlock))
+                if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
                 {
                     throw new Exception("could not initialize protocol settings");
                 }
@@ -568,9 +602,35 @@ namespace NeoExpress.Neo2
             }
         }
 
-        static async Task Show(ExpressChain chain, string accountName, TextWriter writer, Func<Uri, string, Task<JToken?>> func, bool showJson = true, Action<JToken>? writeResponse = null)
+        public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
         {
-            var account = chain.GetAccount(accountName);
+            var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                .SingleOrDefault(w => name.Equals(w.Name, StringComparison.InvariantCultureIgnoreCase));
+            if (wallet != null)
+            {
+                return wallet.DefaultAccount;
+            }
+
+            var node = chain.ConsensusNodes
+                .SingleOrDefault(n => name.Equals(n.Wallet.Name, StringComparison.InvariantCultureIgnoreCase));
+            if (node != null)
+            {
+                return node.Wallet.DefaultAccount;
+            }
+
+            if (GENESIS.Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return chain.ConsensusNodes
+                    .Select(n => n.Wallet.Accounts.Single(a => a.Contract.Script.ToByteArray().IsMultiSigContract()))
+                    .FirstOrDefault();
+            }
+
+            return null;
+        }
+
+        async Task Show(ExpressChain chain, string accountName, TextWriter writer, Func<Uri, string, Task<JToken?>> func, bool showJson = true, Action<JToken>? writeResponse = null)
+        {
+            var account = GetAccount(chain, accountName);
             if (account == null)
             {
                 throw new Exception($"{accountName} wallet not found.");
@@ -1002,40 +1062,6 @@ namespace NeoExpress.Neo2
             }
 
             return new List<ExpressStorage>(0);
-        }
-
-        static bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0)
-        {
-            secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
-
-            IEnumerable<KeyValuePair<string, string>> settings()
-            {
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:Magic", $"{chain.Magic}");
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:AddressVersion", $"{ExpressChain.AddressVersion}");
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:SecondsPerBlock", $"{secondsPerBlock}");
-
-                foreach (var (node, index) in chain.ConsensusNodes.Select((n, i) => (n, i)))
-                {
-                    var privateKey = node.Wallet.Accounts
-                        .Select(a => a.PrivateKey)
-                        .Distinct().Single().HexToBytes();
-                    var encodedPublicKey = new KeyPair(privateKey).PublicKey
-                        .EncodePoint(true).ToHexString();
-                    yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:StandbyValidators:{index}", encodedPublicKey);
-                    yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:SeedList:{index}", $"{IPAddress.Loopback}:{node.TcpPort}");
-                }
-            }
-
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(settings())
-                .Build();
-
-            return ProtocolSettings.Initialize(config);
         }
     }
 }

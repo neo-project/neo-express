@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.Cryptography;
 using Neo.Ledger;
@@ -25,6 +26,40 @@ namespace NeoExpress.Neo2.Node
 {
     internal static class NodeUtility
     {
+        public static bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0)
+        {
+            secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
+
+            IEnumerable<KeyValuePair<string, string>> settings()
+            {
+                yield return new KeyValuePair<string, string>(
+                    "ProtocolConfiguration:Magic", $"{chain.Magic}");
+                yield return new KeyValuePair<string, string>(
+                    "ProtocolConfiguration:AddressVersion", $"{ExpressChain.AddressVersion}");
+                yield return new KeyValuePair<string, string>(
+                    "ProtocolConfiguration:SecondsPerBlock", $"{secondsPerBlock}");
+
+                foreach (var (node, index) in chain.ConsensusNodes.Select((n, i) => (n, i)))
+                {
+                    var privateKey = node.Wallet.Accounts
+                        .Select(a => a.PrivateKey)
+                        .Distinct().Single().HexToBytes();
+                    var encodedPublicKey = new KeyPair(privateKey).PublicKey
+                        .EncodePoint(true).ToHexString();
+                    yield return new KeyValuePair<string, string>(
+                        $"ProtocolConfiguration:StandbyValidators:{index}", encodedPublicKey);
+                    yield return new KeyValuePair<string, string>(
+                        $"ProtocolConfiguration:SeedList:{index}", $"{IPAddress.Loopback}:{node.TcpPort}");
+                }
+            }
+
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(settings())
+                .Build();
+
+            return ProtocolSettings.Initialize(config);
+        }
+
         static ulong NextNonce(Random random)
         {
             Span<byte> nonceSpan = stackalloc byte[sizeof(ulong)];

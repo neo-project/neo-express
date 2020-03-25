@@ -34,13 +34,13 @@ namespace NeoExpress.Commands
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var account = chain.GetAccount(Account);
+                    var blockchainOperations = new BlockchainOperations();
+                    var account = blockchainOperations.GetAccount(chain, Account);
                     if (account == null)
                     {
                         throw new Exception($"Account {Account} not found.");
                     }
 
-                    var blockchainOperations = new BlockchainOperations();
                     if (blockchainOperations.TryLoadContract(Contract, out var contract, out var errorMessage))
                     {
                         console.WriteLine($"Deploying contract {contract.Name} ({contract.Hash}) {(SaveMetadata ? "and contract metadata" : "")}");

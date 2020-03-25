@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using Newtonsoft.Json;
 
 namespace NeoExpress.Abstractions.Models
@@ -31,12 +32,21 @@ namespace NeoExpress.Abstractions.Models
         public static ExpressChain Load(string filename)
         {
             var serializer = new JsonSerializer();
-            using var stream = System.IO.File.OpenRead(filename);
-            using var reader = new JsonTextReader(new System.IO.StreamReader(stream));
-            return serializer.Deserialize<Abstractions.Models.ExpressChain>(reader)
+            using var stream = File.OpenRead(filename);
+            using var reader = new JsonTextReader(new StreamReader(stream));
+            return serializer.Deserialize<ExpressChain>(reader)
                 ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
         }
 
+        public void Save(string fileName)
+        {
+            var serializer = new JsonSerializer();
+            using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
+            using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
+            {
+                serializer.Serialize(writer, this);
+            }
+        }
 
         public const byte AddressVersion = (byte)0x17;
 

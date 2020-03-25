@@ -27,24 +27,9 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-                    if (chain.IsReservedName(Name))
-                    {
-                        throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
-                    }
-
-                    var existingWallet = chain.GetWallet(Name);
-                    if (existingWallet != null)
-                    {
-                        if (!Force)
-                        {
-                            throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
-                        }
-
-                        chain.Wallets.Remove(existingWallet);
-                    }
 
                     var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
-                    var wallet = blockchainOperations.CreateWallet(Name);
+                    var wallet = blockchainOperations.CreateWallet(chain, Name, Force);
                     (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
                         .Add(wallet);
                     chain.Save(filename);

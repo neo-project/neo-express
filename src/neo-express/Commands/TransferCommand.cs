@@ -29,19 +29,19 @@ namespace NeoExpress.Commands
             try
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
-                var senderAccount = chain.GetAccount(Sender);
+                var blockchainOperations = new BlockchainOperations();
+                var senderAccount = blockchainOperations.GetAccount(chain, Sender);
                 if (senderAccount == null)
                 {
                     throw new Exception($"{Sender} sender not found.");
                 }
 
-                var receiverAccount = chain.GetAccount(Receiver);
+                var receiverAccount = blockchainOperations.GetAccount(chain, Receiver);
                 if (receiverAccount == null)
                 {
                     throw new Exception($"{Receiver} receiver not found.");
                 }
 
-                var blockchainOperations = new BlockchainOperations();
                 var tx = await blockchainOperations.Transfer(chain,
                                                              Asset,
                                                              Quantity,

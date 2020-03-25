@@ -29,13 +29,13 @@ namespace NeoExpress.Commands
                 }
                 
                 var (chain, _) = Program.LoadExpressChain(Input);
-                var account = chain.GetAccount(Account);
+                var blockchainOperations = new BlockchainOperations();
+                var account = blockchainOperations.GetAccount(chain, Account);
                 if (account == null)
                 {
                     throw new Exception($"{Account} account not found.");
                 }
 
-                var blockchainOperations = new BlockchainOperations();
                 var tx = await blockchainOperations.Claim(chain, account);
 
                 console.WriteLine($"Claim Transaction {tx.Hash} submitted");

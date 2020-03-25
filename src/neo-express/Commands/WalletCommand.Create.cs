@@ -30,8 +30,11 @@ namespace NeoExpress.Commands
 
                     var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
                     var wallet = blockchainOperations.CreateWallet(chain, Name, Force);
-                    (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
-                        .Add(wallet);
+                    if (chain.Wallets == null)
+                    {
+                        chain.Wallets = new List<ExpressWallet>(1);
+                    }
+                    chain.Wallets.Add(wallet);
                     chain.Save(filename);
 
                     console.WriteLine(Name);

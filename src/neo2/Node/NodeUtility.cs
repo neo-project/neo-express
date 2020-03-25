@@ -170,7 +170,7 @@ namespace NeoExpress.Neo2.Node
                     throw new InvalidOperationException("Preload only supported for single-node blockchains");
                 }
 
-                var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
+                var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
 
                 var tx = factory(snapshot, account);
                 if (tx == null)
@@ -249,11 +249,6 @@ namespace NeoExpress.Neo2.Node
                 try
                 {
                     var wallet = DevWallet.FromExpressWallet(node.Wallet);
-                    var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
-
-                    // create a named mutex so that checkpoint create command
-                    // can detect if blockchain is running automatically
-                    using var mutex = new Mutex(true, account.Address);
 
                     using var system = new NeoSystem(store);
                     var logPlugin = new LogPlugin(writer);

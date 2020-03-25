@@ -42,7 +42,6 @@ namespace NeoExpress.Commands
         [Option]
         private uint PreloadGas { get; }
 
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try

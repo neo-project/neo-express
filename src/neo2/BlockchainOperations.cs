@@ -331,8 +331,25 @@ namespace NeoExpress.Neo2
             return Path.GetFullPath(checkPointFileName);
         }
 
-        public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, bool online, TextWriter writer)
+        public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)
         {
+            static bool NodeRunning(ExpressConsensusNode node)
+            {
+                // Check to see if there's a neo-express blockchain currently running
+                // by attempting to open a mutex with the multisig account address for 
+                // a name. If so, do an online checkpoint instead of offline.
+
+                var wallet = DevWallet.FromExpressWallet(node.Wallet);
+                var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
+
+                if (Mutex.TryOpenExisting(account.Address, out var _))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
             if (File.Exists(checkPointFileName))
             {
                 throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
@@ -346,22 +363,7 @@ namespace NeoExpress.Neo2
             var node = chain.ConsensusNodes[0];
             var folder = node.GetBlockchainPath();
 
-            if (!online)
-            {
-                // Check to see if there's a neo-express blockchain currently running
-                // by attempting to open a mutex with the multisig account address for 
-                // a name. If so, do an online checkpoint instead of offline.
-
-                var wallet = DevWallet.FromExpressWallet(node.Wallet);
-                var account = wallet.GetAccounts().Single(a => a.Contract.Script.IsMultiSigContract());
-
-                if (Mutex.TryOpenExisting(account.Address, out var _))
-                {
-                    online = true;
-                }
-            }
-
-            if (online)
+            if (NodeRunning(node))
             {
                 var uri = chain.GetUri();
                 await NeoRpcClient.ExpressCreateCheckpoint(uri, checkPointFileName)
@@ -500,8 +502,16 @@ namespace NeoExpress.Neo2
                 throw new Exception("could not initialize protocol settings");
             }
 
-#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
+            var wallet = DevWallet.FromExpressWallet(node.Wallet);
+            var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
+
+            // create a named mutex so that checkpoint create command
+            // can detect if blockchain is running automatically
+            using var mutex = new Mutex(true, account.Address);
+
             writer.WriteLine(folder);
+
+#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
             return NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
@@ -621,7 +631,7 @@ namespace NeoExpress.Neo2
             if (GENESIS.Equals(name, StringComparison.InvariantCultureIgnoreCase))
             {
                 return chain.ConsensusNodes
-                    .Select(n => n.Wallet.Accounts.Single(a => a.Contract.Script.ToByteArray().IsMultiSigContract()))
+                    .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
                     .FirstOrDefault();
             }
 

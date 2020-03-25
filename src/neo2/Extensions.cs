@@ -1,4 +1,5 @@
-﻿using NeoExpress.Abstractions.Models;
+﻿using NeoExpress.Abstractions;
+using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -59,5 +60,11 @@ namespace NeoExpress.Neo2
 
             return node.Wallet.GetBlockchainPath();
         }
+
+        public static bool IsMultiSigContract(this ExpressWalletAccount account)
+            => Neo.SmartContract.Helper.IsMultiSigContract(account.Contract.Script.ToByteArray());
+
+        public static bool IsMultiSigContract(this Neo.Wallets.WalletAccount account)
+            => Neo.SmartContract.Helper.IsMultiSigContract(account.Contract.Script);
     }
 }

@@ -20,9 +20,6 @@ namespace NeoExpress.Commands
             [Option]
             private bool Force { get; }
 
-            [Option]
-            private bool Online { get; }
-
             private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -47,7 +44,7 @@ namespace NeoExpress.Commands
                         File.Delete(filename);
                     }
 
-                    await blockchainOperations.CreateCheckpoint(chain, filename, Online, Console.Out);
+                    await blockchainOperations.CreateCheckpoint(chain, filename, Console.Out);
 
                     return 0;
                 }

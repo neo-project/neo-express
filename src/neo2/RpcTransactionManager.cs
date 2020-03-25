@@ -31,7 +31,7 @@ namespace NeoExpress.Neo2
             var txHashData = Neo.Network.P2P.Helper.GetHashData(tx);
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
 
-            if (account.Contract.Script.ToByteArray().IsMultiSigContract())
+            if (account.IsMultiSigContract())
             {
                 // neo-express only uses multi sig contracts for consensus nodes
                 var verification = devAccount.Contract.Script;

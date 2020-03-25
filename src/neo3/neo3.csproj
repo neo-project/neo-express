@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <LangVersion>8</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>NeoExpress.Neo3</RootNamespace>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>	
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <Compile Remove="Models\DevWallet*.cs" />
+
+    <Compile Remove="Node\**" />
+    <Compile Remove="Persistence\**" />
+    <Compile Remove="BlockchainOperations.cs" />
+    <Compile Remove="Extensions.cs" />
+    <Compile Remove="NeoRpcClient.cs" />
+    <Compile Remove="RpcTransactionManager.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Neo" Version="2.10.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="OneOf" Version="2.1.151" />
+    <PackageReference Include="RocksDbNative" Version="6.2.2" />
+    <PackageReference Include="RocksDbSharp" Version="6.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\official\neo3\src\neo\neo.csproj" />
+  </ItemGroup>
+</Project>

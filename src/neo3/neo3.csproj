@@ -10,8 +10,6 @@
 
 
   <ItemGroup>
-    <Compile Remove="Models\DevWallet*.cs" />
-
     <Compile Remove="Node\**" />
     <Compile Remove="Persistence\**" />
     <Compile Remove="BlockchainOperations.cs" />

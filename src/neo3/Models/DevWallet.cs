@@ -42,7 +42,7 @@ namespace NeoExpress.Neo3.Models
 
         public void Export(string filename, string password)
         {
-            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(null, filename, Name);
+            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(filename, Name);
             nep6Wallet.Unlock(password);
             foreach (var account in GetAccounts())
             {
@@ -98,29 +98,5 @@ namespace NeoExpress.Neo3.Models
         public override IEnumerable<WalletAccount> GetAccounts() => accounts.Values;
 
         public override bool VerifyPassword(string password) => true;
-
-        [JsonIgnore]
-        public override uint WalletHeight => throw new NotImplementedException();
-
-        public override event EventHandler<WalletTransactionEventArgs> WalletTransaction
-        {
-            add { throw new NotImplementedException(); }
-            remove { throw new NotImplementedException(); }
-        }
-
-        public override void ApplyTransaction(Transaction tx)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override IEnumerable<Coin> GetCoins(IEnumerable<UInt160> accounts)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override IEnumerable<UInt256> GetTransactions()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -24,18 +24,10 @@ namespace NeoExpress.Neo3.Models
             return key;
         }
 
-        static string ToAddress(UInt160 scriptHash, byte addressVersion = ExpressChain.AddressVersion)
-        {
-            byte[] data = new byte[21];
-            data[0] = addressVersion;
-            Buffer.BlockCopy(scriptHash.ToArray(), 0, data, 1, 20);
-            return Neo.Cryptography.Helper.Base58CheckEncode(data);
-
-        }
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
             PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
-            ScriptHash = ToAddress(ScriptHash),
+            ScriptHash = Neo.Wallets.Helper.ToAddress(ScriptHash),
             Label = Label,
             IsDefault = IsDefault,
             Contract = new ExpressWalletAccount.AccountContract()

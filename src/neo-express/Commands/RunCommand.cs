@@ -3,6 +3,7 @@ using System.IO;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using NeoExpress.Neo2;
 
 namespace NeoExpress.Commands
 {
@@ -10,7 +11,7 @@ namespace NeoExpress.Commands
     internal class RunCommand
     {
         [Argument(0)]
-        private int? NodeIndex { get; }
+        private int NodeIndex { get; } = 0;
 
         [Option]
         private string Input { get; } = string.Empty;
@@ -26,39 +27,22 @@ namespace NeoExpress.Commands
             try
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
-                var index = NodeIndex.GetValueOrDefault();
 
-                if (!NodeIndex.HasValue && chain.ConsensusNodes.Count > 1)
-                {
-                    throw new Exception("Node index not specified");
-                }
-
-                if (index >= chain.ConsensusNodes.Count || index < 0)
+                if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
                 {
                     throw new Exception("Invalid node index");
                 }
 
-                var node = chain.ConsensusNodes[index];
-                var folder = node.GetBlockchainPath();
-
-                if (Reset && Directory.Exists(folder))
-                {
-                    Directory.Delete(folder, true);
-                }
-
-                if (!Directory.Exists(folder))
-                {
-                    Directory.CreateDirectory(folder);
-                }
-
-                using (var cts = new CancellationTokenSource())
-                {
-                    console.CancelKeyPress += (sender, args) => cts.Cancel();
-
-                    await BlockchainOperations.RunBlockchainAsync(folder, chain, index, SecondsPerBlock, 
-                                                                  console.Out, cts.Token)
-                        .ConfigureAwait(false);
-                }
+                using var cts = new CancellationTokenSource();
+                console.CancelKeyPress += (sender, args) => cts.Cancel();
+                var blockchainOperations = new BlockchainOperations();
+                await blockchainOperations.RunBlockchainAsync(chain,
+                                                              NodeIndex,
+                                                              SecondsPerBlock,
+                                                              Reset,
+                                                              console.Out,
+                                                              cts.Token)
+                    .ConfigureAwait(false);
 
                 return 0;
             }

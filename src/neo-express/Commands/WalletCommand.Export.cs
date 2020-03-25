@@ -1,7 +1,8 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
 
 namespace NeoExpress.Commands
 {
@@ -52,7 +53,8 @@ namespace NeoExpress.Commands
                     else
                     {
                         var password = Prompt.GetPassword("Input password to use for exported wallet");
-                        BlockchainOperations.ExportWallet(wallet, output, password);
+                        var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                        blockchainOperations.ExportWallet(wallet, output, password);
                         console.WriteLine($"{Name} privatenet wallet exported to {output}");
                     }
 

@@ -1,6 +1,5 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Commands;
-using NeoExpress.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -60,20 +59,14 @@ namespace NeoExpress
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
            : filename;
 
-        public static (ExpressChain chain, string filename) LoadExpressChain(string filename)
+        public static (Abstractions.Models.ExpressChain chain, string filename) LoadExpressChain(string filename)
         {
             filename = GetDefaultFilename(filename);
             if (!File.Exists(filename))
             {
                 throw new Exception($"{filename} file doesn't exist");
             }
-
-            var serializer = new JsonSerializer();
-            using var stream = File.OpenRead(filename);
-            using var reader = new JsonTextReader(new StreamReader(stream));
-            var chain = serializer.Deserialize<ExpressChain>(reader)
-                ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
-
+            var chain = Abstractions.Models.ExpressChain.Load(filename);
             return (chain, filename);
         }
     }

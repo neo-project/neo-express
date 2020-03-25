@@ -1,7 +1,8 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
+using Neo;
+using NeoExpress.Neo2;
+using NeoExpress.Neo2.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -28,18 +29,20 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
-                    if (contract == null)
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var hash = GetScriptHash(Contract);
+                    var blockchainOperations = new BlockchainOperations();
+                    var contract = await blockchainOperations.GetContract(chain, hash);
+                    if (contract != null)
                     {
-                        throw new Exception($"Contract {Contract} not found.");
+                        var json = JsonConvert.SerializeObject(contract, Formatting.Indented);
+                        console.WriteLine(json);
+                    }
+                    else
+                    {
+                        console.WriteError($"Contract {Contract} not found");
                     }
 
-                    var uri = chain.GetUri();
-                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
-                    console.WriteResult(result);
-
-                    chain.SaveContract(contract, filename, console, Overwrite);
                     return 0;
                 }
                 catch (Exception ex)

@@ -21,19 +21,8 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var uri = chain.GetUri();
-
-                    var rawTxResponseTask = NeoRpcClient.GetRawTransaction(uri, TransactionId);
-                    var appLogResponseTask = NeoRpcClient.GetApplicationLog(uri, TransactionId);
-                    await Task.WhenAll(rawTxResponseTask, appLogResponseTask);
-
-                    console.WriteResult(rawTxResponseTask.Result);
-                    var appLogResponse = appLogResponseTask.Result ?? JValue.CreateString(string.Empty);
-                    if (appLogResponse.Type != JTokenType.String
-                        || appLogResponse.Value<string>().Length != 0)
-                    {
-                        console.WriteResult(appLogResponse);
-                    }
+                    var blockchainOperations = new Neo2.BlockchainOperations();
+                    await blockchainOperations.ShowTransaction(chain, TransactionId, console.Out);
 
                     return 0;
                 }

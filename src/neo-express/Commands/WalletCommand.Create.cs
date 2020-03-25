@@ -1,5 +1,6 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
+using NeoExpress.Abstractions;
+using NeoExpress.Abstractions.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -26,25 +27,14 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-                    if (chain.IsReservedName(Name))
+
+                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                    var wallet = blockchainOperations.CreateWallet(chain, Name, Force);
+                    if (chain.Wallets == null)
                     {
-                        throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
+                        chain.Wallets = new List<ExpressWallet>(1);
                     }
-
-                    var existingWallet = chain.GetWallet(Name);
-                    if (existingWallet != null)
-                    {
-                        if (!Force)
-                        {
-                            throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
-                        }
-
-                        chain.Wallets.Remove(existingWallet);
-                    }
-
-                    var wallet = BlockchainOperations.CreateWallet(Name);
-                    (chain.Wallets ?? (chain.Wallets = new List<ExpressWallet>(1)))
-                        .Add(wallet);
+                    chain.Wallets.Add(wallet);
                     chain.Save(filename);
 
                     console.WriteLine(Name);

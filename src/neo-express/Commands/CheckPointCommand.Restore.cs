@@ -23,35 +23,20 @@ namespace NeoExpress.Commands
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
-                string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-
                 try
                 {
-                    var filename = ValidateCheckpointFileName(Name);
                     var (chain, _) = Program.LoadExpressChain(Input);
 
-                    if (chain.ConsensusNodes.Count > 1)
+                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                    var filename = blockchainOperations.ResolveCheckpointFileName(Name);
+                    if (!File.Exists(filename))
                     {
-                        throw new Exception("Checkpoint restore is only supported on single node express instances");
+                        throw new Exception($"Checkpoint {filename} couldn't be found");
                     }
 
-                    var node = chain.ConsensusNodes[0];
-                    var blockchainPath = node.GetBlockchainPath();
-                    if (!Force && Directory.Exists(blockchainPath))
-                    {
-                        throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
-                    }
+                    blockchainOperations.RestoreCheckpoint(chain, filename, Force);
 
-                    ZipFile.ExtractToDirectory(filename, checkpointTempPath);
-
-                    if (Directory.Exists(blockchainPath))
-                    {
-                        Directory.Delete(blockchainPath, true);
-                    }
-
-                    BlockchainOperations.RestoreCheckpoint(chain, blockchainPath, checkpointTempPath);
-
-                    console.WriteLine($"Checkpoint {Name} sucessfully restored");
+                    console.WriteLine($"Checkpoint {Name} successfully restored");
                     return 0;
                 }
                 catch (Exception ex)
@@ -59,13 +44,6 @@ namespace NeoExpress.Commands
                     console.WriteError(ex.Message);
                     app.ShowHelp();
                     return 1;
-                }
-                finally
-                {
-                    if (Directory.Exists(checkpointTempPath))
-                    {
-                        Directory.Delete(checkpointTempPath, true);
-                    }
                 }
             }
         }

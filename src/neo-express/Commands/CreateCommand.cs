@@ -2,8 +2,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
+using NeoExpress.Neo2;
 
 namespace NeoExpress.Commands
 {
@@ -41,45 +42,31 @@ namespace NeoExpress.Commands
         [Option]
         private uint PreloadGas { get; }
 
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
                 var output = Program.GetDefaultFilename(Output);
-                if (File.Exists(output) && !Force)
+                if (File.Exists(output))
                 {
-                    throw new Exception("You must specify --force to overwrite an existing file");
+                    if (Force)
+                    {
+                        File.Delete(output);
+                    }
+                    else 
+                    {
+                        throw new Exception("You must specify --force to overwrite an existing file");
+                    }
                 }
 
                 var count = (Count == 0 ? 1 : Count);
-                if (PreloadGas > 0 && count != 1)
-                {
-                    throw new Exception("you can only specify --preload-gas for a single node neo-express blockchain");
-                }
 
-                var chain = BlockchainOperations.CreateBlockchain(count);
+                var blockchainOperations = new BlockchainOperations();
+                using var cts = new CancellationTokenSource();
+                console.CancelKeyPress += (sender, args) => cts.Cancel();
+                var chain = blockchainOperations.CreateBlockchain(new FileInfo(output), count, PreloadGas, Console.Out, cts.Token);
                 chain.Save(output);
 
-                console.WriteLine($"Created {count} node privatenet at {output}");
-                console.WriteWarning("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-                console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
-
-                if (PreloadGas > 0)
-                {
-                    var node = chain.ConsensusNodes[0];
-                    var folder = node.GetBlockchainPath();
-
-                    if (!Directory.Exists(folder))
-                    {
-                        Directory.CreateDirectory(folder);
-                    }
-
-                    using var cts = new CancellationTokenSource();
-                    console.CancelKeyPress += (sender, args) => cts.Cancel();
-                    BlockchainOperations.PreloadGas(folder, chain, 0, PreloadGas, console.Out, cts.Token);
-                }
-                
                 return 0;
             }
             catch (Exception ex)

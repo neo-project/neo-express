@@ -1,5 +1,4 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -16,7 +15,7 @@ namespace NeoExpress.Commands
         private class Invoke
         {
             [Argument(0)]
-            [Required]
+            // [Required]
             string Contract { get; } = string.Empty;
 
             [Argument(1)]
@@ -34,97 +33,103 @@ namespace NeoExpress.Commands
             [Option]
             private bool Overwrite { get; }
 
-            static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
+            int OnExecute(CommandLineApplication app, IConsole console)
             {
-                if (function.Parameters.Count != arguments.Count())
-                {
-                    throw new ApplicationException($"Invalid number of arguments. Expecting {function.Parameters.Count} received {arguments.Count()}");
-                }
-
-                return function.Parameters.Zip(arguments,
-                    (param, argValue) => new JObject()
-                    {
-                        ["type"] = param.Type,
-                        ["value"] = argValue
-                    });
+                console.WriteWarning("Updated contract invoke command currently not available");
+                return 1;
             }
 
-            IEnumerable<JObject> ParseArguments(ExpressContract contract)
-            {
-                var arguments = Arguments ?? Enumerable.Empty<string>();
+            // static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
+            // {
+            //     if (function.Parameters.Count != arguments.Count())
+            //     {
+            //         throw new ApplicationException($"Invalid number of arguments. Expecting {function.Parameters.Count} received {arguments.Count()}");
+            //     }
 
-                if (string.IsNullOrEmpty(Function))
-                {
-                    var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
-                    return ParseArguments(entrypoint, arguments);
-                }
-                else
-                {
-                    var function = contract.Functions.SingleOrDefault(f => f.Name == Function);
+            //     return function.Parameters.Zip(arguments,
+            //         (param, argValue) => new JObject()
+            //         {
+            //             ["type"] = param.Type,
+            //             ["value"] = argValue
+            //         });
+            // }
 
-                    if (function == null)
-                    {
-                        throw new Exception($"Could not find function {Function}");
-                    }
+            // IEnumerable<JObject> ParseArguments(ExpressContract contract)
+            // {
+            //     var arguments = Arguments ?? Enumerable.Empty<string>();
 
-                    return new JObject[2]
-                    {
-                        new JObject()
-                        {
-                            ["type"] = "String",
-                            ["value"] = Function
-                        },
-                        new JObject()
-                        {
-                            ["type"] = "Array",
-                            ["value"] = new JArray(ParseArguments(function, arguments))
-                        }
-                    };
-                }
-            }
+            //     if (string.IsNullOrEmpty(Function))
+            //     {
+            //         var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
+            //         return ParseArguments(entrypoint, arguments);
+            //     }
+            //     else
+            //     {
+            //         var function = contract.Functions.SingleOrDefault(f => f.Name == Function);
 
-            async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
-            {
-                try
-                {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
-                    if (contract == null)
-                    {
-                        throw new Exception($"Contract {Contract} not found.");
-                    }
+            //         if (function == null)
+            //         {
+            //             throw new Exception($"Could not find function {Function}");
+            //         }
 
-                    var account = chain.GetAccount(Account);
+            //         return new JObject[2]
+            //         {
+            //             new JObject()
+            //             {
+            //                 ["type"] = "String",
+            //                 ["value"] = Function
+            //             },
+            //             new JObject()
+            //             {
+            //                 ["type"] = "Array",
+            //                 ["value"] = new JArray(ParseArguments(function, arguments))
+            //             }
+            //         };
+            //     }
+            // }
 
-                    var args = ParseArguments(contract);
-                    var uri = chain.GetUri();
-                    var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
-                    console.WriteResult(result);
-                    if (account != null)
-                    {
-                        var txid = result?["txid"];
-                        if (txid != null)
-                        {
-                            console.WriteLine("invocation complete");
-                        }
-                        else
-                        {
-                            var signatures = account.Sign(chain.ConsensusNodes, result);
-                            var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-                            console.WriteResult(result2);
-                        }
-                    }
+            // async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            // {
+            //     try
+            //     {
+            //         var (chain, filename) = Program.LoadExpressChain(Input);
+            //         var contract = chain.GetContract(Contract);
+            //         if (contract == null)
+            //         {
+            //             throw new Exception($"Contract {Contract} not found.");
+            //         }
 
-                    chain.SaveContract(contract, filename, console, Overwrite);
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
-                    return 1;
-                }
-            }
+            //         var account = chain.GetAccount(Account);
+
+            //         var args = ParseArguments(contract);
+            //         var uri = chain.GetUri();
+            //         var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
+            //         console.WriteResult(result);
+            //         if (account != null)
+            //         {
+            //             // var txid = result?["txid"];
+            //             if (txid != null)
+            //             {
+            //                 console.WriteLine("invocation complete");
+            //             }
+            //             else
+            //             {
+            //                 var signatures = account.Sign(chain.ConsensusNodes, result);
+            //                 var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
+            //                 console.WriteResult(result2);
+            //             }
+            //         }
+
+            //         chain.SaveContract(contract, filename, console, Overwrite);
+            //         return 0;
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         console.WriteError(ex.Message);
+            //         app.ShowHelp();
+            //         return 1;
+            //     }
+            // }
         }
     }
 }

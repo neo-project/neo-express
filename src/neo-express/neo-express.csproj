@@ -28,10 +28,11 @@
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.4.4" />
-    <PackageReference Include="Neo" Version="2.10.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="OneOf" Version="2.1.151" />
-    <PackageReference Include="RocksDbNative" Version="6.2.2" />
-    <PackageReference Include="RocksDbSharp" Version="6.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\neo2\neo2.csproj" />
+    <ProjectReference Include="..\abstractions\abstractions.csproj" />
   </ItemGroup>
 </Project>

@@ -48,7 +48,8 @@ namespace NeoExpress.Abstractions.Models
             }
         }
 
-        public const byte AddressVersion = (byte)0x17;
+        [JsonProperty("address-version")]
+        public byte AddressVersion { get; set; }
 
         [JsonProperty("magic")]
         public long Magic { get; set; }

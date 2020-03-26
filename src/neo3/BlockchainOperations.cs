@@ -6,6 +6,7 @@ using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
+using NeoExpress.Neo3.Node;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -70,6 +71,8 @@ namespace NeoExpress.Neo3
 
         }
 
+        const byte ADDRESS_VERSION = (byte)0x35;
+
         static ExpressChain CreateBlockchain(int count)
         {
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
@@ -111,6 +114,7 @@ namespace NeoExpress.Neo3
             return new ExpressChain()
             {
                 Magic = ExpressChain.GenerateMagicValue(),
+                AddressVersion = ADDRESS_VERSION,
                 ConsensusNodes = nodes,
             };
         }
@@ -465,14 +469,14 @@ namespace NeoExpress.Neo3
 //             }
 //         }
 
-//         public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
-//         {
-//             if (index >= chain.ConsensusNodes.Count)
-//             {
-//                 throw new ArgumentException(nameof(index));
-//             }
+        public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
+        {
+            if (index >= chain.ConsensusNodes.Count)
+            {
+                throw new ArgumentException(nameof(index));
+            }
 
-//             var node = chain.ConsensusNodes[index];
+            var node = chain.ConsensusNodes[index];
 //             var folder = node.GetBlockchainPath();
 
 //             if (reset && Directory.Exists(folder))
@@ -485,24 +489,22 @@ namespace NeoExpress.Neo3
 //                 Directory.CreateDirectory(folder);
 //             }
 
-//             if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-//             {
-//                 throw new Exception("could not initialize protocol settings");
-//             }
+            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
 
-//             var wallet = DevWallet.FromExpressWallet(node.Wallet);
-//             var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
+            var wallet = DevWallet.FromExpressWallet(node.Wallet);
+            var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
 
-//             // create a named mutex so that checkpoint create command
-//             // can detect if blockchain is running automatically
-//             using var mutex = new Mutex(true, account.Address);
+            // create a named mutex so that checkpoint create command
+            // can detect if blockchain is running automatically
+            using var mutex = new Mutex(true, account.Address);
 
 //             writer.WriteLine(folder);
 
-// #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-//             return NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
-// #pragma warning restore IDE0067 // Dispose objects before losing scope
-//         }
+            return NodeUtility.RunAsync(node, writer, cancellationToken);
+        }
 
 //         public Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
 //         {

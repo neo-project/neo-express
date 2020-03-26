@@ -35,7 +35,7 @@ namespace NeoExpress.Neo2.Node
                 yield return new KeyValuePair<string, string>(
                     "ProtocolConfiguration:Magic", $"{chain.Magic}");
                 yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:AddressVersion", $"{ExpressChain.AddressVersion}");
+                    "ProtocolConfiguration:AddressVersion", $"{chain.AddressVersion}");
                 yield return new KeyValuePair<string, string>(
                     "ProtocolConfiguration:SecondsPerBlock", $"{secondsPerBlock}");
 

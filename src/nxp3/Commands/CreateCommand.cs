@@ -8,7 +8,7 @@ using NeoExpress.Neo3;
 namespace nxp3.Commands
 {
     [Command("create")]
-    internal class CreateCommand
+    class CreateCommand
     {
         [AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false)]
         private class ValidNodeCountAttribute : ValidationAttribute

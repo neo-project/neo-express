@@ -1,4 +1,5 @@
-﻿using Neo.Plugins;
+﻿using Neo;
+using Neo.Plugins;
 using System;
 using System.IO;
 
@@ -11,10 +12,6 @@ namespace NeoExpress.Neo3.Node
         public LogPlugin(TextWriter writer)
         {
             this.writer = writer;
-        }
-
-        public override void Configure()
-        {
         }
 
         void ILogPlugin.Log(string source, LogLevel level, string message)

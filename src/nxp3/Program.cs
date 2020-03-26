@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
 using nxp3.Commands;
 
 namespace nxp3
 {
     [Command("nxp3")]
-    [Subcommand(typeof(CreateCommand))]
+    [Subcommand(typeof(CreateCommand), typeof(RunCommand))]
     class Program
     {
         public static int Main(string[] args)
@@ -32,5 +33,15 @@ namespace nxp3
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express")
            : filename;
 
+        public static (ExpressChain chain, string filename) LoadExpressChain(string filename)
+        {
+            filename = GetDefaultFilename(filename);
+            if (!File.Exists(filename))
+            {
+                throw new Exception($"{filename} file doesn't exist");
+            }
+            var chain = ExpressChain.Load(filename);
+            return (chain, filename);
+        }
     }
 }

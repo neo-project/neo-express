@@ -11,9 +11,7 @@
 
   <ItemGroup>
     <Compile Remove="Node\**" />
-    <Compile Remove="Persistence\**" />
-    <Compile Remove="BlockchainOperations.cs" />
-    <Compile Remove="Extensions.cs" />
+    <Compile Remove="Persistence\*.cs" />
     <Compile Remove="NeoRpcClient.cs" />
     <Compile Remove="RpcTransactionManager.cs" />
   </ItemGroup>

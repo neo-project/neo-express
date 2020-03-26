@@ -27,18 +27,9 @@ namespace NeoExpress
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Neo-Express", "blockchain-nodes");
 
-        private static int Main(string[] args)
-        {
-            using (var app = new CommandLineApplication<Program>())
-            {
-                // TODO: remove explicitly setting UsePagerForHelpText once version of CommandLineUtils with
-                //       https://github.com/natemcmaster/CommandLineUtils/pull/347 ships
-                app.UsePagerForHelpText = false;
-                app.Conventions.UseDefaultConventions();
-                return app.Execute(args);
-            }
-        }
-
+        public static int Main(string[] args)
+            => CommandLineApplication.Execute<Program>(args);
+            
         [Option]
         private bool Version { get; }
 

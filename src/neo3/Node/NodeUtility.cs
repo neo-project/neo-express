@@ -245,6 +245,8 @@ namespace NeoExpress.Neo3.Node
 
         public static Task RunAsync(string storageEngine, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
         {
+            writer.WriteLine(storageEngine);
+
             var tcs = new TaskCompletionSource<bool>();
 
             Task.Run(() =>

@@ -504,6 +504,35 @@ namespace NeoExpress.Neo3
             return NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
         }
 
+        public Task RunCheckpointAsync(ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        {
+            if (index >= chain.ConsensusNodes.Count)
+            {
+                throw new ArgumentException(nameof(index));
+            }
+
+            var node = chain.ConsensusNodes[index];
+            var folder = node.GetBlockchainPath();
+
+            if (!Directory.Exists(folder))
+            {
+                throw new Exception("invalid checkpoint");
+            }
+
+            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            writer.WriteLine(folder);
+
+            var wallet = DevWallet.FromExpressWallet(node.Wallet);
+            var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
+
+            var storagePlugin = new CheckpointStoragePlugin(folder);
+            return NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
+        }
+
 //         public Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
 //         {
 //             string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());

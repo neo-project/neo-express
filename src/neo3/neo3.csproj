@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <Compile Remove="Node\ExpressNodeRpcPlugin.cs" />
-    <Compile Remove="Persistence\CheckpointStore*.cs" />
     <Compile Remove="NeoRpcClient.cs" />
     <Compile Remove="RpcTransactionManager.cs" />
   </ItemGroup>

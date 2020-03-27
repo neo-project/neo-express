@@ -35,31 +35,27 @@ namespace NeoExpress.Neo3.Persistence
                 storage.db.Write(writeBatch);
             }
 
-            public void Delete(byte table, byte[]? key)
+            public byte[] TryGet(byte table, byte[]? key)
             {
-                writeBatch.Delete(key ?? Array.Empty<byte>(), storage.GetColumnFamily(table));
+                key ??= Array.Empty<byte>();
+                return storage.db.Get(key, storage.GetColumnFamily(table), readOptions);
             }
 
             public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[] prefix)
             {
-                using var iterator = storage.db.NewIterator(storage.GetColumnFamily(table), readOptions);
-                for (iterator.Seek(prefix); iterator.Valid(); iterator.Next())
-                {
-                    var key = iterator.Key();
-                    if (key.Length < prefix.Length) break;
-                    if (!key.AsSpan().StartsWith(prefix)) break;
-                    yield return (key, iterator.Value());
-                }
+                return storage.db.Find(prefix, storage.GetColumnFamily(table), readOptions);
             }
 
             public void Put(byte table, byte[]? key, byte[] value)
             {
-                writeBatch.Put(key ?? Array.Empty<byte>(), value, storage.GetColumnFamily(table));
+                key ??= Array.Empty<byte>();
+                writeBatch.Put(key, value, storage.GetColumnFamily(table));
             }
 
-            public byte[] TryGet(byte table, byte[]? key)
+            public void Delete(byte table, byte[]? key)
             {
-                return storage.db.Get(key ?? Array.Empty<byte>(), storage.GetColumnFamily(table), readOptions);
+                key ??= Array.Empty<byte>();
+                writeBatch.Delete(key, storage.GetColumnFamily(table));
             }
         }
     }

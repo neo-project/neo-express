@@ -71,8 +71,6 @@ namespace NeoExpress.Neo3
 
         }
 
-        const byte ADDRESS_VERSION = (byte)0x35;
-
         static ExpressChain CreateBlockchain(int count)
         {
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
@@ -114,7 +112,6 @@ namespace NeoExpress.Neo3
             return new ExpressChain()
             {
                 Magic = ExpressChain.GenerateMagicValue(),
-                AddressVersion = ADDRESS_VERSION,
                 ConsensusNodes = nodes,
             };
         }

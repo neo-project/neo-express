@@ -26,6 +26,8 @@ namespace NeoExpress.Neo2.Node
 {
     internal static class NodeUtility
     {
+        const byte ADDRESS_VERSION = (byte)0x17;
+
         public static bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0)
         {
             secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
@@ -35,7 +37,7 @@ namespace NeoExpress.Neo2.Node
                 yield return new KeyValuePair<string, string>(
                     "ProtocolConfiguration:Magic", $"{chain.Magic}");
                 yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:AddressVersion", $"{chain.AddressVersion}");
+                    "ProtocolConfiguration:AddressVersion", $"{ADDRESS_VERSION}");
                 yield return new KeyValuePair<string, string>(
                     "ProtocolConfiguration:SecondsPerBlock", $"{secondsPerBlock}");
 

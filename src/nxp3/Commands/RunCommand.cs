@@ -19,7 +19,10 @@ namespace nxp3.Commands
         private uint SecondsPerBlock { get; }
 
         [Option]
-        private bool Reset { get; }
+        private bool Reset { get; } = false;
+
+        [Option]
+        private bool Discard { get; } = false;
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
@@ -35,14 +38,26 @@ namespace nxp3.Commands
                 using var cts = new CancellationTokenSource();
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
                 var blockchainOperations = new BlockchainOperations();
-                await blockchainOperations.RunBlockchainAsync(chain,
-                                                              NodeIndex,
-                                                              SecondsPerBlock,
-                                                              Reset,
-                                                              console.Out,
-                                                              cts.Token)
-                    .ConfigureAwait(false);
 
+                if (Discard)
+                {
+                    await blockchainOperations.RunCheckpointAsync(chain,
+                                                                NodeIndex,
+                                                                SecondsPerBlock,
+                                                                console.Out,
+                                                                cts.Token)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    await blockchainOperations.RunBlockchainAsync(chain,
+                                                                NodeIndex,
+                                                                SecondsPerBlock,
+                                                                Reset,
+                                                                console.Out,
+                                                                cts.Token)
+                        .ConfigureAwait(false);
+                }
                 return 0;
             }
             catch (Exception ex)

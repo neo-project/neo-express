@@ -241,7 +241,7 @@ namespace NeoExpress.Neo3.Node
         //     writer.WriteLine($"Preload complete. {preloadCount * generationAmount} GAS loaded into genesis account.");
         // }
 
-        public static Task RunAsync(ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        public static Task RunAsync(string storageEngine, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSource<bool>();
 
@@ -251,8 +251,9 @@ namespace NeoExpress.Neo3.Node
                 {
                     var wallet = DevWallet.FromExpressWallet(node.Wallet);
 
-                    using var system = new NeoSystem();
                     var logPlugin = new LogPlugin(writer);
+
+                    using var system = new NeoSystem(storageEngine);
                     // var rpcPlugin = new ExpressNodeRpcPlugin(store);
 
                     system.StartNode(new ChannelsConfig

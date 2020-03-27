@@ -5,7 +5,7 @@ using System.IO;
 
 namespace NeoExpress.Neo3.Node
 {
-    internal class LogPlugin : Plugin, ILogPlugin
+    class LogPlugin : Plugin, ILogPlugin
     {
         private readonly TextWriter writer;
 

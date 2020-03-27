@@ -477,22 +477,24 @@ namespace NeoExpress.Neo3
             }
 
             var node = chain.ConsensusNodes[index];
-//             var folder = node.GetBlockchainPath();
+            var folder = node.GetBlockchainPath();
 
-//             if (reset && Directory.Exists(folder))
-//             {
-//                 Directory.Delete(folder, true);
-//             }
+            if (reset && Directory.Exists(folder))
+            {
+                Directory.Delete(folder, true);
+            }
 
-//             if (!Directory.Exists(folder))
-//             {
-//                 Directory.CreateDirectory(folder);
-//             }
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
 
             if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
             }
+
+            writer.WriteLine(folder);
 
             var wallet = DevWallet.FromExpressWallet(node.Wallet);
             var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
@@ -501,9 +503,8 @@ namespace NeoExpress.Neo3
             // can detect if blockchain is running automatically
             using var mutex = new Mutex(true, account.Address);
 
-//             writer.WriteLine(folder);
-
-            return NodeUtility.RunAsync(node, writer, cancellationToken);
+            var storagePlugin = new RocksDbStoragePlugin(folder);
+            return NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
         }
 
 //         public Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)

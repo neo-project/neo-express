@@ -258,7 +258,9 @@ namespace NeoExpress.Neo3.Node
                     var logPlugin = new LogPlugin(writer);
 
                     using var system = new NeoSystem(storageEngine);
-                    // var rpcPlugin = new ExpressNodeRpcPlugin(store);
+                    var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
+                    var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
+                    rpcServer.StartRpcServer();
 
                     system.StartNode(new ChannelsConfig
                     {
@@ -266,7 +268,6 @@ namespace NeoExpress.Neo3.Node
                         WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
                     });
                     system.StartConsensus(wallet);
-                    // system.StartRpc(IPAddress.Loopback, node.RpcPort, wallet);
 
                     cancellationToken.WaitHandle.WaitOne();
                 }

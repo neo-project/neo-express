@@ -24,5 +24,6 @@
   <ItemGroup>
     <ProjectReference Include="..\abstractions\abstractions.csproj" />
     <ProjectReference Include="..\..\..\..\official\neo3\src\neo\neo.csproj" />
+    <ProjectReference Include="..\..\..\..\official\modules\src\RpcServer\RpcServer.csproj" />
   </ItemGroup>
 </Project>

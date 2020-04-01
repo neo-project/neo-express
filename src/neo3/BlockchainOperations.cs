@@ -232,54 +232,37 @@ namespace NeoExpress.Neo3
 //             WriteProtocolJson();
 //         }
 
-//         private const string GENESIS = "genesis";
-        
+        private const string GENESIS = "genesis";
 
-//         static bool EqualsIgnoreCase(string a, string b)
-//             => string.Equals(a, b, StringComparison.InvariantCultureIgnoreCase);
+        static bool EqualsIgnoreCase(string a, string b)
+            => string.Equals(a, b, StringComparison.InvariantCultureIgnoreCase);
 
-//         public ExpressWallet CreateWallet(ExpressChain chain, string name, bool force)
-//         {
-//             bool IsReservedName()
-//             {
-//                 if (EqualsIgnoreCase(GENESIS, name)) 
-//                     return true;
+        public ExpressWallet CreateWallet(ExpressChain chain, string name)
+        {
+            bool IsReservedName()
+            {
+                if (EqualsIgnoreCase(GENESIS, name)) 
+                    return true;
 
-//                 foreach (var node in chain.ConsensusNodes)
-//                 {
-//                     if (EqualsIgnoreCase(name, node.Wallet.Name))
-//                         return true;
-//                 }
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    if (EqualsIgnoreCase(name, node.Wallet.Name))
+                        return true;
+                }
 
-//                 return false;
-//             }
+                return false;
+            }
 
-//             if (IsReservedName())
-//             {
-//                 throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
-//             }
+            if (IsReservedName())
+            {
+                throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
+            }
 
-//             if (chain.Wallets != null)
-//             {
-//                 var existingWallet = chain.GetWallet(name);
-//                 if (existingWallet != null)
-//                 {
-//                     if (!force)
-//                     {
-//                         throw new Exception($"{name} dev wallet already exists. Use --force to overwrite.");
-//                     }
-
-//                     chain.Wallets.Remove(existingWallet);
-//                 }
-//             }
-
-//             using (var wallet = new DevWallet(name))
-//             {
-//                 var account = wallet.CreateAccount();
-//                 account.IsDefault = true;
-//                 return wallet.ToExpressWallet();
-//             }
-//         }
+            var wallet = new DevWallet(name);
+            var account = wallet.CreateAccount();
+            account.IsDefault = true;
+            return wallet.ToExpressWallet();
+        }
 
 //         public void ExportWallet(ExpressWallet wallet, string filename, string password)
 //         {

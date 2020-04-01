@@ -7,7 +7,7 @@ using nxp3.Commands;
 namespace nxp3
 {
     [Command("nxp3")]
-    [Subcommand(typeof(CreateCommand), typeof(RunCommand))]
+    [Subcommand(typeof(CreateCommand), typeof(RunCommand), typeof(WalletCommand))]
     class Program
     {
         public static int Main(string[] args)

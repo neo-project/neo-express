@@ -7,6 +7,7 @@ using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
@@ -288,16 +289,15 @@ namespace NeoExpress.Neo3.Node
             return tcs.Task;
         }
 
-        // public static UInt256 GetAssetId(string asset)
-        // {
-        //     if (string.Compare("neo", asset, true) == 0)
-        //         return Blockchain.GoverningToken.Hash;
+        public static UInt160 GetAssetId(string asset)
+        {
+            if ("neo".Equals(asset, StringComparison.InvariantCultureIgnoreCase))
+                return NativeContract.NEO.Hash;
+            if ("gas".Equals(asset, StringComparison.InvariantCultureIgnoreCase))
+                return NativeContract.GAS.Hash;
 
-        //     if (string.Compare("gas", asset, true) == 0)
-        //         return Blockchain.UtilityToken.Hash;
-
-        //     return UInt256.Parse(asset);
-        // }
+            return UInt160.Parse(asset);
+        }
 
         // private static bool CoinUnspent(Coin c)
         // {

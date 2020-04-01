@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
@@ -548,30 +550,27 @@ namespace NeoExpress.Neo3
 //             }
 //         }
 
-//         public async Task<ContractTransaction> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
-//         {
-//             var uri = chain.GetUri();
+        public async Task<UInt256> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        {
+            var from = DevWalletAccount.FromExpressWalletAccount(sender);
+            var to = DevWalletAccount.FromExpressWalletAccount(receiver);
 
-//             var unspents = (await NeoRpcClient.GetUnspents(uri, sender.ScriptHash)
-//                 .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
-//             if (unspents == null)
-//             {
-//                 throw new Exception($"could not retrieve unspents for {nameof(sender)}");
-//             }
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
 
-//             var assetId = NodeUtility.GetAssetId(asset);
-//             var tx = RpcTransactionManager.CreateContractTransaction(
-//                     assetId, quantity, unspents, sender, receiver);
+            var assetHash = NodeUtility.GetAssetId(asset);
+            var nep5API = new Nep5API(rpcClient);
+            var decimals = nep5API.Decimals(assetHash);
 
-//             tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, sender) };
-//             var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
-//             if (sendResult == null || !sendResult.Value<bool>())
-//             {
-//                 throw new Exception("SendRawTransaction failed");
-//             }
+            // var neoBalance = nep5API.BalanceOf(NativeContract.NEO.Hash, from.ScriptHash);
+            // var gasBalance = nep5API.BalanceOf(NativeContract.GAS.Hash, from.ScriptHash);
 
-//             return tx;
-//         }
+            var amount = Neo.Network.RPC.Utility.ToBigInteger(decimal.Parse(quantity), decimals);
+
+            var walletApi = new WalletAPI(rpcClient);
+            var tx = walletApi.Transfer(assetHash, from.GetKey(), to.ScriptHash, amount);
+            return tx.Hash;
+        }
 
 //         public async Task<ClaimTransaction> Claim(ExpressChain chain, ExpressWalletAccount account)
 //         {
@@ -612,31 +611,31 @@ namespace NeoExpress.Neo3
 //             }
 //         }
 
-//         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
-//         {
-//             var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-//                 .SingleOrDefault(w => name.Equals(w.Name, StringComparison.InvariantCultureIgnoreCase));
-//             if (wallet != null)
-//             {
-//                 return wallet.DefaultAccount;
-//             }
+        public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
+        {
+            var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                .SingleOrDefault(w => name.Equals(w.Name, StringComparison.InvariantCultureIgnoreCase));
+            if (wallet != null)
+            {
+                return wallet.DefaultAccount;
+            }
 
-//             var node = chain.ConsensusNodes
-//                 .SingleOrDefault(n => name.Equals(n.Wallet.Name, StringComparison.InvariantCultureIgnoreCase));
-//             if (node != null)
-//             {
-//                 return node.Wallet.DefaultAccount;
-//             }
+            var node = chain.ConsensusNodes
+                .SingleOrDefault(n => name.Equals(n.Wallet.Name, StringComparison.InvariantCultureIgnoreCase));
+            if (node != null)
+            {
+                return node.Wallet.DefaultAccount;
+            }
 
-//             if (GENESIS.Equals(name, StringComparison.InvariantCultureIgnoreCase))
-//             {
-//                 return chain.ConsensusNodes
-//                     .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
-//                     .FirstOrDefault();
-//             }
+            if (GENESIS.Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return chain.ConsensusNodes
+                    .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
+                    .FirstOrDefault();
+            }
 
-//             return null;
-//         }
+            return null;
+        }
 
 //         async Task Show(ExpressChain chain, string accountName, TextWriter writer, Func<Uri, string, Task<JToken?>> func, bool showJson = true, Action<JToken>? writeResponse = null)
 //         {

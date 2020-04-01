@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
+using NeoExpress.Neo3;
 
 namespace nxp3.Commands
 {
@@ -38,7 +39,7 @@ namespace nxp3.Commands
                         chain.Wallets.Remove(existingWallet);
                     }
 
-                    var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
+                    var blockchainOperations = new BlockchainOperations();
                     var wallet = blockchainOperations.CreateWallet(chain, Name);
                     chain.Wallets ??= new List<ExpressWallet>(1);
                     chain.Wallets.Add(wallet);

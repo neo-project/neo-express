@@ -41,12 +41,10 @@ namespace NeoExpress
                 var signatureCount = devAccount.Contract.ParameterList.Length;
 
                 var signatures = chain.ConsensusNodes
+                    .Select(node => DevWalletAccount.FromExpressWalletAccount(node.Wallet.DefaultAccount))
+                    .OrderBy(account => (account.GetKey() ?? throw new Exception("DevWalletAccount missing key")).PublicKey)
+                    .Select(account => Sign(txHashData, account))
                     .Take(signatureCount)
-                    .Select(node =>
-                    {
-                        var account = DevWalletAccount.FromExpressWalletAccount(node.Wallet.DefaultAccount);
-                        return Sign(txHashData, account);
-                    })
                     .ToList();
 
                 var invocation = new byte[signatures.Aggregate(0, (a, sig) => a + sig.Length + 1)];

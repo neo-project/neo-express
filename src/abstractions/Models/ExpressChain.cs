@@ -16,11 +16,9 @@ namespace NeoExpress.Abstractions.Models
 
         public static uint GenerateMagicValue()
         {
-            var random = new Random();
-
             while (true)
             {
-                uint magic = (uint)random.Next(int.MaxValue);
+                uint magic = (uint)ThreadStaticRandom.Next(int.MaxValue);
 
                 if (!KNOWN_MAGIC_NUMBERS.Contains(magic))
                 {

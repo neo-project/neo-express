@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace NeoExpress.Neo3
 {
-    internal static class Extensions
+    static class Extensions
     {
         public static void WriteResult(this TextWriter writer, JToken? result)
         {

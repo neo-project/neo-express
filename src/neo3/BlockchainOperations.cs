@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Neo;
+using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
@@ -19,6 +21,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -550,26 +553,139 @@ namespace NeoExpress.Neo3
 //             }
 //         }
 
+        static async Task<Transaction> MakeTransaction(RpcClient rpcClient, byte[] script, UInt160 senderScriptHash, TransactionAttribute[]? attributes = null, Cosigner[]? cosigners = null)
+        {
+            attributes ??= Array.Empty<TransactionAttribute>();
+            cosigners ??= Array.Empty<Cosigner>();
+
+            uint height = (await rpcClient.GetBlockCountAsync()) - 1;
+            var tx = new Transaction
+            {
+                Version = 0,
+                Nonce = (uint)ThreadStaticRandom.Next(),
+                Script = script,
+                Sender = senderScriptHash,
+                ValidUntilBlock = height + Transaction.MaxValidUntilBlockIncrement,
+                Attributes = attributes,
+                Cosigners = cosigners,
+                Witnesses = Array.Empty<Witness>()
+            };
+
+            UInt160[] hashes = tx.GetScriptHashesForVerifying(null);
+            var result = await rpcClient.InvokeScriptAsync(script, hashes);
+            tx.SystemFee = Math.Max(long.Parse(result.GasConsumed) - ApplicationEngine.GasFree, 0);
+            if (tx.SystemFee > 0)
+            {
+                long d = (long)NativeContract.GAS.Factor;
+                long remainder = tx.SystemFee % d;
+                if (remainder > 0)
+                    tx.SystemFee += d - remainder;
+                else if (remainder < 0)
+                    tx.SystemFee -= remainder;
+            }
+
+            return tx;
+        }
+
+        static async Task<long> CalculateNetworkFee(Transaction tx, RpcClient rpcClient, IReadOnlyList<WalletAccount> signers)
+        {
+            long networkFee = 0;
+            UInt160[] hashes = tx.GetScriptHashesForVerifying(null);
+            int size = Transaction.HeaderSize + tx.Attributes.GetVarSize() + tx.Cosigners.GetVarSize() + tx.Script.GetVarSize() + Neo.IO.Helper.GetVarSize(hashes.Length);
+            foreach (UInt160 hash in hashes)
+            {
+                byte[]? witnessScript = signers.FirstOrDefault(a => a.Contract.ScriptHash == hash)?.Contract?.Script;
+                if (witnessScript == null || witnessScript.Length == 0)
+                {
+                    try
+                    {
+                        witnessScript = (await rpcClient.GetContractStateAsync(hash.ToString()))?.Script;
+                    }
+                    catch {}
+
+                    if (witnessScript is null) continue;
+                    networkFee += Wallet.CalculateNetworkFee(witnessScript, ref size);
+                }
+            }
+            networkFee += size * (await rpcClient.GetFeePerByteAsync());
+            return networkFee;
+        }
+
+        static IEnumerable<ExpressWalletAccount> GetMultiSigAccounts(ExpressChain chain, string scriptHash)
+        {
+            return chain.ConsensusNodes
+                .Select(n => n.Wallet)
+                .Concat(chain.Wallets)
+                .Select(w => w.Accounts.FirstOrDefault(a => a.ScriptHash == scriptHash))
+                .Where(a => a != null);
+        }
+
+        static async Task Sign(Transaction tx, RpcClient rpcClient, ExpressWalletAccount sender, IEnumerable<ExpressWalletAccount> signers)
+        {
+            var devSigners = signers.Select(DevWalletAccount.FromExpressWalletAccount).ToList();
+            tx.NetworkFee = await CalculateNetworkFee(tx, rpcClient, devSigners).ConfigureAwait(false);
+
+            var gasBalance = await rpcClient.BalanceOfAsync(NativeContract.GAS.Hash, sender.ScriptHash.ToScriptHash());
+            if (gasBalance < tx.SystemFee + tx.NetworkFee)
+            {
+                throw new InvalidOperationException($"Insufficient GAS in address: {sender.ScriptHash}");
+            }
+
+            var context = new ContractParametersContext(tx);
+            foreach (var signer in devSigners)
+            {
+                var key = signer.GetKey() ?? throw new Exception($"{signer.Address} missing key");
+                var signature = tx.Sign(key);
+                if (!context.AddSignature(signer.Contract, key.PublicKey, signature))
+                {
+                    throw new Exception("AddSignature Failed");
+                }
+            }
+
+            if (!context.Completed)
+            {
+                throw new Exception($"Insufficient signatures");
+            }
+
+            tx.Witnesses = context.GetWitnesses();
+        }
+
         public async Task<UInt256> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
-            var from = DevWalletAccount.FromExpressWalletAccount(sender);
-            var to = DevWalletAccount.FromExpressWalletAccount(receiver);
-
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 
             var assetHash = NodeUtility.GetAssetId(asset);
-            var nep5API = new Nep5API(rpcClient);
-            var decimals = nep5API.Decimals(assetHash);
+            var amount = await GetAmount(rpcClient, assetHash).ConfigureAwait(false);
 
-            // var neoBalance = nep5API.BalanceOf(NativeContract.NEO.Hash, from.ScriptHash);
-            // var gasBalance = nep5API.BalanceOf(NativeContract.GAS.Hash, from.ScriptHash);
+            // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md#constructing-a-transaction-to-transfer-from-multi-signature-account
+            var senderScriptHash = sender.ScriptHash.ToScriptHash();
+            var script = assetHash.MakeScript("transfer", senderScriptHash, receiver.ScriptHash.ToScriptHash(), amount);
+            var cosigners = new[] { new Cosigner { Scopes = WitnessScope.CalledByEntry, Account = senderScriptHash } };
+            var tx = await MakeTransaction(rpcClient, script, senderScriptHash, null, cosigners).ConfigureAwait(false);
+            
+            var signers = sender.IsMultiSigContract()
+                ? GetMultiSigAccounts(chain, sender.ScriptHash).Take(sender.Contract.Parameters.Count)
+                : Enumerable.Repeat(sender, 1);
 
-            var amount = Neo.Network.RPC.Utility.ToBigInteger(decimal.Parse(quantity), decimals);
+            await Sign(tx, rpcClient, sender, signers).ConfigureAwait(false);
+            return await rpcClient.SendRawTransactionAsync(tx);
 
-            var walletApi = new WalletAPI(rpcClient);
-            var tx = walletApi.Transfer(assetHash, from.GetKey(), to.ScriptHash, amount);
-            return tx.Hash;
+            async Task<BigInteger> GetAmount(RpcClient _rpcClient, UInt160 _assetHash)
+            {
+                if ("all".Equals(quantity, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return await rpcClient.BalanceOfAsync(assetHash, sender.ScriptHash.ToScriptHash());
+                }
+
+                if (decimal.TryParse(quantity, out var value))
+                {
+                    var decimals = await rpcClient.DecimalsAsync(assetHash).ConfigureAwait(false);
+                    return Neo.Network.RPC.Utility.ToBigInteger(value, decimals);
+                }
+
+                throw new Exception("invalid quantity");
+            }
         }
 
 //         public async Task<ClaimTransaction> Claim(ExpressChain chain, ExpressWalletAccount account)

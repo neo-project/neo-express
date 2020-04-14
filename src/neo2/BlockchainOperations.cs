@@ -477,7 +477,7 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
         {
             if (index >= chain.ConsensusNodes.Count)
             {
@@ -512,7 +512,7 @@ namespace NeoExpress.Neo2
             writer.WriteLine(folder);
 
 #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
+            await NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
 #pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 

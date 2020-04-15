@@ -10,6 +10,7 @@ namespace nxp3
     [Subcommand(
         typeof(CreateCommand), 
         typeof(RunCommand), 
+        typeof(ShowCommand), 
         typeof(TransferCommand), 
         typeof(WalletCommand))]
     class Program

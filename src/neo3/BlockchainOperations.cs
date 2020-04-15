@@ -607,7 +607,7 @@ namespace NeoExpress.Neo3
                     networkFee += Wallet.CalculateNetworkFee(witnessScript, ref size);
                 }
             }
-            networkFee += size * (await rpcClient.GetFeePerByteAsync());
+            networkFee += size * (await rpcClient.GetFeePerByteAsync()) * 2;
             return networkFee;
         }
 
@@ -659,17 +659,57 @@ namespace NeoExpress.Neo3
             var amount = await GetAmount(rpcClient, assetHash).ConfigureAwait(false);
 
             // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md#constructing-a-transaction-to-transfer-from-multi-signature-account
-            var senderScriptHash = sender.ScriptHash.ToScriptHash();
-            var script = assetHash.MakeScript("transfer", senderScriptHash, receiver.ScriptHash.ToScriptHash(), amount);
-            var cosigners = new[] { new Cosigner { Scopes = WitnessScope.CalledByEntry, Account = senderScriptHash } };
-            var tx = await MakeTransaction(rpcClient, script, senderScriptHash, null, cosigners).ConfigureAwait(false);
-            
-            var signers = sender.IsMultiSigContract()
-                ? GetMultiSigAccounts(chain, sender.ScriptHash).Take(sender.Contract.Parameters.Count)
-                : Enumerable.Repeat(sender, 1);
 
-            await Sign(tx, rpcClient, sender, signers).ConfigureAwait(false);
-            return await rpcClient.SendRawTransactionAsync(tx);
+            var devSender = DevWalletAccount.FromExpressWalletAccount(sender);
+            var devReceiver = DevWalletAccount.FromExpressWalletAccount(receiver);
+            var devSenderScriptHash = devSender.Contract.Script.ToScriptHash();
+
+            var script = assetHash.MakeScript("transfer", devSenderScriptHash, devReceiver.ScriptHash, amount);
+            var cosigners = new[] { new Cosigner { Scopes = WitnessScope.CalledByEntry, Account = devSenderScriptHash } };
+
+            var tm = new TransactionManager(rpcClient, devSenderScriptHash)
+                .MakeTransaction(script, null, cosigners);
+
+            if (sender.IsMultiSigContract())
+            {
+                var signers = GetMultiSigAccounts(chain, sender.ScriptHash)
+                    .Select(DevWalletAccount.FromExpressWalletAccount);
+
+                var publicKeys = signers.Select(s => s.GetKey()!.PublicKey).ToArray();
+                var sigCount = sender.Contract.Parameters.Count;
+
+                foreach (var signer in signers.Take(sigCount))
+                {
+                    var keyPair = signer.GetKey() ?? throw new Exception();
+                    tm = tm.AddMultiSig(keyPair, sigCount, publicKeys);
+                }
+            }
+            else
+            {
+                tm = tm.AddSignature(devSender.GetKey()!);
+            }
+
+            var tx = tm.Sign().Tx;
+
+            return rpcClient.SendRawTransaction(tx);
+
+
+
+
+
+
+
+
+
+
+            // var tx = await MakeTransaction(rpcClient, script, senderScriptHash, null, cosigners).ConfigureAwait(false);
+            
+            // var signers = sender.IsMultiSigContract()
+            //     ? GetMultiSigAccounts(chain, sender.ScriptHash).Take(sender.Contract.Parameters.Count)
+            //     : Enumerable.Repeat(sender, 1);
+
+            // await Sign(tx, rpcClient, sender, signers).ConfigureAwait(false);
+            // return await rpcClient.SendRawTransactionAsync(tx);
 
             async Task<BigInteger> GetAmount(RpcClient _rpcClient, UInt160 _assetHash)
             {
@@ -751,6 +791,15 @@ namespace NeoExpress.Neo3
             }
 
             return null;
+        }
+
+        public async Task<BigInteger> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        {
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+            var assetHash = NodeUtility.GetAssetId(asset);
+
+            return await rpcClient.BalanceOfAsync(assetHash, account.ScriptHash.ToScriptHash());
         }
 
 //         async Task Show(ExpressChain chain, string accountName, TextWriter writer, Func<Uri, string, Task<JToken?>> func, bool showJson = true, Action<JToken>? writeResponse = null)

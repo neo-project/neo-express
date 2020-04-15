@@ -73,12 +73,9 @@ namespace NeoExpress.Neo3
         
         public static async Task<RpcInvokeResult> InvokeScriptAsync(this RpcClient @this, byte[] script, params UInt160[] scriptHashesForVerifying)
         {
-            List<JObject> parameters = new List<JObject>
-            {
-                script.ToHexString()
-            };
-            parameters.AddRange(scriptHashesForVerifying.Select(p => (JObject)p.ToString()));
-            var result = await @this.RpcSendAsync("invokescript", parameters.ToArray()).ConfigureAwait(false);
+            var hashes = new JArray(scriptHashesForVerifying.Select(p => (JString)p.ToString()));
+            var parameters = new JObject[] { script.ToHexString(), hashes };
+            var result = await @this.RpcSendAsync("invokescript", parameters).ConfigureAwait(false);
             return RpcInvokeResult.FromJson(result);
         }
 

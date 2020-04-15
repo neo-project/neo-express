@@ -98,5 +98,8 @@ namespace NeoExpress.Neo3.Models
         public override IEnumerable<WalletAccount> GetAccounts() => accounts.Values;
 
         public override bool VerifyPassword(string password) => true;
+        
+        public override bool ChangePassword(string oldPassword, string newPassword)
+            => throw new NotImplementedException();
     }
 }

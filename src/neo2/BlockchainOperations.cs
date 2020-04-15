@@ -477,7 +477,7 @@ namespace NeoExpress.Neo2
             }
         }
 
-        public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
         {
             if (index >= chain.ConsensusNodes.Count)
             {
@@ -511,12 +511,10 @@ namespace NeoExpress.Neo2
 
             writer.WriteLine(folder);
 
-#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
-#pragma warning restore IDE0067 // Dispose objects before losing scope
+            await NodeUtility.RunAsync(new RocksDbStore(folder), node, writer, cancellationToken);
         }
 
-        public Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -535,9 +533,7 @@ namespace NeoExpress.Neo2
                 ZipFile.ExtractToDirectory(checkPointArchive, checkpointTempPath);
                 ValidateCheckpoint(checkpointTempPath, chain.Magic, node.Wallet.DefaultAccount);
 
-    #pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-                return NodeUtility.RunAsync(new CheckpointStore(checkpointTempPath), node, writer, cancellationToken);
-    #pragma warning restore IDE0067 // Dispose objects before losing scope
+                await NodeUtility.RunAsync(new CheckpointStore(checkpointTempPath), node, writer, cancellationToken);
             }
             finally
             {

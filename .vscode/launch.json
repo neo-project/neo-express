@@ -5,14 +5,14 @@
    "version": "0.2.0",
    "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": "transfer",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/src/neo-express/bin/Debug/netcoreapp3.1/neo-express.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/src/neo-express",
+            "program": "${workspaceFolder}/src/nxp3/bin/Debug/netcoreapp3.1/nxp3.dll",
+            "args": ["transfer", "neo", "1000", "genesis", "devhawk"],
+            "cwd": "${workspaceFolder}/src/nxp3",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false

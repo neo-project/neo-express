@@ -1,5 +1,6 @@
 ﻿using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
+using NeoExpress.Neo2.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -66,5 +67,8 @@ namespace NeoExpress.Neo2
 
         public static bool IsMultiSigContract(this Neo.Wallets.WalletAccount account)
             => Neo.SmartContract.Helper.IsMultiSigContract(account.Contract.Script);
+
+        public static AbiContract.Function GetEntrypoint(this AbiContract abiContract) 
+            => abiContract.Functions.Single(f => f.Name == abiContract.Entrypoint);
     }
 }

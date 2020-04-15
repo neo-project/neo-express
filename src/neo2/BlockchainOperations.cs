@@ -1,8 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
-using Neo;
+﻿using Neo;
 using Neo.Network.P2P.Payloads;
-using Neo.SmartContract;
-using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
@@ -962,6 +959,37 @@ namespace NeoExpress.Neo2
             {
                 var abiContract = Convert(contract);
                 await NeoRpcClient.SaveContractMetadata(uri, abiContract.Hash, abiContract);
+            }
+
+            return tx;
+        }
+
+        public async Task<InvocationTransaction> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
+        {
+            static async Task<JObject> LoadInvocationFile(string path)
+            {
+                using var fileStream = File.OpenRead(path);
+                using var textReader = new StreamReader(fileStream);
+                using var jsonReader = new JsonTextReader(textReader);
+                return await JObject.LoadAsync(jsonReader);
+            }
+
+            var uri = chain.GetUri();
+            var json = await LoadInvocationFile(invocationFilePath);
+            var hash = json.Value<string>("hash");
+            var scriptHash = UInt160.Parse(hash);
+
+            var script = RpcTransactionManager.CreateInvocationScript(scriptHash);
+            var invokeResponse = (await NeoRpcClient.InvokeScript(uri, script))?.ToObject<InvokeResponse>();
+            var gasConsumed = invokeResponse == null ? 0 : invokeResponse.GasConsumed;
+            
+            var tx = RpcTransactionManager.CreateInvocationTransaction(account, script, gasConsumed);
+            tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+
+            var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+            if (sendResult == null || !sendResult.Value<bool>())
+            {
+                throw new Exception("SendRawTransaction failed");
             }
 
             return tx;

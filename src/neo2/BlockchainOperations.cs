@@ -1,5 +1,6 @@
 ﻿using Neo;
 using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
@@ -11,10 +12,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -963,6 +966,64 @@ namespace NeoExpress.Neo2
 
             return tx;
         }
+
+        static ContractParameter ParseArg(string arg)
+        {
+            if (arg.StartsWith("@A"))
+            {
+                var hash = Neo.Wallets.Helper.ToScriptHash(arg.Substring(1));
+                return new ContractParameter()
+                {
+                    Type = ContractParameterType.Hash160,
+                    Value = hash
+                };
+            }
+
+            if (arg.StartsWith("0x")
+                && BigInteger.TryParse(arg.AsSpan().Slice(2), NumberStyles.HexNumber, null, out var bigInteger))
+            {
+                return new ContractParameter()
+                {
+                    Type = ContractParameterType.Integer,
+                    Value = bigInteger
+                };
+            }
+
+            return new ContractParameter()
+            {
+                Type = ContractParameterType.String,
+                Value = arg
+            };
+        }
+
+        static ContractParameter ParseArg(JToken arg)
+        {
+            return arg.Type switch
+            {
+                JTokenType.String => ParseArg(arg.Value<string>()),
+                JTokenType.Boolean => new ContractParameter()
+                    {
+                        Type = ContractParameterType.Boolean,
+                        Value = arg.Value<bool>()
+                    }, 
+                JTokenType.Integer => new ContractParameter()
+                    {
+                        Type = ContractParameterType.Integer,
+                        Value = new BigInteger(arg.Value<int>())
+                    }, 
+                JTokenType.Array => new ContractParameter()
+                    {
+                        Type = ContractParameterType.Array,
+                        Value = ((JArray)arg).Select(ParseArg).ToList(),
+                    }, 
+                _ => throw new Exception()
+            };
+        }
+
+        static IEnumerable<ContractParameter> ParseArgs(JArray? args) 
+            => args == null
+                ? Enumerable.Empty<ContractParameter>()
+                : args.Select(ParseArg);
 
         public async Task<InvocationTransaction> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
         {

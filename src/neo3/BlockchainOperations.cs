@@ -9,6 +9,8 @@ using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
 using NeoExpress.Neo3.Node;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -340,6 +342,105 @@ namespace NeoExpress.Neo3
                 sb.EmitSysCall(InteropService.Contract.Create, scriptTask.Result, manifestTask.Result.ToString());
                 return sb.ToArray();
             }
+        }
+
+        static ContractParameter ParseArg(string arg)
+        {
+            if (arg.StartsWith("@N"))
+            {
+                var hash = Neo.Wallets.Helper.ToScriptHash(arg.Substring(1));
+                return new ContractParameter()
+                {
+                    Type = ContractParameterType.Hash160,
+                    Value = hash
+                };
+            }
+
+            if (arg.StartsWith("0x")
+                && BigInteger.TryParse(arg.AsSpan().Slice(2), System.Globalization.NumberStyles.HexNumber, null, out var bigInteger))
+            {
+                return new ContractParameter()
+                {
+                    Type = ContractParameterType.Integer,
+                    Value = bigInteger
+                };
+            }
+
+            return new ContractParameter()
+            {
+                Type = ContractParameterType.String,
+                Value = arg
+            };
+        }
+
+        static ContractParameter ParseArg(JToken arg)
+        {
+            return arg.Type switch
+            {
+                JTokenType.String => ParseArg(arg.Value<string>()),
+                JTokenType.Boolean => new ContractParameter()
+                    {
+                        Type = ContractParameterType.Boolean,
+                        Value = arg.Value<bool>()
+                    }, 
+                JTokenType.Integer => new ContractParameter()
+                    {
+                        Type = ContractParameterType.Integer,
+                        Value = new BigInteger(arg.Value<int>())
+                    }, 
+                JTokenType.Array => new ContractParameter()
+                    {
+                        Type = ContractParameterType.Array,
+                        Value = ((JArray)arg).Select(ParseArg).ToList(),
+                    }, 
+                _ => throw new Exception()
+            };
+        }
+
+        static IEnumerable<ContractParameter> ParseArgs(JToken? args) 
+            => args == null
+                ? Enumerable.Empty<ContractParameter>()
+                : args.Select(ParseArg);
+
+        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            JObject json;
+            {
+                using var fileStream = File.OpenRead(invocationFilePath);
+                using var textReader = new StreamReader(fileStream);
+                using var jsonReader = new JsonTextReader(textReader);
+                json = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+            }
+            
+            var scriptHash = UInt160.Parse(json.Value<string>("hash"));
+            var operation = json.Value<string>("operation");
+            var args = ParseArgs(json.GetValue("args")).ToArray();
+            byte[] script;
+            {
+                using var sb = new ScriptBuilder();
+                sb.EmitAppCall(scriptHash, operation, args);
+                script = sb.ToArray();
+            }
+
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+
+            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+            var cosigners = new[] { new Cosigner { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
+
+            var tm = new TransactionManager(rpcClient, devAccount.ScriptHash)
+                .MakeTransaction(script, null, cosigners);
+
+            AddSignatures(chain, tm, devAccount);
+
+            var tx = tm.Sign().Tx;
+
+            return rpcClient.SendRawTransaction(tx);
         }
 
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)

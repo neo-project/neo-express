@@ -514,5 +514,31 @@ namespace NeoExpress.Neo3
             return rpcClient.GetRawTransaction(txHash);
         }
 
+        public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string scriptHash)
+        {
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+
+            var json = await Task.Run(() => rpcClient.RpcSend("expressgetcontractstorage", scriptHash))
+                .ConfigureAwait(false);
+        
+            if (json != null && json is Neo.IO.Json.JArray array)
+            {
+                var storages = new List<ExpressStorage>(array.Count);
+                foreach (var s in array)
+                {
+                    var storage = new ExpressStorage()
+                    {
+                        Key = s["key"].AsString(),
+                        Value = s["value"].AsString(),
+                        Constant = s["constant"].AsBoolean()
+                    };
+                    storages.Add(storage);
+                }
+                return storages;
+            }
+
+            return new List<ExpressStorage>(0);
+        }
     }
 }

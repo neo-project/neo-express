@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.Cryptography;
-using Neo.Ledger;
 using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
@@ -12,7 +11,6 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -26,6 +24,7 @@ using System.Threading.Tasks;
 
 namespace NeoExpress.Neo3.Node
 {
+
     static class NodeUtility
     {
         const byte ADDRESS_VERSION = (byte)0x35;
@@ -261,6 +260,8 @@ namespace NeoExpress.Neo3.Node
                     using var system = new NeoSystem(storageEngine);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
                     var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
+                    var expressRpcServer = new ExpressRpcServer();
+                    rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.StartRpcServer();
 
                     system.StartNode(new ChannelsConfig

@@ -25,7 +25,7 @@ namespace NeoExpress.Neo3
 {
     public class BlockchainOperations
     {
-        public ExpressChain CreateBlockchain(FileInfo output, int count, uint preloadGas, TextWriter writer, CancellationToken token = default)
+        public ExpressChain CreateBlockchain(FileInfo output, int count, TextWriter writer, CancellationToken token = default)
         {
             if (File.Exists(output.FullName))
             {
@@ -37,39 +37,13 @@ namespace NeoExpress.Neo3
                 throw new ArgumentException("invalid blockchain node count", nameof(count));
             }
 
-            // TODO: remove this restriction
-            if (preloadGas > 0 && count != 1)
-            {
-                throw new ArgumentException("gas can only be preloaded on a single node blockchain", nameof(preloadGas));
-            }
-
             var chain = BlockchainOperations.CreateBlockchain(count);
 
             writer.WriteLine($"Created {count} node privatenet at {output.FullName}");
             writer.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
             writer.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 
-            // if (preloadGas > 0)
-            // {
-            //     var node = chain.ConsensusNodes[0];
-            //     var folder = node.GetBlockchainPath();
-
-            //     if (!Directory.Exists(folder))
-            //     {
-            //         Directory.CreateDirectory(folder);
-            //     }
-
-            //     if (!NodeUtility.InitializeProtocolSettings(chain))
-            //     {
-            //         throw new Exception("could not initialize protocol settings");
-            //     }
-
-            //     using var store = new RocksDbStore(folder);
-            //     NodeUtility.Preload(preloadGas, store, node, writer, token);
-            // }
-
             return chain;
-
         }
 
         static ExpressChain CreateBlockchain(int count)
@@ -149,7 +123,7 @@ namespace NeoExpress.Neo3
             return wallet.ToExpressWallet();
         }
 
-        public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool reset, TextWriter writer, CancellationToken cancellationToken)
+        public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             if (index >= chain.ConsensusNodes.Count)
             {
@@ -158,26 +132,20 @@ namespace NeoExpress.Neo3
 
             var node = chain.ConsensusNodes[index];
             var folder = node.GetBlockchainPath();
-
-            if (reset && Directory.Exists(folder))
-            {
-                Directory.Delete(folder, true);
-            }
-
-            if (!Directory.Exists(folder))
-            {
-                Directory.CreateDirectory(folder);
-            }
+            writer.WriteLine(folder);
 
             if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
             }
 
-            writer.WriteLine(folder);
-
             var wallet = DevWallet.FromExpressWallet(node.Wallet);
             var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
+
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
 
             // create a named mutex so that checkpoint create command
             // can detect if blockchain is running automatically
@@ -187,33 +155,24 @@ namespace NeoExpress.Neo3
             return NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
         }
 
-        public Task RunCheckpointAsync(ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public Task RunCheckpointAsync(ExpressChain chain, string filename, uint secondsPerBlock, TextWriter @out, CancellationToken token)
         {
-            if (index >= chain.ConsensusNodes.Count)
-            {
-                throw new ArgumentException(nameof(index));
-            }
+            throw new NotImplementedException();
+        }
 
-            var node = chain.ConsensusNodes[index];
-            var folder = node.GetBlockchainPath();
+        public Task CreateCheckpoint(ExpressChain chain, object filename, TextWriter @out)
+        {
+            throw new NotImplementedException();
+        }
 
-            if (!Directory.Exists(folder))
-            {
-                throw new Exception("invalid checkpoint");
-            }
+        public string ResolveCheckpointFileName(string name)
+        {
+            throw new NotImplementedException();
+        }
 
-            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
-
-            writer.WriteLine(folder);
-
-            var wallet = DevWallet.FromExpressWallet(node.Wallet);
-            var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
-
-            var storagePlugin = new CheckpointStoragePlugin(folder);
-            return NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
+        public void RestoreCheckpoint(ExpressChain chain, string filename, bool force)
+        {
+            throw new NotImplementedException();
         }
 
         static IEnumerable<ExpressWalletAccount> GetMultiSigAccounts(ExpressChain chain, string scriptHash)
@@ -258,11 +217,8 @@ namespace NeoExpress.Neo3
         }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
-        public async Task<UInt256> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        public UInt256 Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
-            // TODO: remove once RpcClient provides async methods 
-            await Task.CompletedTask;
-
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");

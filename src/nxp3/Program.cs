@@ -8,6 +8,7 @@ namespace nxp3
 {
     [Command("nxp3")]
     [Subcommand(
+        typeof(CheckpointCommand),
         typeof(ContractCommand),
         typeof(CreateCommand), 
         typeof(RunCommand), 

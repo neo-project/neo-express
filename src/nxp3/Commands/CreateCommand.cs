@@ -38,9 +38,6 @@ namespace nxp3.Commands
         [Option]
         private bool Force { get; }
 
-        [Option]
-        private uint PreloadGas { get; }
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
@@ -61,7 +58,7 @@ namespace nxp3.Commands
                 var blockchainOperations = new BlockchainOperations();
                 using var cts = new CancellationTokenSource();
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
-                var chain = blockchainOperations.CreateBlockchain(new FileInfo(output), Count, PreloadGas, Console.Out, cts.Token);
+                var chain = blockchainOperations.CreateBlockchain(new FileInfo(output), Count, Console.Out, cts.Token);
                 chain.Save(output);
 
                 return 0;

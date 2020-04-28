@@ -37,7 +37,8 @@ namespace NeoExpress.Neo2
                 throw new ArgumentException("invalid blockchain node count", nameof(count));
             }
 
-            // TODO: remove this restriction
+            // TODO: See if we can remove this restriction and can preload gas on 
+            //       multi-node blockchains
             if (preloadGas > 0 && count != 1)
             {
                 throw new ArgumentException("gas can only be preloaded on a single node blockchain", nameof(preloadGas));

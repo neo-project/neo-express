@@ -412,13 +412,8 @@ namespace NeoExpress.Neo3
                 ? Enumerable.Empty<ContractParameter>()
                 : args.Select(ParseArg);
 
-        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
+        static async Task<byte[]> LoadInvocationFileScript(string invocationFilePath)
         {
-            if (!NodeUtility.InitializeProtocolSettings(chain))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
-
             JObject json;
             {
                 using var fileStream = File.OpenRead(invocationFilePath);
@@ -430,15 +425,22 @@ namespace NeoExpress.Neo3
             var scriptHash = UInt160.Parse(json.Value<string>("hash"));
             var operation = json.Value<string>("operation");
             var args = ParseArgs(json.GetValue("args")).ToArray();
-            byte[] script;
+
+            using var sb = new ScriptBuilder();
+            sb.EmitAppCall(scriptHash, operation, args);
+            return sb.ToArray();
+        }
+
+        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
             {
-                using var sb = new ScriptBuilder();
-                sb.EmitAppCall(scriptHash, operation, args);
-                script = sb.ToArray();
+                throw new Exception("could not initialize protocol settings");
             }
 
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
+            var script = await LoadInvocationFileScript(invocationFilePath);
 
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
             var cosigners = new[] { new Cosigner { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
@@ -453,6 +455,19 @@ namespace NeoExpress.Neo3
             return rpcClient.SendRawTransaction(tx);
         }
 
+        public async Task<RpcInvokeResult> TestInvokeContract(ExpressChain chain, string invocationFilePath)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+            var script = await LoadInvocationFileScript(invocationFilePath);
+            return rpcClient.InvokeScript(script);
+        }
+        
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
         {
             var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())

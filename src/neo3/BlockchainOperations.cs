@@ -2,6 +2,7 @@
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.VM;
@@ -16,6 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -124,7 +126,7 @@ namespace NeoExpress.Neo3
         {
             bool IsReservedName()
             {
-                if (EqualsIgnoreCase(GENESIS, name)) 
+                if (EqualsIgnoreCase(GENESIS, name))
                     return true;
 
                 foreach (var node in chain.ConsensusNodes)
@@ -255,11 +257,12 @@ namespace NeoExpress.Neo3
             }
         }
 
+        // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
         public async Task<UInt256> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
             // TODO: remove once RpcClient provides async methods 
             await Task.CompletedTask;
-            
+
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");
@@ -270,8 +273,6 @@ namespace NeoExpress.Neo3
 
             var assetHash = NodeUtility.GetAssetId(asset);
             var amount = GetAmount();
-
-            // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md#constructing-a-transaction-to-transfer-from-multi-signature-account
 
             var devSender = DevWalletAccount.FromExpressWalletAccount(sender);
             var devReceiver = DevWalletAccount.FromExpressWalletAccount(receiver);
@@ -306,6 +307,8 @@ namespace NeoExpress.Neo3
             }
         }
 
+        // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/contract.md
+        // https://github.com/ProDog/NEO-Test/blob/master/RpcClientTest/Test_ContractClient.cs#L38
         public async Task<UInt256> DeployContract(ExpressChain chain, string contract, ExpressWalletAccount account)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
@@ -316,30 +319,37 @@ namespace NeoExpress.Neo3
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 
-            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+            WalletAccount devAccount = DevWalletAccount.FromExpressWalletAccount(account);
 
-            var script = await CreateDeployScript();
+            var (nefFile, manifest) = await LoadContract(contract);
+            var script = CreateDeployScript(nefFile, manifest);
             var tm = new TransactionManager(rpcClient, devAccount.ScriptHash)
                 .MakeTransaction(script);
 
             AddSignatures(chain, tm, devAccount);
             var tx = tm.Sign().Tx;
             return rpcClient.SendRawTransaction(tx);
-            
-            async Task<byte[]> CreateDeployScript()
-            {
-                var scriptTask = File.ReadAllBytesAsync(contract);
-                var manifestTask = File.ReadAllTextAsync(Path.ChangeExtension(contract, ".manifest.json"))
-                    .ContinueWith(t => 
-                    {
-                        var json = Neo.IO.Json.JObject.Parse(t.Result);
-                        return ContractManifest.FromJson(json);
-                    }, TaskContinuationOptions.OnlyOnRanToCompletion);
-                
-                await Task.WhenAll(scriptTask, manifestTask).ConfigureAwait(false);
 
+            static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
+            {
+                var nefTask = Task.Run(() =>
+                {
+                    using var stream = File.OpenRead(contractPath);
+                    using var reader = new BinaryReader(stream, Encoding.UTF8, false);
+                    return Neo.IO.Helper.ReadSerializable<NefFile>(reader);
+                });
+
+                var manifestTask = File.ReadAllBytesAsync(Path.ChangeExtension(contractPath, ".manifest.json"))
+                    .ContinueWith(t => ContractManifest.Parse(t.Result), TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
+                return (nefTask.Result, manifestTask.Result);
+            }
+
+            static byte[] CreateDeployScript(NefFile nefFile, ContractManifest manifest)
+            {
                 using var sb = new ScriptBuilder();
-                sb.EmitSysCall(InteropService.Contract.Create, scriptTask.Result, manifestTask.Result.ToString());
+                sb.EmitSysCall(InteropService.Contract.Create, nefFile.Script, manifest.ToString());
                 return sb.ToArray();
             }
         }
@@ -379,25 +389,25 @@ namespace NeoExpress.Neo3
             {
                 JTokenType.String => ParseArg(arg.Value<string>()),
                 JTokenType.Boolean => new ContractParameter()
-                    {
-                        Type = ContractParameterType.Boolean,
-                        Value = arg.Value<bool>()
-                    }, 
+                {
+                    Type = ContractParameterType.Boolean,
+                    Value = arg.Value<bool>()
+                },
                 JTokenType.Integer => new ContractParameter()
-                    {
-                        Type = ContractParameterType.Integer,
-                        Value = new BigInteger(arg.Value<int>())
-                    }, 
+                {
+                    Type = ContractParameterType.Integer,
+                    Value = new BigInteger(arg.Value<int>())
+                },
                 JTokenType.Array => new ContractParameter()
-                    {
-                        Type = ContractParameterType.Array,
-                        Value = ((JArray)arg).Select(ParseArg).ToList(),
-                    }, 
+                {
+                    Type = ContractParameterType.Array,
+                    Value = ((JArray)arg).Select(ParseArg).ToList(),
+                },
                 _ => throw new Exception()
             };
         }
 
-        static IEnumerable<ContractParameter> ParseArgs(JToken? args) 
+        static IEnumerable<ContractParameter> ParseArgs(JToken? args)
             => args == null
                 ? Enumerable.Empty<ContractParameter>()
                 : args.Select(ParseArg);
@@ -416,7 +426,7 @@ namespace NeoExpress.Neo3
                 using var jsonReader = new JsonTextReader(textReader);
                 json = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
             }
-            
+
             var scriptHash = UInt160.Parse(json.Value<string>("hash"));
             var operation = json.Value<string>("operation");
             var args = ParseArgs(json.GetValue("args")).ToArray();
@@ -478,6 +488,15 @@ namespace NeoExpress.Neo3
 
             await Task.CompletedTask;
             return nep5client.BalanceOf(assetHash, account.ScriptHash.ToScriptHash());
+        }
+
+        public async Task<RpcTransaction> ShowTransaction(ExpressChain chain, string txHash)
+        {
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+
+            await Task.CompletedTask;
+            return rpcClient.GetRawTransaction(txHash);
         }
 
     }

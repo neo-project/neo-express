@@ -12,12 +12,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -244,7 +242,7 @@ namespace NeoExpress.Neo2
         }
 
         private const string GENESIS = "genesis";
-        
+
 
         static bool EqualsIgnoreCase(string a, string b)
             => string.Equals(a, b, StringComparison.InvariantCultureIgnoreCase);
@@ -253,7 +251,7 @@ namespace NeoExpress.Neo2
         {
             bool IsReservedName()
             {
-                if (EqualsIgnoreCase(GENESIS, name)) 
+                if (EqualsIgnoreCase(GENESIS, name))
                     return true;
 
                 foreach (var node in chain.ConsensusNodes)
@@ -370,7 +368,7 @@ namespace NeoExpress.Neo2
                     .ConfigureAwait(false);
                 writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
             }
-            else 
+            else
             {
                 using var db = new RocksDbStore(folder);
                 CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
@@ -663,7 +661,7 @@ namespace NeoExpress.Neo2
         {
             void WriteResponse(JToken token)
             {
-                var response = token.ToObject<AccountResponse>() 
+                var response = token.ToObject<AccountResponse>()
                     ?? throw new ApplicationException($"Cannot convert response to {nameof(AccountResponse)}");
                 writer.WriteLine($"Account information for {name}:");
                 foreach (var balance in response.Balances)
@@ -677,16 +675,16 @@ namespace NeoExpress.Neo2
 
         public Task ShowClaimable(ExpressChain chain, string name, bool showJson, TextWriter writer)
         {
-                void WriteResponse(JToken token)
+            void WriteResponse(JToken token)
+            {
+                var response = token.ToObject<ClaimableResponse>()
+                    ?? throw new ApplicationException($"Cannot convert response to {nameof(ClaimableResponse)}");
+                writer.WriteLine($"Claimable GAS for {name}: {response.Unclaimed}");
+                foreach (var tx in response.Transactions)
                 {
-                    var response = token.ToObject<ClaimableResponse>()
-                        ?? throw new ApplicationException($"Cannot convert response to {nameof(ClaimableResponse)}");
-                    writer.WriteLine($"Claimable GAS for {name}: {response.Unclaimed}");
-                    foreach (var tx in response.Transactions)
-                    {
-                        writer.WriteLine($"  transaction {tx.TransactionId}({tx.Index}): {tx.Unclaimed}");
-                    }
+                    writer.WriteLine($"  transaction {tx.TransactionId}({tx.Index}): {tx.Unclaimed}");
                 }
+            }
             return Show(chain, name, writer, NeoRpcClient.GetClaimable, showJson, WriteResponse);
         }
 
@@ -764,8 +762,8 @@ namespace NeoExpress.Neo2
                 { "has-storage", contractState.Properties.Storage.ToString() }
             };
 
-            var entrypoint = "Main"; 
-            var @params = contractState.Parameters.Select((type, index) => 
+            var entrypoint = "Main";
+            var @params = contractState.Parameters.Select((type, index) =>
                 new ExpressContract.Parameter()
                 {
                     Name = $"parameter{index}",
@@ -786,7 +784,7 @@ namespace NeoExpress.Neo2
                 Hash = contractState.Hash,
                 EntryPoint = entrypoint,
                 ContractData = contractState.Script,
-                Functions = new List<ExpressContract.Function>() { function },                
+                Functions = new List<ExpressContract.Function>() { function },
                 Properties = properties
             };
 
@@ -804,7 +802,7 @@ namespace NeoExpress.Neo2
                         Type = p.Type
                     }).ToList()
                 };
-            
+
             var properties = abiContract.Metadata == null
                 ? new Dictionary<string, string>()
                 : new Dictionary<string, string>()
@@ -948,7 +946,7 @@ namespace NeoExpress.Neo2
                 throw new Exception($"could not retrieve unspents for account");
             }
 
-            var tx = RpcTransactionManager.CreateDeploymentTransaction(contract, 
+            var tx = RpcTransactionManager.CreateDeploymentTransaction(contract,
                 account, unspents);
             tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
 
@@ -967,83 +965,30 @@ namespace NeoExpress.Neo2
             return tx;
         }
 
-        static ContractParameter ParseArg(string arg)
+        static (UInt160 scriptHash, IEnumerable<ContractParameter> args) LoadInvocationFileScript(string invocationFilePath)
         {
-            if (arg.StartsWith("@A"))
+            static Neo.IO.Json.JObject LoadJsonFile(string path)
             {
-                var hash = Neo.Wallets.Helper.ToScriptHash(arg.Substring(1));
-                return new ContractParameter()
-                {
-                    Type = ContractParameterType.Hash160,
-                    Value = hash
-                };
+                using var fileStream = File.OpenRead(path);
+                using var reader = new StreamReader(fileStream);
+                return Neo.IO.Json.JObject.Parse(reader);
             }
-
-            if (arg.StartsWith("0x")
-                && BigInteger.TryParse(arg.AsSpan().Slice(2), NumberStyles.HexNumber, null, out var bigInteger))
-            {
-                return new ContractParameter()
-                {
-                    Type = ContractParameterType.Integer,
-                    Value = bigInteger
-                };
-            }
-
-            return new ContractParameter()
-            {
-                Type = ContractParameterType.String,
-                Value = arg
-            };
+            
+            var json = LoadJsonFile(invocationFilePath);
+            UInt160 scriptHash = UInt160.Parse(json["hash"]?.AsString() ?? throw new Exception("hash missing"));
+            var args = ((json["args"] as Neo.IO.Json.JArray) ?? Enumerable.Empty<Neo.IO.Json.JObject>())
+                .Select(ContractParameter.FromJson).ToArray();
+            return (scriptHash, args);
         }
-
-        static ContractParameter ParseArg(JToken arg)
-        {
-            return arg.Type switch
-            {
-                JTokenType.String => ParseArg(arg.Value<string>()),
-                JTokenType.Boolean => new ContractParameter()
-                    {
-                        Type = ContractParameterType.Boolean,
-                        Value = arg.Value<bool>()
-                    }, 
-                JTokenType.Integer => new ContractParameter()
-                    {
-                        Type = ContractParameterType.Integer,
-                        Value = new BigInteger(arg.Value<int>())
-                    }, 
-                JTokenType.Array => new ContractParameter()
-                    {
-                        Type = ContractParameterType.Array,
-                        Value = ((JArray)arg).Select(ParseArg).ToList(),
-                    }, 
-                _ => throw new Exception()
-            };
-        }
-
-        static IEnumerable<ContractParameter> ParseArgs(JArray? args) 
-            => args == null
-                ? Enumerable.Empty<ContractParameter>()
-                : args.Select(ParseArg);
 
         public async Task<InvocationTransaction> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
         {
-            static async Task<JObject> LoadInvocationFile(string path)
-            {
-                using var fileStream = File.OpenRead(path);
-                using var textReader = new StreamReader(fileStream);
-                using var jsonReader = new JsonTextReader(textReader);
-                return await JObject.LoadAsync(jsonReader);
-            }
-
             var uri = chain.GetUri();
-            var json = await LoadInvocationFile(invocationFilePath);
-            var hash = json.Value<string>("hash");
-            var scriptHash = UInt160.Parse(hash);
-
-            var script = RpcTransactionManager.CreateInvocationScript(scriptHash);
+            var (scriptHash, args) = LoadInvocationFileScript(invocationFilePath);
+            var script = RpcTransactionManager.CreateInvocationScript(scriptHash, args);
             var invokeResponse = (await NeoRpcClient.InvokeScript(uri, script))?.ToObject<InvokeResponse>();
             var gasConsumed = invokeResponse == null ? 0 : invokeResponse.GasConsumed;
-            
+
             var tx = RpcTransactionManager.CreateInvocationTransaction(account, script, gasConsumed);
             tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
 
@@ -1056,10 +1001,20 @@ namespace NeoExpress.Neo2
             return tx;
         }
 
+        public async Task<InvokeResponse> TestInvokeContract(ExpressChain chain, string invocationFilePath)
+        {
+            var uri = chain.GetUri();
+            var (scriptHash, args) = LoadInvocationFileScript(invocationFilePath);
+            var script = RpcTransactionManager.CreateInvocationScript(scriptHash, args);
+            return (await NeoRpcClient.InvokeScript(uri, script))?.ToObject<InvokeResponse>() 
+                ?? throw new Exception();
+        }
+
         static Task<T?> SwallowException<T>(Task<T?> task)
             where T : class
         {
-            return task.ContinueWith(t => {
+            return task.ContinueWith(t =>
+            {
                 if (task.IsCompletedSuccessfully)
                 {
                     return task.Result;
@@ -1129,7 +1084,7 @@ namespace NeoExpress.Neo2
                         contracts.Add(Convert(contract!));
                     }
                 }
-                
+
                 return contracts;
             }
 

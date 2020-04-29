@@ -17,11 +17,14 @@ namespace NeoExpress.Commands
             [Required]
             string InvocationFile { get; } = string.Empty;
 
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Argument(1)]
+            string Account { get; } = string.Empty;
 
             [Option]
-            private string Account { get; } = string.Empty;
+            bool Test { get; } = false;
+
+            [Option]
+            string Input { get; } = string.Empty;
 
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
@@ -34,14 +37,30 @@ namespace NeoExpress.Commands
 
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
-                    var account = blockchainOperations.GetAccount(chain, Account);
-                    if (account == null)
+
+                    if (Test)
                     {
-                        throw new Exception("Invalid Account");
+                        var result = await blockchainOperations.TestInvokeContract(chain, InvocationFile);
+
+                        console.WriteLine($"Tx: {result.Tx}");
+                        console.WriteLine($"Gas Consumed: {result.GasConsumed}");
+                        console.WriteLine("Result Stack:");
+                        foreach (var v in result.ReturnStack)
+                        {
+                            console.WriteLine($"\t{v.Value} ({v.Type})");
+                        }
                     }
-                    
-                    var tx = await blockchainOperations.InvokeContract(chain, InvocationFile, account);
-                    console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
+                    else
+                    {
+                        var account = blockchainOperations.GetAccount(chain, Account);
+                        if (account == null)
+                        {
+                            throw new Exception("Invalid Account");
+                        }
+                        
+                        var tx = await blockchainOperations.InvokeContract(chain, InvocationFile, account);
+                        console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
+                    }
                     return 0;
                 }
                 catch (Exception ex)

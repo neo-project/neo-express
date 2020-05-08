@@ -141,5 +141,10 @@ namespace NeoExpress.Neo2
         {
             return RpcCall(uri, "express-list-contract-metadata", new JArray());
         } 
+
+        public static Task<JToken?> InvokeScript(Uri uri, byte[] script)
+        {
+            return RpcCall(uri, "invokescript", new JArray(script.ToHexString()));
+        }
     }
 }

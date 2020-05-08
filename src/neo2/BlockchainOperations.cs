@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using Neo;
+﻿using Neo;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
-using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;
@@ -18,11 +16,15 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace NeoExpress.Neo2
 {
+    using ECPoint = Neo.Cryptography.ECC.ECPoint;
+    using ECCurve = Neo.Cryptography.ECC.ECCurve;
+
     public class BlockchainOperations
     {
         public ExpressChain CreateBlockchain(FileInfo output, int count, uint preloadGas, TextWriter writer, CancellationToken token = default)
@@ -244,7 +246,7 @@ namespace NeoExpress.Neo2
         }
 
         private const string GENESIS = "genesis";
-        
+
 
         static bool EqualsIgnoreCase(string a, string b)
             => string.Equals(a, b, StringComparison.InvariantCultureIgnoreCase);
@@ -253,7 +255,7 @@ namespace NeoExpress.Neo2
         {
             bool IsReservedName()
             {
-                if (EqualsIgnoreCase(GENESIS, name)) 
+                if (EqualsIgnoreCase(GENESIS, name))
                     return true;
 
                 foreach (var node in chain.ConsensusNodes)
@@ -370,7 +372,7 @@ namespace NeoExpress.Neo2
                     .ConfigureAwait(false);
                 writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
             }
-            else 
+            else
             {
                 using var db = new RocksDbStore(folder);
                 CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
@@ -663,7 +665,7 @@ namespace NeoExpress.Neo2
         {
             void WriteResponse(JToken token)
             {
-                var response = token.ToObject<AccountResponse>() 
+                var response = token.ToObject<AccountResponse>()
                     ?? throw new ApplicationException($"Cannot convert response to {nameof(AccountResponse)}");
                 writer.WriteLine($"Account information for {name}:");
                 foreach (var balance in response.Balances)
@@ -677,16 +679,16 @@ namespace NeoExpress.Neo2
 
         public Task ShowClaimable(ExpressChain chain, string name, bool showJson, TextWriter writer)
         {
-                void WriteResponse(JToken token)
+            void WriteResponse(JToken token)
+            {
+                var response = token.ToObject<ClaimableResponse>()
+                    ?? throw new ApplicationException($"Cannot convert response to {nameof(ClaimableResponse)}");
+                writer.WriteLine($"Claimable GAS for {name}: {response.Unclaimed}");
+                foreach (var tx in response.Transactions)
                 {
-                    var response = token.ToObject<ClaimableResponse>()
-                        ?? throw new ApplicationException($"Cannot convert response to {nameof(ClaimableResponse)}");
-                    writer.WriteLine($"Claimable GAS for {name}: {response.Unclaimed}");
-                    foreach (var tx in response.Transactions)
-                    {
-                        writer.WriteLine($"  transaction {tx.TransactionId}({tx.Index}): {tx.Unclaimed}");
-                    }
+                    writer.WriteLine($"  transaction {tx.TransactionId}({tx.Index}): {tx.Unclaimed}");
                 }
+            }
             return Show(chain, name, writer, NeoRpcClient.GetClaimable, showJson, WriteResponse);
         }
 
@@ -764,8 +766,8 @@ namespace NeoExpress.Neo2
                 { "has-storage", contractState.Properties.Storage.ToString() }
             };
 
-            var entrypoint = "Main"; 
-            var @params = contractState.Parameters.Select((type, index) => 
+            var entrypoint = "Main";
+            var @params = contractState.Parameters.Select((type, index) =>
                 new ExpressContract.Parameter()
                 {
                     Name = $"parameter{index}",
@@ -786,7 +788,7 @@ namespace NeoExpress.Neo2
                 Hash = contractState.Hash,
                 EntryPoint = entrypoint,
                 ContractData = contractState.Script,
-                Functions = new List<ExpressContract.Function>() { function },                
+                Functions = new List<ExpressContract.Function>() { function },
                 Properties = properties
             };
 
@@ -804,7 +806,7 @@ namespace NeoExpress.Neo2
                         Type = p.Type
                     }).ToList()
                 };
-            
+
             var properties = abiContract.Metadata == null
                 ? new Dictionary<string, string>()
                 : new Dictionary<string, string>()
@@ -948,7 +950,7 @@ namespace NeoExpress.Neo2
                 throw new Exception($"could not retrieve unspents for account");
             }
 
-            var tx = RpcTransactionManager.CreateDeploymentTransaction(contract, 
+            var tx = RpcTransactionManager.CreateDeploymentTransaction(contract,
                 account, unspents);
             tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
 
@@ -967,10 +969,152 @@ namespace NeoExpress.Neo2
             return tx;
         }
 
+        static ContractParameter ParseContractParamString(string value)
+        {
+            if (value.StartsWith("@A"))
+            {
+                try
+                {
+                    var paramValue = Neo.Wallets.Helper.ToScriptHash(value.Substring(1));
+                    return new ContractParameter
+                    {
+                        Type = ContractParameterType.Hash160,
+                        Value = paramValue,
+                    };
+                }
+                catch (FormatException) {} // ignore format exceptions
+            }
+
+            if (value.StartsWith("0x"))
+            {
+                try
+                {
+                    var paramValue = value.Substring(2).HexToBytes(); 
+                    return new ContractParameter
+                    {
+                        Type = ContractParameterType.ByteArray,
+                        Value = paramValue,
+                    };
+                }
+                catch (FormatException) {} // ignore format exceptions
+            }
+
+            return new ContractParameter
+            {
+                Type = ContractParameterType.String,
+                Value = value
+            };
+        }
+
+        static ContractParameter ParseContractParamObject(JObject json)
+        {
+            // This logic mirrors ContractParameter.FromJson, except that it uses 
+            // ParseContractParam for converting array/map elements. It also 
+            // uses the Newtonsoft.Json library instead of Neo's JSON library
+
+            var type = Enum.Parse<ContractParameterType>(json.Value<string>("type"));
+            object value = type switch
+            {
+                ContractParameterType.ByteArray => json.Value<string>("value").HexToBytes(),
+                ContractParameterType.Signature => json.Value<string>("value").HexToBytes(),
+                ContractParameterType.Boolean => json.Value<bool>("value"),
+                ContractParameterType.Integer => BigInteger.Parse(json.Value<string>("value")),
+                ContractParameterType.Hash160 => UInt160.Parse(json.Value<string>("value")),
+                ContractParameterType.Hash256 => UInt256.Parse(json.Value<string>("value")),
+                ContractParameterType.PublicKey => ECPoint.Parse(json.Value<string>("value"), ECCurve.Secp256r1),
+                ContractParameterType.String => ParseContractParamString(json.Value<string>("value")),
+                ContractParameterType.Array => json["value"].Select(ParseContractParam).ToList(),
+                ContractParameterType.Map => json["value"].Select(ParseMapElement).ToList(),
+                _ => throw new ArgumentException(nameof(json)),
+            };
+
+            return new ContractParameter
+            {
+                Type = type,
+                Value = value
+            };
+
+            static KeyValuePair<ContractParameter, ContractParameter> ParseMapElement(JToken json)
+            {
+                var key = ParseContractParam(json["key"] ?? throw new ArgumentException(nameof(json)));
+                var value = ParseContractParam(json["value"] ?? throw new ArgumentException(nameof(json)));
+                return KeyValuePair.Create(key, value);
+            }
+        }
+
+        static ContractParameter ParseContractParam(JToken json) => json.Type switch
+        {
+            JTokenType.Boolean => new ContractParameter
+            {
+                Type = ContractParameterType.Boolean,
+                Value = json.Value<bool>()
+            },
+            JTokenType.Integer => new ContractParameter
+            {
+                Type = ContractParameterType.Integer,
+                Value = new BigInteger(json.Value<int>())
+            },
+            JTokenType.Array => new ContractParameter
+            {
+                Type = ContractParameterType.Array,
+                Value = json.Select(ParseContractParam).ToList()
+            },
+            JTokenType.String => ParseContractParamString(json.Value<string>()),
+            JTokenType.Object => ParseContractParamObject((JObject)json),
+            _ => throw new ArgumentException(nameof(json))
+        };
+
+        static async Task<(UInt160 scriptHash, IReadOnlyList<ContractParameter> args)> LoadInvocationFileScript(string invocationFilePath)
+        {
+            static Task<JArray> LoadInvocationFileJson(string path)
+            {
+                using var fileStream = File.OpenRead(path);
+                using var reader = new StreamReader(fileStream);
+                using var jreader = new JsonTextReader(reader);
+                return JArray.LoadAsync(jreader);
+            }
+            
+            var json = await LoadInvocationFileJson(invocationFilePath).ConfigureAwait(false);
+
+            var scriptHash = UInt160.Parse(json.Value<string>("hash"));
+            var args = (json["args"] ?? Enumerable.Empty<JToken>()).Select(ParseContractParam).ToList();
+            return (scriptHash, args);
+        }
+
+        public async Task<InvocationTransaction> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
+        {
+            var uri = chain.GetUri();
+            var (scriptHash, args) = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
+            var script = RpcTransactionManager.CreateInvocationScript(scriptHash, args);
+            var invokeResponse = (await NeoRpcClient.InvokeScript(uri, script))?.ToObject<InvokeResponse>();
+            var gasConsumed = invokeResponse == null ? 0 : invokeResponse.GasConsumed;
+
+            var tx = RpcTransactionManager.CreateInvocationTransaction(account, script, gasConsumed);
+            tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+
+            var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+            if (sendResult == null || !sendResult.Value<bool>())
+            {
+                throw new Exception("SendRawTransaction failed");
+            }
+
+            return tx;
+        }
+
+        public async Task<InvokeResponse> TestInvokeContract(ExpressChain chain, string invocationFilePath)
+        {
+            var uri = chain.GetUri();
+            var (scriptHash, args) = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
+            var script = RpcTransactionManager.CreateInvocationScript(scriptHash, args);
+            var response = await NeoRpcClient.InvokeScript(uri, script).ConfigureAwait(false);
+            return response?.ToObject<InvokeResponse>() ?? throw new Exception("invalid response");
+        }
+
         static Task<T?> SwallowException<T>(Task<T?> task)
             where T : class
         {
-            return task.ContinueWith(t => {
+            return task.ContinueWith(t =>
+            {
                 if (task.IsCompletedSuccessfully)
                 {
                     return task.Result;
@@ -1040,7 +1184,7 @@ namespace NeoExpress.Neo2
                         contracts.Add(Convert(contract!));
                     }
                 }
-                
+
                 return contracts;
             }
 

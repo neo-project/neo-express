@@ -1022,7 +1022,7 @@ namespace NeoExpress.Neo2
                 ContractParameterType.Hash160 => UInt160.Parse(json.Value<string>("value")),
                 ContractParameterType.Hash256 => UInt256.Parse(json.Value<string>("value")),
                 ContractParameterType.PublicKey => ECPoint.Parse(json.Value<string>("value"), ECCurve.Secp256r1),
-                ContractParameterType.String => ParseContractParamString(json.Value<string>("value")),
+                ContractParameterType.String => json.Value<string>("value"),
                 ContractParameterType.Array => json["value"].Select(ParseContractParam).ToList(),
                 ContractParameterType.Map => json["value"].Select(ParseMapElement).ToList(),
                 _ => throw new ArgumentException(nameof(json)),

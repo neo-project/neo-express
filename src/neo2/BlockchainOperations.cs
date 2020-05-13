@@ -1066,12 +1066,12 @@ namespace NeoExpress.Neo2
 
         static async Task<(UInt160 scriptHash, IReadOnlyList<ContractParameter> args)> LoadInvocationFileScript(string invocationFilePath)
         {
-            static Task<JArray> LoadInvocationFileJson(string path)
+            static async Task<JObject> LoadInvocationFileJson(string path)
             {
                 using var fileStream = File.OpenRead(path);
                 using var reader = new StreamReader(fileStream);
                 using var jreader = new JsonTextReader(reader);
-                return JArray.LoadAsync(jreader);
+                return await JObject.LoadAsync(jreader);
             }
             
             var json = await LoadInvocationFileJson(invocationFilePath).ConfigureAwait(false);

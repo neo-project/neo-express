@@ -1,4 +1,5 @@
 ﻿using Neo;
+using Neo.SmartContract;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using NeoExpress.Persistence;
@@ -11,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -718,6 +719,148 @@ namespace NeoExpress
             }
 
             return new List<ExpressStorage>(0);
+        }
+
+        public static async Task<Neo.Network.P2P.Payloads.InvocationTransaction> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
+        {
+            var uri = chain.GetUri();
+            var (scriptHash, args) = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
+            var script = RpcTransactionManager.CreateInvocationScript(scriptHash, args);
+            var invokeResponse = (await NeoRpcClient.InvokeScript(uri, script))?.ToObject<InvokeResponse>();
+            var gasConsumed = invokeResponse == null ? 0 : invokeResponse.GasConsumed;
+
+            var tx = RpcTransactionManager.CreateInvocationTransaction(account, script, gasConsumed);
+            tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+
+            var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+            if (sendResult == null || !sendResult.Value<bool>())
+            {
+                throw new Exception("SendRawTransaction failed");
+            }
+
+            return tx;
+        }
+
+        static ContractParameter ParseContractParamString(string value)
+        {
+            if (value.StartsWith("@A"))
+            {
+                try
+                {
+                    var paramValue = Neo.Wallets.Helper.ToScriptHash(value.Substring(1));
+                    return new ContractParameter
+                    {
+                        Type = ContractParameterType.Hash160,
+                        Value = paramValue,
+                    };
+                }
+                catch (FormatException) {} // ignore format exceptions
+            }
+
+            if (value.StartsWith("0x"))
+            {
+                try
+                {
+                    var paramValue = value.Substring(2).HexToBytes(); 
+                    return new ContractParameter
+                    {
+                        Type = ContractParameterType.ByteArray,
+                        Value = paramValue,
+                    };
+                }
+                catch (FormatException) {} // ignore format exceptions
+            }
+
+            return new ContractParameter
+            {
+                Type = ContractParameterType.String,
+                Value = value
+            };
+        }
+
+        static ContractParameter ParseContractParamObject(JObject json)
+        {
+            // This logic mirrors ContractParameter.FromJson, except that it uses 
+            // ParseContractParam for converting array/map elements. It also 
+            // uses the Newtonsoft.Json library instead of Neo's JSON library
+
+            var type = Enum.Parse<ContractParameterType>(json.Value<string>("type"));
+            object value = type switch
+            {
+                ContractParameterType.ByteArray => json.Value<string>("value").HexToBytes(),
+                ContractParameterType.Signature => json.Value<string>("value").HexToBytes(),
+                ContractParameterType.Boolean => json.Value<bool>("value"),
+                ContractParameterType.Integer => BigInteger.Parse(json.Value<string>("value")),
+                ContractParameterType.Hash160 => UInt160.Parse(json.Value<string>("value")),
+                ContractParameterType.Hash256 => UInt256.Parse(json.Value<string>("value")),
+                ContractParameterType.PublicKey => Neo.Cryptography.ECC.ECPoint.Parse(json.Value<string>("value"), Neo.Cryptography.ECC.ECCurve.Secp256r1),
+                ContractParameterType.String => json.Value<string>("value"),
+                ContractParameterType.Array => json["value"].Select(ParseContractParam).ToList(),
+                ContractParameterType.Map => json["value"].Select(ParseMapElement).ToList(),
+                _ => throw new ArgumentException(nameof(json)),
+            };
+
+            return new ContractParameter
+            {
+                Type = type,
+                Value = value
+            };
+
+            static KeyValuePair<ContractParameter, ContractParameter> ParseMapElement(JToken json)
+            {
+                var key = ParseContractParam(json["key"] ?? throw new ArgumentException(nameof(json)));
+                var value = ParseContractParam(json["value"] ?? throw new ArgumentException(nameof(json)));
+                return KeyValuePair.Create(key, value);
+            }
+        }
+
+        static ContractParameter ParseContractParam(JToken json) => json.Type switch
+        {
+            JTokenType.Boolean => new ContractParameter
+            {
+                Type = ContractParameterType.Boolean,
+                Value = json.Value<bool>()
+            },
+            JTokenType.Integer => new ContractParameter
+            {
+                Type = ContractParameterType.Integer,
+                Value = new BigInteger(json.Value<int>())
+            },
+            JTokenType.Array => new ContractParameter
+            {
+                Type = ContractParameterType.Array,
+                Value = json.Select(ParseContractParam).ToList()
+            },
+            JTokenType.String => ParseContractParamString(json.Value<string>()),
+            JTokenType.Object => ParseContractParamObject((JObject)json),
+            _ => throw new ArgumentException(nameof(json))
+        };
+
+        static async Task<(UInt160 scriptHash, IReadOnlyList<ContractParameter> args)> LoadInvocationFileScript(string invocationFilePath)
+        {
+            static async Task<JObject> LoadInvocationFileJson(string path)
+            {
+                using var fileStream = File.OpenRead(path);
+                using var reader = new StreamReader(fileStream);
+                using var jreader = new JsonTextReader(reader);
+                return await JObject.LoadAsync(jreader);
+            }
+            
+            var json = await LoadInvocationFileJson(invocationFilePath).ConfigureAwait(false);
+
+            var scriptHash = UInt160.Parse(json.Value<string>("hash"));
+            var args = (json["args"] ?? Enumerable.Empty<JToken>()).Select(ParseContractParam).ToList();
+            return (scriptHash, args);
+        }
+
+
+        public static async Task<InvokeResponse> TestInvokeContract(ExpressChain chain, string invocationFilePath)
+        {
+            var uri = chain.GetUri();
+            var (scriptHash, args) = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
+            var script = RpcTransactionManager.CreateInvocationScript(scriptHash, args);
+            var response = await NeoRpcClient.InvokeScript(uri, script).ConfigureAwait(false);
+            return response?.ToObject<InvokeResponse>() ?? throw new Exception("invalid response");
         }
     }
 }

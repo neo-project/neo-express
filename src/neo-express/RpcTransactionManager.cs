@@ -229,6 +229,33 @@ namespace NeoExpress
             throw new ArgumentException(nameof(quantity));
         }
 
+        public static InvocationTransaction CreateInvocationTransaction(ExpressWalletAccount account, byte[] script, decimal gasConsumed = 0, IEnumerable<CoinReference>? inputs = null, IEnumerable<TransactionOutput>? outputs = null)
+        {
+            var accountHash = Neo.Wallets.Helper.ToScriptHash(account.ScriptHash);
+
+            var attributes = new TransactionAttribute[]
+            {
+                new TransactionAttribute
+                {
+                    Usage = TransactionAttributeUsage.Script,
+                    Data = accountHash.ToArray()
+                }
+            };
+
+            var gas = Fixed8.FromDecimal(gasConsumed) - Fixed8.FromDecimal(10);
+            gas = gas <= Fixed8.Zero ? Fixed8.Zero : gas.Ceiling();
+
+            return new InvocationTransaction
+            {
+                Script = script,
+                Gas = gas,
+                Attributes = attributes,
+                Inputs = inputs?.ToArray() ?? Array.Empty<CoinReference>(),
+                Outputs = outputs?.ToArray() ?? Array.Empty<TransactionOutput>(),
+                Witnesses = Array.Empty<Witness>(),
+            };
+        }
+
         public static InvocationTransaction CreateDeploymentTransaction(ExpressContract contract, ExpressWalletAccount sender, UnspentsResponse unspents)
         {
             var gasAssetId = Neo.Ledger.Blockchain.UtilityToken.Hash;
@@ -327,6 +354,18 @@ namespace NeoExpress
                 email,
                 description);
             return builder;
+        }
+
+        public static byte[] CreateInvocationScript(UInt160 scriptHash, IEnumerable<ContractParameter>? parameters = null)
+        {
+            using var builder = new ScriptBuilder();
+            parameters ??= Enumerable.Empty<ContractParameter>();
+            foreach (var @param in parameters.Reverse())
+            {
+                builder.EmitPush(@param);
+            }
+            builder.EmitAppCall(scriptHash);
+            return builder.ToArray();
         }
     }
 }

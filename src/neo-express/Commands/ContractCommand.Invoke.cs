@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -17,105 +18,56 @@ namespace NeoExpress.Commands
         {
             [Argument(0)]
             [Required]
-            string Contract { get; } = string.Empty;
+            string InvocationFile { get; } = string.Empty;
 
             [Argument(1)]
-            string[] Arguments { get; } = Array.Empty<string>();
+            string Account { get; } = string.Empty;
 
             [Option]
-            private string Input { get; } = string.Empty;
+            bool Test { get; } = false;
 
             [Option]
-            private string Account { get; } = string.Empty;
-
-            [Option]
-            private string Function { get; } = string.Empty;
-
-            [Option]
-            private bool Overwrite { get; }
-
-            static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
-            {
-                if (function.Parameters.Count != arguments.Count())
-                {
-                    throw new ApplicationException($"Invalid number of arguments. Expecting {function.Parameters.Count} received {arguments.Count()}");
-                }
-
-                return function.Parameters.Zip(arguments,
-                    (param, argValue) => new JObject()
-                    {
-                        ["type"] = param.Type,
-                        ["value"] = argValue
-                    });
-            }
-
-            IEnumerable<JObject> ParseArguments(ExpressContract contract)
-            {
-                var arguments = Arguments ?? Enumerable.Empty<string>();
-
-                if (string.IsNullOrEmpty(Function))
-                {
-                    var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
-                    return ParseArguments(entrypoint, arguments);
-                }
-                else
-                {
-                    var function = contract.Functions.SingleOrDefault(f => f.Name == Function);
-
-                    if (function == null)
-                    {
-                        throw new Exception($"Could not find function {Function}");
-                    }
-
-                    return new JObject[2]
-                    {
-                        new JObject()
-                        {
-                            ["type"] = "String",
-                            ["value"] = Function
-                        },
-                        new JObject()
-                        {
-                            ["type"] = "Array",
-                            ["value"] = new JArray(ParseArguments(function, arguments))
-                        }
-                    };
-                }
-            }
+            string Input { get; } = string.Empty;
 
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
-                    if (contract == null)
+                    if (!File.Exists(InvocationFile))
                     {
-                        throw new Exception($"Contract {Contract} not found.");
+                        console.WriteError($"Invocation file {InvocationFile} couldn't be found");
+                        console.WriteWarning("    Note: The arguments for the contract invoke command changed significantly in the v1.1 release.");
+                        console.WriteWarning("          Please see https://neo-project.github.io/neo-express/contract-invoke-changes for more info.\n");
+
+                        app.ShowHelp();
+                        return 1;
                     }
 
-                    var account = chain.GetAccount(Account);
+                    var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var args = ParseArguments(contract);
-                    var uri = chain.GetUri();
-                    var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
-                    console.WriteResult(result);
-                    if (account != null)
+                    if (Test)
                     {
-                        var txid = result?["txid"];
-                        if (txid != null)
+                        var result = await BlockchainOperations.TestInvokeContract(chain, InvocationFile);
+
+                        console.WriteLine($"Tx: {result.Tx}");
+                        console.WriteLine($"Gas Consumed: {result.GasConsumed}");
+                        console.WriteLine("Result Stack:");
+                        foreach (var v in result.ReturnStack)
                         {
-                            console.WriteLine("invocation complete");
-                        }
-                        else
-                        {
-                            var signatures = account.Sign(chain.ConsensusNodes, result);
-                            var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-                            console.WriteResult(result2);
+                            console.WriteLine($"\t{v.Value} ({v.Type})");
                         }
                     }
-
-                    chain.SaveContract(contract, filename, console, Overwrite);
+                    else
+                    {
+                        var account = chain.GetAccount(Account);
+                        if (account == null)
+                        {
+                            throw new Exception("Invalid Account");
+                        }
+                        
+                        var tx = await BlockchainOperations.InvokeContract(chain, InvocationFile, account);
+                        console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
+                    }
                     return 0;
                 }
                 catch (Exception ex)

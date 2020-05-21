@@ -73,24 +73,9 @@ namespace NeoExpress
             return RpcCall(uri, "express-get-contract-storage", new JArray(scriptHash));
         }
 
-        public static Task<JToken?> ExpressInvokeContract(Uri uri, string scriptHash, IEnumerable<JObject> @params, string? address = null)
-        {
-            return RpcCall(uri, "express-invoke-contract", new JArray(scriptHash, new JArray(@params), address == null ? JValue.CreateNull() : JValue.CreateString(address)));
-        }
-
         public static Task<JToken?> ExpressShowCoins(Uri uri, string address)
         {
             return RpcCall(uri, "express-show-coins", new JArray(address));
-        }
-
-        public static Task<JToken?> ExpressSubmitSignatures(Uri uri, JToken? context, JToken signatures)
-        {
-            if (context == null)
-            {
-                throw new ArgumentException(nameof(context));
-            }
-
-            return RpcCall(uri, "express-submit-signatures", new JArray(context, signatures));
         }
 
         public static Task<JToken?> GetAccountState(Uri uri, string address)

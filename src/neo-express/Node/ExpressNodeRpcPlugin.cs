@@ -45,29 +45,6 @@ namespace NeoExpress.Node
             return json;
         }
 
-        private JObject CreateContextResponse(ContractParametersContext context, Transaction? tx)
-        {
-            if (tx == null)
-            {
-                return new JObject();
-            }
-
-            if (context.Completed)
-            {
-                tx.Witnesses = context.GetWitnesses();
-
-                System.LocalNode.Tell(new LocalNode.Relay { Inventory = tx });
-
-                JObject json = new JObject();
-                json["txid"] = tx.Hash.ToString();
-                return json;
-            }
-            else
-            {
-                return ToJson(context);
-            }
-        }
-
         private JObject OnShowCoins(JArray @params)
         {
             var address = @params[0].AsString().ToScriptHash();
@@ -85,102 +62,6 @@ namespace NeoExpress.Node
                     j["output"] = c.Output.ToJson(0);
                     return j;
                 }));
-            }
-        }
-
-        private JObject OnSubmitSignatures(JArray @params)
-        {
-            var context = ContractParametersContext.FromJson(@params[0]);
-            var signatures = (JArray)@params[1];
-
-            foreach (var signature in signatures)
-            {
-                var signatureData = signature["signature"].AsString().HexToBytes();
-                var publicKeyData = signature["public-key"].AsString().HexToBytes();
-                var contractScript = signature["contract"]["script"].AsString().HexToBytes();
-                var parameters = ((JArray)signature["contract"]["parameters"])
-                    .Select(j => Enum.Parse<ContractParameterType>(j.AsString()));
-
-                var publicKey = ECPoint.FromBytes(publicKeyData, ECCurve.Secp256r1);
-                var contract = Contract.Create(parameters.ToArray(), contractScript);
-                if (!context.AddSignature(contract, publicKey, signatureData))
-                {
-                    throw new Exception($"AddSignature failed for {signature["public-key"].AsString()}");
-                }
-
-                if (context.Completed)
-                    break;
-            }
-
-            if (context.Verifiable is Transaction tx)
-            {
-                return CreateContextResponse(context, tx);
-            }
-            else
-            {
-                throw new Exception("Only support to relay transaction");
-            }
-        }
-
-        private static JObject EngineToJson(ApplicationEngine engine)
-        {
-            var json = new JObject();
-            json["state"] = (byte)engine.State;
-            json["gas-consumed"] = engine.GasConsumed.ToString();
-            json["result-stack"] = new JArray(engine.ResultStack.Select(item => item.ToParameter().ToJson()));
-            return json;
-        }
-
-        private static CoinReference CoinReferenceFromJson(JObject json)
-        {
-            var txid = UInt256.Parse(json["txid"].AsString());
-            var vout = (ushort)json["vout"].AsNumber();
-
-            return new CoinReference()
-            {
-                PrevHash = txid,
-                PrevIndex = vout
-            };
-        }
-
-        private static TransactionOutput TransactionOutputFromJson(JObject json)
-        {
-            var asset = UInt256.Parse(json["asset"].AsString());
-            var value = (decimal)json["value"].AsNumber();
-            var address = json["address"].AsString().ToScriptHash();
-
-            return new TransactionOutput()
-            {
-                AssetId = asset,
-                Value = Fixed8.FromDecimal(value),
-                ScriptHash = address
-            };
-        }
-
-        public JObject OnInvokeContract(JArray @params)
-        {
-            var scriptHash = UInt160.Parse(@params[0].AsString());
-            var scriptParams = ((JArray)@params[1]).Select(ContractParameter.FromJson).ToArray();
-            var address = @params[2] == JObject.Null ? null : @params[2].AsString().ToScriptHash();
-
-            IEnumerable<CoinReference> inputs = Enumerable.Empty<CoinReference>();
-            IEnumerable<TransactionOutput> outputs = Enumerable.Empty<TransactionOutput>();
-
-            if (@params.Count == 5)
-            {
-                inputs = ((JArray)@params[3]).Select(CoinReferenceFromJson);
-                outputs = ((JArray)@params[4]).Select(TransactionOutputFromJson);
-            }
-
-            var addresses = address == null ? ImmutableHashSet<UInt160>.Empty : ImmutableHashSet.Create(address);
-
-            using (var snapshot = Blockchain.Singleton.GetSnapshot())
-            {
-                var (tx, engine) = NodeUtility.MakeInvocationTransaction(snapshot, addresses, scriptHash, scriptParams, inputs, outputs);
-                var context = new ContractParametersContext(tx);
-                var json = CreateContextResponse(context, tx);
-                json["engine-state"] = EngineToJson(engine);
-                return json;
             }
         }
 
@@ -459,10 +340,6 @@ namespace NeoExpress.Node
                 // custom Neo-Express RPC Endpoints
                 case "express-show-coins":
                     return OnShowCoins(@params);
-                case "express-submit-signatures":
-                    return OnSubmitSignatures(@params);
-                case "express-invoke-contract":
-                    return OnInvokeContract(@params);
                 case "express-get-contract-storage":
                     return OnGetContractStorage(@params);
                 case "express-create-checkpoint":

@@ -35,7 +35,8 @@ may not exactly match a publicly released version.
 
 - Removed `--online` option from `checkpoint create` command. Neo-express now detects
   when blockchain is running and does an online checkpoint automatically.
-- Removed `express-transfer`, `express-claim` and `express-deploy-contract` RPC endpoints.
+- Removed `express-transfer`, `express-claim`, `express-deploy-contract`
+  `express-invoke-contract` and `express-submit-signatures` RPC endpoints.
   These operations are now performed using the `sendrawtransaction` endpoint.
 - Removed `--json` option from `contract storages` command. Tooling that wishes to access
   this functionality can access the `express-get-contract-storage` RPC endpoint directly.

@@ -19,8 +19,11 @@ Neo-Express provides the following features:
 - Blockchain checkpoint and rollback
 
 Docs are somewhat limited at this point. Please review the
-[Command Reference](docs\command-reference.md) to get an understanding of
-Neo-Express capabilities.
+[Command Reference](https://neo-project.github.io/neo-express/command-reference)
+to get an understanding of Neo-Express capabilities. There is also a
+[Quickstart](https://neo-project.github.io/neo-blockchain-toolkit/quickstart)
+for the [Neo Blockchain Toolkit](https://marketplace.visualstudio.com/items?itemName=ngd-seattle.neo-blockchain-toolkit)
+that covers Neo-Express as well.
 
 ## A Message from the Engineer
 
@@ -57,6 +60,7 @@ Different versions of Neo-Express require different versions of .NET Core.
 
 |Neo-Express Version|.NET Core Version|
 |-------------------|-----------------|
+| v1.1 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
 | v1.0 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
 | v0.9 | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
 | v0.8 | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |

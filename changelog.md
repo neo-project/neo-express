@@ -19,11 +19,26 @@ may not exactly match a publicly released version.
 
 - Added `--preload-gas` option to the `create` command that generates and claims a
   specified amount of GAS in the genesis account.
+- Added `express-save-contract-metadata`, `express-get-contract-metadata` and
+  `express-list-contract-metadata` RPC endpoints to facilitate storage of
+  contract metadata directly within blockchain
+
+### Changed
+
+- Contract information no longer stored in .neo-express.json file
+- `contract deploy` stores contract metadata in blockchain by default
+- `contract get` treats `contract` parameter as script hash or file path instead of
+  as a contract nickname from the .neo-express.json file
+- `contract list` includes contract metadata when available
 
 ### Removed
 
 - Removed `--online` option from `checkpoint create` command. Neo-express now detects
   when blockchain is running and does an online checkpoint automatically.
+- Removed `express-transfer`, `express-claim` and `express-deploy-contract` RPC endpoints.
+  These operations are now performed using the `sendrawtransaction` endpoint.
+- Removed `--json` option from `contract storages` command. Tooling that wishes to access
+  this functionality can access the `express-get-contract-storage` RPC endpoint directly.
 
 ### Fixed
 

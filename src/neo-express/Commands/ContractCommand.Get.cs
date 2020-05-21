@@ -21,25 +21,23 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
-            [Option]
-            private bool Overwrite { get; }
-
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
-                    if (contract == null)
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var hash = GetScriptHash(Contract);
+
+                    var contract = await BlockchainOperations.GetContract(chain, hash);
+                    if (contract != null)
                     {
-                        throw new Exception($"Contract {Contract} not found.");
+                        var json = JsonConvert.SerializeObject(contract, Formatting.Indented);
+                        console.WriteLine(json);
                     }
-
-                    var uri = chain.GetUri();
-                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
-                    console.WriteResult(result);
-
-                    chain.SaveContract(contract, filename, console, Overwrite);
+                    else
+                    {
+                        console.WriteError($"Contract {Contract} not found");
+                    }
                     return 0;
                 }
                 catch (Exception ex)

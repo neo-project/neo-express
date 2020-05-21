@@ -29,112 +29,32 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
-            [Option]
-            private string Name { get; } = string.Empty;
-
-            [Option]
-            private bool Overwrite { get; }
-
-            private static async Task<(bool deployed, JToken? result)> GetContractState(Uri uri, ExpressContract contract)
-            {
-                try
-                {
-                    var result = await NeoRpcClient.GetContractState(uri, contract.Hash).ConfigureAwait(false);
-                    if (result != null)
-                    {
-                        return (true, result);
-                    }
-
-                    return (false, null);
-                }
-                catch (Exception)
-                {
-                    return (false, null);
-                }
-            }
-
-            private static (bool storage, bool dynamicInvoke) GetContractProps(JToken result)
-            {
-                var properties = result["properties"];
-                return (storage: properties.Value<bool>("storage"),
-                    dynamicInvoke: properties.Value<bool>("dynamic_invoke"));
-            }
-
-            private async Task<ExpressContract> DeployContract(ExpressChain chain, ExpressContract contract, Uri uri, IConsole console)
-            {
-                var account = chain.GetAccount(Account);
-                if (account == null)
-                {
-                    throw new Exception($"Account {Account} not found.");
-                }
-
-                if (!contract.Properties.ContainsKey("has-storage"))
-                {
-                    var hasStorage = Prompt.GetYesNo("Does this contract use storage?", false);
-                    contract.Properties.Add("has-storage", hasStorage.ToString());
-                }
-
-                if (!contract.Properties.ContainsKey("has-dynamic-invoke"))
-                {
-                    var hasStorage = Prompt.GetYesNo("Does this contract use dynamic invoke?", false);
-                    contract.Properties.Add("has-dynamic-invoke", hasStorage.ToString());
-                }
-
-                var unspents = (await NeoRpcClient.GetUnspents(uri, account.ScriptHash)
-                    .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
-                if (unspents == null)
-                {
-                    throw new Exception($"could not retrieve unspents for {Account}");
-                }
-
-                var tx = RpcTransactionManager.CreateDeploymentTransaction(contract, 
-                    account, unspents);
-                tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
-                var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
-                if (sendResult == null || !sendResult.Value<bool>())
-                {
-                    throw new Exception("SendRawTransaction failed");
-                }
-
-                console.WriteLine($"Contract Deployment {tx.Hash} submitted");
-                return contract;
-            }
+            [Option(CommandOptionType.SingleValue)]
+            private bool SaveMetadata { get; } = true;
 
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
-                    var contract = chain.GetContract(Contract);
+                    var (chain, _) = Program.LoadExpressChain(Input);
 
-                    if (chain.Contracts == null)
+                    var account = chain.GetAccount(Account);
+                    if (account == null)
                     {
-                        chain.Contracts = new List<ExpressContract>(1);
+                        throw new Exception($"Account {Account} not found.");
                     }
 
-                    if (!string.IsNullOrEmpty(Name))
+                    if (BlockchainOperations.TryLoadContract(Contract, out var contract, out var errorMessage))
                     {
-                        contract.Name = Name;
-                    }
-
-                    var uri = chain.GetUri();
-                    var (deployed, result) = await GetContractState(uri, contract).ConfigureAwait(false);
-
-                    if (deployed)
-                    {
-                        Debug.Assert(result != null);
-                        console.WriteLine($"Contract matching {contract.Name} script hash already deployed.");
-                        var (storage, dynamicInvoke) = GetContractProps(result);
-                        contract.Properties["has-storage"] = storage.ToString();
-                        contract.Properties["has-dynamic-invoke"] = dynamicInvoke.ToString();
+                        console.WriteLine($"Deploying contract {contract.Name} ({contract.Hash}) {(SaveMetadata ? "and contract metadata" : "")}");
+                        var tx = await BlockchainOperations.DeployContract(chain, contract, account, SaveMetadata);
+                        console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
                     }
                     else
                     {
-                        console.WriteLine($"Deploying {contract.Name} contract.");
-                        contract = await DeployContract(chain, contract, uri, console);
+                        throw new Exception(errorMessage);
                     }
 
-                    chain.SaveContract(contract, filename, console, Overwrite);
                     return 0;
                 }
                 catch (Exception ex)

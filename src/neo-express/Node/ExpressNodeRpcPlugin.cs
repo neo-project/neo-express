@@ -22,7 +22,8 @@ namespace NeoExpress.Node
     internal class ExpressNodeRpcPlugin : Plugin, IRpcPlugin, IPersistencePlugin
     {
         private readonly Store store;
-        private const byte APP_LOGS_PREFIX = 0x40;
+        private const byte APP_LOGS_PREFIX = 0xf1;
+        private const byte CONTRACT_METADATA_PREFIX = 0xf2;
 
         public ExpressNodeRpcPlugin(Store store)
         {
@@ -67,38 +68,6 @@ namespace NeoExpress.Node
             }
         }
 
-        private JObject OnTransfer(JArray @params)
-        {
-            static Fixed8? GetQuantity(UInt256 assetId, string quantity)
-            {
-                if (quantity.Equals("all", StringComparison.OrdinalIgnoreCase))
-                {
-                    return null;
-                }
-
-                var assetDescriptor = new AssetDescriptor(assetId);
-                if (BigDecimal.TryParse(quantity, assetDescriptor.Decimals, out var result))
-                {
-                    return result.ToFixed8();
-                }
-
-                throw new ArgumentException(nameof(quantity));
-            }
-
-            var assetId = NodeUtility.GetAssetId(@params[0].AsString());
-            var quantity = GetQuantity(assetId, @params[1].AsString());
-            var sender = @params[2].AsString().ToScriptHash();
-            var receiver = @params[3].AsString().ToScriptHash();
-
-            using (var snapshot = Blockchain.Singleton.GetSnapshot())
-            {
-                var tx = NodeUtility.MakeTransferTransaction(snapshot, ImmutableHashSet.Create(sender), receiver, assetId, quantity);
-                var context = new ContractParametersContext(tx);
-
-                return CreateContextResponse(context, tx);
-            }
-        }
-
         private JObject OnShowCoins(JArray @params)
         {
             var address = @params[0].AsString().ToScriptHash();
@@ -116,28 +85,6 @@ namespace NeoExpress.Node
                     j["output"] = c.Output.ToJson(0);
                     return j;
                 }));
-            }
-        }
-
-        private JObject OnClaim(JArray @params)
-        {
-            UInt256 GetAssetId(string asset)
-            {
-                if (string.Compare("gas", asset, true) == 0)
-                    return Blockchain.GoverningToken.Hash;
-
-                return UInt256.Parse(asset);
-            }
-
-            var assetId = GetAssetId(@params[0].AsString());
-            var address = @params[1].AsString().ToScriptHash();
-
-            using (var snapshot = Blockchain.Singleton.GetSnapshot())
-            {
-                var tx = NodeUtility.MakeClaimTransaction(snapshot, address, assetId);
-                var context = new ContractParametersContext(tx);
-
-                return CreateContextResponse(context, tx);
             }
         }
 
@@ -182,22 +129,6 @@ namespace NeoExpress.Node
             json["gas-consumed"] = engine.GasConsumed.ToString();
             json["result-stack"] = new JArray(engine.ResultStack.Select(item => item.ToParameter().ToJson()));
             return json;
-        }
-
-        public JObject OnDeployContract(JArray @params)
-        {
-            var contract = Newtonsoft.Json.Linq.JToken.Parse(@params[0].ToString());
-            var address = @params[1].AsString().ToScriptHash();
-            var addresses = ImmutableHashSet.Create(address);
-
-            using (var snapshot = Blockchain.Singleton.GetSnapshot())
-            {
-                var (tx, engine) = NodeUtility.MakeDeploymentTransaction(snapshot, addresses, contract);
-                var context = new ContractParametersContext(tx);
-                var json = CreateContextResponse(context, tx);
-                json["engine-state"] = EngineToJson(engine);
-                return json;
-            }
         }
 
         private static CoinReference CoinReferenceFromJson(JObject json)
@@ -463,6 +394,52 @@ namespace NeoExpress.Node
             return populatedBlocks;
         }
 
+        private JObject OnSaveContractMetadata(JArray @params)
+        {
+            var scriptHash = UInt160.Parse(@params[0].AsString());
+            var metadata = @params[1];
+            var value = Encoding.UTF8.GetBytes(metadata.ToString());
+            store.Put(CONTRACT_METADATA_PREFIX, scriptHash.ToArray(), value);
+            return true;
+        }
+
+        private JObject OnGetContractMetadata(JArray @params)
+        {
+            var scriptHash = UInt160.Parse(@params[0].AsString());
+            var value = store.Get(CONTRACT_METADATA_PREFIX, scriptHash.ToArray());
+
+            if (value != null && value.Length > 0)
+            {
+                var json = Encoding.UTF8.GetString(value);
+                return JObject.Parse(json);
+            }
+
+            throw new Exception("Unknown Contract Metadata");
+        }
+
+        private JObject OnListContractMetadata(JArray _)
+        {
+            var contracts = new JArray();
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            foreach (var kvp in snapshot.Contracts.Find())
+            {
+                var metadata = store.Get(CONTRACT_METADATA_PREFIX, kvp.Key.ToArray());
+                if (metadata != null && metadata.Length > 0)
+                {
+                    var json = JObject.Parse(Encoding.UTF8.GetString(metadata));
+                    json["type"] = "metadata";
+                    contracts.Add(json);
+                }
+                else
+                {
+                    var json = kvp.Value.ToJson();
+                    json["type"] = "state";
+                    contracts.Add(json);
+                }
+            }
+            return contracts;
+        }
+
         JObject? IRpcPlugin.OnProcess(HttpContext context, string method, JArray @params)
         {
             switch (method)
@@ -480,16 +457,10 @@ namespace NeoExpress.Node
                     return OnGetUnspents(@params);
 
                 // custom Neo-Express RPC Endpoints
-                case "express-transfer":
-                    return OnTransfer(@params);
-                case "express-claim":
-                    return OnClaim(@params);
                 case "express-show-coins":
                     return OnShowCoins(@params);
                 case "express-submit-signatures":
                     return OnSubmitSignatures(@params);
-                case "express-deploy-contract":
-                    return OnDeployContract(@params);
                 case "express-invoke-contract":
                     return OnInvokeContract(@params);
                 case "express-get-contract-storage":
@@ -498,6 +469,12 @@ namespace NeoExpress.Node
                     return OnCheckpointCreate(@params);
                 case "express-get-populated-blocks":
                     return OnGetPopulatedBlocks(@params);
+                case "express-save-contract-metadata":
+                    return OnSaveContractMetadata(@params);
+                case "express-get-contract-metadata":
+                    return OnGetContractMetadata(@params);
+                case "express-list-contract-metadata":
+                    return OnListContractMetadata(@params);
             }
 
             return null;

@@ -3,9 +3,11 @@ using NeoExpress.Models;
 using NeoExpress.Node;
 using NeoExpress.Persistence;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -375,6 +377,347 @@ namespace NeoExpress
 
             // NodeUtility.RunAsync disposes the store when it's done
             await NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
+        }
+
+        static Task<T?> SwallowException<T>(Task<T?> task)
+            where T : class
+        {
+            return task.ContinueWith(t =>
+            {
+                if (task.IsCompletedSuccessfully)
+                {
+                    return task.Result;
+                }
+                else
+                {
+                    return null;
+                }
+            });
+        }
+
+        public static async Task<Neo.Network.P2P.Payloads.InvocationTransaction> DeployContract(ExpressChain chain, ExpressContract contract, ExpressWalletAccount account, bool saveMetadata = true)
+        {
+            var uri = chain.GetUri();
+
+            var contractState = await SwallowException(NeoRpcClient.GetContractState(uri, contract.Hash))
+                .ConfigureAwait(false);
+
+            if (contractState != null)
+            {
+                throw new Exception($"Contract {contract.Name} ({contract.Hash}) already deployed");
+            }
+
+            var unspents = (await NeoRpcClient.GetUnspents(uri, account.ScriptHash)
+                .ConfigureAwait(false))?.ToObject<UnspentsResponse>();
+            if (unspents == null)
+            {
+                throw new Exception($"could not retrieve unspents for account");
+            }
+
+            var tx = RpcTransactionManager.CreateDeploymentTransaction(contract,
+                account, unspents);
+            tx.Witnesses = new[] { RpcTransactionManager.GetWitness(tx, chain, account) };
+
+            var sendResult = await NeoRpcClient.SendRawTransaction(uri, tx);
+            if (sendResult == null || !sendResult.Value<bool>())
+            {
+                throw new Exception("SendRawTransaction failed");
+            }
+
+            if (saveMetadata)
+            {
+                var abiContract = ConvertContract(contract);
+                await NeoRpcClient.SaveContractMetadata(uri, abiContract.Hash, abiContract);
+            }
+
+            return tx;
+        }
+
+        static ExpressContract ConvertContract(AbiContract abiContract, string? name = null, string? contractData = null)
+        {
+            static ExpressContract.Function ToExpressContractFunction(AbiContract.Function function)
+                => new ExpressContract.Function
+                {
+                    Name = function.Name,
+                    ReturnType = function.ReturnType,
+                    Parameters = function.Parameters.Select(p => new ExpressContract.Parameter
+                    {
+                        Name = p.Name,
+                        Type = p.Type
+                    }).ToList()
+                };
+
+            var properties = abiContract.Metadata == null
+                ? new Dictionary<string, string>()
+                : new Dictionary<string, string>()
+                {
+                    { "title", abiContract.Metadata.Title },
+                    { "description", abiContract.Metadata.Description },
+                    { "version", abiContract.Metadata.Version },
+                    { "email", abiContract.Metadata.Email },
+                    { "author", abiContract.Metadata.Author },
+                    { "has-storage", abiContract.Metadata.HasStorage.ToString() },
+                    { "has-dynamic-invoke", abiContract.Metadata.HasDynamicInvoke.ToString() },
+                    { "is-payable", abiContract.Metadata.IsPayable.ToString() }
+                };
+
+            return new ExpressContract()
+            {
+                Name = name ?? abiContract.Metadata?.Title ?? string.Empty,
+                Hash = abiContract.Hash,
+                EntryPoint = abiContract.Entrypoint,
+                ContractData = contractData ?? string.Empty,
+                Functions = abiContract.Functions.Select(ToExpressContractFunction).ToList(),
+                Events = abiContract.Events.Select(ToExpressContractFunction).ToList(),
+                Properties = properties
+            };
+        }
+
+        static ExpressContract ConvertContract(ContractState contractState)
+        {
+            var properties = new Dictionary<string, string>()
+            {
+                { "has-dynamic-invoke", contractState.Properties.DynamicInvoke.ToString() },
+                { "has-storage", contractState.Properties.Storage.ToString() }
+            };
+
+            var entrypoint = "Main";
+            var @params = contractState.Parameters.Select((type, index) =>
+                new ExpressContract.Parameter()
+                {
+                    Name = $"parameter{index}",
+                    Type = type
+                }
+            );
+
+            var function = new ExpressContract.Function()
+            {
+                Name = entrypoint,
+                Parameters = @params.ToList(),
+                ReturnType = contractState.ReturnType,
+            };
+
+            return new ExpressContract()
+            {
+                Name = contractState.Name,
+                Hash = contractState.Hash,
+                EntryPoint = entrypoint,
+                ContractData = contractState.Script,
+                Functions = new List<ExpressContract.Function>() { function },
+                Properties = properties
+            };
+
+        }
+
+        static AbiContract ConvertContract(ExpressContract contract)
+        {
+            static AbiContract.Function ToAbiContractFunction(ExpressContract.Function function)
+                => new AbiContract.Function
+                {
+                    Name = function.Name,
+                    ReturnType = function.ReturnType,
+                    Parameters = function.Parameters.Select(p => new AbiContract.Parameter
+                    {
+                        Name = p.Name,
+                        Type = p.Type
+                    }).ToList()
+                };
+
+            static AbiContract.ContractMetadata ToAbiContractMetadata(Dictionary<string, string> metadata)
+            {
+                var contractMetadata = new AbiContract.ContractMetadata();
+                if (metadata.TryGetValue("title", out var title))
+                {
+                    contractMetadata.Title = title;
+                }
+                if (metadata.TryGetValue("description", out var description))
+                {
+                    contractMetadata.Description = description;
+                }
+                if (metadata.TryGetValue("version", out var version))
+                {
+                    contractMetadata.Version = version;
+                }
+                if (metadata.TryGetValue("email", out var email))
+                {
+                    contractMetadata.Description = email;
+                }
+                if (metadata.TryGetValue("author", out var author))
+                {
+                    contractMetadata.Author = author;
+                }
+                if (metadata.TryGetValue("has-storage", out var hasStorageString)
+                    && bool.TryParse(hasStorageString, out var hasStorage))
+                {
+                    contractMetadata.HasStorage = hasStorage;
+                }
+                if (metadata.TryGetValue("has-dynamic-invoke", out var hasDynamicInvokeString)
+                    && bool.TryParse(hasDynamicInvokeString, out var hasDynamicInvoke))
+                {
+                    contractMetadata.HasDynamicInvoke = hasDynamicInvoke;
+                }
+                if (metadata.TryGetValue("is-payable", out var isPayableString)
+                    && bool.TryParse(hasStorageString, out var isPayable))
+                {
+                    contractMetadata.IsPayable = isPayable;
+                }
+
+                return contractMetadata;
+            }
+
+            return new AbiContract()
+            {
+                Hash = contract.Hash,
+                Entrypoint = contract.EntryPoint,
+                Functions = contract.Functions.Select(ToAbiContractFunction).ToList(),
+                Events = contract.Events.Select(ToAbiContractFunction).ToList(),
+                Metadata = ToAbiContractMetadata(contract.Properties)
+            };
+        }
+
+        public static bool TryLoadContract(string path, [MaybeNullWhen(false)] out ExpressContract contract, [MaybeNullWhen(true)] out string errorMessage)
+        {
+            if (Directory.Exists(path))
+            {
+                var avmFiles = Directory.EnumerateFiles(path, "*.avm");
+                var avmFileCount = avmFiles.Count();
+                if (avmFileCount == 1)
+                {
+                    contract = LoadContract(avmFiles.Single());
+                    errorMessage = null!;
+                    return true;
+                }
+
+                contract = null!;
+                errorMessage = avmFileCount == 0
+                    ? $"There are no .avm files in {path}"
+                    : $"There is more than one .avm file in {path}. Please specify file name directly";
+                return false;
+            }
+
+            if (File.Exists(path) && Path.GetExtension(path) == ".avm")
+            {
+                contract = LoadContract(path);
+                errorMessage = null!;
+                return true;
+            }
+
+            contract = null!;
+            errorMessage = $"{path} is not an .avm file.";
+            return false;
+        }
+
+        static ExpressContract LoadContract(string avmFile)
+        {
+            static AbiContract LoadAbiContract(string avmFile)
+            {
+                string abiFile = Path.ChangeExtension(avmFile, ".abi.json");
+                if (!File.Exists(abiFile))
+                {
+                    throw new ApplicationException($"there is no .abi.json file for {avmFile}.");
+                }
+
+                var serializer = new JsonSerializer();
+                using var stream = File.OpenRead(abiFile);
+                using var reader = new JsonTextReader(new StreamReader(stream));
+                return serializer.Deserialize<AbiContract>(reader)
+                    ?? throw new ApplicationException($"Cannot load contract abi information from {abiFile}");
+            }
+
+            System.Diagnostics.Debug.Assert(File.Exists(avmFile));
+
+            var abiContract = LoadAbiContract(avmFile);
+            var name = Path.GetFileNameWithoutExtension(avmFile);
+            var contractData = File.ReadAllBytes(avmFile).ToHexString();
+            return ConvertContract(abiContract, name, contractData);
+        }
+
+        public static async Task<ExpressContract?> GetContract(ExpressChain chain, string scriptHash)
+        {
+            var uri = chain.GetUri();
+
+            var getContractStateTask = SwallowException(NeoRpcClient.GetContractState(uri, scriptHash));
+            var getContractMetadataTask = SwallowException(NeoRpcClient.GetContractMetadata(uri, scriptHash));
+            await Task.WhenAll(getContractStateTask, getContractMetadataTask);
+
+            if (getContractStateTask.Result != null
+                && getContractMetadataTask.Result != null)
+            {
+                var contractData = getContractMetadataTask.Result.Value<string>("script");
+                var name = getContractMetadataTask.Result.Value<string>("name");
+                var abiContract = getContractMetadataTask.Result.ToObject<AbiContract>();
+
+                if (abiContract != null)
+                {
+                    return ConvertContract(abiContract, name, contractData);
+                }
+            }
+
+            if (getContractStateTask.Result != null)
+            {
+                var contractState = getContractStateTask.Result.ToObject<ContractState>();
+                if (contractState != null)
+                {
+                    return ConvertContract(contractState);
+                }
+            }
+
+            throw new Exception($"Contract {scriptHash} not deployed");
+        }
+
+        public static async Task<List<ExpressContract>> ListContracts(ExpressChain chain)
+        {
+            var uri = chain.GetUri();
+            var json = await NeoRpcClient.ListContracts(uri);
+
+            if (json != null && json is JArray jObject)
+            {
+                var contracts = new List<ExpressContract>(jObject.Count);
+                foreach (var obj in jObject)
+                {
+                    var type = obj.Value<string>("type");
+                    if (type == "metadata")
+                    {
+                        var contract = obj.ToObject<AbiContract>();
+                        Debug.Assert(contract != null);
+                        contracts.Add(ConvertContract(contract!));
+                    }
+                    else
+                    {
+                        Debug.Assert(type == "state");
+                        var contract = obj.ToObject<ContractState>();
+                        Debug.Assert(contract != null);
+                        contracts.Add(ConvertContract(contract!));
+                    }
+                }
+
+                return contracts;
+            }
+
+            return new List<ExpressContract>(0);
+        }
+
+        public static async Task<List<ExpressStorage>> GetStorage(ExpressChain chain, string scriptHash)
+        {
+            var uri = chain.GetUri();
+            var json = await NeoRpcClient.ExpressGetContractStorage(uri, scriptHash);
+            if (json != null && json is JArray array)
+            {
+                var storages = new List<ExpressStorage>(array.Count);
+                foreach (var s in array)
+                {
+                    var storage = new ExpressStorage()
+                    {
+                        Key = s.Value<string>("key"),
+                        Value = s.Value<string>("value"),
+                        Constant = s.Value<bool>("constant")
+                    };
+                    storages.Add(storage);
+                }
+                return storages;
+            }
+
+            return new List<ExpressStorage>(0);
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -12,22 +14,22 @@ namespace NeoExpress.Commands
             [Option]
             private string Input { get; } = string.Empty;
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    if (chain.Contracts == null || !chain.Contracts.Any())
+                    var contracts = await BlockchainOperations.ListContracts(chain);
+                    for (int i = 0; i < contracts.Count; i++)
                     {
-                        console.WriteLine("No contracts deployed");
+                        var contract = contracts[i];
+                        var json = JsonConvert.SerializeObject(contract, Formatting.Indented);
+                        console.WriteLine(json);
                     }
-                    else
+
+                    if (contracts.Count == 0)
                     {
-                        foreach (var c in chain.Contracts)
-                        {
-                            console.WriteLine($"{c.Name}");
-                            console.WriteLine($"\t{c.Hash}");
-                        }
+                        console.WriteLine("no contracts deployed");
                     }
 
                     return 0;

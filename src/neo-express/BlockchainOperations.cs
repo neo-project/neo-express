@@ -222,10 +222,48 @@ namespace NeoExpress
         private static string GetAddressFilePath(string directory) =>
             Path.Combine(directory, ADDRESS_FILENAME);
 
-        public static void CreateCheckpoint(ExpressChain chain, string blockChainStoreDirectory, string checkPointFileName)
+        public static async Task<string> CreateCheckpoint(ExpressChain chain, string checkPointFileName)
         {
-            using var db = new RocksDbStore(blockChainStoreDirectory);
-            CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+            static bool NodeRunning(ExpressConsensusNode node)
+            {
+                // Check to see if there's a neo-express blockchain currently running
+                // by attempting to open a mutex with the multisig account address for 
+                // a name. If so, do an online checkpoint instead of offline.
+
+                if (Mutex.TryOpenExisting(node.GetMultiSigAddress(), out var _))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            if (File.Exists(checkPointFileName))
+            {
+                throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
+            }
+
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            var folder = node.GetBlockchainPath();
+
+            if (NodeRunning(node))
+            {
+                var uri = chain.GetUri();
+                await NeoRpcClient.ExpressCreateCheckpoint(uri, checkPointFileName)
+                    .ConfigureAwait(false);
+                return $"Created {Path.GetFileName(checkPointFileName)} checkpoint online";
+            }
+            else
+            {
+                using var db = new RocksDbStore(folder);
+                CreateCheckpoint(db, checkPointFileName, chain.Magic, chain.ConsensusNodes[0].Wallet.DefaultAccount.ScriptHash);
+                return $"Created {Path.GetFileName(checkPointFileName)} checkpoint offline";
+            }
         }
 
         public static void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, string scriptHash)
@@ -308,20 +346,25 @@ namespace NeoExpress
             NodeUtility.Preload(preloadGasAmount, store , node, writer, cancellationToken);
         }
 
-        public static Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public static async Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             if (!chain.InitializeProtocolSettings(secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
             }
-            var node = chain.ConsensusNodes[index];
 
-#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new RocksDbStore(directory), node, writer, cancellationToken);
-#pragma warning restore IDE0067 // Dispose objects before losing scope
+            // create a named mutex so that checkpoint create command
+            // can detect if blockchain is running automatically
+            var node = chain.ConsensusNodes[index];
+            using var mutex = new Mutex(true, node.GetMultiSigAddress());
+
+            writer.WriteLine(directory);
+
+            // NodeUtility.RunAsync disposes the store when it's done
+            await NodeUtility.RunAsync(new RocksDbStore(directory), node, writer, cancellationToken);
         }
 
-        public static Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public static async Task RunCheckpointAsync(string directory, ExpressChain chain, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             if (!chain.InitializeProtocolSettings(secondsPerBlock))
             {
@@ -330,9 +373,8 @@ namespace NeoExpress
             var node = chain.ConsensusNodes[0];
             ValidateCheckpoint(directory, chain.Magic, node.Wallet.DefaultAccount);
 
-#pragma warning disable IDE0067 // NodeUtility.RunAsync disposes the store when it's done
-            return NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
-#pragma warning restore IDE0067 // Dispose objects before losing scope
+            // NodeUtility.RunAsync disposes the store when it's done
+            await NodeUtility.RunAsync(new CheckpointStore(directory), node, writer, cancellationToken);
         }
     }
 }

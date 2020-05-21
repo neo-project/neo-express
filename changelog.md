@@ -15,8 +15,19 @@ may not exactly match a publicly released version.
 
 ## [1.1] - Unreleased
 
+### Added
+
 - Added `--preload-gas` option to the `create` command that generates and claims a
   specified amount of GAS in the genesis account.
+
+### Removed
+
+- Removed `--online` option from `checkpoint create` command. Neo-express now detects
+  when blockchain is running and does an online checkpoint automatically.
+
+### Fixed
+
+- [genesis multisig account keys must be sorted when signing](https://github.com/neo-project/neo-express/issues/54)
 
 ## [1.0.8] - 2019-02-25
 

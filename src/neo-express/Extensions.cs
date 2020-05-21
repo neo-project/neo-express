@@ -20,6 +20,14 @@ namespace NeoExpress
 
     internal static class Extensions
     {
+        public static string GetMultiSigAddress(this ExpressConsensusNode node)
+        {
+            var account = DevWalletAccount.FromExpressWalletAccount(node.Wallet.Accounts
+                .Single(a => Neo.SmartContract.Helper.IsMultiSigContract(a.Contract.Script.ToByteArray())));
+            
+            return account.Address;
+        }
+        
         public static JObject Sign(this ExpressWalletAccount account, byte[] data)
         {
             var (signature, publicKey) = BlockchainOperations.Sign(account, data);

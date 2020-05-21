@@ -27,9 +27,11 @@ namespace NeoExpress.Persistence
                 this.updater = updater;
             }
 
-#pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
+#pragma warning disable CS8764 // Nullability of reference types in return type doesn't match overridden member.
+            // Neo 2.x is not compiled with C# 8, so not sure why C# compiler thinks
+            // TryGetInternal can't return null. But it can so suppress the warning.
             protected override T? TryGetInternal()
-#pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
+#pragma warning restore CS8764 // Nullability of reference types in return type doesn't match overridden member.
             {
                 return tracker.TryGet(snapshot);
             }

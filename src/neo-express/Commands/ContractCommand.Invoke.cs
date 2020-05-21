@@ -37,7 +37,7 @@ namespace NeoExpress.Commands
                     {
                         console.WriteError($"Invocation file {InvocationFile} couldn't be found");
                         console.WriteWarning("    Note: The arguments for the contract invoke command changed significantly in the v1.1 release.");
-                        console.WriteWarning("          Please see https://neo-project.github.io/neo-express/command-reference for details.\n");
+                        console.WriteWarning("          Please see https://neo-project.github.io/neo-express/command-reference#contract-invoke-subcommand for details.\n");
 
                         app.ShowHelp();
                         return 1;

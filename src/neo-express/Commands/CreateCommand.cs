@@ -79,7 +79,7 @@ namespace NeoExpress.Commands
                     console.CancelKeyPress += (sender, args) => cts.Cancel();
                     BlockchainOperations.PreloadGas(folder, chain, 0, PreloadGas, console.Out, cts.Token);
                 }
-                
+
                 return 0;
             }
             catch (Exception ex)

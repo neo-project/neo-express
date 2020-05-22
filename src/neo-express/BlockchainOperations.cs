@@ -346,7 +346,7 @@ namespace NeoExpress
             }
             var node = chain.ConsensusNodes[index];
             using var store = new RocksDbStore(directory);
-            NodeUtility.Preload(preloadGasAmount, store , node, writer, cancellationToken);
+            NodeUtility.Preload(preloadGasAmount, store, node, writer, cancellationToken);
         }
 
         public static async Task RunBlockchainAsync(string directory, ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
@@ -754,21 +754,21 @@ namespace NeoExpress
                         Value = paramValue,
                     };
                 }
-                catch (FormatException) {} // ignore format exceptions
+                catch (FormatException) { } // ignore format exceptions
             }
 
             if (value.StartsWith("0x"))
             {
                 try
                 {
-                    var paramValue = value.Substring(2).HexToBytes(); 
+                    var paramValue = value.Substring(2).HexToBytes();
                     return new ContractParameter
                     {
                         Type = ContractParameterType.ByteArray,
                         Value = paramValue,
                     };
                 }
-                catch (FormatException) {} // ignore format exceptions
+                catch (FormatException) { } // ignore format exceptions
             }
 
             return new ContractParameter
@@ -845,7 +845,7 @@ namespace NeoExpress
                 using var jreader = new JsonTextReader(reader);
                 return await JObject.LoadAsync(jreader);
             }
-            
+
             var json = await LoadInvocationFileJson(invocationFilePath).ConfigureAwait(false);
 
             var scriptHash = UInt160.Parse(json.Value<string>("hash"));

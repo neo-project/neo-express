@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 namespace NeoExpress.Commands
 {
     [Command("show")]
-    [Subcommand(typeof(Account), 
-        typeof(Claimable), 
-        typeof(Coins), 
-        typeof(Gas), 
-        typeof(Transaction), 
+    [Subcommand(typeof(Account),
+        typeof(Claimable),
+        typeof(Coins),
+        typeof(Gas),
+        typeof(Transaction),
         typeof(Unspents))]
     partial class ShowCommand
     {
@@ -79,7 +79,7 @@ Remarks:
             {
                 void WriteResponse(JToken token)
                 {
-                    var response = token.ToObject<AccountResponse>() 
+                    var response = token.ToObject<AccountResponse>()
                         ?? throw new ApplicationException($"Cannot convert response to {nameof(AccountResponse)}");
                     console.WriteLine($"Account information for {Name}:");
                     foreach (var balance in response.Balances)

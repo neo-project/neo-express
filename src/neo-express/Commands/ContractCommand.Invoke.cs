@@ -64,7 +64,7 @@ namespace NeoExpress.Commands
                         {
                             throw new Exception("Invalid Account");
                         }
-                        
+
                         var tx = await BlockchainOperations.InvokeContract(chain, InvocationFile, account);
                         console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
                     }

@@ -1,9 +1,20 @@
 {
-   // Use IntelliSense to find out which attributes exist for C# debugging
-   // Use hover for the description of the existing attributes
-   // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
-   "version": "0.2.0",
-   "configurations": [
+    // Use IntelliSense to find out which attributes exist for C# debugging
+    // Use hover for the description of the existing attributes
+    // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "contract deploy",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/nxp3/bin/Debug/netcoreapp3.1/nxp3.dll",
+            "args": "contract deploy C:/Users/harry/Source/neo/seattle/samples/helloWorld3/helloWorld3.nef genesis",
+            "cwd": "${workspaceFolder}/src/nxp3",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
         {
             "name": "transfer",
             "type": "coreclr",
@@ -11,7 +22,7 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/src/nxp3/bin/Debug/netcoreapp3.1/nxp3.dll",
-            "args": ["transfer", "neo", "1000", "genesis", "devhawk"],
+            "args": "transfer neo 1000 genesis devhawk",
             "cwd": "${workspaceFolder}/src/nxp3",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",

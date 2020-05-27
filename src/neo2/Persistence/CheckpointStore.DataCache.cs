@@ -48,9 +48,9 @@ namespace NeoExpress.Neo2.Persistence
                 }
             }
 
-#pragma warning disable CS8609 // Nullability of reference types in return type doesn't match overridden member.
+#pragma warning disable CS8764 // Nullability of reference types in return type doesn't match overridden member.
             protected override TValue? TryGetInternal(TKey key)
-#pragma warning restore CS8609 // Nullability of reference types in return type doesn't match overridden member.
+#pragma warning restore CS8764 // Nullability of reference types in return type doesn't match overridden member.
             {
                 return tracker.TryGet(key, snapshot);
             }

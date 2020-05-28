@@ -23,8 +23,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\abstractions\abstractions.csproj" />
-    <ProjectReference Include="..\..\..\..\official\core3\src\neo\neo.csproj" />
-    <ProjectReference Include="..\..\..\..\official\modules3\src\RpcClient\RpcClient.csproj" />
-    <ProjectReference Include="..\..\..\..\official\modules3\src\RpcServer\RpcServer.csproj" />
+    <ProjectReference Include="..\..\..\..\official\neo3\core\src\neo\neo.csproj" />
+    <ProjectReference Include="..\..\..\..\official\neo3\modules\src\RpcClient\RpcClient.csproj" />
+    <ProjectReference Include="..\..\..\..\official\neo3\modules\src\RpcServer\RpcServer.csproj" />
   </ItemGroup>
 </Project>

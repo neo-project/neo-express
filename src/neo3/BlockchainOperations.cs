@@ -46,6 +46,22 @@ namespace NeoExpress.Neo3
             return chain;
         }
 
+        public void ResetNode(ExpressChain chain, int index)
+        {
+            if (index >= chain.ConsensusNodes.Count)
+            {
+                throw new ArgumentException(nameof(index));
+            }
+
+            var node = chain.ConsensusNodes[index];
+            var folder = node.GetBlockchainPath();
+
+            if (Directory.Exists(folder))
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+
         static ExpressChain CreateBlockchain(int count)
         {
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,15 +8,15 @@ using RocksDbSharp;
 
 namespace NeoExpress.Neo3.Persistence
 {
-    partial class RocksDbStorage : IStore
+    partial class RocksDbStore : IStore
     {
         private readonly RocksDb db;
         private readonly ConcurrentDictionary<byte, ColumnFamilyHandle> columnFamilyCache;
-        private readonly object @lock = new object();
         private readonly ReadOptions readOptions = new ReadOptions();
         private readonly WriteOptions writeOptions = new WriteOptions();
+        private readonly WriteOptions writeSyncOptions = new WriteOptions().SetSync(true);
 
-        public RocksDbStorage(string path)
+        public RocksDbStore(string path)
         {
             var options = new DbOptions().SetCreateIfMissing(true);
             var columnFamilies = GetColumnFamilies(path);
@@ -65,6 +65,18 @@ namespace NeoExpress.Neo3.Persistence
 
         ColumnFamilyHandle GetColumnFamily(byte table)
         {
+            if (columnFamilyCache.TryGetValue(table, out var columnFamily))
+            {
+                return columnFamily;
+            }
+
+            lock (columnFamilyCache) 
+            {
+                columnFamily = GetColumnFamilyFromDatabase();
+                columnFamilyCache.TryAdd(table, columnFamily);
+                return columnFamily;
+            }
+
             ColumnFamilyHandle GetColumnFamilyFromDatabase()
             {
                 var familyName = table.ToString();
@@ -77,41 +89,31 @@ namespace NeoExpress.Neo3.Persistence
                     return db.CreateColumnFamily(new ColumnFamilyOptions(), familyName);
                 }
             }
-
-            if (columnFamilyCache.TryGetValue(table, out var columnFamily))
-            {
-                return columnFamily;
-            }
-
-            lock (@lock) 
-            {
-                columnFamily = GetColumnFamilyFromDatabase();
-                columnFamilyCache.TryAdd(table, columnFamily);
-                return columnFamily;
-            }
         }
 
         public byte[]? TryGet(byte table, byte[]? key)
         {
-            key ??= Array.Empty<byte>();
-            return db.Get(key, GetColumnFamily(table), readOptions);
+            return db.Get(key ?? Array.Empty<byte>(), GetColumnFamily(table), readOptions);
         }
 
-        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[] prefix)
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[]? prefix)
         {
             return db.Find(prefix, GetColumnFamily(table), readOptions);
         }
         
         public void Put(byte table, byte[]? key, byte[] value)
         {
-            key ??= Array.Empty<byte>();
-            db.Put(key, value, GetColumnFamily(table), writeOptions);
+            db.Put(key ?? Array.Empty<byte>(), value, GetColumnFamily(table), writeOptions);
+        }
+
+        public void PutSync(byte table, byte[]? key, byte[] value)
+        {
+            db.Put(key ?? Array.Empty<byte>(), value, GetColumnFamily(table), writeSyncOptions);
         }
 
         public void Delete(byte table, byte[]? key)
         {
-            key ??= Array.Empty<byte>();
-            db.Remove(key, GetColumnFamily(table), writeOptions);
+            db.Remove(key ?? Array.Empty<byte>(), GetColumnFamily(table), writeOptions);
         }
     }
 }

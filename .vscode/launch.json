@@ -29,6 +29,19 @@
             "stopAtEntry": false
         },
         {
+            "name": "run",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/src/nxp3/bin/Debug/netcoreapp3.1/nxp3.dll",
+            "args": "run",
+            "cwd": "${workspaceFolder}/src/nxp3",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach",

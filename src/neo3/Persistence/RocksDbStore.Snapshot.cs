@@ -1,20 +1,20 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Neo.Persistence;
 using RocksDbSharp;
 
 namespace NeoExpress.Neo3.Persistence
 {
-    partial class RocksDbStorage
+    partial class RocksDbStore
     {
         class Snapshot : ISnapshot
         {
-            private readonly RocksDbStorage storage;
+            private readonly RocksDbStore storage;
             private readonly RocksDbSharp.Snapshot snapshot;
             private readonly ReadOptions readOptions;
             private readonly WriteBatch writeBatch;
 
-            public Snapshot(RocksDbStorage storage)
+            public Snapshot(RocksDbStore storage)
             {
                 this.storage = storage;
                 snapshot = storage.db.CreateSnapshot();
@@ -37,25 +37,22 @@ namespace NeoExpress.Neo3.Persistence
 
             public byte[] TryGet(byte table, byte[]? key)
             {
-                key ??= Array.Empty<byte>();
-                return storage.db.Get(key, storage.GetColumnFamily(table), readOptions);
+                return storage.db.Get(key ?? Array.Empty<byte>(), storage.GetColumnFamily(table), readOptions);
             }
 
-            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[] prefix)
+            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[]? prefix)
             {
                 return storage.db.Find(prefix, storage.GetColumnFamily(table), readOptions);
             }
 
             public void Put(byte table, byte[]? key, byte[] value)
             {
-                key ??= Array.Empty<byte>();
-                writeBatch.Put(key, value, storage.GetColumnFamily(table));
+                writeBatch.Put(key ?? Array.Empty<byte>(), value, storage.GetColumnFamily(table));
             }
 
             public void Delete(byte table, byte[]? key)
             {
-                key ??= Array.Empty<byte>();
-                writeBatch.Delete(key, storage.GetColumnFamily(table));
+                writeBatch.Delete(key ?? Array.Empty<byte>(), storage.GetColumnFamily(table));
             }
         }
     }

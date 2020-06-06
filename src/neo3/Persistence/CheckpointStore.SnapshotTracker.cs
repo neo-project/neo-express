@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -9,7 +9,7 @@ namespace NeoExpress.Neo3.Persistence
 {
     using TrackingDictionary = ImmutableDictionary<byte[], OneOf<byte[], OneOf.Types.None>>;
 
-    partial class CheckpointStorage
+    partial class CheckpointStore
     {
         class SnapshotTracker
         {
@@ -32,8 +32,7 @@ namespace NeoExpress.Neo3.Persistence
 
             public void Update(byte[]? key, OneOf<byte[], OneOf.Types.None> value)
             {
-                key ??= Array.Empty<byte>();
-                writeBatch[key] = value;
+                writeBatch[key ?? Array.Empty<byte>()] = value;
             }
 
             public void Commit()

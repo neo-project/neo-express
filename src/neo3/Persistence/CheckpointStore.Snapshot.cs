@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -7,7 +7,7 @@ using OneOf;
 
 namespace NeoExpress.Neo3.Persistence
 {
-    partial class CheckpointStorage
+    partial class CheckpointStore
     {
         class Snapshot : ISnapshot
         {
@@ -17,10 +17,7 @@ namespace NeoExpress.Neo3.Persistence
             {
                 foreach (var kvp in dataTrackers)
                 {
-                    if (!snapshotTrackers.TryAdd(kvp.Key, kvp.Value.GetSnapshot()))
-                    {
-                        throw new Exception();
-                    }
+                    snapshotTrackers.TryAdd(kvp.Key, kvp.Value.GetSnapshot());
                 }
             }
 
@@ -52,7 +49,7 @@ namespace NeoExpress.Neo3.Persistence
 
             public void Delete(byte table, byte[] key)
             {
-                GetSnapshotTracker(table).Update(key, CheckpointStorage.NONE_INSTANCE);
+                GetSnapshotTracker(table).Update(key, CheckpointStore.NONE_INSTANCE);
             }
         }
     }

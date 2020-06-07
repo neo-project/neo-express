@@ -42,7 +42,7 @@ namespace NeoExpress.Neo3.Persistence
 
             public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[]? prefix)
             {
-                return store.db.Find(prefix, store.GetColumnFamily(table), readOptions);
+                return RocksDbStore.Find(store.db, prefix, store.GetColumnFamily(table), readOptions);
             }
 
             public void Put(byte table, byte[]? key, byte[] value)

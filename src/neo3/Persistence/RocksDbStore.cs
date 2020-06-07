@@ -58,6 +58,12 @@ namespace NeoExpress.Neo3.Persistence
             }
         }
 
+        public void SaveCheckpoint(string path)
+        {
+            using var checkpoint = db.Checkpoint();
+            checkpoint.Save(path);
+        }
+
         static ColumnFamilies GetColumnFamilies(string path)
         {
             try
@@ -117,7 +123,7 @@ namespace NeoExpress.Neo3.Persistence
 
         IEnumerable<(byte[] Key, byte[] Value)> IReadOnlyStore.Find(byte table, byte[]? prefix)
         {
-            return db.Find(prefix, GetColumnFamily(table), readOptions);
+            return Find(db, prefix, GetColumnFamily(table), readOptions);
         }
         
         ISnapshot IStore.GetSnapshot() => readOnly 
@@ -140,6 +146,19 @@ namespace NeoExpress.Neo3.Persistence
         {
             if (readOnly) throw new InvalidOperationException();
             db.Remove(key ?? Array.Empty<byte>(), GetColumnFamily(table), writeOptions);
+        }
+
+        static IEnumerable<(byte[] key, byte[] value)> Find(RocksDb db, byte[]? prefix, ColumnFamilyHandle columnFamily, ReadOptions? readOptions = null)
+        {
+            prefix ??= Array.Empty<byte>();
+            using var iterator = db.NewIterator(columnFamily, readOptions);
+            for (iterator.Seek(prefix); iterator.Valid(); iterator.Next())
+            {
+                var key = iterator.Key();
+                if (key.Length < prefix.Length) break;
+                if (!key.AsSpan().StartsWith(prefix)) break;
+                yield return (key, iterator.Value());
+            }
         }
     }
 }

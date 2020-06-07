@@ -13,6 +13,6 @@ namespace NeoExpress.Neo3.Node
             this.path = path;
         }
 
-        public IStore GetStore() => new RocksDbStore(path);
+        public IStore GetStore() => RocksDbStore.Open(path);
     }
 }

@@ -10,21 +10,55 @@ namespace NeoExpress.Neo3.Persistence
 {
     partial class RocksDbStore : IStore
     {
+        private readonly bool readOnly;
         private readonly RocksDb db;
         private readonly ConcurrentDictionary<byte, ColumnFamilyHandle> columnFamilyCache;
         private readonly ReadOptions readOptions = new ReadOptions();
         private readonly WriteOptions writeOptions = new WriteOptions();
         private readonly WriteOptions writeSyncOptions = new WriteOptions().SetSync(true);
 
-        public RocksDbStore(string path)
+        public static IStore Open(string path)
         {
-            var options = new DbOptions().SetCreateIfMissing(true);
             var columnFamilies = GetColumnFamilies(path);
-            db = RocksDb.Open(options, path, columnFamilies);
-            columnFamilyCache = new ConcurrentDictionary<byte, ColumnFamilyHandle>(GetColumnFamilyCache(db, columnFamilies));
+            var db = RocksDb.Open(new DbOptions().SetCreateIfMissing(true), path, columnFamilies);
+            return new RocksDbStore(db, columnFamilies);
         }
 
-        internal static ColumnFamilies GetColumnFamilies(string path)
+        public static IReadOnlyStore OpenReadOnly(string path)
+        {
+            try
+            {
+                var columnFamilies = GetColumnFamilies(path);
+                var db = RocksDb.OpenReadOnly(new DbOptions(), path, columnFamilies, false);
+                return new RocksDbStore(db, columnFamilies, true);
+            }
+            catch (Exception)
+            {
+                return new NullReadOnlyStore();
+            }
+        }
+
+        RocksDbStore(RocksDb db, ColumnFamilies columnFamilies, bool readOnly = false)
+        {
+            this.readOnly = readOnly;
+            this.db = db;
+            this.columnFamilyCache = new ConcurrentDictionary<byte, ColumnFamilyHandle>(EnumerateColumnFamlies(db, columnFamilies));
+
+            static IEnumerable<KeyValuePair<byte, ColumnFamilyHandle>> EnumerateColumnFamlies(RocksDb db, ColumnFamilies columnFamilies)
+            {
+                foreach (var descriptor in columnFamilies)
+                {
+                    var name = descriptor.Name;
+                    if (byte.TryParse(descriptor.Name, out var key))
+                    {
+                        var value = db.GetColumnFamily(name);
+                        yield return KeyValuePair.Create(key, value);
+                    }
+                }
+            }
+        }
+
+        static ColumnFamilies GetColumnFamilies(string path)
         {
             try
             {
@@ -43,25 +77,10 @@ namespace NeoExpress.Neo3.Persistence
             }
         }
 
-        internal static IEnumerable<KeyValuePair<byte, ColumnFamilyHandle>> GetColumnFamilyCache(RocksDb db, ColumnFamilies columnFamilies)
-        {
-            foreach (var descriptor in columnFamilies)
-            {
-                var name = descriptor.Name;
-                if (byte.TryParse(descriptor.Name, out var key))
-                {
-                    var value = db.GetColumnFamily(name);
-                    yield return KeyValuePair.Create(key, value);
-                }
-            }
-        }
-
         public void Dispose()
         {
             db.Dispose();
         }
-
-        public ISnapshot GetSnapshot() => new Snapshot(this);
 
         ColumnFamilyHandle GetColumnFamily(byte table)
         {
@@ -91,28 +110,35 @@ namespace NeoExpress.Neo3.Persistence
             }
         }
 
-        public byte[]? TryGet(byte table, byte[]? key)
+        byte[]? IReadOnlyStore.TryGet(byte table, byte[]? key)
         {
             return db.Get(key ?? Array.Empty<byte>(), GetColumnFamily(table), readOptions);
         }
 
-        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[]? prefix)
+        IEnumerable<(byte[] Key, byte[] Value)> IReadOnlyStore.Find(byte table, byte[]? prefix)
         {
             return db.Find(prefix, GetColumnFamily(table), readOptions);
         }
         
-        public void Put(byte table, byte[]? key, byte[] value)
+        ISnapshot IStore.GetSnapshot() => readOnly 
+            ? throw new InvalidOperationException() 
+            : new Snapshot(this);
+
+        void IStore.Put(byte table, byte[]? key, byte[] value)
         {
+            if (readOnly) throw new InvalidOperationException();
             db.Put(key ?? Array.Empty<byte>(), value, GetColumnFamily(table), writeOptions);
         }
 
-        public void PutSync(byte table, byte[]? key, byte[] value)
+        void IStore.PutSync(byte table, byte[]? key, byte[] value)
         {
+            if (readOnly) throw new InvalidOperationException();
             db.Put(key ?? Array.Empty<byte>(), value, GetColumnFamily(table), writeSyncOptions);
         }
 
-        public void Delete(byte table, byte[]? key)
+        void IStore.Delete(byte table, byte[]? key)
         {
+            if (readOnly) throw new InvalidOperationException();
             db.Remove(key ?? Array.Empty<byte>(), GetColumnFamily(table), writeOptions);
         }
     }

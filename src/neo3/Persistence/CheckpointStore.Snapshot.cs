@@ -7,28 +7,21 @@ using OneOf;
 
 namespace NeoExpress.Neo3.Persistence
 {
+    using TrackingMap = ImmutableDictionary<byte[], OneOf<byte[], OneOf.Types.None>>;
+
     partial class CheckpointStore
     {
         class Snapshot : ISnapshot
         {
+            private readonly CheckpointStore store;
             private readonly ConcurrentDictionary<byte, SnapshotTracker> snapshotTrackers = new ConcurrentDictionary<byte, SnapshotTracker>();
 
-            public Snapshot(ConcurrentDictionary<byte, DataTracker> dataTrackers)
+            public Snapshot(CheckpointStore store)
             {
-                foreach (var kvp in dataTrackers)
+                this.store = store;
+                foreach (var kvp in store.dataTrackers)
                 {
                     snapshotTrackers.TryAdd(kvp.Key, kvp.Value.GetSnapshot());
-                }
-            }
-
-            SnapshotTracker GetSnapshotTracker(byte table) 
-                => snapshotTrackers.TryGetValue(table, out var tracker) ? tracker : throw new Exception();
-
-            public void Commit()
-            {
-                foreach (var tracker in snapshotTrackers.Values)
-                {
-                    tracker.Commit();
                 }
             }
 
@@ -36,20 +29,28 @@ namespace NeoExpress.Neo3.Persistence
             {
             }
 
+            SnapshotTracker GetSnapshotTracker(byte table) 
+                => snapshotTrackers.GetOrAdd(table, t => new SnapshotTracker(store.store, t, TrackingMap.Empty)); 
+
             public byte[]? TryGet(byte table, byte[]? key)
                 => GetSnapshotTracker(table).TryGet(key);
 
             public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[] prefix)
                 => GetSnapshotTracker(table).Find(prefix);
 
-            public void Put(byte table, byte[]? key, byte[] value)
-            {
-                GetSnapshotTracker(table).Update(key, value);
-            }
+            public void Put(byte table, byte[]? key, byte[] value) 
+                => GetSnapshotTracker(table).Update(key, value);
 
-            public void Delete(byte table, byte[] key)
+            public void Delete(byte table, byte[] key) 
+                => GetSnapshotTracker(table).Update(key, CheckpointStore.NONE_INSTANCE);
+
+            public void Commit()
             {
-                GetSnapshotTracker(table).Update(key, CheckpointStore.NONE_INSTANCE);
+                foreach (var kvp in snapshotTrackers)
+                {
+                    var tracker = store.GetDataTracker(kvp.Key);
+                    kvp.Value.Commit(tracker);
+                }
             }
         }
     }

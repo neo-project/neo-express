@@ -9,15 +9,15 @@ namespace NeoExpress.Neo3.Persistence
     {
         class Snapshot : ISnapshot
         {
-            private readonly RocksDbStore storage;
+            private readonly RocksDbStore store;
             private readonly RocksDbSharp.Snapshot snapshot;
             private readonly ReadOptions readOptions;
             private readonly WriteBatch writeBatch;
 
-            public Snapshot(RocksDbStore storage)
+            public Snapshot(RocksDbStore store)
             {
-                this.storage = storage;
-                snapshot = storage.db.CreateSnapshot();
+                this.store = store;
+                snapshot = store.db.CreateSnapshot();
                 readOptions = new ReadOptions()
                     .SetSnapshot(snapshot)
                     .SetFillCache(false);
@@ -32,27 +32,27 @@ namespace NeoExpress.Neo3.Persistence
 
             public void Commit()
             {
-                storage.db.Write(writeBatch);
+                store.db.Write(writeBatch);
             }
 
             public byte[] TryGet(byte table, byte[]? key)
             {
-                return storage.db.Get(key ?? Array.Empty<byte>(), storage.GetColumnFamily(table), readOptions);
+                return store.db.Get(key ?? Array.Empty<byte>(), store.GetColumnFamily(table), readOptions);
             }
 
             public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[]? prefix)
             {
-                return storage.db.Find(prefix, storage.GetColumnFamily(table), readOptions);
+                return store.db.Find(prefix, store.GetColumnFamily(table), readOptions);
             }
 
             public void Put(byte table, byte[]? key, byte[] value)
             {
-                writeBatch.Put(key ?? Array.Empty<byte>(), value, storage.GetColumnFamily(table));
+                writeBatch.Put(key ?? Array.Empty<byte>(), value, store.GetColumnFamily(table));
             }
 
             public void Delete(byte table, byte[]? key)
             {
-                writeBatch.Delete(key ?? Array.Empty<byte>(), storage.GetColumnFamily(table));
+                writeBatch.Delete(key ?? Array.Empty<byte>(), store.GetColumnFamily(table));
             }
         }
     }

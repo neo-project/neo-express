@@ -167,7 +167,7 @@ namespace NeoExpress.Neo3
             // can detect if blockchain is running automatically
             using var mutex = new Mutex(true, account.Address);
 
-            var storagePlugin = new RocksDbStoragePlugin(folder);
+            var storagePlugin = new RocksDbStorePlugin(folder);
             return NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
         }
 

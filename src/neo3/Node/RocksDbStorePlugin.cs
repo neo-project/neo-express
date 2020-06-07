@@ -1,14 +1,14 @@
-using Neo.Persistence;
+﻿using Neo.Persistence;
 using Neo.Plugins;
 using NeoExpress.Neo3.Persistence;
 
 namespace NeoExpress.Neo3.Node
 {
-    class RocksDbStoragePlugin : Plugin, IStoragePlugin
+    class RocksDbStorePlugin : Plugin, IStoragePlugin
     {
         private readonly string path;
 
-        public RocksDbStoragePlugin(string path)
+        public RocksDbStorePlugin(string path)
         {
             this.path = path;
         }

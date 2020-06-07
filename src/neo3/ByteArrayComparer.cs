@@ -4,8 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace NeoExpress.Neo3
 {
-    internal class ByteArrayComparer : IEqualityComparer<byte[]>
+    class ByteArrayComparer : IEqualityComparer<byte[]>
     {
+        static Lazy<ByteArrayComparer> defaultComparer = new Lazy<ByteArrayComparer>(() => new ByteArrayComparer());
+        public static ByteArrayComparer Default => defaultComparer.Value;
+
         public bool Equals([AllowNull] byte[] x, [AllowNull] byte[] y)
         {
             if (x == null && y == null)

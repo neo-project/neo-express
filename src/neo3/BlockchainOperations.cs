@@ -172,7 +172,7 @@ namespace NeoExpress.Neo3
             await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
         }
 
-        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter @out, CancellationToken cancellationToken)
+        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
             string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -197,8 +197,8 @@ namespace NeoExpress.Neo3
                 // can detect if blockchain is running automatically
                 using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
-                var storagePlugin = new RocksDbStorePlugin(checkpointTempPath);
-                await NodeUtility.RunAsync(storagePlugin.Name, node, @out, cancellationToken);
+                var storagePlugin = new CheckpointStorePlugin(checkpointTempPath);
+                await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
             }
             finally
             {
@@ -209,7 +209,7 @@ namespace NeoExpress.Neo3
             }
         }
 
-        public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter @out)
+        public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)
         {
             static bool NodeRunning(ExpressConsensusNode node)
             {
@@ -242,22 +242,21 @@ namespace NeoExpress.Neo3
 
             if (NodeRunning(node))
             {
-                await Task.Delay(0);
-                throw new Exception("checkpoint while running not implemented yet");
-                // var uri = chain.GetUri();
-                // await NeoRpcClient.ExpressCreateCheckpoint(uri, checkPointFileName)
-                //     .ConfigureAwait(false);
-                // writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
+                var uri = chain.GetUri();
+                var rpcClient = new RpcClient(uri.ToString());
+                await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName);
+                writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
             }
             else 
             {
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
                 using var db = RocksDbStore.Open(folder);
                 CreateCheckpoint(db, checkPointFileName, chain.Magic, multiSigAccount);
-                @out.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
+                writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
             }
         }
 
+        internal 
         void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, ExpressWalletAccount account)
         {
             string tempPath;

@@ -1,10 +1,12 @@
-﻿using NeoExpress.Abstractions;
+﻿using Neo.Network.RPC;
+using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Neo3
 {
@@ -66,5 +68,19 @@ namespace NeoExpress.Neo3
 
         public static bool IsMultiSigContract(this Neo.Wallets.WalletAccount account)
             => Neo.SmartContract.Helper.IsMultiSigContract(account.Contract.Script);
+
+        public static async Task<Neo.IO.Json.JObject> RpcSendAsync(this RpcClient @this, string method, params Neo.IO.Json.JObject[] paraArgs)
+        {
+            var request = new Neo.Network.RPC.Models.RpcRequest
+            {
+                Id = 1,
+                JsonRpc = "2.0",
+                Method = method,
+                Params = paraArgs
+            };
+
+            var response = await @this.SendAsync(request);
+            return response.Result;
+        }
     }
 }

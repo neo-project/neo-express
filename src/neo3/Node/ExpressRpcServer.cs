@@ -1,12 +1,22 @@
+using System;
 using Neo;
 using Neo.IO.Json;
 using Neo.Ledger;
+using Neo.Persistence;
 using Neo.Plugins;
+using NeoExpress.Abstractions.Models;
 
 namespace NeoExpress.Neo3.Node
 {
     class ExpressRpcServer
     {
+        private readonly ExpressWalletAccount multiSigAccount;
+
+        public ExpressRpcServer(ExpressWalletAccount multiSigAccount)
+        {
+            this.multiSigAccount = multiSigAccount;
+        }
+
         [RpcMethod]
         private JObject? ExpressGetContractStorage(JArray @params)
         {
@@ -28,5 +38,33 @@ namespace NeoExpress.Neo3.Node
             }
             return storages;
         }
+
+        [RpcMethod]
+        public JObject? ExpressCreateCheckpoint(JArray @params)
+        {
+            string filename = @params[0].AsString();
+
+            if (ProtocolSettings.Default.StandbyValidators.Length > 1)
+            {
+                throw new Exception("Checkpoint create is only supported on single node express instances");
+            }
+
+            if (Blockchain.Singleton.Store is Persistence.RocksDbStore rocksDbStore)
+            {
+                var blockchainOperations = new BlockchainOperations();
+                blockchainOperations.CreateCheckpoint(
+                    rocksDbStore,
+                    filename,
+                    ProtocolSettings.Default.Magic,
+                    multiSigAccount);
+
+                return filename;
+            }
+            else
+            {
+                throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
+            }
+        }
+
     }
 }

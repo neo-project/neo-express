@@ -18,13 +18,8 @@ namespace nxp3.Commands
         [Option]
         private uint SecondsPerBlock { get; }
 
-        // [Option]
-        // private bool Reset { get; } = false;
-
-        // [Option]
-        // private bool Discard { get; } = false;
-
-        // TODO: Discard and Reset support
+        [Option]
+        private bool Discard { get; } = false;
 
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
@@ -44,6 +39,7 @@ namespace nxp3.Commands
                 await blockchainOperations.RunBlockchainAsync(chain,
                                                             NodeIndex,
                                                             SecondsPerBlock,
+                                                            Discard,
                                                             console.Out,
                                                             cts.Token)
                     .ConfigureAwait(false);

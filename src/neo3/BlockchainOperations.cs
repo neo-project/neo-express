@@ -10,6 +10,7 @@ using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
 using NeoExpress.Neo3.Node;
+using NeoExpress.Neo3.Persistence;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -139,7 +140,7 @@ namespace NeoExpress.Neo3
             return wallet.ToExpressWallet();
         }
 
-        public Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, TextWriter writer, CancellationToken cancellationToken)
         {
             if (index >= chain.ConsensusNodes.Count)
             {
@@ -155,9 +156,6 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var wallet = DevWallet.FromExpressWallet(node.Wallet);
-            var account = wallet.GetAccounts().Single(a => a.IsMultiSigContract());
-
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
@@ -165,30 +163,220 @@ namespace NeoExpress.Neo3
 
             // create a named mutex so that checkpoint create command
             // can detect if blockchain is running automatically
-            using var mutex = new Mutex(true, account.Address);
+            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
-            var storagePlugin = new RocksDbStorePlugin(folder);
-            return NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
+            var storagePlugin = discard 
+                ? (Neo.Plugins.Plugin)new CheckpointStorePlugin(folder) 
+                : (Neo.Plugins.Plugin)new RocksDbStorePlugin(folder);
+            await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
         }
 
-        public Task RunCheckpointAsync(ExpressChain chain, string filename, uint secondsPerBlock, TextWriter @out, CancellationToken token)
+        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter @out, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
+                {
+                    throw new Exception("could not initialize protocol settings");
+                }
+
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+                }
+
+                var node = chain.ConsensusNodes[0];
+                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+
+                System.IO.Compression.ZipFile.ExtractToDirectory(checkPointArchive, checkpointTempPath);
+                ValidateCheckpoint(checkpointTempPath, chain.Magic, multiSigAccount);
+
+                // create a named mutex so that checkpoint create command
+                // can detect if blockchain is running automatically
+                using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
+
+                var storagePlugin = new RocksDbStorePlugin(checkpointTempPath);
+                await NodeUtility.RunAsync(storagePlugin.Name, node, @out, cancellationToken);
+            }
+            finally
+            {
+                if (Directory.Exists(checkpointTempPath))
+                {
+                    Directory.Delete(checkpointTempPath, true);
+                }
+            }
         }
 
-        public Task CreateCheckpoint(ExpressChain chain, object filename, TextWriter @out)
+        public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter @out)
         {
-            throw new NotImplementedException();
+            static bool NodeRunning(ExpressConsensusNode node)
+            {
+                // Check to see if there's a neo-express blockchain currently running
+                // by attempting to open a mutex with the multisig account address for 
+                // a name. If so, do an online checkpoint instead of offline.
+
+                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+
+                if (Mutex.TryOpenExisting(multiSigAccount.ScriptHash, out var _))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            if (File.Exists(checkPointFileName))
+            {
+                throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
+            }
+
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            var folder = node.GetBlockchainPath();
+
+            if (NodeRunning(node))
+            {
+                await Task.Delay(0);
+                throw new Exception("checkpoint while running not implemented yet");
+                // var uri = chain.GetUri();
+                // await NeoRpcClient.ExpressCreateCheckpoint(uri, checkPointFileName)
+                //     .ConfigureAwait(false);
+                // writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
+            }
+            else 
+            {
+                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+                using var db = RocksDbStore.Open(folder);
+                CreateCheckpoint(db, checkPointFileName, chain.Magic, multiSigAccount);
+                @out.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
+            }
         }
 
-        public string ResolveCheckpointFileName(string name)
+        void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, ExpressWalletAccount account)
         {
-            throw new NotImplementedException();
+            string tempPath;
+            do
+            {
+                tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            }
+            while (Directory.Exists(tempPath));
+
+            Console.WriteLine(tempPath);
+            try
+            {
+                db.SaveCheckpoint(tempPath);
+
+                using (var stream = File.OpenWrite(GetAddressFilePath(tempPath)))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.WriteLine(magic);
+                    writer.WriteLine(account.ScriptHash);
+                }
+
+                if (File.Exists(checkPointFileName))
+                {
+                    throw new InvalidOperationException(checkPointFileName + " checkpoint file already exists");
+                }
+                System.IO.Compression.ZipFile.CreateFromDirectory(tempPath, checkPointFileName);
+            }
+            finally
+            {
+                Directory.Delete(tempPath, true);
+            }
         }
 
-        public void RestoreCheckpoint(ExpressChain chain, string filename, bool force)
+        private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
+        private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
+
+        private static string GetAddressFilePath(string directory) =>
+            Path.Combine(directory, ADDRESS_FILENAME);
+
+        public string ResolveCheckpointFileName(string checkPointFileName)
         {
-            throw new NotImplementedException();
+            checkPointFileName = string.IsNullOrEmpty(checkPointFileName)
+                ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}{CHECKPOINT_EXTENSION}"
+                : checkPointFileName;
+
+            if (!Path.GetExtension(checkPointFileName).Equals(CHECKPOINT_EXTENSION))
+            {
+                checkPointFileName = checkPointFileName + CHECKPOINT_EXTENSION;
+            }
+
+            return Path.GetFullPath(checkPointFileName);
+        }
+
+        public void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force)
+        {
+            string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+            try
+            {
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+                }
+
+                var node = chain.ConsensusNodes[0];
+                var blockchainDataPath = node.GetBlockchainPath();
+
+                if (!force && Directory.Exists(blockchainDataPath))
+                {
+                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+                }
+
+                System.IO.Compression.ZipFile.ExtractToDirectory(checkPointArchive, checkpointTempPath);
+                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+                ValidateCheckpoint(checkpointTempPath, chain.Magic, multiSigAccount);
+
+                var addressFile = GetAddressFilePath(checkpointTempPath);
+                if (File.Exists(addressFile))
+                {
+                    File.Delete(addressFile);
+                }
+
+                if (Directory.Exists(blockchainDataPath))
+                {
+                    Directory.Delete(blockchainDataPath, true);
+                }
+
+                Directory.Move(checkpointTempPath, blockchainDataPath);
+            }
+            finally
+            {
+                if (Directory.Exists(checkpointTempPath))
+                {
+                    Directory.Delete(checkpointTempPath, true);
+                }
+            }
+        }
+
+        static void ValidateCheckpoint(string checkPointDirectory, long magic, ExpressWalletAccount account)
+        {
+            var addressFile = GetAddressFilePath(checkPointDirectory);
+            if (!File.Exists(addressFile))
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
+
+            long checkPointMagic;
+            string scriptHash;
+            using (var stream = File.OpenRead(addressFile))
+            using (var reader = new StreamReader(stream))
+            {
+                checkPointMagic = long.Parse(reader.ReadLine() ?? string.Empty);
+                scriptHash = reader.ReadLine() ?? string.Empty;
+            }
+
+            if (magic != checkPointMagic || scriptHash != account.ScriptHash)
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
         }
 
         static IEnumerable<ExpressWalletAccount> GetMultiSigAccounts(ExpressChain chain, string scriptHash)

@@ -17,25 +17,18 @@ namespace NeoExpress.Neo3.Persistence
         private readonly WriteOptions writeOptions = new WriteOptions();
         private readonly WriteOptions writeSyncOptions = new WriteOptions().SetSync(true);
 
-        public static IStore Open(string path)
+        public static RocksDbStore Open(string path)
         {
             var columnFamilies = GetColumnFamilies(path);
             var db = RocksDb.Open(new DbOptions().SetCreateIfMissing(true), path, columnFamilies);
             return new RocksDbStore(db, columnFamilies);
         }
 
-        public static IReadOnlyStore OpenReadOnly(string path)
+        public static RocksDbStore OpenReadOnly(string path)
         {
-            try
-            {
-                var columnFamilies = GetColumnFamilies(path);
-                var db = RocksDb.OpenReadOnly(new DbOptions(), path, columnFamilies, false);
-                return new RocksDbStore(db, columnFamilies, true);
-            }
-            catch (Exception)
-            {
-                return new NullReadOnlyStore();
-            }
+            var columnFamilies = GetColumnFamilies(path);
+            var db = RocksDb.OpenReadOnly(new DbOptions(), path, columnFamilies, false);
+            return new RocksDbStore(db, columnFamilies, true);
         }
 
         RocksDbStore(RocksDb db, ColumnFamilies columnFamilies, bool readOnly = false)

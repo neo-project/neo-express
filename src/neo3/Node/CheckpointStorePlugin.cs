@@ -1,4 +1,5 @@
-﻿using Neo.Persistence;
+﻿using System;
+using Neo.Persistence;
 using Neo.Plugins;
 using NeoExpress.Neo3.Persistence;
 
@@ -13,7 +14,19 @@ namespace NeoExpress.Neo3.Node
             this.path = path;
         }
 
-        public IStore GetStore() 
-            => new CheckpointStore(RocksDbStore.OpenReadOnly(path));
+        IReadOnlyStore GetReadOnlyStore()
+        {
+            try
+            {
+                return RocksDbStore.OpenReadOnly(path);
+            }            
+            catch (Exception)
+            {
+                return new NullReadOnlyStore();
+            }
+        }
+
+        public IStore GetStore()
+            => new CheckpointStore(GetReadOnlyStore());
     }
 }

@@ -47,8 +47,25 @@ namespace NeoExpress.Neo3
             return chain;
         }
 
+        private static char GetHexValue(int i) {
+            if (i<10) {
+                return (char)(i + '0');
+            }
+    
+            return (char)(i - 10 + 'A');
+        }
+
+        public byte[] ToScriptHashByteArray(ExpressWalletAccount account)
+        {
+            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+            return devAccount.ScriptHash.ToArray();
+        }
+
         public void ResetNode(ExpressChain chain, int index)
         {
+            Console.WriteLine(Neo.SmartContract.Native.NativeContract.NEO.Hash);
+            Console.WriteLine(
+                BitConverter.ToString(Neo.SmartContract.Native.NativeContract.NEO.Hash.ToArray()));
             if (index >= chain.ConsensusNodes.Count)
             {
                 throw new ArgumentException(nameof(index));

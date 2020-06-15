@@ -3,7 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 namespace nxp3.Commands
 {
     [Command("wallet")]
-    [Subcommand(typeof(Create))]
+    [Subcommand(typeof(Create), typeof(List))]
     partial class WalletCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)

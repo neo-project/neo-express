@@ -7,11 +7,6 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Node\ExpressNodeRpcPlugin.cs"/>
-    <Compile Remove="NeoRpcClient.cs"/>
-    <Compile Remove="RpcTransactionManager.cs"/>
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
     <PackageReference Include="OneOf" Version="2.1.151"/>
     <PackageReference Include="RocksDB" Version="6.8.1.7680"/>

@@ -191,7 +191,13 @@ namespace NeoExpress.Neo3
 
         public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
         {
-            string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string checkpointTempPath;
+            do
+            {
+                checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            }
+            while (Directory.Exists(checkpointTempPath));
+
             try
             {
                 if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
@@ -206,9 +212,7 @@ namespace NeoExpress.Neo3
 
                 var node = chain.ConsensusNodes[0];
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-
-                System.IO.Compression.ZipFile.ExtractToDirectory(checkPointArchive, checkpointTempPath);
-                ValidateCheckpoint(checkpointTempPath, chain.Magic, multiSigAccount);
+                RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
 
                 // create a named mutex so that checkpoint create command
                 // can detect if blockchain is running automatically
@@ -268,44 +272,11 @@ namespace NeoExpress.Neo3
             {
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
                 using var db = RocksDbStore.Open(folder);
-                CreateCheckpoint(db, checkPointFileName, chain.Magic, multiSigAccount);
+                db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
                 writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
             }
         }
 
-        internal 
-        void CreateCheckpoint(RocksDbStore db, string checkPointFileName, long magic, ExpressWalletAccount account)
-        {
-            string tempPath;
-            do
-            {
-                tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            }
-            while (Directory.Exists(tempPath));
-
-            Console.WriteLine(tempPath);
-            try
-            {
-                db.SaveCheckpoint(tempPath);
-
-                using (var stream = File.OpenWrite(GetAddressFilePath(tempPath)))
-                using (var writer = new StreamWriter(stream))
-                {
-                    writer.WriteLine(magic);
-                    writer.WriteLine(account.ScriptHash);
-                }
-
-                if (File.Exists(checkPointFileName))
-                {
-                    throw new InvalidOperationException(checkPointFileName + " checkpoint file already exists");
-                }
-                System.IO.Compression.ZipFile.CreateFromDirectory(tempPath, checkPointFileName);
-            }
-            finally
-            {
-                Directory.Delete(tempPath, true);
-            }
-        }
 
         private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
         private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
@@ -339,6 +310,7 @@ namespace NeoExpress.Neo3
                 }
 
                 var node = chain.ConsensusNodes[0];
+                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
                 var blockchainDataPath = node.GetBlockchainPath();
 
                 if (!force && Directory.Exists(blockchainDataPath))
@@ -346,15 +318,7 @@ namespace NeoExpress.Neo3
                     throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
                 }
 
-                System.IO.Compression.ZipFile.ExtractToDirectory(checkPointArchive, checkpointTempPath);
-                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-                ValidateCheckpoint(checkpointTempPath, chain.Magic, multiSigAccount);
-
-                var addressFile = GetAddressFilePath(checkpointTempPath);
-                if (File.Exists(addressFile))
-                {
-                    File.Delete(addressFile);
-                }
+                RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
 
                 if (Directory.Exists(blockchainDataPath))
                 {
@@ -369,29 +333,6 @@ namespace NeoExpress.Neo3
                 {
                     Directory.Delete(checkpointTempPath, true);
                 }
-            }
-        }
-
-        static void ValidateCheckpoint(string checkPointDirectory, long magic, ExpressWalletAccount account)
-        {
-            var addressFile = GetAddressFilePath(checkPointDirectory);
-            if (!File.Exists(addressFile))
-            {
-                throw new Exception("Invalid Checkpoint");
-            }
-
-            long checkPointMagic;
-            string scriptHash;
-            using (var stream = File.OpenRead(addressFile))
-            using (var reader = new StreamReader(stream))
-            {
-                checkPointMagic = long.Parse(reader.ReadLine() ?? string.Empty);
-                scriptHash = reader.ReadLine() ?? string.Empty;
-            }
-
-            if (magic != checkPointMagic || scriptHash != account.ScriptHash)
-            {
-                throw new Exception("Invalid Checkpoint");
             }
         }
 

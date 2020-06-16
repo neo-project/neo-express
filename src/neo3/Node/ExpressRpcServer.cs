@@ -5,6 +5,7 @@ using Neo.Ledger;
 using Neo.Persistence;
 using Neo.Plugins;
 using NeoExpress.Abstractions.Models;
+using NeoExpress.Neo3.Persistence;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -52,11 +53,10 @@ namespace NeoExpress.Neo3.Node
             if (Blockchain.Singleton.Store is Persistence.RocksDbStore rocksDbStore)
             {
                 var blockchainOperations = new BlockchainOperations();
-                blockchainOperations.CreateCheckpoint(
-                    rocksDbStore,
+                rocksDbStore.CreateCheckpoint(
                     filename,
                     ProtocolSettings.Default.Magic,
-                    multiSigAccount);
+                    multiSigAccount.ScriptHash);
 
                 return filename;
             }

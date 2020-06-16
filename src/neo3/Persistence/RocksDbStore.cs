@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using Neo.Persistence;
@@ -8,7 +10,7 @@ using RocksDbSharp;
 
 namespace NeoExpress.Neo3.Persistence
 {
-    partial class RocksDbStore : IStore
+    public partial class RocksDbStore : IStore
     {
         private readonly bool readOnly;
         private readonly RocksDb db;
@@ -51,10 +53,76 @@ namespace NeoExpress.Neo3.Persistence
             }
         }
 
-        public void SaveCheckpoint(string path)
+        private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
+
+        private static string GetAddressFilePath(string directory) =>
+            Path.Combine(directory, ADDRESS_FILENAME);
+
+        public void CreateCheckpoint(string checkPointFileName, long magic, string scriptHash)
         {
-            using var checkpoint = db.Checkpoint();
-            checkpoint.Save(path);
+            if (File.Exists(checkPointFileName))
+            {
+                throw new ArgumentException("checkpoint file already exists", nameof(checkPointFileName));
+            }
+
+            string tempPath;
+            do
+            {
+                tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            }
+            while (Directory.Exists(tempPath));
+
+            try
+            {
+                {
+                    using var checkpoint = db.Checkpoint();
+                    checkpoint.Save(tempPath);
+                }
+
+                {
+                    using var stream = File.OpenWrite(GetAddressFilePath(tempPath));
+                    using var writer = new StreamWriter(stream);
+                    writer.WriteLine(magic);
+                    writer.WriteLine(scriptHash);
+                }
+
+                ZipFile.CreateFromDirectory(tempPath, checkPointFileName);
+            }
+            finally
+            {
+                Directory.Delete(tempPath, true);
+            }
+        }
+
+        public static void RestoreCheckpoint(string checkPointArchive, string restorePath, long magic, string scriptHash)
+        {
+            ZipFile.ExtractToDirectory(checkPointArchive, restorePath);
+            var addressFile = ValidateCheckpoint(restorePath, magic, scriptHash);
+            if (File.Exists(addressFile))
+            {
+                File.Delete(addressFile);
+            }
+        }
+
+        static string ValidateCheckpoint(string checkPointDirectory, long magic, string scriptHash)
+        {
+            var addressFile = GetAddressFilePath(checkPointDirectory);
+            if (!File.Exists(addressFile))
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
+
+            using var stream = File.OpenRead(addressFile);
+            using var reader = new StreamReader(stream);
+            var checkPointMagic = long.Parse(reader.ReadLine() ?? string.Empty);
+            var checkPointScriptHash = reader.ReadLine() ?? string.Empty;
+
+            if (magic != checkPointMagic || scriptHash != checkPointScriptHash)
+            {
+                throw new Exception("Invalid Checkpoint");
+            }
+            
+            return addressFile;
         }
 
         static ColumnFamilies GetColumnFamilies(string path)

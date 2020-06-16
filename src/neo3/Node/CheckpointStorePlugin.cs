@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Neo.Persistence;
 using Neo.Plugins;
 using NeoExpress.Neo3.Persistence;
@@ -28,5 +30,13 @@ namespace NeoExpress.Neo3.Node
 
         public IStore GetStore()
             => new CheckpointStore(GetReadOnlyStore());
+
+        class NullReadOnlyStore : IReadOnlyStore
+        {
+            IEnumerable<(byte[] Key, byte[] Value)> IReadOnlyStore.Find(byte table, byte[]? prefix) 
+                => Enumerable.Empty<(byte[] Key, byte[] Value)>();
+
+            byte[]? IReadOnlyStore.TryGet(byte table, byte[]? key) => null;
+        }
     }
 }

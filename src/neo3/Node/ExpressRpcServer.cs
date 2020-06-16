@@ -2,10 +2,9 @@ using System;
 using Neo;
 using Neo.IO.Json;
 using Neo.Ledger;
-using Neo.Persistence;
+using Neo.Seattle.Persistence;
 using Neo.Plugins;
 using NeoExpress.Abstractions.Models;
-using NeoExpress.Neo3.Persistence;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -50,7 +49,7 @@ namespace NeoExpress.Neo3.Node
                 throw new Exception("Checkpoint create is only supported on single node express instances");
             }
 
-            if (Blockchain.Singleton.Store is Persistence.RocksDbStore rocksDbStore)
+            if (Blockchain.Singleton.Store is RocksDbStore rocksDbStore)
             {
                 var blockchainOperations = new BlockchainOperations();
                 rocksDbStore.CreateCheckpoint(

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo.Persistence;
 using Neo.Plugins;
-using NeoExpress.Neo3.Persistence;
+using Neo.Seattle.Persistence;
 
 namespace NeoExpress.Neo3.Node
 {

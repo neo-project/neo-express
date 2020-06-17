@@ -13,6 +13,7 @@ using NeoExpress.Neo3.Models;
 using NeoExpress.Neo3.Node;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Nito.Disposables;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -183,10 +184,37 @@ namespace NeoExpress.Neo3
             var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
             using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
-            var storagePlugin = discard 
-                ? (Neo.Plugins.Plugin)new CheckpointStorePlugin(folder) 
-                : (Neo.Plugins.Plugin)new RocksDbStorePlugin(folder);
+            using var store = GetStore();
+            var storagePlugin = new ExpressStoragePlugin(store);
             await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
+
+            Neo.Persistence.IStore GetStore()
+            {
+                if (discard)
+                {
+                    try 
+                    {
+                        var roStore = RocksDbStore.OpenReadOnly(folder);
+                        return new CheckpointStore(roStore);
+                    }
+                    catch
+                    {
+                        return new CheckpointStore(new NullReadOnlyStore());
+                    }
+                }
+                else
+                {
+                    return RocksDbStore.Open(folder);
+                }
+            }
+        }
+
+        class NullReadOnlyStore : Neo.Persistence.IReadOnlyStore
+        {
+            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[]? prefix) 
+                => Enumerable.Empty<(byte[] Key, byte[] Value)>();
+
+            public byte[]? TryGet(byte table, byte[]? key) => null;
         }
 
         public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
@@ -198,36 +226,33 @@ namespace NeoExpress.Neo3
             }
             while (Directory.Exists(checkpointTempPath));
 
-            try
+            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
             {
-                if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-                {
-                    throw new Exception("could not initialize protocol settings");
-                }
-
-                if (chain.ConsensusNodes.Count != 1)
-                {
-                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-                }
-
-                var node = chain.ConsensusNodes[0];
-                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-                RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
-
-                // create a named mutex so that checkpoint create command
-                // can detect if blockchain is running automatically
-                using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
-
-                var storagePlugin = new CheckpointStorePlugin(checkpointTempPath);
-                await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
+                throw new Exception("could not initialize protocol settings");
             }
-            finally
+
+            if (chain.ConsensusNodes.Count != 1)
             {
+                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+
+            // create a named mutex so that checkpoint create command
+            // can detect if blockchain is running automatically
+            using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
+            using var folderCleanup = AnonymousDisposable.Create(() => {
                 if (Directory.Exists(checkpointTempPath))
                 {
                     Directory.Delete(checkpointTempPath, true);
                 }
-            }
+            });
+            using var roStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
+            using var store = new CheckpointStore(roStore); 
+            var storagePlugin = new ExpressStoragePlugin(store);
+            await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
         }
 
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)

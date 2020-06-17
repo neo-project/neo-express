@@ -193,8 +193,8 @@ namespace NeoExpress.Neo3
                 {
                     try 
                     {
-                        var roStore = RocksDbStore.OpenReadOnly(folder);
-                        return new CheckpointStore(roStore);
+                        var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
+                        return new CheckpointStore(rocksDbStore);
                     }
                     catch
                     {
@@ -225,6 +225,13 @@ namespace NeoExpress.Neo3
             }
             while (Directory.Exists(checkpointTempPath));
 
+            using var folderCleanup = AnonymousDisposable.Create(() => {
+                if (Directory.Exists(checkpointTempPath))
+                {
+                    Directory.Delete(checkpointTempPath, true);
+                }
+            });
+
             if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
@@ -242,15 +249,10 @@ namespace NeoExpress.Neo3
             // create a named mutex so that checkpoint create command
             // can detect if blockchain is running automatically
             using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
-            using var folderCleanup = AnonymousDisposable.Create(() => {
-                if (Directory.Exists(checkpointTempPath))
-                {
-                    Directory.Delete(checkpointTempPath, true);
-                }
-            });
-            using var roStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
-            using var store = new CheckpointStore(roStore); 
-            await NodeUtility.RunAsync(store, node, writer, cancellationToken);
+
+            using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
+            using var checkpointStore = new CheckpointStore(rocksDbStore); 
+            await NodeUtility.RunAsync(checkpointStore, node, writer, cancellationToken);
         }
 
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)

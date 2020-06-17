@@ -185,8 +185,7 @@ namespace NeoExpress.Neo3
             using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
             using var store = GetStore();
-            var storagePlugin = new ExpressStoragePlugin(store);
-            await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
+            await NodeUtility.RunAsync(store, node, writer, cancellationToken);
 
             Neo.Persistence.IStore GetStore()
             {
@@ -251,8 +250,7 @@ namespace NeoExpress.Neo3
             });
             using var roStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
             using var store = new CheckpointStore(roStore); 
-            var storagePlugin = new ExpressStoragePlugin(store);
-            await NodeUtility.RunAsync(storagePlugin.Name, node, writer, cancellationToken);
+            await NodeUtility.RunAsync(store, node, writer, cancellationToken);
         }
 
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)

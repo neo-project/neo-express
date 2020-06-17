@@ -63,9 +63,9 @@ namespace NeoExpress.Neo3.Node
             return ProtocolSettings.Initialize(config);
         }
 
-        public static Task RunAsync(string storageEngine, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        public static Task RunAsync(IStore store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
         {
-            writer.WriteLine(storageEngine);
+            writer.WriteLine(store.GetType().Name);
 
             var tcs = new TaskCompletionSource<bool>();
 
@@ -77,8 +77,9 @@ namespace NeoExpress.Neo3.Node
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
                     var logPlugin = new LogPlugin(writer);
+                    var storagePlugin = new ExpressStoragePlugin(store);
 
-                    using var system = new NeoSystem(storageEngine);
+                    using var system = new NeoSystem(storagePlugin.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
                     var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
                     var expressRpcServer = new ExpressRpcServer(multiSigAccount);
@@ -100,10 +101,6 @@ namespace NeoExpress.Neo3.Node
                 }
                 finally
                 {
-                    // if (store is IDisposable disposable)
-                    // {
-                    //     disposable.Dispose();
-                    // }
                     tcs.TrySetResult(true);
                 }
             });

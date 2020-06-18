@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>neo-express</AssemblyName>
+    <AssemblyName>nxp3</AssemblyName>
     <Authors>Neo Global Development Seattle</Authors>
     <Company>The Neo Project</Company>
     <Copyright>2015-2020 The Neo Project</Copyright>
@@ -21,6 +21,10 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.6.0" />

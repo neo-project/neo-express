@@ -1,9 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AssemblyName>neo-express</AssemblyName>
+    <Authors>Neo Global Development Seattle</Authors>
+    <Company>The Neo Project</Company>
+    <Copyright>2015-2020 The Neo Project</Copyright>
+    <Description>neo-express is a Neo developer blockchain tool</Description>
     <LangVersion>8</LangVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
+    <PackageIcon>neo-logo-72.png</PackageIcon>
+    <PackageId>Neo.Express3</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
+    <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>
+    <PackAsTool>true</PackAsTool>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
+    <RootNamespace>NeoExpress</RootNamespace>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>

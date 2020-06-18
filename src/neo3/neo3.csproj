@@ -7,16 +7,16 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Neo" Version="3.0.0-preview2-00" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-preview2" />
+    <PackageReference Include="Neo.Network.RPC.RpcServer" Version="3.0.0-preview2" />
+    <PackageReference Include="Neo.Seattle.Persistence" Version="0.1.17-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
+    <PackageReference Include="Nito.Disposables" Version="2.1.0"/>
     <PackageReference Include="OneOf" Version="2.1.151"/>
     <PackageReference Include="RocksDB" Version="6.8.1.7680"/>
-    <PackageReference Include="Nito.Disposables" Version="2.1.0"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\abstractions\abstractions.csproj"/>
-    <ProjectReference Include="..\..\..\..\official\neo3\core\src\neo\neo.csproj"/>
-    <ProjectReference Include="..\..\..\..\official\neo3\modules\src\RpcClient\RpcClient.csproj"/>
-    <ProjectReference Include="..\..\..\..\official\neo3\modules\src\RpcServer\RpcServer.csproj"/>
-    <ProjectReference Include="..\..\..\persistence\persistence.csproj"/>
   </ItemGroup>
 </Project>

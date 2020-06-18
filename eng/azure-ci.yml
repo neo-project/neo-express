@@ -9,6 +9,7 @@ trigger:
   branches:
     include:
     - master
+    - insiders
     - release/*
   paths:
     include:
@@ -26,10 +27,19 @@ steps:
     useGlobalJson: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet pack'
+  displayName: 'dotnet pack neo express 2'
   inputs:
     command: 'pack'
-    packagesToPack: './src/neo-express/neo-express.csproj'
+    packagesToPack: './src/neo-express/'
+    includesymbols: true
+    versioningScheme: 'off'
+
+    
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack neo express 3'
+  inputs:
+    command: 'pack'
+    packagesToPack: './src/nxp3/'
     includesymbols: true
     versioningScheme: 'off'
 

@@ -30,7 +30,7 @@ steps:
   displayName: 'dotnet pack neo express 2'
   inputs:
     command: 'pack'
-    packagesToPack: './src/neo-express/'
+    packagesToPack: './src/neo-express/neo-express.csproj'
     includesymbols: true
     versioningScheme: 'off'
 
@@ -39,7 +39,7 @@ steps:
   displayName: 'dotnet pack neo express 3'
   inputs:
     command: 'pack'
-    packagesToPack: './src/nxp3/'
+    packagesToPack: './src/nxp3/nxp3.csproj'
     includesymbols: true
     versioningScheme: 'off'
 

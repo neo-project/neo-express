@@ -16,7 +16,7 @@ namespace NeoExpress.Neo3.Models
         private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
 
-        public DevWallet(string name, IEnumerable<DevWalletAccount>? accounts = null)
+        public DevWallet(string name, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty)
         {
             this.name = name;
 

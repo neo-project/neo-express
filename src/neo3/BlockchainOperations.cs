@@ -1,5 +1,6 @@
 ﻿using Neo;
 using Neo.IO;
+using Neo.IO.Caching;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
@@ -210,7 +211,7 @@ namespace NeoExpress.Neo3
 
         class NullReadOnlyStore : Neo.Persistence.IReadOnlyStore
         {
-            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte table, byte[]? prefix) 
+            public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte table, byte[] key, SeekDirection direction)
                 => Enumerable.Empty<(byte[] Key, byte[] Value)>();
 
             public byte[]? TryGet(byte table, byte[]? key) => null;
@@ -420,10 +421,10 @@ namespace NeoExpress.Neo3
             var devReceiver = DevWalletAccount.FromExpressWalletAccount(receiver);
 
             var script = assetHash.MakeScript("transfer", devSender.ScriptHash, devReceiver.ScriptHash, amount);
-            var cosigners = new[] { new Cosigner { Scopes = WitnessScope.CalledByEntry, Account = devSender.ScriptHash } };
+            var cosigners = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devSender.ScriptHash } };
 
             var tm = new TransactionManager(rpcClient, devSender.ScriptHash)
-                .MakeTransaction(script, null, cosigners);
+                .MakeTransaction(script, cosigners);
 
             AddSignatures(chain, tm, devSender);
 
@@ -491,7 +492,9 @@ namespace NeoExpress.Neo3
             static byte[] CreateDeployScript(NefFile nefFile, ContractManifest manifest)
             {
                 using var sb = new ScriptBuilder();
-                sb.EmitSysCall(InteropService.Contract.Create, nefFile.Script, manifest.ToString());
+                // sb.EmitSysCall(ApplicationEngine.System_Contract_Create
+                    
+                //     InteropService.Contract.Create, nefFile.Script, manifest.ToString());
                 return sb.ToArray();
             }
         }
@@ -585,10 +588,10 @@ namespace NeoExpress.Neo3
             var script = await LoadInvocationFileScript(invocationFilePath);
 
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-            var cosigners = new[] { new Cosigner { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
+            var cosigners = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
 
             var tm = new TransactionManager(rpcClient, devAccount.ScriptHash)
-                .MakeTransaction(script, null, cosigners);
+                .MakeTransaction(script, cosigners);
 
             AddSignatures(chain, tm, devAccount);
 

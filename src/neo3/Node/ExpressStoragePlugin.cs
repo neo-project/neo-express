@@ -3,11 +3,11 @@ using Neo.Plugins;
 
 namespace NeoExpress.Neo3.Node
 {
-    class ExpressStoragePlugin : Plugin, IStoragePlugin
+    class ExpressStorageProvider : Plugin, IStorageProvider
     {
         public readonly IStore store;
 
-        public ExpressStoragePlugin(IStore store)
+        public ExpressStorageProvider(IStore store)
         {
             this.store = store;
         }

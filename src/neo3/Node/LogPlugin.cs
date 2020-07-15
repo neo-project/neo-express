@@ -14,9 +14,9 @@ namespace NeoExpress.Neo3.Node
             this.writer = writer;
         }
 
-        void ILogPlugin.Log(string source, LogLevel level, string message)
+        void ILogPlugin.Log(string source, LogLevel level, object message)
         {
-            writer.WriteLine($"{DateTimeOffset.Now.ToString("HH:mm:ss.ff")} {source} {level} {message}");
+            writer.WriteLine($"{DateTimeOffset.Now:HH:mm:ss.ff} {source} {level} {message}");
         }
     }
 }

@@ -44,7 +44,7 @@ namespace NeoExpress.Neo3.Node
         {
             string filename = @params[0].AsString();
 
-            if (ProtocolSettings.Default.StandbyValidators.Length > 1)
+            if (ProtocolSettings.Default.ValidatorsCount > 1)
             {
                 throw new Exception("Checkpoint create is only supported on single node express instances");
             }

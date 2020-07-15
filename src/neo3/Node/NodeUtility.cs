@@ -77,7 +77,7 @@ namespace NeoExpress.Neo3.Node
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
                     var logPlugin = new LogPlugin(writer);
-                    var storagePlugin = new ExpressStoragePlugin(store);
+                    var storagePlugin = new ExpressStorageProvider(store);
 
                     using var system = new NeoSystem(storagePlugin.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);

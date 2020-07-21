@@ -371,38 +371,6 @@ namespace NeoExpress.Neo3
                 .Where(a => a != null);
         }
 
-        static void AddSignatures(ExpressChain chain, TransactionManager tm, WalletAccount account)
-        {
-            IEnumerable<WalletAccount> GetMultiSigAccounts()
-            {
-                var scriptHash = Neo.Wallets.Helper.ToAddress(account.ScriptHash);
-                return chain.ConsensusNodes
-                    .Select(n => n.Wallet)
-                    .Concat(chain.Wallets)
-                    .Select(w => w.Accounts.FirstOrDefault(a => a.ScriptHash == scriptHash))
-                    .Where(a => a != null)
-                    .Select(DevWalletAccount.FromExpressWalletAccount);
-            }
-
-            if (account.IsMultiSigContract())
-            {
-                var signers = GetMultiSigAccounts();
-
-                var publicKeys = signers.Select(s => s.GetKey()!.PublicKey).ToArray();
-                var sigCount = account.Contract.ParameterList.Length;
-
-                foreach (var signer in signers.Take(sigCount))
-                {
-                    var keyPair = signer.GetKey() ?? throw new Exception();
-                    tm = tm.AddMultiSig(keyPair, sigCount, publicKeys);
-                }
-            }
-            else
-            {
-                tm = tm.AddSignature(account.GetKey()!);
-            }
-        }
-
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
         public UInt256 Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
@@ -421,16 +389,14 @@ namespace NeoExpress.Neo3
             var devReceiver = DevWalletAccount.FromExpressWalletAccount(receiver);
 
             var script = assetHash.MakeScript("transfer", devSender.ScriptHash, devReceiver.ScriptHash, amount);
-            var cosigners = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devSender.ScriptHash } };
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devSender.ScriptHash } };
 
-            var tm = new TransactionManager(rpcClient, devSender.ScriptHash)
-                .MakeTransaction(script, cosigners);
+            var tm = new TransactionManager(rpcClient)
+                .MakeTransaction(script, signers)
+                .AddSignatures(chain, devSender)
+                .Sign();
 
-            AddSignatures(chain, tm, devSender);
-
-            var tx = tm.Sign().Tx;
-
-            return rpcClient.SendRawTransaction(tx);
+            return rpcClient.SendRawTransaction(tm.Tx);
 
             BigInteger GetAmount()
             {
@@ -466,12 +432,12 @@ namespace NeoExpress.Neo3
 
             var (nefFile, manifest) = await LoadContract(contract);
             var script = CreateDeployScript(nefFile, manifest);
-            var tm = new TransactionManager(rpcClient, devAccount.ScriptHash)
-                .MakeTransaction(script);
+            var tm = new TransactionManager(rpcClient)
+                .MakeTransaction(script)
+                .AddSignatures(chain, devAccount)
+                .Sign();
 
-            AddSignatures(chain, tm, devAccount);
-            var tx = tm.Sign().Tx;
-            return rpcClient.SendRawTransaction(tx);
+            return rpcClient.SendRawTransaction(tm.Sign().Tx);
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
             {
@@ -493,7 +459,7 @@ namespace NeoExpress.Neo3
             {
                 using var sb = new ScriptBuilder();
                 // sb.EmitSysCall(ApplicationEngine.System_Contract_Create
-                    
+
                 //     InteropService.Contract.Create, nefFile.Script, manifest.ToString());
                 return sb.ToArray();
             }
@@ -557,7 +523,7 @@ namespace NeoExpress.Neo3
                 ? Enumerable.Empty<ContractParameter>()
                 : args.Select(ParseArg);
 
-        static async Task<byte[]> LoadInvocationFileScript(string invocationFilePath)
+        private static async Task<byte[]> LoadInvocationFileScript(string invocationFilePath)
         {
             JObject json;
             {
@@ -585,19 +551,17 @@ namespace NeoExpress.Neo3
 
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
-            var script = await LoadInvocationFileScript(invocationFilePath);
+            var script = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
 
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-            var cosigners = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
 
-            var tm = new TransactionManager(rpcClient, devAccount.ScriptHash)
-                .MakeTransaction(script, cosigners);
+            var tm = new TransactionManager(rpcClient)
+                .MakeTransaction(script, signers)
+                .AddSignatures(chain, devAccount)
+                .Sign();
 
-            AddSignatures(chain, tm, devAccount);
-
-            var tx = tm.Sign().Tx;
-
-            return rpcClient.SendRawTransaction(tx);
+            return rpcClient.SendRawTransaction(tm.Tx);
         }
 
         public async Task<RpcInvokeResult> TestInvokeContract(ExpressChain chain, string invocationFilePath)
@@ -666,7 +630,7 @@ namespace NeoExpress.Neo3
 
             var json = await Task.Run(() => rpcClient.RpcSend("expressgetcontractstorage", scriptHash))
                 .ConfigureAwait(false);
-        
+
             if (json != null && json is Neo.IO.Json.JArray array)
             {
                 var storages = new List<ExpressStorage>(array.Count);

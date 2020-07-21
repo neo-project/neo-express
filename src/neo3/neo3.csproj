@@ -9,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Nito.Disposables" Version="2.1.0" />
-    <PackageReference Include="OneOf" Version="2.1.151" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\abstractions\abstractions.csproj" />

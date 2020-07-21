@@ -1,9 +1,11 @@
 ﻿using Neo.Network.RPC;
+using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -81,6 +83,40 @@ namespace NeoExpress.Neo3
 
             var response = await @this.SendAsync(request);
             return response.Result;
+        }
+
+        public static TransactionManager AddSignatures(this TransactionManager tm, ExpressChain chain, WalletAccount account)
+        {
+            if (account.IsMultiSigContract())
+            {
+                var signers = GetMultiSigAccounts();
+
+                var publicKeys = signers.Select(s => s.GetKey()!.PublicKey).ToArray();
+                var sigCount = account.Contract.ParameterList.Length;
+
+                foreach (var signer in signers.Take(sigCount))
+                {
+                    var keyPair = signer.GetKey() ?? throw new Exception();
+                    tm = tm.AddMultiSig(keyPair, sigCount, publicKeys);
+                }
+            }
+            else
+            {
+                tm = tm.AddSignature(account.GetKey()!);
+            }
+
+            return tm;
+
+            IEnumerable<WalletAccount> GetMultiSigAccounts()
+            {
+                var scriptHash = account.ScriptHash.ToAddress();
+                return chain.ConsensusNodes
+                    .Select(n => n.Wallet)
+                    .Concat(chain.Wallets)
+                    .Select(w => w.Accounts.Find(a => a.ScriptHash == scriptHash))
+                    .Where(a => a != null)
+                    .Select(Models.DevWalletAccount.FromExpressWalletAccount);
+            }
         }
     }
 }

@@ -21,13 +21,13 @@ namespace NeoExpress.Neo3.Models
         public string Hash { get; set; } = string.Empty;
 
         [JsonProperty("script")]
-        public string Script { get; set; }  = string.Empty;
+        public string Script { get; set; } = string.Empty;
 
         [JsonProperty("parameters")]
         public string[] Parameters { get; set; } = Array.Empty<string>();
 
         [JsonProperty("returntype")]
-        public string ReturnType { get; set; }  = string.Empty;
+        public string ReturnType { get; set; } = string.Empty;
 
         [JsonProperty("name")]
         public string Name { get; set; } = string.Empty;

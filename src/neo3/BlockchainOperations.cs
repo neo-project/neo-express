@@ -458,9 +458,7 @@ namespace NeoExpress.Neo3
             static byte[] CreateDeployScript(NefFile nefFile, ContractManifest manifest)
             {
                 using var sb = new ScriptBuilder();
-                // sb.EmitSysCall(ApplicationEngine.System_Contract_Create
-
-                //     InteropService.Contract.Create, nefFile.Script, manifest.ToString());
+                sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
                 return sb.ToArray();
             }
         }
@@ -603,24 +601,24 @@ namespace NeoExpress.Neo3
             return null;
         }
 
-        public async Task<BigInteger> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public Task<BigInteger> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             var uri = chain.GetUri();
             var nep5client = new Nep5API(new RpcClient(uri.ToString()));
 
             var assetHash = NodeUtility.GetAssetId(asset);
 
-            await Task.CompletedTask;
-            return nep5client.BalanceOf(assetHash, account.ScriptHash.ToScriptHash());
+            var result = nep5client.BalanceOf(assetHash, account.ScriptHash.ToScriptHash());
+            return Task.FromResult(result);
         }
 
-        public async Task<RpcTransaction> ShowTransaction(ExpressChain chain, string txHash)
+        public Task<RpcTransaction> ShowTransaction(ExpressChain chain, string txHash)
         {
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 
-            await Task.CompletedTask;
-            return rpcClient.GetRawTransaction(txHash);
+            var result = rpcClient.GetRawTransaction(txHash);
+            return Task.FromResult(result);
         }
 
         public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string scriptHash)

@@ -39,7 +39,7 @@ namespace NeoExpress.Neo3.Node
                     var encodedPublicKey = new KeyPair(privateKey).PublicKey
                         .EncodePoint(true).ToHexString();
                     yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:StandbyValidators:{index}", encodedPublicKey);
+                        $"ProtocolConfiguration:StandbyCommittee:{index}", encodedPublicKey);
                     yield return new KeyValuePair<string, string>(
                         $"ProtocolConfiguration:SeedList:{index}", $"{IPAddress.Loopback}:{node.TcpPort}");
                 }

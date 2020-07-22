@@ -65,9 +65,6 @@ namespace NeoExpress.Neo3
 
         public void ResetNode(ExpressChain chain, int index)
         {
-            Console.WriteLine(Neo.SmartContract.Native.NativeContract.NEO.Hash);
-            Console.WriteLine(
-                BitConverter.ToString(Neo.SmartContract.Native.NativeContract.NEO.Hash.ToArray()));
             if (index >= chain.ConsensusNodes.Count)
             {
                 throw new ArgumentException(nameof(index));
@@ -385,15 +382,18 @@ namespace NeoExpress.Neo3
             var assetHash = NodeUtility.GetAssetId(asset);
             var amount = GetAmount();
 
-            var devSender = DevWalletAccount.FromExpressWalletAccount(sender);
-            var devReceiver = DevWalletAccount.FromExpressWalletAccount(receiver);
+            // var devSender = DevWalletAccount.FromExpressWalletAccount(sender);
+            // var devReceiver = DevWalletAccount.FromExpressWalletAccount(receiver);
 
-            var script = assetHash.MakeScript("transfer", devSender.ScriptHash, devReceiver.ScriptHash, amount);
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devSender.ScriptHash } };
+            var senderHash = sender.GetScriptHashAsUInt160();
+            var receiverHash = receiver.GetScriptHashAsUInt160();
+
+            var script = assetHash.MakeScript("transfer", senderHash, receiverHash, amount);
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = senderHash } };
 
             var tm = new TransactionManager(rpcClient)
                 .MakeTransaction(script, signers)
-                .AddSignatures(chain, devSender)
+                .AddSignatures(chain, sender)
                 .Sign();
 
             return rpcClient.SendRawTransaction(tm.Tx);
@@ -434,7 +434,7 @@ namespace NeoExpress.Neo3
             var script = CreateDeployScript(nefFile, manifest);
             var tm = new TransactionManager(rpcClient)
                 .MakeTransaction(script)
-                .AddSignatures(chain, devAccount)
+                // .AddSignatures(chain, devAccount)
                 .Sign();
 
             return rpcClient.SendRawTransaction(tm.Sign().Tx);
@@ -556,7 +556,7 @@ namespace NeoExpress.Neo3
 
             var tm = new TransactionManager(rpcClient)
                 .MakeTransaction(script, signers)
-                .AddSignatures(chain, devAccount)
+                // .AddSignatures(chain, devAccount)
                 .Sign();
 
             return rpcClient.SendRawTransaction(tm.Tx);

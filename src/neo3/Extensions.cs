@@ -1,4 +1,5 @@
-﻿using Neo.Network.RPC;
+﻿using Neo;
+using Neo.Network.RPC;
 using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
@@ -85,35 +86,38 @@ namespace NeoExpress.Neo3
             return response.Result;
         }
 
-        public static TransactionManager AddSignatures(this TransactionManager tm, ExpressChain chain, WalletAccount account)
+        public static KeyPair GetKey(this ExpressWalletAccount account) => new KeyPair(account.PrivateKey.HexToBytes());
+
+        public static UInt160 GetScriptHashAsUInt160(this ExpressWalletAccount account) => account.ScriptHash.ToScriptHash();
+
+        public static TransactionManager AddSignatures(this TransactionManager tm, ExpressChain chain, ExpressWalletAccount account)
         {
             if (account.IsMultiSigContract())
             {
                 var signers = GetMultiSigAccounts();
 
                 var publicKeys = signers.Select(s => s.GetKey()!.PublicKey).ToArray();
-                var sigCount = account.Contract.ParameterList.Length;
+                var sigCount = account.Contract.Parameters.Count;
 
                 foreach (var signer in signers.Take(sigCount))
                 {
                     var keyPair = signer.GetKey() ?? throw new Exception();
                     tm = tm.AddMultiSig(keyPair, sigCount, publicKeys);
                 }
+
+                return tm;
             }
             else
             {
-                tm = tm.AddSignature(account.GetKey()!);
+                return tm.AddSignature(account.GetKey()!);
             }
-
-            return tm;
 
             IEnumerable<WalletAccount> GetMultiSigAccounts()
             {
-                var scriptHash = account.ScriptHash.ToAddress();
                 return chain.ConsensusNodes
                     .Select(n => n.Wallet)
                     .Concat(chain.Wallets)
-                    .Select(w => w.Accounts.Find(a => a.ScriptHash == scriptHash))
+                    .Select(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash))
                     .Where(a => a != null)
                     .Select(Models.DevWalletAccount.FromExpressWalletAccount);
             }

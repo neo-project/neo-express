@@ -443,64 +443,6 @@ namespace NeoExpress.Neo3
             }
         }
 
-        static ContractParameter ParseArg(string arg)
-        {
-            if (arg.StartsWith("@N"))
-            {
-                var hash = arg.Substring(1).ToScriptHash();
-                return new ContractParameter()
-                {
-                    Type = ContractParameterType.Hash160,
-                    Value = hash
-                };
-            }
-
-            if (arg.StartsWith("0x")
-                && BigInteger.TryParse(arg.AsSpan().Slice(2), System.Globalization.NumberStyles.HexNumber, null, out var bigInteger))
-            {
-                return new ContractParameter()
-                {
-                    Type = ContractParameterType.Integer,
-                    Value = bigInteger
-                };
-            }
-
-            return new ContractParameter()
-            {
-                Type = ContractParameterType.String,
-                Value = arg
-            };
-        }
-
-        static ContractParameter ParseArg(JToken arg)
-        {
-            return arg.Type switch
-            {
-                JTokenType.String => ParseArg(arg.Value<string>()),
-                JTokenType.Boolean => new ContractParameter()
-                {
-                    Type = ContractParameterType.Boolean,
-                    Value = arg.Value<bool>()
-                },
-                JTokenType.Integer => new ContractParameter()
-                {
-                    Type = ContractParameterType.Integer,
-                    Value = new BigInteger(arg.Value<int>())
-                },
-                JTokenType.Array => new ContractParameter()
-                {
-                    Type = ContractParameterType.Array,
-                    Value = ((JArray)arg).Select(ParseArg).ToList(),
-                },
-                _ => throw new Exception()
-            };
-        }
-
-        static IEnumerable<ContractParameter> ParseArgs(JToken? args)
-            => args == null
-                ? Enumerable.Empty<ContractParameter>()
-                : args.Select(ParseArg);
-
         private static async Task<byte[]> LoadInvocationFileScript(string invocationFilePath)
         {
             JObject json;
@@ -513,7 +455,7 @@ namespace NeoExpress.Neo3
 
             var scriptHash = UInt160.Parse(json.Value<string>("hash"));
             var operation = json.Value<string>("operation");
-            var args = ParseArgs(json.GetValue("args")).ToArray();
+            var args = ContractParameterParser.ParseParams(json.GetValue("args")).ToArray();
 
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(scriptHash, operation, args);

@@ -28,7 +28,7 @@ namespace NeoExpress.Neo3
 {
     public class BlockchainOperations
     {
-        public ExpressChain CreateBlockchain(FileInfo output, int count, TextWriter writer, CancellationToken token = default)
+        public ExpressChain CreateBlockchain(FileInfo output, int count, TextWriter writer)
         {
             if (File.Exists(output.FullName))
             {
@@ -47,14 +47,6 @@ namespace NeoExpress.Neo3
             writer.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 
             return chain;
-        }
-
-        private static char GetHexValue(int i) {
-            if (i<10) {
-                return (char)(i + '0');
-            }
-    
-            return (char)(i - 10 + 'A');
         }
 
         public byte[] ToScriptHashByteArray(ExpressWalletAccount account)
@@ -83,7 +75,7 @@ namespace NeoExpress.Neo3
         {
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
 
-            ushort GetPortNumber(int index, ushort portNumber) => (ushort)((49000 + (index * 1000)) + portNumber);
+            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(49000 + (index * 1000) + portNumber);
 
             for (var i = 1; i <= count; i++)
             {
@@ -95,7 +87,7 @@ namespace NeoExpress.Neo3
 
             var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
 
-            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+            var contract = Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
 
             foreach (var (wallet, account) in wallets)
             {
@@ -183,7 +175,7 @@ namespace NeoExpress.Neo3
             using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
             using var store = GetStore();
-            await NodeUtility.RunAsync(store, node, writer, cancellationToken);
+            await NodeUtility.RunAsync(store, node, writer, cancellationToken).ConfigureAwait(false);
 
             Neo.Persistence.IStore GetStore()
             {
@@ -250,7 +242,7 @@ namespace NeoExpress.Neo3
 
             using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
             using var checkpointStore = new CheckpointStore(rocksDbStore); 
-            await NodeUtility.RunAsync(checkpointStore, node, writer, cancellationToken);
+            await NodeUtility.RunAsync(checkpointStore, node, writer, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)
@@ -263,12 +255,7 @@ namespace NeoExpress.Neo3
 
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
-                if (Mutex.TryOpenExisting(multiSigAccount.ScriptHash, out var _))
-                {
-                    return true;
-                }
-
-                return false;
+                return Mutex.TryOpenExisting(multiSigAccount.ScriptHash, out var _);
             }
 
             if (File.Exists(checkPointFileName))
@@ -288,10 +275,10 @@ namespace NeoExpress.Neo3
             {
                 var uri = chain.GetUri();
                 var rpcClient = new RpcClient(uri.ToString());
-                await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName);
+                await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
                 writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
             }
-            else 
+            else
             {
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
                 using var db = RocksDbStore.Open(folder);
@@ -300,12 +287,8 @@ namespace NeoExpress.Neo3
             }
         }
 
-
         private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
         private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
-
-        private static string GetAddressFilePath(string directory) =>
-            Path.Combine(directory, ADDRESS_FILENAME);
 
         public string ResolveCheckpointFileName(string checkPointFileName)
         {
@@ -315,7 +298,7 @@ namespace NeoExpress.Neo3
 
             if (!Path.GetExtension(checkPointFileName).Equals(CHECKPOINT_EXTENSION))
             {
-                checkPointFileName = checkPointFileName + CHECKPOINT_EXTENSION;
+                checkPointFileName += CHECKPOINT_EXTENSION;
             }
 
             return Path.GetFullPath(checkPointFileName);
@@ -364,7 +347,7 @@ namespace NeoExpress.Neo3
             return chain.ConsensusNodes
                 .Select(n => n.Wallet)
                 .Concat(chain.Wallets)
-                .Select(w => w.Accounts.FirstOrDefault(a => a.ScriptHash == scriptHash))
+                .Select(w => w.Accounts.Find(a => a.ScriptHash == scriptHash))
                 .Where(a => a != null);
         }
 
@@ -381,9 +364,6 @@ namespace NeoExpress.Neo3
 
             var assetHash = NodeUtility.GetAssetId(asset);
             var amount = GetAmount();
-
-            // var devSender = DevWalletAccount.FromExpressWalletAccount(sender);
-            // var devReceiver = DevWalletAccount.FromExpressWalletAccount(receiver);
 
             var senderHash = sender.GetScriptHashAsUInt160();
             var receiverHash = receiver.GetScriptHashAsUInt160();
@@ -409,7 +389,7 @@ namespace NeoExpress.Neo3
                 if (decimal.TryParse(quantity, out var value))
                 {
                     var decimals = nep5client.Decimals(assetHash);
-                    return Neo.Network.RPC.Utility.ToBigInteger(value, decimals);
+                    return value.ToBigInteger(decimals);
                 }
 
                 throw new Exception("invalid quantity");
@@ -428,13 +408,20 @@ namespace NeoExpress.Neo3
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 
-            WalletAccount devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+            var (nefFile, manifest) = await LoadContract(contract).ConfigureAwait(false);
+            byte[] script;
+            using (ScriptBuilder sb = new ScriptBuilder())
+            {
+                sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
+                script = sb.ToArray();
+            }
 
-            var (nefFile, manifest) = await LoadContract(contract);
-            var script = CreateDeployScript(nefFile, manifest);
+            var accountHash = account.GetScriptHashAsUInt160();
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = accountHash } };
+
             var tm = new TransactionManager(rpcClient)
-                .MakeTransaction(script)
-                // .AddSignatures(chain, devAccount)
+                .MakeTransaction(script, signers)
+                .AddSignatures(chain, account)
                 .Sign();
 
             return rpcClient.SendRawTransaction(tm.Sign().Tx);
@@ -445,7 +432,7 @@ namespace NeoExpress.Neo3
                 {
                     using var stream = File.OpenRead(contractPath);
                     using var reader = new BinaryReader(stream, Encoding.UTF8, false);
-                    return Neo.IO.Helper.ReadSerializable<NefFile>(reader);
+                    return reader.ReadSerializable<NefFile>();
                 });
 
                 var manifestTask = File.ReadAllBytesAsync(Path.ChangeExtension(contractPath, ".manifest.json"))
@@ -454,20 +441,13 @@ namespace NeoExpress.Neo3
                 await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
                 return (nefTask.Result, manifestTask.Result);
             }
-
-            static byte[] CreateDeployScript(NefFile nefFile, ContractManifest manifest)
-            {
-                using var sb = new ScriptBuilder();
-                sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
-                return sb.ToArray();
-            }
         }
 
         static ContractParameter ParseArg(string arg)
         {
             if (arg.StartsWith("@N"))
             {
-                var hash = Neo.Wallets.Helper.ToScriptHash(arg.Substring(1));
+                var hash = arg.Substring(1).ToScriptHash();
                 return new ContractParameter()
                 {
                     Type = ContractParameterType.Hash160,
@@ -571,10 +551,10 @@ namespace NeoExpress.Neo3
 
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
-            var script = await LoadInvocationFileScript(invocationFilePath);
+            var script = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
             return rpcClient.InvokeScript(script);
         }
-        
+
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
         {
             var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())

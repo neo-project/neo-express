@@ -56,9 +56,7 @@ namespace nxp3.Commands
                 }
 
                 var blockchainOperations = new BlockchainOperations();
-                using var cts = new CancellationTokenSource();
-                console.CancelKeyPress += (sender, args) => cts.Cancel();
-                var chain = blockchainOperations.CreateBlockchain(new FileInfo(output), Count, Console.Out, cts.Token);
+                var chain = blockchainOperations.CreateBlockchain(new FileInfo(output), Count, Console.Out);
                 chain.Save(output);
 
                 return 0;

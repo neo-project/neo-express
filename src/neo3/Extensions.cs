@@ -82,7 +82,7 @@ namespace NeoExpress.Neo3
                 Params = paraArgs
             };
 
-            var response = await @this.SendAsync(request);
+            var response = await @this.SendAsync(request).ConfigureAwait(false);
             return response.Result;
         }
 

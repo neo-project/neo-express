@@ -25,14 +25,14 @@ namespace NeoExpress.Neo3.Node
             if (contract == null) return null;
 
             var storages = new JArray();
-            foreach (var kvp in Blockchain.Singleton.View.Storages.Find())
+            foreach (var (key, value) in Blockchain.Singleton.View.Storages.Find())
             {
-                if (kvp.Key.Id == contract.Id)
+                if (key.Id == contract.Id)
                 {
                     var storage = new JObject();
-                    storage["key"] = kvp.Key.Key.ToHexString();
-                    storage["value"] = kvp.Value.Value.ToHexString();
-                    storage["constant"] = kvp.Value.IsConstant;
+                    storage["key"] = key.Key.ToHexString();
+                    storage["value"] = value.Value.ToHexString();
+                    storage["constant"] = value.IsConstant;
                     storages.Add(storage);
                 }
             }
@@ -51,7 +51,6 @@ namespace NeoExpress.Neo3.Node
 
             if (Blockchain.Singleton.Store is RocksDbStore rocksDbStore)
             {
-                var blockchainOperations = new BlockchainOperations();
                 rocksDbStore.CreateCheckpoint(
                     filename,
                     ProtocolSettings.Default.Magic,
@@ -64,6 +63,5 @@ namespace NeoExpress.Neo3.Node
                 throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
             }
         }
-
     }
 }

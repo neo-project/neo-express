@@ -3,7 +3,6 @@ using System;
 
 namespace NeoExpress.Neo3.Models
 {
-
     class UnspentsResponse
     {
         [JsonProperty("address")]

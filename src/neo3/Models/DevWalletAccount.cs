@@ -27,7 +27,7 @@ namespace NeoExpress.Neo3.Models
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
             PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
-            ScriptHash = Neo.Wallets.Helper.ToAddress(ScriptHash),
+            ScriptHash = ScriptHash.ToAddress(),
             Label = Label,
             IsDefault = IsDefault,
             Contract = new ExpressWalletAccount.AccountContract()

@@ -543,6 +543,15 @@ namespace NeoExpress.Neo3
             return Task.FromResult(result);
         }
 
+        public Task<RpcBlock> ShowBlock(ExpressChain chain, string blockHash)
+        {
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+
+            var result = rpcClient.GetBlock(blockHash);
+            return Task.FromResult(result);
+        }
+
         public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string scriptHash)
         {
             var uri = chain.GetUri();

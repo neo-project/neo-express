@@ -166,10 +166,10 @@ namespace NeoExpress.Neo2
                 {
                     Attributes = Array.Empty<TransactionAttribute>(),
                     Inputs = assets.Select(t => new CoinReference
-                        {
-                            PrevHash= UInt256.Parse(t.TransactionId),
-                            PrevIndex = t.Index
-                        }).ToArray(),
+                    {
+                        PrevHash = UInt256.Parse(t.TransactionId),
+                        PrevIndex = t.Index
+                    }).ToArray(),
                     Outputs = new TransactionOutput[] {
                         new TransactionOutput
                         {
@@ -193,10 +193,10 @@ namespace NeoExpress.Neo2
                 {
                     Attributes = Array.Empty<TransactionAttribute>(),
                     Inputs = inputs.Select(t => new CoinReference
-                        {
-                            PrevHash = UInt256.Parse(t.tx.TransactionId),
-                            PrevIndex = t.tx.Index
-                        }).ToArray(),
+                    {
+                        PrevHash = UInt256.Parse(t.tx.TransactionId),
+                        PrevIndex = t.tx.Index
+                    }).ToArray(),
                     Outputs = new TransactionOutput[] {
                         new TransactionOutput
                         {
@@ -220,7 +220,7 @@ namespace NeoExpress.Neo2
         public static InvocationTransaction CreateDeploymentTransaction(ExpressContract contract, ExpressWalletAccount sender, UnspentsResponse unspents)
         {
             var gasAssetId = Neo.Ledger.Blockchain.UtilityToken.Hash;
-            
+
             using var builder = BuildContractCreateScript(contract);
             var contractPropertyState = GetContractPropertyState(contract);
 
@@ -250,10 +250,10 @@ namespace NeoExpress.Neo2
                 Version = 1,
                 Attributes = Array.Empty<TransactionAttribute>(),
                 Inputs = inputs.Select(t => new CoinReference
-                    {
-                        PrevHash = UInt256.Parse(t.tx.TransactionId),
-                        PrevIndex = t.tx.Index
-                    }).ToArray(),
+                {
+                    PrevHash = UInt256.Parse(t.tx.TransactionId),
+                    PrevIndex = t.tx.Index
+                }).ToArray(),
                 Outputs = new TransactionOutput[] {
                     new TransactionOutput
                     {
@@ -291,12 +291,12 @@ namespace NeoExpress.Neo2
         {
             var contractData = contract.ContractData.HexToBytes();
 
-            var entryFunction =contract.Functions.Single(f => f.Name == contract.EntryPoint);
-           
-            var entryParameters = entryFunction.Parameters.Select(p => Enum.Parse<ContractParameterType>(p.Type));
-            var entryReturnType = Enum.Parse<ContractParameterType>(entryFunction.ReturnType); 
+            var entryFunction = contract.Functions.Single(f => f.Name == contract.EntryPoint);
 
-            var title = contract.Properties.GetValueOrDefault("title", contract.Name);  
+            var entryParameters = entryFunction.Parameters.Select(p => Enum.Parse<ContractParameterType>(p.Type));
+            var entryReturnType = Enum.Parse<ContractParameterType>(entryFunction.ReturnType);
+
+            var title = contract.Properties.GetValueOrDefault("title", contract.Name);
             var description = contract.Properties.GetValueOrDefault("description", "no description provided");
             var version = contract.Properties.GetValueOrDefault("version", "0.1.0");
             var author = contract.Properties.GetValueOrDefault("author", "no description provided");

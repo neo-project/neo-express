@@ -33,7 +33,7 @@ namespace nxp3.Commands
 
                     var balanceOf = await blockchainOperations.ShowBalance(chain, account, Asset);
                     console.WriteLine($"{Account} balance of {Asset} is {balanceOf}");
-                    return 0;                
+                    return 0;
                 }
                 catch (Exception ex)
                 {

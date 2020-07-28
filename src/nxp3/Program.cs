@@ -10,11 +10,11 @@ namespace nxp3
     [Subcommand(
         typeof(CheckpointCommand),
         typeof(ContractCommand),
-        typeof(CreateCommand), 
-        typeof(ResetCommand), 
-        typeof(RunCommand), 
-        typeof(ShowCommand), 
-        typeof(TransferCommand), 
+        typeof(CreateCommand),
+        typeof(ResetCommand),
+        typeof(RunCommand),
+        typeof(ShowCommand),
+        typeof(TransferCommand),
         typeof(WalletCommand))]
     class Program
     {

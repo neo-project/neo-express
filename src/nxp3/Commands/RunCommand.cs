@@ -53,5 +53,5 @@ namespace nxp3.Commands
                 return 1;
             }
         }
-     }
+    }
 }

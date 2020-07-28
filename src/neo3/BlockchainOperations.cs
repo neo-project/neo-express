@@ -181,7 +181,7 @@ namespace NeoExpress.Neo3
             {
                 if (discard)
                 {
-                    try 
+                    try
                     {
                         var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
                         return new CheckpointStore(rocksDbStore);
@@ -215,7 +215,8 @@ namespace NeoExpress.Neo3
             }
             while (Directory.Exists(checkpointTempPath));
 
-            using var folderCleanup = AnonymousDisposable.Create(() => {
+            using var folderCleanup = AnonymousDisposable.Create(() =>
+            {
                 if (Directory.Exists(checkpointTempPath))
                 {
                     Directory.Delete(checkpointTempPath, true);
@@ -241,7 +242,7 @@ namespace NeoExpress.Neo3
             using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
             using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
-            using var checkpointStore = new CheckpointStore(rocksDbStore); 
+            using var checkpointStore = new CheckpointStore(rocksDbStore);
             await NodeUtility.RunAsync(checkpointStore, node, writer, cancellationToken).ConfigureAwait(false);
         }
 

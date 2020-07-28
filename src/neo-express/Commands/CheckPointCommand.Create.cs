@@ -32,7 +32,7 @@ namespace NeoExpress.Commands
                     }
 
                     var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
-                    var filename = blockchainOperations.ResolveCheckpointFileName(Name); 
+                    var filename = blockchainOperations.ResolveCheckpointFileName(Name);
 
                     if (File.Exists(filename))
                     {

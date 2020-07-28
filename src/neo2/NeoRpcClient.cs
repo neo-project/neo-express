@@ -118,7 +118,7 @@ namespace NeoExpress.Neo2
 
         public static Task<JToken?> GetRawTransaction(Uri uri, string txid, bool verbose = true)
         {
-            return RpcCall(uri, "getrawtransaction", new JArray(txid, verbose ? 1 : 0));            
+            return RpcCall(uri, "getrawtransaction", new JArray(txid, verbose ? 1 : 0));
         }
 
         public static Task<JToken?> SaveContractMetadata(Uri uri, string scriptHash, AbiContract contractMetadata)
@@ -130,16 +130,16 @@ namespace NeoExpress.Neo2
                 throw new ApplicationException($"Could not serialize {nameof(contractMetadata)}");
 
             return RpcCall(uri, "express-save-contract-metadata", new JArray(scriptHash, writer.Token));
-        } 
+        }
 
         public static Task<JToken?> GetContractMetadata(Uri uri, string scriptHash)
         {
             return RpcCall(uri, "express-get-contract-metadata", new JArray(scriptHash));
-        } 
+        }
 
         public static Task<JToken?> ListContracts(Uri uri)
         {
             return RpcCall(uri, "express-list-contract-metadata", new JArray());
-        } 
+        }
     }
 }

@@ -27,7 +27,7 @@ namespace NeoExpress.Commands
                 {
                     throw new Exception("Only GAS can be claimed");
                 }
-                
+
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var blockchainOperations = new BlockchainOperations();
                 var account = blockchainOperations.GetAccount(chain, Account);

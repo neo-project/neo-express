@@ -29,7 +29,7 @@ namespace NeoExpress
 
         public static int Main(string[] args)
             => CommandLineApplication.Execute<Program>(args);
-            
+
         [Option]
         private bool Version { get; }
 

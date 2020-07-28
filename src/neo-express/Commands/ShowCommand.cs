@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 namespace NeoExpress.Commands
 {
     [Command("show")]
-    [Subcommand(typeof(Account), 
-        typeof(Claimable), 
-        typeof(Coins), 
-        typeof(Gas), 
-        typeof(Transaction), 
+    [Subcommand(typeof(Account),
+        typeof(Claimable),
+        typeof(Coins),
+        typeof(Gas),
+        typeof(Transaction),
         typeof(Unspents))]
     partial class ShowCommand
     {

@@ -49,7 +49,7 @@ namespace nxp3.Commands
                     {
                         File.Delete(output);
                     }
-                    else 
+                    else
                     {
                         throw new Exception("You must specify --force to overwrite an existing file");
                     }

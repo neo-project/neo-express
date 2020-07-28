@@ -32,7 +32,7 @@ namespace nxp3.Commands
                     }
 
                     var blockchainOperations = new BlockchainOperations();
-                    var filename = blockchainOperations.ResolveCheckpointFileName(Name); 
+                    var filename = blockchainOperations.ResolveCheckpointFileName(Name);
 
                     if (File.Exists(filename))
                     {

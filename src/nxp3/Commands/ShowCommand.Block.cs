@@ -23,9 +23,9 @@ namespace nxp3.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
 
-                    var tx = await blockchainOperations.ShowBlock(chain, BlockHash);
-                    console.WriteLine(tx.ToJson().ToString(true));
-                    return 0;                
+                    var block = await blockchainOperations.ShowBlock(chain, BlockHash).ConfigureAwait(false);
+                    console.WriteLine(block.ToJson().ToString(true));
+                    return 0;
                 }
                 catch (Exception ex)
                 {

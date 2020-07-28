@@ -36,7 +36,7 @@ namespace nxp3.Commands
 
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
-                    
+
                     if (Test)
                     {
                         var result = await blockchainOperations.TestInvokeContract(chain, InvocationFile);

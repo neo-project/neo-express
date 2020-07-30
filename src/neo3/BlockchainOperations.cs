@@ -425,7 +425,7 @@ namespace NeoExpress.Neo3
                 .AddSignatures(chain, account)
                 .Sign();
 
-            return rpcClient.SendRawTransaction(tm.Sign().Tx);
+            return rpcClient.SendRawTransaction(tm.Tx);
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
             {
@@ -479,7 +479,7 @@ namespace NeoExpress.Neo3
 
             var tm = new TransactionManager(rpcClient)
                 .MakeTransaction(script, signers)
-                // .AddSignatures(chain, devAccount)
+                .AddSignatures(chain, account)
                 .Sign();
 
             return rpcClient.SendRawTransaction(tm.Tx);

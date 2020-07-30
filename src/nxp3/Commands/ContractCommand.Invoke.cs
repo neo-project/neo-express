@@ -25,6 +25,20 @@ namespace nxp3.Commands
             [Option]
             string Input { get; } = string.Empty;
 
+            static string AsString(Neo.VM.Types.StackItem item) => item switch
+            {
+                Neo.VM.Types.Boolean _ => $"{item.GetBoolean()}",
+                Neo.VM.Types.Buffer buffer => Neo.Helper.ToHexString(buffer.GetSpan()),
+                Neo.VM.Types.ByteString byteString => Neo.Helper.ToHexString(byteString.GetSpan()),
+                Neo.VM.Types.Integer @int => $"{@int.GetInteger()}",
+                // Neo.VM.Types.InteropInterface _ => MakeVariable("InteropInterface"),
+                // Neo.VM.Types.Map _ => MakeVariable("Map"),
+                Neo.VM.Types.Null _ => "<null>",
+                // Neo.VM.Types.Pointer _ => MakeVariable("Pointer"),
+                // Neo.VM.Types.Array array => NeoArrayContainer.Create(manager, array, name),
+                _ => throw new ArgumentException(nameof(item)),
+            };
+
             async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -45,7 +59,7 @@ namespace nxp3.Commands
                         console.WriteLine("Result Stack:");
                         foreach (var v in result.Stack)
                         {
-                            console.WriteLine($"\t{v}");
+                            console.WriteLine($"\t{AsString(v)}");
                         }
                     }
                     else

@@ -3,7 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 namespace nxp3.Commands
 {
     [Command("contract")]
-    [Subcommand(typeof(Deploy), typeof(Invoke), typeof(Storage))]
+    [Subcommand(typeof(Deploy), typeof(Get), typeof(Invoke), typeof(List), typeof(Storage))]
     partial class ContractCommand
     {
         private int OnExecute(CommandLineApplication app, IConsole console)

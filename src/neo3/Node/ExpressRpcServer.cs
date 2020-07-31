@@ -5,6 +5,7 @@ using Neo.Ledger;
 using Neo.Seattle.Persistence;
 using Neo.Plugins;
 using NeoExpress.Abstractions.Models;
+using System.Linq;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -37,6 +38,19 @@ namespace NeoExpress.Neo3.Node
                 }
             }
             return storages;
+        }
+
+        [RpcMethod]
+        private JObject? ExpressListContracts(JArray @params)
+        {
+            var contracts = Blockchain.Singleton.View.Contracts.Find().OrderBy(t => t.Value.Id);
+
+            var json = new JArray();
+            foreach (var (key, value) in contracts)
+            {
+                json.Add(value.Manifest.ToJson());
+            }
+            return json;
         }
 
         [RpcMethod]

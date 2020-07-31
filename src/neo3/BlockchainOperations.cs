@@ -553,12 +553,13 @@ namespace NeoExpress.Neo3
             return Task.FromResult(result);
         }
 
-        public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string scriptHash)
+        public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string hashOrContract)
         {
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 
-            var json = await Task.Run(() => rpcClient.RpcSend("expressgetcontractstorage", scriptHash))
+            var scriptHash = ParseScriptHash(hashOrContract);
+            var json = await Task.Run(() => rpcClient.RpcSend("expressgetcontractstorage", scriptHash.ToString()))
                 .ConfigureAwait(false);
 
             if (json != null && json is Neo.IO.Json.JArray array)
@@ -574,10 +575,61 @@ namespace NeoExpress.Neo3
                     };
                     storages.Add(storage);
                 }
-                return storages;
+                return storages.AsReadOnly();
             }
 
-            return new List<ExpressStorage>(0);
+            return new List<ExpressStorage>(0).AsReadOnly();
+        }
+
+        public async Task<ContractManifest> GetContract(ExpressChain chain, string hashOrContract)
+        {
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+
+            var scriptHash = ParseScriptHash(hashOrContract);
+            var contractState = await Task.Run(() => rpcClient.GetContractState(scriptHash.ToString()))
+                .ConfigureAwait(false);
+
+            return contractState.Manifest;
+        }
+
+        public async Task<IReadOnlyList<ContractManifest>> ListContracts(ExpressChain chain)
+        {
+            var uri = chain.GetUri();
+            var rpcClient = new RpcClient(uri.ToString());
+
+            var json = await Task.Run(() => rpcClient.RpcSend("expresslistcontracts"))
+                .ConfigureAwait(false);
+
+            if (json != null && json is Neo.IO.Json.JArray array)
+            {
+                var contracts = new List<ContractManifest>(array.Count);
+                foreach (var c in array)
+                {
+                    contracts.Add(ContractManifest.FromJson(c));
+                }
+                return contracts;
+            }
+
+            return new List<ContractManifest>(0).AsReadOnly();
+        }
+
+        static UInt160 ParseScriptHash(string hashOrContract)
+        {
+            if (UInt160.TryParse(hashOrContract, out var hash))
+            {
+                return hash;
+            }
+
+            if (File.Exists(hashOrContract))
+            {
+                using var stream = File.OpenRead(hashOrContract);
+                using var reader = new BinaryReader(stream, Encoding.UTF8, false);
+                var nefFile = reader.ReadSerializable<NefFile>();
+                return nefFile.ScriptHash;
+            }
+
+            throw new ArgumentException(nameof(hashOrContract));
         }
     }
 }

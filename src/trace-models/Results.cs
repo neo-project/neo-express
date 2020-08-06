@@ -15,7 +15,7 @@ namespace Neo.Seattle.TraceDebug.Models
         [Key(2)]
         public readonly IReadOnlyList<StackItem> ResultStack;
 
-        public Results(VMState state, long gasConsumed, IReadOnlyList<StackItem> resultStack) 
+        public Results(VMState state, long gasConsumed, IReadOnlyList<StackItem> resultStack)
         {
             this.State = state;
             this.GasConsumed = gasConsumed;

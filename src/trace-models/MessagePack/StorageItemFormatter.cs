@@ -42,7 +42,7 @@ namespace Neo.Seattle.TraceDebug.Formatters
                 switch (key)
                 {
                     case 0:
-                        value= reader.ReadBytes()?.ToArray();
+                        value = reader.ReadBytes()?.ToArray();
                         break;
                     case 1:
                         isConstant = reader.ReadBoolean();

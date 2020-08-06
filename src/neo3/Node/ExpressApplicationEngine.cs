@@ -20,6 +20,31 @@ namespace NeoExpress.Neo3.Node
             : base(trigger, container, snapshot, gas, testMode)
         {
             this.traceDebugSink = traceDebugSink;
+            Log += OnLog;
+            Notify += OnNotify;
+        }
+
+        public override void Dispose()
+        {
+            Log -= OnLog;
+            Notify -= OnNotify;
+            traceDebugSink.Dispose();
+        }
+
+        private void OnNotify(object sender, NotifyEventArgs args)
+        {
+            if (object.ReferenceEquals(sender, this))
+            {
+                traceDebugSink.Notify(args);
+            }
+        }
+
+        private void OnLog(object sender, LogEventArgs args)
+        {
+            if (object.ReferenceEquals(sender, this))
+            {
+                traceDebugSink.Log(args);
+            }
         }
 
         private void Trace()

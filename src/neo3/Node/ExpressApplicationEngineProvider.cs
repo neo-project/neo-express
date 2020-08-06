@@ -7,9 +7,14 @@ namespace NeoExpress.Neo3.Node
 {
     internal class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
-        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas, bool testMode = false)
+        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas, bool testMode = false)
         {
-            return new ExpressApplicationEngine(trigger, container, snapshot, gas, testMode);
+            // eventually put logic to determine if we are tracing or not
+            // returning null will use default ApplicationEngine
+            return null;
+
+            // var traceDebugSink = create debug sink
+            // return new ExpressApplicationEngine(traceDebugSink, trigger, container, snapshot, gas, testMode);
         }
     }
 }

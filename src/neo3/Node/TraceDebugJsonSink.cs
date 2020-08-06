@@ -39,46 +39,46 @@ namespace NeoExpress.Neo3.Node
 
             writer.WriteStartObject();
             writer.WritePropertyName("type");
-            writer.WriteValue("trace-point");
+            writer.WriteValue("trace");
             writer.WritePropertyName("vmstate");
             writer.WriteValue(vmState.ToString());
 
-            writer.WritePropertyName("contexts");
+            writer.WritePropertyName("stack-frames");
             writer.WriteStartArray();
-            foreach (var context in stackFrames)
+            foreach (var stackFrame in stackFrames)
             {
                 // var scriptHash = context.GetScriptHash();
                 // scriptHashes.Add(scriptHash);
 
                 writer.WriteStartObject();
                 writer.WritePropertyName("script-hash");
-                writer.WriteValue(context.GetScriptHash().ToString());
+                writer.WriteValue(stackFrame.GetScriptHash().ToString());
                 writer.WritePropertyName("instruction-pointer");
-                writer.WriteValue(context.InstructionPointer);
-                writer.WritePropertyName("eval-stack");
-                WriteStack(writer, context.EvaluationStack);
+                writer.WriteValue(stackFrame.InstructionPointer);
+                // writer.WritePropertyName("eval-stack");
+                // WriteStack(writer, context.EvaluationStack);
                 // writer.WritePropertyName("alt-stack");
                 // WriteStack(writer, context.AltStack);
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
 
-            writer.WritePropertyName("storages");
-            writer.WriteStartArray();
-            foreach (var (scriptHash, key, item) in storages)
-            {
-                writer.WriteStartObject();
-                writer.WritePropertyName("script-hash");
-                writer.WriteValue(scriptHash.ToString());
-                writer.WritePropertyName("key");
-                writer.WriteValue(key);
-                writer.WritePropertyName("value");
-                writer.WriteValue(item.Value);
-                writer.WritePropertyName("constant");
-                writer.WriteValue(item.IsConstant);
-                writer.WriteEndObject();
-            }
-            writer.WriteEndArray();
+            // writer.WritePropertyName("storages");
+            // writer.WriteStartArray();
+            // foreach (var (scriptHash, key, item) in storages)
+            // {
+            //     writer.WriteStartObject();
+            //     writer.WritePropertyName("script-hash");
+            //     writer.WriteValue(scriptHash.ToString());
+            //     writer.WritePropertyName("key");
+            //     writer.WriteValue(key);
+            //     writer.WritePropertyName("value");
+            //     writer.WriteValue(item.Value);
+            //     writer.WritePropertyName("constant");
+            //     writer.WriteValue(item.IsConstant);
+            //     writer.WriteEndObject();
+            // }
+            // writer.WriteEndArray();
             writer.WriteEndObject();
         }
 

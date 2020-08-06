@@ -35,8 +35,6 @@ namespace NeoExpress.Neo3.Node
 
         public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> stackFrames, IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> storages)
         {
-            // var scriptHashes = new HashSet<UInt160>();
-
             writer.WriteStartObject();
             writer.WritePropertyName("type");
             writer.WriteValue("trace");
@@ -47,38 +45,46 @@ namespace NeoExpress.Neo3.Node
             writer.WriteStartArray();
             foreach (var stackFrame in stackFrames)
             {
-                // var scriptHash = context.GetScriptHash();
-                // scriptHashes.Add(scriptHash);
-
                 writer.WriteStartObject();
                 writer.WritePropertyName("script-hash");
                 writer.WriteValue(stackFrame.GetScriptHash().ToString());
                 writer.WritePropertyName("instruction-pointer");
                 writer.WriteValue(stackFrame.InstructionPointer);
-                // writer.WritePropertyName("eval-stack");
-                // WriteStack(writer, context.EvaluationStack);
-                // writer.WritePropertyName("alt-stack");
-                // WriteStack(writer, context.AltStack);
+                writer.WritePropertyName("eval-stack");
+                WriteStack(writer, stackFrame.EvaluationStack);
+                writer.WritePropertyName("locals");
+                WriteStack(writer, stackFrame.LocalVariables);
+                writer.WritePropertyName("statics");
+                WriteStack(writer, stackFrame.StaticFields);
+                writer.WritePropertyName("args");
+                WriteStack(writer, stackFrame.Arguments);
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
 
-            // writer.WritePropertyName("storages");
-            // writer.WriteStartArray();
-            // foreach (var (scriptHash, key, item) in storages)
-            // {
-            //     writer.WriteStartObject();
-            //     writer.WritePropertyName("script-hash");
-            //     writer.WriteValue(scriptHash.ToString());
-            //     writer.WritePropertyName("key");
-            //     writer.WriteValue(key);
-            //     writer.WritePropertyName("value");
-            //     writer.WriteValue(item.Value);
-            //     writer.WritePropertyName("constant");
-            //     writer.WriteValue(item.IsConstant);
-            //     writer.WriteEndObject();
-            // }
-            // writer.WriteEndArray();
+            writer.WritePropertyName("storages");
+            writer.WriteStartObject();
+            foreach (var g in storages.GroupBy(t => t.scriptHash))
+            {
+                writer.WritePropertyName("script-hash");
+                writer.WriteValue(g.Key.ToString());
+                writer.WritePropertyName("values");
+                writer.WriteStartArray();
+                foreach (var (_, key, item) in g)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("key");
+                    writer.WriteValue(key);
+                    writer.WritePropertyName("value");
+                    writer.WriteValue(item.Value);
+                    writer.WritePropertyName("constant");
+                    writer.WriteValue(item.IsConstant);
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+            }
+            writer.WriteEndObject();
+
             writer.WriteEndObject();
         }
 
@@ -142,43 +148,68 @@ namespace NeoExpress.Neo3.Node
 
         private static void WriteStackItem(JsonWriter writer, StackItem item)
         {
+            void WriteByteArray(ReadOnlySpan<byte> span)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("type");
+                writer.WriteValue("byte-array");
+                writer.WritePropertyName("value");
+                writer.WriteValue(Convert.ToBase64String(span));
+                writer.WriteEndObject();
+            }
             switch (item)
             {
                 case Neo.VM.Types.InteropInterface _:
-                    writer.WriteValue("InteropInterface");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("type");
+                    writer.WriteValue("interop-interface");
+                    writer.WriteEndObject();
                     break;
                 case Neo.VM.Types.Boolean _:
                     writer.WriteValue(item.GetBoolean());
                     break;
-                // case Neo.VM.Types.Integer _:
-                //     writer.WriteValue(item.GetBigInteger());
-                //     break;
-                // case Neo.VM.Types.ByteArray byteArray:
-                //     writer.WriteValue(byteArray.GetByteArray());
-                //     break;
+                case Neo.VM.Types.Buffer buffer:
+                    WriteByteArray(buffer.InnerBuffer);
+                    break;
+                case Neo.VM.Types.ByteString byteString:
+                    WriteByteArray(byteString);
+                    break;
+                case Neo.VM.Types.Integer @int:
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("type");
+                    writer.WriteValue("integer");
+                    writer.WritePropertyName("value");
+                    writer.WriteValue($"{@int.GetInteger()}");
+                    writer.WriteEndObject();
+                    break;
+                case Neo.VM.Types.Null _:
+                    writer.WriteNull();
+                    break;
+                case Neo.VM.Types.Pointer pointer:
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("type");
+                    writer.WriteValue("pointer");
+                    writer.WriteEndObject();
+                    break;
                 case Neo.VM.Types.Map map:
+                    writer.WriteStartArray();
+                    foreach (var kvp in map)
                     {
-                        writer.WriteStartObject();
-                        foreach (var kvp in map)
-                        {
-                            writer.WritePropertyName("key");
-                            WriteStackItem(writer, kvp.Key);
-                            writer.WritePropertyName("value");
-                            WriteStackItem(writer, kvp.Value);
-                        }
-                        writer.WriteEndObject();
-                        break;
+                        writer.WritePropertyName("key");
+                        WriteStackItem(writer, kvp.Key);
+                        writer.WritePropertyName("value");
+                        WriteStackItem(writer, kvp.Value);
                     }
+                    writer.WriteEndArray();
+                    break;
                 case Neo.VM.Types.Array array:
+                    writer.WriteStartArray();
+                    foreach (var arrayItem in array)
                     {
-                        writer.WriteStartArray();
-                        foreach (var arrayItem in array)
-                        {
-                            WriteStackItem(writer, arrayItem);
-                        }
-                        writer.WriteEndArray();
-                        break;
+                        WriteStackItem(writer, arrayItem);
                     }
+                    writer.WriteEndArray();
+                    break;
             }
         }
     }

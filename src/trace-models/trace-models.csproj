@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Neo.Seattle.TraceDebug.Models</AssemblyName>
+    <Authors>Neo Global Development Seattle</Authors>
+    <Company>The Neo Project</Company>
+    <Copyright>2015-2020 The Neo Project</Copyright>
+    <LangVersion>8</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageIcon>ngdsea.png</PackageIcon>
+    <PackageId>Neo.Seattle.TraceDebug.Models</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RootNamespace>Neo.Seattle.TraceDebug.Models</RootNamespace>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MessagePack" Version="2.1.152"/>
+    <PackageReference Include="Neo" Version="3.0.0-preview3-00"/>
+  </ItemGroup>
+</Project>

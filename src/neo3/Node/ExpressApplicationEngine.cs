@@ -29,6 +29,7 @@ namespace NeoExpress.Neo3.Node
             Log -= OnLog;
             Notify -= OnNotify;
             traceDebugSink.Dispose();
+            base.Dispose();
         }
 
         private void OnNotify(object sender, NotifyEventArgs args)

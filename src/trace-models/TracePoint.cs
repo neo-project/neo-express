@@ -7,30 +7,20 @@ using StackItem = Neo.VM.Types.StackItem;
 namespace Neo.Seattle.TraceDebug.Models
 {
     [MessagePackObject]
-    public struct TracePoint : ITraceRecord
+    public readonly struct TracePoint : ITraceRecord
     {
         [Key(0)]
-        public VMState State;
+        public readonly VMState State;
         [Key(1)]
-        public IReadOnlyList<StackFrame> StackFrames;
+        public readonly IReadOnlyList<StackFrame> StackFrames;
         [Key(2)]
-        public IReadOnlyDictionary<UInt160, IReadOnlyDictionary<byte[], StorageItem>> Storages;
+        public readonly IReadOnlyDictionary<UInt160, IReadOnlyDictionary<byte[], StorageItem>> Storages;
 
-        [MessagePackObject]
-        public struct StackFrame
+        public TracePoint(VMState state, IReadOnlyList<StackFrame> stackFrames, IReadOnlyDictionary<UInt160, IReadOnlyDictionary<byte[], StorageItem>> storages)
         {
-            [Key(0)]
-            public UInt160 ScriptHash;
-            [Key(1)]
-            public int InstructionPointer;
-            [Key(2)]
-            public IReadOnlyList<StackItem> EvaluationStack;
-            [Key(3)]
-            public IReadOnlyList<StackItem> LocalVariables;
-            [Key(4)]
-            public IReadOnlyList<StackItem> StaticFields;
-            [Key(5)]
-            public IReadOnlyList<StackItem> Arguments;
+            State = state;
+            StackFrames = stackFrames;
+            Storages = storages;
         }
     }
 }

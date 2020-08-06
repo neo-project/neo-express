@@ -3,9 +3,14 @@ using MessagePack;
 namespace Neo.Seattle.TraceDebug.Models
 {
     [MessagePackObject]
-    public struct Fault : ITraceRecord
+    public readonly struct Fault : ITraceRecord
     {
         [Key(0)]
-        public string Exception;
+        public readonly string Exception;
+
+        public Fault(string exception)
+        {
+            Exception = exception;
+        }
     }
 }

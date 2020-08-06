@@ -5,13 +5,20 @@ using StackItem = Neo.VM.Types.StackItem;
 namespace Neo.Seattle.TraceDebug.Models
 {
     [MessagePackObject]
-    public struct Notify : ITraceRecord
+    public readonly struct Notify : ITraceRecord
     {
         [Key(0)]
-        public UInt160 ScriptHash;
+        public readonly UInt160 ScriptHash;
+        [Key(1)]
+        public readonly string EventName;
         [Key(2)]
-        public string EventName;
-        [Key(2)]
-        public IReadOnlyList<StackItem> State;
+        public readonly IReadOnlyList<StackItem> State;
+
+        public Notify(UInt160 scriptHash, string eventName, IReadOnlyList<StackItem> state)
+        {
+            ScriptHash = scriptHash;
+            EventName = eventName;
+            State = state;
+        }
     }
 }

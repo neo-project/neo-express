@@ -15,7 +15,12 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.1.152"/>
-    <PackageReference Include="Neo" Version="3.0.0-preview3-00"/>
+    <PackageReference Include="Neo" Version="3.0.0-preview3-00" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="gen/*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\repos\MessagePack-CSharp\src\MessagePack\MessagePack.csproj" />
   </ItemGroup>
 </Project>

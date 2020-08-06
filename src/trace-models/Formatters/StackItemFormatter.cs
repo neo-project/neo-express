@@ -30,7 +30,7 @@ namespace Neo.Seattle.TraceDebug.Formatters
             var count = reader.ReadArrayHeader();
             if (count != 2) throw new MessagePackSerializationException();
 
-            var type = options.Resolver.GetFormatterWithVerify<StackItemType>().Deserialize(ref reader, options);
+            var type = (StackItemType)reader.ReadByte();
 
             switch (type)
             {
@@ -93,36 +93,31 @@ namespace Neo.Seattle.TraceDebug.Formatters
 
         public void Serialize(ref MessagePackWriter writer, StackItem value, MessagePackSerializerOptions options)
         {
-            var stackItemTypeFormatter = options.Resolver.GetFormatterWithVerify<StackItemType>();
-
+            var resolver = options.Resolver;
+            writer.WriteArrayHeader(2);
             switch (value)
             {
                 case NeoBoolean _:
-                    writer.WriteArrayHeader(2);
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.Boolean, options);
+                    writer.Write((byte)StackItemType.Boolean);
                     writer.Write(value.GetBoolean());
                     break;
                 case NeoBuffer buffer:
-                    writer.WriteArrayHeader(2);
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.Buffer, options);
+                    writer.Write((byte)StackItemType.Buffer);
                     writer.Write(buffer.InnerBuffer.AsSpan());
                     break;
                 case NeoByteString byteString:
-                    writer.WriteArrayHeader(2);
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.ByteString, options);
+                    writer.Write((byte)StackItemType.ByteString);
                     writer.Write(byteString);
                     break;
                 case NeoInteger integer:
-                    writer.WriteArrayHeader(2);
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.Integer, options);
-                    options.Resolver.GetFormatterWithVerify<BigInteger>().Serialize(ref writer, integer.GetInteger(), options);
+                    writer.Write((byte)StackItemType.Integer);
+                    resolver.GetFormatterWithVerify<BigInteger>().Serialize(ref writer, integer.GetInteger(), options);
                     break;
                 case NeoInteropInterface interopInterface:
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.InteropInterface, options);
+                    writer.Write((byte)StackItemType.InteropInterface);
                     throw new NotImplementedException();
                 case NeoMap map:
-                    writer.WriteArrayHeader(2);
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.Map, options);
+                    writer.Write((byte)StackItemType.Map);
                     writer.WriteMapHeader(map.Count);
                     foreach (var kvp in map)
                     {
@@ -131,18 +126,15 @@ namespace Neo.Seattle.TraceDebug.Formatters
                     }
                     break;
                 case NeoNull _:
-                    writer.WriteArrayHeader(2);
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.Any, options);
+                    writer.Write((byte)StackItemType.Any);
                     writer.WriteNil();
                     break;
                 case NeoPointer pointer:
-                    stackItemTypeFormatter.Serialize(ref writer, StackItemType.Pointer, options);
+                    writer.Write((byte)StackItemType.Pointer);
                     throw new NotImplementedException();
                 case NeoArray array:
                     {
-                        var type = array is NeoStruct ? StackItemType.Struct : StackItemType.Array;
-                        writer.WriteArrayHeader(2);
-                        stackItemTypeFormatter.Serialize(ref writer, type, options);
+                        writer.Write((byte)(array is NeoStruct ? StackItemType.Struct : StackItemType.Array));
                         writer.WriteArrayHeader(array.Count);
                         for (int i = 0; i < array.Count; i++)
                         {

@@ -12,19 +12,9 @@ namespace Neo.Seattle.TraceDebug.Formatters
 
         public UInt160 Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            if (reader.TryReadNil())
-            {
-                return null!;
-            }
-
             var seq = reader.ReadRaw(UInt160.Length);
-            if (seq.Length == UInt160.Length)
-            {
-                // TODO: avoid array creation by adding ReadOnlySequence<byte> ctor to uint160
-                return new UInt160(seq.ToArray());
-            }
-
-            throw new MessagePackSerializationException("Invalid UInt160");
+            // TODO: avoid array creation by adding ReadOnlySequence<byte> ctor to uint160
+            return new UInt160(seq.ToArray());
         }
 
         public void Serialize(ref MessagePackWriter writer, UInt160 value, MessagePackSerializerOptions options)

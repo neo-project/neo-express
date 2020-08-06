@@ -28,34 +28,14 @@ namespace Neo.Seattle.TraceDebug.Formatters
 
         public StorageItem Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            if (reader.TryReadNil())
+            if (reader.ReadArrayHeader() != 2)
             {
-                return null!;
+                throw new MessagePackSerializationException();
             }
 
-            options.Security.DepthStep(ref reader);
-
-            var value = default(byte[]);
-            var isConstant = default(bool);
-            for (int key = 0; key < reader.ReadArrayHeader(); key++)
-            {
-                switch (key)
-                {
-                    case 0:
-                        value = reader.ReadBytes()?.ToArray();
-                        break;
-                    case 1:
-                        isConstant = reader.ReadBoolean();
-                        break;
-                    default:
-                        reader.Skip();
-                        break;
-                }
-            }
-
-            var result = new StorageItem(value, isConstant);
-            reader.Depth--;
-            return result;
+            var value = reader.ReadBytes()?.ToArray() ?? throw new MessagePackSerializationException();
+            var isConstant = reader.ReadBoolean();
+            return new StorageItem(value, isConstant);
         }
 
         public void Serialize(ref MessagePackWriter writer, StorageItem value, MessagePackSerializerOptions options)

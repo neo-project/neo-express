@@ -6,7 +6,7 @@ using Neo.SmartContract;
 
 namespace NeoExpress.Neo3.Node
 {
-    using SysPath = System.IO.Path;
+    using SysIO = System.IO;
 
     internal class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
@@ -15,9 +15,8 @@ namespace NeoExpress.Neo3.Node
             if (trigger == TriggerType.Application
                 && container is Transaction tx)
             {
-                var name = $"{tx.Hash}.neo-trace.json";
-                var path = SysPath.Combine(Environment.CurrentDirectory, name);
-                var sink = new TraceDebugJsonSink(path);
+                var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
+                var sink = new TraceDebugSink(SysIO.File.OpenWrite(path));
                 return new ExpressApplicationEngine(sink, trigger, container, snapshot, gas, testMode);
             }
 

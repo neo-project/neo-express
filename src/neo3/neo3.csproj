@@ -7,15 +7,16 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Nito.Disposables" Version="2.1.0" />
-    <PackageReference Include="Neo.Seattle.Persistence" Version="0.1.22-preview" />
-    <PackageReference Include="Neo" Version="3.0.0-preview3-00" />
-    <PackageReference Include="RpcServer" Version="3.0.0-preview3" />
-    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-preview3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
+    <PackageReference Include="Nito.Disposables" Version="2.1.0"/>
+    <PackageReference Include="Neo.Seattle.Persistence" Version="0.1.22-preview"/>
+    <PackageReference Include="Neo" Version="3.0.0-preview3-00"/>
+    <PackageReference Include="RpcServer" Version="3.0.0-preview3"/>
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-preview3"/>
+    <PackageReference Include="Nerdbank.Streams" Version="2.5.76"/>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\abstractions\abstractions.csproj" />
-    <ProjectReference Include="..\trace-models\trace-models.csproj" />
+    <ProjectReference Include="..\abstractions\abstractions.csproj"/>
+    <ProjectReference Include="..\trace-models\trace-models.csproj"/>
   </ItemGroup>
 </Project>

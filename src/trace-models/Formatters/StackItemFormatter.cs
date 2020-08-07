@@ -19,7 +19,7 @@ using NeoNull = Neo.VM.Types.Null;
 using NeoPointer = Neo.VM.Types.Pointer;
 using NeoStruct = Neo.VM.Types.Struct;
 
-namespace Neo.Seattle.TraceDebug.Formatters
+namespace Neo.BlockchainToolkit.TraceDebug.Formatters
 {
     public class StackItemFormatter : IMessagePackFormatter<StackItem>
     {

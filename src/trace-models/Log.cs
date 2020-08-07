@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace Neo.Seattle.TraceDebug.Models
+namespace Neo.BlockchainToolkit.TraceDebug
 {
     [MessagePackObject]
     public readonly struct Log : ITraceRecord

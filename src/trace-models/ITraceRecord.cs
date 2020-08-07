@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace Neo.Seattle.TraceDebug.Models
+namespace Neo.BlockchainToolkit.TraceDebug
 {
     [Union(0, typeof(TracePoint))]
     [Union(1, typeof(Notify))]

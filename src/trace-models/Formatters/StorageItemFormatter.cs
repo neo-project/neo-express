@@ -20,7 +20,7 @@ using NeoPointer = Neo.VM.Types.Pointer;
 using NeoStruct = Neo.VM.Types.Struct;
 using Neo.Ledger;
 
-namespace Neo.Seattle.TraceDebug.Formatters
+namespace Neo.BlockchainToolkit.TraceDebug.Formatters
 {
     public class StorageItemFormatter : IMessagePackFormatter<StorageItem>
     {

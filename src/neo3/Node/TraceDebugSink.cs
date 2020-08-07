@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Pipelines;
 using System.Linq;
 using MessagePack;
 using MessagePack.Formatters;
 using Neo;
 using Neo.Ledger;
-using Neo.Seattle.TraceDebug.Formatters;
+using Neo.BlockchainToolkit.TraceDebug.Formatters;
 using Neo.SmartContract;
 using Neo.VM;
 using Nerdbank.Streams;
@@ -16,7 +15,7 @@ using StackItem = Neo.VM.Types.StackItem;
 namespace NeoExpress.Neo3.Node
 {
     // The trace methods in this class are designed to write out MessagePack messages
-    // that can be deserialized into types defined in the Neo.Seattle.TraceDebug.Models
+    // that can be deserialized into types defined in the Neo.BlockchainToolkit.TraceDebug
     // package. However, this code replicates the MessagePack serialization logic
     // in order to avoid having to create garbage during serialization.
 
@@ -43,24 +42,22 @@ namespace NeoExpress.Neo3.Node
         }
 
         private readonly Stream stream;
-        private readonly PipeWriter outputPipe;
 
         public TraceDebugSink(Stream stream)
         {
             this.stream = stream;
-            outputPipe = stream.UsePipe().Output;
         }
 
         public void Dispose()
         {
-            outputPipe.Complete();
             stream.Flush();
             stream.Dispose();
         }
 
         public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> stackFrames, IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> storages)
         {
-            var writer = new MessagePackWriter(outputPipe);
+            var pipe = stream.UseStrictPipeWriter();
+            var writer = new MessagePackWriter(pipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(0);
             writer.WriteArrayHeader(3);
@@ -91,11 +88,13 @@ namespace NeoExpress.Neo3.Node
                 }
             }
             writer.Flush();
+            pipe.Complete();
         }
 
         public void Notify(NotifyEventArgs args)
         {
-            var writer = new MessagePackWriter(outputPipe);
+            var pipe = stream.UseStrictPipeWriter();
+            var writer = new MessagePackWriter(pipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(1);
             writer.WriteArrayHeader(3);
@@ -103,22 +102,26 @@ namespace NeoExpress.Neo3.Node
             options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, args.EventName, options);
             options.Resolver.GetFormatterWithVerify<IReadOnlyList<StackItem>>().Serialize(ref writer, args.State, options);
             writer.Flush();
+            pipe.Complete();
         }
 
         public void Log(LogEventArgs args)
         {
-            var writer = new MessagePackWriter(outputPipe);
+            var pipe = stream.UseStrictPipeWriter();
+            var writer = new MessagePackWriter(pipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(2);
             writer.WriteArrayHeader(2);
             options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, args.ScriptHash, options);
             options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, args.Message, options);
             writer.Flush();
+            pipe.Complete();
         }
 
         public void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<StackItem> results)
         {
-            var writer = new MessagePackWriter(outputPipe);
+            var pipe = stream.UseStrictPipeWriter();
+            var writer = new MessagePackWriter(pipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(3);
             writer.WriteArrayHeader(3);
@@ -126,16 +129,19 @@ namespace NeoExpress.Neo3.Node
             writer.Write(gasConsumed);
             options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, results, options);
             writer.Flush();
+            pipe.Complete();
         }
 
         public void Fault(Exception exception)
         {
-            var writer = new MessagePackWriter(outputPipe);
+            var pipe = stream.UseStrictPipeWriter();
+            var writer = new MessagePackWriter(pipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(4);
             writer.WriteArrayHeader(1);
             options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, exception.Message, options);
             writer.Flush();
+            pipe.Complete();
         }
     }
 }

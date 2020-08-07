@@ -4,7 +4,7 @@ using MessagePack;
 using MessagePack.Formatters;
 using Neo.IO;
 
-namespace Neo.Seattle.TraceDebug.Formatters
+namespace Neo.BlockchainToolkit.TraceDebug.Formatters
 {
     public class UInt160Formatter : IMessagePackFormatter<UInt160>
     {

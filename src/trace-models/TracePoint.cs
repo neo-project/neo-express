@@ -4,7 +4,7 @@ using Neo.Ledger;
 using Neo.VM;
 using StackItem = Neo.VM.Types.StackItem;
 
-namespace Neo.Seattle.TraceDebug.Models
+namespace Neo.BlockchainToolkit.TraceDebug
 {
     [MessagePackObject]
     public readonly struct TracePoint : ITraceRecord

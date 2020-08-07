@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using MessagePack;
 using MessagePack.Formatters;
@@ -42,21 +43,23 @@ namespace NeoExpress.Neo3.Node
         }
 
         private readonly Stream stream;
+        private readonly PipeWriter outputPipe;
 
         public TraceDebugSink(Stream stream)
         {
             this.stream = stream;
+            outputPipe = stream.UsePipe().Output;
         }
 
         public void Dispose()
         {
+            outputPipe.Complete();
             stream.Flush();
             stream.Dispose();
         }
 
         public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> stackFrames, IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> storages)
         {
-            var outputPipe = stream.UsePipe().Output;
             var writer = new MessagePackWriter(outputPipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(0);
@@ -88,12 +91,10 @@ namespace NeoExpress.Neo3.Node
                 }
             }
             writer.Flush();
-            outputPipe.Complete();
         }
 
         public void Notify(NotifyEventArgs args)
         {
-            var outputPipe = stream.UsePipe().Output;
             var writer = new MessagePackWriter(outputPipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(1);
@@ -102,12 +103,10 @@ namespace NeoExpress.Neo3.Node
             options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, args.EventName, options);
             options.Resolver.GetFormatterWithVerify<IReadOnlyList<StackItem>>().Serialize(ref writer, args.State, options);
             writer.Flush();
-            outputPipe.Complete();
         }
 
         public void Log(LogEventArgs args)
         {
-            var outputPipe = stream.UsePipe().Output;
             var writer = new MessagePackWriter(outputPipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(2);
@@ -115,12 +114,10 @@ namespace NeoExpress.Neo3.Node
             options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, args.ScriptHash, options);
             options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, args.Message, options);
             writer.Flush();
-            outputPipe.Complete();
         }
 
         public void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<StackItem> results)
         {
-            var outputPipe = stream.UsePipe().Output;
             var writer = new MessagePackWriter(outputPipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(3);
@@ -129,19 +126,16 @@ namespace NeoExpress.Neo3.Node
             writer.Write(gasConsumed);
             options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, results, options);
             writer.Flush();
-            outputPipe.Complete();
         }
 
         public void Fault(Exception exception)
         {
-            var outputPipe = stream.UsePipe().Output;
             var writer = new MessagePackWriter(outputPipe);
             writer.WriteArrayHeader(2);
             writer.WriteInt32(4);
             writer.WriteArrayHeader(1);
             options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, exception.Message, options);
             writer.Flush();
-            outputPipe.Complete();
         }
     }
 }

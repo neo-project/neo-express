@@ -4,7 +4,7 @@ using Neo.IO.Caching;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
-using Neo.Seattle.Persistence;
+using Neo.BlockchainToolkit.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.VM;

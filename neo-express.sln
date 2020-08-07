@@ -15,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neo3", "src\neo3\neo3.cspro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nxp3", "src\nxp3\nxp3.csproj", "{BBABD2F5-E597-4AA7-8893-753142FD386A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "trace-models", "src\trace-models\trace-models.csproj", "{77EA02FF-277C-42C1-82E2-44BC99436698}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,10 +41,6 @@ Global
 		{BBABD2F5-E597-4AA7-8893-753142FD386A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBABD2F5-E597-4AA7-8893-753142FD386A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBABD2F5-E597-4AA7-8893-753142FD386A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{77EA02FF-277C-42C1-82E2-44BC99436698}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{77EA02FF-277C-42C1-82E2-44BC99436698}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{77EA02FF-277C-42C1-82E2-44BC99436698}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{77EA02FF-277C-42C1-82E2-44BC99436698}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,6 +53,5 @@ Global
 		{945E794F-24B8-47DF-B852-332A0BB8E73E} = {D75A7A77-40E7-4266-8999-A4D33FD28DCC}
 		{50C15088-D51C-4A3B-83DA-238A16BFD00B} = {D75A7A77-40E7-4266-8999-A4D33FD28DCC}
 		{BBABD2F5-E597-4AA7-8893-753142FD386A} = {D75A7A77-40E7-4266-8999-A4D33FD28DCC}
-		{77EA02FF-277C-42C1-82E2-44BC99436698} = {D75A7A77-40E7-4266-8999-A4D33FD28DCC}
 	EndGlobalSection
 EndGlobal

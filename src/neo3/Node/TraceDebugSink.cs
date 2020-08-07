@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MessagePack;
-using MessagePack.Formatters;
+using MessagePack.Resolvers;
 using Neo;
 using Neo.Ledger;
-using Neo.BlockchainToolkit.TraceDebug.Formatters;
 using Neo.SmartContract;
 using Neo.VM;
 using Nerdbank.Streams;
@@ -21,24 +20,12 @@ namespace NeoExpress.Neo3.Node
 
     internal class TraceDebugSink : ITraceDebugSink
     {
-        private readonly static IFormatterResolver resolver;
         private readonly static MessagePackSerializerOptions options;
 
         static TraceDebugSink()
         {
-            resolver = MessagePack.Resolvers.CompositeResolver.Create(
-                new IMessagePackFormatter[]
-                {
-                    StackItemFormatter.Instance,
-                    StorageItemFormatter.Instance,
-                    UInt160Formatter.Instance
-                },
-                new IFormatterResolver[]
-                {
-                    MessagePack.Resolvers.StandardResolver.Instance
-                });
-
-            options = MessagePackSerializerOptions.Standard.WithResolver(resolver);
+            options = MessagePackSerializerOptions.Standard
+                .WithResolver(TraceDebugResolver.Instance);
         }
 
         private readonly Stream stream;

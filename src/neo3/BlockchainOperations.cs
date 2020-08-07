@@ -148,7 +148,7 @@ namespace NeoExpress.Neo3
             return wallet.ToExpressWallet();
         }
 
-        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
             if (index >= chain.ConsensusNodes.Count)
             {
@@ -175,7 +175,7 @@ namespace NeoExpress.Neo3
             using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
             using var store = GetStore();
-            await NodeUtility.RunAsync(store, node, writer, cancellationToken).ConfigureAwait(false);
+            await NodeUtility.RunAsync(store, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
 
             Neo.Persistence.IStore GetStore()
             {
@@ -206,7 +206,7 @@ namespace NeoExpress.Neo3
             public byte[]? TryGet(byte table, byte[]? key) => null;
         }
 
-        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
             string checkpointTempPath;
             do
@@ -243,7 +243,7 @@ namespace NeoExpress.Neo3
 
             using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
             using var checkpointStore = new CheckpointStore(rocksDbStore);
-            await NodeUtility.RunAsync(checkpointStore, node, writer, cancellationToken).ConfigureAwait(false);
+            await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)

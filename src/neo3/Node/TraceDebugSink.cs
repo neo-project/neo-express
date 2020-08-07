@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MessagePack;
+using MessagePack.Formatters;
+using MessagePack.Formatters.Neo.BlockchainToolkit.TraceDebug;
 using MessagePack.Resolvers;
 using Neo;
 using Neo.Ledger;
@@ -24,6 +26,14 @@ namespace NeoExpress.Neo3.Node
 
         static TraceDebugSink()
         {
+            // var r = CompositeResolver.Create(
+            //     StackItemFormatter.Instance,
+            //     StorageItemFormatter.Instance,
+            //     UInt160Formatter.Instance,
+            //     new GenericEnumFormatter<VMState>(),
+            //     new InterfaceReadOnlyCollectionFormatter<StackItem>(),
+            //     BigIntegerFormatter.Instance,
+            //     NullableStringFormatter.Instance);
             options = MessagePackSerializerOptions.Standard
                 .WithResolver(TraceDebugResolver.Instance);
         }
@@ -87,7 +97,7 @@ namespace NeoExpress.Neo3.Node
             writer.WriteArrayHeader(3);
             options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, args.ScriptHash, options);
             options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, args.EventName, options);
-            options.Resolver.GetFormatterWithVerify<IReadOnlyList<StackItem>>().Serialize(ref writer, args.State, options);
+            options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, args.State, options);
             writer.Flush();
             pipe.Complete();
         }

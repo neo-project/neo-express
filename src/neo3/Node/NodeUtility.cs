@@ -52,7 +52,7 @@ namespace NeoExpress.Neo3.Node
             return ProtocolSettings.Initialize(config);
         }
 
-        public static Task RunAsync(IStore store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
             writer.WriteLine(store.GetType().Name);
 
@@ -67,7 +67,7 @@ namespace NeoExpress.Neo3.Node
 
                     var logPlugin = new LogPlugin(writer);
                     var storageProvider = new ExpressStorageProvider(store);
-                    var appEngineProvider = new ExpressApplicationEngineProvider();
+                    var appEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
 
                     using var system = new NeoSystem(storageProvider.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);

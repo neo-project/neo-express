@@ -21,6 +21,9 @@ namespace nxp3.Commands
         [Option]
         private bool Discard { get; } = false;
 
+        [Option]
+        private bool Trace { get; } = false;
+
         private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
@@ -40,6 +43,7 @@ namespace nxp3.Commands
                                                             NodeIndex,
                                                             SecondsPerBlock,
                                                             Discard,
+                                                            Trace,
                                                             console.Out,
                                                             cts.Token)
                     .ConfigureAwait(false);

@@ -1,12 +1,11 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using MessagePack;
-using MessagePack.Formatters;
-using MessagePack.Formatters.Neo.BlockchainToolkit.TraceDebug;
 using MessagePack.Resolvers;
 using Neo;
+using Neo.BlockchainToolkit.TraceDebug;
 using Neo.Ledger;
 using Neo.SmartContract;
 using Neo.VM;
@@ -26,19 +25,12 @@ namespace NeoExpress.Neo3.Node
 
         static TraceDebugSink()
         {
-            // var r = CompositeResolver.Create(
-            //     StackItemFormatter.Instance,
-            //     StorageItemFormatter.Instance,
-            //     UInt160Formatter.Instance,
-            //     new GenericEnumFormatter<VMState>(),
-            //     new InterfaceReadOnlyCollectionFormatter<StackItem>(),
-            //     BigIntegerFormatter.Instance,
-            //     NullableStringFormatter.Instance);
             options = MessagePackSerializerOptions.Standard
                 .WithResolver(TraceDebugResolver.Instance);
         }
 
         private readonly Stream stream;
+        private readonly Sequence<byte> sequence = new Sequence<byte>();
 
         public TraceDebugSink(Stream stream)
         {
@@ -51,94 +43,45 @@ namespace NeoExpress.Neo3.Node
             stream.Dispose();
         }
 
-        public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> stackFrames, IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> storages)
+        private void Write(Action<IBufferWriter<byte>, MessagePackSerializerOptions> funcWrite)
         {
-            var pipe = stream.UseStrictPipeWriter();
-            var writer = new MessagePackWriter(pipe);
-            writer.WriteArrayHeader(2);
-            writer.WriteInt32(0);
-            writer.WriteArrayHeader(3);
-            options.Resolver.GetFormatterWithVerify<VMState>().Serialize(ref writer, vmState, options);
-
-            writer.WriteArrayHeader(stackFrames.Count);
-            foreach (var context in stackFrames)
+            try
             {
-                writer.WriteArrayHeader(6);
-                options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, context.GetScriptHash(), options);
-                writer.Write(context.InstructionPointer);
-                options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, context.EvaluationStack, options);
-                options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, context.LocalVariables, options);
-                options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, context.StaticFields, options);
-                options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, context.Arguments, options);
-            }
-
-            var storageGroups = storages.GroupBy(t => t.scriptHash);
-            writer.WriteMapHeader(storageGroups.Count());
-            foreach (var group in storageGroups)
-            {
-                options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, group.Key, options);
-                writer.WriteMapHeader(group.Count());
-                foreach (var (_, key, item) in group)
+                sequence.Reset();
+                funcWrite(sequence, options);
+                foreach (var segment in sequence.AsReadOnlySequence)
                 {
-                    writer.Write(key);
-                    options.Resolver.GetFormatterWithVerify<StorageItem>().Serialize(ref writer, item, options);
+                    stream.Write(segment.Span);
                 }
             }
-            writer.Flush();
-            pipe.Complete();
+            catch (Exception)
+            {
+            }
+        }
+
+        public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> contexts, IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> storages)
+        {
+            Write((seq, opt) => TraceRecord.Write(seq, opt, vmState, contexts));
         }
 
         public void Notify(NotifyEventArgs args)
         {
-            var pipe = stream.UseStrictPipeWriter();
-            var writer = new MessagePackWriter(pipe);
-            writer.WriteArrayHeader(2);
-            writer.WriteInt32(1);
-            writer.WriteArrayHeader(3);
-            options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, args.ScriptHash, options);
-            options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, args.EventName, options);
-            options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, args.State, options);
-            writer.Flush();
-            pipe.Complete();
+            Write((seq, opt) => NotifyRecord.Write(seq, opt, args.ScriptHash, args.EventName, args.State));
         }
 
         public void Log(LogEventArgs args)
         {
-            var pipe = stream.UseStrictPipeWriter();
-            var writer = new MessagePackWriter(pipe);
-            writer.WriteArrayHeader(2);
-            writer.WriteInt32(2);
-            writer.WriteArrayHeader(2);
-            options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, args.ScriptHash, options);
-            options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, args.Message, options);
-            writer.Flush();
-            pipe.Complete();
+            Write((seq, opt) => LogRecord.Write(seq, opt, args.ScriptHash, args.Message));
         }
 
         public void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<StackItem> results)
         {
-            var pipe = stream.UseStrictPipeWriter();
-            var writer = new MessagePackWriter(pipe);
-            writer.WriteArrayHeader(2);
-            writer.WriteInt32(3);
-            writer.WriteArrayHeader(3);
-            options.Resolver.GetFormatterWithVerify<VMState>().Serialize(ref writer, vmState, options);
-            writer.Write(gasConsumed);
-            options.Resolver.GetFormatterWithVerify<IReadOnlyCollection<StackItem>>().Serialize(ref writer, results, options);
-            writer.Flush();
-            pipe.Complete();
+            Write((seq, opt) => ResultsRecord.Write(seq, opt, vmState, gasConsumed, results));
         }
 
         public void Fault(Exception exception)
         {
-            var pipe = stream.UseStrictPipeWriter();
-            var writer = new MessagePackWriter(pipe);
-            writer.WriteArrayHeader(2);
-            writer.WriteInt32(4);
-            writer.WriteArrayHeader(1);
-            options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, exception.Message, options);
-            writer.Flush();
-            pipe.Complete();
+            Write((seq, opt) => FaultRecord.Write(seq, opt, exception.Message));
         }
     }
 }

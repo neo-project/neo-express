@@ -59,9 +59,9 @@ namespace NeoExpress.Neo3.Node
             }
         }
 
-        public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> contexts, IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> storages)
+        public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> executionContexts)
         {
-            Write((seq, opt) => TraceRecord.Write(seq, opt, vmState, contexts));
+            Write((seq, opt) => TraceRecord.Write(seq, opt, vmState, executionContexts));
         }
 
         public void Notify(NotifyEventArgs args)
@@ -82,6 +82,11 @@ namespace NeoExpress.Neo3.Node
         public void Fault(Exception exception)
         {
             Write((seq, opt) => FaultRecord.Write(seq, opt, exception.Message));
+        }
+
+        public void Script(byte[] script)
+        {
+            Write((seq, opt) => ScriptRecord.Write(seq, opt, script));
         }
     }
 }

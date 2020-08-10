@@ -1,9 +1,4 @@
 using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using Neo;
-using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
@@ -11,6 +6,19 @@ using Neo.VM;
 
 namespace NeoExpress.Neo3.Node
 {
+    // random notes:
+    //  * Need to have a trace record for capturing the initial execution script.
+    //    I think we can skip capturing any script that is deployed in the chain.
+    //    If the developer has the script / source locally, we can step thru it.
+    //    If they don't, then we can simply skip to the end of the missing script's 
+    //    execution.
+    //  * Instead of capturing storages every time, I'm thinking we capture storages
+    //    on context entry and only capture them again if storage put/putex/delete
+    //    is called. I can watch for those methods to be called in OnSysCall w/o
+    //    having to do the full parameter parsing stuff.
+    //  * In next preview, Execute method will be virtual so it will be easier to
+    //    retrieve start/end state 
+
     internal class ExpressApplicationEngine : ApplicationEngine
     {
         private bool preExecTrace = true;
@@ -34,7 +42,7 @@ namespace NeoExpress.Neo3.Node
 
         private void OnNotify(object sender, NotifyEventArgs args)
         {
-            if (object.ReferenceEquals(sender, this))
+            if (ReferenceEquals(sender, this))
             {
                 traceDebugSink.Notify(args);
             }
@@ -42,42 +50,40 @@ namespace NeoExpress.Neo3.Node
 
         private void OnLog(object sender, LogEventArgs args)
         {
-            if (object.ReferenceEquals(sender, this))
+            if (ReferenceEquals(sender, this))
             {
                 traceDebugSink.Log(args);
             }
         }
 
-        private void Trace()
-        {
-            var storages = InvocationStack
-                .Select(ec => ec.GetScriptHash())
-                .Distinct()
-                .SelectMany(GetStorages);
+        // private void Trace()
+        // {
+            // var storages = InvocationStack
+            //     .Select(ec => ec.GetScriptHash())
+            //     .Distinct()
+            //     .SelectMany(GetStorages);
 
-            traceDebugSink.Trace(State, InvocationStack, storages);
+            // IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> GetStorages(UInt160 scriptHash)
+            // {
+            //     var contractState = Snapshot.Contracts.TryGet(scriptHash);
+            //     return contractState != null
+            //         ? Snapshot.Storages
+            //             .Find(CreateSearchPrefix(contractState.Id, default))
+            //             .Select(t => (scriptHash, t.Key.Key, t.Value))
+            //         : Enumerable.Empty<(UInt160, byte[], StorageItem)>();
+            // }
 
-            IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> GetStorages(UInt160 scriptHash)
-            {
-                var contractState = Snapshot.Contracts.TryGet(scriptHash);
-                return contractState != null
-                    ? Snapshot.Storages
-                        .Find(CreateSearchPrefix(contractState.Id, default))
-                        .Select(t => (scriptHash, t.Key.Key, t.Value))
-                    : Enumerable.Empty<(UInt160, byte[], StorageItem)>();
-            }
-
-            // TODO: PR Opened to make StorageKey.CreateSearchPrefix public
-            //       If accepted, remove this copy of that method 
-            //       https://github.com/neo-project/neo/pull/1824
-            static byte[] CreateSearchPrefix(int id, ReadOnlySpan<byte> prefix)
-            {
-                byte[] buffer = new byte[sizeof(int) + prefix.Length];
-                BinaryPrimitives.WriteInt32LittleEndian(buffer, id);
-                prefix.CopyTo(buffer.AsSpan(sizeof(int)));
-                return buffer;
-            }
-        }
+            // // TODO: PR Opened to make StorageKey.CreateSearchPrefix public
+            // //       If accepted, remove this copy of that method 
+            // //       https://github.com/neo-project/neo/pull/1824
+            // static byte[] CreateSearchPrefix(int id, ReadOnlySpan<byte> prefix)
+            // {
+            //     byte[] buffer = new byte[sizeof(int) + prefix.Length];
+            //     BinaryPrimitives.WriteInt32LittleEndian(buffer, id);
+            //     prefix.CopyTo(buffer.AsSpan(sizeof(int)));
+            //     return buffer;
+            // }
+        // }
 
          protected override void PreExecuteInstruction()
          {
@@ -86,7 +92,8 @@ namespace NeoExpress.Neo3.Node
              //       https://github.com/neo-project/neo-vm/pull/355
              if (preExecTrace)
              {
-                 Trace();
+                 traceDebugSink.Script(CurrentContext.Script);
+                 traceDebugSink.Trace(State, InvocationStack);
                  preExecTrace = false;
              }
 
@@ -95,7 +102,7 @@ namespace NeoExpress.Neo3.Node
 
         protected override void PostExecuteInstruction(Instruction instruction)
         {
-            Trace();
+            traceDebugSink.Trace(State, InvocationStack);
             base.PostExecuteInstruction(instruction);
         }
 

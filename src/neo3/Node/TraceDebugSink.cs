@@ -88,5 +88,10 @@ namespace NeoExpress.Neo3.Node
         {
             Write((seq, opt) => ScriptRecord.Write(seq, opt, script));
         }
+
+        public void Storages(UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages)
+        {
+            Write((seq, opt) => StorageRecord.Write(seq, opt, scriptHash, storages));
+        }
     }
 }

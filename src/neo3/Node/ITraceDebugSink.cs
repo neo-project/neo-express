@@ -15,5 +15,6 @@ namespace NeoExpress.Neo3.Node
         void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<Neo.VM.Types.StackItem> results);
         void Fault(Exception exception);
         void Script(byte[] script);
+        void Storages(UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages);
     }
 }

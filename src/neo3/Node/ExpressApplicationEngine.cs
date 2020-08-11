@@ -97,11 +97,14 @@ namespace NeoExpress.Neo3.Node
 
         private void WriteStorages(UInt160 scriptHash)
         {
-            var contractState = Snapshot.Contracts.TryGet(CurrentScriptHash);
-            if (contractState != null)
+            if (scriptHash != null)
             {
-                var storages = Snapshot.Storages.Find(CreateSearchPrefix(contractState.Id, default));
-                traceDebugSink.Storages(scriptHash, storages);
+                var contractState = Snapshot.Contracts.TryGet(scriptHash);
+                if (contractState != null)
+                {
+                    var storages = Snapshot.Storages.Find(CreateSearchPrefix(contractState.Id, default));
+                    traceDebugSink.Storages(scriptHash, storages);
+                }
             }
 
             // TODO: remove this copy of CreateSearchPrefix in preview 4 

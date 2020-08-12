@@ -89,10 +89,11 @@ namespace NeoExpress.Neo3.Node
 
         protected override void OnFault(Exception e)
         {
+            base.OnFault(e);
             traceDebugSink.Fault(e);
+            traceDebugSink.Trace(State, InvocationStack);
             // TODO: move this results call to Execute override in preview 4
             traceDebugSink.Results(State, GasConsumed, ResultStack);
-            base.OnFault(e);
         }
 
         private void WriteStorages(UInt160 scriptHash)

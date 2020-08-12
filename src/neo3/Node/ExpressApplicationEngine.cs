@@ -10,15 +10,6 @@ using Neo.VM;
 
 namespace NeoExpress.Neo3.Node
 {
-    // random notes:
-    //  * Instead of capturing storages every time, I'm thinking we capture storages
-    //    on context entry and only capture them again if storage put/putex/delete
-    //    is called. I can watch for those methods to be called in OnSysCall w/o
-    //    having to do the full parameter parsing stuff. This way, I don't capture
-    //    storage every time + I'm only capturing current script context changes
-    //  * I think I need need to trace Throw opcodes special
-
-
     internal class ExpressApplicationEngine : ApplicationEngine
     {
         // In next preview, Execute method will be virtual so it will be easier to
@@ -120,23 +111,3 @@ namespace NeoExpress.Neo3.Node
         }
     }
 }
-
-// private void Trace()
-// {
-// var storages = InvocationStack
-//     .Select(ec => ec.GetScriptHash())
-//     .Distinct()
-//     .SelectMany(GetStorages);
-
-// IEnumerable<(UInt160 scriptHash, byte[] key, StorageItem item)> GetStorages(UInt160 scriptHash)
-// {
-//     var contractState = Snapshot.Contracts.TryGet(scriptHash);
-//     return contractState != null
-//         ? Snapshot.Storages
-//             .Find(CreateSearchPrefix(contractState.Id, default))
-//             .Select(t => (scriptHash, t.Key.Key, t.Value))
-//         : Enumerable.Empty<(UInt160, byte[], StorageItem)>();
-// }
-
-
-// }

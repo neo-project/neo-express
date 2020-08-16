@@ -52,7 +52,7 @@ namespace NeoExpress.Neo3.Node
             return ProtocolSettings.Initialize(config);
         }
 
-        public static Task RunAsync(IStore store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
             writer.WriteLine(store.GetType().Name);
 
@@ -66,9 +66,10 @@ namespace NeoExpress.Neo3.Node
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
                     var logPlugin = new LogPlugin(writer);
-                    var storagePlugin = new ExpressStorageProvider(store);
+                    var storageProvider = new ExpressStorageProvider(store);
+                    var appEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
 
-                    using var system = new NeoSystem(storagePlugin.Name);
+                    using var system = new NeoSystem(storageProvider.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
                     var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
                     var expressRpcServer = new ExpressRpcServer(multiSigAccount);

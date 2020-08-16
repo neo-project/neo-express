@@ -2,7 +2,7 @@ using System;
 using Neo;
 using Neo.IO.Json;
 using Neo.Ledger;
-using Neo.Seattle.Persistence;
+using Neo.BlockchainToolkit.Persistence;
 using Neo.Plugins;
 using NeoExpress.Abstractions.Models;
 using System.Linq;

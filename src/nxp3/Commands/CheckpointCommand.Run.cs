@@ -23,6 +23,9 @@ namespace nxp3.Commands
             [Option]
             private uint SecondsPerBlock { get; }
 
+            [Option]
+            private bool Trace { get; } = false;
+
             private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -41,6 +44,7 @@ namespace nxp3.Commands
                     await blockchainOperations.RunCheckpointAsync(chain,
                                                                   filename,
                                                                   SecondsPerBlock,
+                                                                  Trace,
                                                                   console.Out,
                                                                   cts.Token)
                             .ConfigureAwait(false);

@@ -4,7 +4,7 @@ using Neo.IO.Caching;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
-using Neo.Seattle.Persistence;
+using Neo.BlockchainToolkit.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.VM;
@@ -148,7 +148,7 @@ namespace NeoExpress.Neo3
             return wallet.ToExpressWallet();
         }
 
-        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
             if (index >= chain.ConsensusNodes.Count)
             {
@@ -175,7 +175,7 @@ namespace NeoExpress.Neo3
             using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
 
             using var store = GetStore();
-            await NodeUtility.RunAsync(store, node, writer, cancellationToken).ConfigureAwait(false);
+            await NodeUtility.RunAsync(store, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
 
             Neo.Persistence.IStore GetStore()
             {
@@ -206,7 +206,7 @@ namespace NeoExpress.Neo3
             public byte[]? TryGet(byte table, byte[]? key) => null;
         }
 
-        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, TextWriter writer, CancellationToken cancellationToken)
+        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
             string checkpointTempPath;
             do
@@ -243,7 +243,7 @@ namespace NeoExpress.Neo3
 
             using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
             using var checkpointStore = new CheckpointStore(rocksDbStore);
-            await NodeUtility.RunAsync(checkpointStore, node, writer, cancellationToken).ConfigureAwait(false);
+            await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)
@@ -454,13 +454,38 @@ namespace NeoExpress.Neo3
                 json = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
             }
 
-            var scriptHash = UInt160.Parse(json.Value<string>("hash"));
+            var scriptHash = GetScriptHash(json["contract"], invocationFilePath);
             var operation = json.Value<string>("operation");
             var args = ContractParameterParser.ParseParams(json.GetValue("args")).ToArray();
 
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(scriptHash, operation, args);
             return sb.ToArray();
+
+            static UInt160 GetScriptHash(JToken? json, string invocationFilePath)
+            {
+                if (json != null && json is JObject jObject)
+                {
+                    if (jObject.TryGetValue("hash", out var jsonHash))
+                    {
+                        return UInt160.Parse(jsonHash.Value<string>());
+                    }
+
+                    if (jObject.TryGetValue("path", out var jsonPath))
+                    {
+                        var path = jsonPath.Value<string>();
+                        path = Path.IsPathFullyQualified(path)
+                            ? path
+                            : Path.Combine(Path.GetDirectoryName(invocationFilePath), path);
+
+                        using var stream = File.OpenRead(path);
+                        using var reader = new BinaryReader(stream, Encoding.UTF8, false);
+                        return reader.ReadSerializable<NefFile>().ScriptHash;
+                    }
+                }
+
+                throw new InvalidDataException("invalid contract property");
+            }
         }
 
         public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)

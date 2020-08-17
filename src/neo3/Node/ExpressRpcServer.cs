@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace NeoExpress.Neo3.Node
 {
-    class ExpressRpcServer
+    internal class ExpressRpcServer
     {
         private readonly ExpressWalletAccount multiSigAccount;
 
@@ -19,7 +19,7 @@ namespace NeoExpress.Neo3.Node
         }
 
         [RpcMethod]
-        private JObject? ExpressGetContractStorage(JArray @params)
+        public JObject? ExpressGetContractStorage(JArray @params)
         {
             var scriptHash = UInt160.Parse(@params[0].AsString());
             ContractState? contract = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
@@ -41,7 +41,7 @@ namespace NeoExpress.Neo3.Node
         }
 
         [RpcMethod]
-        private JObject? ExpressListContracts(JArray @params)
+        public JObject? ExpressListContracts(JArray @params)
         {
             var contracts = Blockchain.Singleton.View.Contracts.Find().OrderBy(t => t.Value.Id);
 

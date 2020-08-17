@@ -68,12 +68,17 @@ namespace NeoExpress.Neo3.Node
                     var logPlugin = new LogPlugin(writer);
                     var storageProvider = new ExpressStorageProvider(store);
                     var appEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
+                    var appLogsPlugin = new ExpressAppLogsPlugin(store);
+
+                    var q = appLogsPlugin as Neo.Plugins.IPersistencePlugin;
+                    var z = q.ShouldThrowExceptionFromCommit(new Exception());
 
                     using var system = new NeoSystem(storageProvider.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
                     var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
                     var expressRpcServer = new ExpressRpcServer(multiSigAccount);
                     rpcServer.RegisterMethods(expressRpcServer);
+                    rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
 
                     system.StartNode(new ChannelsConfig

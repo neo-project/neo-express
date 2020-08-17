@@ -69,13 +69,12 @@ namespace NeoExpress.Neo3.Node
         {
             base.PostExecuteInstruction(instruction);
 
-            traceDebugSink.Trace(State, InvocationStack);
-            WriteStorages(CurrentScriptHash);
-            // TODO: move this results call to Execute override in preview 4
             if (State == VMState.HALT)
             {
                 traceDebugSink.Results(State, GasConsumed, ResultStack);
             }
+            traceDebugSink.Trace(State, InvocationStack);
+            WriteStorages(CurrentScriptHash);
         }
 
         protected override void OnFault(Exception e)
@@ -83,8 +82,6 @@ namespace NeoExpress.Neo3.Node
             base.OnFault(e);
             traceDebugSink.Fault(e);
             traceDebugSink.Trace(State, InvocationStack);
-            // TODO: move this results call to Execute override in preview 4
-            traceDebugSink.Results(State, GasConsumed, ResultStack);
         }
 
         private void WriteStorages(UInt160 scriptHash)

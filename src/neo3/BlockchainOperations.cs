@@ -562,6 +562,11 @@ namespace NeoExpress.Neo3
 
         public Task<RpcTransaction> ShowTransaction(ExpressChain chain, string txHash)
         {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 
@@ -571,6 +576,11 @@ namespace NeoExpress.Neo3
 
         public Task<RpcBlock> ShowBlock(ExpressChain chain, string blockHash)
         {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 

@@ -560,7 +560,8 @@ namespace NeoExpress.Neo3
             return Task.FromResult(result);
         }
 
-        public Task<RpcTransaction> ShowTransaction(ExpressChain chain, string txHash)
+        // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed
+        public async Task<(RpcTransaction tx, Neo.IO.Json.JObject? log)> ShowTransaction(ExpressChain chain, string txHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -570,8 +571,16 @@ namespace NeoExpress.Neo3
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
 
-            var result = rpcClient.GetRawTransaction(txHash);
-            return Task.FromResult(result);
+            var tx = rpcClient.GetRawTransaction(txHash);
+            try
+            {
+                var log = await rpcClient.RpcSendAsync("getapplicationlog", txHash).ConfigureAwait(false);
+                return (tx, log);
+            }
+            catch
+            {
+                return (tx, null);
+            }
         }
 
         public Task<RpcBlock> ShowBlock(ExpressChain chain, string blockHash)

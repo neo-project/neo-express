@@ -27,9 +27,9 @@ namespace NeoExpress.Neo2.Persistence
         public const string GENERAL_STORAGE_FAMILY = "general-storage";
 
         public const byte VALIDATORS_COUNT_KEY = 0x90;
-        public const byte CURRENT_BLOCK_KEY = 0xc0;
-        public const byte CURRENT_HEADER_KEY = 0xc1;
-        public const byte CURRENT_ROOT_KEY = 0xc2;
+        public const byte BLOCK_HASH_INDEX_KEY = 0xc0;
+        public const byte HEADER_HASH_INDEX_KEY = 0xc1;
+        public const byte STATE_ROOT_HASH_INDEX_KEY = 0xc2;
 
         private static ColumnFamilies CreateColumnFamilies() 
         {
@@ -54,6 +54,7 @@ namespace NeoExpress.Neo2.Persistence
         public static ColumnFamilies ColumnFamilies => columnFamilies.Value;
 
         private readonly RocksDb db;
+        private readonly Lazy<ColumnFamilyHandle> generalStorageFamily;
 
         public RocksDbStore(string path)
         {
@@ -62,6 +63,7 @@ namespace NeoExpress.Neo2.Persistence
                 .SetCreateMissingColumnFamilies(true);
 
             db = RocksDb.Open(options, path, ColumnFamilies);
+            generalStorageFamily = new Lazy<ColumnFamilyHandle>(() => db.GetColumnFamily(METADATA_FAMILY));
         }
 
         public void Dispose()
@@ -89,9 +91,9 @@ namespace NeoExpress.Neo2.Persistence
         public override Neo.IO.Caching.DataCache<UInt32Wrapper, StateRootState> GetStateRoots() => new DataCache<UInt32Wrapper, StateRootState>(db, STATE_ROOT_FAMILY);
         public override Neo.IO.Caching.DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList() => new DataCache<UInt32Wrapper, HeaderHashList>(db, HEADER_HASH_LIST_FAMILY);
         public override Neo.IO.Caching.MetaDataCache<ValidatorsCountState> GetValidatorsCount() => new MetaDataCache<ValidatorsCountState>(db, VALIDATORS_COUNT_KEY);
-        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() => new MetaDataCache<HashIndexState>(db, CURRENT_BLOCK_KEY);
-        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() => new MetaDataCache<HashIndexState>(db, CURRENT_HEADER_KEY);
-        public override Neo.IO.Caching.MetaDataCache<RootHashIndex> GetStateRootHashIndex() => new MetaDataCache<RootHashIndex>(db, CURRENT_ROOT_KEY);
+        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetBlockHashIndex() => new MetaDataCache<HashIndexState>(db, BLOCK_HASH_INDEX_KEY);
+        public override Neo.IO.Caching.MetaDataCache<HashIndexState> GetHeaderHashIndex() => new MetaDataCache<HashIndexState>(db, HEADER_HASH_INDEX_KEY);
+        public override Neo.IO.Caching.MetaDataCache<RootHashIndex> GetStateRootHashIndex() => new MetaDataCache<RootHashIndex>(db, STATE_ROOT_HASH_INDEX_KEY);
 
         internal static byte[] GetKey(byte prefix, byte[] key)
         {
@@ -103,20 +105,17 @@ namespace NeoExpress.Neo2.Persistence
 
         public override byte[] Get(byte prefix, byte[] key)
         {
-            var columnFamily = db.GetColumnFamily(GENERAL_STORAGE_FAMILY);
-            return db.Get(GetKey(prefix, key), columnFamily);
+            return db.Get(GetKey(prefix, key), generalStorageFamily.Value);
         }
 
         public override void Put(byte prefix, byte[] key, byte[] value)
         {
-            var columnFamily = db.GetColumnFamily(GENERAL_STORAGE_FAMILY);
-            db.Put(GetKey(prefix, key), value, columnFamily);
+            db.Put(GetKey(prefix, key), value, generalStorageFamily.Value);
         }
 
         public override void PutSync(byte prefix, byte[] key, byte[] value)
         {
-            var columnFamily = db.GetColumnFamily(GENERAL_STORAGE_FAMILY);
-            db.Put(GetKey(prefix, key), value, columnFamily,
+            db.Put(GetKey(prefix, key), value, generalStorageFamily.Value,
                 new WriteOptions().SetSync(true));
         }
     }

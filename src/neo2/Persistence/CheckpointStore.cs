@@ -51,9 +51,9 @@ namespace NeoExpress.Neo2.Persistence
             stateRoots = new DataTracker<UInt32Wrapper, StateRootState>(db, RocksDbStore.STATE_ROOT_FAMILY);
             headerHashList = new DataTracker<UInt32Wrapper, HeaderHashList>(db, RocksDbStore.HEADER_HASH_LIST_FAMILY);
             validatorsCount = new MetadataTracker<ValidatorsCountState>(db, RocksDbStore.VALIDATORS_COUNT_KEY, metadataColumnHandle);
-            blockHashIndex = new MetadataTracker<HashIndexState>(db, RocksDbStore.CURRENT_BLOCK_KEY, metadataColumnHandle);
-            headerHashIndex = new MetadataTracker<HashIndexState>(db, RocksDbStore.CURRENT_HEADER_KEY, metadataColumnHandle);
-            stateRootHashIndex = new MetadataTracker<RootHashIndex>(db, RocksDbStore.CURRENT_ROOT_KEY, metadataColumnHandle);
+            blockHashIndex = new MetadataTracker<HashIndexState>(db, RocksDbStore.BLOCK_HASH_INDEX_KEY, metadataColumnHandle);
+            headerHashIndex = new MetadataTracker<HashIndexState>(db, RocksDbStore.HEADER_HASH_INDEX_KEY, metadataColumnHandle);
+            stateRootHashIndex = new MetadataTracker<RootHashIndex>(db, RocksDbStore.STATE_ROOT_HASH_INDEX_KEY, metadataColumnHandle);
         }
 
         public void Dispose()

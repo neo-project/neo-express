@@ -35,9 +35,9 @@ namespace NeoExpress.Neo2.Persistence
                 StateRoots = new DataCache<UInt32Wrapper, StateRootState>(db, STATE_ROOT_FAMILY, readOptions, writeBatch);
                 HeaderHashList = new DataCache<UInt32Wrapper, HeaderHashList>(db, HEADER_HASH_LIST_FAMILY, readOptions, writeBatch);
                 ValidatorsCount = new MetaDataCache<ValidatorsCountState>(db, VALIDATORS_COUNT_KEY, readOptions, writeBatch);
-                BlockHashIndex = new MetaDataCache<HashIndexState>(db, CURRENT_BLOCK_KEY, readOptions, writeBatch);
-                HeaderHashIndex = new MetaDataCache<HashIndexState>(db, CURRENT_HEADER_KEY, readOptions, writeBatch);
-                StateRootHashIndex = new MetaDataCache<RootHashIndex>(db, CURRENT_ROOT_KEY, readOptions, writeBatch);
+                BlockHashIndex = new MetaDataCache<HashIndexState>(db, BLOCK_HASH_INDEX_KEY, readOptions, writeBatch);
+                HeaderHashIndex = new MetaDataCache<HashIndexState>(db, HEADER_HASH_INDEX_KEY, readOptions, writeBatch);
+                StateRootHashIndex = new MetaDataCache<RootHashIndex>(db, STATE_ROOT_HASH_INDEX_KEY, readOptions, writeBatch);
             }
 
             public override void Dispose()

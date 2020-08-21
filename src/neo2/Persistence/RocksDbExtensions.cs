@@ -19,15 +19,13 @@ namespace NeoExpress.Neo2.Persistence
         public static IEnumerable<KeyValuePair<byte[], TValue>> Find<TValue>(this RocksDb db, byte[] keyPrefix, ColumnFamilyHandle? columnFamily = null, ReadOptions? readOptions = null)
             where TValue : ISerializable, new()
         {
-            using (var iterator = db.NewIterator(columnFamily, readOptions))
+            using var iterator = db.NewIterator(columnFamily, readOptions);
+            iterator.Seek(keyPrefix);
+            while (iterator.Valid())
             {
-                iterator.Seek(keyPrefix);
-                while (iterator.Valid())
-                {
-                    yield return new KeyValuePair<byte[], TValue>(
-                        iterator.Key(), iterator.Value().AsSerializable<TValue>());
-                    iterator.Next();
-                }
+                yield return new KeyValuePair<byte[], TValue>(
+                    iterator.Key(), iterator.Value().AsSerializable<TValue>());
+                iterator.Next();
             }
         }
 

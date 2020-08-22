@@ -1,4 +1,5 @@
-﻿using Neo.IO;
+﻿using Neo;
+using Neo.IO;
 using Neo.Trie.MPT;
 using OneOf;
 using System;
@@ -13,9 +14,9 @@ namespace NeoExpress.Neo2.Persistence
             where TKey : IEquatable<TKey>, ISerializable, new()
             where TValue : class, ICloneable<TValue>, ISerializable, new()
         {
+            private readonly bool updateEnabled;
             private readonly DataTracker<TKey, TValue> tracker;
             private readonly ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>>? snapshot = null;
-            private readonly Action<byte[], OneOf<TValue, OneOf.Types.None>>? updater = null;
             private readonly MPTTrie? mptTrie = null;
 
             public DataCache(DataTracker<TKey, TValue> tracker)
@@ -25,11 +26,12 @@ namespace NeoExpress.Neo2.Persistence
 
             public DataCache(DataTracker<TKey, TValue> tracker,
                 ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> values,
-                Action<byte[], OneOf<TValue, OneOf.Types.None>> updater)
+                MPTTrie? mptTrie)
             {
+                this.updateEnabled = true;
                 this.tracker = tracker;
                 this.snapshot = values;
-                this.updater = updater;
+                this.mptTrie = mptTrie;
             }
 
             protected override IEnumerable<KeyValuePair<TKey, TValue>> FindInternal(byte[] key_prefix)
@@ -59,11 +61,11 @@ namespace NeoExpress.Neo2.Persistence
 
             public override void DeleteInternal(TKey key)
             {
-                if (updater == null)
+                if (!updateEnabled)
                     throw new InvalidOperationException();
 
                 var keyArray = key.ToArray();
-                updater(keyArray, NONE_INSTANCE);
+                tracker.Update(keyArray, NONE_INSTANCE);
                 mptTrie?.TryDelete(keyArray);
             }
 
@@ -74,11 +76,11 @@ namespace NeoExpress.Neo2.Persistence
 
             protected override void UpdateInternal(TKey key, TValue value)
             {
-                if (updater == null)
+                if (!updateEnabled)
                     throw new InvalidOperationException();
 
                 var keyArray = key.ToArray();
-                updater(keyArray, value);
+                tracker.Update(keyArray, value);
                 mptTrie?.Put(keyArray, value.ToArray());
             }
 
@@ -87,7 +89,10 @@ namespace NeoExpress.Neo2.Persistence
                 base.Commit();
                 if (mptTrie != null)
                 {
-                    // put root
+                    if (!updateEnabled)
+                        throw new InvalidOperationException();
+
+                    tracker.PutRoot(mptTrie.GetRoot());
                 }
             }
         }

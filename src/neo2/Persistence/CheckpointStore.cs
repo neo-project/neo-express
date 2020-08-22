@@ -34,6 +34,8 @@ namespace NeoExpress.Neo2.Persistence
 
         private readonly Dictionary<byte[], byte[]> generalStorage = new Dictionary<byte[], byte[]>(new ByteArrayComparer());
 
+        private readonly KVTracker kvTracker;
+
         public CheckpointStore(string path)
         {
             db = RocksDb.OpenReadOnly(new DbOptions(), path, RocksDbStore.ColumnFamilies, false);
@@ -54,6 +56,7 @@ namespace NeoExpress.Neo2.Persistence
             blockHashIndex = new MetadataTracker<HashIndexState>(db, RocksDbStore.BLOCK_HASH_INDEX_KEY, metadataColumnHandle);
             headerHashIndex = new MetadataTracker<HashIndexState>(db, RocksDbStore.HEADER_HASH_INDEX_KEY, metadataColumnHandle);
             stateRootHashIndex = new MetadataTracker<RootHashIndex>(db, RocksDbStore.STATE_ROOT_HASH_INDEX_KEY, metadataColumnHandle);
+            kvTracker = new KVTracker(db, RocksDbStore.MPT_FAMILY);
         }
 
         public void Dispose()

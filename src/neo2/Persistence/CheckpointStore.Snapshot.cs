@@ -5,17 +5,20 @@ using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.IO.Wrappers;
 using Neo.Ledger;
-using OneOf;
-using RocksDbSharp;
+using Neo.Trie;
+using Neo.Trie.MPT;
 
 namespace NeoExpress.Neo2.Persistence
 {
     internal partial class CheckpointStore
     {
+
         private class Snapshot : Neo.Persistence.Snapshot
         {
             public Snapshot(CheckpointStore store)
             {
+                var kvStore = store.kvTracker.GetSnapshot();
+
                 Blocks = store.blocks.GetSnapshot();
                 Transactions = store.transactions.GetSnapshot();
                 Accounts = store.accounts.GetSnapshot();
@@ -24,7 +27,7 @@ namespace NeoExpress.Neo2.Persistence
                 Validators = store.validators.GetSnapshot();
                 Assets = store.assets.GetSnapshot();
                 Contracts = store.contracts.GetSnapshot();
-                Storages = store.storages.GetSnapshot();
+                Storages = store.storages.GetSnapshot(kvStore);
                 StateRoots = store.stateRoots.GetSnapshot();
                 HeaderHashList = store.headerHashList.GetSnapshot();
 

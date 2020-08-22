@@ -1,4 +1,7 @@
-﻿using Neo.IO;
+﻿using Neo;
+using Neo.IO;
+using Neo.Trie;
+using Neo.Trie.MPT;
 using OneOf;
 using RocksDbSharp;
 using System;
@@ -15,6 +18,7 @@ namespace NeoExpress.Neo2.Persistence
         {
             private readonly RocksDb db;
             private readonly ColumnFamilyHandle columnFamily;
+            private UInt256? root;
 
             // dictionary value of None indicates the key has been deleted
             private ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> updatedValues =
@@ -30,8 +34,10 @@ namespace NeoExpress.Neo2.Persistence
             public Neo.IO.Caching.DataCache<TKey, TValue> GetCache()
                 => new DataCache<TKey, TValue>(this);
 
-            public Neo.IO.Caching.DataCache<TKey, TValue> GetSnapshot()
-                => new DataCache<TKey, TValue>(this, updatedValues, Update);
+            public Neo.IO.Caching.DataCache<TKey, TValue> GetSnapshot(IKVStore? kvStore = null)
+                => kvStore == null
+                    ? new DataCache<TKey, TValue>(this, updatedValues, null)
+                    : new DataCache<TKey, TValue>(this, updatedValues, new MPTTrie(GetRoot(), kvStore));
 
             public IEnumerable<KeyValuePair<TKey, TValue>> Find(byte[] keyPrefix, ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>>? snapshotValues)
             {
@@ -74,8 +80,23 @@ namespace NeoExpress.Neo2.Persistence
                 return db.TryGet<TValue>(keyArray, columnFamily);
             }
 
-            private void Update(byte[] key, OneOf<TValue, OneOf.Types.None> value)
+            public void Update(byte[] key, OneOf<TValue, OneOf.Types.None> value)
                 => updatedValues = updatedValues.SetItem(key, value);
+
+            private UInt256? GetRoot()
+            {
+                if (root != null)
+                {
+                    return root;
+                }
+
+                return RocksDbStore.GetRoot(db);
+            }
+
+            public void PutRoot(UInt256 root)
+            {
+                this.root = root;
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Neo.IO;
+using Neo.Trie.MPT;
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;
@@ -15,18 +16,20 @@ namespace NeoExpress.Neo2.Persistence
             private readonly ColumnFamilyHandle familyHandle;
             private readonly ReadOptions? readOptions;
             private readonly WriteBatch? writeBatch;
+            private readonly MPTTrie? mptTrie = null;
 
-            public DataCache(RocksDb db, string familyName, ReadOptions? readOptions = null, WriteBatch? writeBatch = null)
-                : this(db, db.GetColumnFamily(familyName), readOptions, writeBatch)
+            public DataCache(RocksDb db, string familyName, ReadOptions? readOptions = null, WriteBatch? writeBatch = null, MPTTrie? mptTrie = null)
+                : this(db, db.GetColumnFamily(familyName), readOptions, writeBatch, mptTrie)
             {
             }
 
-            public DataCache(RocksDb db, ColumnFamilyHandle familyHandle, ReadOptions? readOptions = null, WriteBatch? writeBatch = null)
+            public DataCache(RocksDb db, ColumnFamilyHandle familyHandle, ReadOptions? readOptions = null, WriteBatch? writeBatch = null, MPTTrie? mptTrie = null)
             {
                 this.db = db;
                 this.familyHandle = familyHandle;
                 this.readOptions = readOptions;
                 this.writeBatch = writeBatch;
+                this.mptTrie = mptTrie;
             }
 
             protected override IEnumerable<KeyValuePair<TKey, TValue>> FindInternal(byte[] key_prefix)
@@ -66,7 +69,10 @@ namespace NeoExpress.Neo2.Persistence
                 if (writeBatch == null)
                     throw new InvalidOperationException();
 
-                writeBatch.Put(key.ToArray(), value.ToArray(), familyHandle);
+                var keyArray = key.ToArray();
+                var valueArray = value.ToArray();
+                writeBatch.Put(keyArray, valueArray, familyHandle);
+                mptTrie?.Put(keyArray, valueArray);
             }
 
             public override void DeleteInternal(TKey key)
@@ -74,7 +80,18 @@ namespace NeoExpress.Neo2.Persistence
                 if (writeBatch == null)
                     throw new InvalidOperationException();
 
-                writeBatch.Delete(key.ToArray(), familyHandle);
+                var keyArray = key.ToArray();
+                writeBatch.Delete(keyArray, familyHandle);
+                mptTrie?.TryDelete(keyArray);
+            }
+
+            public override void Commit()
+            {
+                base.Commit();
+                if (mptTrie != null)
+                {
+                    // put root
+                }
             }
         }
     }

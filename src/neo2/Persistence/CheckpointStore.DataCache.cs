@@ -1,4 +1,5 @@
 ﻿using Neo.IO;
+using Neo.Trie.MPT;
 using OneOf;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,8 @@ namespace NeoExpress.Neo2.Persistence
         {
             private readonly DataTracker<TKey, TValue> tracker;
             private readonly ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>>? snapshot = null;
-            private readonly Action<TKey, OneOf<TValue, OneOf.Types.None>>? updater = null;
+            private readonly Action<byte[], OneOf<TValue, OneOf.Types.None>>? updater = null;
+            private readonly MPTTrie? mptTrie = null;
 
             public DataCache(DataTracker<TKey, TValue> tracker)
             {
@@ -23,7 +25,7 @@ namespace NeoExpress.Neo2.Persistence
 
             public DataCache(DataTracker<TKey, TValue> tracker,
                 ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>> values,
-                Action<TKey, OneOf<TValue, OneOf.Types.None>> updater)
+                Action<byte[], OneOf<TValue, OneOf.Types.None>> updater)
             {
                 this.tracker = tracker;
                 this.snapshot = values;
@@ -60,7 +62,9 @@ namespace NeoExpress.Neo2.Persistence
                 if (updater == null)
                     throw new InvalidOperationException();
 
-                updater(key, NONE_INSTANCE);
+                var keyArray = key.ToArray();
+                updater(keyArray, NONE_INSTANCE);
+                mptTrie?.TryDelete(keyArray);
             }
 
             protected override void AddInternal(TKey key, TValue value)
@@ -73,7 +77,18 @@ namespace NeoExpress.Neo2.Persistence
                 if (updater == null)
                     throw new InvalidOperationException();
 
-                updater(key, value);
+                var keyArray = key.ToArray();
+                updater(keyArray, value);
+                mptTrie?.Put(keyArray, value.ToArray());
+            }
+
+            public override void Commit()
+            {
+                base.Commit();
+                if (mptTrie != null)
+                {
+                    // put root
+                }
             }
         }
     }

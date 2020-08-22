@@ -90,7 +90,10 @@ namespace NeoExpress.Neo2.Persistence
                 base.Commit();
                 if (mptTrie != null)
                 {
-                    // put root
+                    if (writeBatch == null)
+                        throw new InvalidOperationException();
+
+                    PutRoot(mptTrie.GetRoot(), db, writeBatch);
                 }
             }
         }

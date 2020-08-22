@@ -30,6 +30,7 @@ namespace NeoExpress.Neo2.Persistence
         public const byte BLOCK_HASH_INDEX_KEY = 0xc0;
         public const byte HEADER_HASH_INDEX_KEY = 0xc1;
         public const byte STATE_ROOT_HASH_INDEX_KEY = 0xc2;
+        public static readonly byte[] STATE_ROOT_KEY = new[] { (byte)0xd0 };
 
         private static ColumnFamilies CreateColumnFamilies() 
         {
@@ -117,6 +118,17 @@ namespace NeoExpress.Neo2.Persistence
         {
             db.Put(GetKey(prefix, key), value, generalStorageFamily.Value,
                 new WriteOptions().SetSync(true));
+        }
+
+        public static UInt256? GetRoot(RocksDb db, ReadOptions? readOptions = null)
+        {
+            return db.TryGet<UInt256>(STATE_ROOT_KEY, db.GetColumnFamily(METADATA_FAMILY), readOptions);
+        }
+
+        private static void PutRoot(UInt256 root, RocksDb db, WriteBatch writeBatch)
+        {
+            if (root == null) return;
+            writeBatch.Put(STATE_ROOT_KEY, root.ToArray(), db.GetColumnFamily(METADATA_FAMILY));
         }
     }
 }

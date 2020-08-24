@@ -26,7 +26,7 @@ namespace NeoExpress.Neo2.Node
 {
     internal static class NodeUtility
     {
-        const byte ADDRESS_VERSION = (byte)0x17;
+        public const byte ADDRESS_VERSION = (byte)0x17;
 
         public static bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0)
         {

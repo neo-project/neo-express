@@ -4,6 +4,7 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Neo;
 using NeoExpress.Abstractions.Models;
+using Neo.Cryptography;
 
 namespace NeoExpress.Neo2.Models
 {
@@ -24,10 +25,20 @@ namespace NeoExpress.Neo2.Models
             return key;
         }
 
+        // copied from Neo.Wallets.Helper to use NodeUtility.ADDRESS_VERSION 
+        // instead of ProtocolSettings.Default.AddressVersion
+        public static string ToAddress(UInt160 scriptHash)
+        {
+            byte[] data = new byte[21];
+            data[0] = Node.NodeUtility.ADDRESS_VERSION;
+            Buffer.BlockCopy(scriptHash.ToArray(), 0, data, 1, 20);
+            return data.Base58CheckEncode();
+        }
+        
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
             PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
-            ScriptHash = Neo.Wallets.Helper.ToAddress(ScriptHash),
+            ScriptHash = ToAddress(ScriptHash),
             Label = Label,
             IsDefault = IsDefault,
             Contract = new ExpressWalletAccount.AccountContract()

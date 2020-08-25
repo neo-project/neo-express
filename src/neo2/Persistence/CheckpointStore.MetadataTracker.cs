@@ -36,10 +36,7 @@ namespace NeoExpress.Neo2.Persistence
                     _ => db.TryGet<T>(key, columnFamily));
             }
 
-            public void Update(T value)
-            {
-                updatedValue = value;
-            }
+            public void Update(T value) => updatedValue = value;
         }
     }
 }

@@ -42,10 +42,11 @@ namespace NeoExpress.Neo2.Persistence
                 HEADER_HASH_LIST_FAMILY, METADATA_FAMILY, GENERAL_STORAGE_FAMILY
             };
 
+            var columnFamilyOptions = new ColumnFamilyOptions();
             var columnFamilies = new ColumnFamilies();
             for (int i = 0; i < families.Length; i++)
             {
-                columnFamilies.Add(families[i], new ColumnFamilyOptions());
+                columnFamilies.Add(families[i], columnFamilyOptions);
             }
             return columnFamilies;
         }

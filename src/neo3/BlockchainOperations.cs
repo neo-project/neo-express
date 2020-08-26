@@ -475,7 +475,7 @@ namespace NeoExpress.Neo3
 
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
-            var script = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
+            var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
             return rpcClient.InvokeScript(script);
         }
 

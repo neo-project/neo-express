@@ -251,7 +251,7 @@ namespace NeoExpress.Neo3
             static bool NodeRunning(ExpressConsensusNode node)
             {
                 // Check to see if there's a neo-express blockchain currently running
-                // by attempting to open a mutex with the multisig account address for 
+                // by attempting to open a mutex with the multisig account address for
                 // a name. If so, do an online checkpoint instead of offline.
 
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
@@ -444,50 +444,6 @@ namespace NeoExpress.Neo3
             }
         }
 
-        private static async Task<byte[]> LoadInvocationFileScript(string invocationFilePath)
-        {
-            JObject json;
-            {
-                using var fileStream = File.OpenRead(invocationFilePath);
-                using var textReader = new StreamReader(fileStream);
-                using var jsonReader = new JsonTextReader(textReader);
-                json = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
-            }
-
-            var scriptHash = GetScriptHash(json["contract"], invocationFilePath);
-            var operation = json.Value<string>("operation");
-            var args = ContractParameterParser.ParseParams(json.GetValue("args")).ToArray();
-
-            using var sb = new ScriptBuilder();
-            sb.EmitAppCall(scriptHash, operation, args);
-            return sb.ToArray();
-
-            static UInt160 GetScriptHash(JToken? json, string invocationFilePath)
-            {
-                if (json != null && json is JObject jObject)
-                {
-                    if (jObject.TryGetValue("hash", out var jsonHash))
-                    {
-                        return UInt160.Parse(jsonHash.Value<string>());
-                    }
-
-                    if (jObject.TryGetValue("path", out var jsonPath))
-                    {
-                        var path = jsonPath.Value<string>();
-                        path = Path.IsPathFullyQualified(path)
-                            ? path
-                            : Path.Combine(Path.GetDirectoryName(invocationFilePath), path);
-
-                        using var stream = File.OpenRead(path);
-                        using var reader = new BinaryReader(stream, Encoding.UTF8, false);
-                        return reader.ReadSerializable<NefFile>().ScriptHash;
-                    }
-                }
-
-                throw new InvalidDataException("invalid contract property");
-            }
-        }
-
         public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
@@ -497,7 +453,7 @@ namespace NeoExpress.Neo3
 
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
-            var script = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
+            var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
 
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
             var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
@@ -519,7 +475,7 @@ namespace NeoExpress.Neo3
 
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());
-            var script = await LoadInvocationFileScript(invocationFilePath).ConfigureAwait(false);
+            var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
             return rpcClient.InvokeScript(script);
         }
 

@@ -444,7 +444,7 @@ namespace NeoExpress.Neo3
             }
         }
 
-        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account)
+        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account, decimal additionalGas = 0m)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -460,6 +460,7 @@ namespace NeoExpress.Neo3
 
             var tm = new TransactionManager(rpcClient)
                 .MakeTransaction(script, signers)
+                .AddGas(additionalGas)
                 .AddSignatures(chain, account)
                 .Sign();
 

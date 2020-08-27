@@ -1,5 +1,6 @@
 ﻿using Neo;
 using Neo.Network.RPC;
+using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
@@ -121,6 +122,15 @@ namespace NeoExpress.Neo3
                     .Where(a => a != null)
                     .Select(Models.DevWalletAccount.FromExpressWalletAccount);
             }
+        }
+
+        public static TransactionManager AddGas(this TransactionManager transactionManager, decimal gas)
+        {
+            if (transactionManager.Tx != null && gas > 0.0m)
+            {
+                transactionManager.Tx.SystemFee += (long)gas.ToBigInteger(NativeContract.GAS.Decimals);
+            }
+            return transactionManager;
         }
     }
 }

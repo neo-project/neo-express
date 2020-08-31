@@ -185,10 +185,14 @@ namespace NeoExpress.Neo2.Node
                 {
                     throw new InvalidOperationException("could not complete signing of preload transaction");
                 }
+                tx.Witnesses = context.GetWitnesses();
+                if (!tx.Verify(snapshot, Enumerable.Empty<Transaction>()))
+                { 
+                    throw new Exception($"{tx.Type} transaction verification failed");
+                }
 
                 var block = CreatePreloadBlock(wallet, random, tx);
                 var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
-
                 if (result != RelayResultReason.Succeed)
                 {
                     throw new Exception($"Preload {tx.Type} transaction failed {result}");

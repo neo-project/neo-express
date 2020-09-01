@@ -38,39 +38,6 @@ namespace NeoExpress.Neo3
                 throw new ArgumentException("invalid blockchain node count", nameof(count));
             }
 
-            var chain = BlockchainOperations.CreateBlockchain(count);
-
-            writer.WriteLine($"Created {count} node privatenet at {output.FullName}");
-            writer.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-            writer.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
-
-            return chain;
-        }
-
-        public byte[] ToScriptHashByteArray(ExpressWalletAccount account)
-        {
-            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-            return devAccount.ScriptHash.ToArray();
-        }
-
-        public void ResetNode(ExpressChain chain, int index)
-        {
-            if (index >= chain.ConsensusNodes.Count)
-            {
-                throw new ArgumentException(nameof(index));
-            }
-
-            var node = chain.ConsensusNodes[index];
-            var folder = node.GetBlockchainPath();
-
-            if (Directory.Exists(folder))
-            {
-                Directory.Delete(folder, true);
-            }
-        }
-
-        static ExpressChain CreateBlockchain(int count)
-        {
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
 
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(49000 + (index * 1000) + portNumber);
@@ -107,11 +74,37 @@ namespace NeoExpress.Neo3
                 });
             }
 
+            writer.WriteLine($"Created {count} node privatenet at {output.FullName}");
+            writer.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
+            writer.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+
             return new ExpressChain()
             {
                 Magic = ExpressChain.GenerateMagicValue(),
                 ConsensusNodes = nodes,
             };
+        }
+
+        public byte[] ToScriptHashByteArray(ExpressWalletAccount account)
+        {
+            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+            return devAccount.ScriptHash.ToArray();
+        }
+
+        public void ResetNode(ExpressChain chain, int index)
+        {
+            if (index >= chain.ConsensusNodes.Count)
+            {
+                throw new ArgumentException(nameof(index));
+            }
+
+            var node = chain.ConsensusNodes[index];
+            var folder = node.GetBlockchainPath();
+
+            if (Directory.Exists(folder))
+            {
+                Directory.Delete(folder, true);
+            }
         }
 
         private const string GENESIS = "genesis";
@@ -241,8 +234,6 @@ namespace NeoExpress.Neo3
             await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
         }
 
-
-
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)
         {
             if (File.Exists(checkPointFileName))
@@ -274,7 +265,6 @@ namespace NeoExpress.Neo3
             }
         }
 
-        private const string ADDRESS_FILENAME = "ADDRESS.neo-express";
         private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
 
         public string ResolveCheckpointFileName(string checkPointFileName)
@@ -329,15 +319,6 @@ namespace NeoExpress.Neo3
             }
         }
 
-        static IEnumerable<ExpressWalletAccount> GetMultiSigAccounts(ExpressChain chain, string scriptHash)
-        {
-            return chain.ConsensusNodes
-                .Select(n => n.Wallet)
-                .Concat(chain.Wallets)
-                .Select(w => w.Accounts.Find(a => a.ScriptHash == scriptHash))
-                .Where(a => a != null);
-        }
-
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
         public UInt256 Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
@@ -367,10 +348,10 @@ namespace NeoExpress.Neo3
             }
             else if(decimal.TryParse(quantity, out var amount))
             {
-                var decimalsResult = expressNode.Invoke(assetHash.MakeScript("decimals"));
-                if (decimalsResult.Length > 0 && decimalsResult[0].Type == StackItemType.Integer)
+                var (_, results) = expressNode.Invoke(assetHash.MakeScript("decimals"));
+                if (results.Length > 0 && results[0].Type == StackItemType.Integer)
                 {
-                    var decimals = (byte)decimalsResult[0].GetInteger();
+                    var decimals = (byte)results[0].GetInteger();
                     var value = amount.ToBigInteger(decimals);
                     return expressNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value));
                 }
@@ -428,24 +409,19 @@ namespace NeoExpress.Neo3
 
             var expressNode = chain.GetExpressNode();
             var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
-            return expressNode.Execute(chain, account, script);
+            return expressNode.Execute(chain, account, script, additionalGas);
         }
 
-        public async Task<RpcInvokeResult> TestInvokeContract(ExpressChain chain, string invocationFilePath)
+        public async Task<(BigDecimal gasConsumed, Neo.VM.Types.StackItem[] results)> TestInvokeContract(ExpressChain chain, string invocationFilePath)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");
             }
 
-            // var expressNode = chain.GetexpressNode();
-            // var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
-            // return expressNode.Execute(chain, account, script);
-
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
+            var expressNode = chain.GetExpressNode();
             var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
-            return rpcClient.InvokeScript(script);
+            return expressNode.Invoke(script);
         }
 
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
@@ -476,10 +452,26 @@ namespace NeoExpress.Neo3
 
         public Task<BigDecimal> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            var assetHash = NodeUtility.GetAssetId(asset);
+            var accountHash = account.GetScriptHashAsUInt160();
+            var expressNode = chain.GetExpressNode();
+
+            using var sb = new ScriptBuilder();
+            sb.EmitAppCall(assetHash, "balanceOf", accountHash);
+            sb.EmitAppCall(assetHash, "decimals");
+
+            var foo = expressNode.Invoke(sb.ToArray());
+
+            
+
             var uri = chain.GetUri();
             var nep5client = new Nep5API(new RpcClient(uri.ToString()));
 
-            var assetHash = NodeUtility.GetAssetId(asset);
             var decimals = nep5client.Decimals(assetHash);
             var result = nep5client.BalanceOf(assetHash, account.ScriptHash.ToScriptHash());
             return Task.FromResult(new BigDecimal(result, decimals));

@@ -1,6 +1,7 @@
 using Neo;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Abstractions.Models;
 using System;
@@ -22,20 +23,23 @@ namespace NeoExpress.Neo3.Node
         {
         }
 
-        public UInt256 Execute(ExpressChain chain, ExpressWalletAccount account, Script script)
+        public UInt256 Execute(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.GetScriptHashAsUInt160() } };
             var tm = new TransactionManager(rpcClient)
                 .MakeTransaction(script, signers)
+                .AddGas(additionalGas)
                 .AddSignatures(chain, account)
                 .Sign();
             return rpcClient.SendRawTransaction(tm.Tx);
         }
 
-        public StackItem[] Invoke(Script script)
+        public (BigDecimal gasConsumed, StackItem[] results) Invoke(Script script)
         {
-            var result = rpcClient.InvokeScript(script);
-            return result.Stack ?? Array.Empty<StackItem>();
+            var invokeResult = rpcClient.InvokeScript(script);
+            var gasConsumed = BigDecimal.Parse(invokeResult.GasConsumed, NativeContract.GAS.Decimals);
+            var results = invokeResult.Stack ?? Array.Empty<StackItem>();
+            return (gasConsumed, results);
         }
     }
 }

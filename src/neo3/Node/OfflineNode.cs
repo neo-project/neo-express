@@ -2,8 +2,10 @@ using Akka.Actor;
 using Neo;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
@@ -35,15 +37,18 @@ namespace NeoExpress.Neo3.Node
             this.nodeWallet = nodeWallet;
         }
 
-        public StackItem[] Invoke(Neo.VM.Script script)
+        public (BigDecimal gasConsumed, StackItem[] results) Invoke(Neo.VM.Script script)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             using ApplicationEngine engine = ApplicationEngine.Run(script, container: null, gas: 20000000L);
-            return engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
+            var gasConsumed = new BigDecimal(engine.GasConsumed, NativeContract.GAS.Decimals);
+            var results = engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
+            return (gasConsumed, results);
+            
         }
 
-        public UInt256 Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script)
+        public UInt256 Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -51,6 +56,10 @@ namespace NeoExpress.Neo3.Node
             var devWallet = new DevWallet(string.Empty, devAccount);
             var signer = new Signer() { Account = devAccount.ScriptHash, Scopes = WitnessScope.CalledByEntry };
             var tx = devWallet.MakeTransaction(script, devAccount.ScriptHash, new[] { signer });
+            if (additionalGas > 0.0m)
+            {
+                tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
+            }
             var context = new ContractParametersContext(tx);
 
             if (devAccount.IsMultiSigContract())

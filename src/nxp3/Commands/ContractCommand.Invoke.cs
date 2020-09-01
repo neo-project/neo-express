@@ -56,13 +56,12 @@ namespace nxp3.Commands
 
                     if (Test)
                     {
-                        var result = await blockchainOperations.TestInvokeContract(chain, InvocationFile);
-                        console.WriteLine($"Tx: {result.Tx}");
-                        console.WriteLine($"Gas Consumed: {result.GasConsumed}");
+                        var (gasConsumed, results) = await blockchainOperations.TestInvokeContract(chain, InvocationFile);
+                        console.WriteLine($"Gas Consumed: {gasConsumed}");
                         console.WriteLine("Result Stack:");
-                        foreach (var v in result.Stack)
+                        for (int i = 0; i < results.Length; i++)
                         {
-                            console.WriteLine($"\t{AsString(v)}");
+                            console.WriteLine($"\t{AsString(results[i])}");
                         }
                     }
                     else

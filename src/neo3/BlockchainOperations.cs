@@ -475,7 +475,7 @@ namespace NeoExpress.Neo3
                 return Task.FromResult(new BigDecimal(value, decimals));                
             }
 
-            throw new Exception();
+            throw new Exception("invalid script results");
         }
 
         // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed

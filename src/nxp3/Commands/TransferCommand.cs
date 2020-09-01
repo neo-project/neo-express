@@ -23,6 +23,9 @@ namespace nxp3.Commands
         [Option]
         private string Input { get; } = string.Empty;
 
+        [Option]
+        private bool Offline { get; } = false;
+
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
@@ -41,13 +44,16 @@ namespace nxp3.Commands
                     throw new Exception($"{Receiver} receiver not found.");
                 }
 
-                var txHash = blockchainOperations.Transfer(chain,
-                                                             Asset,
-                                                             Quantity,
-                                                             senderAccount,
-                                                             receiverAccount);
+                if (Offline)
+                {
+                    blockchainOperations.OfflineTransfer(chain, Asset, Quantity, senderAccount, receiverAccount);
+                }
+                else
+                {
+                    var txHash = blockchainOperations.Transfer(chain, Asset, Quantity, senderAccount, receiverAccount);
+                    console.WriteLine($"Transfer Transaction {txHash} submitted");
+                }
 
-                console.WriteLine($"Transfer Transaction {txHash} submitted");
                 return 0;
             }
             catch (Exception ex)

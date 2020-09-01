@@ -26,6 +26,8 @@ using System.Threading.Tasks;
 
 namespace NeoExpress.Neo3
 {
+    using StackItemType = Neo.VM.Types.StackItemType;
+
     public class BlockchainOperations
     {
         public ExpressChain CreateBlockchain(FileInfo output, int count, TextWriter writer)
@@ -352,6 +354,56 @@ namespace NeoExpress.Neo3
                 .Where(a => a != null);
         }
 
+        public void OfflineTransfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            var assetHash = NodeUtility.GetAssetId(asset);
+            var senderHash = sender.GetScriptHashAsUInt160();
+            var receiverHash = receiver.GetScriptHashAsUInt160();
+
+            var node = chain.ConsensusNodes[0];
+            var folder = node.GetBlockchainPath();
+            using var store = RocksDbStore.Open(folder);
+            using var offlineNode = new OfflineNode(store, node.Wallet);
+
+            if ("all".Equals(quantity, StringComparison.InvariantCultureIgnoreCase))
+            {
+                using var sb = new ScriptBuilder();
+                sb.EmitAppCall(assetHash, "balanceOf", senderHash);
+                // current balance on eval stack after balanceOf call
+                sb.EmitPush(receiverHash);
+                sb.EmitPush(senderHash);
+                sb.EmitPush(3);
+                sb.Emit(OpCode.PACK);
+                sb.EmitPush("transfer");
+                sb.EmitPush(assetHash);
+                sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
+                offlineNode.Execute(chain, sender, sb.ToArray());
+            }
+            else if(decimal.TryParse(quantity, out var amount))
+            {
+                var decimalsResult = offlineNode.Execute(chain, sender, assetHash.MakeScript("decimals"));
+                if (decimalsResult.Length > 0 && decimalsResult[0].Type == StackItemType.Integer)
+                {
+                    var decimals = (byte)decimalsResult[0].GetInteger();
+                    var value = amount.ToBigInteger(decimals);
+                    offlineNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value));
+                }
+                else
+                {
+                    throw new Exception("Invalid response from decimals operation");
+                }
+            }
+            else
+            {
+                throw new Exception($"Invalid quantity value {quantity}");
+            }
+        }
+
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
         public UInt256 Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
@@ -506,15 +558,15 @@ namespace NeoExpress.Neo3
             return null;
         }
 
-        public Task<BigInteger> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public Task<BigDecimal> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             var uri = chain.GetUri();
             var nep5client = new Nep5API(new RpcClient(uri.ToString()));
 
             var assetHash = NodeUtility.GetAssetId(asset);
-
+            var decimals = nep5client.Decimals(assetHash);
             var result = nep5client.BalanceOf(assetHash, account.ScriptHash.ToScriptHash());
-            return Task.FromResult(result);
+            return Task.FromResult(new BigDecimal(result, decimals));
         }
 
         // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed

@@ -4,6 +4,7 @@ using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
+using NeoExpress.Neo3.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -95,7 +96,7 @@ namespace NeoExpress.Neo3
         {
             if (account.IsMultiSigContract())
             {
-                var signers = GetMultiSigAccounts();
+                var signers = chain.GetMultiSigAccounts(account);
 
                 var publicKeys = signers.Select(s => s.GetKey()!.PublicKey).ToArray();
                 var sigCount = account.Contract.Parameters.Count;
@@ -112,17 +113,22 @@ namespace NeoExpress.Neo3
             {
                 return tm.AddSignature(account.GetKey()!);
             }
-
-            IEnumerable<WalletAccount> GetMultiSigAccounts()
-            {
-                return chain.ConsensusNodes
-                    .Select(n => n.Wallet)
-                    .Concat(chain.Wallets)
-                    .Select(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash))
-                    .Where(a => a != null)
-                    .Select(Models.DevWalletAccount.FromExpressWalletAccount);
-            }
         }
+
+        public static IEnumerable<DevWallet> GetMultiSigWallets(this ExpressChain chain, ExpressWalletAccount account)
+            => chain.ConsensusNodes
+                .Select(n => n.Wallet)
+                .Concat(chain.Wallets)
+                .Where(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash) != null)
+                .Select(Models.DevWallet.FromExpressWallet);
+
+        public static IEnumerable<DevWalletAccount> GetMultiSigAccounts(this ExpressChain chain, ExpressWalletAccount account)
+            => chain.ConsensusNodes
+                .Select(n => n.Wallet)
+                .Concat(chain.Wallets)
+                .Select(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash))
+                .Where(a => a != null)
+                .Select(Models.DevWalletAccount.FromExpressWalletAccount);
 
         public static TransactionManager AddGas(this TransactionManager transactionManager, decimal gas)
         {

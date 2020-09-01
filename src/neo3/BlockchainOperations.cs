@@ -23,6 +23,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NeoExpress.Neo3
 {
@@ -173,9 +174,7 @@ namespace NeoExpress.Neo3
 
             // create a named mutex so that checkpoint create command
             // can detect if blockchain is running automatically
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
-
+            using var runningMutex = node.CreateRunningMutex();
             using var store = GetStore();
             await NodeUtility.RunAsync(store, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
 
@@ -241,26 +240,16 @@ namespace NeoExpress.Neo3
 
             // create a named mutex so that checkpoint create command
             // can detect if blockchain is running automatically
-            using var mutex = new Mutex(true, multiSigAccount.ScriptHash);
-
+            using var runningMutex = node.CreateRunningMutex();
             using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
             using var checkpointStore = new CheckpointStore(rocksDbStore);
             await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
         }
 
+
+
         public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)
         {
-            static bool NodeRunning(ExpressConsensusNode node)
-            {
-                // Check to see if there's a neo-express blockchain currently running
-                // by attempting to open a mutex with the multisig account address for
-                // a name. If so, do an online checkpoint instead of offline.
-
-                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-
-                return Mutex.TryOpenExisting(multiSigAccount.ScriptHash, out var _);
-            }
-
             if (File.Exists(checkPointFileName))
             {
                 throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
@@ -274,7 +263,7 @@ namespace NeoExpress.Neo3
             var node = chain.ConsensusNodes[0];
             var folder = node.GetBlockchainPath();
 
-            if (NodeRunning(node))
+            if (node.IsRunning())
             {
                 var uri = chain.GetUri();
                 var rpcClient = new RpcClient(uri.ToString());
@@ -354,21 +343,19 @@ namespace NeoExpress.Neo3
                 .Where(a => a != null);
         }
 
-        public void OfflineTransfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
+        public UInt256 Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");
             }
 
+            IExpressNode neoNode = chain.GetNeoNode();
+
             var assetHash = NodeUtility.GetAssetId(asset);
             var senderHash = sender.GetScriptHashAsUInt160();
             var receiverHash = receiver.GetScriptHashAsUInt160();
-
-            var node = chain.ConsensusNodes[0];
-            var folder = node.GetBlockchainPath();
-            using var store = RocksDbStore.Open(folder);
-            using var offlineNode = new OfflineNode(store, node.Wallet);
 
             if ("all".Equals(quantity, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -382,16 +369,16 @@ namespace NeoExpress.Neo3
                 sb.EmitPush("transfer");
                 sb.EmitPush(assetHash);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                offlineNode.Execute(chain, sender, sb.ToArray());
+                return neoNode.Execute(chain, sender, sb.ToArray());
             }
             else if(decimal.TryParse(quantity, out var amount))
             {
-                var decimalsResult = offlineNode.Invoke(assetHash.MakeScript("decimals"));
+                var decimalsResult = neoNode.Invoke(assetHash.MakeScript("decimals"));
                 if (decimalsResult.Length > 0 && decimalsResult[0].Type == StackItemType.Integer)
                 {
                     var decimals = (byte)decimalsResult[0].GetInteger();
                     var value = amount.ToBigInteger(decimals);
-                    offlineNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value));
+                    return neoNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value));
                 }
                 else
                 {
@@ -402,51 +389,43 @@ namespace NeoExpress.Neo3
             {
                 throw new Exception($"Invalid quantity value {quantity}");
             }
-        }
 
-        // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
-        public UInt256 Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
-        {
-            if (!NodeUtility.InitializeProtocolSettings(chain))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
 
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
+            
+            
 
-            var assetHash = NodeUtility.GetAssetId(asset);
-            var amount = GetAmount();
+            // var assetHash = NodeUtility.GetAssetId(asset);
+            // var amount = GetAmount();
 
-            var senderHash = sender.GetScriptHashAsUInt160();
-            var receiverHash = receiver.GetScriptHashAsUInt160();
+            // var senderHash = sender.GetScriptHashAsUInt160();
+            // var receiverHash = receiver.GetScriptHashAsUInt160();
 
-            var script = assetHash.MakeScript("transfer", senderHash, receiverHash, amount);
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = senderHash } };
+            // var script = assetHash.MakeScript("transfer", senderHash, receiverHash, amount);
+            // var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = senderHash } };
 
-            var tm = new TransactionManager(rpcClient)
-                .MakeTransaction(script, signers)
-                .AddSignatures(chain, sender)
-                .Sign();
+            // var tm = new TransactionManager(rpcClient)
+            //     .MakeTransaction(script, signers)
+            //     .AddSignatures(chain, sender)
+            //     .Sign();
 
-            return rpcClient.SendRawTransaction(tm.Tx);
+            // return rpcClient.SendRawTransaction(tm.Tx);
 
-            BigInteger GetAmount()
-            {
-                var nep5client = new Nep5API(rpcClient);
-                if ("all".Equals(quantity, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    return nep5client.BalanceOf(assetHash, sender.ScriptHash.ToScriptHash());
-                }
+            // BigInteger GetAmount()
+            // {
+            //     var nep5client = new Nep5API(rpcClient);
+            //     if ("all".Equals(quantity, StringComparison.InvariantCultureIgnoreCase))
+            //     {
+            //         return nep5client.BalanceOf(assetHash, sender.ScriptHash.ToScriptHash());
+            //     }
 
-                if (decimal.TryParse(quantity, out var value))
-                {
-                    var decimals = nep5client.Decimals(assetHash);
-                    return value.ToBigInteger(decimals);
-                }
+            //     if (decimal.TryParse(quantity, out var value))
+            //     {
+            //         var decimals = nep5client.Decimals(assetHash);
+            //         return value.ToBigInteger(decimals);
+            //     }
 
-                throw new Exception("invalid quantity");
-            }
+            //     throw new Exception("invalid quantity");
+            // }
         }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/contract.md

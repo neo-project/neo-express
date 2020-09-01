@@ -9,8 +9,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NeoExpress.Neo3
@@ -30,7 +32,10 @@ namespace NeoExpress.Neo3
         }
 
         public static Uri GetUri(this ExpressChain chain, int node = 0)
-            => new Uri($"http://localhost:{chain.ConsensusNodes[node].RpcPort}");
+            => GetUri(chain.ConsensusNodes[node]);
+
+        public static Uri GetUri(this ExpressConsensusNode node)
+            => new Uri($"http://localhost:{node.RpcPort}");
 
         static string ROOT_PATH => Path.Combine(
              Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -137,6 +142,51 @@ namespace NeoExpress.Neo3
                 transactionManager.Tx.SystemFee += (long)gas.ToBigInteger(NativeContract.GAS.Decimals);
             }
             return transactionManager;
+        }
+
+        public static Mutex CreateRunningMutex(this ExpressConsensusNode node)
+        {
+            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            return new Mutex(true, multiSigAccount.ScriptHash);
+        }
+        
+        public static bool IsRunning(this ExpressChain chain, [MaybeNullWhen(false)] out ExpressConsensusNode node)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            foreach (var consensusNode in chain.ConsensusNodes)
+            {
+                if (consensusNode.IsRunning())
+                {
+                    node = consensusNode;
+                    return true;
+                }
+            }
+            
+            node = default;
+            return false;
+        }
+
+        public static bool IsRunning(this ExpressConsensusNode node)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            return Mutex.TryOpenExisting(multiSigAccount.ScriptHash, out var _);
+        }
+
+        public static Node.IExpressNode GetNeoNode(this ExpressChain chain)
+        {
+            if (chain.IsRunning(out var node))
+            {
+                return new Node.OnlineNode(node);
+            }
+
+            node = chain.ConsensusNodes[0];
+            var folder = node.GetBlockchainPath();
+            return new Node.OfflineNode(Neo.BlockchainToolkit.Persistence.RocksDbStore.Open(folder), node.Wallet);
         }
     }
 }

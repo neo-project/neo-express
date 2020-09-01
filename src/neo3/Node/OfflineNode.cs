@@ -16,9 +16,8 @@ namespace NeoExpress.Neo3.Node
 {
     using StackItem = Neo.VM.Types.StackItem;
 
-    internal class OfflineNode : IDisposable
+    internal class OfflineNode : IDisposable, IExpressNode
     {
-        private readonly List<ApplicationExecuted> appExecutedList = new List<ApplicationExecuted>();
         private readonly NeoSystem neoSystem;
         private ExpressStorageProvider storageProvider;
         private Wallet nodeWallet;
@@ -34,14 +33,20 @@ namespace NeoExpress.Neo3.Node
             storageProvider = new ExpressStorageProvider(store);
             neoSystem = new NeoSystem(storageProvider.Name);
             this.nodeWallet = nodeWallet;
-            neoSystem.ActorSystem.ActorOf(EventWrapper<ApplicationExecuted>.Props(appExecuted => 
-            {
-                appExecutedList.Add(appExecuted);
-            }));
         }
-        
-        public StackItem[] Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script)
+
+        public StackItem[] Invoke(Neo.VM.Script script)
         {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            using ApplicationEngine engine = ApplicationEngine.Run(script, container: null, gas: 20000000L);
+            return engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
+        }
+
+        public UInt256 Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
             var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
             var devWallet = new DevWallet(string.Empty, devAccount);
             var signer = new Signer() { Account = devAccount.ScriptHash, Scopes = WitnessScope.CalledByEntry };
@@ -74,13 +79,7 @@ namespace NeoExpress.Neo3.Node
             return ExecuteTransaction(tx);
         }
 
-        public StackItem[] Invoke(Neo.VM.Script script)
-        {
-            using ApplicationEngine engine = ApplicationEngine.Run(script, container: null, gas: 20000000L);
-            return engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
-        }
-
-        public StackItem[] ExecuteTransaction(Transaction tx)
+        public UInt256 ExecuteTransaction(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -101,8 +100,7 @@ namespace NeoExpress.Neo3.Node
                 throw new Exception($"Block relay failed {blockRelay.Result}");
             }
 
-            var appExec = appExecutedList.FirstOrDefault(ae => ae.Transaction?.Hash == tx.Hash);
-            return appExec?.Stack ?? Array.Empty<StackItem>();
+            return tx.Hash;
         }
 
         protected virtual void Dispose(bool disposing)
@@ -124,33 +122,6 @@ namespace NeoExpress.Neo3.Node
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
-        }
-
-        private class EventWrapper<T> : UntypedActor
-        {
-            private readonly Action<T> callback;
-
-            public EventWrapper(Action<T> callback)
-            {
-                this.callback = callback;
-                Context.System.EventStream.Subscribe(Self, typeof(T));
-            }
-
-            protected override void OnReceive(object message)
-            {
-                if (message is T obj) callback(obj);
-            }
-
-            protected override void PostStop()
-            {
-                Context.System.EventStream.Unsubscribe(Self);
-                base.PostStop();
-            }
-
-            public static Props Props(Action<T> callback)
-            {
-                return Akka.Actor.Props.Create(() => new EventWrapper<T>(callback));
-            }
         }
     }
 }

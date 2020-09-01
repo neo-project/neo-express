@@ -465,16 +465,17 @@ namespace NeoExpress.Neo3
             sb.EmitAppCall(assetHash, "balanceOf", accountHash);
             sb.EmitAppCall(assetHash, "decimals");
 
-            var foo = expressNode.Invoke(sb.ToArray());
+            var (_, results) = expressNode.Invoke(sb.ToArray());
+            if (results.Length >= 2
+                && results[0].Type == StackItemType.Integer
+                && results[1].Type == StackItemType.Integer)
+            {
+                var value = results[0].GetInteger();
+                var decimals = (byte)results[1].GetInteger();
+                return Task.FromResult(new BigDecimal(value, decimals));                
+            }
 
-            
-
-            var uri = chain.GetUri();
-            var nep5client = new Nep5API(new RpcClient(uri.ToString()));
-
-            var decimals = nep5client.Decimals(assetHash);
-            var result = nep5client.BalanceOf(assetHash, account.ScriptHash.ToScriptHash());
-            return Task.FromResult(new BigDecimal(result, decimals));
+            throw new Exception();
         }
 
         // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed

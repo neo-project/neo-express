@@ -18,6 +18,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo.Network.P2P.Payloads;
+using Neo.Ledger;
 
 namespace NeoExpress.Neo3
 {
@@ -488,40 +490,53 @@ namespace NeoExpress.Neo3
         }
 
         // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed
-        public async Task<(RpcTransaction tx, Neo.IO.Json.JObject? log)> ShowTransaction(ExpressChain chain, string txHash)
+        public Task<Transaction> ShowTransaction(ExpressChain chain, string txHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
-
-            var tx = rpcClient.GetRawTransaction(txHash);
-            try
+            if (chain.IsRunning(out var node))
             {
-                var log = await rpcClient.RpcSendAsync("getapplicationlog", txHash).ConfigureAwait(false);
-                return (tx, log);
+                var rpcClient = new RpcClient(node.GetUri().ToString());
+                var response = rpcClient.GetRawTransaction(txHash);
+                return Task.FromResult(response.Transaction);
             }
-            catch
+            else
             {
-                return (tx, null);
+                var hash = UInt256.Parse(txHash);
+                return Task.FromResult(Blockchain.Singleton.GetTransaction(hash));
             }
         }
 
-        public Task<RpcBlock> ShowBlock(ExpressChain chain, string blockHash)
+        public Task<Block> ShowBlock(ExpressChain chain, string blockHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
+            if (chain.IsRunning(out var node))
+            {
+                var rpcClient = new RpcClient(node.GetUri().ToString());
+                var result = rpcClient.GetBlock(blockHash);
+                return Task.FromResult(result.Block);
+            }
+            else
+            {
+                if (UInt256.TryParse(blockHash, out var hash))
+                {
+                    return Task.FromResult(Blockchain.Singleton.GetBlock(hash));
+                }
 
-            var result = rpcClient.GetBlock(blockHash);
-            return Task.FromResult(result);
+                if (uint.TryParse(blockHash, out var index))
+                {
+                    return Task.FromResult(Blockchain.Singleton.GetBlock(index));
+                }
+
+                throw new ArgumentException(nameof(blockHash));
+            }
         }
 
         public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string hashOrContract)
@@ -596,6 +611,9 @@ namespace NeoExpress.Neo3
             {
                 using var stream = File.OpenRead(hashOrContract);
                 using var reader = new BinaryReader(stream, Encoding.UTF8, false);
+
+                // TODO: use NefFile.DeserializeHeader once
+                // https://github.com/neo-project/neo/pull/1897 is merged
                 var nefFile = reader.ReadSerializable<NefFile>();
                 return nefFile.ScriptHash;
             }

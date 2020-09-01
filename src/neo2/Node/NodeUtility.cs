@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -69,15 +70,76 @@ namespace NeoExpress.Neo2.Node
             return BinaryPrimitives.ReadUInt64LittleEndian(nonceSpan);
         }
 
-        // Since ConensusContext's constructor is internal, it can't be used from neo-express.
-        // CreatePreloadBlock replicates the following logic for creating an empty block with ConensusContext
+        // TODO: remove when https://github.com/neo-project/neo/pull/1892 is merged
+        private class ReflectionConsensusContext
+        {
+            static readonly Type consensusContextType;
+            static readonly MethodInfo reset;
+            static readonly MethodInfo makePrepareRequest;
+            static readonly MethodInfo makeCommit;
+            static readonly MethodInfo createBlock;
 
-        // var ctx = new Neo.Consensus.ConsensusContext(wallet, store);
-        // ctx.Reset(0);
-        // ctx.MakePrepareRequest();
-        // ctx.MakeCommit();
-        // ctx.Save();
-        // Block block = ctx.CreateBlock();
+            static ReflectionConsensusContext()
+            {
+                consensusContextType = typeof(Neo.Consensus.ConsensusService).Assembly.GetType("Neo.Consensus.ConsensusContext");
+                reset = consensusContextType.GetMethod("Reset");
+                makePrepareRequest = consensusContextType.GetMethod("MakePrepareRequest");
+                makeCommit = consensusContextType.GetMethod("MakeCommit");
+                createBlock = consensusContextType.GetMethod("CreateBlock");
+            }
+
+            readonly object consensusContext;
+
+            public ReflectionConsensusContext(Wallet wallet, Store store)
+            {
+                consensusContext = Activator.CreateInstance(consensusContextType, wallet, store);
+            }
+
+            public void Reset(byte viewNumber)
+            {
+                _ = reset.Invoke(consensusContext, new object[] { viewNumber });
+            }
+
+            public void MakePrepareRequest()
+            {
+                _ = makePrepareRequest.Invoke(consensusContext, Array.Empty<object>());
+            }
+            public void MakeCommit()
+            {
+                _ = makeCommit.Invoke(consensusContext, Array.Empty<object>());
+            }
+
+            public Block CreateBlock()
+            {
+                return (Block)createBlock.Invoke(consensusContext, Array.Empty<object>());
+            }
+        }
+
+        static void RelayBlock(NeoSystem system, Neo.Wallets.Wallet wallet, Transaction? transaction = null)
+        {
+            if (transaction != null)
+            {
+                var txResult = system.Blockchain.Ask<RelayResultReason>(transaction).Result;
+                if (txResult != RelayResultReason.Succeed)
+                {
+                    throw new Exception($"{transaction.Type} Transaction relay failed {txResult}");
+                }
+
+            }
+
+            // TODO: replace with non-reflection code when https://github.com/neo-project/neo/pull/1892 is merged
+            var ctx = new ReflectionConsensusContext(wallet, Blockchain.Singleton.Store);
+            ctx.Reset(0);
+            ctx.MakePrepareRequest();
+            ctx.MakeCommit();
+            var block = ctx.CreateBlock();
+
+            var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
+            if (result != RelayResultReason.Succeed)
+            {
+                throw new Exception($"Block relay failed {result}");
+            }
+        }
 
         static Block CreatePreloadBlock(Neo.Wallets.Wallet wallet, Random random, Transaction? transaction = null)
         {
@@ -161,8 +223,44 @@ namespace NeoExpress.Neo2.Node
             return block;
         }
 
-        public static void ClaimPreloadGas(NeoSystem system, Neo.Wallets.Wallet wallet, Random random)
+        public static void ClaimPreloadGas(NeoSystem system, Neo.Wallets.Wallet wallet)
         {
+
+
+        }
+
+        public static void Preload(uint preloadGasAmount, Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
+        {
+            Debug.Assert(preloadGasAmount > 0);
+
+            var wallet = DevWallet.FromExpressWallet(node.Wallet);
+            using var system = new NeoSystem(store);
+
+            var generationAmount = Blockchain.GenerationAmount[0];
+            var gas = preloadGasAmount / generationAmount;
+            var preloadCount = preloadGasAmount % generationAmount == 0 ? gas : gas + 1;
+            writer.WriteLine($"Creating {preloadCount} empty blocks to preload {preloadGasAmount} GAS");
+            for (int i = 1; i <= preloadCount; i++)
+            {
+                if (i % 100 == 0)
+                {
+                    writer.WriteLine($"  Creating Block {i}");
+                }
+
+                RelayBlock(system, wallet);
+            }
+
+            SubmitTransaction((snapshot, account) => NodeUtility.MakeTransferTransaction(snapshot,
+                ImmutableHashSet.Create(account.ScriptHash), account.ScriptHash, Blockchain.GoverningToken.Hash, null));
+
+            // There needs to be least one block after the transfer transaction before submitting a GAS claim
+            RelayBlock(system, wallet);
+
+            SubmitTransaction((snapshot, account) => NodeUtility.MakeClaimTransaction(snapshot, account.ScriptHash,
+                Blockchain.GoverningToken.Hash));
+
+            writer.WriteLine($"Preload complete. {preloadCount * generationAmount} GAS loaded into genesis account.");
+
             void SubmitTransaction(Func<Snapshot, WalletAccount, Transaction?> factory)
             {
                 using var snapshot = Blockchain.Singleton.GetSnapshot();
@@ -191,59 +289,8 @@ namespace NeoExpress.Neo2.Node
                     throw new Exception($"{tx.Type} transaction verification failed");
                 }
 
-                var block = CreatePreloadBlock(wallet, random, tx);
-                var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
-                if (result != RelayResultReason.Succeed)
-                {
-                    throw new Exception($"Preload {tx.Type} transaction failed {result}");
-                }
+                RelayBlock(system, wallet, tx);
             }
-
-            SubmitTransaction((snapshot, account) => NodeUtility.MakeTransferTransaction(snapshot,
-                ImmutableHashSet.Create(account.ScriptHash), account.ScriptHash, Blockchain.GoverningToken.Hash, null));
-
-            // There needs to be least one block after the transfer transaction before submitting a GAS claim
-            var block = CreatePreloadBlock(wallet, random);
-            var result = system.Blockchain.Ask<RelayResultReason>(block).Result;
-            if (result != RelayResultReason.Succeed)
-            {
-                throw new Exception($"Preload transfer suffix block failed {result}");
-            }
-
-            SubmitTransaction((snapshot, account) => NodeUtility.MakeClaimTransaction(snapshot, account.ScriptHash,
-                Blockchain.GoverningToken.Hash));
-        }
-
-        public static void Preload(uint preloadGasAmount, Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)
-        {
-            Debug.Assert(preloadGasAmount > 0);
-
-            var wallet = DevWallet.FromExpressWallet(node.Wallet);
-            using var system = new NeoSystem(store);
-
-            var generationAmount = Blockchain.GenerationAmount[0];
-            var gas = preloadGasAmount / generationAmount;
-            var preloadCount = preloadGasAmount % generationAmount == 0 ? gas : gas + 1;
-            writer.WriteLine($"Creating {preloadCount} empty blocks to preload {preloadGasAmount} GAS");
-            Random random = new Random();
-            for (int i = 1; i <= preloadCount; i++)
-            {
-                if (i % 100 == 0)
-                {
-                    writer.WriteLine($"  Creating Block {i}");
-                }
-                var block = CreatePreloadBlock(wallet, random);
-                var relayResult = system.Blockchain.Ask<RelayResultReason>(block).Result;
-
-                if (relayResult != RelayResultReason.Succeed)
-                {
-                    throw new Exception($"Preload block {i} failed {relayResult}");
-                }
-            }
-
-            ClaimPreloadGas(system, wallet, random);
-
-            writer.WriteLine($"Preload complete. {preloadCount * generationAmount} GAS loaded into genesis account.");
         }
 
         public static Task RunAsync(Store store, ExpressConsensusNode node, TextWriter writer, CancellationToken cancellationToken)

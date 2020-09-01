@@ -12,6 +12,7 @@ using NeoExpress.Neo3.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using static Neo.Ledger.Blockchain;
 
@@ -89,6 +90,51 @@ namespace NeoExpress.Neo3.Node
             return ExecuteTransaction(tx);
         }
 
+        // TODO: remove when https://github.com/neo-project/neo/pull/1893 is merged
+        private class ReflectionConsensusContext
+        {
+            static readonly Type consensusContextType;
+            static readonly MethodInfo reset;
+            static readonly MethodInfo makePrepareRequest;
+            static readonly MethodInfo makeCommit;
+            static readonly MethodInfo createBlock;
+
+            static ReflectionConsensusContext()
+            {
+                consensusContextType = typeof(Neo.Consensus.ConsensusService).Assembly.GetType("Neo.Consensus.ConsensusContext");
+                reset = consensusContextType.GetMethod("Reset");
+                makePrepareRequest = consensusContextType.GetMethod("MakePrepareRequest");
+                makeCommit = consensusContextType.GetMethod("MakeCommit");
+                createBlock = consensusContextType.GetMethod("CreateBlock");
+            }
+
+            readonly object consensusContext;
+
+            public ReflectionConsensusContext(Wallet wallet, IStore store)
+            {
+                consensusContext = Activator.CreateInstance(consensusContextType, wallet, store);
+            }
+
+            public void Reset(byte viewNumber)
+            {
+                _ = reset.Invoke(consensusContext, new object[] { viewNumber });
+            }
+
+            public void MakePrepareRequest()
+            {
+                _ = makePrepareRequest.Invoke(consensusContext, Array.Empty<object>());
+            }
+            public void MakeCommit()
+            {
+                _ = makeCommit.Invoke(consensusContext, Array.Empty<object>());
+            }
+
+            public Block CreateBlock()
+            {
+                return (Block)createBlock.Invoke(consensusContext, Array.Empty<object>());
+            }
+        }
+
         public Task<UInt256> ExecuteTransaction(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
@@ -99,11 +145,13 @@ namespace NeoExpress.Neo3.Node
                 throw new Exception($"Transaction relay failed {txRelay.Result}");
             }
 
-            var ctx = new Neo.Consensus.ConsensusContext(nodeWallet, Blockchain.Singleton.Store);
+            // TODO: replace with non-reflection code when https://github.com/neo-project/neo/pull/1893 is merged
+            var ctx = new ReflectionConsensusContext(nodeWallet, Blockchain.Singleton.Store);
             ctx.Reset(0);
             ctx.MakePrepareRequest();
             ctx.MakeCommit();
             var block = ctx.CreateBlock();
+
             var blockRelay = neoSystem.Blockchain.Ask<RelayResult>(block).Result;
             if (blockRelay.Result != VerifyResult.Succeed)
             {

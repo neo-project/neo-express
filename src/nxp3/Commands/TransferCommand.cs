@@ -23,7 +23,7 @@ namespace nxp3.Commands
         [Option]
         private string Input { get; } = string.Empty;
 
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -41,7 +41,8 @@ namespace nxp3.Commands
                     throw new Exception($"{Receiver} receiver not found.");
                 }
 
-                var txHash = blockchainOperations.Transfer(chain, Asset, Quantity, senderAccount, receiverAccount);
+                var txHash = await blockchainOperations.Transfer(chain, Asset, Quantity, senderAccount, receiverAccount)
+                    .ConfigureAwait(false);
                 console.WriteLine($"Transfer Transaction {txHash} submitted");
 
                 return 0;

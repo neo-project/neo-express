@@ -74,6 +74,12 @@ namespace NeoExpress.Neo3.Node
             return ExecuteTransaction(tx);
         }
 
+        public StackItem[] Invoke(Neo.VM.Script script)
+        {
+            using ApplicationEngine engine = ApplicationEngine.Run(script, container: null, gas: 20000000L);
+            return engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
+        }
+
         public StackItem[] ExecuteTransaction(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
@@ -120,7 +126,7 @@ namespace NeoExpress.Neo3.Node
             GC.SuppressFinalize(this);
         }
 
-        internal class EventWrapper<T> : UntypedActor
+        private class EventWrapper<T> : UntypedActor
         {
             private readonly Action<T> callback;
 

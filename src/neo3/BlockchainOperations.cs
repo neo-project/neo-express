@@ -386,7 +386,7 @@ namespace NeoExpress.Neo3
             }
             else if(decimal.TryParse(quantity, out var amount))
             {
-                var decimalsResult = offlineNode.Execute(chain, sender, assetHash.MakeScript("decimals"));
+                var decimalsResult = offlineNode.Invoke(assetHash.MakeScript("decimals"));
                 if (decimalsResult.Length > 0 && decimalsResult[0].Type == StackItemType.Integer)
                 {
                     var decimals = (byte)decimalsResult[0].GetInteger();

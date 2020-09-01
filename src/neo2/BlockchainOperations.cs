@@ -1,8 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
-using Neo;
+﻿using Neo;
 using Neo.Network.P2P.Payloads;
-using Neo.SmartContract;
-using Neo.Wallets;
 using NeoExpress.Abstractions;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo2.Models;

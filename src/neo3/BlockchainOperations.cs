@@ -7,7 +7,6 @@ using Neo.BlockchainToolkit.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.VM;
-using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
 using NeoExpress.Neo3.Node;
@@ -109,25 +108,8 @@ namespace NeoExpress.Neo3
 
         private const string GENESIS = "genesis";
 
-        static bool EqualsIgnoreCase(string a, string b)
-            => string.Equals(a, b, StringComparison.InvariantCultureIgnoreCase);
-
         public ExpressWallet CreateWallet(ExpressChain chain, string name)
         {
-            bool IsReservedName()
-            {
-                if (EqualsIgnoreCase(GENESIS, name))
-                    return true;
-
-                foreach (var node in chain.ConsensusNodes)
-                {
-                    if (EqualsIgnoreCase(name, node.Wallet.Name))
-                        return true;
-                }
-
-                return false;
-            }
-
             if (IsReservedName())
             {
                 throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
@@ -137,6 +119,20 @@ namespace NeoExpress.Neo3
             var account = wallet.CreateAccount();
             account.IsDefault = true;
             return wallet.ToExpressWallet();
+
+            bool IsReservedName()
+            {
+                if (string.Equals(GENESIS, name, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    if (string.Equals(node.Wallet.Name, name, StringComparison.InvariantCultureIgnoreCase))
+                        return true;
+                }
+
+                return false;
+            }
         }
 
         public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)

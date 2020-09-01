@@ -177,7 +177,7 @@ namespace NeoExpress.Neo3
             return Mutex.TryOpenExisting(multiSigAccount.ScriptHash, out var _);
         }
 
-        public static Node.IExpressNode GetNeoNode(this ExpressChain chain)
+        public static Node.IExpressNode GetExpressNode(this ExpressChain chain)
         {
             if (chain.IsRunning(out var node))
             {

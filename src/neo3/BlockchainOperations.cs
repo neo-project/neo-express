@@ -351,8 +351,7 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            IExpressNode neoNode = chain.GetNeoNode();
-
+            var expressNode = chain.GetExpressNode();
             var assetHash = NodeUtility.GetAssetId(asset);
             var senderHash = sender.GetScriptHashAsUInt160();
             var receiverHash = receiver.GetScriptHashAsUInt160();
@@ -369,16 +368,16 @@ namespace NeoExpress.Neo3
                 sb.EmitPush("transfer");
                 sb.EmitPush(assetHash);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                return neoNode.Execute(chain, sender, sb.ToArray());
+                return expressNode.Execute(chain, sender, sb.ToArray());
             }
             else if(decimal.TryParse(quantity, out var amount))
             {
-                var decimalsResult = neoNode.Invoke(assetHash.MakeScript("decimals"));
+                var decimalsResult = expressNode.Invoke(assetHash.MakeScript("decimals"));
                 if (decimalsResult.Length > 0 && decimalsResult[0].Type == StackItemType.Integer)
                 {
                     var decimals = (byte)decimalsResult[0].GetInteger();
                     var value = amount.ToBigInteger(decimals);
-                    return neoNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value));
+                    return expressNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value));
                 }
                 else
                 {
@@ -389,43 +388,6 @@ namespace NeoExpress.Neo3
             {
                 throw new Exception($"Invalid quantity value {quantity}");
             }
-
-
-            
-            
-
-            // var assetHash = NodeUtility.GetAssetId(asset);
-            // var amount = GetAmount();
-
-            // var senderHash = sender.GetScriptHashAsUInt160();
-            // var receiverHash = receiver.GetScriptHashAsUInt160();
-
-            // var script = assetHash.MakeScript("transfer", senderHash, receiverHash, amount);
-            // var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = senderHash } };
-
-            // var tm = new TransactionManager(rpcClient)
-            //     .MakeTransaction(script, signers)
-            //     .AddSignatures(chain, sender)
-            //     .Sign();
-
-            // return rpcClient.SendRawTransaction(tm.Tx);
-
-            // BigInteger GetAmount()
-            // {
-            //     var nep5client = new Nep5API(rpcClient);
-            //     if ("all".Equals(quantity, StringComparison.InvariantCultureIgnoreCase))
-            //     {
-            //         return nep5client.BalanceOf(assetHash, sender.ScriptHash.ToScriptHash());
-            //     }
-
-            //     if (decimal.TryParse(quantity, out var value))
-            //     {
-            //         var decimals = nep5client.Decimals(assetHash);
-            //         return value.ToBigInteger(decimals);
-            //     }
-
-            //     throw new Exception("invalid quantity");
-            // }
         }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/contract.md
@@ -437,26 +399,13 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
-
-            var (nefFile, manifest) = await LoadContract(contract).ConfigureAwait(false);
-            byte[] script;
-            using (ScriptBuilder sb = new ScriptBuilder())
-            {
-                sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
-                script = sb.ToArray();
-            }
-
+            var expressNode = chain.GetExpressNode();
             var accountHash = account.GetScriptHashAsUInt160();
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = accountHash } };
+            var (nefFile, manifest) = await LoadContract(contract).ConfigureAwait(false);
 
-            var tm = new TransactionManager(rpcClient)
-                .MakeTransaction(script, signers)
-                .AddSignatures(chain, account)
-                .Sign();
-
-            return rpcClient.SendRawTransaction(tm.Tx);
+            using var sb = new ScriptBuilder();
+            sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
+            return expressNode.Execute(chain, account, sb.ToArray());
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
             {
@@ -482,20 +431,9 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
+            var expressNode = chain.GetExpressNode();
             var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
-
-            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = devAccount.ScriptHash } };
-
-            var tm = new TransactionManager(rpcClient)
-                .MakeTransaction(script, signers)
-                .AddGas(additionalGas)
-                .AddSignatures(chain, account)
-                .Sign();
-
-            return rpcClient.SendRawTransaction(tm.Tx);
+            return expressNode.Execute(chain, account, script);
         }
 
         public async Task<RpcInvokeResult> TestInvokeContract(ExpressChain chain, string invocationFilePath)
@@ -504,6 +442,10 @@ namespace NeoExpress.Neo3
             {
                 throw new Exception("could not initialize protocol settings");
             }
+
+            // var expressNode = chain.GetexpressNode();
+            // var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
+            // return expressNode.Execute(chain, account, script);
 
             var uri = chain.GetUri();
             var rpcClient = new RpcClient(uri.ToString());

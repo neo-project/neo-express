@@ -98,8 +98,12 @@ namespace NeoExpress.Neo3
             }
 
             var node = chain.ConsensusNodes[index];
-            var folder = node.GetBlockchainPath();
+            if (node.IsRunning())
+            {
+                throw new Exception($"node {index} currently running");
+            }
 
+            var folder = node.GetBlockchainPath();
             if (Directory.Exists(folder))
             {
                 Directory.Delete(folder, true);
@@ -143,18 +147,22 @@ namespace NeoExpress.Neo3
             }
 
             var node = chain.ConsensusNodes[index];
-            var folder = node.GetBlockchainPath();
-            writer.WriteLine(folder);
+            if (node.IsRunning())
+            {
+                throw new Exception($"node {index} already running");
+            }
 
             if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
             {
                 throw new Exception("could not initialize protocol settings");
             }
 
+            var folder = node.GetBlockchainPath();
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
             }
+            writer.WriteLine(folder);
 
             // create a named mutex so that checkpoint create command
             // can detect if blockchain is running automatically
@@ -193,6 +201,22 @@ namespace NeoExpress.Neo3
 
         public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            if (node.IsRunning())
+            {
+                throw new Exception($"checkpoint node already running");
+            }
+
+            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
             string checkpointTempPath;
             do
             {
@@ -208,17 +232,6 @@ namespace NeoExpress.Neo3
                 }
             });
 
-            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
-
-            if (chain.ConsensusNodes.Count != 1)
-            {
-                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-            }
-
-            var node = chain.ConsensusNodes[0];
             var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
             RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
 

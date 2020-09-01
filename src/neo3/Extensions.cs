@@ -146,8 +146,8 @@ namespace NeoExpress.Neo3
 
         public static Mutex CreateRunningMutex(this ExpressConsensusNode node)
         {
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            return new Mutex(true, multiSigAccount.ScriptHash);
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return new Mutex(true, account.ScriptHash);
         }
         
         public static bool IsRunning(this ExpressChain chain, [MaybeNullWhen(false)] out ExpressConsensusNode node)
@@ -173,8 +173,8 @@ namespace NeoExpress.Neo3
             // Check to see if there's a neo-express blockchain currently running by
             // attempting to open a mutex with the multisig account address for a name
 
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            return Mutex.TryOpenExisting(multiSigAccount.ScriptHash, out var _);
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return Mutex.TryOpenExisting(account.ScriptHash, out var _);
         }
 
         public static Node.IExpressNode GetExpressNode(this ExpressChain chain)

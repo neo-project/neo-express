@@ -320,7 +320,7 @@ namespace NeoExpress.Neo3
         }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
-        public UInt256 Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        public async Task<UInt256> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -344,16 +344,16 @@ namespace NeoExpress.Neo3
                 sb.EmitPush("transfer");
                 sb.EmitPush(assetHash);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                return expressNode.Execute(chain, sender, sb.ToArray());
+                return await expressNode.Execute(chain, sender, sb.ToArray()).ConfigureAwait(false);
             }
             else if(decimal.TryParse(quantity, out var amount))
             {
-                var (_, results) = expressNode.Invoke(assetHash.MakeScript("decimals"));
+                var (_, results) = await expressNode.Invoke(assetHash.MakeScript("decimals")).ConfigureAwait(false);
                 if (results.Length > 0 && results[0].Type == StackItemType.Integer)
                 {
                     var decimals = (byte)results[0].GetInteger();
                     var value = amount.ToBigInteger(decimals);
-                    return expressNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value));
+                    return await expressNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value)).ConfigureAwait(false);
                 }
                 else
                 {
@@ -381,7 +381,7 @@ namespace NeoExpress.Neo3
 
             using var sb = new ScriptBuilder();
             sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
-            return expressNode.Execute(chain, account, sb.ToArray());
+            return await expressNode.Execute(chain, account, sb.ToArray()).ConfigureAwait(false);
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
             {
@@ -409,7 +409,7 @@ namespace NeoExpress.Neo3
 
             var expressNode = chain.GetExpressNode();
             var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
-            return expressNode.Execute(chain, account, script, additionalGas);
+            return await expressNode.Execute(chain, account, script, additionalGas).ConfigureAwait(false);
         }
 
         public async Task<(BigDecimal gasConsumed, Neo.VM.Types.StackItem[] results)> TestInvokeContract(ExpressChain chain, string invocationFilePath)
@@ -421,7 +421,7 @@ namespace NeoExpress.Neo3
 
             var expressNode = chain.GetExpressNode();
             var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
-            return expressNode.Invoke(script);
+            return await expressNode.Invoke(script).ConfigureAwait(false);
         }
 
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
@@ -450,7 +450,7 @@ namespace NeoExpress.Neo3
             return null;
         }
 
-        public Task<BigDecimal> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public async Task<BigDecimal> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -465,14 +465,14 @@ namespace NeoExpress.Neo3
             sb.EmitAppCall(assetHash, "balanceOf", accountHash);
             sb.EmitAppCall(assetHash, "decimals");
 
-            var (_, results) = expressNode.Invoke(sb.ToArray());
+            var (_, results) = await expressNode.Invoke(sb.ToArray()).ConfigureAwait(false);
             if (results.Length >= 2
                 && results[0].Type == StackItemType.Integer
                 && results[1].Type == StackItemType.Integer)
             {
                 var value = results[0].GetInteger();
                 var decimals = (byte)results[1].GetInteger();
-                return Task.FromResult(new BigDecimal(value, decimals));                
+                return new BigDecimal(value, decimals);
             }
 
             throw new Exception("invalid script results");

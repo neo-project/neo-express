@@ -12,6 +12,7 @@ using NeoExpress.Neo3.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Neo3.Node
@@ -37,18 +38,18 @@ namespace NeoExpress.Neo3.Node
             this.nodeWallet = nodeWallet;
         }
 
-        public (BigDecimal gasConsumed, StackItem[] results) Invoke(Neo.VM.Script script)
+        public Task<(BigDecimal gasConsumed, StackItem[] results)> Invoke(Neo.VM.Script script)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             using ApplicationEngine engine = ApplicationEngine.Run(script, container: null, gas: 20000000L);
             var gasConsumed = new BigDecimal(engine.GasConsumed, NativeContract.GAS.Decimals);
             var results = engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
-            return (gasConsumed, results);
+            return Task.FromResult((gasConsumed, results));
             
         }
 
-        public UInt256 Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
+        public Task<UInt256> Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -88,7 +89,7 @@ namespace NeoExpress.Neo3.Node
             return ExecuteTransaction(tx);
         }
 
-        public UInt256 ExecuteTransaction(Transaction tx)
+        public Task<UInt256> ExecuteTransaction(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -109,7 +110,7 @@ namespace NeoExpress.Neo3.Node
                 throw new Exception($"Block relay failed {blockRelay.Result}");
             }
 
-            return tx.Hash;
+            return Task.FromResult(tx.Hash);
         }
 
         protected virtual void Dispose(bool disposing)

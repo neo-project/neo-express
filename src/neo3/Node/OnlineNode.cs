@@ -5,6 +5,7 @@ using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Abstractions.Models;
 using System;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -23,7 +24,8 @@ namespace NeoExpress.Neo3.Node
         {
         }
 
-        public UInt256 Execute(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0)
+        // TODO: Make these truly async when async RpcClient work is merged and available
+        public Task<UInt256> Execute(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.GetScriptHashAsUInt160() } };
             var tm = new TransactionManager(rpcClient)
@@ -31,15 +33,15 @@ namespace NeoExpress.Neo3.Node
                 .AddGas(additionalGas)
                 .AddSignatures(chain, account)
                 .Sign();
-            return rpcClient.SendRawTransaction(tm.Tx);
+            return Task.FromResult(rpcClient.SendRawTransaction(tm.Tx));
         }
 
-        public (BigDecimal gasConsumed, StackItem[] results) Invoke(Script script)
+        public Task<(BigDecimal gasConsumed, StackItem[] results)> Invoke(Script script)
         {
             var invokeResult = rpcClient.InvokeScript(script);
             var gasConsumed = BigDecimal.Parse(invokeResult.GasConsumed, NativeContract.GAS.Decimals);
             var results = invokeResult.Stack ?? Array.Empty<StackItem>();
-            return (gasConsumed, results);
+            return Task.FromResult((gasConsumed, results));
         }
     }
 }

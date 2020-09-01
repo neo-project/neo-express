@@ -490,7 +490,7 @@ namespace NeoExpress.Neo3
         }
 
         // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed
-        public Task<Transaction> ShowTransaction(ExpressChain chain, string txHash)
+        public async Task<Transaction> ShowTransaction(ExpressChain chain, string txHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -501,16 +501,16 @@ namespace NeoExpress.Neo3
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
                 var response = rpcClient.GetRawTransaction(txHash);
-                return Task.FromResult(response.Transaction);
+                return response.Transaction;
             }
             else
             {
                 var hash = UInt256.Parse(txHash);
-                return Task.FromResult(Blockchain.Singleton.GetTransaction(hash));
+                return Blockchain.Singleton.GetTransaction(hash);
             }
         }
 
-        public Task<Block> ShowBlock(ExpressChain chain, string blockHash)
+        public async Task<Block> ShowBlock(ExpressChain chain, string blockHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -521,18 +521,18 @@ namespace NeoExpress.Neo3
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
                 var result = rpcClient.GetBlock(blockHash);
-                return Task.FromResult(result.Block);
+                return result.Block;
             }
             else
             {
                 if (UInt256.TryParse(blockHash, out var hash))
                 {
-                    return Task.FromResult(Blockchain.Singleton.GetBlock(hash));
+                    return Blockchain.Singleton.GetBlock(hash);
                 }
 
                 if (uint.TryParse(blockHash, out var index))
                 {
-                    return Task.FromResult(Blockchain.Singleton.GetBlock(index));
+                    return Blockchain.Singleton.GetBlock(index);
                 }
 
                 throw new ArgumentException(nameof(blockHash));
@@ -541,63 +541,102 @@ namespace NeoExpress.Neo3
 
         public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string hashOrContract)
         {
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
-
             var scriptHash = ParseScriptHash(hashOrContract);
-            var json = await Task.Run(() => rpcClient.RpcSend("expressgetcontractstorage", scriptHash.ToString()))
-                .ConfigureAwait(false);
 
-            if (json != null && json is Neo.IO.Json.JArray array)
+            if (!NodeUtility.InitializeProtocolSettings(chain))
             {
-                var storages = new List<ExpressStorage>(array.Count);
-                foreach (var s in array)
-                {
-                    var storage = new ExpressStorage()
-                    {
-                        Key = s["key"].AsString(),
-                        Value = s["value"].AsString(),
-                        Constant = s["constant"].AsBoolean()
-                    };
-                    storages.Add(storage);
-                }
-                return storages.AsReadOnly();
+                throw new Exception("could not initialize protocol settings");
             }
 
-            return new List<ExpressStorage>(0).AsReadOnly();
+            if (chain.IsRunning(out var node))
+            {
+                var rpcClient = new RpcClient(node.GetUri().ToString());
+                var json = rpcClient.RpcSend("expressgetcontractstorage", scriptHash.ToString());
+
+                if (json != null && json is Neo.IO.Json.JArray array)
+                {
+                    return array.Select(s => new ExpressStorage()
+                        {
+                            Key = s["key"].AsString(),
+                            Value = s["value"].AsString(),
+                            Constant = s["constant"].AsBoolean()
+                        })
+                        .ToList();
+                }
+            }
+            else
+            {
+                var contract = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
+                if (contract != null)
+                {
+                    return Blockchain.Singleton.View.Storages.Find()
+                        .Where(t => t.Key.Id == contract.Id)
+                        .Select(t => new ExpressStorage()
+                            {
+                                Key = t.Key.Key.ToHexString(),
+                                Value = t.Value.Value.ToHexString(),
+                                Constant = t.Value.IsConstant
+                            })
+                        .ToList();
+                }
+            }
+
+            return new List<ExpressStorage>(0);
         }
 
         public async Task<ContractManifest> GetContract(ExpressChain chain, string hashOrContract)
         {
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
-
             var scriptHash = ParseScriptHash(hashOrContract);
-            var contractState = await Task.Run(() => rpcClient.GetContractState(scriptHash.ToString()))
-                .ConfigureAwait(false);
 
-            return contractState.Manifest;
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            if (chain.IsRunning(out var node))
+            {
+                var rpcClient = new RpcClient(node.GetUri().ToString());
+                var contractState = rpcClient.GetContractState(scriptHash.ToString());
+                return contractState.Manifest;
+            }
+            else
+            {
+                var contractState = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
+                if (contractState == null)
+                {
+                    throw new Exception("Unknown contract");
+                }
+
+                return contractState.Manifest;
+            }
         }
 
         public async Task<IReadOnlyList<ContractManifest>> ListContracts(ExpressChain chain)
         {
-            var uri = chain.GetUri();
-            var rpcClient = new RpcClient(uri.ToString());
-
-            var json = await Task.Run(() => rpcClient.RpcSend("expresslistcontracts"))
-                .ConfigureAwait(false);
-
-            if (json != null && json is Neo.IO.Json.JArray array)
+            if (!NodeUtility.InitializeProtocolSettings(chain))
             {
-                var contracts = new List<ContractManifest>(array.Count);
-                foreach (var c in array)
-                {
-                    contracts.Add(ContractManifest.FromJson(c));
-                }
-                return contracts;
+                throw new Exception("could not initialize protocol settings");
             }
 
-            return new List<ContractManifest>(0).AsReadOnly();
+            if (chain.IsRunning(out var node))
+            {
+                var rpcClient = new RpcClient(node.GetUri().ToString());
+                var json = rpcClient.RpcSend("expresslistcontracts");
+
+                if (json != null && json is Neo.IO.Json.JArray array)
+                {
+                    return array.Select(ContractManifest.FromJson).ToList();
+                }
+
+                return new List<ContractManifest>(0);
+            }
+            else
+            {
+                return Blockchain.Singleton.View.Contracts.Find()
+                    .OrderBy(t => t.Value.Id)
+                    .Select(t => t.Value.Manifest)
+                    .ToList();
+            }
         }
 
         static UInt160 ParseScriptHash(string hashOrContract)

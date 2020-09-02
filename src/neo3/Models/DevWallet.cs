@@ -25,6 +25,12 @@ namespace NeoExpress.Neo3.Models
                 this.accounts.Add(a.ScriptHash, a);
             }
         }
+        
+        public DevWallet(string name, DevWalletAccount account) : base(string.Empty)
+        {
+            this.name = name;
+            accounts.Add(account.ScriptHash, account);
+        }
 
         public ExpressWallet ToExpressWallet() => new ExpressWallet()
         {

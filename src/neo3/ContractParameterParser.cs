@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -56,39 +57,58 @@ namespace NeoExpress.Neo3
 
             void EmitAppCall(ScriptBuilder scriptBuilder, JObject json)
             {
-                var scriptHash = GetScriptHash(json["contract"]);
-                var operation = json.Value<string>("operation");
-                var args = ContractParameterParser.ParseParams(json.GetValue("args")).ToArray();
-                scriptBuilder.EmitAppCall(scriptHash, operation, args);
-            }
-
-            UInt160 GetScriptHash(JToken? json)
-            {
-                if (json != null && json is JObject jObject)
+                var contract = json.Value<string>("contract");
+                contract = contract[0] == '#' ? contract[1..] : contract;
+                if (!TryParseScriptHash(contract, invocationFilePath, out var scriptHash))
                 {
-                    if (jObject.TryGetValue("hash", out var jsonHash))
-                    {
-                        return UInt160.Parse(jsonHash.Value<string>());
-                    }
-
-                    if (jObject.TryGetValue("path", out var jsonPath))
-                    {
-                        var path = jsonPath.Value<string>();
-                        path = Path.IsPathFullyQualified(path)
-                            ? path
-                            : Path.Combine(Path.GetDirectoryName(invocationFilePath), path);
-
-                        using var stream = File.OpenRead(path);
-                        using var reader = new BinaryReader(stream, Encoding.UTF8, false);
-                        return reader.ReadSerializable<NefFile>().ScriptHash;
-                    }
+                    throw new InvalidDataException();
                 }
-
-                throw new InvalidDataException("invalid contract property");
+                var operation = json.Value<string>("operation");
+                var args = ParseParams(json.GetValue("args"), invocationFilePath).ToArray();
+                scriptBuilder.EmitAppCall(scriptHash, operation, args);
             }
         }
 
-        public static IEnumerable<ContractParameter> ParseParams(JToken? @params)
+        private static string ResolvePath(string path, string root)
+        {
+            if (Path.IsPathFullyQualified(path))
+            {
+                return path;
+            }
+
+            if (root.Length == 0)
+            {
+                throw new InvalidOperationException("root path must be specified when using relative paths");
+            }
+
+            string rootDir = (File.GetAttributes(root) & FileAttributes.Directory) != 0
+                ? root : Path.GetDirectoryName(root)!;
+            return Path.Combine(rootDir, path);
+        }
+
+        private static bool TryParseScriptHash(string text, string root, [MaybeNullWhen(false)] out UInt160 value)
+        {
+            if (text.EndsWith(".nef"))
+            {
+                var path = ResolvePath(text, root);
+                if (File.Exists(path))
+                {
+                    using var stream = File.OpenRead(path);
+                    using var reader = new BinaryReader(stream, Encoding.UTF8, false);
+                    value = reader.ReadSerializable<NefFile>().ScriptHash;
+                    return true;
+                }
+            }
+
+            if (UInt160.TryParse(text, out value))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static IEnumerable<ContractParameter> ParseParams(JToken? @params, string root = "")
         {
             if (@params == null)
             {
@@ -97,17 +117,17 @@ namespace NeoExpress.Neo3
 
             if (@params is JArray jArray)
             {
-                return jArray.Select(ParseParam);
+                return jArray.Select(p => ParseParam(p, root));
             }
 
-            return Enumerable.Repeat(ParseParam(@params), 1);
+            return Enumerable.Repeat(ParseParam(@params, root), 1);
         }
 
-        private static ContractParameter ParseParam(JToken param)
+        private static ContractParameter ParseParam(JToken param, string root)
         {
             return param.Type switch
             {
-                JTokenType.String => ParseStringParam(param.Value<string>()),
+                JTokenType.String => ParseStringParam(param.Value<string>(), root),
                 JTokenType.Boolean => new ContractParameter()
                 {
                     Type = ContractParameterType.Boolean,
@@ -121,16 +141,16 @@ namespace NeoExpress.Neo3
                 JTokenType.Array => new ContractParameter()
                 {
                     Type = ContractParameterType.Array,
-                    Value = ((JArray)param).Select(ParseParam).ToList(),
+                    Value = ((JArray)param).Select(p => ParseParam(p, root)).ToList(),
                 },
-                JTokenType.Object => ParseObjectParam((JObject)param),
+                JTokenType.Object => ParseObjectParam((JObject)param, root),
                 _ => throw new ArgumentException(nameof(param))
             };
         }
 
-        private static ContractParameter ParseStringParam(string param)
+        public static ContractParameter ParseStringParam(string param, string root = "")
         {
-            if (TryParseScriptHash(out var scriptHash))
+            if (TryParseAddress(out var scriptHash))
             {
                 return new ContractParameter()
                 {
@@ -140,7 +160,7 @@ namespace NeoExpress.Neo3
             }
 
             if (param[0] == '#'
-                && UInt160.TryParse(param[1..], out var uint160))
+                && TryParseScriptHash(param[1..], root, out var uint160))
             {
                 return new ContractParameter()
                 {
@@ -175,7 +195,7 @@ namespace NeoExpress.Neo3
                 Value = param
             };
 
-            bool TryParseScriptHash(out UInt160 value)
+            bool TryParseAddress(out UInt160 value)
             {
                 try
                 {
@@ -194,20 +214,20 @@ namespace NeoExpress.Neo3
             }
         }
 
-        private static ContractParameter ParseObjectParam(JObject param)
+        private static ContractParameter ParseObjectParam(JObject param, string root = "")
         {
             var type = Enum.Parse<ContractParameterType>(param.Value<string>("type"));
             var jValue = param["value"] ?? throw new InvalidOperationException();
 
             object value = type switch
             {
-                ContractParameterType.Array => jValue.Select(ParseParam).ToArray(),
+                ContractParameterType.Array => jValue.Select(p => ParseParam(p, root)).ToArray(),
                 ContractParameterType.Boolean => jValue.Value<bool>(),
                 ContractParameterType.ByteArray => ParseByteArray(jValue),
                 ContractParameterType.Hash160 => UInt160.Parse(jValue.Value<string>()),
                 ContractParameterType.Hash256 => UInt256.Parse(jValue.Value<string>()),
                 ContractParameterType.Integer => BigInteger.Parse(jValue.Value<string>()),
-                ContractParameterType.Map => jValue.Select(ParseMapElement).ToArray(),
+                ContractParameterType.Map => jValue.Select(e => ParseMapElement(e, root)).ToArray(),
                 ContractParameterType.PublicKey => ECPoint.Parse(jValue.Value<string>(), ECCurve.Secp256r1),
                 ContractParameterType.Signature => ParseByteArray(jValue),
                 ContractParameterType.String => jValue.Value<string>(),
@@ -228,10 +248,10 @@ namespace NeoExpress.Neo3
                     : Convert.FromBase64String(value);
             }
 
-            static KeyValuePair<ContractParameter, ContractParameter> ParseMapElement(JToken json) =>
+            static KeyValuePair<ContractParameter, ContractParameter> ParseMapElement(JToken json, string root) =>
                 KeyValuePair.Create(
-                    ParseParam(json["key"] ?? throw new InvalidOperationException()),
-                    ParseParam(json["value"] ?? throw new InvalidOperationException()));
+                    ParseParam(json["key"] ?? throw new InvalidOperationException(), root),
+                    ParseParam(json["value"] ?? throw new InvalidOperationException(), root));
         }
     }
 }

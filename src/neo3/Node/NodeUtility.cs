@@ -1,7 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Akka.Actor;
+using Microsoft.Extensions.Configuration;
 using Neo;
+using Neo.Ledger;
 using Neo.Network.P2P;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.Plugins;
 using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
@@ -13,9 +17,12 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Neo3.Node
 {
+    using StackItem = Neo.VM.Types.StackItem;
+
     internal static class NodeUtility
     {
         public static bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0)
@@ -69,9 +76,6 @@ namespace NeoExpress.Neo3.Node
                     var storageProvider = new ExpressStorageProvider(store);
                     var appEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
                     var appLogsPlugin = new ExpressAppLogsPlugin(store);
-
-                    var q = appLogsPlugin as Neo.Plugins.IPersistencePlugin;
-                    var z = q.ShouldThrowExceptionFromCommit(new Exception());
 
                     using var system = new NeoSystem(storageProvider.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);

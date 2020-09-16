@@ -3,7 +3,7 @@
 [![Build Status](https://dev.azure.com/NGDSeattle/Public/_apis/build/status/neo-project.neo-express?branchName=master)](https://dev.azure.com/NGDSeattle/Public/_build/latest?definitionId=24&branchName=master)
 [![Nuget](https://img.shields.io/nuget/v/Neo.Express)](https://www.nuget.org/packages/Neo.Express/)
 
-Neo-Express is a new Neo blockchain client application that is optimized for
+Neo-Express is a Private Net that is optimized for
 development scenarios. It is built on the same Neo platform core as
 [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and
 [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) ensuring that

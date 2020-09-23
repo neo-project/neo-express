@@ -338,7 +338,7 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var expressNode = chain.GetExpressNode();
+            using var expressNode = chain.GetExpressNode();
             var assetHash = NodeUtility.GetAssetId(asset);
             var senderHash = sender.GetScriptHashAsUInt160();
             var receiverHash = receiver.GetScriptHashAsUInt160();
@@ -386,7 +386,7 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var expressNode = chain.GetExpressNode();
+            using var expressNode = chain.GetExpressNode();
             var accountHash = account.GetScriptHashAsUInt160();
             var (nefFile, manifest) = await LoadContract(contract).ConfigureAwait(false);
 
@@ -418,7 +418,7 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var expressNode = chain.GetExpressNode();
+            using var expressNode = chain.GetExpressNode();
             var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
             return await expressNode.Execute(chain, account, script, additionalGas).ConfigureAwait(false);
         }
@@ -430,7 +430,7 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var expressNode = chain.GetExpressNode();
+            using var expressNode = chain.GetExpressNode();
             var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
             return await expressNode.Invoke(script).ConfigureAwait(false);
         }
@@ -470,7 +470,7 @@ namespace NeoExpress.Neo3
 
             var assetHash = NodeUtility.GetAssetId(asset);
             var accountHash = account.GetScriptHashAsUInt160();
-            var expressNode = chain.GetExpressNode();
+            using var expressNode = chain.GetExpressNode();
 
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(assetHash, "balanceOf", accountHash);
@@ -505,6 +505,7 @@ namespace NeoExpress.Neo3
             }
             else
             {
+                using var expressNode = chain.GetExpressNode();
                 var hash = UInt256.Parse(txHash);
                 return Blockchain.Singleton.GetTransaction(hash);
             }
@@ -525,6 +526,7 @@ namespace NeoExpress.Neo3
             }
             else
             {
+                using var expressNode = chain.GetExpressNode();
                 if (UInt256.TryParse(blockHash, out var hash))
                 {
                     return Blockchain.Singleton.GetBlock(hash);
@@ -566,6 +568,7 @@ namespace NeoExpress.Neo3
             }
             else
             {
+                using var expressNode = chain.GetExpressNode();
                 var contract = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
                 if (contract != null)
                 {
@@ -601,6 +604,7 @@ namespace NeoExpress.Neo3
             }
             else
             {
+                using var expressNode = chain.GetExpressNode();
                 var contractState = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
                 if (contractState == null)
                 {
@@ -632,6 +636,7 @@ namespace NeoExpress.Neo3
             }
             else
             {
+                using var expressNode = chain.GetExpressNode();
                 return Blockchain.Singleton.View.Contracts.Find()
                     .OrderBy(t => t.Value.Id)
                     .Select(t => t.Value.Manifest)

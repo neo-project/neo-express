@@ -47,7 +47,6 @@ namespace NeoExpress.Neo3.Node
             var gasConsumed = new BigDecimal(engine.GasConsumed, NativeContract.GAS.Decimals);
             var results = engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
             return Task.FromResult((gasConsumed, results));
-            
         }
 
         public Task<UInt256> Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)

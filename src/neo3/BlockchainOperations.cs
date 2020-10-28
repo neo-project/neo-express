@@ -183,7 +183,7 @@ namespace NeoExpress.Neo3
                     }
                     catch
                     {
-                        return new CheckpointStore(new NullReadOnlyStore());
+                        return new CheckpointStore(NullReadOnlyStore.Instance);
                     }
                 }
                 else
@@ -191,14 +191,6 @@ namespace NeoExpress.Neo3
                     return RocksDbStore.Open(folder);
                 }
             }
-        }
-
-        class NullReadOnlyStore : Neo.Persistence.IReadOnlyStore
-        {
-            public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte table, byte[] key, SeekDirection direction)
-                => Enumerable.Empty<(byte[] Key, byte[] Value)>();
-
-            public byte[]? TryGet(byte table, byte[]? key) => null;
         }
 
         public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
@@ -500,7 +492,7 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var response = rpcClient.GetRawTransaction(txHash);
+                var response = await rpcClient.GetRawTransactionAsync(txHash).ConfigureAwait(false);
                 return response.Transaction;
             }
             else
@@ -521,7 +513,7 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var result = rpcClient.GetBlock(blockHash);
+                var result = await rpcClient.GetBlockAsync(blockHash).ConfigureAwait(false);
                 return result.Block;
             }
             else
@@ -553,7 +545,8 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var json = rpcClient.RpcSend("expressgetcontractstorage", scriptHash.ToString());
+                var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
+                    .ConfigureAwait(false);
 
                 if (json != null && json is Neo.IO.Json.JArray array)
                 {
@@ -599,7 +592,7 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var contractState = rpcClient.GetContractState(scriptHash.ToString());
+                var contractState = await rpcClient.GetContractStateAsync(scriptHash.ToString()).ConfigureAwait(false);
                 return contractState.Manifest;
             }
             else
@@ -625,7 +618,7 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var json = rpcClient.RpcSend("expresslistcontracts");
+                var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
 
                 if (json != null && json is Neo.IO.Json.JArray array)
                 {

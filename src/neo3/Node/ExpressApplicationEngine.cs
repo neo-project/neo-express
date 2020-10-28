@@ -19,8 +19,8 @@ namespace NeoExpress.Neo3.Node
         private bool preExecTrace = true;
         private readonly ITraceDebugSink traceDebugSink;
 
-        public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, StoreView snapshot, long gas, bool testMode)
-            : base(trigger, container, snapshot, gas, testMode)
+        public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
+            : base(trigger, container, snapshot, gas)
         {
             this.traceDebugSink = traceDebugSink;
             Log += OnLog;
@@ -65,9 +65,9 @@ namespace NeoExpress.Neo3.Node
             base.PreExecuteInstruction();
         }
 
-        protected override void PostExecuteInstruction(Instruction instruction)
+        protected override void PostExecuteInstruction()
         {
-            base.PostExecuteInstruction(instruction);
+            base.PostExecuteInstruction();
 
             if (State == VMState.HALT)
             {

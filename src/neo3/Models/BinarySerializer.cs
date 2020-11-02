@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 
-namespace NeoExpress.Neo3.Node
+namespace NeoExpress.Neo3.Models
 {
     // TODO: remove once https://github.com/neo-project/neo/pull/2041 is merged
     internal static class BinarySerializer

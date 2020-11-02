@@ -10,6 +10,8 @@ using Neo.IO;
 using System.Text;
 using Neo;
 using System.Buffers.Binary;
+using Neo.Ledger;
+using NeoExpress.Neo3.Models;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -24,16 +26,28 @@ namespace NeoExpress.Neo3.Node
             this.store = store;
         }
 
-        [RpcMethod]
-        public JObject GetApplicationLog(JArray _params)
+        public static byte[]? TryGetAppLog(IReadOnlyStore store, UInt256 txHash)
         {
-            UInt256 hash = UInt256.Parse(_params[0].AsString());
-            byte[] value = store.TryGet(APP_LOGS_PREFIX, hash.ToArray());
-            if (value is null)
-                throw new RpcException(-100, "Unknown transaction");
-            return JObject.Parse(Encoding.UTF8.GetString(value));
+            return store.TryGet(APP_LOGS_PREFIX, txHash.ToArray());
         }
 
+        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IReadOnlyStore store)
+        {
+            return store.Seek(NOTIFICATIONS_PREFIX, null, Neo.IO.Caching.SeekDirection.Forward)
+                .Select(t => 
+                {
+                     var (blockIndex, txIndex) = ParseNotificationKey(t.Key);
+                    return (blockIndex, txIndex, t.Value.AsSerializable<NotificationRecord>());
+                });
+
+            static (uint, ushort) ParseNotificationKey(byte[] key)
+            {
+                var blockIndex = BinaryPrimitives.ReadUInt32BigEndian(key.AsSpan(0, sizeof(uint)));
+                var txIndex = BinaryPrimitives.ReadUInt16BigEndian(key.AsSpan(sizeof(uint), sizeof(ushort)));
+                return (blockIndex, txIndex);
+            }
+        }
+        
         public void OnPersist(StoreView snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             if (applicationExecutedList.Count > ushort.MaxValue)

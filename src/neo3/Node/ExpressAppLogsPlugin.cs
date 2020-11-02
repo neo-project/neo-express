@@ -9,13 +9,15 @@ using Neo.VM;
 using Neo.IO;
 using System.Text;
 using Neo;
+using System.Buffers.Binary;
 
 namespace NeoExpress.Neo3.Node
 {
-    internal class ExpressAppLogsPlugin : Plugin, IPersistencePlugin
+    internal partial class ExpressAppLogsPlugin : Plugin, IPersistencePlugin
     {
         private readonly IStore store;
         private const byte APP_LOGS_PREFIX = 0xf0;
+        private const byte NOTIFICATIONS_PREFIX = 0xf1;
 
         public ExpressAppLogsPlugin(IStore store)
         {
@@ -32,10 +34,21 @@ namespace NeoExpress.Neo3.Node
             return JObject.Parse(Encoding.UTF8.GetString(value));
         }
 
-        public void OnPersist(StoreView _, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
+        public void OnPersist(StoreView snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
-            foreach (var appExec in applicationExecutedList)
+            if (applicationExecutedList.Count > ushort.MaxValue)
             {
+                throw new Exception("applicationExecutedList too big");
+            }
+
+            var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
+                BinaryPrimitives.WriteUInt32BigEndian(
+                    notificationIndex.AsSpan(0, sizeof(uint)),
+                    snapshot.PersistingBlock.Index);
+
+            for (int i = 0; i < applicationExecutedList.Count; i++)
+            {
+                ApplicationExecuted? appExec = applicationExecutedList[i];
                 if (appExec.Transaction == null)
                 {
                     continue;
@@ -71,6 +84,30 @@ namespace NeoExpress.Neo3.Node
                 }).ToArray();
 
                 store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Encoding.UTF8.GetBytes(json.ToString()));
+
+                if (appExec.VMState != VMState.FAULT)
+                {
+                    if (appExec.Notifications.Length > ushort.MaxValue)
+                    {
+                        throw new Exception("appExec.Notifications too big");
+                    }
+
+                     BinaryPrimitives.WriteUInt16BigEndian(
+                            notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)),
+                            (ushort)i);
+
+                    for (int j = 0; j < appExec.Notifications.Length; j++)
+                    {
+                        BinaryPrimitives.WriteUInt16BigEndian(
+                            notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
+                            (ushort)j);
+                        var record = new NotificationRecord(appExec.Notifications[j]);
+                        store.Put(
+                            NOTIFICATIONS_PREFIX,
+                            notificationIndex,
+                            record.ToArray());
+                    }
+                }
             }
         }
     }

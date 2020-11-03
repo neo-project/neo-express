@@ -33,7 +33,7 @@ namespace nxp3
             }
 
             console.WriteLine("You must specify a subcommand.");
-            app.ShowHelp();
+            app.ShowHelp(false);
             return 1;
         }
 

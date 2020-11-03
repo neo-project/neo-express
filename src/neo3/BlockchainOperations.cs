@@ -20,6 +20,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo.Network.P2P.Payloads;
 using Neo.Ledger;
+using Newtonsoft.Json;
+using System.Net;
 
 namespace NeoExpress.Neo3
 {
@@ -648,14 +650,113 @@ namespace NeoExpress.Neo3
             {
                 using var stream = File.OpenRead(hashOrContract);
                 using var reader = new BinaryReader(stream, Encoding.UTF8, false);
-
-                // TODO: use NefFile.DeserializeHeader once
-                // https://github.com/neo-project/neo/pull/1897 is merged
                 var nefFile = reader.ReadSerializable<NefFile>();
                 return nefFile.ScriptHash;
             }
 
             throw new ArgumentException(nameof(hashOrContract));
+        }
+
+        public void ExportBlockchain(ExpressChain chain, string folder, string password, TextWriter writer)
+        {
+            void WriteNodeConfigJson(ExpressConsensusNode _node, string walletPath)
+            {
+                using var stream = File.Open(Path.Combine(folder, $"{_node.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write);
+                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+
+                // use neo-cli defaults for Logger & Storage
+
+                writer.WriteStartObject();
+                writer.WritePropertyName("ApplicationConfiguration");
+                writer.WriteStartObject();
+
+                writer.WritePropertyName("P2P");
+                writer.WriteStartObject();
+                writer.WritePropertyName("Port");
+                writer.WriteValue(_node.TcpPort);
+                writer.WritePropertyName("WsPort");
+                writer.WriteValue(_node.WebSocketPort);
+                writer.WriteEndObject();
+
+                writer.WritePropertyName("UnlockWallet");
+                writer.WriteStartObject();
+                writer.WritePropertyName("Path");
+                writer.WriteValue(walletPath);
+                writer.WritePropertyName("Password");
+                writer.WriteValue(password);
+                writer.WritePropertyName("StartConsensus");
+                writer.WriteValue(true);
+                writer.WritePropertyName("IsActive");
+                writer.WriteValue(true);
+                writer.WriteEndObject();
+
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            void WriteProtocolJson()
+            {
+                using var stream = File.Open(Path.Combine(folder, "protocol.json"), FileMode.Create, FileAccess.Write);
+                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+
+                // use neo defaults for MillisecondsPerBlock & AddressVersion
+
+                writer.WriteStartObject();
+                writer.WritePropertyName("ProtocolConfiguration");
+                writer.WriteStartObject();
+
+                writer.WritePropertyName("Magic");
+                writer.WriteValue(chain.Magic);
+                writer.WritePropertyName("ValidatorsCount");
+                writer.WriteValue(chain.ConsensusNodes.Count);
+
+                writer.WritePropertyName("StandbyCommittee");
+                writer.WriteStartArray();
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                {
+                    var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount);
+                    var key = account.GetKey();
+                    if (key != null)
+                    {
+                        writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
+                    }
+                }
+                writer.WriteEndArray();
+
+                writer.WritePropertyName("SeedList");
+                writer.WriteStartArray();
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    writer.WriteValue($"{IPAddress.Loopback}:{node.TcpPort}");
+                }
+                writer.WriteEndArray();
+
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var node = chain.ConsensusNodes[i];
+                writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node wallet");
+
+                var walletPath = Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
+                if (File.Exists(walletPath))
+                {
+                    File.Delete(walletPath);
+                }
+
+                ExportWallet(node.Wallet, walletPath, password);
+                WriteNodeConfigJson(node, walletPath);
+            }
+
+            WriteProtocolJson();
+        }
+
+        public void ExportWallet(ExpressWallet wallet, string filename, string password)
+        {
+            var devWallet = DevWallet.FromExpressWallet(wallet);
+            devWallet.Export(filename, password);
         }
     }
 }

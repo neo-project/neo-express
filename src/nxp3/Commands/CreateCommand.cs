@@ -10,35 +10,18 @@ namespace nxp3.Commands
     [Command("create")]
     class CreateCommand
     {
-        [AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false)]
-        private class ValidNodeCountAttribute : ValidationAttribute
-        {
-            public ValidNodeCountAttribute() : base("The value for {0} must be 1, 4 or 7")
-            {
-            }
+        [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
+        string Output { get; } = string.Empty;
 
-            protected override ValidationResult IsValid(object value, ValidationContext context)
-            {
-                if (value == null || (value is string str && str != "1" && str != "4" && str != "7"))
-                {
-                    return new ValidationResult(FormatErrorMessage(context.DisplayName));
-                }
 
-                return ValidationResult.Success;
-            }
-        }
-
-        [ValidNodeCount]
-        [Option]
-        private int Count { get; } = 1;
+        [Option(Description = "Number of consensus nodes to create\nDefault: 1")]
+        [AllowedValues("1", "4", "7")]
+        int Count { get; } = 1;
 
         [Option]
-        private string Output { get; } = string.Empty;
+        bool Force { get; }
 
-        [Option]
-        private bool Force { get; }
-
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {

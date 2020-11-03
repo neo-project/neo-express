@@ -13,15 +13,15 @@ namespace nxp3.Commands
         {
             [Argument(0)]
             [Required]
-            private string Name { get; } = string.Empty;
+            string Name { get; } = string.Empty;
 
             [Option]
-            private string Input { get; } = string.Empty;
+            string Input { get; } = string.Empty;
 
             [Option]
-            private bool Force { get; }
+            bool Force { get; }
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {

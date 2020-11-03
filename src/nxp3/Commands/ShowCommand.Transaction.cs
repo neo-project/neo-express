@@ -11,12 +11,12 @@ namespace nxp3.Commands
         class Transaction
         {
             [Argument(0)]
-            private string TransactionHash { get; } = string.Empty;
+            string TransactionHash { get; } = string.Empty;
 
             [Option]
-            private string Input { get; } = string.Empty;
+            string Input { get; } = string.Empty;
 
-            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {

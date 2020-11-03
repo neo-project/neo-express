@@ -6,7 +6,7 @@ namespace nxp3.Commands
     [Subcommand(typeof(Balance), typeof(Block), typeof(Transaction))]
     partial class ShowCommand
     {
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             console.WriteLine("You must specify at a subcommand.");
             app.ShowHelp();

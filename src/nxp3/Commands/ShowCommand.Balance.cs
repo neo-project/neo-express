@@ -11,15 +11,15 @@ namespace nxp3.Commands
         class Balance
         {
             [Argument(0)]
-            private string Asset { get; } = string.Empty;
+            string Asset { get; } = string.Empty;
 
             [Argument(1)]
-            private string Account { get; } = string.Empty;
+            string Account { get; } = string.Empty;
 
             [Option]
-            private string Input { get; } = string.Empty;
+            string Input { get; } = string.Empty;
 
-            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {

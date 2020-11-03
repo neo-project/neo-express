@@ -42,7 +42,6 @@ namespace nxp3.Commands
                 catch (Exception ex)
                 {
                     console.WriteLine(ex.Message);
-                    app.ShowHelp();
                     return 1;
                 }
             }

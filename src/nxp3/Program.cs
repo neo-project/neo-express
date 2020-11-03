@@ -6,7 +6,7 @@ using nxp3.Commands;
 
 namespace nxp3
 {
-    [Command("nxp3")]
+    [Command("nxp3", UsePagerForHelpText = false)]
     [Subcommand(
         typeof(CheckpointCommand),
         typeof(ContractCommand),
@@ -33,7 +33,7 @@ namespace nxp3
             }
 
             console.WriteLine("You must specify a subcommand.");
-            app.ShowHelp();
+            app.ShowHelp(false);
             return 1;
         }
 

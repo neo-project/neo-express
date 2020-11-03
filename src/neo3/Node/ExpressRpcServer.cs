@@ -33,10 +33,7 @@ namespace NeoExpress.Neo3.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0].AsString());
-            var value = ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash);
-            if (value is null)
-                throw new RpcException(-100, "Unknown transaction");
-            return JObject.Parse(Encoding.UTF8.GetString(value));
+            return ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
         static bool IsNep5Transfer(NotificationRecord notification)

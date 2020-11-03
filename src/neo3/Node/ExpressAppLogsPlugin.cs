@@ -26,9 +26,14 @@ namespace NeoExpress.Neo3.Node
             this.store = store;
         }
 
-        public static byte[]? TryGetAppLog(IReadOnlyStore store, UInt256 txHash)
+        public static JObject? TryGetAppLog(IReadOnlyStore store, UInt256 txHash)
         {
-            return store.TryGet(APP_LOGS_PREFIX, txHash.ToArray());
+            var value = store.TryGet(APP_LOGS_PREFIX, txHash.ToArray());
+            if (value != null && value.Length != 0)
+            {
+                return JObject.Parse(Encoding.UTF8.GetString(value));
+            }
+            return null;
         }
 
         public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IReadOnlyStore store)

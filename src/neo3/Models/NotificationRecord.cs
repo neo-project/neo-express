@@ -5,6 +5,9 @@ using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
 using NeoExpress.Neo3.Node;
+using System.Collections.Generic;
+using System;
+using System.Linq;
 
 namespace NeoExpress.Neo3.Models
 {
@@ -31,7 +34,7 @@ namespace NeoExpress.Neo3.Models
         }
 
         public int Size => ScriptHash.Size
-            + BinarySerializer.GetSize(State, ExecutionEngineLimits.Default.MaxItemSize)
+            + GetSize(State, ExecutionEngineLimits.Default.MaxItemSize)
             + InventoryHash.Size
             + sizeof(byte);
 
@@ -53,6 +56,60 @@ namespace NeoExpress.Neo3.Models
             BinarySerializer.Serialize(State, writer, ExecutionEngineLimits.Default.MaxItemSize);
             ((ISerializable)InventoryHash).Serialize(writer);
             writer.Write((byte)InventoryType);
+        }
+
+        static int GetSize(Neo.VM.Types.StackItem item, uint maxSize)
+        {
+            int size = 0;
+            var serialized = new List<Neo.VM.Types.CompoundType>();
+            var unserialized = new Stack<Neo.VM.Types.StackItem>();
+            unserialized.Push(item);
+            while (unserialized.Count > 0)
+            {
+                item = unserialized.Pop();
+                size++;
+                switch (item)
+                {
+                    case Neo.VM.Types.Null _:
+                        break;
+                    case Neo.VM.Types.Boolean _:
+                        size += sizeof(bool);
+                        break;
+                    case Neo.VM.Types.Integer _:
+                    case Neo.VM.Types.ByteString _:
+                    case Neo.VM.Types.Buffer _:
+                        {
+                            var span = item.GetSpan();
+                            size += Neo.IO.Helper.GetVarSize(span.Length);
+                            size += span.Length;
+                        }
+                        break;
+                    case Neo.VM.Types.Array array:
+                        if (serialized.Any(p => ReferenceEquals(p, array)))
+                            throw new NotSupportedException();
+                        serialized.Add(array);
+                        size += Neo.IO.Helper.GetVarSize(array.Count);
+                        for (int i = array.Count - 1; i >= 0; i--)
+                            unserialized.Push(array[i]);
+                        break;
+                    case Neo.VM.Types.Map map:
+                        if (serialized.Any(p => ReferenceEquals(p, map)))
+                            throw new NotSupportedException();
+                        serialized.Add(map);
+                        size += Neo.IO.Helper.GetVarSize(map.Count);
+                        foreach (var pair in map.Reverse())
+                        {
+                            unserialized.Push(pair.Value);
+                            unserialized.Push(pair.Key);
+                        }
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+
+            if (size > maxSize) throw new InvalidOperationException();
+            return size;
         }
     }
 }

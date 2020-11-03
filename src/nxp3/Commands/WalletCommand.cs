@@ -9,7 +9,7 @@ namespace nxp3.Commands
         internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             console.WriteLine("You must specify at a subcommand.");
-            app.ShowHelp();
+            app.ShowHelp(false);
             return 1;
         }
     }

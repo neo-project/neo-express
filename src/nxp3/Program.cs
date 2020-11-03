@@ -6,7 +6,7 @@ using nxp3.Commands;
 
 namespace nxp3
 {
-    [Command("nxp3")]
+    [Command("nxp3", UsePagerForHelpText = false)]
     [Subcommand(
         typeof(CheckpointCommand),
         typeof(ContractCommand),

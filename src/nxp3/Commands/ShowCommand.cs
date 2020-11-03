@@ -3,7 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 namespace nxp3.Commands
 {
     [Command("show")]
-    [Subcommand(typeof(Balance), typeof(Block), typeof(Transaction))]
+    [Subcommand(typeof(Balance), typeof(Balances), typeof(Block), typeof(Transaction))]
     partial class ShowCommand
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)

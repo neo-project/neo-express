@@ -483,7 +483,39 @@ namespace NeoExpress.Neo3
             throw new Exception("invalid script results");
         }
 
-        // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed
+        public async Task<RpcNep5Balances> GetBalances(ExpressChain chain, ExpressWalletAccount account)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            var accountHash = account.GetScriptHashAsUInt160();
+            using var expressNode = chain.GetExpressNode();
+
+            if (chain.IsRunning(out var node))
+            {
+                var rpcClient = new RpcClient(node.GetUri().ToString());
+                return await rpcClient.GetNep5BalancesAsync(account.ScriptHash).ConfigureAwait(false);
+            }
+            else
+            {
+                var accountScriptHash = account.GetScriptHashAsUInt160();
+                return new RpcNep5Balances()
+                {
+                    UserScriptHash = accountScriptHash,
+                    Balances = ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, accountScriptHash)
+                        .Select(b => new RpcNep5Balance
+                        {
+                            Amount = b.balance,
+                            AssetHash = b.contract.ScriptHash,
+                            LastUpdatedBlock = b.lastUpdatedBlock
+                        })
+                        .ToList()
+                };
+            }
+        }
+
         public async Task<(Transaction tx, RpcApplicationLog appLog)> ShowTransaction(ExpressChain chain, string txHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))

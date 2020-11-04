@@ -31,8 +31,9 @@ namespace nxp3.Commands
                         throw new Exception($"{Account} account not found.");
                     }
 
-                    var balanceOf = await blockchainOperations.ShowBalance(chain, account, Asset);
-                    console.WriteLine($"{Account} balance of {Asset} is {balanceOf}");
+                    var (balance, contract) = await blockchainOperations.ShowBalance(chain, account, Asset);
+
+                    console.WriteLine($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance}");
                     return 0;
                 }
                 catch (Exception ex)

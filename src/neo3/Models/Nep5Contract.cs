@@ -1,11 +1,12 @@
 using System.Text;
 using Neo;
+using Neo.IO.Json;
 using Neo.Persistence;
 using Neo.VM;
 
 namespace NeoExpress.Neo3.Models
 {
-    struct Nep5Contract
+    public struct Nep5Contract
     {
         public readonly string Name;
         public readonly string Symbol;
@@ -41,6 +42,25 @@ namespace NeoExpress.Neo3.Models
 
             contract = default;
             return false;
+        }
+
+        public JObject ToJson()
+        {
+            var json = new JObject();
+            json["scriptHash"] = ScriptHash.ToString();
+            json["name"] = Name;
+            json["symbol"] = Symbol;
+            json["decimals"] = Decimals;
+            return json;
+        }
+
+        public static Nep5Contract FromJson(JObject json)
+        {
+            var name = json["name"].AsString();
+            var symbol = json["symbol"].AsString();
+            var scriptHash = UInt160.Parse(json["scriptHash"].AsString());
+            var decimals = (byte)json["decimals"].AsNumber();
+            return new Nep5Contract(name, symbol, decimals, scriptHash);
         }
     }
 }

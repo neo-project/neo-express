@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3;
 
@@ -33,9 +34,10 @@ namespace nxp3.Commands
 
                     var balances = await blockchainOperations.GetBalances(chain, account);
 
-                    for (int i = 0; i < balances.Balances.Count; i++)
+                    for (int i = 0; i < balances.Length; i++)
                     {
-                        console.WriteLine($"{balances.Balances[i].AssetHash} balance:     {balances.Balances[i].Amount}");
+                        var balance = new BigDecimal(balances[i].balance.Amount, balances[i].contract.Decimals);
+                        console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})\n  balance: {balance}");
                     }
                     return 0;
                 }

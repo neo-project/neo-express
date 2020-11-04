@@ -71,10 +71,12 @@ namespace NeoExpress.Neo3.Node
             return ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
+        // TODO: should the event name comparison be case insensitive? 
+        // Native contracts use "Transfer" while neon preview 3 compiled contracts use "transfer"
         static bool IsNep5Transfer(NotificationRecord notification)
             => notification.InventoryType == InventoryType.TX
                 && notification.State.Count == 3
-                && notification.EventName == "Transfer";
+                && (notification.EventName == "Transfer" || notification.EventName == "transfer");
 
         static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep5Transfers(IReadOnlyStore store)
         {
@@ -83,21 +85,19 @@ namespace NeoExpress.Neo3.Node
                 .Where(t => IsNep5Transfer(t.notification));
         }
 
-        public static IEnumerable<Nep5Contract> GetNep5Contracts()
+        public static IEnumerable<Nep5Contract> GetNep5Contracts(IReadOnlyStore store)
         {
             var scriptHashes = new HashSet<UInt160>();
-            using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
-            foreach (var (_, _, notification) in GetNep5Transfers(snapshot))
+            foreach (var (_, _, notification) in GetNep5Transfers(store))
             {
                 scriptHashes.Add(notification.ScriptHash);
             }
 
             foreach (var scriptHash in scriptHashes)
             {
-                if (Nep5Contract.TryLoad(snapshot, scriptHash, out var contract))
+                if (Nep5Contract.TryLoad(store, scriptHash, out var contract))
                 {
                     yield return contract;
-
                 }
             }
         }
@@ -110,7 +110,7 @@ namespace NeoExpress.Neo3.Node
         static UInt160 ToUInt160(Neo.VM.Types.StackItem item)
         {
             if (item.IsNull) return UInt160.Zero;
-            
+
             var bytes = item.GetSpan();
             return bytes.Length == 0
                 ? UInt160.Zero
@@ -163,15 +163,11 @@ namespace NeoExpress.Neo3.Node
         [RpcMethod]
         public JObject ExpressGetNep5Contracts(JArray _)
         {
+            using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
             var jsonContracts = new JArray();
-            foreach (var contract in GetNep5Contracts())
+            foreach (var contract in GetNep5Contracts(snapshot))
             {
-                var json = new JObject();
-                json["scriptHash"] = contract.ScriptHash.ToString();
-                json["name"] = contract.Name;
-                json["symbol"] = contract.Symbol;
-                json["decimals"] = contract.Decimals;
-                jsonContracts.Add(json);
+                jsonContracts.Add(contract.ToJson());
             }
             return jsonContracts;
         }

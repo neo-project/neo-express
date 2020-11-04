@@ -22,6 +22,7 @@ using Neo.Network.P2P.Payloads;
 using Neo.Ledger;
 using Newtonsoft.Json;
 using System.Net;
+using Neo.IO.Json;
 
 namespace NeoExpress.Neo3
 {
@@ -455,7 +456,7 @@ namespace NeoExpress.Neo3
             return null;
         }
 
-        public async Task<BigDecimal> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public async Task<(BigDecimal balance, Nep5Contract contract)> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -468,22 +469,25 @@ namespace NeoExpress.Neo3
 
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(assetHash, "balanceOf", accountHash);
+            sb.EmitAppCall(assetHash, "name");
+            sb.EmitAppCall(assetHash, "symbol");
             sb.EmitAppCall(assetHash, "decimals");
 
             var (_, results) = await expressNode.Invoke(sb.ToArray()).ConfigureAwait(false);
-            if (results.Length >= 2
-                && results[0].Type == StackItemType.Integer
-                && results[1].Type == StackItemType.Integer)
+            if (results.Length >= 4)
             {
-                var value = results[0].GetInteger();
-                var decimals = (byte)results[1].GetInteger();
-                return new BigDecimal(value, decimals);
+                var balance = results[0].GetInteger();
+                var name = Encoding.UTF8.GetString(results[1].GetSpan());
+                var symbol = Encoding.UTF8.GetString(results[2].GetSpan());
+                var decimals = (byte)results[3].GetInteger();
+
+                return (new BigDecimal(balance, decimals), new Nep5Contract(name, symbol, decimals, assetHash));
             }
 
             throw new Exception("invalid script results");
         }
 
-        public async Task<RpcNep5Balances> GetBalances(ExpressChain chain, ExpressWalletAccount account)
+        public async Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalances(ExpressChain chain, ExpressWalletAccount account)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -496,23 +500,33 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                return await rpcClient.GetNep5BalancesAsync(account.ScriptHash).ConfigureAwait(false);
+                var contracts = ((JArray)await rpcClient.RpcSendAsync("expressgetnep5contracts"))
+                    .Select(json => Nep5Contract.FromJson(json))
+                    .ToDictionary(c => c.ScriptHash);
+                var balances = await rpcClient.GetNep5BalancesAsync(account.ScriptHash).ConfigureAwait(false);
+                return balances.Balances
+                    .Select(b => (
+                        balance: b,
+                        contract: contracts.TryGetValue(b.AssetHash, out var value) 
+                            ? value 
+                            : Nep5Contract.Unknown(b.AssetHash)))
+                    .ToArray();
             }
             else
             {
-                var accountScriptHash = account.GetScriptHashAsUInt160();
-                return new RpcNep5Balances()
-                {
-                    UserScriptHash = accountScriptHash,
-                    Balances = ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, accountScriptHash)
-                        .Select(b => new RpcNep5Balance
+                var contracts = ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
+                return ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, account.GetScriptHashAsUInt160())
+                    .Select(b => (
+                        balance: new RpcNep5Balance
                         {
                             Amount = b.balance,
                             AssetHash = b.contract.ScriptHash,
                             LastUpdatedBlock = b.lastUpdatedBlock
-                        })
-                        .ToList()
-                };
+                        }, 
+                        contract: contracts.TryGetValue(b.contract.ScriptHash, out var value) 
+                            ? value 
+                            : Nep5Contract.Unknown(b.contract.ScriptHash)))
+                    .ToArray();
             }
         }
 

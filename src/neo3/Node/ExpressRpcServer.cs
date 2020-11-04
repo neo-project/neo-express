@@ -16,18 +16,53 @@ using Neo.VM;
 using Neo.SmartContract;
 using Neo.Wallets;
 using Neo.Persistence;
+using Neo.IO.Caching;
 
 namespace NeoExpress.Neo3.Node
 {
     internal class ExpressRpcServer
     {
-        private readonly ExpressWalletAccount multiSigAccount;
-
+        readonly ExpressWalletAccount multiSigAccount;
+        readonly DataCache<UInt256, TrimmedBlock> blocksCache;
         public ExpressRpcServer(ExpressWalletAccount multiSigAccount)
         {
             this.multiSigAccount = multiSigAccount;
+            this.blocksCache = Blockchain.Singleton.View.Blocks;
         }
 
+        [RpcMethod]
+        public JObject ExpressGetPopulatedBlocks(JArray @params)
+        {
+            var height = Blockchain.Singleton.Height;
+
+            var count = @params.Count >= 1 ? uint.Parse(@params[0].AsString()) : 20;
+            count = count > 100 ? 100 : count;
+
+            var start = @params.Count >= 2 ? uint.Parse(@params[1].AsString()) : height;
+            start = start > height ? height : start;
+
+            var populatedBlocks = new JArray();
+            while (populatedBlocks.Count < count)
+            {
+                var hash = Blockchain.Singleton.GetBlockHash(start);
+                var blockState = blocksCache.TryGet(hash);
+                if (blockState != null
+                    && blockState.Hashes.Length > 0)
+                {
+                    populatedBlocks.Add(blockState.Index);
+                }
+
+                if (start == 0)
+                {
+                    break;
+                }
+                else
+                {
+                    start--;
+                }
+            }
+            return populatedBlocks;
+        }
         
         [RpcMethod]
         public JObject GetApplicationLog(JArray _params)

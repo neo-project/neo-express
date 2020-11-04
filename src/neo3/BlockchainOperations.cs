@@ -516,7 +516,7 @@ namespace NeoExpress.Neo3
             }
         }
 
-        public async Task<(Transaction tx, RpcApplicationLog appLog)> ShowTransaction(ExpressChain chain, string txHash)
+        public async Task<(Transaction tx, RpcApplicationLog? appLog)> ShowTransaction(ExpressChain chain, string txHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -536,7 +536,7 @@ namespace NeoExpress.Neo3
                 var hash = UInt256.Parse(txHash);
                 var tx = Blockchain.Singleton.GetTransaction(hash);
                 var log = ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash);
-                return (tx, RpcApplicationLog.FromJson(log));
+                return (tx, log != null ? RpcApplicationLog.FromJson(log) : null);
             }
         }
 

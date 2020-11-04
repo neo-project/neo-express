@@ -73,9 +73,8 @@ namespace NeoExpress.Neo3.Node
 
         static bool IsNep5Transfer(NotificationRecord notification)
             => notification.InventoryType == InventoryType.TX
-                && notification.State is Neo.VM.Types.Array state
-                && state.Count == 4
-                && "transfer" == Encoding.UTF8.GetString(state[0].GetSpan());
+                && notification.State.Count == 3
+                && notification.EventName == "Transfer";
 
         static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep5Transfers(IReadOnlyStore store)
         {
@@ -110,6 +109,8 @@ namespace NeoExpress.Neo3.Node
 
         static UInt160 ToUInt160(Neo.VM.Types.StackItem item)
         {
+            if (item.IsNull) return UInt160.Zero;
+            
             var bytes = item.GetSpan();
             return bytes.Length == 0
                 ? UInt160.Zero
@@ -124,8 +125,8 @@ namespace NeoExpress.Neo3.Node
 
             foreach (var (blockIndex, _, notification) in GetNep5Transfers(store))
             {
-                var from = ToUInt160(notification.State[1]);
-                var to = ToUInt160(notification.State[2]);
+                var from = ToUInt160(notification.State[0]);
+                var to = ToUInt160(notification.State[1]);
                 if (from == address || to == address)
                 {
                     accounts[notification.ScriptHash] = blockIndex;
@@ -219,8 +220,8 @@ namespace NeoExpress.Neo3.Node
                     var header = Blockchain.Singleton.GetHeader(blockIndex);
                     if (startTime <= header.Timestamp && header.Timestamp <= endTime)
                     {
-                        var from = ToUInt160(notification.State[1]);
-                        var to = ToUInt160(notification.State[2]);
+                        var from = ToUInt160(notification.State[0]);
+                        var to = ToUInt160(notification.State[1]);
 
                         if (address == from)
                         {
@@ -248,7 +249,7 @@ namespace NeoExpress.Neo3.Node
                     ["timestamp"] = timestamp,
                     ["asset_hash"] = notification.ScriptHash.ToString(),
                     ["transfer_address"] = Neo.Wallets.Helper.ToAddress(transferAddress),
-                    ["amount"] = notification.State[3].GetInteger().ToString(),
+                    ["amount"] = notification.State[2].GetInteger().ToString(),
                     ["block_index"] = blockIndex,
                     ["transfer_notify_index"] = txIndex,
                     ["tx_hash"] = notification.InventoryHash.ToString(),

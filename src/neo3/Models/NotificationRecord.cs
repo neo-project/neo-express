@@ -14,6 +14,7 @@ namespace NeoExpress.Neo3.Models
     class NotificationRecord : ISerializable
     {
         public UInt160 ScriptHash { get; private set; } = null!;
+        public string EventName { get; private set; } = null!;
         public Neo.VM.Types.Array State { get; private set; } = null!;
         public UInt256 InventoryHash { get; private set; } = UInt256.Zero;
         public InventoryType InventoryType { get; private set; }
@@ -26,6 +27,7 @@ namespace NeoExpress.Neo3.Models
         {
             ScriptHash = notification.ScriptHash;
             State = notification.State;
+            EventName = notification.EventName;
             if (notification.ScriptContainer is IInventory inventory)
             {
                 InventoryHash = inventory.Hash;
@@ -35,6 +37,7 @@ namespace NeoExpress.Neo3.Models
 
         public int Size => ScriptHash.Size
             + GetSize(State, ExecutionEngineLimits.Default.MaxItemSize)
+            + EventName.GetVarSize()
             + InventoryHash.Size
             + sizeof(byte);
 
@@ -46,6 +49,7 @@ namespace NeoExpress.Neo3.Models
                 ExecutionEngineLimits.Default.MaxStackSize,
                 ExecutionEngineLimits.Default.MaxItemSize,
                 null);
+            EventName = reader.ReadVarString();
             InventoryHash = reader.ReadSerializable<UInt256>();
             InventoryType = (InventoryType)reader.ReadByte();
         }
@@ -54,6 +58,7 @@ namespace NeoExpress.Neo3.Models
         {
             ((ISerializable)ScriptHash).Serialize(writer);
             BinarySerializer.Serialize(State, writer, ExecutionEngineLimits.Default.MaxItemSize);
+            writer.WriteVarString(EventName);
             ((ISerializable)InventoryHash).Serialize(writer);
             writer.Write((byte)InventoryType);
         }

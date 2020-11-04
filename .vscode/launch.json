@@ -5,13 +5,26 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "contract deploy",
+            "name": "apoc",
+            "type": "coreclr",
+            "request": "launch",
+            // "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/nxp3/bin/Debug/netcoreapp3.1/nxp3.dll",
+            // "args": "transfer neo 100000 genesis apoc-owner",
+            "args": "show balances genesis",
+            // "args": "reset -f",
+            "cwd": "C:/Users/harry/Source/neo/seattle/samples/apoc",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "apoc run",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/nxp3/bin/Debug/netcoreapp3.1/nxp3.dll",
-            "args": "contract deploy C:/Users/harry/Source/neo/seattle/samples/helloWorld3/helloWorld3.nef genesis",
-            "cwd": "${workspaceFolder}/src/nxp3",
+            "args": "run -d -s 5",
+            "cwd": "C:/Users/harry/Source/neo/seattle/samples/apoc",
             "stopAtEntry": false,
             "console": "internalConsole"
         },

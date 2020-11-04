@@ -6,7 +6,7 @@ namespace nxp3.Commands
     [Subcommand(typeof(Deploy), typeof(Get), typeof(Invoke), typeof(List), typeof(Storage))]
     partial class ContractCommand
     {
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             console.WriteLine("You must specify at a subcommand.");
             app.ShowHelp(false);

@@ -37,6 +37,7 @@ namespace NeoExpress.Neo3.Node
             storageProvider = new ExpressStorageProvider(store);
             neoSystem = new NeoSystem(storageProvider.Name);
             this.nodeWallet = nodeWallet;
+            _ = new ExpressAppLogsPlugin(store);
         }
 
         public Task<(BigDecimal gasConsumed, StackItem[] results)> Invoke(Neo.VM.Script script)

@@ -11,12 +11,12 @@ namespace nxp3.Commands
         class Block
         {
             [Argument(0)]
-            private string BlockHash { get; } = string.Empty;
+            string BlockHash { get; } = string.Empty;
 
             [Option]
-            private string Input { get; } = string.Empty;
+            string Input { get; } = string.Empty;
 
-            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -29,7 +29,7 @@ namespace nxp3.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.WriteLine(ex.Message);
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

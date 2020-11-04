@@ -9,21 +9,21 @@ namespace nxp3.Commands
     class TransferCommand
     {
         [Argument(0)]
-        private string Asset { get; } = string.Empty;
+        string Asset { get; } = string.Empty;
 
         [Argument(1)]
-        private string Quantity { get; } = string.Empty;
+        string Quantity { get; } = string.Empty;
 
         [Argument(2)]
-        private string Sender { get; } = string.Empty;
+        string Sender { get; } = string.Empty;
 
         [Argument(3)]
-        private string Receiver { get; } = string.Empty;
+        string Receiver { get; } = string.Empty;
 
         [Option]
-        private string Input { get; } = string.Empty;
+        string Input { get; } = string.Empty;
 
-        private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -49,7 +49,7 @@ namespace nxp3.Commands
             }
             catch (Exception ex)
             {
-                console.WriteLine(ex.Message);
+                console.Error.WriteLine(ex.Message);
                 return 1;
             }
         }

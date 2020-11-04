@@ -11,9 +11,9 @@ namespace nxp3.Commands
         private class List
         {
             [Option]
-            private string Input { get; } = string.Empty;
+            string Input { get; } = string.Empty;
 
-            async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -32,7 +32,7 @@ namespace nxp3.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.WriteLine(ex.Message);
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

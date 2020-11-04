@@ -42,7 +42,7 @@ namespace nxp3.Commands
                 _ => throw new ArgumentException(nameof(item)),
             };
 
-            async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -78,7 +78,7 @@ namespace nxp3.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.WriteLine(ex.Message);
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

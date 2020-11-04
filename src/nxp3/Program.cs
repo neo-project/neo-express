@@ -11,6 +11,7 @@ namespace nxp3
         typeof(CheckpointCommand),
         typeof(ContractCommand),
         typeof(CreateCommand),
+        typeof(ExportCommand),
         typeof(ResetCommand),
         typeof(RunCommand),
         typeof(ShowCommand),

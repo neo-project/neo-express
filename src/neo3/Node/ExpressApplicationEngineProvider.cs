@@ -14,7 +14,7 @@ namespace NeoExpress.Neo3.Node
 
     internal class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
-        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas, bool testMode = false)
+        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx
@@ -22,7 +22,7 @@ namespace NeoExpress.Neo3.Node
             {
                 var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
                 var sink = new TraceDebugSink(SysIO.File.OpenWrite(path));
-                return new ExpressApplicationEngine(sink, trigger, container, snapshot, gas, testMode);
+                return new ExpressApplicationEngine(sink, trigger, container, snapshot, gas);
             }
 
             return null;

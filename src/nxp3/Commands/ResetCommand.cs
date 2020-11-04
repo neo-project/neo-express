@@ -8,15 +8,15 @@ namespace nxp3.Commands
     class ResetCommand
     {
         [Argument(0)]
-        private int NodeIndex { get; } = 0;
+        int NodeIndex { get; } = 0;
 
         [Option]
-        private string Input { get; } = string.Empty;
+        string Input { get; } = string.Empty;
 
         [Option]
-        private bool Force { get; }
+        bool Force { get; }
 
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -39,7 +39,7 @@ namespace nxp3.Commands
             }
             catch (Exception ex)
             {
-                console.WriteLine(ex.Message);
+                console.Error.WriteLine(ex.Message);
                 return 1;
             }
         }

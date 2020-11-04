@@ -11,19 +11,19 @@ namespace nxp3.Commands
     partial class WalletCommand
     {
         [Command("create")]
-        private class Create
+        class Create
         {
             [Argument(0)]
             [Required]
-            private string Name { get; } = string.Empty;
+            string Name { get; } = string.Empty;
 
             [Option]
-            private bool Force { get; }
+            bool Force { get; }
 
             [Option]
-            private string Input { get; } = string.Empty;
+            string Input { get; } = string.Empty;
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -57,7 +57,7 @@ namespace nxp3.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.WriteLine(ex.Message);
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

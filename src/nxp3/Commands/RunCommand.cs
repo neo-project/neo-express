@@ -10,21 +10,21 @@ namespace nxp3.Commands
     class RunCommand
     {
         [Argument(0)]
-        private int NodeIndex { get; } = 0;
+        int NodeIndex { get; } = 0;
 
         [Option]
-        private string Input { get; } = string.Empty;
+        string Input { get; } = string.Empty;
 
         [Option]
-        private uint SecondsPerBlock { get; }
+        uint SecondsPerBlock { get; }
 
         [Option]
-        private bool Discard { get; } = false;
+        bool Discard { get; } = false;
 
         [Option]
-        private bool Trace { get; } = false;
+        bool Trace { get; } = false;
 
-        private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace nxp3.Commands
             }
             catch (Exception ex)
             {
-                console.WriteLine(ex.Message);
+                console.Error.WriteLine(ex.Message);
                 return 1;
             }
         }

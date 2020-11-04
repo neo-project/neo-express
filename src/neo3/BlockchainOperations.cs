@@ -20,6 +20,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo.Network.P2P.Payloads;
 using Neo.Ledger;
+using Newtonsoft.Json;
+using System.Net;
+using Neo.IO.Json;
 
 namespace NeoExpress.Neo3
 {
@@ -183,7 +186,7 @@ namespace NeoExpress.Neo3
                     }
                     catch
                     {
-                        return new CheckpointStore(new NullReadOnlyStore());
+                        return new CheckpointStore(NullReadOnlyStore.Instance);
                     }
                 }
                 else
@@ -191,14 +194,6 @@ namespace NeoExpress.Neo3
                     return RocksDbStore.Open(folder);
                 }
             }
-        }
-
-        class NullReadOnlyStore : Neo.Persistence.IReadOnlyStore
-        {
-            public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte table, byte[] key, SeekDirection direction)
-                => Enumerable.Empty<(byte[] Key, byte[] Value)>();
-
-            public byte[]? TryGet(byte table, byte[]? key) => null;
         }
 
         public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
@@ -461,7 +456,7 @@ namespace NeoExpress.Neo3
             return null;
         }
 
-        public async Task<BigDecimal> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public async Task<(BigDecimal balance, Nep5Contract contract)> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -474,23 +469,68 @@ namespace NeoExpress.Neo3
 
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(assetHash, "balanceOf", accountHash);
+            sb.EmitAppCall(assetHash, "name");
+            sb.EmitAppCall(assetHash, "symbol");
             sb.EmitAppCall(assetHash, "decimals");
 
             var (_, results) = await expressNode.Invoke(sb.ToArray()).ConfigureAwait(false);
-            if (results.Length >= 2
-                && results[0].Type == StackItemType.Integer
-                && results[1].Type == StackItemType.Integer)
+            if (results.Length >= 4)
             {
-                var value = results[0].GetInteger();
-                var decimals = (byte)results[1].GetInteger();
-                return new BigDecimal(value, decimals);
+                var balance = results[0].GetInteger();
+                var name = Encoding.UTF8.GetString(results[1].GetSpan());
+                var symbol = Encoding.UTF8.GetString(results[2].GetSpan());
+                var decimals = (byte)results[3].GetInteger();
+
+                return (new BigDecimal(balance, decimals), new Nep5Contract(name, symbol, decimals, assetHash));
             }
 
             throw new Exception("invalid script results");
         }
 
-        // TODO: Return RpcApplicationLog once https://github.com/neo-project/neo-modules/issues/324 is fixed
-        public async Task<Transaction> ShowTransaction(ExpressChain chain, string txHash)
+        public async Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalances(ExpressChain chain, ExpressWalletAccount account)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            var accountHash = account.GetScriptHashAsUInt160();
+            using var expressNode = chain.GetExpressNode();
+
+            if (chain.IsRunning(out var node))
+            {
+                var rpcClient = new RpcClient(node.GetUri().ToString());
+                var contracts = ((JArray)await rpcClient.RpcSendAsync("expressgetnep5contracts"))
+                    .Select(json => Nep5Contract.FromJson(json))
+                    .ToDictionary(c => c.ScriptHash);
+                var balances = await rpcClient.GetNep5BalancesAsync(account.ScriptHash).ConfigureAwait(false);
+                return balances.Balances
+                    .Select(b => (
+                        balance: b,
+                        contract: contracts.TryGetValue(b.AssetHash, out var value) 
+                            ? value 
+                            : Nep5Contract.Unknown(b.AssetHash)))
+                    .ToArray();
+            }
+            else
+            {
+                var contracts = ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
+                return ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, account.GetScriptHashAsUInt160())
+                    .Select(b => (
+                        balance: new RpcNep5Balance
+                        {
+                            Amount = b.balance,
+                            AssetHash = b.contract.ScriptHash,
+                            LastUpdatedBlock = b.lastUpdatedBlock
+                        }, 
+                        contract: contracts.TryGetValue(b.contract.ScriptHash, out var value) 
+                            ? value 
+                            : Nep5Contract.Unknown(b.contract.ScriptHash)))
+                    .ToArray();
+            }
+        }
+
+        public async Task<(Transaction tx, RpcApplicationLog? appLog)> ShowTransaction(ExpressChain chain, string txHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -500,14 +540,17 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var response = rpcClient.GetRawTransaction(txHash);
-                return response.Transaction;
+                var response = await rpcClient.GetRawTransactionAsync(txHash).ConfigureAwait(false);
+                var log = await rpcClient.GetApplicationLogAsync(txHash).ConfigureAwait(false);
+                return (response.Transaction, log);
             }
             else
             {
                 using var expressNode = chain.GetExpressNode();
                 var hash = UInt256.Parse(txHash);
-                return Blockchain.Singleton.GetTransaction(hash);
+                var tx = Blockchain.Singleton.GetTransaction(hash);
+                var log = ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash);
+                return (tx, log != null ? RpcApplicationLog.FromJson(log) : null);
             }
         }
 
@@ -521,7 +564,7 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var result = rpcClient.GetBlock(blockHash);
+                var result = await rpcClient.GetBlockAsync(blockHash).ConfigureAwait(false);
                 return result.Block;
             }
             else
@@ -553,7 +596,8 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var json = rpcClient.RpcSend("expressgetcontractstorage", scriptHash.ToString());
+                var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
+                    .ConfigureAwait(false);
 
                 if (json != null && json is Neo.IO.Json.JArray array)
                 {
@@ -599,7 +643,7 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var contractState = rpcClient.GetContractState(scriptHash.ToString());
+                var contractState = await rpcClient.GetContractStateAsync(scriptHash.ToString()).ConfigureAwait(false);
                 return contractState.Manifest;
             }
             else
@@ -625,7 +669,7 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
-                var json = rpcClient.RpcSend("expresslistcontracts");
+                var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
 
                 if (json != null && json is Neo.IO.Json.JArray array)
                 {
@@ -655,14 +699,113 @@ namespace NeoExpress.Neo3
             {
                 using var stream = File.OpenRead(hashOrContract);
                 using var reader = new BinaryReader(stream, Encoding.UTF8, false);
-
-                // TODO: use NefFile.DeserializeHeader once
-                // https://github.com/neo-project/neo/pull/1897 is merged
                 var nefFile = reader.ReadSerializable<NefFile>();
                 return nefFile.ScriptHash;
             }
 
             throw new ArgumentException(nameof(hashOrContract));
+        }
+
+        public void ExportBlockchain(ExpressChain chain, string folder, string password, TextWriter writer)
+        {
+            void WriteNodeConfigJson(ExpressConsensusNode _node, string walletPath)
+            {
+                using var stream = File.Open(Path.Combine(folder, $"{_node.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write);
+                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+
+                // use neo-cli defaults for Logger & Storage
+
+                writer.WriteStartObject();
+                writer.WritePropertyName("ApplicationConfiguration");
+                writer.WriteStartObject();
+
+                writer.WritePropertyName("P2P");
+                writer.WriteStartObject();
+                writer.WritePropertyName("Port");
+                writer.WriteValue(_node.TcpPort);
+                writer.WritePropertyName("WsPort");
+                writer.WriteValue(_node.WebSocketPort);
+                writer.WriteEndObject();
+
+                writer.WritePropertyName("UnlockWallet");
+                writer.WriteStartObject();
+                writer.WritePropertyName("Path");
+                writer.WriteValue(walletPath);
+                writer.WritePropertyName("Password");
+                writer.WriteValue(password);
+                writer.WritePropertyName("StartConsensus");
+                writer.WriteValue(true);
+                writer.WritePropertyName("IsActive");
+                writer.WriteValue(true);
+                writer.WriteEndObject();
+
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            void WriteProtocolJson()
+            {
+                using var stream = File.Open(Path.Combine(folder, "protocol.json"), FileMode.Create, FileAccess.Write);
+                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+
+                // use neo defaults for MillisecondsPerBlock & AddressVersion
+
+                writer.WriteStartObject();
+                writer.WritePropertyName("ProtocolConfiguration");
+                writer.WriteStartObject();
+
+                writer.WritePropertyName("Magic");
+                writer.WriteValue(chain.Magic);
+                writer.WritePropertyName("ValidatorsCount");
+                writer.WriteValue(chain.ConsensusNodes.Count);
+
+                writer.WritePropertyName("StandbyCommittee");
+                writer.WriteStartArray();
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                {
+                    var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount);
+                    var key = account.GetKey();
+                    if (key != null)
+                    {
+                        writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
+                    }
+                }
+                writer.WriteEndArray();
+
+                writer.WritePropertyName("SeedList");
+                writer.WriteStartArray();
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    writer.WriteValue($"{IPAddress.Loopback}:{node.TcpPort}");
+                }
+                writer.WriteEndArray();
+
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var node = chain.ConsensusNodes[i];
+                writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node wallet");
+
+                var walletPath = Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
+                if (File.Exists(walletPath))
+                {
+                    File.Delete(walletPath);
+                }
+
+                ExportWallet(node.Wallet, walletPath, password);
+                WriteNodeConfigJson(node, walletPath);
+            }
+
+            WriteProtocolJson();
+        }
+
+        public void ExportWallet(ExpressWallet wallet, string filename, string password)
+        {
+            var devWallet = DevWallet.FromExpressWallet(wallet);
+            devWallet.Export(filename, password);
         }
     }
 }

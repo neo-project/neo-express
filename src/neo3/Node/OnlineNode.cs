@@ -24,24 +24,26 @@ namespace NeoExpress.Neo3.Node
         {
         }
 
-        // TODO: Make these truly async when async RpcClient work is merged and available
-        public Task<UInt256> Execute(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0)
+        public async Task<UInt256> Execute(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.GetScriptHashAsUInt160() } };
-            var tm = new TransactionManager(rpcClient)
-                .MakeTransaction(script, signers)
+            var factory = new TransactionManagerFactory(rpcClient);
+            var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
+            var tx = await tm
                 .AddGas(additionalGas)
                 .AddSignatures(chain, account)
-                .Sign();
-            return Task.FromResult(rpcClient.SendRawTransaction(tm.Tx));
+                .SignAsync()
+                .ConfigureAwait(false);
+
+            return await rpcClient.SendRawTransactionAsync(tx);
         }
 
-        public Task<(BigDecimal gasConsumed, StackItem[] results)> Invoke(Script script)
+        public async Task<(BigDecimal gasConsumed, StackItem[] results)> Invoke(Script script)
         {
-            var invokeResult = rpcClient.InvokeScript(script);
+            var invokeResult = await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
             var gasConsumed = BigDecimal.Parse(invokeResult.GasConsumed, NativeContract.GAS.Decimals);
             var results = invokeResult.Stack ?? Array.Empty<StackItem>();
-            return Task.FromResult((gasConsumed, results));
+            return (gasConsumed, results);
         }
     }
 }

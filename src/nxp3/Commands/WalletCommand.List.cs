@@ -8,15 +8,15 @@ namespace nxp3.Commands
     partial class WalletCommand
     {
         [Command("list")]
-        private class List
+        class List
         {
             [Option]
-            private string Input { get; } = string.Empty;
+            string Input { get; } = string.Empty;
 
             [Option]
-            private bool Dev { get; }
+            bool Dev { get; }
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -55,7 +55,7 @@ namespace nxp3.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.WriteLine(ex.Message);
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

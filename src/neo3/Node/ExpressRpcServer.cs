@@ -182,9 +182,9 @@ namespace NeoExpress.Neo3.Node
             {
                 balances.Add(new JObject()
                 {
-                    ["asset_hash"] = contract.ScriptHash.ToString(),
+                    ["assethash"] = contract.ScriptHash.ToString(),
                     ["amount"] = balance.ToString(),
-                    ["last_updated_block"] = lastUpdatedBlock,
+                    ["lastupdatedblock"] = lastUpdatedBlock,
                 });
             }
             return new JObject

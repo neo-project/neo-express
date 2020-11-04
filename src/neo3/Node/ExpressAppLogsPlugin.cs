@@ -123,7 +123,7 @@ namespace NeoExpress.Neo3.Node
                         var record = new NotificationRecord(appExec.Notifications[j]);
                         store.Put(
                             NOTIFICATIONS_PREFIX,
-                            notificationIndex,
+                            notificationIndex.ToArray(),
                             record.ToArray());
                     }
                 }

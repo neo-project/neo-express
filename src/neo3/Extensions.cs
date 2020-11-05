@@ -145,10 +145,12 @@ namespace NeoExpress.Neo3
             return transactionManager;
         }
 
+        const string GLOBAL_PREFIX = "Global\\";
+
         public static Mutex CreateRunningMutex(this ExpressConsensusNode node)
         {
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return new Mutex(true, account.ScriptHash);
+            return new Mutex(true, GLOBAL_PREFIX + account.ScriptHash);
         }
         
         public static bool IsRunning(this ExpressChain chain, [MaybeNullWhen(false)] out ExpressConsensusNode node)
@@ -175,7 +177,7 @@ namespace NeoExpress.Neo3
             // attempting to open a mutex with the multisig account address for a name
 
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return Mutex.TryOpenExisting(account.ScriptHash, out var _);
+            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
         public static Node.IExpressNode GetExpressNode(this ExpressChain chain)

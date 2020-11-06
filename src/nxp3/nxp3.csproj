@@ -7,6 +7,7 @@
     <Copyright>2015-2020 The Neo Project</Copyright>
     <Description>neo-express is a Neo developer blockchain tool</Description>
     <LangVersion>8</LangVersion>
+    <NoWarn>VSTHRD103</NoWarn>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>

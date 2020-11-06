@@ -399,7 +399,7 @@ namespace NeoExpress.Neo3
                 });
 
                 var manifestTask = File.ReadAllBytesAsync(Path.ChangeExtension(contractPath, ".manifest.json"))
-                    .ContinueWith(t => ContractManifest.Parse(t.Result), TaskContinuationOptions.OnlyOnRanToCompletion);
+                    .ContinueWith(t => ContractManifest.Parse(t.Result), default, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
 
                 await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
                 return (nefTask.Result, manifestTask.Result);

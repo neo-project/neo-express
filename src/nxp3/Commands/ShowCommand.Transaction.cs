@@ -25,7 +25,7 @@ namespace nxp3.Commands
 
                     var (tx, log) = await blockchainOperations.ShowTransaction(chain, TransactionHash).ConfigureAwait(false);
                     console.WriteLine(tx.ToJson().ToString(true));
-                    console.WriteLine(log.ToJson().ToString(true));
+                    if (log != null) console.WriteLine(log.ToJson().ToString(true));
                     return 0;
                 }
                 catch (Exception ex)

@@ -65,7 +65,7 @@ namespace NeoExpress.Neo3.Node
 
             var tcs = new TaskCompletionSource<bool>();
 
-            Task.Run(() =>
+            _ = Task.Run(() =>
             {
                 try
                 {

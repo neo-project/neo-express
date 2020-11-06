@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <LangVersion>8</LangVersion>
+    <NoWarn>VSTHRD200;VSTHRD103</NoWarn>
     <Nullable>enable</Nullable>
     <RootNamespace>NeoExpress.Neo3</RootNamespace>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -9,8 +10,8 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Nito.Disposables" Version="2.2.0" />
-    <PackageReference Include="Neo.BlockchainToolkit.Persistence" Version="0.4.4-preview" />
-    <PackageReference Include="Neo.BlockchainToolkit.TraceDebug" Version="0.4.4-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit.Persistence" Version="0.4.18-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit.TraceDebug" Version="0.4.18-preview" />
     <PackageReference Include="Neo" Version="3.0.0-CI01060" />
     <PackageReference Include="RpcServer" Version="3.0.0-CI01060" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-CI01060" />

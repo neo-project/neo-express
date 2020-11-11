@@ -54,7 +54,7 @@ namespace NeoExpress.Neo3.Node
                     stream.Write(segment.Span);
                 }
             }
-            catch (Exception)
+            catch
             {
             }
         }

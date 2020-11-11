@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Neo3;
@@ -11,9 +12,11 @@ namespace nxp3.Commands
         class Balance
         {
             [Argument(0)]
+            [Required]
             string Asset { get; } = string.Empty;
 
             [Argument(1)]
+            [Required]
             string Account { get; } = string.Empty;
 
             [Option]

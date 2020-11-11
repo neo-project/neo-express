@@ -1,4 +1,4 @@
-﻿using Neo;
+using Neo;
 using Neo.IO;
 using Neo.IO.Caching;
 using Neo.Network.RPC;
@@ -564,12 +564,22 @@ namespace NeoExpress.Neo3
             if (chain.IsRunning(out var node))
             {
                 var rpcClient = new RpcClient(node.GetUri().ToString());
+                if (string.IsNullOrEmpty(blockHash))
+                {
+                    blockHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
+                }
                 var result = await rpcClient.GetBlockAsync(blockHash).ConfigureAwait(false);
                 return result.Block;
             }
             else
             {
                 using var expressNode = chain.GetExpressNode();
+
+                if (string.IsNullOrEmpty(blockHash))
+                {
+                    return Blockchain.Singleton.GetBlock(Blockchain.Singleton.CurrentBlockHash);
+                }
+
                 if (UInt256.TryParse(blockHash, out var hash))
                 {
                     return Blockchain.Singleton.GetBlock(hash);
@@ -580,7 +590,7 @@ namespace NeoExpress.Neo3
                     return Blockchain.Singleton.GetBlock(index);
                 }
 
-                throw new ArgumentException(nameof(blockHash));
+                throw new ArgumentException("Invalid block hash", nameof(blockHash));
             }
         }
 

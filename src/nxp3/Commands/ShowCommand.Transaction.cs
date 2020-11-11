@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Neo3;
@@ -11,6 +12,7 @@ namespace nxp3.Commands
         class Transaction
         {
             [Argument(0)]
+            [Required]
             string TransactionHash { get; } = string.Empty;
 
             [Option]

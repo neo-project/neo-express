@@ -23,6 +23,8 @@ using Neo.Ledger;
 using Newtonsoft.Json;
 using System.Net;
 using Neo.IO.Json;
+using Neo.BlockchainToolkit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NeoExpress.Neo3
 {
@@ -414,7 +416,8 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode();
-            var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
+            var parser = GetContractParameterParser(chain);
+            var script = parser.LoadInvocationScript(invocationFilePath);
             return await expressNode.Execute(chain, account, script, additionalGas).ConfigureAwait(false);
         }
 
@@ -426,8 +429,27 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode();
-            var script = await ContractParameterParser.LoadInvocationScript(invocationFilePath).ConfigureAwait(false);
+            var parser = GetContractParameterParser(chain);
+            var script = parser.LoadInvocationScript(invocationFilePath);
             return await expressNode.Invoke(script).ConfigureAwait(false);
+        }
+
+        ContractParameterParser GetContractParameterParser(ExpressChain chain)
+        {
+            ContractParameterParser.TryGetAccount tryGetAccount = (string name, out UInt160 scriptHash) =>
+            {
+                var account = GetAccount(chain, name);
+                if (account != null)
+                {
+                    scriptHash = account.GetScriptHashAsUInt160();
+                    return true;
+                }
+
+                scriptHash = null!;
+                return false;
+            };
+            
+            return new ContractParameterParser(new System.IO.Abstractions.FileSystem(), tryGetAccount);
         }
 
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)

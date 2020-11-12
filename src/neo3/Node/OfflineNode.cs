@@ -1,6 +1,9 @@
 using Akka.Actor;
 using Neo;
+using Neo.Consensus;
+using Neo.Cryptography;
 using Neo.Ledger;
+using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
@@ -23,20 +26,22 @@ namespace NeoExpress.Neo3.Node
     internal class OfflineNode : IDisposable, IExpressNode
     {
         private readonly NeoSystem neoSystem;
-        private ExpressStorageProvider storageProvider;
-        private Wallet nodeWallet;
+        private readonly ExpressStorageProvider storageProvider;
+        private readonly Wallet nodeWallet;
+        private readonly ExpressChain chain;
         private bool disposedValue;
 
-        public OfflineNode(IStore store, ExpressWallet nodeWallet)
-            : this(store, DevWallet.FromExpressWallet(nodeWallet))
+        public OfflineNode(IStore store, ExpressWallet nodeWallet, ExpressChain chain)
+            : this(store, DevWallet.FromExpressWallet(nodeWallet), chain)
         {
         }
 
-        public OfflineNode(IStore store, Wallet nodeWallet)
+        public OfflineNode(IStore store, Wallet nodeWallet, ExpressChain chain)
         {
             storageProvider = new ExpressStorageProvider(store);
             neoSystem = new NeoSystem(storageProvider.Name);
             this.nodeWallet = nodeWallet;
+            this.chain = chain;
             _ = new ExpressAppLogsPlugin(store);
         }
 
@@ -90,51 +95,6 @@ namespace NeoExpress.Neo3.Node
             return ExecuteTransaction(tx);
         }
 
-        // TODO: remove when https://github.com/neo-project/neo/pull/1893 is merged
-        private class ReflectionConsensusContext
-        {
-            static readonly Type consensusContextType;
-            static readonly MethodInfo reset;
-            static readonly MethodInfo makePrepareRequest;
-            static readonly MethodInfo makeCommit;
-            static readonly MethodInfo createBlock;
-
-            static ReflectionConsensusContext()
-            {
-                consensusContextType = typeof(Neo.Consensus.ConsensusService).Assembly.GetType("Neo.Consensus.ConsensusContext");
-                reset = consensusContextType.GetMethod("Reset");
-                makePrepareRequest = consensusContextType.GetMethod("MakePrepareRequest");
-                makeCommit = consensusContextType.GetMethod("MakeCommit");
-                createBlock = consensusContextType.GetMethod("CreateBlock");
-            }
-
-            readonly object consensusContext;
-
-            public ReflectionConsensusContext(Wallet wallet, IStore store)
-            {
-                consensusContext = Activator.CreateInstance(consensusContextType, wallet, store);
-            }
-
-            public void Reset(byte viewNumber)
-            {
-                _ = reset.Invoke(consensusContext, new object[] { viewNumber });
-            }
-
-            public void MakePrepareRequest()
-            {
-                _ = makePrepareRequest.Invoke(consensusContext, Array.Empty<object>());
-            }
-            public void MakeCommit()
-            {
-                _ = makeCommit.Invoke(consensusContext, Array.Empty<object>());
-            }
-
-            public Block CreateBlock()
-            {
-                return (Block)createBlock.Invoke(consensusContext, Array.Empty<object>());
-            }
-        }
-
         public Task<UInt256> ExecuteTransaction(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
@@ -145,13 +105,7 @@ namespace NeoExpress.Neo3.Node
                 throw new Exception($"Transaction relay failed {txRelay.Result}");
             }
 
-            // TODO: replace with non-reflection code when https://github.com/neo-project/neo/pull/1893 is merged
-            var ctx = new ReflectionConsensusContext(nodeWallet, Blockchain.Singleton.Store);
-            ctx.Reset(0);
-            ctx.MakePrepareRequest();
-            ctx.MakeCommit();
-            var block = ctx.CreateBlock();
-
+            var block = RunConsensus();
             var blockRelay = neoSystem.Blockchain.Ask<RelayResult>(block).Result;
             if (blockRelay.Result != VerifyResult.Succeed)
             {
@@ -159,6 +113,150 @@ namespace NeoExpress.Neo3.Node
             }
 
             return Task.FromResult(tx.Hash);
+        }
+
+        Block RunConsensus()
+        {
+            if (chain.ConsensusNodes.Count == 1)
+            {
+                var ctx = new ConsensusContext(nodeWallet, Blockchain.Singleton.Store);
+                ctx.Reset(0);
+                ctx.MakePrepareRequest();
+                ctx.MakeCommit();
+                return ctx.CreateBlock();
+            }
+
+            // create ConsensusContext for each ConsensusNode
+            var contexts = new ConsensusContext[chain.ConsensusNodes.Count];
+            for (int x = 0; x < contexts.Length; x++)
+            {
+                contexts[x] = new ConsensusContext(DevWallet.FromExpressWallet(chain.ConsensusNodes[x].Wallet), Blockchain.Singleton.Store);
+                contexts[x].Reset(0);
+            }
+
+            // find the primary node for this consensus round
+            var primary = contexts.Single(c => c.IsPrimary);
+            var prepareRequest = primary.MakePrepareRequest();
+
+            for (int x = 0; x < contexts.Length; x++)
+            {
+                if (contexts[x].MyIndex == primary.MyIndex) continue;
+                OnPrepareRequestReceived(contexts[x], prepareRequest);
+                var commit = contexts[x].MakeCommit();
+                OnCommitReceived(primary, commit);
+            }
+
+            return primary.CreateBlock();
+        }
+
+
+        // this logic is lifted from ConsensusService.OnPrepareRequestReceived
+        // Log, Timer, Task and CheckPrepare logic has been removed for offline consensus
+        private static void OnPrepareRequestReceived(ConsensusContext context, ConsensusPayload payload)
+        {
+            var message = (PrepareRequest)payload.ConsensusMessage;
+
+            if (context.RequestSentOrReceived || context.NotAcceptingPayloadsDueToViewChanging) return;
+            if (payload.ValidatorIndex != context.Block.ConsensusData.PrimaryIndex || message.ViewNumber != context.ViewNumber) return;
+            if (message.Timestamp <= context.PrevHeader.Timestamp || message.Timestamp > TimeProvider.Current.UtcNow.AddMilliseconds(8 * Blockchain.MillisecondsPerBlock).ToTimestampMS())
+            {
+                return;
+            }
+            if (message.TransactionHashes.Any(p => context.Snapshot.ContainsTransaction(p)))
+            {
+                return;
+            }
+
+            context.Block.Timestamp = message.Timestamp;
+            context.Block.ConsensusData.Nonce = message.Nonce;
+            context.TransactionHashes = message.TransactionHashes;
+            context.Transactions = new Dictionary<UInt256, Transaction>();
+            context.VerificationContext = new TransactionVerificationContext();
+            for (int i = 0; i < context.PreparationPayloads.Length; i++)
+                if (context.PreparationPayloads[i] != null)
+                    if (!context.PreparationPayloads[i].GetDeserializedMessage<PrepareResponse>().PreparationHash.Equals(payload.Hash))
+                        context.PreparationPayloads[i] = null;
+            context.PreparationPayloads[payload.ValidatorIndex] = payload;
+            byte[] hashData = context.EnsureHeader().GetHashData();
+            for (int i = 0; i < context.CommitPayloads.Length; i++)
+                if (context.CommitPayloads[i]?.ConsensusMessage.ViewNumber == context.ViewNumber)
+                    if (!Crypto.VerifySignature(hashData, context.CommitPayloads[i].GetDeserializedMessage<Commit>().Signature, context.Validators[i]))
+                        context.CommitPayloads[i] = null;
+
+            if (context.TransactionHashes.Length == 0)
+            {
+                // There are no tx so we should act like if all the transactions were filled
+                return;
+            }
+
+            Dictionary<UInt256, Transaction> mempoolVerified = Blockchain.Singleton.MemPool.GetVerifiedTransactions().ToDictionary(p => p.Hash);
+            List<Transaction> unverified = new List<Transaction>();
+            foreach (UInt256 hash in context.TransactionHashes)
+            {
+                if (mempoolVerified.TryGetValue(hash, out Transaction tx))
+                {
+                    if (!AddTransaction(context, tx, false))
+                        return;
+                }
+                else
+                {
+                    if (Blockchain.Singleton.MemPool.TryGetValue(hash, out tx))
+                        unverified.Add(tx);
+                }
+            }
+            foreach (Transaction tx in unverified)
+            {
+                if (!AddTransaction(context, tx, true))
+                    return;
+            }
+
+            static bool AddTransaction(ConsensusContext context, Transaction tx, bool verify)
+            {
+                if (verify)
+                {
+                    VerifyResult result = tx.Verify(context.Snapshot, context.VerificationContext);
+                    if (result == VerifyResult.PolicyFail)
+                    {
+                        return false;
+                    }
+                    else if (result != VerifyResult.Succeed)
+                    {
+                        return false;
+                    }
+                }
+                context.Transactions[tx.Hash] = tx;
+                context.VerificationContext.AddTransaction(tx);
+                return true;
+            }
+        }
+
+        // this logic is lifted from ConsensusService.OnCommitReceived
+        // Log, Timer and CheckCommits logic has been removed for offline consensus
+        private static void OnCommitReceived(ConsensusContext context, ConsensusPayload payload)
+        {
+            Commit commit = (Commit)payload.ConsensusMessage;
+
+            ref ConsensusPayload existingCommitPayload = ref context.CommitPayloads[payload.ValidatorIndex];
+            if (existingCommitPayload != null)
+            {
+                return;
+            }
+
+            if (commit.ViewNumber == context.ViewNumber)
+            {
+                byte[]? hashData = context.EnsureHeader()?.GetHashData();
+                if (hashData == null)
+                {
+                    existingCommitPayload = payload;
+                }
+                else if (Crypto.VerifySignature(hashData, commit.Signature, context.Validators[payload.ValidatorIndex]))
+                {
+                    existingCommitPayload = payload;
+                }
+                return;
+            }
+
+            existingCommitPayload = payload;
         }
 
         protected virtual void Dispose(bool disposing)

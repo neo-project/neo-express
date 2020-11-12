@@ -189,7 +189,7 @@ namespace NeoExpress.Neo3
 
             node = chain.ConsensusNodes[0];
             var folder = node.GetBlockchainPath();
-            return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet);
+            return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain);
         }
     }
 }

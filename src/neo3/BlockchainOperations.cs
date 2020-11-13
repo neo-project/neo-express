@@ -88,10 +88,20 @@ namespace NeoExpress.Neo3
             };
         }
 
-        public byte[] ToScriptHashByteArray(ExpressWalletAccount account)
+        public void PrintWalletInfo(ExpressWallet wallet, TextWriter writer)
         {
-            var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-            return devAccount.ScriptHash.ToArray();
+            writer.WriteLine(wallet.Name);
+
+            foreach (var account in wallet.Accounts)
+            {
+                var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+                var key = devAccount.GetKey() ?? throw new Exception();
+
+                writer.WriteLine($"  {account.ScriptHash} ({(account.IsDefault ? "Default" : account.Label)})");
+                writer.WriteLine($"    address bytes: {BitConverter.ToString(devAccount.ScriptHash.ToArray())}");
+                writer.WriteLine($"    public key:    {key.PublicKey.EncodePoint(true).ToHexString()}");
+                writer.WriteLine($"    private key:   {key.PrivateKey.ToHexString()}");
+            }
         }
 
         public void ResetNode(ExpressChain chain, int index, bool force)
@@ -361,7 +371,7 @@ namespace NeoExpress.Neo3
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
                 return await expressNode.ExecuteAsync(chain, sender, sb.ToArray()).ConfigureAwait(false);
             }
-            else if(decimal.TryParse(quantity, out var amount))
+            else if (decimal.TryParse(quantity, out var amount))
             {
                 var (_, results) = await expressNode.InvokeAsync(assetHash.MakeScript("decimals")).ConfigureAwait(false);
                 if (results.Length > 0 && results[0].Type == StackItemType.Integer)
@@ -401,7 +411,7 @@ namespace NeoExpress.Neo3
             if (asset.EndsWith(".nef"))
             {
                 var parser = new ContractParameterParser();
-                if (parser.TryLoadScriptHash(asset, out var scriptHash))
+                if (parser.TryLoadScriptHash(asset, System.Environment.CurrentDirectory, out var scriptHash))
                 {
                     return scriptHash;
                 }
@@ -493,7 +503,7 @@ namespace NeoExpress.Neo3
                 scriptHash = null!;
                 return false;
             };
-            
+
             return new ContractParameterParser(new System.IO.Abstractions.FileSystem(), tryGetAccount);
         }
 

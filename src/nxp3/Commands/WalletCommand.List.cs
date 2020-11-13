@@ -13,9 +13,6 @@ namespace nxp3.Commands
             [Option]
             string Input { get; } = string.Empty;
 
-            [Option]
-            bool Dev { get; }
-
             internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
@@ -27,28 +24,7 @@ namespace nxp3.Commands
                         .Concat(chain.Wallets ?? Enumerable.Empty<ExpressWallet>());
                     foreach (var wallet in wallets)
                     {
-                        console.WriteLine(wallet.Name);
-
-                        foreach (var account in wallet.Accounts)
-                        {
-                            console.WriteLine($"  {account.ScriptHash} ({(account.IsDefault ? "Default" : account.Label)})");
-                            if (Dev)
-                            {
-                                var scriptHash = blockchainOperations.ToScriptHashByteArray(account);
-                                console.Write("    C#: { ");
-                                foreach (var b in scriptHash)
-                                {
-                                    console.Write($"0x{b.ToString("x2")}, ");
-                                }
-                                console.WriteLine("}");
-                                console.Write("    Python: b'");
-                                foreach (var b in scriptHash)
-                                {
-                                    console.Write($"\\x{b.ToString("x2")}");
-                                }
-                                console.WriteLine("'");
-                            }
-                        }
+                        blockchainOperations.PrintWalletInfo(wallet, console.Out);
                     }
 
                     return 0;

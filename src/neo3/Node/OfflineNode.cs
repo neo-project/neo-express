@@ -6,8 +6,10 @@ using Neo.Ledger;
 using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
@@ -45,7 +47,7 @@ namespace NeoExpress.Neo3.Node
             _ = new ExpressAppLogsPlugin(store);
         }
 
-        public Task<(BigDecimal gasConsumed, StackItem[] results)> Invoke(Neo.VM.Script script)
+        public Task<(BigDecimal gasConsumed, StackItem[] results)> InvokeAsync(Neo.VM.Script script)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -55,7 +57,7 @@ namespace NeoExpress.Neo3.Node
             return Task.FromResult((gasConsumed, results));
         }
 
-        public Task<UInt256> Execute(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
+        public Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -349,6 +351,101 @@ namespace NeoExpress.Neo3.Node
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        public Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            var contracts = ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
+            var balances = ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, address)
+                .Select(b => (
+                    balance: new RpcNep5Balance
+                    {
+                        Amount = b.balance,
+                        AssetHash = b.contract.ScriptHash,
+                        LastUpdatedBlock = b.lastUpdatedBlock
+                    }, 
+                    contract: contracts.TryGetValue(b.contract.ScriptHash, out var value) 
+                        ? value 
+                        : Nep5Contract.Unknown(b.contract.ScriptHash)))
+                .ToArray();
+            return Task.FromResult(balances);
+        }
+
+        public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            var tx = Blockchain.Singleton.GetTransaction(txHash);
+            var log = ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, txHash);
+            return Task.FromResult((tx, log != null ? RpcApplicationLog.FromJson(log) : null));
+        }
+
+        public Task<Block> GetBlockAsync(UInt256 blockHash)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            return Task.FromResult(Blockchain.Singleton.GetBlock(blockHash));
+        }
+
+        public Task<Block> GetBlockAsync(uint blockIndex)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            return Task.FromResult(Blockchain.Singleton.GetBlock(blockIndex));
+        }
+
+        public Task<Block> GetLatestBlockAsync()
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            return Task.FromResult(Blockchain.Singleton.GetBlock(Blockchain.Singleton.CurrentBlockHash));
+        }
+
+        public Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            var contract = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
+            if (contract != null)
+            {
+                IReadOnlyList<ExpressStorage> storages = Blockchain.Singleton.View.Storages.Find()
+                    .Where(t => t.Key.Id == contract.Id)
+                    .Select(t => new ExpressStorage()
+                        {
+                            Key = t.Key.Key.ToHexString(),
+                            Value = t.Value.Value.ToHexString(),
+                            Constant = t.Value.IsConstant
+                        })
+                    .ToList();
+                return Task.FromResult(storages);
+            }
+
+            return Task.FromResult<IReadOnlyList<ExpressStorage>>(Array.Empty<ExpressStorage>());
+        }
+
+        public Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            var contractState = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
+            if (contractState == null)
+            {
+                throw new Exception("Unknown contract");
+            }
+            return Task.FromResult(contractState.Manifest);
+        }
+
+        public Task<IReadOnlyList<ContractManifest>> ListContractsAsync()
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            var contracts = Blockchain.Singleton.View.Contracts.Find()
+                    .OrderBy(t => t.Value.Id)
+                    .Select(t => t.Value.Manifest)
+                    .ToList();
+            return Task.FromResult<IReadOnlyList<ContractManifest>>(contracts);
         }
     }
 }

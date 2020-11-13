@@ -46,7 +46,7 @@ namespace NeoExpress.Neo3
 
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
 
-            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(49000 + (index * 1000) + portNumber);
+            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
 
             for (var i = 1; i <= count; i++)
             {
@@ -73,9 +73,9 @@ namespace NeoExpress.Neo3
             {
                 nodes.Add(new ExpressConsensusNode()
                 {
-                    TcpPort = GetPortNumber(i, 333),
-                    WebSocketPort = GetPortNumber(i, 334),
-                    RpcPort = GetPortNumber(i, 332),
+                    TcpPort = GetPortNumber(i, 3),
+                    WebSocketPort = GetPortNumber(i, 4),
+                    RpcPort = GetPortNumber(i, 2),
                     Wallet = wallets[i].wallet.ToExpressWallet()
                 });
             }
@@ -131,6 +131,11 @@ namespace NeoExpress.Neo3
                 throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
             }
 
+            if (chain.Wallets.Any(w => string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new Exception($"There is already a wallet named {name}. Choose a different wallet name.");
+            }
+
             var wallet = new DevWallet(name);
             var account = wallet.CreateAccount();
             account.IsDefault = true;
@@ -138,12 +143,12 @@ namespace NeoExpress.Neo3
 
             bool IsReservedName()
             {
-                if (string.Equals(GENESIS, name, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
                     return true;
 
                 foreach (var node in chain.ConsensusNodes)
                 {
-                    if (string.Equals(node.Wallet.Name, name, StringComparison.InvariantCultureIgnoreCase))
+                    if (string.Equals(node.Wallet.Name, name, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
 
@@ -345,7 +350,7 @@ namespace NeoExpress.Neo3
             var senderHash = sender.GetScriptHashAsUInt160();
             var receiverHash = receiver.GetScriptHashAsUInt160();
 
-            if ("all".Equals(quantity, StringComparison.InvariantCultureIgnoreCase))
+            if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
             {
                 using var sb = new ScriptBuilder();
                 sb.EmitAppCall(assetHash, "balanceOf", senderHash);
@@ -357,16 +362,16 @@ namespace NeoExpress.Neo3
                 sb.EmitPush("transfer");
                 sb.EmitPush(assetHash);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                return await expressNode.Execute(chain, sender, sb.ToArray()).ConfigureAwait(false);
+                return await expressNode.ExecuteAsync(chain, sender, sb.ToArray()).ConfigureAwait(false);
             }
             else if(decimal.TryParse(quantity, out var amount))
             {
-                var (_, results) = await expressNode.Invoke(assetHash.MakeScript("decimals")).ConfigureAwait(false);
+                var (_, results) = await expressNode.InvokeAsync(assetHash.MakeScript("decimals")).ConfigureAwait(false);
                 if (results.Length > 0 && results[0].Type == StackItemType.Integer)
                 {
                     var decimals = (byte)results[0].GetInteger();
                     var value = amount.ToBigInteger(decimals);
-                    return await expressNode.Execute(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value)).ConfigureAwait(false);
+                    return await expressNode.ExecuteAsync(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value)).ConfigureAwait(false);
                 }
                 else
                 {
@@ -394,7 +399,7 @@ namespace NeoExpress.Neo3
 
             using var sb = new ScriptBuilder();
             sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
-            return await expressNode.Execute(chain, account, sb.ToArray()).ConfigureAwait(false);
+            return await expressNode.ExecuteAsync(chain, account, sb.ToArray()).ConfigureAwait(false);
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
             {
@@ -423,7 +428,7 @@ namespace NeoExpress.Neo3
             using var expressNode = chain.GetExpressNode();
             var parser = GetContractParameterParser(chain);
             var script = parser.LoadInvocationScript(invocationFilePath);
-            return await expressNode.Execute(chain, account, script, additionalGas).ConfigureAwait(false);
+            return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);
         }
 
         public async Task<(BigDecimal gasConsumed, Neo.VM.Types.StackItem[] results)> TestInvokeContract(ExpressChain chain, string invocationFilePath)
@@ -436,7 +441,7 @@ namespace NeoExpress.Neo3
             using var expressNode = chain.GetExpressNode();
             var parser = GetContractParameterParser(chain);
             var script = parser.LoadInvocationScript(invocationFilePath);
-            return await expressNode.Invoke(script).ConfigureAwait(false);
+            return await expressNode.InvokeAsync(script).ConfigureAwait(false);
         }
 
         ContractParameterParser GetContractParameterParser(ExpressChain chain)
@@ -460,20 +465,20 @@ namespace NeoExpress.Neo3
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
         {
             var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => name.Equals(w.Name, StringComparison.InvariantCultureIgnoreCase));
+                .SingleOrDefault(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase));
             if (wallet != null)
             {
                 return wallet.DefaultAccount;
             }
 
             var node = chain.ConsensusNodes
-                .SingleOrDefault(n => name.Equals(n.Wallet.Name, StringComparison.InvariantCultureIgnoreCase));
+                .SingleOrDefault(n => name.Equals(n.Wallet.Name, StringComparison.OrdinalIgnoreCase));
             if (node != null)
             {
                 return node.Wallet.DefaultAccount;
             }
 
-            if (GENESIS.Equals(name, StringComparison.InvariantCultureIgnoreCase))
+            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
                 return chain.ConsensusNodes
                     .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
@@ -500,7 +505,7 @@ namespace NeoExpress.Neo3
             sb.EmitAppCall(assetHash, "symbol");
             sb.EmitAppCall(assetHash, "decimals");
 
-            var (_, results) = await expressNode.Invoke(sb.ToArray()).ConfigureAwait(false);
+            var (_, results) = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
             if (results.Length >= 4)
             {
                 var balance = results[0].GetInteger();
@@ -521,40 +526,8 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var accountHash = account.GetScriptHashAsUInt160();
             using var expressNode = chain.GetExpressNode();
-
-            if (chain.IsRunning(out var node))
-            {
-                var rpcClient = new RpcClient(node.GetUri().ToString());
-                var contracts = ((JArray)await rpcClient.RpcSendAsync("expressgetnep5contracts"))
-                    .Select(json => Nep5Contract.FromJson(json))
-                    .ToDictionary(c => c.ScriptHash);
-                var balances = await rpcClient.GetNep5BalancesAsync(account.ScriptHash).ConfigureAwait(false);
-                return balances.Balances
-                    .Select(b => (
-                        balance: b,
-                        contract: contracts.TryGetValue(b.AssetHash, out var value) 
-                            ? value 
-                            : Nep5Contract.Unknown(b.AssetHash)))
-                    .ToArray();
-            }
-            else
-            {
-                var contracts = ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
-                return ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, account.GetScriptHashAsUInt160())
-                    .Select(b => (
-                        balance: new RpcNep5Balance
-                        {
-                            Amount = b.balance,
-                            AssetHash = b.contract.ScriptHash,
-                            LastUpdatedBlock = b.lastUpdatedBlock
-                        }, 
-                        contract: contracts.TryGetValue(b.contract.ScriptHash, out var value) 
-                            ? value 
-                            : Nep5Contract.Unknown(b.contract.ScriptHash)))
-                    .ToArray();
-            }
+            return await expressNode.GetBalancesAsync(account.GetScriptHashAsUInt160());
         }
 
         public async Task<(Transaction tx, RpcApplicationLog? appLog)> ShowTransaction(ExpressChain chain, string txHash)
@@ -564,21 +537,9 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            if (chain.IsRunning(out var node))
-            {
-                var rpcClient = new RpcClient(node.GetUri().ToString());
-                var response = await rpcClient.GetRawTransactionAsync(txHash).ConfigureAwait(false);
-                var log = await rpcClient.GetApplicationLogAsync(txHash).ConfigureAwait(false);
-                return (response.Transaction, log);
-            }
-            else
-            {
-                using var expressNode = chain.GetExpressNode();
-                var hash = UInt256.Parse(txHash);
-                var tx = Blockchain.Singleton.GetTransaction(hash);
-                var log = ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash);
-                return (tx, log != null ? RpcApplicationLog.FromJson(log) : null);
-            }
+            var hash = UInt256.Parse(txHash);
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode.GetTransactionAsync(hash);
         }
 
         public async Task<Block> ShowBlock(ExpressChain chain, string blockHash)
@@ -588,37 +549,23 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            if (chain.IsRunning(out var node))
+            using var expressNode = chain.GetExpressNode();
+            if (string.IsNullOrEmpty(blockHash))
             {
-                var rpcClient = new RpcClient(node.GetUri().ToString());
-                if (string.IsNullOrEmpty(blockHash))
-                {
-                    blockHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
-                }
-                var result = await rpcClient.GetBlockAsync(blockHash).ConfigureAwait(false);
-                return result.Block;
+                return await expressNode.GetLatestBlockAsync();
             }
-            else
+
+            if (UInt256.TryParse(blockHash, out var uint256))
             {
-                using var expressNode = chain.GetExpressNode();
-
-                if (string.IsNullOrEmpty(blockHash))
-                {
-                    return Blockchain.Singleton.GetBlock(Blockchain.Singleton.CurrentBlockHash);
-                }
-
-                if (UInt256.TryParse(blockHash, out var hash))
-                {
-                    return Blockchain.Singleton.GetBlock(hash);
-                }
-
-                if (uint.TryParse(blockHash, out var index))
-                {
-                    return Blockchain.Singleton.GetBlock(index);
-                }
-
-                throw new ArgumentException("Invalid block hash", nameof(blockHash));
+                return await expressNode.GetBlockAsync(uint256);
             }
+
+            if (uint.TryParse(blockHash, out var index))
+            {
+                return await expressNode.GetBlockAsync(index);
+            }
+
+            throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
         }
 
         public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string hashOrContract)
@@ -630,42 +577,8 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            if (chain.IsRunning(out var node))
-            {
-                var rpcClient = new RpcClient(node.GetUri().ToString());
-                var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
-                    .ConfigureAwait(false);
-
-                if (json != null && json is Neo.IO.Json.JArray array)
-                {
-                    return array.Select(s => new ExpressStorage()
-                        {
-                            Key = s["key"].AsString(),
-                            Value = s["value"].AsString(),
-                            Constant = s["constant"].AsBoolean()
-                        })
-                        .ToList();
-                }
-            }
-            else
-            {
-                using var expressNode = chain.GetExpressNode();
-                var contract = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
-                if (contract != null)
-                {
-                    return Blockchain.Singleton.View.Storages.Find()
-                        .Where(t => t.Key.Id == contract.Id)
-                        .Select(t => new ExpressStorage()
-                            {
-                                Key = t.Key.Key.ToHexString(),
-                                Value = t.Value.Value.ToHexString(),
-                                Constant = t.Value.IsConstant
-                            })
-                        .ToList();
-                }
-            }
-
-            return new List<ExpressStorage>(0);
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode.GetStoragesAsync(scriptHash);
         }
 
         public async Task<ContractManifest> GetContract(ExpressChain chain, string hashOrContract)
@@ -677,23 +590,8 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            if (chain.IsRunning(out var node))
-            {
-                var rpcClient = new RpcClient(node.GetUri().ToString());
-                var contractState = await rpcClient.GetContractStateAsync(scriptHash.ToString()).ConfigureAwait(false);
-                return contractState.Manifest;
-            }
-            else
-            {
-                using var expressNode = chain.GetExpressNode();
-                var contractState = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
-                if (contractState == null)
-                {
-                    throw new Exception("Unknown contract");
-                }
-
-                return contractState.Manifest;
-            }
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode.GetContractAsync(scriptHash);
         }
 
         public async Task<IReadOnlyList<ContractManifest>> ListContracts(ExpressChain chain)
@@ -703,26 +601,8 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            if (chain.IsRunning(out var node))
-            {
-                var rpcClient = new RpcClient(node.GetUri().ToString());
-                var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
-
-                if (json != null && json is Neo.IO.Json.JArray array)
-                {
-                    return array.Select(ContractManifest.FromJson).ToList();
-                }
-
-                return new List<ContractManifest>(0);
-            }
-            else
-            {
-                using var expressNode = chain.GetExpressNode();
-                return Blockchain.Singleton.View.Contracts.Find()
-                    .OrderBy(t => t.Value.Id)
-                    .Select(t => t.Value.Manifest)
-                    .ToList();
-            }
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode.ListContractsAsync();
         }
 
         static UInt160 ParseScriptHash(string hashOrContract)

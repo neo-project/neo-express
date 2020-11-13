@@ -44,6 +44,6 @@ namespace NeoExpress.Abstractions
 
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.InvariantCultureIgnoreCase));
+                .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
     }
 }

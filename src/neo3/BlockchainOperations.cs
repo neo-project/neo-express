@@ -97,7 +97,7 @@ namespace NeoExpress.Neo3
             return devAccount.ScriptHash.ToArray();
         }
 
-        public void ResetNode(ExpressChain chain, int index)
+        public void ResetNode(ExpressChain chain, int index, bool force)
         {
             if (index >= chain.ConsensusNodes.Count)
             {
@@ -113,6 +113,11 @@ namespace NeoExpress.Neo3
             var folder = node.GetBlockchainPath();
             if (Directory.Exists(folder))
             {
+                if (!force)
+                {
+                    throw new Exception("--force must be specified when resetting a node");
+                }
+
                 Directory.Delete(folder, true);
             }
         }

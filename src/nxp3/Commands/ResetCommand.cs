@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -8,7 +9,7 @@ namespace nxp3.Commands
     class ResetCommand
     {
         [Argument(0)]
-        int NodeIndex { get; } = 0;
+        int? NodeIndex { get; }
 
         [Option]
         string Input { get; } = string.Empty;
@@ -16,24 +17,38 @@ namespace nxp3.Commands
         [Option]
         bool Force { get; }
 
+        [Option]
+        bool All { get; }
+
         internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
+                if (NodeIndex.HasValue && All)
+                {
+                    throw new Exception("Only one of NodeIndex or --all can be specified");
+                }
+
+                if (!NodeIndex.HasValue && !All)
+                {
+                    throw new Exception("Either NodeIndex or --all must be specified");
+                }
+
                 var (chain, _) = Program.LoadExpressChain(Input);
-
-                if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
-                {
-                    throw new Exception("Invalid node index");
-                }
-
-                if (!Force)
-                {
-                    throw new Exception("--force must be specified when resetting a node");
-                }
-
                 var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
-                blockchainOperations.ResetNode(chain, NodeIndex);
+                
+                if (All)
+                {
+                    for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                    {
+                        blockchainOperations.ResetNode(chain, i, Force);
+                    }
+                }
+                else
+                {
+                    Debug.Assert(NodeIndex.HasValue);
+                    blockchainOperations.ResetNode(chain, NodeIndex.Value, Force);
+                }
 
                 return 0;
             }

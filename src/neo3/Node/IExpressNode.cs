@@ -25,5 +25,6 @@ namespace NeoExpress.Neo3.Node
         Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash);
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
         Task<IReadOnlyList<ContractManifest>> ListContractsAsync();
+        Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync();
     }
 }

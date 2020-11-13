@@ -447,5 +447,11 @@ namespace NeoExpress.Neo3.Node
                     .ToList();
             return Task.FromResult<IReadOnlyList<ContractManifest>>(contracts);
         }
+
+        public Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync()
+        {
+            return Task.FromResult<IReadOnlyList<Nep5Contract>>(
+                ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToList());
+        }
     }
 }

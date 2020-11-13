@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Neo" Version="3.0.0-CI01060" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.29-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.32-preview" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-CI01060" />
     <PackageReference Include="Nerdbank.Streams" Version="2.6.81" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />

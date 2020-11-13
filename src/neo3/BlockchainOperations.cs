@@ -1,6 +1,5 @@
 using Neo;
 using Neo.IO;
-using Neo.IO.Caching;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.BlockchainToolkit.Persistence;
@@ -19,12 +18,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo.Network.P2P.Payloads;
-using Neo.Ledger;
 using Newtonsoft.Json;
 using System.Net;
-using Neo.IO.Json;
 using Neo.BlockchainToolkit;
-using System.Diagnostics.CodeAnalysis;
+using Neo.SmartContract.Native;
 
 namespace NeoExpress.Neo3
 {
@@ -346,7 +343,7 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode();
-            var assetHash = NodeUtility.GetAssetId(asset);
+            var assetHash = await ParseAssetAsync(expressNode, asset);
             var senderHash = sender.GetScriptHashAsUInt160();
             var receiverHash = receiver.GetScriptHashAsUInt160();
 
@@ -382,6 +379,44 @@ namespace NeoExpress.Neo3
             {
                 throw new Exception($"Invalid quantity value {quantity}");
             }
+        }
+
+        static async Task<UInt160> ParseAssetAsync(Node.IExpressNode expressNode, string asset)
+        {
+            if ("neo".Equals(asset, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return NativeContract.NEO.Hash;
+            }
+
+            if ("gas".Equals(asset, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return NativeContract.GAS.Hash;
+            }
+
+            if (UInt160.TryParse(asset, out var uint160))
+            {
+                return uint160;
+            }
+
+            if (asset.EndsWith(".nef"))
+            {
+                var parser = new ContractParameterParser();
+                if (parser.TryLoadScriptHash(asset, out var scriptHash))
+                {
+                    return scriptHash;
+                }
+            }
+
+            var contracts = await expressNode.ListNep5ContractsAsync().ConfigureAwait(false);
+            for (int i = 0; i < contracts.Count; i++)
+            {
+                if (contracts[i].Symbol.Equals(asset, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return contracts[i].ScriptHash;
+                }
+            }
+
+            throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
         }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/contract.md
@@ -495,9 +530,9 @@ namespace NeoExpress.Neo3
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var assetHash = NodeUtility.GetAssetId(asset);
-            var accountHash = account.GetScriptHashAsUInt160();
             using var expressNode = chain.GetExpressNode();
+            var accountHash = account.GetScriptHashAsUInt160();
+            var assetHash = await ParseAssetAsync(expressNode, asset);
 
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(assetHash, "balanceOf", accountHash);

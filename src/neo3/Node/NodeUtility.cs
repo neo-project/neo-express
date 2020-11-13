@@ -106,15 +106,5 @@ namespace NeoExpress.Neo3.Node
 
             return tcs.Task;
         }
-
-        public static UInt160 GetAssetId(string asset)
-        {
-            if ("neo".Equals(asset, StringComparison.OrdinalIgnoreCase))
-                return NativeContract.NEO.Hash;
-            if ("gas".Equals(asset, StringComparison.OrdinalIgnoreCase))
-                return NativeContract.GAS.Hash;
-
-            return UInt160.Parse(asset);
-        }
     }
 }

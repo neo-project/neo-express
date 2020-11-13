@@ -129,5 +129,17 @@ namespace NeoExpress.Neo3.Node
 
             return Array.Empty<ContractManifest>();
         }
+
+        public async Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync()
+        {
+            var json = await rpcClient.RpcSendAsync("expressgetnep5contracts").ConfigureAwait(false);
+
+            if (json != null && json is Neo.IO.Json.JArray array)
+            {
+                return array.Select(Nep5Contract.FromJson).ToList();
+            }
+
+            return Array.Empty<Nep5Contract>();
+        }
     }
 }

@@ -149,23 +149,30 @@ namespace NeoExpress.Neo3.Node
             return primary.CreateBlock();
         }
 
-
+        // TODO: remove if https://github.com/neo-project/neo/issues/2061 is fixed
         // this logic is lifted from ConsensusService.OnPrepareRequestReceived
-        // Log, Timer, Task and CheckPrepare logic has been removed for offline consensus
+        // Log, Timer, Task and CheckPrepare logic has been commented out for offline consensus
         private static void OnPrepareRequestReceived(ConsensusContext context, ConsensusPayload payload)
         {
             var message = (PrepareRequest)payload.ConsensusMessage;
 
             if (context.RequestSentOrReceived || context.NotAcceptingPayloadsDueToViewChanging) return;
             if (payload.ValidatorIndex != context.Block.ConsensusData.PrimaryIndex || message.ViewNumber != context.ViewNumber) return;
+            // Log($"{nameof(OnPrepareRequestReceived)}: height={payload.BlockIndex} view={message.ViewNumber} index={payload.ValidatorIndex} tx={message.TransactionHashes.Length}");
             if (message.Timestamp <= context.PrevHeader.Timestamp || message.Timestamp > TimeProvider.Current.UtcNow.AddMilliseconds(8 * Blockchain.MillisecondsPerBlock).ToTimestampMS())
             {
+                // Log($"Timestamp incorrect: {message.Timestamp}", LogLevel.Warning);
                 return;
             }
             if (message.TransactionHashes.Any(p => context.Snapshot.ContainsTransaction(p)))
             {
+                // Log($"Invalid request: transaction already exists", LogLevel.Warning);
                 return;
             }
+
+            // Timeout extension: prepare request has been received with success
+            // around 2*15/M=30.0/5 ~ 40% block time (for M=5)
+            // ExtendTimerByFactor(2);
 
             context.Block.Timestamp = message.Timestamp;
             context.Block.ConsensusData.Nonce = message.Nonce;
@@ -186,6 +193,7 @@ namespace NeoExpress.Neo3.Node
             if (context.TransactionHashes.Length == 0)
             {
                 // There are no tx so we should act like if all the transactions were filled
+                // CheckPrepareResponse();
                 return;
             }
 
@@ -195,7 +203,7 @@ namespace NeoExpress.Neo3.Node
             {
                 if (mempoolVerified.TryGetValue(hash, out Transaction tx))
                 {
-                    if (!AddTransaction(context, tx, false))
+                    if (!AddTransaction(tx, false))
                         return;
                 }
                 else
@@ -205,33 +213,84 @@ namespace NeoExpress.Neo3.Node
                 }
             }
             foreach (Transaction tx in unverified)
-            {
-                if (!AddTransaction(context, tx, true))
+                if (!AddTransaction(tx, true))
                     return;
-            }
+            // if (context.Transactions.Count < context.TransactionHashes.Length)
+            // {
+            //     UInt256[] hashes = context.TransactionHashes.Where(i => !context.Transactions.ContainsKey(i)).ToArray();
+            //     taskManager.Tell(new TaskManager.RestartTasks
+            //     {
+            //         Payload = InvPayload.Create(InventoryType.TX, hashes)
+            //     });
+            // }
 
-            static bool AddTransaction(ConsensusContext context, Transaction tx, bool verify)
+            bool AddTransaction(Transaction tx, bool verify)
             {
                 if (verify)
                 {
                     VerifyResult result = tx.Verify(context.Snapshot, context.VerificationContext);
                     if (result == VerifyResult.PolicyFail)
                     {
+                        // Log($"reject tx: {tx.Hash}{Environment.NewLine}{tx.ToArray().ToHexString()}", LogLevel.Warning);
+                        // RequestChangeView(ChangeViewReason.TxRejectedByPolicy);
                         return false;
                     }
                     else if (result != VerifyResult.Succeed)
                     {
+                        // Log($"Invalid transaction: {tx.Hash}{Environment.NewLine}{tx.ToArray().ToHexString()}", LogLevel.Warning);
+                        // RequestChangeView(ChangeViewReason.TxInvalid);
                         return false;
                     }
                 }
                 context.Transactions[tx.Hash] = tx;
                 context.VerificationContext.AddTransaction(tx);
+                return CheckPrepareResponse();
+            }
+
+            bool CheckPrepareResponse()
+            {
+                if (context.TransactionHashes.Length == context.Transactions.Count)
+                {
+                    // if we are the primary for this view, but acting as a backup because we recovered our own
+                    // previously sent prepare request, then we don't want to send a prepare response.
+                    if (context.IsPrimary || context.WatchOnly) return true;
+
+                    // Check maximum block size via Native Contract policy
+                    var expectedBlockSize = (int)(getExpectedBlockSizeMethodInfo.Value.Invoke(context, Array.Empty<object>()));
+                    if (expectedBlockSize > NativeContract.Policy.GetMaxBlockSize(context.Snapshot))
+                    {
+                        // Log($"rejected block: {context.Block.Index} The size exceed the policy", LogLevel.Warning);
+                        // RequestChangeView(ChangeViewReason.BlockRejectedByPolicy);
+                        return false;
+                    }
+                    // Check maximum block system fee via Native Contract policy
+                    var expectedSystemFee = context.Transactions.Values.Sum(u => u.SystemFee);
+                    if (expectedSystemFee > NativeContract.Policy.GetMaxBlockSystemFee(context.Snapshot))
+                    {
+                        // Log($"rejected block: {context.Block.Index} The system fee exceed the policy", LogLevel.Warning);
+                        // RequestChangeView(ChangeViewReason.BlockRejectedByPolicy);
+                        return false;
+                    }
+
+                    // Timeout extension due to prepare response sent
+                    // around 2*15/M=30.0/5 ~ 40% block time (for M=5)
+                    // ExtendTimerByFactor(2);
+
+                    // Log($"send prepare response");
+                    // localNode.Tell(new LocalNode.SendDirectly { Inventory = context.MakePrepareResponse() });
+                    // CheckPreparations();
+                }
                 return true;
             }
         }
 
+        static Lazy<MethodInfo> getExpectedBlockSizeMethodInfo = new Lazy<MethodInfo>(
+            () => typeof(ConsensusContext).GetMethod("GetExpectedBlockSize", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("could not retrieve GetExpectedBlockSize methodInfo"));
+
+        // TODO: remove if https://github.com/neo-project/neo/issues/2061 is fixed
         // this logic is lifted from ConsensusService.OnCommitReceived
-        // Log, Timer and CheckCommits logic has been removed for offline consensus
+        // Log, Timer,  CheckCommits logic has been commented out for offline consensus
         private static void OnCommitReceived(ConsensusContext context, ConsensusPayload payload)
         {
             Commit commit = (Commit)payload.ConsensusMessage;
@@ -239,11 +298,21 @@ namespace NeoExpress.Neo3.Node
             ref ConsensusPayload existingCommitPayload = ref context.CommitPayloads[payload.ValidatorIndex];
             if (existingCommitPayload != null)
             {
+                if (existingCommitPayload.Hash != payload.Hash)
+                {
+                    // Log($"{nameof(OnCommitReceived)}: different commit from validator! height={payload.BlockIndex} index={payload.ValidatorIndex} view={commit.ViewNumber} existingView={existingCommitPayload.ConsensusMessage.ViewNumber}", LogLevel.Warning);
+                }
                 return;
             }
 
+            // Timeout extension: commit has been received with success
+            // around 4*15s/M=60.0s/5=12.0s ~ 80% block time (for M=5)
+            // ExtendTimerByFactor(4);
+
             if (commit.ViewNumber == context.ViewNumber)
             {
+                // Log($"{nameof(OnCommitReceived)}: height={payload.BlockIndex} view={commit.ViewNumber} index={payload.ValidatorIndex} nc={context.CountCommitted} nf={context.CountFailed}");
+
                 byte[]? hashData = context.EnsureHeader()?.GetHashData();
                 if (hashData == null)
                 {
@@ -252,10 +321,12 @@ namespace NeoExpress.Neo3.Node
                 else if (Crypto.VerifySignature(hashData, commit.Signature, context.Validators[payload.ValidatorIndex]))
                 {
                     existingCommitPayload = payload;
+                    // CheckCommits();
                 }
                 return;
             }
-
+            // Receiving commit from another view
+            // Log($"{nameof(OnCommitReceived)}: record commit for different view={commit.ViewNumber} index={payload.ValidatorIndex} height={payload.BlockIndex}");
             existingCommitPayload = payload;
         }
 

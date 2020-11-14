@@ -1,6 +1,7 @@
 using Neo;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -110,12 +111,10 @@ namespace NeoExpress.Neo3.Node
             return (response.Transaction, log);
         }
 
-        public async Task<(BigDecimal gasConsumed, StackItem[] results)> InvokeAsync(Script script)
+        public async Task<InvokeResult> InvokeAsync(Script script)
         {
             var invokeResult = await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
-            var gasConsumed = BigDecimal.Parse(invokeResult.GasConsumed, NativeContract.GAS.Decimals);
-            var results = invokeResult.Stack ?? Array.Empty<StackItem>();
-            return (gasConsumed, results);
+            return InvokeResult.FromRpcInvokeResult(invokeResult);
         }
 
         public async Task<IReadOnlyList<ContractManifest>> ListContractsAsync()

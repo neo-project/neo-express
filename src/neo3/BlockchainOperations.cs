@@ -373,10 +373,10 @@ namespace NeoExpress.Neo3
             }
             else if (decimal.TryParse(quantity, out var amount))
             {
-                var (_, results) = await expressNode.InvokeAsync(assetHash.MakeScript("decimals")).ConfigureAwait(false);
-                if (results.Length > 0 && results[0].Type == StackItemType.Integer)
+                var results = await expressNode.InvokeAsync(assetHash.MakeScript("decimals")).ConfigureAwait(false);
+                if (results.Stack.Length > 0 && results.Stack[0].Type == StackItemType.Integer)
                 {
-                    var decimals = (byte)results[0].GetInteger();
+                    var decimals = (byte)(results.Stack[0].GetInteger());
                     var value = amount.ToBigInteger(decimals);
                     return await expressNode.ExecuteAsync(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value)).ConfigureAwait(false);
                 }
@@ -476,7 +476,7 @@ namespace NeoExpress.Neo3
             return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);
         }
 
-        public async Task<(BigDecimal gasConsumed, Neo.VM.Types.StackItem[] results)> TestInvokeContract(ExpressChain chain, string invocationFilePath)
+        public async Task<InvokeResult> TestInvokeContract(ExpressChain chain, string invocationFilePath)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -549,14 +549,15 @@ namespace NeoExpress.Neo3
             sb.EmitAppCall(assetHash, "name");
             sb.EmitAppCall(assetHash, "symbol");
             sb.EmitAppCall(assetHash, "decimals");
-
-            var (_, results) = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-            if (results.Length >= 4)
+            
+            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
+            var stack = result.Stack;
+            if (stack.Length >= 4)
             {
-                var balance = results[0].GetInteger();
-                var name = Encoding.UTF8.GetString(results[1].GetSpan());
-                var symbol = Encoding.UTF8.GetString(results[2].GetSpan());
-                var decimals = (byte)results[3].GetInteger();
+                var balance = stack[0].GetInteger();
+                var name = Encoding.UTF8.GetString(stack[1].GetSpan());
+                var symbol = Encoding.UTF8.GetString(stack[2].GetSpan());
+                var decimals = (byte)(stack[3].GetInteger());
 
                 return (new BigDecimal(balance, decimals), new Nep5Contract(name, symbol, decimals, assetHash));
             }

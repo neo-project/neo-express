@@ -47,14 +47,19 @@ namespace NeoExpress.Neo3.Node
             _ = new ExpressAppLogsPlugin(store);
         }
 
-        public Task<(BigDecimal gasConsumed, StackItem[] results)> InvokeAsync(Neo.VM.Script script)
+        public Task<InvokeResult> InvokeAsync(Neo.VM.Script script)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             using ApplicationEngine engine = ApplicationEngine.Run(script, container: null, gas: 20000000L);
-            var gasConsumed = new BigDecimal(engine.GasConsumed, NativeContract.GAS.Decimals);
-            var results = engine.ResultStack?.ToArray() ?? Array.Empty<StackItem>();
-            return Task.FromResult((gasConsumed, results));
+            var result = new InvokeResult()
+            {
+                State = engine.State,
+                Stack = engine.ResultStack.ToArray(),
+                Exception = engine.FaultException,
+                GasConsumed = new BigDecimal(engine.GasConsumed, NativeContract.GAS.Decimals)
+            };
+            return Task.FromResult(result);
         }
 
         public Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)

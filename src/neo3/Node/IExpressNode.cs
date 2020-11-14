@@ -16,7 +16,7 @@ namespace NeoExpress.Neo3.Node
     internal interface IExpressNode : IDisposable
     {
         Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0);
-        Task<(BigDecimal gasConsumed, StackItem[] results)> InvokeAsync(Script script);
+        Task<InvokeResult> InvokeAsync(Script script);
         Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address);
         Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
         Task<Block> GetBlockAsync(UInt256 blockHash);

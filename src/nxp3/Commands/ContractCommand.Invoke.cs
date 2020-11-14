@@ -28,19 +28,57 @@ namespace nxp3.Commands
             [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract invocation")]
             decimal AdditionalGas { get; } = 0;
 
-            static string AsString(Neo.VM.Types.StackItem item) => item switch
+            static void WriteStackItem(IConsole console, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
             {
-                Neo.VM.Types.Boolean _ => $"{item.GetBoolean()}",
-                Neo.VM.Types.Buffer buffer => Neo.Helper.ToHexString(buffer.GetSpan()),
-                Neo.VM.Types.ByteString byteString => Neo.Helper.ToHexString(byteString.GetSpan()),
-                Neo.VM.Types.Integer @int => $"{@int.GetInteger()}",
-                // Neo.VM.Types.InteropInterface _ => MakeVariable("InteropInterface"),
-                // Neo.VM.Types.Map _ => MakeVariable("Map"),
-                Neo.VM.Types.Null _ => "<null>",
-                // Neo.VM.Types.Pointer _ => MakeVariable("Pointer"),
-                // Neo.VM.Types.Array array => NeoArrayContainer.Create(manager, array, name),
-                _ => throw new ArgumentException(nameof(item)),
-            };
+                switch (item)
+                {
+                    case Neo.VM.Types.Boolean _: 
+                        WriteLine(item.GetBoolean() ? "true" : "false");
+                        break;
+                    case Neo.VM.Types.Integer @int:
+                        WriteLine(@int.GetInteger().ToString());
+                        break;
+                    case Neo.VM.Types.Buffer buffer:
+                        WriteLine(Neo.Helper.ToHexString(buffer.GetSpan()));
+                        break;
+                    case Neo.VM.Types.ByteString byteString:
+                        WriteLine(Neo.Helper.ToHexString(byteString.GetSpan()));
+                        break;
+                    case Neo.VM.Types.Null _:
+                        WriteLine("<null>");
+                        break;
+                    case Neo.VM.Types.Array array:
+                        WriteLine($"Array: ({array.Count})");
+                        for (int i = 0; i < array.Count; i++)
+                        {
+                            WriteStackItem(console, array[i], indent + 1);
+                        }
+                        break;
+                    case Neo.VM.Types.Map map:
+                        WriteLine($"Map: ({map.Count})");
+                        foreach (var m in map)
+                        {
+                            WriteStackItem(console, m.Key, indent + 1, "key:   ");
+                            WriteStackItem(console, m.Value, indent + 1, "value: ");  
+                        }
+                        break;
+                }
+
+                void WriteLine(string value)
+                {
+                    for (var i = 0; i < indent; i++)
+                    {
+                        console.Write("  ");
+                    }
+
+                    if (!string.IsNullOrEmpty(prefix))
+                    {
+                        console.Write(prefix);
+                    }
+
+                    console.WriteLine(value);
+                }
+            }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
@@ -56,12 +94,21 @@ namespace nxp3.Commands
 
                     if (Test)
                     {
-                        var (gasConsumed, results) = await blockchainOperations.TestInvokeContract(chain, InvocationFile);
-                        console.WriteLine($"Gas Consumed: {gasConsumed}");
-                        console.WriteLine("Result Stack:");
-                        for (int i = 0; i < results.Length; i++)
+                        var result = await blockchainOperations.TestInvokeContract(chain, InvocationFile);
+                        console.WriteLine($"VM State:     {result.State}");
+                        console.WriteLine($"Gas Consumed: {result.GasConsumed}");
+                        if (result.Exception != null)
                         {
-                            console.WriteLine($"\t{AsString(results[i])}");
+                            console.WriteLine($"Expception:   {result.Exception}");
+                        }
+                        if (result.Stack.Length > 0)
+                        {
+                            var stack = result.Stack;
+                            console.WriteLine("Result Stack:");
+                            for (int i = 0; i < stack.Length; i++)
+                            {
+                                WriteStackItem(console, stack[i]);
+                            }
                         }
                     }
                     else

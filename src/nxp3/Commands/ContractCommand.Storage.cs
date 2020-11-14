@@ -5,6 +5,7 @@ using NeoExpress.Neo3;
 using NeoExpress.Abstractions;
 using System.Text;
 using System;
+using System.Text.Json;
 
 namespace nxp3.Commands
 {
@@ -20,6 +21,9 @@ namespace nxp3.Commands
             [Option]
             string Input { get; } = string.Empty;
 
+            [Option]
+            bool Json { get; }
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -29,26 +33,28 @@ namespace nxp3.Commands
                     var blockchainOperations = new BlockchainOperations();
                     var storages = await blockchainOperations.GetStorages(chain, Contract);
 
-                    foreach (var storage in storages)
+                    if (Json)
                     {
-                        var key = storage.Key.ToByteArray();
-                        var value = storage.Value.ToByteArray();
-
-                        console.Write("0x");
-                        console.WriteLine(key.ToHexString(true));
-                        console.Write("  key (as string)   : ");
-                        console.WriteLine(Encoding.UTF8.GetString(key));
-                        console.Write("  value (as bytes)  : 0x");
-                        console.WriteLine(value.ToHexString(true));
-                        console.Write("        (as string) : ");
-                        console.WriteLine(Encoding.UTF8.GetString(value));
-                        if (value.Length == 20)
+                        using var writer = new Utf8JsonWriter(Console.OpenStandardOutput(), new JsonWriterOptions() { Indented = true });
+                        writer.WriteStartArray();
+                        foreach (var storage in storages)
                         {
-                            var hash = new Neo.UInt160(value);
-                            var address = Neo.Wallets.Helper.ToAddress(hash);
-                            console.WriteLine($"        (as addr)   : {address}");
+                            writer.WriteStartObject();
+                            writer.WriteString("key", storage.Key);
+                            writer.WriteString("value", storage.Value);
+                            writer.WriteBoolean("constant", storage.Constant);
+                            writer.WriteEndObject();
                         }
-                        console.WriteLine($"  constant value    : {storage.Constant}");
+                        writer.WriteEndArray();
+                    }
+                    else
+                    {
+                        foreach (var storage in storages)
+                        {
+                            console.WriteLine($"key:        0x{storage.Key}");
+                            console.WriteLine($"  value:    0x{storage.Value}");
+                            console.WriteLine($"  constant: {storage.Constant}");
+                        }
                     }
 
                     return 0;

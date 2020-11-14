@@ -26,12 +26,7 @@ namespace nxp3.Commands
             {
                 if (NodeIndex.HasValue && All)
                 {
-                    throw new Exception("Only one of NodeIndex or --all can be specified");
-                }
-
-                if (!NodeIndex.HasValue && !All)
-                {
-                    throw new Exception("Either NodeIndex or --all must be specified");
+                    throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
                 }
 
                 var (chain, _) = Program.LoadExpressChain(Input);
@@ -46,8 +41,13 @@ namespace nxp3.Commands
                 }
                 else
                 {
-                    Debug.Assert(NodeIndex.HasValue);
-                    blockchainOperations.ResetNode(chain, NodeIndex.Value, Force);
+                    var nodeIndex = NodeIndex.HasValue
+                        ? NodeIndex.Value
+                        : chain.ConsensusNodes.Count == 1
+                            ? 0 
+                            : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
+                    
+                    blockchainOperations.ResetNode(chain, nodeIndex, Force);
                 }
 
                 return 0;

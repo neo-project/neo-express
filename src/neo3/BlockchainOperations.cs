@@ -108,13 +108,13 @@ namespace NeoExpress.Neo3
         {
             if (index >= chain.ConsensusNodes.Count)
             {
-                throw new ArgumentException(nameof(index));
+                throw new InvalidOperationException($"Invalid node index {index}");
             }
 
             var node = chain.ConsensusNodes[index];
             if (node.IsRunning())
             {
-                throw new Exception($"node {index} currently running");
+                throw new InvalidOperationException($"node {index} currently running");
             }
 
             var folder = node.GetBlockchainPath();
@@ -122,7 +122,7 @@ namespace NeoExpress.Neo3
             {
                 if (!force)
                 {
-                    throw new Exception("--force must be specified when resetting a node");
+                    throw new InvalidOperationException("--force must be specified when resetting a node");
                 }
 
                 Directory.Delete(folder, true);
@@ -657,12 +657,10 @@ namespace NeoExpress.Neo3
                 return hash;
             }
 
-            if (File.Exists(hashOrContract))
+            var parser = new ContractParameterParser();
+            if (parser.TryLoadScriptHash(hashOrContract, out var value))
             {
-                using var stream = File.OpenRead(hashOrContract);
-                using var reader = new BinaryReader(stream, Encoding.UTF8, false);
-                var nefFile = reader.ReadSerializable<NefFile>();
-                return nefFile.ScriptHash;
+                return value;
             }
 
             throw new ArgumentException(nameof(hashOrContract));

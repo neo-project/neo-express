@@ -22,6 +22,8 @@ using Newtonsoft.Json;
 using System.Net;
 using Neo.BlockchainToolkit;
 using Neo.SmartContract.Native;
+using Neo.SmartContract.Native.Designate;
+using System.Numerics;
 
 namespace NeoExpress.Neo3
 {
@@ -767,6 +769,61 @@ namespace NeoExpress.Neo3
         {
             var devWallet = DevWallet.FromExpressWallet(wallet);
             devWallet.Export(filename, password);
+        }
+
+        public async Task<UInt256> DesignateOracleRoles(ExpressChain chain, IEnumerable<ExpressWalletAccount> accounts)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            var genesisAccount = GetAccount(chain, "genesis") ?? throw new Exception();
+
+            byte[] script;
+            {
+                using var sb = new ScriptBuilder();
+                var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+                var oracles = new ContractParameter(ContractParameterType.Array);
+                var oraclesList = (List<ContractParameter>)oracles.Value;
+
+                foreach (var account in accounts)
+                {
+                    var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception();
+                    oraclesList.Add(new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey });
+                }
+
+                sb.EmitAppCall(NativeContract.Designate.Hash, "designateAsRole", role, oracles);
+                script = sb.ToArray();
+            }
+
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode
+                .ExecuteAsync(chain, genesisAccount, script)
+                .ConfigureAwait(false);
+
+        }
+
+        public async Task<InvokeResult> GetOracleRoles(ExpressChain chain)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            using var expressNode = chain.GetExpressNode();
+            var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
+
+            byte[] script;
+            {
+                using var sb = new ScriptBuilder();
+                var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+                var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
+                sb.EmitAppCall(NativeContract.Designate.Hash, "getDesignatedByRole", role, index);
+                script = sb.ToArray();
+            }
+
+            return await expressNode.InvokeAsync(script).ConfigureAwait(false);
         }
     }
 }

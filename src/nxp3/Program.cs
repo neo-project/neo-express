@@ -12,6 +12,7 @@ namespace nxp3
         typeof(ContractCommand),
         typeof(CreateCommand),
         typeof(ExportCommand),
+        typeof(OracleCommand),
         typeof(ResetCommand),
         typeof(RunCommand),
         typeof(ShowCommand),

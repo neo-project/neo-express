@@ -11,8 +11,6 @@ using System.Threading.Tasks;
 
 namespace NeoExpress.Neo3.Node
 {
-    using StackItem = Neo.VM.Types.StackItem;
-
     internal interface IExpressNode : IDisposable
     {
         Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0);

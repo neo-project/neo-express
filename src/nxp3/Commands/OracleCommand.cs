@@ -3,7 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 namespace nxp3.Commands
 {
     [Command("oracle")]
-    [Subcommand(typeof(Disable), typeof(Enable), typeof(List))]
+    [Subcommand(typeof(Enable), typeof(List))]
     partial class OracleCommand
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)

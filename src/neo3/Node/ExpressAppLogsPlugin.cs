@@ -52,6 +52,92 @@ namespace NeoExpress.Neo3.Node
                 return (blockIndex, txIndex);
             }
         }
+
+        // TODO: use official TxLogToJson when https://github.com/neo-project/neo-modules/pull/402 is merged
+        static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
+        {
+            global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
+
+            var txJson = new JObject();
+            txJson["txid"] = appExec.Transaction.Hash.ToString();
+            JObject trigger = new JObject();
+            trigger["trigger"] = appExec.Trigger;
+            trigger["vmstate"] = appExec.VMState;
+            trigger["gasconsumed"] = appExec.GasConsumed.ToString();
+            try
+            {
+                trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
+            }
+            catch (InvalidOperationException)
+            {
+                trigger["stack"] = "error: recursive reference";
+            }
+            trigger["notifications"] = appExec.Notifications.Select(q =>
+            {
+                JObject notification = new JObject();
+                notification["contract"] = q.ScriptHash.ToString();
+                notification["eventname"] = q.EventName;
+                try
+                {
+                    notification["state"] = q.State.ToJson();
+                }
+                catch (InvalidOperationException)
+                {
+                    notification["state"] = "error: recursive reference";
+                }
+                return notification;
+            }).ToArray();
+
+            txJson["executions"] = new List<JObject>() { trigger }.ToArray();
+            return txJson;
+        }
+
+        // TODO: use official BlockLogToJson when https://github.com/neo-project/neo-modules/pull/402 is merged
+        static JObject? BlockLogToJson(StoreView snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        {
+            var blocks = applicationExecutedList.Where(p => p.Transaction == null);
+            if (blocks.Count() > 0)
+            {
+                var blockJson = new JObject();
+                var blockHash = snapshot.PersistingBlock.Hash.ToArray();
+                blockJson["blockhash"] = snapshot.PersistingBlock.Hash.ToString();
+                var triggerList = new List<JObject>();
+                foreach (var appExec in blocks)
+                {
+                    JObject trigger = new JObject();
+                    trigger["trigger"] = appExec.Trigger;
+                    trigger["vmstate"] = appExec.VMState;
+                    trigger["gasconsumed"] = appExec.GasConsumed.ToString();
+                    try
+                    {
+                        trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        trigger["stack"] = "error: recursive reference";
+                    }
+                    trigger["notifications"] = appExec.Notifications.Select(q =>
+                    {
+                        JObject notification = new JObject();
+                        notification["contract"] = q.ScriptHash.ToString();
+                        notification["eventname"] = q.EventName;
+                        try
+                        {
+                            notification["state"] = q.State.ToJson();
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            notification["state"] = "error: recursive reference";
+                        }
+                        return notification;
+                    }).ToArray();
+                    triggerList.Add(trigger);
+                }
+                blockJson["executions"] = triggerList.ToArray();
+                return blockJson;
+            }
+            return null;
+        }
         
         public void OnPersist(StoreView snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
@@ -73,36 +159,8 @@ namespace NeoExpress.Neo3.Node
                     continue;
                 }
 
-                JObject json = new JObject();
-                json["txid"] = appExec.Transaction.Hash.ToString();
-                json["trigger"] = appExec.Trigger;
-                json["vmstate"] = appExec.VMState;
-                json["gasconsumed"] = appExec.GasConsumed.ToString();
-                try
-                {
-                    json["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
-                }
-                catch (InvalidOperationException)
-                {
-                    json["stack"] = "error: recursive reference";
-                }
-                json["notifications"] = appExec.Notifications.Select(q =>
-                {
-                    JObject notification = new JObject();
-                    notification["contract"] = q.ScriptHash.ToString();
-                    notification["eventname"] = q.EventName;
-                    try
-                    {
-                        notification["state"] = q.State.ToJson();
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        notification["state"] = "error: recursive reference";
-                    }
-                    return notification;
-                }).ToArray();
-
-                store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Encoding.UTF8.GetBytes(json.ToString()));
+                var txJson = TxLogToJson(appExec);
+                store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
                 if (appExec.VMState != VMState.FAULT)
                 {
@@ -126,6 +184,12 @@ namespace NeoExpress.Neo3.Node
                             notificationIndex.ToArray(),
                             record.ToArray());
                     }
+                }
+
+                var blockJson = BlockLogToJson(snapshot, applicationExecutedList);
+                if (blockJson != null)
+                {
+                    store.Put(APP_LOGS_PREFIX, snapshot.PersistingBlock.Hash.ToArray(), Utility.StrictUTF8.GetBytes(blockJson.ToString()));
                 }
             }
         }

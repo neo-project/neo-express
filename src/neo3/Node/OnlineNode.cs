@@ -4,6 +4,7 @@ using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
+using Neo.SmartContract.Native.Oracle;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
@@ -139,6 +140,40 @@ namespace NeoExpress.Neo3.Node
             }
 
             return Array.Empty<Nep5Contract>();
+        }
+
+        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+        {
+            var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
+
+            if (json != null && json is Neo.IO.Json.JArray array)
+            {
+                return array.Select(FromJson).ToList();
+            }
+            return Array.Empty<(ulong, OracleRequest)>();
+
+            (ulong, OracleRequest) FromJson(Neo.IO.Json.JObject json)
+            {
+                var id = ulong.Parse(json["requestid"].AsString());
+                var originalTxId = UInt256.Parse(json["originaltxid"].AsString());
+                var gasForResponse = long.Parse(json["gasforresponse"].AsString());
+                var url = json["url"].AsString();
+                var filter = json["filter"].AsString();
+                var callbackContract = UInt160.Parse(json["callbackcontract"].AsString());
+                var callbackMethod = json["callbackmethod"].AsString();
+                var userData = Convert.FromBase64String(json["userdata"].AsString());
+ 
+                return (id, new OracleRequest
+                {
+                    OriginalTxid = originalTxId,
+                    CallbackContract = callbackContract,
+                    CallbackMethod = callbackMethod,
+                    Filter = filter,
+                    GasForResponse = gasForResponse,
+                    Url = url,
+                    UserData = userData,
+                });
+            }
         }
     }
 }

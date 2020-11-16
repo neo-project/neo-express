@@ -11,6 +11,7 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
+using Neo.SmartContract.Native.Oracle;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
@@ -457,6 +458,13 @@ namespace NeoExpress.Neo3.Node
         {
             return Task.FromResult<IReadOnlyList<Nep5Contract>>(
                 ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToList());
+        }
+
+        public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+        {
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            var requests = NativeContract.Oracle.GetRequests(snapshot).ToList();
+            return Task.FromResult<IReadOnlyList<(ulong, OracleRequest)>>(requests);
         }
     }
 }

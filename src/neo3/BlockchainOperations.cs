@@ -24,6 +24,7 @@ using Neo.BlockchainToolkit;
 using Neo.SmartContract.Native;
 using Neo.SmartContract.Native.Designate;
 using System.Numerics;
+using Neo.SmartContract.Native.Oracle;
 
 namespace NeoExpress.Neo3
 {
@@ -824,6 +825,17 @@ namespace NeoExpress.Neo3
             }
 
             return await expressNode.InvokeAsync(script).ConfigureAwait(false);
+        }
+
+        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> GetOracleRequests(ExpressChain chain)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
         }
     }
 }

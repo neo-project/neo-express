@@ -17,6 +17,7 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Neo.Persistence;
 using Neo.IO.Caching;
+using Neo.SmartContract.Native;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -310,6 +311,28 @@ namespace NeoExpress.Neo3.Node
             {
                 throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
             }
+        }
+
+        [RpcMethod]
+        public JObject? ExpressListOracleRequests(JArray _)
+        {
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+
+            var requests = new JArray();
+            foreach (var (id, request) in NativeContract.Oracle.GetRequests(snapshot))
+            {
+                var json = new JObject();
+                json["requestid"] = id.ToString();
+                json["originaltxid"] = request.OriginalTxid.ToString();
+                json["gasforresponse"] = request.GasForResponse.ToString();
+                json["url"] = request.Url;
+                json["filter"] = request.Filter;
+                json["callbackcontract"] = request.CallbackContract.ToString();
+                json["callbackmethod"] = request.CallbackMethod;
+                json["userdata"] = Convert.ToBase64String(request.UserData);
+                requests.Add(json);
+            }
+            return requests;
         }
     }
 }

@@ -1,14 +1,13 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using System.Threading.Tasks;
+using System;
 
 namespace nxp3.Commands
 {
     partial class OracleCommand
     {
-        [Command("enable")]
-        class Enable
+        [Command("requests")]
+        class Requests
         {
             [Option]
             string Input { get; } = string.Empty;
@@ -19,10 +18,16 @@ namespace nxp3.Commands
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
-                    var txHash = await blockchainOperations
-                        .DesignateOracleRoles(chain, chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount))
+                    var requests = await blockchainOperations
+                        .GetOracleRequests(chain)
                         .ConfigureAwait(false);
-                    console.WriteLine($"Oracle Enable Transaction {txHash} submitted");
+
+                    foreach (var (id, request) in requests)
+                    {
+                        console.WriteLine($"request #{id}:");
+                        console.WriteLine($"    Original Tx Hash: {request.OriginalTxid}");
+                        console.WriteLine($"    Request Url:      \"{request.Url}\"");
+                    }
 
                     return 0;
                 }

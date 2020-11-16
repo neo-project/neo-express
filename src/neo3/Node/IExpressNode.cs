@@ -2,6 +2,7 @@ using Neo;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
+using Neo.SmartContract.Native.Oracle;
 using Neo.VM;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
@@ -24,5 +25,6 @@ namespace NeoExpress.Neo3.Node
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
         Task<IReadOnlyList<ContractManifest>> ListContractsAsync();
         Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync();
+        Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
     }
 }

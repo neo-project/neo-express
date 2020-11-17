@@ -48,6 +48,19 @@ namespace nxp3.Commands
                     var txs = await blockchainOperations.SubmitOracleResponse(chain, Url, OracleResponseCode.Success, responseJson, requestId)
                         .ConfigureAwait(false);
 
+                    if (txs.Count == 0)
+                    {
+                        console.WriteLine("No oracle response transactions submitted");
+                    }
+                    else
+                    {
+                        console.WriteLine("Oracle response transactions submitted:");
+                        for (int i = 0; i < txs.Count; i++)
+                        {
+                            console.WriteLine($"    {txs[i]}");
+                        }
+                    }
+
                     return 0;
                 }
                 catch (Exception ex)

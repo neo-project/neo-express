@@ -489,15 +489,12 @@ namespace NeoExpress.Neo3.Node
             return Task.FromResult<IReadOnlyList<(ulong, OracleRequest)>>(requests);
         }
 
-        public Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
+        public Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes)
         {
             using var snapshot = Blockchain.Singleton.GetSnapshot();
-
             var tx = ExpressOracle.CreateResponseTx(snapshot, response);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-
-            ExpressOracle.SignOracleResponseTransaction(chain, snapshot, tx);
-
+            ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
             return SubmitTransactionAsync(tx);
         }
     }

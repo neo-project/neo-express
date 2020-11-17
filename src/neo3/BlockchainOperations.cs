@@ -815,6 +815,11 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode();
+            return await GetOracleNodes(expressNode);
+        }
+
+        static async Task<ECPoint[]> GetOracleNodes(IExpressNode expressNode)
+        {
             var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
 
             byte[] script;
@@ -867,6 +872,7 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode();
+            var oracleNodes = await GetOracleNodes(expressNode);
 
             var txHashes = new List<UInt256>();
             var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
@@ -883,7 +889,7 @@ namespace NeoExpress.Neo3
                     Result = GetResponseData(request.Filter),
                 };
 
-                var txHash = await expressNode.SubmitOracleResponseAsync(response);
+                var txHash = await expressNode.SubmitOracleResponseAsync(chain, response, oracleNodes);
                 txHashes.Add(txHash);
             }
             return txHashes;

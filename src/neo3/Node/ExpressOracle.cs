@@ -116,9 +116,8 @@ namespace NeoExpress.Neo3.Node
             return tx;
         }
 
-        public static void SignOracleResponseTransaction(ExpressChain chain, SnapshotView snapshot, Transaction tx)
+        public static void SignOracleResponseTransaction(ExpressChain chain, Transaction tx, ECPoint[] oracleNodes)
         {
-            var oracleNodes = NativeContract.Designate.GetDesignatedByRole(snapshot, Role.Oracle, snapshot.Height + 1) ?? Array.Empty<ECPoint>();
             var signatures = new Dictionary<ECPoint, byte[]>();
 
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
@@ -139,12 +138,12 @@ namespace NeoExpress.Neo3.Node
 
             var contract = Contract.CreateMultiSigContract(m, oracleNodes);
             var sb = new ScriptBuilder();
-            foreach (var pair in signatures.OrderBy(p => p.Key).Take(m))
+            foreach (var kvp in signatures.OrderBy(p => p.Key).Take(m))
             {
-                sb.EmitPush(pair.Value);
+                sb.EmitPush(kvp.Value);
             }
-            var idx = tx.GetScriptHashesForVerifying(snapshot)[0] == contract.ScriptHash ? 0 : 1;
-            tx.Witnesses[idx].InvocationScript = sb.ToArray();
+            var index = tx.GetScriptHashesForVerifying(null)[0] == contract.ScriptHash ? 0 : 1;
+            tx.Witnesses[index].InvocationScript = sb.ToArray();
         }
     }
 }

@@ -1,4 +1,5 @@
 using Neo;
+using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
@@ -28,6 +29,6 @@ namespace NeoExpress.Neo3.Node
         Task<IReadOnlyList<ContractManifest>> ListContractsAsync();
         Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync();
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
-        Task<UInt256> SubmitOracleResponseAsync(OracleResponse response);
+        Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes);
     }
 }

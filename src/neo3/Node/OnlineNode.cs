@@ -1,4 +1,6 @@
 using Neo;
+using Neo.Cryptography.ECC;
+using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
@@ -124,7 +126,9 @@ namespace NeoExpress.Neo3.Node
 
         public async Task<InvokeResult> InvokeAsync(Script script)
         {
-            var invokeResult = await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
+            // TODO: remove dummy signer once https://github.com/neo-project/neo-modules/issues/398 is fixed
+            var signer = new Signer() { Account = UInt160.Zero };
+            var invokeResult = await rpcClient.InvokeScriptAsync(script, signer).ConfigureAwait(false);
             return InvokeResult.FromRpcInvokeResult(invokeResult);
         }
 
@@ -186,9 +190,12 @@ namespace NeoExpress.Neo3.Node
             }
         }
 
-        public Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
+        public async Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes)
         {
-            throw new Exception();
+            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
+            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
+            ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
+            return await SubmitTransactionAsync(tx);
         }
     }
 }

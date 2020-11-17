@@ -334,5 +334,21 @@ namespace NeoExpress.Neo3.Node
             }
             return requests;
         }
+
+        [RpcMethod]
+        public JObject? ExpressCreateOracleResponseTx(JArray @params)
+        {
+            var jsonResponse = @params[0];
+            var response = new OracleResponse
+            {
+                Id = (ulong)jsonResponse["id"].AsNumber(),
+                Code = (OracleResponseCode)jsonResponse["code"].AsNumber(),
+                Result = Convert.FromBase64String(jsonResponse["result"].AsString())
+            };
+
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            var tx = ExpressOracle.CreateResponseTx(snapshot, response);
+            return tx == null ? null : Convert.ToBase64String(tx.ToArray());
+        }
     }
 }

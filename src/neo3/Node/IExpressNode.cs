@@ -15,12 +15,14 @@ namespace NeoExpress.Neo3.Node
     internal interface IExpressNode : IDisposable
     {
         Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0);
+        Task<UInt256> SubmitTransactionAsync(Transaction tx);
         Task<InvokeResult> InvokeAsync(Script script);
         Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address);
         Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
         Task<Block> GetBlockAsync(UInt256 blockHash);
         Task<Block> GetBlockAsync(uint blockIndex);
         Task<Block> GetLatestBlockAsync();
+        Task<uint> GetTransactionHeight(UInt256 txHash);
         Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash);
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
         Task<IReadOnlyList<ContractManifest>> ListContractsAsync();

@@ -42,7 +42,12 @@ namespace NeoExpress.Neo3.Node
                 .SignAsync()
                 .ConfigureAwait(false);
 
-            return await rpcClient.SendRawTransactionAsync(tx);
+            return await SubmitTransactionAsync(tx).ConfigureAwait(false);
+        }
+
+        public Task<UInt256> SubmitTransactionAsync(Transaction tx)
+        {
+            return rpcClient.SendRawTransactionAsync(tx);
         }
 
         public async Task<(Neo.Network.RPC.Models.RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address)
@@ -83,6 +88,11 @@ namespace NeoExpress.Neo3.Node
             var hash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
             var rpcBlock = await rpcClient.GetBlockAsync(hash).ConfigureAwait(false);
             return rpcBlock.Block;
+        }
+
+        public Task<uint> GetTransactionHeight(UInt256 txHash)
+        {
+            return rpcClient.GetTransactionHeightAsync(txHash.ToString());
         }
 
         public async Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash)

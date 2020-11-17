@@ -100,10 +100,10 @@ namespace NeoExpress.Neo3.Node
 
             tx.Witnesses = context.GetWitnesses();
 
-            return ExecuteTransaction(tx);
+            return SubmitTransactionAsync(tx);
         }
 
-        public Task<UInt256> ExecuteTransaction(Transaction tx)
+        public Task<UInt256> SubmitTransactionAsync(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -407,6 +407,16 @@ namespace NeoExpress.Neo3.Node
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             return Task.FromResult(Blockchain.Singleton.GetBlock(Blockchain.Singleton.CurrentBlockHash));
+        }
+
+        public Task<uint> GetTransactionHeight(UInt256 txHash)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            uint? height = Blockchain.Singleton.View.Transactions.TryGet(txHash)?.BlockIndex;
+            return height.HasValue
+                ? Task.FromResult(height.Value)
+                : Task.FromException<uint>(new Exception("Unknown transaction"));
         }
 
         public Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash)

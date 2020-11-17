@@ -25,6 +25,7 @@ using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
 using NeoExpress.Neo3.Node;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Nito.Disposables;
 
 namespace NeoExpress.Neo3
@@ -851,6 +852,55 @@ namespace NeoExpress.Neo3
 
             using var expressNode = chain.GetExpressNode();
             return await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+        }
+
+        public async Task<IReadOnlyList<UInt256>> SubmitOracleResponse(ExpressChain chain, string url, OracleResponseCode responseCode, JObject? responseJson, ulong? requestId)
+        {
+            if (responseCode == OracleResponseCode.Success && responseJson == null)
+            {
+                throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
+            }
+
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            using var expressNode = chain.GetExpressNode();
+
+            var txHashes = new List<UInt256>();
+            var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+            for (var x = 0; x < requests.Count; x++)
+            {
+                var (id, request) = requests[x];
+                if (requestId.HasValue && requestId.Value != id) continue;
+                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var response = new OracleResponse
+                {
+                    Code = responseCode,
+                    Id = id,
+                    Result = GetResponseData(request.Filter),
+                };
+
+                var txHash = await expressNode.SubmitOracleResponseAsync(response);
+                txHashes.Add(txHash);
+            }
+            return txHashes;
+
+            byte[] GetResponseData(string filter)
+            {
+                if (responseCode != OracleResponseCode.Success)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                System.Diagnostics.Debug.Assert(responseJson != null);
+
+                var json = string.IsNullOrEmpty(filter)
+                    ? (JContainer)responseJson : new JArray(responseJson.SelectTokens(filter, true));
+                return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
+            }
         }
     }
 }

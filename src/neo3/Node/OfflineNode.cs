@@ -2,6 +2,8 @@ using Akka.Actor;
 using Neo;
 using Neo.Consensus;
 using Neo.Cryptography;
+using Neo.Cryptography.ECC;
+using Neo.IO;
 using Neo.Ledger;
 using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
@@ -11,7 +13,9 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
+using Neo.SmartContract.Native.Designate;
 using Neo.SmartContract.Native.Oracle;
+using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
@@ -46,6 +50,14 @@ namespace NeoExpress.Neo3.Node
             this.nodeWallet = nodeWallet;
             this.chain = chain;
             _ = new ExpressAppLogsPlugin(store);
+
+            ApplicationEngine.Log += OnLog;
+        }
+
+        private void OnLog(object sender, LogEventArgs args)
+        {
+            var name = args.ScriptHash.ToString();
+            Console.WriteLine($"{name} Log \"{args.Message}\" [{args.ScriptContainer.GetType().Name}]");
         }
 
         public Task<InvokeResult> InvokeAsync(Neo.VM.Script script)
@@ -475,6 +487,18 @@ namespace NeoExpress.Neo3.Node
             using var snapshot = Blockchain.Singleton.GetSnapshot();
             var requests = NativeContract.Oracle.GetRequests(snapshot).ToList();
             return Task.FromResult<IReadOnlyList<(ulong, OracleRequest)>>(requests);
+        }
+
+        public Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
+        {
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+
+            var tx = ExpressOracle.CreateResponseTx(snapshot, response);
+            if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
+
+            ExpressOracle.SignOracleResponseTransaction(chain, snapshot, tx);
+
+            return SubmitTransactionAsync(tx);
         }
     }
 }

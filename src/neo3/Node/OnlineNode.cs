@@ -185,5 +185,10 @@ namespace NeoExpress.Neo3.Node
                 });
             }
         }
+
+        public Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
+        {
+            throw new Exception();
+        }
     }
 }

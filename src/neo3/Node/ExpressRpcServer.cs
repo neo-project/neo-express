@@ -21,7 +21,7 @@ using Neo.SmartContract.Native;
 
 namespace NeoExpress.Neo3.Node
 {
-    internal class ExpressRpcServer
+    class ExpressRpcServer
     {
         readonly ExpressWalletAccount multiSigAccount;
         readonly DataCache<UInt256, TrimmedBlock> blocksCache;

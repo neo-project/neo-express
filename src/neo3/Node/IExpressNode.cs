@@ -28,5 +28,6 @@ namespace NeoExpress.Neo3.Node
         Task<IReadOnlyList<ContractManifest>> ListContractsAsync();
         Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync();
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
+        Task<UInt256> SubmitOracleResponseAsync(OracleResponse response);
     }
 }

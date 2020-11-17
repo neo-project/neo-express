@@ -1,30 +1,31 @@
-using Neo;
-using Neo.IO;
-using Neo.Network.RPC;
-using Neo.Network.RPC.Models;
-using Neo.BlockchainToolkit.Persistence;
-using Neo.SmartContract;
-using Neo.SmartContract.Manifest;
-using Neo.VM;
-using NeoExpress.Abstractions.Models;
-using NeoExpress.Neo3.Models;
-using NeoExpress.Neo3.Node;
-using Nito.Disposables;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo.Network.P2P.Payloads;
-using Newtonsoft.Json;
-using System.Net;
+using Neo;
 using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Persistence;
+using Neo.Cryptography.ECC;
+using Neo.IO;
+using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
+using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.SmartContract.Native.Designate;
-using System.Numerics;
 using Neo.SmartContract.Native.Oracle;
+using Neo.VM;
+using NeoExpress.Abstractions.Models;
+using NeoExpress.Neo3.Models;
+using NeoExpress.Neo3.Node;
+using Newtonsoft.Json;
+using Nito.Disposables;
 
 namespace NeoExpress.Neo3
 {
@@ -805,7 +806,7 @@ namespace NeoExpress.Neo3
 
         }
 
-        public async Task<InvokeResult> GetOracleRoles(ExpressChain chain)
+        public async Task<ECPoint[]> GetOracleNodes(ExpressChain chain)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -824,7 +825,21 @@ namespace NeoExpress.Neo3
                 script = sb.ToArray();
             }
 
-            return await expressNode.InvokeAsync(script).ConfigureAwait(false);
+            var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
+
+            if (result.State == Neo.VM.VMState.HALT
+                && result.Stack.Length >= 1
+                && result.Stack[0] is Neo.VM.Types.Array array)
+            {
+                var nodes = new ECPoint[array.Count];
+                for (var x = 0; x < array.Count; x++)
+                {
+                    nodes[x] = ECPoint.DecodePoint(array[x].GetSpan(), ECCurve.Secp256r1);
+                }
+                return nodes;
+            }
+
+            return Array.Empty<ECPoint>();
         }
 
         public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> GetOracleRequests(ExpressChain chain)

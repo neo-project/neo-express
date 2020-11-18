@@ -34,16 +34,16 @@ namespace NeoExpress.Neo3.Node
         private readonly ExpressChain chain;
         private bool disposedValue;
 
-        public OfflineNode(IStore store, ExpressWallet nodeWallet, ExpressChain chain, bool trace)
-            : this(store, DevWallet.FromExpressWallet(nodeWallet), chain, trace)
+        public OfflineNode(IStore store, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
+            : this(store, DevWallet.FromExpressWallet(nodeWallet), chain, enableTrace)
         {
         }
 
-        public OfflineNode(IStore store, Wallet nodeWallet, ExpressChain chain, bool trace)
+        public OfflineNode(IStore store, Wallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
             this.nodeWallet = nodeWallet;
             this.chain = chain;
-            applicationEngineProvider = trace ? new ExpressApplicationEngineProvider() : null;
+            applicationEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
             storageProvider = new ExpressStorageProvider(store);
             _ = new ExpressAppLogsPlugin(store);
             neoSystem = new NeoSystem(storageProvider.Name);
@@ -119,15 +119,6 @@ namespace NeoExpress.Neo3.Node
             if (blockRelay.Result != VerifyResult.Succeed)
             {
                 throw new Exception($"Block relay failed {blockRelay.Result}");
-            }
-
-            var sink = applicationEngineProvider?.GetDebugSink(tx.Hash);
-            if (sink != null)
-            {
-                var path = System.IO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
-                using var stream = System.IO.File.OpenWrite(path);
-                sink.Write(stream);
-                stream.Flush();
             }
 
             return Task.FromResult(tx.Hash);

@@ -14,26 +14,16 @@ namespace NeoExpress.Neo3.Node
 
     class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
-        readonly Dictionary<UInt256, TraceDebugSink> traceDebugSinks = new Dictionary<UInt256, TraceDebugSink>();
-
-        public TraceDebugSink? GetDebugSink(UInt256 txHash)
-        {
-            if (traceDebugSinks.TryGetValue(txHash, out var sink))
-            {
-                return sink;
-            }
-
-            return null;
-        }
-
         public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx
+                && tx.Witnesses != null
+                && tx.Witnesses.Length > 0
                 && EnumerateContractCalls(tx.Script).Any())
             {
-                var sink = new TraceDebugSink();
-                traceDebugSinks.Add(tx.Hash, sink);
+                var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
+                var sink = new TraceDebugSink(SysIO.File.OpenWrite(path));
                 return new ExpressApplicationEngine(sink, trigger, container, snapshot, gas);
             }
 

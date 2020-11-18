@@ -29,57 +29,69 @@ namespace NeoExpress.Neo3.Node
                 .WithResolver(TraceDebugResolver.Instance);
         }
 
-        readonly Sequence<byte> sequence = new Sequence<byte>();
+        private readonly Stream stream;
+        private readonly Sequence<byte> sequence = new Sequence<byte>();
 
-        public TraceDebugSink()
+        public TraceDebugSink(Stream stream)
         {
+            this.stream = stream;
         }
 
         public void Dispose()
         {
+            stream.Flush();
+            stream.Dispose();
         }
 
-        public void Write(Stream stream)
+        private void Write(Action<IBufferWriter<byte>, MessagePackSerializerOptions> funcWrite)
         {
-            foreach (var segment in sequence.AsReadOnlySequence)
+            try
             {
-                stream.Write(segment.Span);
+                sequence.Reset();
+                funcWrite(sequence, options);
+                foreach (var segment in sequence.AsReadOnlySequence)
+                {
+                    stream.Write(segment.Span);
+                }
+            }
+            catch
+            {
             }
         }
 
         public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> executionContexts)
         {
-            TraceRecord.Write(sequence, options, vmState, executionContexts);
+            Write((seq, opt) => TraceRecord.Write(seq, opt, vmState, executionContexts));
         }
 
         public void Notify(NotifyEventArgs args)
         {
-            NotifyRecord.Write(sequence, options, args.ScriptHash, args.EventName, args.State);
+            Write((seq, opt) => NotifyRecord.Write(seq, opt, args.ScriptHash, args.EventName, args.State));
         }
 
         public void Log(LogEventArgs args)
         {
-            LogRecord.Write(sequence, options, args.ScriptHash, args.Message);
+            Write((seq, opt) => LogRecord.Write(seq, opt, args.ScriptHash, args.Message));
         }
 
         public void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<StackItem> results)
         {
-            ResultsRecord.Write(sequence, options, vmState, gasConsumed, results);
+            Write((seq, opt) => ResultsRecord.Write(seq, opt, vmState, gasConsumed, results));
         }
 
         public void Fault(Exception exception)
         {
-            FaultRecord.Write(sequence, options, exception.Message);
+            Write((seq, opt) => FaultRecord.Write(seq, opt, exception.Message));
         }
 
         public void Script(byte[] script)
         {
-            ScriptRecord.Write(sequence, options, script);
+            Write((seq, opt) => ScriptRecord.Write(seq, opt, script));
         }
 
         public void Storages(UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages)
         {
-            StorageRecord.Write(sequence, options, scriptHash, storages);
+            Write((seq, opt) => StorageRecord.Write(seq, opt, scriptHash, storages));
         }
     }
 }

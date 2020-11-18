@@ -28,6 +28,9 @@ namespace nxp3.Commands
             [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract invocation")]
             decimal AdditionalGas { get; } = 0;
 
+            [Option("--trace")]
+            bool Trace { get; } = false;
+
             static void WriteStackItem(IConsole console, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
             {
                 switch (item)
@@ -118,7 +121,7 @@ namespace nxp3.Commands
                         {
                             throw new Exception($"{Account} account not found.");
                         }
-                        var txHash = await blockchainOperations.InvokeContract(chain, InvocationFile, account, AdditionalGas);
+                        var txHash = await blockchainOperations.InvokeContract(chain, InvocationFile, account, Trace, AdditionalGas);
                         console.WriteLine($"InvocationTransaction {txHash} submitted");
                     }
                     return 0;

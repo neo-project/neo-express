@@ -12,16 +12,28 @@ namespace NeoExpress.Neo3.Node
 {
     using SysIO = System.IO;
 
-    internal class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
+    class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
+        readonly Dictionary<UInt256, TraceDebugSink> traceDebugSinks = new Dictionary<UInt256, TraceDebugSink>();
+
+        public TraceDebugSink? GetDebugSink(UInt256 txHash)
+        {
+            if (traceDebugSinks.TryGetValue(txHash, out var sink))
+            {
+                return sink;
+            }
+
+            return null;
+        }
+
         public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx
                 && EnumerateContractCalls(tx.Script).Any())
             {
-                var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
-                var sink = new TraceDebugSink(SysIO.File.OpenWrite(path));
+                var sink = new TraceDebugSink();
+                traceDebugSinks.Add(tx.Hash, sink);
                 return new ExpressApplicationEngine(sink, trigger, container, snapshot, gas);
             }
 

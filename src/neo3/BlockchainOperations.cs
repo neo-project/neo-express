@@ -463,14 +463,14 @@ namespace NeoExpress.Neo3
             }
         }
 
-        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account, decimal additionalGas = 0m)
+        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account, bool trace, decimal additionalGas = 0m)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
                 throw new Exception("could not initialize protocol settings");
             }
 
-            using var expressNode = chain.GetExpressNode();
+            using var expressNode = chain.GetExpressNode(trace);
             var parser = GetContractParameterParser(chain);
             var script = parser.LoadInvocationScript(invocationFilePath);
             return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);

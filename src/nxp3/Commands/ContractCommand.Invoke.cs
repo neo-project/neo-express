@@ -122,7 +122,7 @@ namespace nxp3.Commands
                             throw new Exception($"{Account} account not found.");
                         }
                         var txHash = await blockchainOperations.InvokeContract(chain, InvocationFile, account, Trace, AdditionalGas);
-                        console.WriteLine($"InvocationTransaction {txHash} submitted");
+                        console.WriteLine($"Invocation Transaction {txHash} submitted");
                     }
                     return 0;
                 }

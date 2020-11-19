@@ -34,22 +34,24 @@ namespace NeoExpress.Neo3.Node
     {
         private readonly NeoSystem neoSystem;
         private readonly ExpressStorageProvider storageProvider;
+        private readonly ExpressApplicationEngineProvider? applicationEngineProvider;
         private readonly Wallet nodeWallet;
         private readonly ExpressChain chain;
         private bool disposedValue;
 
-        public OfflineNode(IStore store, ExpressWallet nodeWallet, ExpressChain chain)
-            : this(store, DevWallet.FromExpressWallet(nodeWallet), chain)
+        public OfflineNode(IStore store, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
+            : this(store, DevWallet.FromExpressWallet(nodeWallet), chain, enableTrace)
         {
         }
 
-        public OfflineNode(IStore store, Wallet nodeWallet, ExpressChain chain)
+        public OfflineNode(IStore store, Wallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
-            storageProvider = new ExpressStorageProvider(store);
-            neoSystem = new NeoSystem(storageProvider.Name);
             this.nodeWallet = nodeWallet;
             this.chain = chain;
+            applicationEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
+            storageProvider = new ExpressStorageProvider(store);
             _ = new ExpressAppLogsPlugin(store);
+            neoSystem = new NeoSystem(storageProvider.Name);
 
             ApplicationEngine.Log += OnLog;
         }

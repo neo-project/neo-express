@@ -12,12 +12,14 @@ namespace NeoExpress.Neo3.Node
 {
     using SysIO = System.IO;
 
-    internal class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
+    class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
         public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx
+                && tx.Witnesses != null
+                && tx.Witnesses.Length > 0
                 && EnumerateContractCalls(tx.Script).Any())
             {
                 var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");

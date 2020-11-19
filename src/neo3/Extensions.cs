@@ -180,7 +180,7 @@ namespace NeoExpress.Neo3
             return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
-        public static Node.IExpressNode GetExpressNode(this ExpressChain chain)
+        public static Node.IExpressNode GetExpressNode(this ExpressChain chain, bool offlineTrace = false)
         {
             if (chain.IsRunning(out var node))
             {
@@ -189,7 +189,7 @@ namespace NeoExpress.Neo3
 
             node = chain.ConsensusNodes[0];
             var folder = node.GetBlockchainPath();
-            return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain);
+            return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain, offlineTrace);
         }
     }
 }

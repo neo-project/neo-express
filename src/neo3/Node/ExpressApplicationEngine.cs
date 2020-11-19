@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo;
 using Neo.Ledger;
+using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
@@ -16,7 +17,6 @@ namespace NeoExpress.Neo3.Node
         // retrieve start/end state. In the meantime, preExecTrace and completeStateChange
         // are used to control tracing of start/end states.
 
-        private bool preExecTrace = true;
         private readonly ITraceDebugSink traceDebugSink;
 
         public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
@@ -51,18 +51,13 @@ namespace NeoExpress.Neo3.Node
             }
         }
 
-        protected override void PreExecuteInstruction()
+        public override VMState Execute()
         {
-            if (preExecTrace)
-            {
-                traceDebugSink.Script(CurrentContext.Script);
-                traceDebugSink.Trace(State, InvocationStack);
-                WriteStorages(CurrentScriptHash);
+            traceDebugSink.Script(CurrentContext.Script);
+            traceDebugSink.Trace(State, InvocationStack);
+            WriteStorages(CurrentScriptHash);
 
-                preExecTrace = false;
-            }
-
-            base.PreExecuteInstruction();
+            return base.Execute();
         }
 
         protected override void PostExecuteInstruction()
@@ -91,19 +86,9 @@ namespace NeoExpress.Neo3.Node
                 var contractState = Snapshot.Contracts.TryGet(scriptHash);
                 if (contractState != null)
                 {
-                    var storages = Snapshot.Storages.Find(CreateSearchPrefix(contractState.Id, default));
+                    var storages = Snapshot.Storages.Find(StorageKey.CreateSearchPrefix(contractState.Id, default));
                     traceDebugSink.Storages(scriptHash, storages);
                 }
-            }
-
-            // TODO: remove this copy of CreateSearchPrefix in preview 4 
-            //       https://github.com/neo-project/neo/pull/1824
-            static byte[] CreateSearchPrefix(int id, ReadOnlySpan<byte> prefix)
-            {
-                byte[] buffer = new byte[sizeof(int) + prefix.Length];
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(buffer, id);
-                prefix.CopyTo(buffer.AsSpan(sizeof(int)));
-                return buffer;
             }
         }
     }

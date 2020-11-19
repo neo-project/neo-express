@@ -36,7 +36,7 @@ namespace nxp3.Commands
                     }
 
                     var txHash = await blockchainOperations.DeployContract(chain, Contract, account);
-                    console.WriteLine($"InvocationTransaction {txHash} submitted");
+                    console.WriteLine($"Deployment Transaction {txHash} submitted");
 
                     return 0;
                 }

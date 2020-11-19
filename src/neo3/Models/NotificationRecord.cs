@@ -57,7 +57,7 @@ namespace NeoExpress.Neo3.Models
         public void Serialize(BinaryWriter writer)
         {
             ((ISerializable)ScriptHash).Serialize(writer);
-            BinarySerializer.Serialize(writer, State, ExecutionEngineLimits.Default.MaxItemSize);
+            BinarySerializer.Serialize(State, writer, ExecutionEngineLimits.Default.MaxItemSize);
             writer.WriteVarString(EventName);
             ((ISerializable)InventoryHash).Serialize(writer);
             writer.Write((byte)InventoryType);

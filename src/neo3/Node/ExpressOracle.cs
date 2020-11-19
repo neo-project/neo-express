@@ -98,12 +98,12 @@ namespace NeoExpress.Neo3.Node
 
             if (response.Result.Length > OracleResponse.MaxResultSize)
             {
-                response.Code = OracleResponseCode.ResponseTooLarge;
+                response.Code = OracleResponseCode.Error;
                 response.Result = Array.Empty<byte>();
             }
             else if (tx.NetworkFee + (size + tx.Attributes.GetVarSize()) * NativeContract.Policy.GetFeePerByte(snapshot) > request.GasForResponse)
             {
-                response.Code = OracleResponseCode.InsufficientFunds;
+                response.Code = OracleResponseCode.Error;
                 response.Result = Array.Empty<byte>();
             }
             size += tx.Attributes.GetVarSize();

@@ -472,7 +472,7 @@ namespace NeoExpress.Neo3
 
             using var expressNode = chain.GetExpressNode(trace);
             var parser = GetContractParameterParser(chain);
-            var script = parser.LoadInvocationScript(invocationFilePath);
+            var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);
         }
 
@@ -485,7 +485,7 @@ namespace NeoExpress.Neo3
 
             using var expressNode = chain.GetExpressNode();
             var parser = GetContractParameterParser(chain);
-            var script = parser.LoadInvocationScript(invocationFilePath);
+            var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.InvokeAsync(script).ConfigureAwait(false);
         }
 

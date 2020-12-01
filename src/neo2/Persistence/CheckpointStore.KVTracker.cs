@@ -7,7 +7,7 @@ namespace NeoExpress.Neo2.Persistence
 {
     internal partial class CheckpointStore
     {
-        private class KVTracker 
+        private class KVTracker
         {
             private readonly RocksDb db;
             private readonly ColumnFamilyHandle columnFamily;

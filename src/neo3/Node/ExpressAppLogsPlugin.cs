@@ -39,9 +39,9 @@ namespace NeoExpress.Neo3.Node
         public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IReadOnlyStore store)
         {
             return store.Seek(NOTIFICATIONS_PREFIX, null, Neo.IO.Caching.SeekDirection.Forward)
-                .Select(t => 
+                .Select(t =>
                 {
-                     var (blockIndex, txIndex) = ParseNotificationKey(t.Key);
+                    var (blockIndex, txIndex) = ParseNotificationKey(t.Key);
                     return (blockIndex, txIndex, t.Value.AsSerializable<NotificationRecord>());
                 });
 
@@ -138,7 +138,7 @@ namespace NeoExpress.Neo3.Node
             }
             return null;
         }
-        
+
         public void OnPersist(StoreView snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             if (applicationExecutedList.Count > ushort.MaxValue)
@@ -147,9 +147,9 @@ namespace NeoExpress.Neo3.Node
             }
 
             var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
-                BinaryPrimitives.WriteUInt32BigEndian(
-                    notificationIndex.AsSpan(0, sizeof(uint)),
-                    snapshot.PersistingBlock.Index);
+            BinaryPrimitives.WriteUInt32BigEndian(
+                notificationIndex.AsSpan(0, sizeof(uint)),
+                snapshot.PersistingBlock.Index);
 
             for (int i = 0; i < applicationExecutedList.Count; i++)
             {
@@ -169,9 +169,9 @@ namespace NeoExpress.Neo3.Node
                         throw new Exception("appExec.Notifications too big");
                     }
 
-                     BinaryPrimitives.WriteUInt16BigEndian(
-                            notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)),
-                            (ushort)i);
+                    BinaryPrimitives.WriteUInt16BigEndian(
+                           notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)),
+                           (ushort)i);
 
                     for (int j = 0; j < appExec.Notifications.Length; j++)
                     {

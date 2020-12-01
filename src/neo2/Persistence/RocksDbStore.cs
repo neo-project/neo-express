@@ -12,7 +12,7 @@ namespace NeoExpress.Neo2.Persistence
         public const string BLOCK_FAMILY = "data:block";
         public const string TX_FAMILY = "data:transaction";
         public const string MPT_FAMILY = "data:mpt";
-        
+
         public const string ACCOUNT_FAMILY = "st:account";
         public const string UNSPENT_COIN_FAMILY = "st:coin";
         public const string SPENT_COIN_FAMILY = "st:spent-coin";
@@ -32,9 +32,9 @@ namespace NeoExpress.Neo2.Persistence
         public const byte STATE_ROOT_HASH_INDEX_KEY = 0xc2;
         public static readonly byte[] STATE_ROOT_KEY = new[] { (byte)0xd0 };
 
-        private static ColumnFamilies CreateColumnFamilies() 
+        private static ColumnFamilies CreateColumnFamilies()
         {
-            var families = new string[] 
+            var families = new string[]
             {
                 BLOCK_FAMILY, TX_FAMILY, MPT_FAMILY,
                 ACCOUNT_FAMILY, UNSPENT_COIN_FAMILY, SPENT_COIN_FAMILY, VALIDATOR_FAMILY,

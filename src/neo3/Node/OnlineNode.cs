@@ -53,17 +53,17 @@ namespace NeoExpress.Neo3.Node
             return balances.Balances
                 .Select(b => (
                     balance: b,
-                    contract: contracts.TryGetValue(b.AssetHash, out var value) 
-                        ? value 
+                    contract: contracts.TryGetValue(b.AssetHash, out var value)
+                        ? value
                         : Nep5Contract.Unknown(b.AssetHash)))
-                .ToArray();        
+                .ToArray();
         }
 
         public async Task<Block> GetBlockAsync(UInt256 blockHash)
         {
             var rpcBlock = await rpcClient.GetBlockAsync(blockHash.ToString()).ConfigureAwait(false);
             return rpcBlock.Block;
-       }
+        }
 
         public async Task<Block> GetBlockAsync(uint blockIndex)
         {
@@ -92,11 +92,11 @@ namespace NeoExpress.Neo3.Node
             if (json != null && json is Neo.IO.Json.JArray array)
             {
                 return array.Select(s => new ExpressStorage()
-                    {
-                        Key = s["key"].AsString(),
-                        Value = s["value"].AsString(),
-                        Constant = s["constant"].AsBoolean()
-                    })
+                {
+                    Key = s["key"].AsString(),
+                    Value = s["value"].AsString(),
+                    Constant = s["constant"].AsBoolean()
+                })
                     .ToList();
             }
 

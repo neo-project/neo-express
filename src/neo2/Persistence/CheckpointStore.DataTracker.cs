@@ -42,7 +42,7 @@ namespace NeoExpress.Neo2.Persistence
             public IEnumerable<KeyValuePair<TKey, TValue>> Find(byte[] keyPrefix, ImmutableDictionary<byte[], OneOf<TValue, OneOf.Types.None>>? snapshotValues)
             {
                 static bool PrefixEquals(byte[] prefix, byte[] value)
-                    => prefix.Length == 0 
+                    => prefix.Length == 0
                         || prefix.AsSpan().SequenceEqual(value.AsSpan().Slice(0, prefix.Length));
 
                 snapshotValues ??= updatedValues;

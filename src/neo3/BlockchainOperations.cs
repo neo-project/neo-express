@@ -365,11 +365,16 @@ namespace NeoExpress.Neo3
             if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
             {
                 using var sb = new ScriptBuilder();
+                // balanceOf operation places current balance on eval stack
                 sb.EmitAppCall(assetHash, "balanceOf", senderHash);
-                // current balance on eval stack after balanceOf call
+                // transfer operation takes 4 arguments, amount is 3rd parameter
+                // push null onto the stack and then switch positions of the top
+                // two items on eval stack so null is 4th arg and balance is 3rd
+                sb.Emit(OpCode.PUSHNULL);
+                sb.Emit(OpCode.SWAP);
                 sb.EmitPush(receiverHash);
                 sb.EmitPush(senderHash);
-                sb.EmitPush(3);
+                sb.EmitPush(4);
                 sb.Emit(OpCode.PACK);
                 sb.EmitPush("transfer");
                 sb.EmitPush(assetHash);
@@ -383,7 +388,7 @@ namespace NeoExpress.Neo3
                 {
                     var decimals = (byte)(results.Stack[0].GetInteger());
                     var value = amount.ToBigInteger(decimals);
-                    return await expressNode.ExecuteAsync(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value)).ConfigureAwait(false);
+                    return await expressNode.ExecuteAsync(chain, sender, assetHash.MakeScript("transfer", senderHash, receiverHash, value, null)).ConfigureAwait(false);
                 }
                 else
                 {
@@ -477,7 +482,7 @@ namespace NeoExpress.Neo3
 
             using var expressNode = chain.GetExpressNode(trace);
             var parser = GetContractParameterParser(chain);
-            var script = parser.LoadInvocationScript(invocationFilePath);
+            var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);
         }
 
@@ -490,7 +495,7 @@ namespace NeoExpress.Neo3
 
             using var expressNode = chain.GetExpressNode();
             var parser = GetContractParameterParser(chain);
-            var script = parser.LoadInvocationScript(invocationFilePath);
+            var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.InvokeAsync(script).ConfigureAwait(false);
         }
 

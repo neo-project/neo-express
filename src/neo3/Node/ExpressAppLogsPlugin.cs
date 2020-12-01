@@ -160,7 +160,7 @@ namespace NeoExpress.Neo3.Node
                 }
 
                 var txJson = TxLogToJson(appExec);
-                store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Utility.StrictUTF8.GetBytes(txJson.ToString()));
+                store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
                 if (appExec.VMState != VMState.FAULT)
                 {
@@ -189,7 +189,7 @@ namespace NeoExpress.Neo3.Node
                 var blockJson = BlockLogToJson(snapshot, applicationExecutedList);
                 if (blockJson != null)
                 {
-                    store.Put(APP_LOGS_PREFIX, snapshot.PersistingBlock.Hash.ToArray(), Utility.StrictUTF8.GetBytes(blockJson.ToString()));
+                    store.Put(APP_LOGS_PREFIX, snapshot.PersistingBlock.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
                 }
             }
         }

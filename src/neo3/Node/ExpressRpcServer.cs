@@ -24,11 +24,9 @@ namespace NeoExpress.Neo3.Node
     class ExpressRpcServer
     {
         readonly ExpressWalletAccount multiSigAccount;
-        readonly DataCache<UInt256, TrimmedBlock> blocksCache;
         public ExpressRpcServer(ExpressWalletAccount multiSigAccount)
         {
             this.multiSigAccount = multiSigAccount;
-            this.blocksCache = Blockchain.Singleton.View.Blocks;
         }
 
         [RpcMethod]
@@ -46,9 +44,10 @@ namespace NeoExpress.Neo3.Node
             while (populatedBlocks.Count < count)
             {
                 var hash = Blockchain.Singleton.GetBlockHash(start);
-                var blockState = blocksCache.TryGet(hash);
+                var blockState = Blockchain.Singleton.View.Blocks.TryGet(hash);
+
                 if (blockState != null
-                    && blockState.Hashes.Length > 0)
+                    && blockState.Hashes.Length > 1)
                 {
                     populatedBlocks.Add(blockState.Index);
                 }
@@ -64,7 +63,7 @@ namespace NeoExpress.Neo3.Node
             }
             return populatedBlocks;
         }
-        
+
         [RpcMethod]
         public JObject GetApplicationLog(JArray _params)
         {
@@ -72,7 +71,7 @@ namespace NeoExpress.Neo3.Node
             return ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
-        // TODO: should the event name comparison be case insensitive? 
+        // TODO: should the event name comparison be case insensitive?
         // Native contracts use "Transfer" while neon preview 3 compiled contracts use "transfer"
         static bool IsNep5Transfer(NotificationRecord notification)
             => notification.InventoryType == InventoryType.TX

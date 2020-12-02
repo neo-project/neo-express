@@ -23,9 +23,12 @@ namespace NeoExpress.Neo3.Node
     internal class ExpressRpcServer
     {
         readonly ExpressWalletAccount multiSigAccount;
+        readonly string cacheId;
+
         public ExpressRpcServer(ExpressWalletAccount multiSigAccount)
         {
             this.multiSigAccount = multiSigAccount;
+            cacheId = DateTimeOffset.Now.Ticks.ToString();
         }
 
         [RpcMethod]
@@ -60,7 +63,11 @@ namespace NeoExpress.Neo3.Node
                     start--;
                 }
             }
-            return populatedBlocks;
+
+            var response = new JObject();
+            response["cacheId"] = cacheId;
+            response["blocks"] = populatedBlocks;
+            return response;
         }
 
         [RpcMethod]

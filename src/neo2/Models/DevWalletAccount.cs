@@ -34,7 +34,7 @@ namespace NeoExpress.Neo2.Models
             Buffer.BlockCopy(scriptHash.ToArray(), 0, data, 1, 20);
             return data.Base58CheckEncode();
         }
-        
+
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
             PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,

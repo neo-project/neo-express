@@ -35,7 +35,7 @@ namespace nxp3.Commands
             {
                 switch (item)
                 {
-                    case Neo.VM.Types.Boolean _: 
+                    case Neo.VM.Types.Boolean _:
                         WriteLine(item.GetBoolean() ? "true" : "false");
                         break;
                     case Neo.VM.Types.Integer @int:
@@ -62,7 +62,7 @@ namespace nxp3.Commands
                         foreach (var m in map)
                         {
                             WriteStackItem(console, m.Key, indent + 1, "key:   ");
-                            WriteStackItem(console, m.Value, indent + 1, "value: ");  
+                            WriteStackItem(console, m.Value, indent + 1, "value: ");
                         }
                         break;
                 }

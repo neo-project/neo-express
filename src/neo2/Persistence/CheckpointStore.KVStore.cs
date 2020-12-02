@@ -20,7 +20,7 @@ namespace NeoExpress.Neo2.Persistence
             public byte[]? Get(byte[] key)
             {
                 return tracker.TryGet(key, snapshot);
-                
+
             }
 
             public void Put(byte[] key, byte[] value)

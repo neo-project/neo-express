@@ -150,7 +150,7 @@ namespace NeoExpress.Neo2.Node
                 }
                 tx.Witnesses = context.GetWitnesses();
                 if (!tx.Verify(snapshot, Enumerable.Empty<Transaction>()))
-                { 
+                {
                     throw new Exception($"{tx.Type} transaction verification failed");
                 }
 

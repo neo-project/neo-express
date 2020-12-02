@@ -31,7 +31,7 @@ namespace nxp3.Commands
 
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
-                
+
                 if (All)
                 {
                     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
@@ -44,9 +44,9 @@ namespace nxp3.Commands
                     var nodeIndex = NodeIndex.HasValue
                         ? NodeIndex.Value
                         : chain.ConsensusNodes.Count == 1
-                            ? 0 
+                            ? 0
                             : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
-                    
+
                     blockchainOperations.ResetNode(chain, nodeIndex, Force);
                 }
 

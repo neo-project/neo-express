@@ -390,9 +390,9 @@ namespace NeoExpress.Neo3.Node
                         Amount = b.balance,
                         AssetHash = b.contract.ScriptHash,
                         LastUpdatedBlock = b.lastUpdatedBlock
-                    }, 
-                    contract: contracts.TryGetValue(b.contract.ScriptHash, out var value) 
-                        ? value 
+                    },
+                    contract: contracts.TryGetValue(b.contract.ScriptHash, out var value)
+                        ? value
                         : Nep5Contract.Unknown(b.contract.ScriptHash)))
                 .ToArray();
             return Task.FromResult(balances);
@@ -448,11 +448,11 @@ namespace NeoExpress.Neo3.Node
                 IReadOnlyList<ExpressStorage> storages = Blockchain.Singleton.View.Storages.Find()
                     .Where(t => t.Key.Id == contract.Id)
                     .Select(t => new ExpressStorage()
-                        {
-                            Key = t.Key.Key.ToHexString(),
-                            Value = t.Value.Value.ToHexString(),
-                            Constant = t.Value.IsConstant
-                        })
+                    {
+                        Key = t.Key.Key.ToHexString(),
+                        Value = t.Value.Value.ToHexString(),
+                        Constant = t.Value.IsConstant
+                    })
                     .ToList();
                 return Task.FromResult(storages);
             }

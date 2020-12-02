@@ -152,7 +152,7 @@ namespace NeoExpress.Neo3
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
             return new Mutex(true, GLOBAL_PREFIX + account.ScriptHash);
         }
-        
+
         public static bool IsRunning(this ExpressChain chain, [MaybeNullWhen(false)] out ExpressConsensusNode node)
         {
             // Check to see if there's a neo-express blockchain currently running by
@@ -166,7 +166,7 @@ namespace NeoExpress.Neo3
                     return true;
                 }
             }
-            
+
             node = default;
             return false;
         }

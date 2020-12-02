@@ -559,7 +559,7 @@ namespace NeoExpress.Neo3
             sb.EmitAppCall(assetHash, "name");
             sb.EmitAppCall(assetHash, "symbol");
             sb.EmitAppCall(assetHash, "decimals");
-            
+
             var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
             var stack = result.Stack;
             if (stack.Length >= 4)

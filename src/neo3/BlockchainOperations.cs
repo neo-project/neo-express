@@ -1,27 +1,32 @@
-using Neo;
-using Neo.IO;
-using Neo.Network.RPC;
-using Neo.Network.RPC.Models;
-using Neo.BlockchainToolkit.Persistence;
-using Neo.SmartContract;
-using Neo.SmartContract.Manifest;
-using Neo.VM;
-using NeoExpress.Abstractions.Models;
-using NeoExpress.Neo3.Models;
-using NeoExpress.Neo3.Node;
-using Nito.Disposables;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo.Network.P2P.Payloads;
-using Newtonsoft.Json;
-using System.Net;
+using Neo;
 using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Persistence;
+using Neo.Cryptography.ECC;
+using Neo.IO;
+using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
+using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
+using Neo.SmartContract.Native.Designate;
+using Neo.SmartContract.Native.Oracle;
+using Neo.VM;
+using NeoExpress.Abstractions.Models;
+using NeoExpress.Neo3.Models;
+using NeoExpress.Neo3.Node;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Nito.Disposables;
 
 namespace NeoExpress.Neo3
 {
@@ -772,6 +777,141 @@ namespace NeoExpress.Neo3
         {
             var devWallet = DevWallet.FromExpressWallet(wallet);
             devWallet.Export(filename, password);
+        }
+
+        public async Task<UInt256> DesignateOracleRoles(ExpressChain chain, IEnumerable<ExpressWalletAccount> accounts)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            var genesisAccount = GetAccount(chain, "genesis") ?? throw new Exception();
+
+            byte[] script;
+            {
+                using var sb = new ScriptBuilder();
+                var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+                var oracles = new ContractParameter(ContractParameterType.Array);
+                var oraclesList = (List<ContractParameter>)oracles.Value;
+
+                foreach (var account in accounts)
+                {
+                    var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception();
+                    oraclesList.Add(new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey });
+                }
+
+                sb.EmitAppCall(NativeContract.Designate.Hash, "designateAsRole", role, oracles);
+                script = sb.ToArray();
+            }
+
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode
+                .ExecuteAsync(chain, genesisAccount, script)
+                .ConfigureAwait(false);
+
+        }
+
+        public async Task<ECPoint[]> GetOracleNodes(ExpressChain chain)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            using var expressNode = chain.GetExpressNode();
+            return await GetOracleNodes(expressNode);
+        }
+
+        static async Task<ECPoint[]> GetOracleNodes(IExpressNode expressNode)
+        {
+            var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
+
+            byte[] script;
+            {
+                using var sb = new ScriptBuilder();
+                var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+                var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
+                sb.EmitAppCall(NativeContract.Designate.Hash, "getDesignatedByRole", role, index);
+                script = sb.ToArray();
+            }
+
+            var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
+
+            if (result.State == Neo.VM.VMState.HALT
+                && result.Stack.Length >= 1
+                && result.Stack[0] is Neo.VM.Types.Array array)
+            {
+                var nodes = new ECPoint[array.Count];
+                for (var x = 0; x < array.Count; x++)
+                {
+                    nodes[x] = ECPoint.DecodePoint(array[x].GetSpan(), ECCurve.Secp256r1);
+                }
+                return nodes;
+            }
+
+            return Array.Empty<ECPoint>();
+        }
+
+        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> GetOracleRequests(ExpressChain chain)
+        {
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            using var expressNode = chain.GetExpressNode();
+            return await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+        }
+
+        public async Task<IReadOnlyList<UInt256>> SubmitOracleResponse(ExpressChain chain, string url, OracleResponseCode responseCode, JObject? responseJson, ulong? requestId)
+        {
+            if (responseCode == OracleResponseCode.Success && responseJson == null)
+            {
+                throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
+            }
+
+            if (!NodeUtility.InitializeProtocolSettings(chain))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            using var expressNode = chain.GetExpressNode();
+            var oracleNodes = await GetOracleNodes(expressNode);
+
+            var txHashes = new List<UInt256>();
+            var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+            for (var x = 0; x < requests.Count; x++)
+            {
+                var (id, request) = requests[x];
+                if (requestId.HasValue && requestId.Value != id) continue;
+                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var response = new OracleResponse
+                {
+                    Code = responseCode,
+                    Id = id,
+                    Result = GetResponseData(request.Filter),
+                };
+
+                var txHash = await expressNode.SubmitOracleResponseAsync(chain, response, oracleNodes);
+                txHashes.Add(txHash);
+            }
+            return txHashes;
+
+            byte[] GetResponseData(string filter)
+            {
+                if (responseCode != OracleResponseCode.Success)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                System.Diagnostics.Debug.Assert(responseJson != null);
+
+                var json = string.IsNullOrEmpty(filter)
+                    ? (JContainer)responseJson : new JArray(responseJson.SelectTokens(filter, true));
+                return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
+            }
         }
     }
 }

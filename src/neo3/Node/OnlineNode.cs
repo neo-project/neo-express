@@ -1,9 +1,12 @@
 using Neo;
+using Neo.Cryptography.ECC;
+using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
+using Neo.SmartContract.Native.Oracle;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
@@ -41,7 +44,12 @@ namespace NeoExpress.Neo3.Node
                 .SignAsync()
                 .ConfigureAwait(false);
 
-            return await rpcClient.SendRawTransactionAsync(tx);
+            return await SubmitTransactionAsync(tx).ConfigureAwait(false);
+        }
+
+        public Task<UInt256> SubmitTransactionAsync(Transaction tx)
+        {
+            return rpcClient.SendRawTransactionAsync(tx);
         }
 
         public async Task<(Neo.Network.RPC.Models.RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address)
@@ -84,6 +92,11 @@ namespace NeoExpress.Neo3.Node
             return rpcBlock.Block;
         }
 
+        public Task<uint> GetTransactionHeight(UInt256 txHash)
+        {
+            return rpcClient.GetTransactionHeightAsync(txHash.ToString());
+        }
+
         public async Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash)
         {
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
@@ -113,7 +126,9 @@ namespace NeoExpress.Neo3.Node
 
         public async Task<InvokeResult> InvokeAsync(Script script)
         {
-            var invokeResult = await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
+            // TODO: remove dummy signer once https://github.com/neo-project/neo-modules/issues/398 is fixed
+            var signer = new Signer() { Account = UInt160.Zero };
+            var invokeResult = await rpcClient.InvokeScriptAsync(script, signer).ConfigureAwait(false);
             return InvokeResult.FromRpcInvokeResult(invokeResult);
         }
 
@@ -139,6 +154,48 @@ namespace NeoExpress.Neo3.Node
             }
 
             return Array.Empty<Nep5Contract>();
+        }
+
+        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+        {
+            var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
+
+            if (json != null && json is Neo.IO.Json.JArray array)
+            {
+                return array.Select(FromJson).ToList();
+            }
+            return Array.Empty<(ulong, OracleRequest)>();
+
+            (ulong, OracleRequest) FromJson(Neo.IO.Json.JObject json)
+            {
+                var id = ulong.Parse(json["requestid"].AsString());
+                var originalTxId = UInt256.Parse(json["originaltxid"].AsString());
+                var gasForResponse = long.Parse(json["gasforresponse"].AsString());
+                var url = json["url"].AsString();
+                var filter = json["filter"].AsString();
+                var callbackContract = UInt160.Parse(json["callbackcontract"].AsString());
+                var callbackMethod = json["callbackmethod"].AsString();
+                var userData = Convert.FromBase64String(json["userdata"].AsString());
+ 
+                return (id, new OracleRequest
+                {
+                    OriginalTxid = originalTxId,
+                    CallbackContract = callbackContract,
+                    CallbackMethod = callbackMethod,
+                    Filter = filter,
+                    GasForResponse = gasForResponse,
+                    Url = url,
+                    UserData = userData,
+                });
+            }
+        }
+
+        public async Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes)
+        {
+            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
+            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
+            ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
+            return await SubmitTransactionAsync(tx);
         }
     }
 }

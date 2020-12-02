@@ -2,6 +2,8 @@ using Akka.Actor;
 using Neo;
 using Neo.Consensus;
 using Neo.Cryptography;
+using Neo.Cryptography.ECC;
+using Neo.IO;
 using Neo.Ledger;
 using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
@@ -11,6 +13,9 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
+using Neo.SmartContract.Native.Designate;
+using Neo.SmartContract.Native.Oracle;
+using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
@@ -47,6 +52,19 @@ namespace NeoExpress.Neo3.Node
             storageProvider = new ExpressStorageProvider(store);
             _ = new ExpressAppLogsPlugin(store);
             neoSystem = new NeoSystem(storageProvider.Name);
+
+            ApplicationEngine.Log += OnLog;
+        }
+
+        private void OnLog(object sender, LogEventArgs args)
+        {
+            var engine = sender as ApplicationEngine;
+            var tx = engine?.ScriptContainer as Transaction;
+            if (tx?.Witnesses?.Any() ?? false)
+            {
+                var name = args.ScriptHash.ToString();
+                Console.WriteLine($"{name} Log \x1b[36m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
+            }
         }
 
         public Task<InvokeResult> InvokeAsync(Neo.VM.Script script)
@@ -101,10 +119,10 @@ namespace NeoExpress.Neo3.Node
 
             tx.Witnesses = context.GetWitnesses();
 
-            return ExecuteTransaction(tx);
+            return SubmitTransactionAsync(tx);
         }
 
-        public Task<UInt256> ExecuteTransaction(Transaction tx)
+        public Task<UInt256> SubmitTransactionAsync(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -410,6 +428,16 @@ namespace NeoExpress.Neo3.Node
             return Task.FromResult(Blockchain.Singleton.GetBlock(Blockchain.Singleton.CurrentBlockHash));
         }
 
+        public Task<uint> GetTransactionHeight(UInt256 txHash)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            uint? height = Blockchain.Singleton.View.Transactions.TryGet(txHash)?.BlockIndex;
+            return height.HasValue
+                ? Task.FromResult(height.Value)
+                : Task.FromException<uint>(new Exception("Unknown transaction"));
+        }
+
         public Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
@@ -459,6 +487,22 @@ namespace NeoExpress.Neo3.Node
         {
             return Task.FromResult<IReadOnlyList<Nep5Contract>>(
                 ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToList());
+        }
+
+        public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+        {
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            var requests = NativeContract.Oracle.GetRequests(snapshot).ToList();
+            return Task.FromResult<IReadOnlyList<(ulong, OracleRequest)>>(requests);
+        }
+
+        public Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes)
+        {
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            var tx = ExpressOracle.CreateResponseTx(snapshot, response);
+            if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
+            ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
+            return SubmitTransactionAsync(tx);
         }
     }
 }

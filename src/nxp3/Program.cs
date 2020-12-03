@@ -24,17 +24,10 @@ namespace nxp3
         public static int Main(string[] args)
         {
             var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-            if (!GetConsoleMode(iStdOut, out uint outConsoleMode))
+            if (GetConsoleMode(iStdOut, out uint outConsoleMode))
             {
-                Console.WriteLine("failed to get output console mode");
-                return 1;
-            }
-
-            outConsoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
-            if (!SetConsoleMode(iStdOut, outConsoleMode))
-            {
-                Console.WriteLine($"failed to set output console mode, error code: {GetLastError()}");
-                return 1;
+                outConsoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+                SetConsoleMode(iStdOut, outConsoleMode);
             }
 
             return CommandLineApplication.Execute<Program>(args);

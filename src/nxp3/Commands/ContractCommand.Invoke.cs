@@ -128,10 +128,11 @@ namespace nxp3.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.Error.WriteLine(ex.Message);
-                    if (ex.InnerException != null && ex.InnerException is Neo.VM.VMUnhandledException)
+                    console.Error.WriteLine($"{ex.Message} [{ex.GetType().Name}]");
+                    while (ex.InnerException != null)
                     {
-                        console.Error.WriteLine($"  Contract Exception: {ex.InnerException.Message}");
+                        console.Error.WriteLine($"  Contract Exception: {ex.InnerException.Message} [{ex.InnerException.GetType().Name}]");
+                        ex = ex.InnerException;
                     }
                     return 1;
                 }

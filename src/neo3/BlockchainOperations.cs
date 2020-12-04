@@ -472,7 +472,8 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode(trace);
-            var parser = GetContractParameterParser(chain);
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            var parser = GetContractParameterParser(chain, contracts);
             var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);
         }
@@ -485,12 +486,13 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode();
-            var parser = GetContractParameterParser(chain);
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            var parser = GetContractParameterParser(chain, contracts);
             var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.InvokeAsync(script).ConfigureAwait(false);
         }
 
-        ContractParameterParser GetContractParameterParser(ExpressChain chain)
+        ContractParameterParser GetContractParameterParser(ExpressChain chain, IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts)
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
@@ -505,7 +507,27 @@ namespace NeoExpress.Neo3
                 return false;
             };
 
-            return new ContractParameterParser(tryGetAccount);
+            var lookup = contracts.ToDictionary(c => c.manifest.Name, c => c.hash);
+            ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
+            {
+                if (lookup.TryGetValue(name, out scriptHash))
+                {
+                    return true;
+                }
+
+                foreach (var kvp in lookup)
+                {
+                    if (string.Equals(name, kvp.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        scriptHash = kvp.Value;
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+            return new ContractParameterParser(tryGetAccount, tryGetContract);
         }
 
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)

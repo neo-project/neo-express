@@ -174,6 +174,7 @@ namespace NeoExpress.Neo3.Node
             var jsonContracts = new JArray();
             foreach (var contract in GetNep5Contracts(snapshot))
             {
+                var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());
             }
             return jsonContracts;
@@ -289,7 +290,10 @@ namespace NeoExpress.Neo3.Node
             var json = new JArray();
             foreach (var (key, value) in contracts)
             {
-                json.Add(value.Manifest.ToJson());
+                var jsonContract = new JObject();
+                jsonContract["hash"] = value.Hash.ToString();
+                jsonContract["manifest"] = value.Manifest.ToJson();
+                json.Add(jsonContract);
             }
             return json;
         }

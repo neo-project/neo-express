@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Neo3;
 using System;
+using System.Linq;
 
 namespace nxp3.Commands
 {
@@ -23,9 +24,9 @@ namespace nxp3.Commands
                     var contracts = await blockchainOperations.ListContracts(chain)
                         .ConfigureAwait(false);
 
-                    for (int i = 0; i < contracts.Count; i++)
+                    foreach (var (hash, manifest) in contracts)
                     {
-                        console.WriteLine(contracts[i].ToJson().ToString(true));
+                        console.WriteLine($"{manifest.Name} ({hash})");
                     }
 
                     return 0;

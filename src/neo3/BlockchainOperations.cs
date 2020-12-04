@@ -418,15 +418,6 @@ namespace NeoExpress.Neo3
                 return uint160;
             }
 
-            if (asset.EndsWith(".nef"))
-            {
-                var parser = new ContractParameterParser();
-                if (parser.TryLoadScriptHash(asset, System.Environment.CurrentDirectory, out var scriptHash))
-                {
-                    return scriptHash;
-                }
-            }
-
             var contracts = await expressNode.ListNep5ContractsAsync().ConfigureAwait(false);
             for (int i = 0; i < contracts.Count; i++)
             {
@@ -453,7 +444,7 @@ namespace NeoExpress.Neo3
             var (nefFile, manifest) = await LoadContract(contract).ConfigureAwait(false);
 
             using var sb = new ScriptBuilder();
-            sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
+            sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.ToArray(), manifest.ToString());
             return await expressNode.ExecuteAsync(chain, account, sb.ToArray()).ConfigureAwait(false);
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
@@ -501,7 +492,7 @@ namespace NeoExpress.Neo3
 
         ContractParameterParser GetContractParameterParser(ExpressChain chain)
         {
-            ContractParameterParser.TryGetAccount tryGetAccount = (string name, out UInt160 scriptHash) =>
+            ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
                 var account = GetAccount(chain, name);
                 if (account != null)
@@ -514,7 +505,7 @@ namespace NeoExpress.Neo3
                 return false;
             };
 
-            return new ContractParameterParser(new System.IO.Abstractions.FileSystem(), tryGetAccount);
+            return new ContractParameterParser(tryGetAccount);
         }
 
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
@@ -650,7 +641,7 @@ namespace NeoExpress.Neo3
             return await expressNode.GetContractAsync(scriptHash);
         }
 
-        public async Task<IReadOnlyList<ContractManifest>> ListContracts(ExpressChain chain)
+        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContracts(ExpressChain chain)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {

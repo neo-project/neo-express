@@ -75,7 +75,7 @@ namespace NeoExpress.Neo3.Node
             // Calculate network fee
 
             var engine = ApplicationEngine.Create(TriggerType.Verification, tx, snapshot.Clone());
-            engine.LoadScript(NativeContract.Oracle.Script, CallFlags.None, 0);
+            engine.LoadScript(NativeContract.Oracle.Script, CallFlags.None);
             engine.LoadScript(new ScriptBuilder().Emit(OpCode.DEPTH, OpCode.PACK).EmitPush("verify").ToArray(), CallFlags.None);
             if (engine.Execute() != VMState.HALT) return null;
             tx.NetworkFee += engine.GasConsumed;

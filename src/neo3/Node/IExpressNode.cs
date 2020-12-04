@@ -26,7 +26,7 @@ namespace NeoExpress.Neo3.Node
         Task<uint> GetTransactionHeight(UInt256 txHash);
         Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash);
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
-        Task<IReadOnlyList<ContractManifest>> ListContractsAsync();
+        Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
         Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync();
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
         Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes);

@@ -472,15 +472,15 @@ namespace NeoExpress.Neo3.Node
             return Task.FromResult(contractState.Manifest);
         }
 
-        public Task<IReadOnlyList<ContractManifest>> ListContractsAsync()
+        public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             var contracts = Blockchain.Singleton.View.Contracts.Find()
                     .OrderBy(t => t.Value.Id)
-                    .Select(t => t.Value.Manifest)
+                    .Select(t => (t.Value.Hash, t.Value.Manifest))
                     .ToList();
-            return Task.FromResult<IReadOnlyList<ContractManifest>>(contracts);
+            return Task.FromResult<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>>(contracts);
         }
 
         public Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync()

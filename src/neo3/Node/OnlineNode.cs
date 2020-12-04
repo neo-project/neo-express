@@ -132,16 +132,20 @@ namespace NeoExpress.Neo3.Node
             return InvokeResult.FromRpcInvokeResult(invokeResult);
         }
 
-        public async Task<IReadOnlyList<ContractManifest>> ListContractsAsync()
+        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
         {
             var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
 
             if (json != null && json is Neo.IO.Json.JArray array)
             {
-                return array.Select(ContractManifest.FromJson).ToList();
+                return array
+                    .Select(j => (
+                        UInt160.Parse(j["hash"].AsString()),
+                        ContractManifest.FromJson(j["manifest"])))
+                    .ToList();
             }
 
-            return Array.Empty<ContractManifest>();
+            return Array.Empty<(UInt160 hash, ContractManifest manifest)>();
         }
 
         public async Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync()

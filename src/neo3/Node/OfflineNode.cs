@@ -60,11 +60,10 @@ namespace NeoExpress.Neo3.Node
         {
             var engine = sender as ApplicationEngine;
             var tx = engine?.ScriptContainer as Transaction;
-            if (tx?.Witnesses?.Any() ?? false)
-            {
-                var name = args.ScriptHash.ToString();
-                Console.WriteLine($"{name} Log \x1b[36m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
-            }
+            var colorCode = tx?.Witnesses?.Any() ?? false ? "96" : "93";
+            var contract = Blockchain.Singleton.View.Contracts.TryGet(args.ScriptHash);
+            var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
+            Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
         public Task<InvokeResult> InvokeAsync(Neo.VM.Script script)

@@ -23,13 +23,7 @@ namespace nxp3
     {
         public static int Main(string[] args)
         {
-            var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-            if (GetConsoleMode(iStdOut, out uint outConsoleMode))
-            {
-                outConsoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
-                SetConsoleMode(iStdOut, outConsoleMode);
-            }
-
+            EnableAnsiEscapeSequences();
             return CommandLineApplication.Execute<Program>(args);
         }
 
@@ -64,9 +58,23 @@ namespace nxp3
             return (chain, filename);
         }
 
-        private const int STD_OUTPUT_HANDLE = -11;
-        private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
-        private const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
+        static void EnableAnsiEscapeSequences()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                const int STD_OUTPUT_HANDLE = -11;
+                var stdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+                if (GetConsoleMode(stdOutHandle, out uint outMode))
+                {
+                    const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+                    const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
+
+                    outMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+                    SetConsoleMode(stdOutHandle, outMode);
+                }
+            }
+        }
 
         [DllImport("kernel32.dll")]
         private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
@@ -76,8 +84,5 @@ namespace nxp3
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern IntPtr GetStdHandle(int nStdHandle);
-
-        [DllImport("kernel32.dll")]
-        public static extern uint GetLastError();
     }
 }

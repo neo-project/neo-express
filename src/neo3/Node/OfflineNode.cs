@@ -377,14 +377,14 @@ namespace NeoExpress.Neo3.Node
             GC.SuppressFinalize(this);
         }
 
-        public Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address)
+        public Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var contracts = ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
-            var balances = ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, address)
+            var contracts = ExpressRpcServer.GetNep17Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
+            var balances = ExpressRpcServer.GetNep17Balances(Blockchain.Singleton.Store, address)
                 .Select(b => (
-                    balance: new RpcNep5Balance
+                    balance: new RpcNep17Balance
                     {
                         Amount = b.balance,
                         AssetHash = b.contract.ScriptHash,
@@ -392,7 +392,7 @@ namespace NeoExpress.Neo3.Node
                     },
                     contract: contracts.TryGetValue(b.contract.ScriptHash, out var value)
                         ? value
-                        : Nep5Contract.Unknown(b.contract.ScriptHash)))
+                        : Nep17Contract.Unknown(b.contract.ScriptHash)))
                 .ToArray();
             return Task.FromResult(balances);
         }
@@ -482,10 +482,10 @@ namespace NeoExpress.Neo3.Node
             return Task.FromResult<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>>(contracts);
         }
 
-        public Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync()
+        public Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
         {
-            return Task.FromResult<IReadOnlyList<Nep5Contract>>(
-                ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToList());
+            return Task.FromResult<IReadOnlyList<Nep17Contract>>(
+                ExpressRpcServer.GetNep17Contracts(Blockchain.Singleton.Store).ToList());
         }
 
         public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()

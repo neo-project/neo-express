@@ -418,7 +418,7 @@ namespace NeoExpress.Neo3
                 return uint160;
             }
 
-            var contracts = await expressNode.ListNep5ContractsAsync().ConfigureAwait(false);
+            var contracts = await expressNode.ListNep17ContractsAsync().ConfigureAwait(false);
             for (int i = 0; i < contracts.Count; i++)
             {
                 if (contracts[i].Symbol.Equals(asset, StringComparison.CurrentCultureIgnoreCase))
@@ -556,7 +556,7 @@ namespace NeoExpress.Neo3
             return null;
         }
 
-        public async Task<(BigDecimal balance, Nep5Contract contract)> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public async Task<(BigDecimal balance, Nep17Contract contract)> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -582,13 +582,13 @@ namespace NeoExpress.Neo3
                 var symbol = Encoding.UTF8.GetString(stack[2].GetSpan());
                 var decimals = (byte)(stack[3].GetInteger());
 
-                return (new BigDecimal(balance, decimals), new Nep5Contract(name, symbol, decimals, assetHash));
+                return (new BigDecimal(balance, decimals), new Nep17Contract(name, symbol, decimals, assetHash));
             }
 
             throw new Exception("invalid script results");
         }
 
-        public async Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalances(ExpressChain chain, ExpressWalletAccount account)
+        public async Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalances(ExpressChain chain, ExpressWalletAccount account)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {

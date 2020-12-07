@@ -52,18 +52,18 @@ namespace NeoExpress.Neo3.Node
             return rpcClient.SendRawTransactionAsync(tx);
         }
 
-        public async Task<(Neo.Network.RPC.Models.RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address)
+        public async Task<(Neo.Network.RPC.Models.RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address)
         {
-            var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep5contracts"))
-                .Select(json => Nep5Contract.FromJson(json))
+            var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
+                .Select(json => Nep17Contract.FromJson(json))
                 .ToDictionary(c => c.ScriptHash);
-            var balances = await rpcClient.GetNep5BalancesAsync(address.ToAddress()).ConfigureAwait(false);
+            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress()).ConfigureAwait(false);
             return balances.Balances
                 .Select(b => (
                     balance: b,
                     contract: contracts.TryGetValue(b.AssetHash, out var value)
                         ? value
-                        : Nep5Contract.Unknown(b.AssetHash)))
+                        : Nep17Contract.Unknown(b.AssetHash)))
                 .ToArray();
         }
 
@@ -148,16 +148,16 @@ namespace NeoExpress.Neo3.Node
             return Array.Empty<(UInt160 hash, ContractManifest manifest)>();
         }
 
-        public async Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync()
+        public async Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
         {
-            var json = await rpcClient.RpcSendAsync("expressgetnep5contracts").ConfigureAwait(false);
+            var json = await rpcClient.RpcSendAsync("expressgetnep17contracts").ConfigureAwait(false);
 
             if (json != null && json is Neo.IO.Json.JArray array)
             {
-                return array.Select(Nep5Contract.FromJson).ToList();
+                return array.Select(Nep17Contract.FromJson).ToList();
             }
 
-            return Array.Empty<Nep5Contract>();
+            return Array.Empty<Nep17Contract>();
         }
 
         public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()

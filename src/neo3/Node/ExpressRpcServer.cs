@@ -80,29 +80,29 @@ namespace NeoExpress.Neo3.Node
 
         // TODO: should the event name comparison be case insensitive?
         // Native contracts use "Transfer" while neon preview 3 compiled contracts use "transfer"
-        static bool IsNep5Transfer(NotificationRecord notification)
+        static bool IsNep17Transfer(NotificationRecord notification)
             => notification.InventoryType == InventoryType.TX
-                && notification.State.Count == 3
+                && notification.State.Count == 4
                 && (notification.EventName == "Transfer" || notification.EventName == "transfer");
 
-        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep5Transfers(IReadOnlyStore store)
+        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IReadOnlyStore store)
         {
             return ExpressAppLogsPlugin
                 .GetNotifications(store)
-                .Where(t => IsNep5Transfer(t.notification));
+                .Where(t => IsNep17Transfer(t.notification));
         }
 
-        public static IEnumerable<Nep5Contract> GetNep5Contracts(IReadOnlyStore store)
+        public static IEnumerable<Nep17Contract> GetNep17Contracts(IReadOnlyStore store)
         {
             var scriptHashes = new HashSet<UInt160>();
-            foreach (var (_, _, notification) in GetNep5Transfers(store))
+            foreach (var (_, _, notification) in GetNep17Transfers(store))
             {
                 scriptHashes.Add(notification.ScriptHash);
             }
 
             foreach (var scriptHash in scriptHashes)
             {
-                if (Nep5Contract.TryLoad(store, scriptHash, out var contract))
+                if (Nep17Contract.TryLoad(store, scriptHash, out var contract))
                 {
                     yield return contract;
                 }
@@ -126,11 +126,11 @@ namespace NeoExpress.Neo3.Node
                     : throw new ArgumentException("invalid UInt160", nameof(item));
         }
 
-        public static IEnumerable<(Nep5Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep5Balances(IReadOnlyStore store, UInt160 address)
+        public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(IReadOnlyStore store, UInt160 address)
         {
             var accounts = new Dictionary<UInt160, uint>();
 
-            foreach (var (blockIndex, _, notification) in GetNep5Transfers(store))
+            foreach (var (blockIndex, _, notification) in GetNep17Transfers(store))
             {
                 var from = ToUInt160(notification.State[0]);
                 var to = ToUInt160(notification.State[1]);
@@ -144,8 +144,8 @@ namespace NeoExpress.Neo3.Node
             {
                 if (TryGetBalance(kvp.Key, out var balance))
                 {
-                    var contract = Nep5Contract.TryLoad(store, kvp.Key, out var _contract)
-                        ? _contract : Nep5Contract.Unknown(kvp.Key);
+                    var contract = Nep17Contract.TryLoad(store, kvp.Key, out var _contract)
+                        ? _contract : Nep17Contract.Unknown(kvp.Key);
                     yield return (contract, balance, kvp.Value);
                 }
             }
@@ -168,11 +168,11 @@ namespace NeoExpress.Neo3.Node
         }
 
         [RpcMethod]
-        public JObject ExpressGetNep5Contracts(JArray _)
+        public JObject ExpressGetNep17Contracts(JArray _)
         {
             using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
             var jsonContracts = new JArray();
-            foreach (var contract in GetNep5Contracts(snapshot))
+            foreach (var contract in GetNep17Contracts(snapshot))
             {
                 var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());
@@ -181,12 +181,12 @@ namespace NeoExpress.Neo3.Node
         }
 
         [RpcMethod]
-        public JObject GetNep5Balances(JArray @params)
+        public JObject GetNep17Balances(JArray @params)
         {
             var address = GetScriptHashFromParam(@params[0].AsString());
             using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
             var balances = new JArray();
-            foreach (var (contract, balance, lastUpdatedBlock) in GetNep5Balances(snapshot, address))
+            foreach (var (contract, balance, lastUpdatedBlock) in GetNep17Balances(snapshot, address))
             {
                 balances.Add(new JObject()
                 {
@@ -203,7 +203,7 @@ namespace NeoExpress.Neo3.Node
         }
 
         [RpcMethod]
-        public JObject GetNep5Transfers(JArray @params)
+        public JObject GetNep17Transfers(JArray @params)
         {
             var address = GetScriptHashFromParam(@params[0].AsString());
 
@@ -219,7 +219,7 @@ namespace NeoExpress.Neo3.Node
 
             {
                 using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
-                foreach (var (blockIndex, txIndex, notification) in GetNep5Transfers(snapshot))
+                foreach (var (blockIndex, txIndex, notification) in GetNep17Transfers(snapshot))
                 {
                     var header = Blockchain.Singleton.GetHeader(blockIndex);
                     if (startTime <= header.Timestamp && header.Timestamp <= endTime)

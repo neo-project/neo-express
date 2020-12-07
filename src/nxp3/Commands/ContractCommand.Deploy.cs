@@ -22,6 +22,9 @@ namespace nxp3.Commands
             [Option]
             string Input { get; } = string.Empty;
 
+            [Option()]
+            bool Json { get; } = false;
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -36,7 +39,14 @@ namespace nxp3.Commands
                     }
 
                     var txHash = await blockchainOperations.DeployContract(chain, Contract, account);
-                    console.WriteLine($"Deployment Transaction {txHash} submitted");
+                    if (Json)
+                    {
+                        console.WriteLine($"{txHash}");
+                    }
+                    else
+                    {
+                        console.WriteLine($"Deployment Transaction {txHash} submitted");
+                    }
 
                     return 0;
                 }

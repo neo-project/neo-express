@@ -31,6 +31,9 @@ namespace nxp3.Commands
             [Option("--trace")]
             bool Trace { get; } = false;
 
+            [Option()]
+            bool Json { get; } = false;
+
             static void WriteStackItem(IConsole console, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
             {
                 switch (item)
@@ -122,7 +125,14 @@ namespace nxp3.Commands
                             throw new Exception($"{Account} account not found.");
                         }
                         var txHash = await blockchainOperations.InvokeContract(chain, InvocationFile, account, Trace, AdditionalGas);
-                        console.WriteLine($"Invocation Transaction {txHash} submitted");
+                        if (Json)
+                        {
+                            console.WriteLine($"{txHash}");
+                        }
+                        else
+                        {
+                            console.WriteLine($"Invocation Transaction {txHash} submitted");
+                        }
                     }
                     return 0;
                 }

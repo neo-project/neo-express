@@ -10,6 +10,7 @@ using Neo.VM;
 
 namespace NeoExpress.Neo3.Node
 {
+    // Note: namespace alias needed to avoid conflict with Plugin.System property
     using SysIO = System.IO;
 
     class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider

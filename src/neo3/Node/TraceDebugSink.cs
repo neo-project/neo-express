@@ -22,6 +22,7 @@ namespace NeoExpress.Neo3.Node
     internal class TraceDebugSink : ITraceDebugSink
     {
         private readonly static MessagePackSerializerOptions options;
+        private readonly IDictionary<UInt160, UInt160> scriptIdMap = new Dictionary<UInt160, UInt160>();
 
         static TraceDebugSink()
         {
@@ -61,17 +62,17 @@ namespace NeoExpress.Neo3.Node
 
         public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> executionContexts)
         {
-            Write((seq, opt) => TraceRecord.Write(seq, opt, vmState, executionContexts));
+            Write((seq, opt) => TraceRecord.Write(seq, opt, scriptIdMap, vmState, executionContexts));
         }
 
-        public void Notify(NotifyEventArgs args)
+        public void Notify(NotifyEventArgs args, string scriptName)
         {
-            Write((seq, opt) => NotifyRecord.Write(seq, opt, args.ScriptHash, args.EventName, args.State));
+            Write((seq, opt) => NotifyRecord.Write(seq, opt, args.ScriptHash, scriptName, args.EventName, args.State));
         }
 
-        public void Log(LogEventArgs args)
+        public void Log(LogEventArgs args, string scriptName)
         {
-            Write((seq, opt) => LogRecord.Write(seq, opt, args.ScriptHash, args.Message));
+            Write((seq, opt) => LogRecord.Write(seq, opt, args.ScriptHash, scriptName, args.Message));
         }
 
         public void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<StackItem> results)

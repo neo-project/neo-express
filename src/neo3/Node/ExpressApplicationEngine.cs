@@ -13,16 +13,16 @@ namespace NeoExpress.Neo3.Node
 {
     internal class ExpressApplicationEngine : ApplicationEngine
     {
-        // In next preview, Execute method will be virtual so it will be easier to
-        // retrieve start/end state. In the meantime, preExecTrace and completeStateChange
-        // are used to control tracing of start/end states.
-
         private readonly ITraceDebugSink traceDebugSink;
+        private readonly StoreView snapshot;
+        private readonly Dictionary<UInt160, string> contractNameMap = new Dictionary<UInt160, string>();
 
         public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
             : base(trigger, container, snapshot, gas)
         {
             this.traceDebugSink = traceDebugSink;
+            this.snapshot = snapshot;
+
             Log += OnLog;
             Notify += OnNotify;
         }
@@ -35,11 +35,25 @@ namespace NeoExpress.Neo3.Node
             base.Dispose();
         }
 
+        private string GetContractName(UInt160 scriptId)
+        {
+            if (contractNameMap.TryGetValue(scriptId, out var name))
+            {
+                return name;
+            }
+
+            var state = snapshot.Contracts.TryGet(scriptId);
+            name = state != null ? state.Manifest.Name : "";
+            contractNameMap[scriptId] = name;
+            return name;
+        }
+
         private void OnNotify(object sender, NotifyEventArgs args)
         {
             if (ReferenceEquals(sender, this))
             {
-                traceDebugSink.Notify(args);
+                var name = GetContractName(args.ScriptHash);
+                traceDebugSink.Notify(args, name);
             }
         }
 
@@ -47,7 +61,8 @@ namespace NeoExpress.Neo3.Node
         {
             if (ReferenceEquals(sender, this))
             {
-                traceDebugSink.Log(args);
+                var name = GetContractName(args.ScriptHash);
+                traceDebugSink.Log(args, name);
             }
         }
 

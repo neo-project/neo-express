@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
@@ -23,6 +24,9 @@ namespace nxp3.Commands
 
             [Option]
             string Input { get; } = string.Empty;
+
+            [Option()]
+            bool Json { get; } = false;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
@@ -48,19 +52,31 @@ namespace nxp3.Commands
                     var txs = await blockchainOperations.SubmitOracleResponse(chain, Url, OracleResponseCode.Success, responseJson, requestId)
                         .ConfigureAwait(false);
 
-                    if (txs.Count == 0)
+                    if (Json)
                     {
-                        console.WriteLine("No oracle response transactions submitted");
+                        using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
+                        writer.WriteStartArray();
+                        for (int i = 0; i < txs.Count; i++)
+                        {
+                            writer.WriteValue(txs[i].ToString());
+                        }
+                        writer.WriteEndArray();
                     }
                     else
                     {
-                        console.WriteLine("Oracle response transactions submitted:");
-                        for (int i = 0; i < txs.Count; i++)
+                        if (txs.Count == 0)
                         {
-                            console.WriteLine($"    {txs[i]}");
+                            console.WriteLine("No oracle response transactions submitted");
+                        }
+                        else
+                        {
+                            console.WriteLine("Oracle response transactions submitted:");
+                            for (int i = 0; i < txs.Count; i++)
+                            {
+                                console.WriteLine($"    {txs[i]}");
+                            }
                         }
                     }
-
                     return 0;
                 }
                 catch (Exception ex)

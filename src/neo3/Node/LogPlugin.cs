@@ -18,8 +18,9 @@ namespace NeoExpress.Neo3.Node
 
         private void OnLog(object sender, LogEventArgs args)
         {
-            var name = args.ScriptHash.ToString();
-            writer.WriteLine($"{name} Log \"{args.Message}\" [{args.ScriptContainer.GetType().Name}]");
+            var contract = Neo.Ledger.Blockchain.Singleton.View.Contracts.TryGet(args.ScriptHash);
+            var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
+            writer.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[96m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
         void ILogPlugin.Log(string source, LogLevel level, object message)

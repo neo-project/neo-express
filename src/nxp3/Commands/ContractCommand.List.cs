@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Neo3;
 using System;
+using System.Linq;
 
 namespace nxp3.Commands
 {
@@ -13,6 +14,9 @@ namespace nxp3.Commands
             [Option]
             string Input { get; } = string.Empty;
 
+            [Option()]
+            bool Json { get; } = false;
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -23,9 +27,27 @@ namespace nxp3.Commands
                     var contracts = await blockchainOperations.ListContracts(chain)
                         .ConfigureAwait(false);
 
-                    for (int i = 0; i < contracts.Count; i++)
+                    if (Json)
                     {
-                        console.WriteLine(contracts[i].ToJson().ToString(true));
+                        using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
+                        writer.WriteStartArray();
+                        foreach (var (hash, manifest) in contracts)
+                        {
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("name");
+                            writer.WriteValue(manifest.Name);
+                            writer.WritePropertyName("hash");
+                            writer.WriteValue(hash.ToString());
+                            writer.WriteEndObject();
+                        }
+                        writer.WriteEndArray();
+                    }
+                    else
+                    {
+                        foreach (var (hash, manifest) in contracts)
+                        {
+                            console.WriteLine($"{manifest.Name} ({hash})");
+                        }
                     }
 
                     return 0;

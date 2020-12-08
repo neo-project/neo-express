@@ -6,14 +6,14 @@ using Neo.VM;
 
 namespace NeoExpress.Neo3.Models
 {
-    public struct Nep5Contract
+    public struct Nep17Contract
     {
         public readonly string Name;
         public readonly string Symbol;
         public readonly byte Decimals;
         public readonly UInt160 ScriptHash;
 
-        public Nep5Contract(string name, string symbol, byte decimals, UInt160 scriptHash)
+        public Nep17Contract(string name, string symbol, byte decimals, UInt160 scriptHash)
         {
             Name = name;
             Symbol = symbol;
@@ -21,9 +21,9 @@ namespace NeoExpress.Neo3.Models
             ScriptHash = scriptHash;
         }
 
-        public static Nep5Contract Unknown(UInt160 scriptHash) => new Nep5Contract("unknown", "unknown", 0, scriptHash);
+        public static Nep17Contract Unknown(UInt160 scriptHash) => new Nep17Contract("unknown", "unknown", 0, scriptHash);
 
-        public static bool TryLoad(IReadOnlyStore store, UInt160 scriptHash, out Nep5Contract contract)
+        public static bool TryLoad(IReadOnlyStore store, UInt160 scriptHash, out Nep17Contract contract)
         {
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(scriptHash, "name");
@@ -36,7 +36,7 @@ namespace NeoExpress.Neo3.Models
                 var decimals = (byte)engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();
                 var symbol = Encoding.UTF8.GetString(engine.ResultStack.Pop().GetSpan());
                 var name = Encoding.UTF8.GetString(engine.ResultStack.Pop().GetSpan());
-                contract = new Nep5Contract(name, symbol, decimals, scriptHash);
+                contract = new Nep17Contract(name, symbol, decimals, scriptHash);
                 return true;
             }
 
@@ -54,13 +54,13 @@ namespace NeoExpress.Neo3.Models
             return json;
         }
 
-        public static Nep5Contract FromJson(JObject json)
+        public static Nep17Contract FromJson(JObject json)
         {
             var name = json["name"].AsString();
             var symbol = json["symbol"].AsString();
             var scriptHash = UInt160.Parse(json["scriptHash"].AsString());
             var decimals = (byte)json["decimals"].AsNumber();
-            return new Nep5Contract(name, symbol, decimals, scriptHash);
+            return new Nep17Contract(name, symbol, decimals, scriptHash);
         }
     }
 }

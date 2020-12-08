@@ -23,6 +23,9 @@ namespace nxp3.Commands
         [Option]
         string Input { get; } = string.Empty;
 
+        [Option()]
+        bool Json { get; } = false;
+
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
@@ -43,7 +46,14 @@ namespace nxp3.Commands
 
                 var txHash = await blockchainOperations.Transfer(chain, Asset, Quantity, senderAccount, receiverAccount)
                     .ConfigureAwait(false);
-                console.WriteLine($"Transfer Transaction {txHash} submitted");
+                if (Json)
+                {
+                    console.WriteLine($"{txHash}");
+                }
+                else
+                {
+                    console.WriteLine($"Transfer Transaction {txHash} submitted");
+                }
 
                 return 0;
             }

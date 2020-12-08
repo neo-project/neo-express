@@ -418,16 +418,7 @@ namespace NeoExpress.Neo3
                 return uint160;
             }
 
-            if (asset.EndsWith(".nef"))
-            {
-                var parser = new ContractParameterParser();
-                if (parser.TryLoadScriptHash(asset, System.Environment.CurrentDirectory, out var scriptHash))
-                {
-                    return scriptHash;
-                }
-            }
-
-            var contracts = await expressNode.ListNep5ContractsAsync().ConfigureAwait(false);
+            var contracts = await expressNode.ListNep17ContractsAsync().ConfigureAwait(false);
             for (int i = 0; i < contracts.Count; i++)
             {
                 if (contracts[i].Symbol.Equals(asset, StringComparison.CurrentCultureIgnoreCase))
@@ -453,7 +444,7 @@ namespace NeoExpress.Neo3
             var (nefFile, manifest) = await LoadContract(contract).ConfigureAwait(false);
 
             using var sb = new ScriptBuilder();
-            sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.Script, manifest.ToString());
+            sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.ToArray(), manifest.ToString());
             return await expressNode.ExecuteAsync(chain, account, sb.ToArray()).ConfigureAwait(false);
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)
@@ -481,7 +472,8 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode(trace);
-            var parser = GetContractParameterParser(chain);
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            var parser = GetContractParameterParser(chain, contracts);
             var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);
         }
@@ -494,14 +486,15 @@ namespace NeoExpress.Neo3
             }
 
             using var expressNode = chain.GetExpressNode();
-            var parser = GetContractParameterParser(chain);
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            var parser = GetContractParameterParser(chain, contracts);
             var script = await parser.LoadInvocationScriptAsync(invocationFilePath).ConfigureAwait(false);
             return await expressNode.InvokeAsync(script).ConfigureAwait(false);
         }
 
-        ContractParameterParser GetContractParameterParser(ExpressChain chain)
+        ContractParameterParser GetContractParameterParser(ExpressChain chain, IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts)
         {
-            ContractParameterParser.TryGetAccount tryGetAccount = (string name, out UInt160 scriptHash) =>
+            ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
                 var account = GetAccount(chain, name);
                 if (account != null)
@@ -514,7 +507,27 @@ namespace NeoExpress.Neo3
                 return false;
             };
 
-            return new ContractParameterParser(new System.IO.Abstractions.FileSystem(), tryGetAccount);
+            var lookup = contracts.ToDictionary(c => c.manifest.Name, c => c.hash);
+            ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
+            {
+                if (lookup.TryGetValue(name, out scriptHash))
+                {
+                    return true;
+                }
+
+                foreach (var kvp in lookup)
+                {
+                    if (string.Equals(name, kvp.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        scriptHash = kvp.Value;
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+            return new ContractParameterParser(tryGetAccount, tryGetContract);
         }
 
         public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
@@ -543,7 +556,7 @@ namespace NeoExpress.Neo3
             return null;
         }
 
-        public async Task<(BigDecimal balance, Nep5Contract contract)> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public async Task<(BigDecimal balance, Nep17Contract contract)> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -569,13 +582,13 @@ namespace NeoExpress.Neo3
                 var symbol = Encoding.UTF8.GetString(stack[2].GetSpan());
                 var decimals = (byte)(stack[3].GetInteger());
 
-                return (new BigDecimal(balance, decimals), new Nep5Contract(name, symbol, decimals, assetHash));
+                return (new BigDecimal(balance, decimals), new Nep17Contract(name, symbol, decimals, assetHash));
             }
 
             throw new Exception("invalid script results");
         }
 
-        public async Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalances(ExpressChain chain, ExpressWalletAccount account)
+        public async Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalances(ExpressChain chain, ExpressWalletAccount account)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -650,7 +663,7 @@ namespace NeoExpress.Neo3
             return await expressNode.GetContractAsync(scriptHash);
         }
 
-        public async Task<IReadOnlyList<ContractManifest>> ListContracts(ExpressChain chain)
+        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContracts(ExpressChain chain)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {

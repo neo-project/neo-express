@@ -13,6 +13,9 @@ namespace nxp3.Commands
             [Option]
             string Input { get; } = string.Empty;
 
+            [Option()]
+            bool Json { get; } = false;
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -23,6 +26,15 @@ namespace nxp3.Commands
                         .DesignateOracleRoles(chain, chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount))
                         .ConfigureAwait(false);
                     console.WriteLine($"Oracle Enable Transaction {txHash} submitted");
+
+                    if (Json)
+                    {
+                        console.WriteLine($"{txHash}");
+                    }
+                    else
+                    {
+                        console.WriteLine($"Transfer Transaction {txHash} submitted");
+                    }
 
                     return 0;
                 }

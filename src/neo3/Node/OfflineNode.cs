@@ -60,11 +60,10 @@ namespace NeoExpress.Neo3.Node
         {
             var engine = sender as ApplicationEngine;
             var tx = engine?.ScriptContainer as Transaction;
-            if (tx?.Witnesses?.Any() ?? false)
-            {
-                var name = args.ScriptHash.ToString();
-                Console.WriteLine($"{name} Log \x1b[36m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
-            }
+            var colorCode = tx?.Witnesses?.Any() ?? false ? "96" : "93";
+            var contract = Blockchain.Singleton.View.Contracts.TryGet(args.ScriptHash);
+            var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
+            Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
         public Task<InvokeResult> InvokeAsync(Neo.VM.Script script)
@@ -378,14 +377,14 @@ namespace NeoExpress.Neo3.Node
             GC.SuppressFinalize(this);
         }
 
-        public Task<(RpcNep5Balance balance, Nep5Contract contract)[]> GetBalancesAsync(UInt160 address)
+        public Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var contracts = ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
-            var balances = ExpressRpcServer.GetNep5Balances(Blockchain.Singleton.Store, address)
+            var contracts = ExpressRpcServer.GetNep17Contracts(Blockchain.Singleton.Store).ToDictionary(c => c.ScriptHash);
+            var balances = ExpressRpcServer.GetNep17Balances(Blockchain.Singleton.Store, address)
                 .Select(b => (
-                    balance: new RpcNep5Balance
+                    balance: new RpcNep17Balance
                     {
                         Amount = b.balance,
                         AssetHash = b.contract.ScriptHash,
@@ -393,7 +392,7 @@ namespace NeoExpress.Neo3.Node
                     },
                     contract: contracts.TryGetValue(b.contract.ScriptHash, out var value)
                         ? value
-                        : Nep5Contract.Unknown(b.contract.ScriptHash)))
+                        : Nep17Contract.Unknown(b.contract.ScriptHash)))
                 .ToArray();
             return Task.FromResult(balances);
         }
@@ -472,21 +471,21 @@ namespace NeoExpress.Neo3.Node
             return Task.FromResult(contractState.Manifest);
         }
 
-        public Task<IReadOnlyList<ContractManifest>> ListContractsAsync()
+        public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             var contracts = Blockchain.Singleton.View.Contracts.Find()
                     .OrderBy(t => t.Value.Id)
-                    .Select(t => t.Value.Manifest)
+                    .Select(t => (t.Value.Hash, t.Value.Manifest))
                     .ToList();
-            return Task.FromResult<IReadOnlyList<ContractManifest>>(contracts);
+            return Task.FromResult<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>>(contracts);
         }
 
-        public Task<IReadOnlyList<Nep5Contract>> ListNep5ContractsAsync()
+        public Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
         {
-            return Task.FromResult<IReadOnlyList<Nep5Contract>>(
-                ExpressRpcServer.GetNep5Contracts(Blockchain.Singleton.Store).ToList());
+            return Task.FromResult<IReadOnlyList<Nep17Contract>>(
+                ExpressRpcServer.GetNep17Contracts(Blockchain.Singleton.Store).ToList());
         }
 
         public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()

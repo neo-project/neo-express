@@ -66,15 +66,10 @@ namespace NeoExpress.Neo3.Node
         static Lazy<byte[]> listContractsPrefix = new Lazy<byte[]>(() => new KeyBuilder(NativeContract.Management.Id, ManagementContract_PREFIX).ToArray());
 
         public static IEnumerable<(int Id, UInt160 Hash, ContractManifest Manifest)> ListContracts(StoreView snapshot)
-        {
-            var native = NativeContract.Contracts.Select(c => (c.Id, c.Hash, c.Manifest));
-            var deployed = snapshot.Storages.Find(listContractsPrefix.Value)
+            => snapshot.Storages.Find(listContractsPrefix.Value)
                 .Select(kvp => kvp.Value.GetInteroperable<Neo.SmartContract.ContractState>())
                 .Select(s => (s.Id, s.Hash, s.Manifest));
 
-            return native.Concat(deployed);
-        }
-             
 
         public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {

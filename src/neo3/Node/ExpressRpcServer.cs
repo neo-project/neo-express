@@ -264,7 +264,7 @@ namespace NeoExpress.Neo3.Node
         public JObject? ExpressGetContractStorage(JArray @params)
         {
             var scriptHash = UInt160.Parse(@params[0].AsString());
-            Neo.Ledger.ContractState? contract = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
+            var contract = NativeContract.Management.GetContract(Blockchain.Singleton.View, scriptHash);
             if (contract == null) return null;
 
             var storages = new JArray();
@@ -285,14 +285,15 @@ namespace NeoExpress.Neo3.Node
         [RpcMethod]
         public JObject? ExpressListContracts(JArray @params)
         {
-            var contracts = Blockchain.Singleton.View.Contracts.Find().OrderBy(t => t.Value.Id);
+            var contracts = NodeUtility.ListContracts(Blockchain.Singleton.View)
+                .OrderBy(c => c.Id);
 
             var json = new JArray();
-            foreach (var (key, value) in contracts)
+            foreach (var contract in contracts)
             {
                 var jsonContract = new JObject();
-                jsonContract["hash"] = value.Hash.ToString();
-                jsonContract["manifest"] = value.Manifest.ToJson();
+                jsonContract["hash"] = contract.Hash.ToString();
+                jsonContract["manifest"] = contract.Manifest.ToJson();
                 json.Add(jsonContract);
             }
             return json;

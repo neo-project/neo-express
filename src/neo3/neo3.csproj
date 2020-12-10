@@ -8,17 +8,17 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-mono-master-00349" />
-    <PackageReference Include="Neo.Plugins.RpcServer" Version="3.0.0-mono-master-00349" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.56-preview" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-mono-master-00364" />
+    <PackageReference Include="Neo.Plugins.RpcServer" Version="3.0.0-mono-master-00364" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.59-preview" />
     <PackageReference Include="Nerdbank.Streams" Version="2.6.81" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Nito.Disposables" Version="2.2.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\abstractions\abstractions.csproj" />
-    <!-- <ProjectReference Include="..\..\..\lib-bctk\src\bctklib-3\bctklib-3.csproj" /> -->
-    <!-- <ProjectReference Include="..\..\..\..\official\modules\src\RpcClient\RpcClient.csproj" /> -->
-    <!-- <ProjectReference Include="..\..\..\..\official\modules\src\RpcServer\RpcServer.csproj" /> -->
+    <!-- <ProjectReference Include="..\..\..\lib-bctk\src\bctklib-3\bctklib-3.csproj" />  -->
+    <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\modules\src\RpcClient\RpcClient.csproj" /> -->
+    <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\modules\src\RpcServer\RpcServer.csproj" /> -->
   </ItemGroup>
 </Project>

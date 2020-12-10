@@ -1,6 +1,7 @@
 ﻿using Neo;
 using Neo.Plugins;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using System;
 using System.IO;
 
@@ -18,7 +19,7 @@ namespace NeoExpress.Neo3.Node
 
         private void OnLog(object sender, LogEventArgs args)
         {
-            var contract = Neo.Ledger.Blockchain.Singleton.View.Contracts.TryGet(args.ScriptHash);
+            var contract = NativeContract.Management.GetContract(Neo.Ledger.Blockchain.Singleton.View, args.ScriptHash);
             var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
             writer.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[96m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }

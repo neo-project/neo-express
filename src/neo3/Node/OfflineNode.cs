@@ -61,7 +61,7 @@ namespace NeoExpress.Neo3.Node
             var engine = sender as ApplicationEngine;
             var tx = engine?.ScriptContainer as Transaction;
             var colorCode = tx?.Witnesses?.Any() ?? false ? "96" : "93";
-            var contract = Blockchain.Singleton.View.Contracts.TryGet(args.ScriptHash);
+            var contract = NativeContract.Management.GetContract(Blockchain.Singleton.View, args.ScriptHash);
             var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
             Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
@@ -441,7 +441,7 @@ namespace NeoExpress.Neo3.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var contract = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
+            var contract = NativeContract.Management.GetContract(Blockchain.Singleton.View, scriptHash);
             if (contract != null)
             {
                 IReadOnlyList<ExpressStorage> storages = Blockchain.Singleton.View.Storages.Find()
@@ -463,7 +463,7 @@ namespace NeoExpress.Neo3.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var contractState = Blockchain.Singleton.View.Contracts.TryGet(scriptHash);
+            var contractState = NativeContract.Management.GetContract(Blockchain.Singleton.View, scriptHash);
             if (contractState == null)
             {
                 throw new Exception("Unknown contract");
@@ -475,10 +475,11 @@ namespace NeoExpress.Neo3.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var contracts = Blockchain.Singleton.View.Contracts.Find()
-                    .OrderBy(t => t.Value.Id)
-                    .Select(t => (t.Value.Hash, t.Value.Manifest))
-                    .ToList();
+            var contracts = NodeUtility.ListContracts(Blockchain.Singleton.View)
+                .OrderBy(c => c.Id)
+                .Select(c => (c.Hash, c.Manifest))
+                .ToList();
+
             return Task.FromResult<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>>(contracts);
         }
 

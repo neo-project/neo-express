@@ -6,6 +6,7 @@ using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Plugins;
+using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
@@ -58,6 +59,12 @@ namespace NeoExpress.Neo3.Node
 
             return ProtocolSettings.Initialize(config);
         }
+
+        // ManagementContract.Prefix_Contract = 8;
+        static Lazy<byte[]> listContractsPrefix = new Lazy<byte[]>(() => new KeyBuilder(NativeContract.Management.Id, 8).ToArray());
+
+        public static IEnumerable<Neo.SmartContract.ContractState> ListContracts(StoreView snapshot)
+            => snapshot.Storages.Find(listContractsPrefix.Value).Select(kvp => kvp.Value.GetInteroperable<Neo.SmartContract.ContractState>());
 
         public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {

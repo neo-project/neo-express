@@ -7,6 +7,7 @@ using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using Neo.VM;
 
 namespace NeoExpress.Neo3.Node
@@ -42,7 +43,7 @@ namespace NeoExpress.Neo3.Node
                 return name;
             }
 
-            var state = snapshot.Contracts.TryGet(scriptId);
+            var state = NativeContract.Management.GetContract(snapshot, scriptId);
             name = state != null ? state.Manifest.Name : "";
             contractNameMap[scriptId] = name;
             return name;
@@ -98,7 +99,7 @@ namespace NeoExpress.Neo3.Node
         {
             if (scriptHash != null)
             {
-                var contractState = Snapshot.Contracts.TryGet(scriptHash);
+                var contractState = NativeContract.Management.GetContract(Snapshot, scriptHash);
                 if (contractState != null)
                 {
                     var storages = Snapshot.Storages.Find(StorageKey.CreateSearchPrefix(contractState.Id, default));

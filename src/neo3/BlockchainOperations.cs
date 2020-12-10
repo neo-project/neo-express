@@ -443,8 +443,28 @@ namespace NeoExpress.Neo3
             var accountHash = account.GetScriptHashAsUInt160();
             var (nefFile, manifest) = await LoadContract(contract).ConfigureAwait(false);
 
+            // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
+            Script script = nefFile.Script;
+            for (var i = 0; i < script.Length;)
+            {
+                var instruction = script.GetInstruction(i);
+                if (instruction == null)
+                {
+                    throw new FormatException($"null opcode found at {i}");
+                }
+                else
+                {
+                    if (!Enum.IsDefined(typeof(OpCode), instruction.OpCode))
+                    {
+                        throw new FormatException($"Invalid opcode found at {i}-{((byte)instruction.OpCode).ToString("x2")}");
+                    }
+
+                    i += instruction.Size;
+                }
+            }
+
             using var sb = new ScriptBuilder();
-            sb.EmitSysCall(ApplicationEngine.System_Contract_Create, nefFile.ToArray(), manifest.ToString());
+            sb.EmitAppCall(NativeContract.Management.Hash, "deploy", nefFile.ToArray(), manifest.ToJson().ToString());
             return await expressNode.ExecuteAsync(chain, account, sb.ToArray()).ConfigureAwait(false);
 
             static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContract(string contractPath)

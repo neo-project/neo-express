@@ -1,5 +1,10 @@
 variables:
   BuildConfiguration: Release
+  isMasterBranch: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
+  isInsidersBranch: $[eq(variables['Build.SourceBranch'], 'refs/heads/insiders')]
+  isReleaseBranch: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')]
+  azureArtifactsBranch: $[or(eq(variables.isMasterBranch, true), eq(variables.isInsidersBranch, true), eq(variables.isReleaseBranch, true))]
+  nugetOrgBranch: $[eq(variables.isReleaseBranch, true)]
 
 pool:
   vmImage: 'windows-2019'
@@ -49,6 +54,7 @@ steps:
 
 - task: NuGetCommand@2
   displayName: 'NuGet push to NeoDevPackages feed'
+  condition: and(succeeded(), eq(variables.azureArtifactsBranch, true))
   inputs:
     command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'

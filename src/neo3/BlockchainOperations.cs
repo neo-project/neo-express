@@ -18,8 +18,6 @@ using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
-using Neo.SmartContract.Native.Designate;
-using Neo.SmartContract.Native.Oracle;
 using Neo.VM;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;
@@ -834,7 +832,7 @@ namespace NeoExpress.Neo3
                     oraclesList.Add(new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey });
                 }
 
-                sb.EmitAppCall(NativeContract.Designate.Hash, "designateAsRole", role, oracles);
+                sb.EmitAppCall(NativeContract.Designation.Hash, "designateAsRole", role, oracles);
                 script = sb.ToArray();
             }
 
@@ -865,7 +863,7 @@ namespace NeoExpress.Neo3
                 using var sb = new ScriptBuilder();
                 var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
                 var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
-                sb.EmitAppCall(NativeContract.Designate.Hash, "getDesignatedByRole", role, index);
+                sb.EmitAppCall(NativeContract.Designation.Hash, "getDesignatedByRole", role, index);
                 script = sb.ToArray();
             }
 

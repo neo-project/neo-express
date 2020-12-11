@@ -13,8 +13,6 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
-using Neo.SmartContract.Native.Designate;
-using Neo.SmartContract.Native.Oracle;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;

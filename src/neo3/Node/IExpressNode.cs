@@ -3,7 +3,7 @@ using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
-using Neo.SmartContract.Native.Oracle;
+using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Neo3.Models;

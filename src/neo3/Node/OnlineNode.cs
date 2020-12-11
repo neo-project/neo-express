@@ -6,7 +6,6 @@ using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
-using Neo.SmartContract.Native.Oracle;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;

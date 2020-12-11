@@ -8,7 +8,6 @@ using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
-using Neo.SmartContract.Native.Designate;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Abstractions.Models;
@@ -21,7 +20,7 @@ namespace NeoExpress.Neo3.Node
         // TODO: replace with official Oracle.CreateResponseTx
         public static Transaction? CreateResponseTx(StoreView snapshot, OracleResponse response)
         {
-            var oracleNodes = NativeContract.Designate.GetDesignatedByRole(snapshot, Role.Oracle, snapshot.Height + 1);
+            var oracleNodes = NativeContract.Designation.GetDesignatedByRole(snapshot, Role.Oracle, snapshot.Height + 1);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var requestTx = snapshot.Transactions.TryGet(request.OriginalTxid);
             var m = oracleNodes.Length - (oracleNodes.Length - 1) / 3;

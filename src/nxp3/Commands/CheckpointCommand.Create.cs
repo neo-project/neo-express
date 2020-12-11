@@ -44,6 +44,12 @@ namespace nxp3.Commands
                         File.Delete(filename);
                     }
 
+                    var parentPath = Path.GetDirectoryName(filename);
+                    if (!Directory.Exists(parentPath))
+                    {
+                        Directory.CreateDirectory(parentPath);
+                    }
+
                     await blockchainOperations.CreateCheckpoint(chain, filename, Console.Out);
 
                     return 0;

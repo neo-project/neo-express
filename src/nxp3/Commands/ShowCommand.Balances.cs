@@ -34,6 +34,11 @@ namespace nxp3.Commands
 
                     var balances = await blockchainOperations.GetBalances(chain, account);
 
+                    if (balances.Length == 0)
+                    {
+                        console.WriteLine($"No balances for {Account}");
+                    }
+
                     for (int i = 0; i < balances.Length; i++)
                     {
                         var balance = new BigDecimal(balances[i].balance.Amount, balances[i].contract.Decimals);

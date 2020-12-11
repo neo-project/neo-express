@@ -98,6 +98,9 @@ namespace NeoExpress.Neo3.Node
                 scriptHashes.Add(notification.ScriptHash);
             }
 
+            scriptHashes.Add(NativeContract.NEO.Hash);
+            scriptHashes.Add(NativeContract.GAS.Hash);
+
             var snapshot = new ReadOnlyView(store);
             foreach (var scriptHash in scriptHashes)
             {
@@ -141,10 +144,21 @@ namespace NeoExpress.Neo3.Node
                 }
             }
 
+            if (!assets.ContainsKey(NativeContract.NEO.Hash))
+            {
+                assets[NativeContract.NEO.Hash] = 0;
+            }
+
+            if (!assets.ContainsKey(NativeContract.GAS.Hash))
+            {
+                assets[NativeContract.GAS.Hash] = 0;
+            }
+
             var snapshot = new ReadOnlyView(store);
             foreach (var kvp in assets)
             {
-                if (TryGetBalance(kvp.Key, out var balance))
+                if (TryGetBalance(kvp.Key, out var balance)
+                    && balance > BigInteger.Zero)
                 {
                     var contract = Nep17Contract.TryLoad(snapshot, kvp.Key, out var _contract)
                         ? _contract : Nep17Contract.Unknown(kvp.Key);

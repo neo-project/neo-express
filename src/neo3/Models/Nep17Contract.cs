@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using Neo;
 using Neo.IO.Json;
@@ -22,10 +23,38 @@ namespace NeoExpress.Neo3.Models
             ScriptHash = scriptHash;
         }
 
+        public Nep17Contract(Nep17Token<AccountState> token)
+        {
+            Name = token.Name;
+            Symbol = token.Symbol;
+            Decimals = token.Decimals;
+            ScriptHash = token.Hash;
+        }
+
         public static Nep17Contract Unknown(UInt160 scriptHash) => new Nep17Contract("unknown", "unknown", 0, scriptHash);
 
         public static bool TryLoad(StoreView snapshot, UInt160 scriptHash, out Nep17Contract contract)
         {
+            if (scriptHash == NativeContract.NEO.Hash)
+            {
+                contract = new Nep17Contract(
+                    NativeContract.NEO.Name,
+                    NativeContract.NEO.Symbol,
+                    NativeContract.NEO.Decimals,
+                    NativeContract.NEO.Hash);
+                return true;
+            }
+
+            if (scriptHash == NativeContract.GAS.Hash)
+            {
+                contract = new Nep17Contract(
+                    NativeContract.GAS.Name,
+                    NativeContract.GAS.Symbol,
+                    NativeContract.GAS.Decimals,
+                    NativeContract.GAS.Hash);
+                return true;
+            }
+
             var contractState = NativeContract.Management.GetContract(snapshot, scriptHash);
 
             if (contractState != null)

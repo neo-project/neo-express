@@ -587,18 +587,17 @@ namespace NeoExpress.Neo3
 
             using var sb = new ScriptBuilder();
             sb.EmitAppCall(assetHash, "balanceOf", accountHash);
-            sb.EmitAppCall(assetHash, "name");
             sb.EmitAppCall(assetHash, "symbol");
             sb.EmitAppCall(assetHash, "decimals");
 
             var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
             var stack = result.Stack;
-            if (stack.Length >= 4)
+            if (stack.Length >= 3)
             {
                 var balance = stack[0].GetInteger();
-                var name = Encoding.UTF8.GetString(stack[1].GetSpan());
-                var symbol = Encoding.UTF8.GetString(stack[2].GetSpan());
-                var decimals = (byte)(stack[3].GetInteger());
+                var name = string.Empty; //Encoding.UTF8.GetString(stack[1].GetSpan());
+                var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
+                var decimals = (byte)(stack[2].GetInteger());
 
                 return (new BigDecimal(balance, decimals), new Nep17Contract(name, symbol, decimals, assetHash));
             }

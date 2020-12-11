@@ -2,6 +2,7 @@ using System.Text;
 using Neo;
 using Neo.IO.Json;
 using Neo.Persistence;
+using Neo.SmartContract.Native;
 using Neo.VM;
 
 namespace NeoExpress.Neo3.Models
@@ -23,21 +24,24 @@ namespace NeoExpress.Neo3.Models
 
         public static Nep17Contract Unknown(UInt160 scriptHash) => new Nep17Contract("unknown", "unknown", 0, scriptHash);
 
-        public static bool TryLoad(IReadOnlyStore store, UInt160 scriptHash, out Nep17Contract contract)
+        public static bool TryLoad(StoreView snapshot, UInt160 scriptHash, out Nep17Contract contract)
         {
-            using var sb = new ScriptBuilder();
-            sb.EmitAppCall(scriptHash, "name");
-            sb.EmitAppCall(scriptHash, "symbol");
-            sb.EmitAppCall(scriptHash, "decimals");
+            var contractState = NativeContract.Management.GetContract(snapshot, scriptHash);
 
-            using var engine = Neo.SmartContract.ApplicationEngine.Run(sb.ToArray(), new ReadOnlyView(store));
-            if (engine.State != VMState.FAULT && engine.ResultStack.Count >= 3)
+            if (contractState != null)
             {
-                var decimals = (byte)engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();
-                var symbol = Encoding.UTF8.GetString(engine.ResultStack.Pop().GetSpan());
-                var name = Encoding.UTF8.GetString(engine.ResultStack.Pop().GetSpan());
-                contract = new Nep17Contract(name, symbol, decimals, scriptHash);
-                return true;
+                using var sb = new ScriptBuilder();
+                sb.EmitAppCall(scriptHash, "symbol");
+                sb.EmitAppCall(scriptHash, "decimals");
+
+                using var engine = Neo.SmartContract.ApplicationEngine.Run(sb.ToArray(), snapshot);
+                if (engine.State != VMState.FAULT && engine.ResultStack.Count >= 2)
+                {
+                    var decimals = (byte)engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();
+                    var symbol = Encoding.UTF8.GetString(engine.ResultStack.Pop().GetSpan());
+                    contract = new Nep17Contract(contractState.Manifest.Name, symbol, decimals, scriptHash);
+                    return true;
+                }
             }
 
             contract = default;

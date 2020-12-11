@@ -82,15 +82,13 @@ namespace NeoExpress.Neo3.Node
         // Native contracts use "Transfer" while neon preview 3 compiled contracts use "transfer"
         static bool IsNep17Transfer(NotificationRecord notification)
             => notification.InventoryType == InventoryType.TX
-                && notification.State.Count == 4
+                && notification.State.Count == 3
                 && (notification.EventName == "Transfer" || notification.EventName == "transfer");
 
-        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IReadOnlyStore store)
-        {
-            return ExpressAppLogsPlugin
+        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IReadOnlyStore store) 
+            => ExpressAppLogsPlugin
                 .GetNotifications(store)
                 .Where(t => IsNep17Transfer(t.notification));
-        }
 
         public static IEnumerable<Nep17Contract> GetNep17Contracts(IReadOnlyStore store)
         {
@@ -100,9 +98,10 @@ namespace NeoExpress.Neo3.Node
                 scriptHashes.Add(notification.ScriptHash);
             }
 
+            var snapshot = new ReadOnlyView(store);
             foreach (var scriptHash in scriptHashes)
             {
-                if (Nep17Contract.TryLoad(store, scriptHash, out var contract))
+                if (Nep17Contract.TryLoad(snapshot, scriptHash, out var contract))
                 {
                     yield return contract;
                 }
@@ -128,7 +127,9 @@ namespace NeoExpress.Neo3.Node
 
         public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(IReadOnlyStore store, UInt160 address)
         {
-            var accounts = new Dictionary<UInt160, uint>();
+            // assets key is the script hash of the asset contract
+            // assets value is the last updated block of the assoicated asset for address
+            var assets = new Dictionary<UInt160, uint>();
 
             foreach (var (blockIndex, _, notification) in GetNep17Transfers(store))
             {
@@ -136,15 +137,16 @@ namespace NeoExpress.Neo3.Node
                 var to = ToUInt160(notification.State[1]);
                 if (from == address || to == address)
                 {
-                    accounts[notification.ScriptHash] = blockIndex;
+                    assets[notification.ScriptHash] = blockIndex;
                 }
             }
 
-            foreach (var kvp in accounts)
+            var snapshot = new ReadOnlyView(store);
+            foreach (var kvp in assets)
             {
                 if (TryGetBalance(kvp.Key, out var balance))
                 {
-                    var contract = Nep17Contract.TryLoad(store, kvp.Key, out var _contract)
+                    var contract = Nep17Contract.TryLoad(snapshot, kvp.Key, out var _contract)
                         ? _contract : Nep17Contract.Unknown(kvp.Key);
                     yield return (contract, balance, kvp.Value);
                 }
@@ -155,7 +157,7 @@ namespace NeoExpress.Neo3.Node
                 using var sb = new ScriptBuilder();
                 sb.EmitAppCall(asset, "balanceOf", address.ToArray());
 
-                using var engine = ApplicationEngine.Run(sb.ToArray(), new ReadOnlyView(store));
+                using var engine = ApplicationEngine.Run(sb.ToArray(), snapshot);
                 if (!engine.State.HasFlag(VMState.FAULT) && engine.ResultStack.Count >= 1)
                 {
                     balance = engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();

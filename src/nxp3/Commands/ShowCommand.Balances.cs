@@ -42,7 +42,8 @@ namespace nxp3.Commands
                     for (int i = 0; i < balances.Length; i++)
                     {
                         var balance = new BigDecimal(balances[i].balance.Amount, balances[i].contract.Decimals);
-                        console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})\n  balance: {balance}");
+                        console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
+                        console.WriteLine($"  balance: {balance}");
                     }
                     return 0;
                 }

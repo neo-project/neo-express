@@ -1,23 +1,21 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using Neo;
+using Neo.BlockchainToolkit.Persistence;
+using Neo.IO;
 using Neo.IO.Json;
 using Neo.Ledger;
-using Neo.BlockchainToolkit.Persistence;
-using Neo.Plugins;
-using NeoExpress.Abstractions.Models;
-using System.Linq;
-using Neo.IO;
-using System.Text;
 using Neo.Network.P2P.Payloads;
-using System.Collections.Generic;
-using NeoExpress.Neo3.Models;
-using System.Numerics;
-using Neo.VM;
-using Neo.SmartContract;
-using Neo.Wallets;
 using Neo.Persistence;
-using Neo.IO.Caching;
+using Neo.Plugins;
+using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using Neo.VM;
+using Neo.Wallets;
+using NeoExpress.Abstractions.Models;
+using NeoExpress.Neo3.Models;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -274,6 +272,43 @@ namespace NeoExpress.Neo3.Node
                     ["transfer_notify_index"] = txIndex,
                     ["tx_hash"] = notification.InventoryHash.ToString(),
                 };
+        }
+
+        [RpcMethod]
+        public JObject? ExpressGetContractState(JArray @params)
+        {
+            using SnapshotView snapshot = Blockchain.Singleton.GetSnapshot();
+
+            if (@params[0] is JNumber number)
+            {
+                var id = (int)number.AsNumber();
+                foreach (var native in NativeContract.Contracts)
+                {
+                    if (id == native.Id)
+                    {
+                        var contract = NativeContract.Management.GetContract(snapshot, native.Hash);
+                        return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
+                    }
+                }
+            }
+
+            var param = @params[0].AsString();
+
+            if (UInt160.TryParse(param, out var scriptHash))
+            {
+                var contract = NativeContract.Management.GetContract(snapshot, scriptHash);
+                return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
+            }
+
+            var contracts = new JArray();
+            foreach (var contract in NativeContract.Management.ListContracts(snapshot))
+            {
+                if (param.Equals(contract.Manifest.Name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    contracts.Add(contract.ToJson());
+                }
+            } 
+            return contracts;
         }
 
         [RpcMethod]

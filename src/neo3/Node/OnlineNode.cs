@@ -125,9 +125,7 @@ namespace NeoExpress.Neo3.Node
 
         public async Task<InvokeResult> InvokeAsync(Script script)
         {
-            // TODO: remove dummy signer once https://github.com/neo-project/neo-modules/issues/398 is fixed
-            var signer = new Signer() { Account = UInt160.Zero };
-            var invokeResult = await rpcClient.InvokeScriptAsync(script, signer).ConfigureAwait(false);
+            var invokeResult = await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
             return InvokeResult.FromRpcInvokeResult(invokeResult);
         }
 

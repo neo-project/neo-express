@@ -336,7 +336,7 @@ namespace NeoExpress.Neo3.Node
         [RpcMethod]
         public JObject? ExpressListContracts(JArray @params)
         {
-            var contracts = NodeUtility.ListContracts(Blockchain.Singleton.View)
+            var contracts = NativeContract.Management.ListContracts(Blockchain.Singleton.View)
                 .OrderBy(c => c.Id);
 
             var json = new JArray();

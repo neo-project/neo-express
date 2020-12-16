@@ -61,16 +61,6 @@ namespace NeoExpress.Neo3.Node
             return ProtocolSettings.Initialize(config);
         }
 
-        // TODO: replace with ManagementContract.ListContracts when https://github.com/neo-project/neo/pull/2134 is merged
-        const byte ManagementContract_PREFIX = 8;
-        static Lazy<byte[]> listContractsPrefix = new Lazy<byte[]>(() => new KeyBuilder(NativeContract.Management.Id, ManagementContract_PREFIX).ToArray());
-
-        public static IEnumerable<(int Id, UInt160 Hash, ContractManifest Manifest)> ListContracts(StoreView snapshot)
-            => snapshot.Storages.Find(listContractsPrefix.Value)
-                .Select(kvp => kvp.Value.GetInteroperable<Neo.SmartContract.ContractState>())
-                .Select(s => (s.Id, s.Hash, s.Manifest));
-
-
         public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
             writer.WriteLine(store.GetType().Name);

@@ -473,7 +473,7 @@ namespace NeoExpress.Neo3.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var contracts = NodeUtility.ListContracts(Blockchain.Singleton.View)
+            var contracts = NativeContract.Management.ListContracts(Blockchain.Singleton.View)
                 .OrderBy(c => c.Id)
                 .Select(c => (c.Hash, c.Manifest))
                 .ToList();

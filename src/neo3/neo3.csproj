@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <LangVersion>8</LangVersion>
     <NoWarn>VSTHRD200;VSTHRD103</NoWarn>
@@ -7,18 +8,26 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <NeoVersion>3.0.0-mono-master-00397</NeoVersion>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.0.0-mono-master-00396" />
-    <PackageReference Include="Neo.Plugins.RpcServer" Version="3.0.0-mono-master-00396" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.64-preview" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
+    <PackageReference Include="Neo.Plugins.ApplicationLogs" Version="$(NeoVersion)" />
+    <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.65-preview" />
     <PackageReference Include="Nerdbank.Streams" Version="2.6.81" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Nito.Disposables" Version="2.2.0" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\abstractions\abstractions.csproj" />
     <!-- <ProjectReference Include="..\..\..\lib-bctk\src\bctklib-3\bctklib-3.csproj" />  -->
     <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\modules\src\RpcClient\RpcClient.csproj" /> -->
     <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\modules\src\RpcServer\RpcServer.csproj" /> -->
   </ItemGroup>
+
 </Project>

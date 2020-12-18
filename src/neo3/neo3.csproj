@@ -10,11 +10,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <NeoVersion>3.0.0-mono-preview4-00286</NeoVersion>
+    <NeoVersion>3.0.0-preview4-mono</NeoVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.66-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.67-preview" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.ApplicationLogs" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
@@ -25,11 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\abstractions\abstractions.csproj" />
-    <!-- <ProjectReference Include="..\..\..\lib-bctk\src\bctklib-3\bctklib-3.csproj" /> -->
-    <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\core\src\neo\neo.csproj" /> -->
-    <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\modules\src\ApplicationLogs\ApplicationLogs.csproj" /> -->
-    <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\modules\src\RpcClient\RpcClient.csproj" /> -->
-    <!-- <ProjectReference Include="..\..\..\..\official\3neo-monorepo\modules\src\RpcServer\RpcServer.csproj" /> -->
   </ItemGroup>
 
 </Project>

@@ -16,7 +16,6 @@
   <ItemGroup>
     <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.67-preview" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
-    <PackageReference Include="Neo.Plugins.ApplicationLogs" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
     <PackageReference Include="Nerdbank.Streams" Version="2.6.81" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />

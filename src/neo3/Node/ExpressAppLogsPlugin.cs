@@ -12,6 +12,7 @@ using Neo;
 using System.Buffers.Binary;
 using Neo.Ledger;
 using NeoExpress.Neo3.Models;
+using Neo.SmartContract.Native;
 
 namespace NeoExpress.Neo3.Node
 {
@@ -53,6 +54,107 @@ namespace NeoExpress.Neo3.Node
             }
         }
 
+        // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
+        // to avoid dependency on LevelDBStore package
+        
+        static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
+        {
+            global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
+
+            var txJson = new JObject();
+            txJson["txid"] = appExec.Transaction.Hash.ToString();
+            JObject trigger = new JObject();
+            trigger["trigger"] = appExec.Trigger;
+            trigger["vmstate"] = appExec.VMState;
+            trigger["exception"] = GetExceptionMessage(appExec.Exception);
+            trigger["gasconsumed"] = new BigDecimal(appExec.GasConsumed, NativeContract.GAS.Decimals).ToString();
+            try
+            {
+                trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
+            }
+            catch (InvalidOperationException)
+            {
+                trigger["stack"] = "error: recursive reference";
+            }
+            trigger["notifications"] = appExec.Notifications.Select(q =>
+            {
+                JObject notification = new JObject();
+                notification["contract"] = q.ScriptHash.ToString();
+                notification["eventname"] = q.EventName;
+                try
+                {
+                    notification["state"] = q.State.ToJson();
+                }
+                catch (InvalidOperationException)
+                {
+                    notification["state"] = "error: recursive reference";
+                }
+                return notification;
+            }).ToArray();
+
+            txJson["executions"] = new List<JObject>() { trigger }.ToArray();
+            return txJson;
+
+            static string? GetExceptionMessage(Exception exception)
+            {
+                if (exception == null) return null;
+
+                if (exception.InnerException != null)
+                {
+                    return GetExceptionMessage(exception.InnerException);
+                }
+
+                return exception.Message;
+            }
+        }
+
+        static JObject? BlockLogToJson(StoreView snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        {
+            var blocks = applicationExecutedList.Where(p => p.Transaction == null);
+            if (blocks.Count() > 0)
+            {
+                var blockJson = new JObject();
+                var blockHash = snapshot.PersistingBlock.Hash.ToArray();
+                blockJson["blockhash"] = snapshot.PersistingBlock.Hash.ToString();
+                var triggerList = new List<JObject>();
+                foreach (var appExec in blocks)
+                {
+                    JObject trigger = new JObject();
+                    trigger["trigger"] = appExec.Trigger;
+                    trigger["vmstate"] = appExec.VMState;
+                    trigger["gasconsumed"] = new BigDecimal(appExec.GasConsumed, NativeContract.GAS.Decimals).ToString();
+                    try
+                    {
+                        trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        trigger["stack"] = "error: recursive reference";
+                    }
+                    trigger["notifications"] = appExec.Notifications.Select(q =>
+                    {
+                        JObject notification = new JObject();
+                        notification["contract"] = q.ScriptHash.ToString();
+                        notification["eventname"] = q.EventName;
+                        try
+                        {
+                            notification["state"] = q.State.ToJson();
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            notification["state"] = "error: recursive reference";
+                        }
+                        return notification;
+                    }).ToArray();
+                    triggerList.Add(trigger);
+                }
+                blockJson["executions"] = triggerList.ToArray();
+                return blockJson;
+            }
+
+            return null;
+        }
+
         public void OnPersist(StoreView snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             if (applicationExecutedList.Count > ushort.MaxValue)
@@ -73,7 +175,7 @@ namespace NeoExpress.Neo3.Node
                     continue;
                 }
 
-                var txJson = LogReader.TxLogToJson(appExec);
+                var txJson = TxLogToJson(appExec);
                 store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
                 if (appExec.VMState != VMState.FAULT)
@@ -100,7 +202,7 @@ namespace NeoExpress.Neo3.Node
                     }
                 }
 
-                var blockJson = LogReader.BlockLogToJson(snapshot, applicationExecutedList);
+                var blockJson = BlockLogToJson(snapshot, applicationExecutedList);
                 if (blockJson != null)
                 {
                     store.Put(APP_LOGS_PREFIX, snapshot.PersistingBlock.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));

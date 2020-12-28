@@ -24,7 +24,6 @@ trigger:
     - 'changelog.md'
     - 'docs/*'
     - '.vscode/*'
-    - '.github/*'
 
 steps:
 - task: UseDotNet@2

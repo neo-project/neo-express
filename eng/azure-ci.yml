@@ -23,6 +23,8 @@ trigger:
     - 'readme.md'
     - 'changelog.md'
     - 'docs/*'
+    - '.vscode/*'
+    - '.github/*'
 
 steps:
 - task: UseDotNet@2

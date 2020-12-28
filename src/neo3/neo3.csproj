@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <NeoVersion>3.0.0-preview4-mono</NeoVersion>
+    <NeoVersion>3.0.0-preview4</NeoVersion>
   </PropertyGroup>
 
   <ItemGroup>

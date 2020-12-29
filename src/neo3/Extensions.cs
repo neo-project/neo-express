@@ -39,7 +39,7 @@ namespace NeoExpress.Neo3
             => new Uri($"http://localhost:{node.RpcPort}");
 
         static string ROOT_PATH => Path.Combine(
-             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
              "Neo-Express", "blockchain-nodes");
 
         static string GetBlockchainPath(this ExpressWalletAccount account)
@@ -189,6 +189,10 @@ namespace NeoExpress.Neo3
 
             node = chain.ConsensusNodes[0];
             var folder = node.GetBlockchainPath();
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
             return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain, offlineTrace);
         }
     }

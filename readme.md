@@ -51,6 +51,12 @@ Thanks again for checking out Neo-Express. I look forward to hearing from you.
 
 \- Harry Pierson (aka [DevHawk](http://devhawk.net)), Chief Architect NGD Seattle
 
+## Branch Structure
+
+Neo-Express has been updated to use a similar branch structure as other repos in the 
+Neo project. The `master` branch is for the Neo 3 compatible version of Neo-Express
+and the `master-2.x` branch is for the Neo 2 compatible version.
+
 ## Installation
 
 Neo-Express is distributed as a
@@ -59,16 +65,14 @@ Different versions of Neo-Express require different versions of .NET Core.
 
 |Neo-Express Version|.NET Core Version|
 |-------------------|-----------------|
+| v1.2-insiders | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
+| v1.1 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
 | v1.0 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
 | v0.9 | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
 | v0.8 | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
 
-> As of v1.0, Neo-Express has snapped to a Long Term Support (LTS) release of
-> .NET Core. .NET Core LTS releases are
-> [supported for three years](https://github.com/dotnet/core/blob/master/microsoft-support.md#long-term-support-lts-releases).
-> The next LTS release of .NET Core isn't projected be released until
-> [November 2021](https://github.com/dotnet/core/blob/master/roadmap.md#upcoming-ship-dates),
-> so we expect to stay on this version of .NET core for at least two years.
+> Note, the Neo project moved to .NET 5 after preview 4 was shipped. Future versions
+> of the Neo 3 compatible version of Neo-Express will require .NET 5.
 
 To install Neo-Express, open a terminal window and enter the following command:
 

@@ -5,25 +5,25 @@ using NeoExpress.Neo3;
 
 namespace nxp3.Commands
 {
-    [Command("transfer")]
+    [Command("transfer", Description = "Transfer asset between accounts")]
     class TransferCommand
     {
-        [Argument(0)]
+        [Argument(0, Description = "Asset to transfer (symbol or script hash)")]
         string Asset { get; } = string.Empty;
 
-        [Argument(1)]
+        [Argument(1, Description = "Amount to transfer")]
         string Quantity { get; } = string.Empty;
 
-        [Argument(2)]
+        [Argument(2, Description = "Account to send asset from")]
         string Sender { get; } = string.Empty;
 
-        [Argument(3)]
+        [Argument(3, Description = "Account to send asset to")]
         string Receiver { get; } = string.Empty;
 
-        [Option]
+        [Option(Description = "Path to neo-express data file")]
         string Input { get; } = string.Empty;
 
-        [Option()]
+        [Option(Description = "Output as JSON")]
         bool Json { get; } = false;
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

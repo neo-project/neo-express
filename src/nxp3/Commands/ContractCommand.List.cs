@@ -11,10 +11,10 @@ namespace nxp3.Commands
         [Command(Name = "list")]
         private class List
         {
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option()]
+            [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

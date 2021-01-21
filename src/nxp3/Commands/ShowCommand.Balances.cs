@@ -13,11 +13,11 @@ namespace nxp3.Commands
         [Command("balances")]
         class Balances
         {
-            [Argument(0)]
+            [Argument(0, Description = "Account to show asset balances for")]
             [Required]
             string Account { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

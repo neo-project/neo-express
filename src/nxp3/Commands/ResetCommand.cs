@@ -5,19 +5,19 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace nxp3.Commands
 {
-    [Command("reset")]
+    [Command("reset", "Reset neo-express instance node")]
     class ResetCommand
     {
-        [Argument(0)]
+        [Argument(0, Description = "Index of node to reset")]
         int? NodeIndex { get; }
 
-        [Option]
+        [Option(Description = "Path to neo-express data file")]
         string Input { get; } = string.Empty;
 
-        [Option]
+        [Option(Description = "Overwrite existing data")]
         bool Force { get; }
 
-        [Option]
+        [Option(Description = "Reset all nodes")]
         bool All { get; }
 
         internal int OnExecute(CommandLineApplication app, IConsole console)

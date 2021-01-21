@@ -2,7 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace nxp3.Commands
 {
-    [Command("wallet")]
+    [Command("wallet", Description = "Manage neo-express wallets")]
     [Subcommand(typeof(Create), typeof(Delete), typeof(Export), typeof(List))]
     partial class WalletCommand
     {

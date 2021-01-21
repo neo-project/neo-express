@@ -2,7 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace nxp3.Commands
 {
-    [Command("contract")]
+    [Command("contract", Description = "Manage smart contracts")]
     [Subcommand(typeof(Deploy), typeof(Get), typeof(Invoke), typeof(List), typeof(Storage))]
     partial class ContractCommand
     {

@@ -10,20 +10,20 @@ namespace nxp3.Commands
 {
     partial class CheckpointCommand
     {
-        [Command("run")]
+        [Command("run", Description = "Run a neo-express checkpoint (discarding changes on shutdown)")]
         class Run
         {
-            [Argument(0)]
+            [Argument(0, "Checkpoint file name")]
             [Required]
             string Name { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Time between blocks")]
             uint SecondsPerBlock { get; }
 
-            [Option]
+            [Option(Description = "Enable contract execution tracing")]
             bool Trace { get; } = false;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

@@ -8,17 +8,17 @@ namespace nxp3.Commands
 {
     partial class CheckpointCommand
     {
-        [Command("restore")]
+        [Command("restore", Description = "Restore a neo-express checkpoint")]
         class Restore
         {
-            [Argument(0)]
+            [Argument(0, "Checkpoint file name")]
             [Required]
             string Name { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Overwrite existing data")]
             bool Force { get; }
 
             internal int OnExecute(CommandLineApplication app, IConsole console)

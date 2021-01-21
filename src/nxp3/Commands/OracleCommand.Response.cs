@@ -10,22 +10,22 @@ namespace nxp3.Commands
 {
     partial class OracleCommand
     {
-        [Command("response")]
+        [Command("response", Description = "Submit oracle response")]
         class Response
         {
-            [Argument(0)]
+            [Argument(0, Description = "URL of oracle request")]
             string Url { get; } = string.Empty;
 
-            [Argument(1)]
+            [Argument(1, Description = "Path to JSON file with oracle response cotnent")]
             string ResponsePath { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Oracle request ID")]
             (bool hasValue, ulong value) RequestId { get; }
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option()]
+            [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

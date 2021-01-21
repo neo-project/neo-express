@@ -8,16 +8,16 @@ namespace nxp3.Commands
 {
     partial class CheckpointCommand
     {
-        [Command("create")]
+        [Command("create", Description = "Create a new neo-express checkpoint")]
         class Create
         {
-            [Argument(0)]
+            [Argument(0, "Checkpoint file name")]
             string Name { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Overwrite existing data")]
             bool Force { get; }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

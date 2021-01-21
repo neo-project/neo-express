@@ -6,10 +6,10 @@ namespace nxp3.Commands
 {
     partial class OracleCommand
     {
-        [Command("requests")]
+        [Command("requests", Description = "List outstanding oracle requests")]
         class Requests
         {
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

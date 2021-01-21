@@ -8,14 +8,14 @@ namespace nxp3.Commands
 {
     partial class ShowCommand
     {
-        [Command("transaction", "tx")]
+        [Command("transaction", "tx", Description = "Show transaction")]
         class Transaction
         {
-            [Argument(0)]
+            [Argument(0, Description = "Transaction hash")]
             [Required]
             string TransactionHash { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

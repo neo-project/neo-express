@@ -10,20 +10,20 @@ namespace nxp3.Commands
 {
     partial class WalletCommand
     {
-        [Command("export")]
+        [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
         class Export
         {
-            [Argument(0)]
+            [Argument(0, Description = "Wallet name")]
             [Required]
             private string Name { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             private string Input { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "NEP-5 wallet name (Defaults to Neo-Express name if unspecified)")]
             private string Output { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Overwrite existing data")]
             private bool Force { get; }
 
             private int OnExecute(CommandLineApplication app, IConsole console)

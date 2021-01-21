@@ -2,7 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace nxp3.Commands
 {
-    [Command("checkpoint")]
+    [Command("checkpoint", Description = "Manage neo-express checkpoints")]
     [Subcommand(typeof(Create), typeof(Restore), typeof(Run))]
     partial class CheckpointCommand
     {

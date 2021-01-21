@@ -7,13 +7,13 @@ namespace nxp3.Commands
 {
     partial class ShowCommand
     {
-        [Command("block")]
+        [Command("block", Description = "Show block")]
         class Block
         {
-            [Argument(0)]
+            [Argument(0, Description = "Optional block hash or index. Show most recent block if unspecified")]
             string BlockHash { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

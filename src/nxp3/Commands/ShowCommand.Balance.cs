@@ -8,18 +8,18 @@ namespace nxp3.Commands
 {
     partial class ShowCommand
     {
-        [Command("balance")]
+        [Command("balance", Description = "Show asset balance for account")]
         class Balance
         {
-            [Argument(0)]
+            [Argument(0, Description = "Asset to show balance of (symbol or script hash)")]
             [Required]
             string Asset { get; } = string.Empty;
 
-            [Argument(1)]
+            [Argument(1, Description = "Account to show asset balance for")]
             [Required]
             string Account { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

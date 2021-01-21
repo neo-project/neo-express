@@ -7,7 +7,7 @@ using NeoExpress.Neo3;
 
 namespace nxp3.Commands
 {
-    [Command("create")]
+    [Command("create", Description = "Create new neo-express instance")]
     class CreateCommand
     {
         [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
@@ -18,7 +18,7 @@ namespace nxp3.Commands
         [AllowedValues("1", "4", "7")]
         int Count { get; } = 1;
 
-        [Option]
+        [Option(Description = "Overwrite existing data")]
         bool Force { get; }
 
         internal int OnExecute(CommandLineApplication app, IConsole console)

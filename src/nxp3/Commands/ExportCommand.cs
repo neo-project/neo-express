@@ -5,10 +5,10 @@ using NeoExpress.Neo3;
 
 namespace nxp3.Commands
 {
-    [Command("export")]
+    [Command("export", Description = "Export neo-express protocol, config and wallet files")]
     class ExportCommand
     {
-        [Option]
+        [Option(Description = "Path to neo-express data file")]
         string Input { get; } = string.Empty;
 
         internal int OnExecute(CommandLineApplication app, IConsole console)

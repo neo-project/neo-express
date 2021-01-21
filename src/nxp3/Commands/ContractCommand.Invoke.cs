@@ -12,26 +12,26 @@ namespace nxp3.Commands
         [Command(Name = "invoke")]
         class Invoke
         {
-            [Argument(0)]
+            [Argument(0, Description = "Path to contract invocation JSON file")]
             [Required]
             string InvocationFile { get; } = string.Empty;
 
-            [Argument(1)]
+            [Argument(1, Description = "Account to pay contract invocation GAS fee")]
             string Account { get; } = string.Empty;
 
-            [Option]
+            [Option("--test", Description = "Test invocation (does not cost GAS)")]
             bool Test { get; } = false;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract invocation")]
             decimal AdditionalGas { get; } = 0;
 
-            [Option("--trace")]
+            [Option(Description = "Enable contract execution tracing")]
             bool Trace { get; } = false;
 
-            [Option()]
+            [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
             static void WriteStackItem(IConsole console, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")

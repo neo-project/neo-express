@@ -14,14 +14,14 @@ namespace nxp3.Commands
         [Command(Name = "storage")]
         private class Storage
         {
-            [Argument(0)]
+            [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
             string Contract { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Output as JSON")]
             bool Json { get; }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

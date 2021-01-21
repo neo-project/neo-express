@@ -7,17 +7,17 @@ namespace nxp3.Commands
 {
     partial class WalletCommand
     {
-        [Command("delete")]
+        [Command("delete", Description = "Delete neo-express wallet")]
         class Delete
         {
-            [Argument(0)]
+            [Argument(0, Description = "Wallet name")]
             [Required]
             string Name { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Overwrite existing data")]
             bool Force { get; }
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal int OnExecute(CommandLineApplication app, IConsole console)

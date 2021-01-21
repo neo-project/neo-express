@@ -2,7 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace nxp3.Commands
 {
-    [Command("oracle")]
+    [Command("oracle", Description = "Manage oracle nodes and requests")]
     [Subcommand(typeof(Enable), typeof(List), typeof(Requests), typeof(Response))]
     partial class OracleCommand
     {

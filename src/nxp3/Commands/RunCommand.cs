@@ -6,22 +6,22 @@ using NeoExpress.Neo3;
 
 namespace nxp3.Commands
 {
-    [Command("run")]
+    [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        [Argument(0)]
+        [Argument(0, Description = "Index of node to run")]
         int NodeIndex { get; } = 0;
 
-        [Option]
+        [Option(Description = "Path to neo-express data file")]
         string Input { get; } = string.Empty;
 
-        [Option]
+        [Option(Description = "Time between blocks")]
         uint SecondsPerBlock { get; }
 
-        [Option]
+        [Option(Description = "Discard blockchain changes on shutdown")]
         bool Discard { get; } = false;
 
-        [Option]
+        [Option(Description = "Enable contract execution tracing")]
         bool Trace { get; } = false;
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

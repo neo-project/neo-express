@@ -7,7 +7,7 @@ using nxp3.Commands;
 
 namespace nxp3
 {
-    [Command("nxp3", UsePagerForHelpText = false)]
+    [Command("nxp3", Description = "Neo 3 blockchain private net for developers", UsePagerForHelpText = false)]
     [Subcommand(
         typeof(CheckpointCommand),
         typeof(ContractCommand),

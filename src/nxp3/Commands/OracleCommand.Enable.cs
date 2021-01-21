@@ -7,13 +7,13 @@ namespace nxp3.Commands
 {
     partial class OracleCommand
     {
-        [Command("enable")]
+        [Command("enable", Description = "Enable oracles for neo-express instance")]
         class Enable
         {
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option()]
+            [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

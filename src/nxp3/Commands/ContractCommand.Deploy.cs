@@ -8,21 +8,21 @@ namespace nxp3.Commands
 {
     partial class ContractCommand
     {
-        [Command("deploy")]
+        [Command("deploy", Description = "Deploy contract to a neo-express instance")]
         class Deploy
         {
-            [Argument(0)]
+            [Argument(0, Description = "Path to contract .nef file")]
             [Required]
             string Contract { get; } = string.Empty;
 
-            [Argument(1)]
+            [Argument(1, Description = "Account to pay contract deployment GAS fee")]
             [Required]
             string Account { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            [Option()]
+            [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
@@ -42,7 +42,7 @@ namespace nxp3.Commands
                     if (Json)
                     {
                         console.WriteLine($"{txHash}");
-                    }
+                    } 
                     else
                     {
                         console.WriteLine($"Deployment Transaction {txHash} submitted");

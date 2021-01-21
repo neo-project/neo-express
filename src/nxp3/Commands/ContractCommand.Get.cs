@@ -8,14 +8,14 @@ namespace nxp3.Commands
 {
     partial class ContractCommand
     {
-        [Command(Name = "get")]
+        [Command(Name = "get", Description = "Get information for a deployed contract")]
         private class Get
         {
-            [Argument(0)]
+            [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
             string Contract { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

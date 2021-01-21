@@ -2,7 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace nxp3.Commands
 {
-    [Command("show")]
+    [Command("show", "Show information")]
     [Subcommand(typeof(Balance), typeof(Balances), typeof(Block), typeof(Transaction))]
     partial class ShowCommand
     {

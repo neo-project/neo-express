@@ -7,10 +7,10 @@ namespace nxp3.Commands
 {
     partial class WalletCommand
     {
-        [Command("list")]
+        [Command("list", Description = "List neo-express wallets")]
         class List
         {
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             internal int OnExecute(CommandLineApplication app, IConsole console)

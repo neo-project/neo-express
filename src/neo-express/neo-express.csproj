@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>nxp3</AssemblyName>
+    <AssemblyName>neoxp</AssemblyName>
     <Authors>Neo Global Development Seattle</Authors>
     <Company>The Neo Project</Company>
     <Copyright>2015-2020 The Neo Project</Copyright>
@@ -12,7 +12,7 @@
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>
-    <PackageId>Neo.Express3</PackageId>
+    <PackageId>Neo.Express</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
     <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>

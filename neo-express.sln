@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29009.5
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D75A7A77-40E7-4266-8999-A4D33FD28DCC}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B776EC0E-262D-4160-9B8A-72CB4C4E050C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nxp3", "src\nxp3\nxp3.csproj", "{BBABD2F5-E597-4AA7-8893-753142FD386A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neo-express", "src\neo-express\neo-express.csproj", "{6D5F5A99-6F8B-47B9-A9BB-7D9394BCF788}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,10 +13,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BBABD2F5-E597-4AA7-8893-753142FD386A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BBABD2F5-E597-4AA7-8893-753142FD386A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BBABD2F5-E597-4AA7-8893-753142FD386A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BBABD2F5-E597-4AA7-8893-753142FD386A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D5F5A99-6F8B-47B9-A9BB-7D9394BCF788}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D5F5A99-6F8B-47B9-A9BB-7D9394BCF788}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D5F5A99-6F8B-47B9-A9BB-7D9394BCF788}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D5F5A99-6F8B-47B9-A9BB-7D9394BCF788}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -25,6 +25,6 @@ Global
 		SolutionGuid = {E7C2B62D-925B-40C4-BB87-FFDE03FF4CF4}
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{BBABD2F5-E597-4AA7-8893-753142FD386A} = {D75A7A77-40E7-4266-8999-A4D33FD28DCC}
+		{6D5F5A99-6F8B-47B9-A9BB-7D9394BCF788} = {B776EC0E-262D-4160-9B8A-72CB4C4E050C}
 	EndGlobalSection
 EndGlobal

@@ -9,6 +9,7 @@ trigger:
   branches:
     include:
     - master
+    - master-2.x
     - release/*
   paths:
     include:

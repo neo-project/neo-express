@@ -32,19 +32,10 @@ steps:
     useGlobalJson: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet pack neo express 2'
+  displayName: 'dotnet pack'
   inputs:
     command: 'pack'
     packagesToPack: './src/neo-express/neo-express.csproj'
-    includesymbols: true
-    versioningScheme: 'off'
-
-    
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet pack neo express 3'
-  inputs:
-    command: 'pack'
-    packagesToPack: './src/nxp3/nxp3.csproj'
     includesymbols: true
     versioningScheme: 'off'
 

@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     partial class OracleCommand
     {
@@ -17,7 +17,7 @@ namespace nxp3.Commands
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
+                    var blockchainOperations = new BlockchainOperations();
                     var oracleNodes = await blockchainOperations
                         .GetOracleNodes(chain)
                         .ConfigureAwait(false);

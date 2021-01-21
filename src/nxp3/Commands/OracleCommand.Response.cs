@@ -6,7 +6,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
 using Newtonsoft.Json.Linq;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     partial class OracleCommand
     {
@@ -48,7 +48,7 @@ namespace nxp3.Commands
                     var requestId = RequestId.hasValue ? (ulong?)RequestId.value : null;
 
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
+                    var blockchainOperations = new BlockchainOperations();
                     var txs = await blockchainOperations.SubmitOracleResponse(chain, Url, OracleResponseCode.Success, responseJson, requestId)
                         .ConfigureAwait(false);
 

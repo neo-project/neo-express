@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Abstractions;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     partial class WalletCommand
     {

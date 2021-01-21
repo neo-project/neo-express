@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using NeoExpress.Abstractions.Models;
-using NeoExpress.Neo3;
 
-namespace nxp3.Commands
+
+namespace NeoExpress.Commands
 {
     partial class ShowCommand
     {

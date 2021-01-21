@@ -1,6 +1,6 @@
 using McMaster.Extensions.CommandLineUtils;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     [Command("oracle", Description = "Manage oracle nodes and requests")]
     [Subcommand(typeof(Enable), typeof(List), typeof(Requests), typeof(Response))]

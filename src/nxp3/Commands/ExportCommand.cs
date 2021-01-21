@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Neo3;
 
-namespace nxp3.Commands
+
+namespace NeoExpress.Commands
 {
     [Command("export", Description = "Export neo-express protocol, config and wallet files")]
     class ExportCommand

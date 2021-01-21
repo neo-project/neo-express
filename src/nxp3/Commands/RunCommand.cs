@@ -2,9 +2,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Neo3;
 
-namespace nxp3.Commands
+
+namespace NeoExpress.Commands
 {
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand

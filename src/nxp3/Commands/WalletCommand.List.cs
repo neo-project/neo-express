@@ -3,7 +3,7 @@ using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Abstractions.Models;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     partial class WalletCommand
     {
@@ -18,7 +18,7 @@ namespace nxp3.Commands
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
+                    var blockchainOperations = new BlockchainOperations();
 
                     var wallets = chain.ConsensusNodes.Select(n => n.Wallet)
                         .Concat(chain.Wallets ?? Enumerable.Empty<ExpressWallet>());

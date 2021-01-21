@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Neo3;
 
-namespace nxp3.Commands
+
+namespace NeoExpress.Commands
 {
     [Command("create", Description = "Create new neo-express instance")]
     class CreateCommand

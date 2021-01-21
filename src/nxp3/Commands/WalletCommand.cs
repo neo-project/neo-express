@@ -1,6 +1,6 @@
 using McMaster.Extensions.CommandLineUtils;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     [Command("wallet", Description = "Manage neo-express wallets")]
     [Subcommand(typeof(Create), typeof(Delete), typeof(Export), typeof(List))]

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     [Command("reset", "Reset neo-express instance node")]
     class ResetCommand
@@ -30,7 +30,7 @@ namespace nxp3.Commands
                 }
 
                 var (chain, _) = Program.LoadExpressChain(Input);
-                var blockchainOperations = new NeoExpress.Neo3.BlockchainOperations();
+                var blockchainOperations = new BlockchainOperations();
 
                 if (All)
                 {

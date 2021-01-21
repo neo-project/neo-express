@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Neo3;
 
-namespace nxp3.Commands
+
+namespace NeoExpress.Commands
 {
     [Command("transfer", Description = "Transfer asset between accounts")]
     class TransferCommand

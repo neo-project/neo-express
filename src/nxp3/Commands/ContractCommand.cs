@@ -1,6 +1,6 @@
 using McMaster.Extensions.CommandLineUtils;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     [Command("contract", Description = "Manage smart contracts")]
     [Subcommand(typeof(Deploy), typeof(Get), typeof(Invoke), typeof(List), typeof(Storage))]

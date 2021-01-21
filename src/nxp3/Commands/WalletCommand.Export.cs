@@ -4,9 +4,9 @@ using System.IO;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Abstractions.Models;
 using NeoExpress.Abstractions;
-using NeoExpress.Neo3;
 
-namespace nxp3.Commands
+
+namespace NeoExpress.Commands
 {
     partial class WalletCommand
     {

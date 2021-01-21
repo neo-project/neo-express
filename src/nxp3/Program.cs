@@ -3,9 +3,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Abstractions.Models;
-using nxp3.Commands;
+using NeoExpress.Commands;
 
-namespace nxp3
+namespace NeoExpress
 {
     [Command("nxp3", Description = "Neo 3 blockchain private net for developers", UsePagerForHelpText = false)]
     [Subcommand(

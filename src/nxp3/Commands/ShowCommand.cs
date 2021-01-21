@@ -1,6 +1,6 @@
 using McMaster.Extensions.CommandLineUtils;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     [Command("show", "Show information")]
     [Subcommand(typeof(Balance), typeof(Balances), typeof(Block), typeof(Transaction))]

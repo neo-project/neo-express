@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Neo3;
+
 using System;
 
-namespace nxp3.Commands
+namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {

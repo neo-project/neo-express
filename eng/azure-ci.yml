@@ -1,9 +1,8 @@
 variables:
   BuildConfiguration: Release
   isMasterBranch: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
-  isInsidersBranch: $[eq(variables['Build.SourceBranch'], 'refs/heads/insiders')]
   isReleaseBranch: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')]
-  azureArtifactsBranch: $[or(eq(variables.isMasterBranch, true), eq(variables.isInsidersBranch, true), eq(variables.isReleaseBranch, true))]
+  azureArtifactsBranch: $[or(eq(variables.isMasterBranch, true), eq(variables.isReleaseBranch, true))]
   nugetOrgBranch: $[eq(variables.isReleaseBranch, true)]
 
 pool:
@@ -14,7 +13,7 @@ trigger:
   branches:
     include:
     - master
-    - insiders
+    - master-2.x
     - release/*
   paths:
     include:

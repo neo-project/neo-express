@@ -23,7 +23,7 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
                     var txHash = await blockchainOperations
-                        .DesignateOracleRoles(chain, chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount))
+                        .DesignateOracleRolesAsync(chain, chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount))
                         .ConfigureAwait(false);
                     console.WriteLine($"Oracle Enable Transaction {txHash} submitted");
 

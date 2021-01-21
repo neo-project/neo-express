@@ -19,7 +19,7 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
                     var oracleNodes = await blockchainOperations
-                        .GetOracleNodes(chain)
+                        .GetOracleNodesAsync(chain)
                         .ConfigureAwait(false);
                     
                     console.WriteLine($"Oracle Nodes ({oracleNodes.Length}): ");

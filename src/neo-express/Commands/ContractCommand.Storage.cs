@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
 
                     var blockchainOperations = new BlockchainOperations();
-                    var storages = await blockchainOperations.GetStorages(chain, Contract);
+                    var storages = await blockchainOperations.GetStoragesAsync(chain, Contract);
 
                     if (Json)
                     {

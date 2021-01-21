@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
                     throw new Exception($"{Receiver} receiver not found.");
                 }
 
-                var txHash = await blockchainOperations.Transfer(chain, Asset, Quantity, senderAccount, receiverAccount)
+                var txHash = await blockchainOperations.TransferAsync(chain, Asset, Quantity, senderAccount, receiverAccount)
                     .ConfigureAwait(false);
                 if (Json)
                 {

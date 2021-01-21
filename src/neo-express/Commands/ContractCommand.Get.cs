@@ -25,7 +25,7 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
 
                     var blockchainOperations = new BlockchainOperations();
-                    var manifest = await blockchainOperations.GetContract(chain, Contract)
+                    var manifest = await blockchainOperations.GetContractAsync(chain, Contract)
                         .ConfigureAwait(false);
 
                     console.WriteLine(manifest.ToJson().ToString(true));

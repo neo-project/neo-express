@@ -38,7 +38,7 @@ namespace NeoExpress.Commands
                         throw new Exception($"Account {Account} not found.");
                     }
 
-                    var txHash = await blockchainOperations.DeployContract(chain, Contract, account);
+                    var txHash = await blockchainOperations.DeployContractAsync(chain, Contract, account);
                     if (Json)
                     {
                         console.WriteLine($"{txHash}");

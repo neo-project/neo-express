@@ -49,7 +49,7 @@ namespace NeoExpress.Commands
 
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
-                    var txs = await blockchainOperations.SubmitOracleResponse(chain, Url, OracleResponseCode.Success, responseJson, requestId)
+                    var txs = await blockchainOperations.SubmitOracleResponseAsync(chain, Url, OracleResponseCode.Success, responseJson, requestId)
                         .ConfigureAwait(false);
 
                     if (Json)

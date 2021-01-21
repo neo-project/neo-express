@@ -23,7 +23,7 @@ namespace NeoExpress.Node
         Task<Block> GetBlockAsync(UInt256 blockHash);
         Task<Block> GetBlockAsync(uint blockIndex);
         Task<Block> GetLatestBlockAsync();
-        Task<uint> GetTransactionHeight(UInt256 txHash);
+        Task<uint> GetTransactionHeightAsync(UInt256 txHash);
         Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash);
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
         Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();

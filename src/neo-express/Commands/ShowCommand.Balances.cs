@@ -32,7 +32,7 @@ namespace NeoExpress.Commands
                         throw new Exception($"{Account} account not found.");
                     }
 
-                    var balances = await blockchainOperations.GetBalances(chain, account);
+                    var balances = await blockchainOperations.GetBalancesAsync(chain, account);
 
                     if (balances.Length == 0)
                     {

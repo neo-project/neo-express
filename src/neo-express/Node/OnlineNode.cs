@@ -91,7 +91,7 @@ namespace NeoExpress.Node
             return rpcBlock.Block;
         }
 
-        public Task<uint> GetTransactionHeight(UInt256 txHash)
+        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
         {
             return rpcClient.GetTransactionHeightAsync(txHash.ToString());
         }

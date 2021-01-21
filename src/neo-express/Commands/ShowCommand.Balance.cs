@@ -34,7 +34,7 @@ namespace NeoExpress.Commands
                         throw new Exception($"{Account} account not found.");
                     }
 
-                    var (balance, contract) = await blockchainOperations.ShowBalance(chain, account, Asset);
+                    var (balance, contract) = await blockchainOperations.ShowBalanceAsync(chain, account, Asset);
 
                     console.WriteLine($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance}");
                     return 0;

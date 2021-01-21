@@ -23,7 +23,7 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
 
-                    var block = await blockchainOperations.ShowBlock(chain, BlockHash).ConfigureAwait(false);
+                    var block = await blockchainOperations.ShowBlockAsync(chain, BlockHash).ConfigureAwait(false);
                     console.WriteLine(block.ToJson().ToString(true));
                     return 0;
                 }

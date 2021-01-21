@@ -425,7 +425,7 @@ namespace NeoExpress.Node
             return Task.FromResult(Blockchain.Singleton.GetBlock(Blockchain.Singleton.CurrentBlockHash));
         }
 
-        public Task<uint> GetTransactionHeight(UInt256 txHash)
+        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 

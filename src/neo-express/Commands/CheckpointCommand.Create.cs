@@ -49,7 +49,7 @@ namespace NeoExpress.Commands
                         Directory.CreateDirectory(parentPath);
                     }
 
-                    await blockchainOperations.CreateCheckpoint(chain, filename, Console.Out);
+                    await blockchainOperations.CreateCheckpointAsync(chain, filename, Console.Out);
 
                     return 0;
                 }

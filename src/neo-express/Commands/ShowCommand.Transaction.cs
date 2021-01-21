@@ -25,7 +25,7 @@ namespace NeoExpress.Commands
                     var (chain, _) = Program.LoadExpressChain(Input);
                     var blockchainOperations = new BlockchainOperations();
 
-                    var (tx, log) = await blockchainOperations.ShowTransaction(chain, TransactionHash).ConfigureAwait(false);
+                    var (tx, log) = await blockchainOperations.ShowTransactionAsync(chain, TransactionHash).ConfigureAwait(false);
                     console.WriteLine(tx.ToJson().ToString(true));
                     if (log != null) console.WriteLine(log.ToJson().ToString(true));
                     return 0;

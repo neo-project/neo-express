@@ -100,7 +100,7 @@ namespace NeoExpress.Commands
 
                     if (Test)
                     {
-                        var result = await blockchainOperations.TestInvokeContract(chain, InvocationFile);
+                        var result = await blockchainOperations.TestInvokeContractAsync(chain, InvocationFile);
                         console.WriteLine($"VM State:     {result.State}");
                         console.WriteLine($"Gas Consumed: {result.GasConsumed}");
                         if (result.Exception != null)
@@ -124,7 +124,7 @@ namespace NeoExpress.Commands
                         {
                             throw new Exception($"{Account} account not found.");
                         }
-                        var txHash = await blockchainOperations.InvokeContract(chain, InvocationFile, account, Trace, AdditionalGas);
+                        var txHash = await blockchainOperations.InvokeContractAsync(chain, InvocationFile, account, Trace, AdditionalGas);
                         if (Json)
                         {
                             console.WriteLine($"{txHash}");

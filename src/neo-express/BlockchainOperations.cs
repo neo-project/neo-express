@@ -262,7 +262,7 @@ namespace NeoExpress
             await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task CreateCheckpoint(ExpressChain chain, string checkPointFileName, TextWriter writer)
+        public async Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, TextWriter writer)
         {
             if (File.Exists(checkPointFileName))
             {
@@ -348,7 +348,7 @@ namespace NeoExpress
         }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
-        public async Task<UInt256> Transfer(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        public async Task<UInt256> TransferAsync(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -430,7 +430,7 @@ namespace NeoExpress
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/contract.md
         // https://github.com/ProDog/NEO-Test/blob/master/RpcClientTest/Test_ContractClient.cs#L38
-        public async Task<UInt256> DeployContract(ExpressChain chain, string contract, ExpressWalletAccount account)
+        public async Task<UInt256> DeployContractAsync(ExpressChain chain, string contract, ExpressWalletAccount account)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -482,7 +482,7 @@ namespace NeoExpress
             }
         }
 
-        public async Task<UInt256> InvokeContract(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account, bool trace, decimal additionalGas = 0m)
+        public async Task<UInt256> InvokeContractAsync(ExpressChain chain, string invocationFilePath, ExpressWalletAccount account, bool trace, decimal additionalGas = 0m)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -496,7 +496,7 @@ namespace NeoExpress
             return await expressNode.ExecuteAsync(chain, account, script, additionalGas).ConfigureAwait(false);
         }
 
-        public async Task<InvokeResult> TestInvokeContract(ExpressChain chain, string invocationFilePath)
+        public async Task<InvokeResult> TestInvokeContractAsync(ExpressChain chain, string invocationFilePath)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -576,7 +576,7 @@ namespace NeoExpress
             return null;
         }
 
-        public async Task<(BigDecimal balance, Nep17Contract contract)> ShowBalance(ExpressChain chain, ExpressWalletAccount account, string asset)
+        public async Task<(BigDecimal balance, Nep17Contract contract)> ShowBalanceAsync(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -607,7 +607,7 @@ namespace NeoExpress
             throw new Exception("invalid script results");
         }
 
-        public async Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalances(ExpressChain chain, ExpressWalletAccount account)
+        public async Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(ExpressChain chain, ExpressWalletAccount account)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -618,7 +618,7 @@ namespace NeoExpress
             return await expressNode.GetBalancesAsync(account.GetScriptHashAsUInt160());
         }
 
-        public async Task<(Transaction tx, RpcApplicationLog? appLog)> ShowTransaction(ExpressChain chain, string txHash)
+        public async Task<(Transaction tx, RpcApplicationLog? appLog)> ShowTransactionAsync(ExpressChain chain, string txHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -630,7 +630,7 @@ namespace NeoExpress
             return await expressNode.GetTransactionAsync(hash);
         }
 
-        public async Task<Block> ShowBlock(ExpressChain chain, string blockHash)
+        public async Task<Block> ShowBlockAsync(ExpressChain chain, string blockHash)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -656,7 +656,7 @@ namespace NeoExpress
             throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
         }
 
-        public async Task<IReadOnlyList<ExpressStorage>> GetStorages(ExpressChain chain, string hashOrContract)
+        public async Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(ExpressChain chain, string hashOrContract)
         {
             var scriptHash = ParseScriptHash(hashOrContract);
 
@@ -669,7 +669,7 @@ namespace NeoExpress
             return await expressNode.GetStoragesAsync(scriptHash);
         }
 
-        public async Task<ContractManifest> GetContract(ExpressChain chain, string hashOrContract)
+        public async Task<ContractManifest> GetContractAsync(ExpressChain chain, string hashOrContract)
         {
             var scriptHash = ParseScriptHash(hashOrContract);
 
@@ -682,7 +682,7 @@ namespace NeoExpress
             return await expressNode.GetContractAsync(scriptHash);
         }
 
-        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContracts(ExpressChain chain)
+        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(ExpressChain chain)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -811,7 +811,7 @@ namespace NeoExpress
             devWallet.Export(filename, password);
         }
 
-        public async Task<UInt256> DesignateOracleRoles(ExpressChain chain, IEnumerable<ExpressWalletAccount> accounts)
+        public async Task<UInt256> DesignateOracleRolesAsync(ExpressChain chain, IEnumerable<ExpressWalletAccount> accounts)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -844,7 +844,7 @@ namespace NeoExpress
 
         }
 
-        public async Task<ECPoint[]> GetOracleNodes(ExpressChain chain)
+        public async Task<ECPoint[]> GetOracleNodesAsync(ExpressChain chain)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -852,10 +852,10 @@ namespace NeoExpress
             }
 
             using var expressNode = chain.GetExpressNode();
-            return await GetOracleNodes(expressNode);
+            return await GetOracleNodesAsync(expressNode);
         }
 
-        static async Task<ECPoint[]> GetOracleNodes(IExpressNode expressNode)
+        static async Task<ECPoint[]> GetOracleNodesAsync(IExpressNode expressNode)
         {
             var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
 
@@ -885,7 +885,7 @@ namespace NeoExpress
             return Array.Empty<ECPoint>();
         }
 
-        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> GetOracleRequests(ExpressChain chain)
+        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> GetOracleRequestsAsync(ExpressChain chain)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
             {
@@ -896,7 +896,7 @@ namespace NeoExpress
             return await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
         }
 
-        public async Task<IReadOnlyList<UInt256>> SubmitOracleResponse(ExpressChain chain, string url, OracleResponseCode responseCode, JObject? responseJson, ulong? requestId)
+        public async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(ExpressChain chain, string url, OracleResponseCode responseCode, JObject? responseJson, ulong? requestId)
         {
             if (responseCode == OracleResponseCode.Success && responseJson == null)
             {
@@ -909,7 +909,7 @@ namespace NeoExpress
             }
 
             using var expressNode = chain.GetExpressNode();
-            var oracleNodes = await GetOracleNodes(expressNode);
+            var oracleNodes = await GetOracleNodesAsync(expressNode);
 
             var txHashes = new List<UInt256>();
             var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);

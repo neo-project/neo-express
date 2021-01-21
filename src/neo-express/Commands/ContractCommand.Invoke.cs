@@ -138,10 +138,10 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.Error.WriteLine($"{ex.Message} [{ex.GetType().Name}]");
+                    await console.Error.WriteLineAsync($"{ex.Message} [{ex.GetType().Name}]");
                     while (ex.InnerException != null)
                     {
-                        console.Error.WriteLine($"  Contract Exception: {ex.InnerException.Message} [{ex.InnerException.GetType().Name}]");
+                        await console.Error.WriteLineAsync($"  Contract Exception: {ex.InnerException.Message} [{ex.InnerException.GetType().Name}]");
                         ex = ex.InnerException;
                     }
                     return 1;

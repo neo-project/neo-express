@@ -63,7 +63,9 @@ namespace NeoExpress.Node
 
         public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
+#pragma warning disable VSTHRD103
             writer.WriteLine(store.GetType().Name);
+#pragma warning restore VSTHRD103
 
             var tcs = new TaskCompletionSource<bool>();
 

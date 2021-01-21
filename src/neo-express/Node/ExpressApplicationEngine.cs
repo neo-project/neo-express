@@ -24,14 +24,14 @@ namespace NeoExpress.Node
             this.traceDebugSink = traceDebugSink;
             this.snapshot = snapshot;
 
-            Log += OnLog;
-            Notify += OnNotify;
+            Log += OnLog!;
+            Notify += OnNotify!;
         }
 
         public override void Dispose()
         {
-            Log -= OnLog;
-            Notify -= OnNotify;
+            Log -= OnLog!;
+            Notify -= OnNotify!;
             traceDebugSink.Dispose();
             base.Dispose();
         }

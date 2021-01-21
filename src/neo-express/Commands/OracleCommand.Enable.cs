@@ -40,7 +40,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.Error.WriteLine(ex.Message);
+                    await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
             }

@@ -134,7 +134,7 @@ namespace NeoExpress
                 .Concat(chain.Wallets)
                 .Select(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash))
                 .Where(a => a != null)
-                .Select(Models.DevWalletAccount.FromExpressWalletAccount);
+                .Select(DevWalletAccount.FromExpressWalletAccount!);
 
         public static TransactionManager AddGas(this TransactionManager transactionManager, decimal gas)
         {

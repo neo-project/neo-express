@@ -51,7 +51,7 @@ namespace NeoExpress.Node
             _ = new ExpressAppLogsPlugin(store);
             neoSystem = new NeoSystem(storageProvider.Name);
 
-            ApplicationEngine.Log += OnLog;
+            ApplicationEngine.Log += OnLog!;
         }
 
         private void OnLog(object sender, LogEventArgs args)
@@ -119,24 +119,24 @@ namespace NeoExpress.Node
             return SubmitTransactionAsync(tx);
         }
 
-        public Task<UInt256> SubmitTransactionAsync(Transaction tx)
+        public async Task<UInt256> SubmitTransactionAsync(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var txRelay = neoSystem.Blockchain.Ask<RelayResult>(tx).Result;
+            var txRelay = await neoSystem.Blockchain.Ask<RelayResult>(tx);
             if (txRelay.Result != VerifyResult.Succeed)
             {
                 throw new Exception($"Transaction relay failed {txRelay.Result}");
             }
 
             var block = RunConsensus();
-            var blockRelay = neoSystem.Blockchain.Ask<RelayResult>(block).Result;
+            var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block);
             if (blockRelay.Result != VerifyResult.Succeed)
             {
                 throw new Exception($"Block relay failed {blockRelay.Result}");
             }
 
-            return Task.FromResult(tx.Hash);
+            return tx.Hash;
         }
 
         Block RunConsensus()
@@ -225,7 +225,7 @@ namespace NeoExpress.Node
             List<Transaction> unverified = new List<Transaction>();
             foreach (UInt256 hash in context.TransactionHashes)
             {
-                if (mempoolVerified.TryGetValue(hash, out Transaction tx))
+                if (mempoolVerified.TryGetValue(hash, out Transaction? tx))
                 {
                     if (!AddTransaction(tx, false))
                         return;
@@ -280,7 +280,7 @@ namespace NeoExpress.Node
                     if (context.IsPrimary || context.WatchOnly) return true;
 
                     // Check maximum block size via Native Contract policy
-                    var expectedBlockSize = (int)(getExpectedBlockSizeMethodInfo.Value.Invoke(context, Array.Empty<object>()));
+                    var expectedBlockSize = (int)(getExpectedBlockSizeMethodInfo.Value.Invoke(context, Array.Empty<object>()))!;
                     if (expectedBlockSize > NativeContract.Policy.GetMaxBlockSize(context.Snapshot))
                     {
                         // Log($"rejected block: {context.Block.Index} The size exceed the policy", LogLevel.Warning);

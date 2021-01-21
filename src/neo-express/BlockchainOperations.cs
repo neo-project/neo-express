@@ -189,7 +189,7 @@ namespace NeoExpress
             {
                 Directory.CreateDirectory(folder);
             }
-            writer.WriteLine(folder);
+            await writer.WriteLineAsync(folder);
 
             // create a named mutex so that checkpoint create command
             // can detect if blockchain is running automatically
@@ -282,14 +282,14 @@ namespace NeoExpress
                 var uri = chain.GetUri();
                 var rpcClient = new RpcClient(uri.ToString());
                 await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
-                writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
+                await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
             }
             else
             {
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
                 using var db = RocksDbStore.Open(folder);
                 db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
-                writer.WriteLine($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
+                await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
             }
         }
 
@@ -478,7 +478,7 @@ namespace NeoExpress
                     .ContinueWith(t => ContractManifest.Parse(t.Result), default, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
 
                 await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
-                return (nefTask.Result, manifestTask.Result);
+                return (await nefTask, await manifestTask);
             }
         }
 
@@ -528,8 +528,9 @@ namespace NeoExpress
             var lookup = contracts.ToDictionary(c => c.manifest.Name, c => c.hash);
             ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
             {
-                if (lookup.TryGetValue(name, out scriptHash))
+                if (lookup.TryGetValue(name, out var value))
                 {
+                    scriptHash = value;
                     return true;
                 }
 
@@ -542,6 +543,7 @@ namespace NeoExpress
                     }
                 }
 
+                scriptHash = default!;
                 return false;
             };
 

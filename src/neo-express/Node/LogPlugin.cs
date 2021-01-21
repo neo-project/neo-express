@@ -14,7 +14,7 @@ namespace NeoExpress.Node
         public LogPlugin(TextWriter writer)
         {
             this.writer = writer;
-            ApplicationEngine.Log += OnLog;
+            ApplicationEngine.Log += OnLog!;
         }
 
         private void OnLog(object sender, LogEventArgs args)

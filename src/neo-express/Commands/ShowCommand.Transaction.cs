@@ -1,35 +1,38 @@
-using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json.Linq;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
+
 
 namespace NeoExpress.Commands
 {
     partial class ShowCommand
     {
-        [Command("transaction", "tx")]
-        private class Transaction
+        [Command("transaction", "tx", Description = "Show transaction")]
+        class Transaction
         {
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Argument(0, Description = "Transaction hash")]
+            [Required]
+            string TransactionHash { get; } = string.Empty;
 
-            [Argument(0)]
-            private string TransactionId { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new Neo2.BlockchainOperations();
-                    await blockchainOperations.ShowTransaction(chain, TransactionId, console.Out);
+                    var blockchainOperations = new BlockchainOperations();
 
+                    var (tx, log) = await blockchainOperations.ShowTransactionAsync(chain, TransactionHash).ConfigureAwait(false);
+                    console.WriteLine(tx.ToJson().ToString(true));
+                    if (log != null) console.WriteLine(log.ToJson().ToString(true));
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
             }

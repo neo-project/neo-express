@@ -1,34 +1,31 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Commands;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Reflection;
+using System.Runtime.InteropServices;
+using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
+using NeoExpress.Commands;
 
 namespace NeoExpress
 {
-    [Command("neo-express")]
+    [Command("nxp3", Description = "Neo 3 blockchain private net for developers", UsePagerForHelpText = false)]
     [Subcommand(
-        typeof(CheckPointCommand),
-        typeof(ClaimCommand),
+        typeof(CheckpointCommand),
         typeof(ContractCommand),
         typeof(CreateCommand),
-        typeof(RunCommand),
         typeof(ExportCommand),
+        typeof(OracleCommand),
+        typeof(ResetCommand),
+        typeof(RunCommand),
         typeof(ShowCommand),
         typeof(TransferCommand),
         typeof(WalletCommand))]
-    internal class Program
+    class Program
     {
-        public static string ROOT_PATH => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Neo-Express", "blockchain-nodes");
-
         public static int Main(string[] args)
-            => CommandLineApplication.Execute<Program>(args);
+        {
+            EnableAnsiEscapeSequences();
+            return CommandLineApplication.Execute<Program>(args);
+        }
 
         [Option]
         private bool Version { get; }
@@ -42,23 +39,50 @@ namespace NeoExpress
             }
 
             console.WriteLine("You must specify a subcommand.");
-            app.ShowHelp();
+            app.ShowHelp(false);
             return 1;
         }
 
         public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
-           ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express.json")
+           ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express")
            : filename;
 
-        public static (Abstractions.Models.ExpressChain chain, string filename) LoadExpressChain(string filename)
+        public static (ExpressChain chain, string filename) LoadExpressChain(string filename)
         {
             filename = GetDefaultFilename(filename);
             if (!File.Exists(filename))
             {
                 throw new Exception($"{filename} file doesn't exist");
             }
-            var chain = Abstractions.Models.ExpressChain.Load(filename);
+            var chain = ExpressChain.Load(filename);
             return (chain, filename);
         }
+
+        static void EnableAnsiEscapeSequences()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                const int STD_OUTPUT_HANDLE = -11;
+                var stdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+                if (GetConsoleMode(stdOutHandle, out uint outMode))
+                {
+                    const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+                    const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
+
+                    outMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+                    SetConsoleMode(stdOutHandle, outMode);
+                }
+            }
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int nStdHandle);
     }
 }

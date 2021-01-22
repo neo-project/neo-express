@@ -1,48 +1,27 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
-using NeoExpress.Neo2;
+
 
 namespace NeoExpress.Commands
 {
-    [Command("create")]
-    internal class CreateCommand
+    [Command("create", Description = "Create new neo-express instance")]
+    class CreateCommand
     {
-        [AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false)]
-        private class ValidNodeCountAttribute : ValidationAttribute
-        {
-            public ValidNodeCountAttribute() : base("The value for {0} must be 1, 4 or 7")
-            {
-            }
+        [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
+        string Output { get; } = string.Empty;
 
-            protected override ValidationResult IsValid(object value, ValidationContext context)
-            {
-                if (value == null || (value is string str && str != "1" && str != "4" && str != "7"))
-                {
-                    return new ValidationResult(FormatErrorMessage(context.DisplayName));
-                }
 
-                return ValidationResult.Success;
-            }
-        }
+        [Option(Description = "Number of consensus nodes to create\nDefault: 1")]
+        [AllowedValues("1", "4", "7")]
+        int Count { get; } = 1;
 
-        [ValidNodeCount]
-        [Option]
-        private int Count { get; }
+        [Option(Description = "Overwrite existing data")]
+        bool Force { get; }
 
-        [Option]
-        private string Output { get; } = string.Empty;
-
-        [Option]
-        private bool Force { get; }
-
-        [Option]
-        private uint PreloadGas { get; }
-
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -59,20 +38,15 @@ namespace NeoExpress.Commands
                     }
                 }
 
-                var count = (Count == 0 ? 1 : Count);
-
                 var blockchainOperations = new BlockchainOperations();
-                using var cts = new CancellationTokenSource();
-                console.CancelKeyPress += (sender, args) => cts.Cancel();
-                var chain = blockchainOperations.CreateBlockchain(new FileInfo(output), count, PreloadGas, Console.Out, cts.Token);
+                var chain = blockchainOperations.CreateBlockchain(new FileInfo(output), Count, Console.Out);
                 chain.Save(output);
 
                 return 0;
             }
             catch (Exception ex)
             {
-                console.WriteError(ex.Message);
-                app.ShowHelp();
+                console.Error.WriteLine(ex.Message);
                 return 1;
             }
         }

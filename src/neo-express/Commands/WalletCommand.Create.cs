@@ -1,39 +1,47 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
-using NeoExpress.Abstractions.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
+using NeoExpress.Abstractions.Models;
+
 
 namespace NeoExpress.Commands
 {
-    internal partial class WalletCommand
+    partial class WalletCommand
     {
-        [Command("create")]
-        private class Create
+        [Command("create", Description = "Create neo-express wallet")]
+        class Create
         {
-            [Argument(0)]
+            [Argument(0, Description = "Wallet name")]
             [Required]
-            private string Name { get; } = string.Empty;
+            string Name { get; } = string.Empty;
 
-            [Option]
-            private bool Force { get; }
+            [Option(Description = "Overwrite existing data")]
+            bool Force { get; }
 
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-
-                    var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
-                    var wallet = blockchainOperations.CreateWallet(chain, Name, Force);
-                    if (chain.Wallets == null)
+                    var existingWallet = chain.GetWallet(Name);
+                    if (existingWallet != null)
                     {
-                        chain.Wallets = new List<ExpressWallet>(1);
+                        if (!Force)
+                        {
+                            throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
+                        }
+
+                        chain.Wallets.Remove(existingWallet);
                     }
+
+                    var blockchainOperations = new BlockchainOperations();
+                    var wallet = blockchainOperations.CreateWallet(chain, Name);
+                    chain.Wallets ??= new List<ExpressWallet>(1);
                     chain.Wallets.Add(wallet);
                     chain.Save(filename);
 
@@ -42,15 +50,14 @@ namespace NeoExpress.Commands
                     {
                         console.WriteLine($"    {account.ScriptHash}");
                     }
-                    console.WriteWarning("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
-                    console.WriteWarning("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                    console.WriteLine("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
+                    console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

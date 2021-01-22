@@ -1,15 +1,15 @@
-﻿using McMaster.Extensions.CommandLineUtils;
+using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
 {
-    [Command("wallet")]
+    [Command("wallet", Description = "Manage neo-express wallets")]
     [Subcommand(typeof(Create), typeof(Delete), typeof(Export), typeof(List))]
-    internal partial class WalletCommand
+    partial class WalletCommand
     {
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
-            console.WriteError("You must specify at a subcommand.");
-            app.ShowHelp();
+            console.WriteLine("You must specify at a subcommand.");
+            app.ShowHelp(false);
             return 1;
         }
     }

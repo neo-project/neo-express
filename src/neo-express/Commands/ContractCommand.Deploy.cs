@@ -1,34 +1,31 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
-using NeoExpress.Neo2;
-using Newtonsoft.Json;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
+
 
 namespace NeoExpress.Commands
 {
-
-    internal partial class ContractCommand
+    partial class ContractCommand
     {
-        [Command(Name = "deploy")]
-        private class Deploy
+        [Command("deploy", Description = "Deploy contract to a neo-express instance")]
+        class Deploy
         {
-            [Argument(0)]
+            [Argument(0, Description = "Path to contract .nef file")]
             [Required]
             string Contract { get; } = string.Empty;
 
-            [Argument(1)]
+            [Argument(1, Description = "Account to pay contract deployment GAS fee")]
             [Required]
             string Account { get; } = string.Empty;
 
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            [Option(CommandOptionType.SingleValue)]
-            private bool SaveMetadata { get; } = true;
+            [Option(Description = "Output as JSON")]
+            bool Json { get; } = false;
 
-            async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -41,26 +38,25 @@ namespace NeoExpress.Commands
                         throw new Exception($"Account {Account} not found.");
                     }
 
-                    if (blockchainOperations.TryLoadContract(Contract, out var contract, out var errorMessage))
+                    var txHash = await blockchainOperations.DeployContractAsync(chain, Contract, account);
+                    if (Json)
                     {
-                        console.WriteLine($"Deploying contract {contract.Name} ({contract.Hash}) {(SaveMetadata ? "and contract metadata" : "")}");
-                        var tx = await blockchainOperations.DeployContract(chain, contract, account, SaveMetadata);
-                        console.WriteLine($"InvocationTransaction {tx.Hash} submitted");
-                    }
+                        console.WriteLine($"{txHash}");
+                    } 
                     else
                     {
-                        throw new Exception(errorMessage);
+                        console.WriteLine($"Deployment Transaction {txHash} submitted");
                     }
 
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
             }
+
         }
     }
 }

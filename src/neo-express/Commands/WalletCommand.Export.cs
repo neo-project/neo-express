@@ -1,27 +1,29 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
 using NeoExpress.Abstractions;
+
 
 namespace NeoExpress.Commands
 {
-    internal partial class WalletCommand
+    partial class WalletCommand
     {
-        [Command("export")]
-        private class Export
+        [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
+        class Export
         {
-            [Argument(0)]
+            [Argument(0, Description = "Wallet name")]
             [Required]
             private string Name { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Path to neo-express data file")]
             private string Input { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "NEP-5 wallet name (Defaults to Neo-Express name if unspecified)")]
             private string Output { get; } = string.Empty;
 
-            [Option]
+            [Option(Description = "Overwrite existing data")]
             private bool Force { get; }
 
             private int OnExecute(CommandLineApplication app, IConsole console)
@@ -53,7 +55,7 @@ namespace NeoExpress.Commands
                     else
                     {
                         var password = Prompt.GetPassword("Input password to use for exported wallet");
-                        var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                        var blockchainOperations = new BlockchainOperations();
                         blockchainOperations.ExportWallet(wallet, output, password);
                         console.WriteLine($"{Name} privatenet wallet exported to {output}");
                     }
@@ -62,8 +64,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

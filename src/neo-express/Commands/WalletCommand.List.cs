@@ -1,39 +1,37 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions.Models;
 using System;
 using System.Linq;
+using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions.Models;
 
 namespace NeoExpress.Commands
 {
-    internal partial class WalletCommand
+    partial class WalletCommand
     {
-        [Command("list")]
-        private class List
+        [Command("list", Description = "List neo-express wallets")]
+        class List
         {
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, filename) = Program.LoadExpressChain(Input);
-                    foreach (var wallet in chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                    {
-                        console.WriteLine(wallet.Name);
+                    var blockchainOperations = new BlockchainOperations();
 
-                        foreach (var account in wallet.Accounts)
-                        {
-                            console.WriteLine($"    {account.ScriptHash}");
-                        }
+                    var wallets = chain.ConsensusNodes.Select(n => n.Wallet)
+                        .Concat(chain.Wallets ?? Enumerable.Empty<ExpressWallet>());
+                    foreach (var wallet in wallets)
+                    {
+                        blockchainOperations.PrintWalletInfo(wallet, console.Out);
                     }
 
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

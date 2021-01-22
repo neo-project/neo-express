@@ -1,135 +1,153 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
+using System.IO;
 using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
+
 
 namespace NeoExpress.Commands
 {
-    internal partial class ContractCommand
+    partial class ContractCommand
     {
         [Command(Name = "invoke")]
-        private class Invoke
+        class Invoke
         {
-            [Argument(0)]
-            // [Required]
-            string Contract { get; } = string.Empty;
+            [Argument(0, Description = "Path to contract invocation JSON file")]
+            [Required]
+            string InvocationFile { get; } = string.Empty;
 
-            [Argument(1)]
-            string[] Arguments { get; } = Array.Empty<string>();
+            [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+            string Account { get; } = string.Empty;
 
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Option("--test", Description = "Test invocation (does not cost GAS)")]
+            bool Test { get; } = false;
 
-            [Option]
-            private string Account { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            [Option]
-            private string Function { get; } = string.Empty;
+            [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract invocation")]
+            decimal AdditionalGas { get; } = 0;
 
-            [Option]
-            private bool Overwrite { get; }
+            [Option(Description = "Enable contract execution tracing")]
+            bool Trace { get; } = false;
 
-            int OnExecute(CommandLineApplication app, IConsole console)
+            [Option(Description = "Output as JSON")]
+            bool Json { get; } = false;
+
+            static void WriteStackItem(IConsole console, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
             {
-                console.WriteWarning("Updated contract invoke command currently not available");
-                return 1;
+                switch (item)
+                {
+                    case Neo.VM.Types.Boolean _:
+                        WriteLine(item.GetBoolean() ? "true" : "false");
+                        break;
+                    case Neo.VM.Types.Integer @int:
+                        WriteLine(@int.GetInteger().ToString());
+                        break;
+                    case Neo.VM.Types.Buffer buffer:
+                        WriteLine(Neo.Helper.ToHexString(buffer.GetSpan()));
+                        break;
+                    case Neo.VM.Types.ByteString byteString:
+                        WriteLine(Neo.Helper.ToHexString(byteString.GetSpan()));
+                        break;
+                    case Neo.VM.Types.Null _:
+                        WriteLine("<null>");
+                        break;
+                    case Neo.VM.Types.Array array:
+                        WriteLine($"Array: ({array.Count})");
+                        for (int i = 0; i < array.Count; i++)
+                        {
+                            WriteStackItem(console, array[i], indent + 1);
+                        }
+                        break;
+                    case Neo.VM.Types.Map map:
+                        WriteLine($"Map: ({map.Count})");
+                        foreach (var m in map)
+                        {
+                            WriteStackItem(console, m.Key, indent + 1, "key:   ");
+                            WriteStackItem(console, m.Value, indent + 1, "value: ");
+                        }
+                        break;
+                }
+
+                void WriteLine(string value)
+                {
+                    for (var i = 0; i < indent; i++)
+                    {
+                        console.Write("  ");
+                    }
+
+                    if (!string.IsNullOrEmpty(prefix))
+                    {
+                        console.Write(prefix);
+                    }
+
+                    console.WriteLine(value);
+                }
             }
 
-            // static IEnumerable<JObject> ParseArguments(ExpressContract.Function function, IEnumerable<string> arguments)
-            // {
-            //     if (function.Parameters.Count != arguments.Count())
-            //     {
-            //         throw new ApplicationException($"Invalid number of arguments. Expecting {function.Parameters.Count} received {arguments.Count()}");
-            //     }
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            {
+                try
+                {
+                    if (!File.Exists(InvocationFile))
+                    {
+                        throw new Exception($"Invocation file {InvocationFile} couldn't be found");
+                    }
 
-            //     return function.Parameters.Zip(arguments,
-            //         (param, argValue) => new JObject()
-            //         {
-            //             ["type"] = param.Type,
-            //             ["value"] = argValue
-            //         });
-            // }
+                    var (chain, _) = Program.LoadExpressChain(Input);
+                    var blockchainOperations = new BlockchainOperations();
 
-            // IEnumerable<JObject> ParseArguments(ExpressContract contract)
-            // {
-            //     var arguments = Arguments ?? Enumerable.Empty<string>();
+                    if (Test)
+                    {
+                        var result = await blockchainOperations.TestInvokeContractAsync(chain, InvocationFile);
+                        console.WriteLine($"VM State:     {result.State}");
+                        console.WriteLine($"Gas Consumed: {result.GasConsumed}");
+                        if (result.Exception != null)
+                        {
+                            console.WriteLine($"Expception:   {result.Exception}");
+                        }
+                        if (result.Stack.Length > 0)
+                        {
+                            var stack = result.Stack;
+                            console.WriteLine("Result Stack:");
+                            for (int i = 0; i < stack.Length; i++)
+                            {
+                                WriteStackItem(console, stack[i]);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var account = blockchainOperations.GetAccount(chain, Account);
+                        if (account == null)
+                        {
+                            throw new Exception($"{Account} account not found.");
+                        }
+                        var txHash = await blockchainOperations.InvokeContractAsync(chain, InvocationFile, account, Trace, AdditionalGas);
+                        if (Json)
+                        {
+                            console.WriteLine($"{txHash}");
+                        }
+                        else
+                        {
+                            console.WriteLine($"Invocation Transaction {txHash} submitted");
+                        }
+                    }
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    await console.Error.WriteLineAsync($"{ex.Message} [{ex.GetType().Name}]");
+                    while (ex.InnerException != null)
+                    {
+                        await console.Error.WriteLineAsync($"  Contract Exception: {ex.InnerException.Message} [{ex.InnerException.GetType().Name}]");
+                        ex = ex.InnerException;
+                    }
+                    return 1;
+                }
+            }
 
-            //     if (string.IsNullOrEmpty(Function))
-            //     {
-            //         var entrypoint = contract.Functions.Single(f => f.Name == contract.EntryPoint);
-            //         return ParseArguments(entrypoint, arguments);
-            //     }
-            //     else
-            //     {
-            //         var function = contract.Functions.SingleOrDefault(f => f.Name == Function);
-
-            //         if (function == null)
-            //         {
-            //             throw new Exception($"Could not find function {Function}");
-            //         }
-
-            //         return new JObject[2]
-            //         {
-            //             new JObject()
-            //             {
-            //                 ["type"] = "String",
-            //                 ["value"] = Function
-            //             },
-            //             new JObject()
-            //             {
-            //                 ["type"] = "Array",
-            //                 ["value"] = new JArray(ParseArguments(function, arguments))
-            //             }
-            //         };
-            //     }
-            // }
-
-            // async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
-            // {
-            //     try
-            //     {
-            //         var (chain, filename) = Program.LoadExpressChain(Input);
-            //         var contract = chain.GetContract(Contract);
-            //         if (contract == null)
-            //         {
-            //             throw new Exception($"Contract {Contract} not found.");
-            //         }
-
-            //         var account = chain.GetAccount(Account);
-
-            //         var args = ParseArguments(contract);
-            //         var uri = chain.GetUri();
-            //         var result = await NeoRpcClient.ExpressInvokeContract(uri, contract.Hash, args, account?.ScriptHash);
-            //         console.WriteResult(result);
-            //         if (account != null)
-            //         {
-            //             // var txid = result?["txid"];
-            //             if (txid != null)
-            //             {
-            //                 console.WriteLine("invocation complete");
-            //             }
-            //             else
-            //             {
-            //                 var signatures = account.Sign(chain.ConsensusNodes, result);
-            //                 var result2 = await NeoRpcClient.ExpressSubmitSignatures(uri, result?["contract-context"], signatures);
-            //                 console.WriteResult(result2);
-            //             }
-            //         }
-
-            //         chain.SaveContract(contract, filename, console, Overwrite);
-            //         return 0;
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         console.WriteError(ex.Message);
-            //         app.ShowHelp();
-            //         return 1;
-            //     }
-            // }
         }
     }
 }

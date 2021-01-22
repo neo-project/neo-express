@@ -1,26 +1,26 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
 using System;
 using System.ComponentModel.DataAnnotations;
+using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Abstractions;
 
 namespace NeoExpress.Commands
 {
-    internal partial class WalletCommand
+    partial class WalletCommand
     {
-        [Command("delete")]
-        private class Delete
+        [Command("delete", Description = "Delete neo-express wallet")]
+        class Delete
         {
-            [Argument(0)]
+            [Argument(0, Description = "Wallet name")]
             [Required]
-            private string Name { get; } = string.Empty;
+            string Name { get; } = string.Empty;
 
-            [Option]
-            private bool Force { get; }
+            [Option(Description = "Overwrite existing data")]
+            bool Force { get; }
 
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -47,8 +47,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    console.Error.WriteLine(ex.Message);
                     return 1;
                 }
             }

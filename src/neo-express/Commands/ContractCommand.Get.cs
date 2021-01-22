@@ -1,54 +1,40 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Neo;
-using NeoExpress.Neo2;
-using NeoExpress.Neo2.Models;
-using Newtonsoft.Json;
-using System;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
+
+using System;
 
 namespace NeoExpress.Commands
 {
-    internal partial class ContractCommand
+    partial class ContractCommand
     {
-        [Command(Name = "get")]
+        [Command(Name = "get", Description = "Get information for a deployed contract")]
         private class Get
         {
-            [Argument(0)]
+            [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
             string Contract { get; } = string.Empty;
 
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            [Option]
-            private bool Overwrite { get; }
-
-            async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var hash = GetScriptHash(Contract);
+
                     var blockchainOperations = new BlockchainOperations();
-                    var contract = await blockchainOperations.GetContract(chain, hash);
-                    if (contract != null)
-                    {
-                        var json = JsonConvert.SerializeObject(contract, Formatting.Indented);
-                        console.WriteLine(json);
-                    }
-                    else
-                    {
-                        console.WriteError($"Contract {Contract} not found");
-                    }
+                    var manifest = await blockchainOperations.GetContractAsync(chain, Contract)
+                        .ConfigureAwait(false);
+
+                    console.WriteLine(manifest.ToJson().ToString(true));
 
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
             }

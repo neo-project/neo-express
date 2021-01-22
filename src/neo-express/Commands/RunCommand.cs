@@ -1,28 +1,30 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using System.IO;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using NeoExpress.Neo2;
+using McMaster.Extensions.CommandLineUtils;
+
 
 namespace NeoExpress.Commands
 {
-    [Command("run")]
-    internal class RunCommand
+    [Command("run", Description = "Run Neo-Express instance node")]
+    class RunCommand
     {
-        [Argument(0)]
-        private int NodeIndex { get; } = 0;
+        [Argument(0, Description = "Index of node to run")]
+        int NodeIndex { get; } = 0;
 
-        [Option]
-        private string Input { get; } = string.Empty;
+        [Option(Description = "Path to neo-express data file")]
+        string Input { get; } = string.Empty;
 
-        [Option]
-        private uint SecondsPerBlock { get; }
+        [Option(Description = "Time between blocks")]
+        uint SecondsPerBlock { get; }
 
-        [Option]
-        private bool Reset { get; }
+        [Option(Description = "Discard blockchain changes on shutdown")]
+        bool Discard { get; } = false;
 
-        private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        [Option(Description = "Enable contract execution tracing")]
+        bool Trace { get; } = false;
+
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -36,20 +38,21 @@ namespace NeoExpress.Commands
                 using var cts = new CancellationTokenSource();
                 console.CancelKeyPress += (sender, args) => cts.Cancel();
                 var blockchainOperations = new BlockchainOperations();
+
                 await blockchainOperations.RunBlockchainAsync(chain,
-                                                              NodeIndex,
-                                                              SecondsPerBlock,
-                                                              Reset,
-                                                              console.Out,
-                                                              cts.Token)
+                                                            NodeIndex,
+                                                            SecondsPerBlock,
+                                                            Discard,
+                                                            Trace,
+                                                            console.Out,
+                                                            cts.Token)
                     .ConfigureAwait(false);
 
                 return 0;
             }
             catch (Exception ex)
             {
-                console.WriteError(ex.Message);
-                app.ShowHelp();
+                await console.Error.WriteLineAsync(ex.Message);
                 return 1;
             }
         }

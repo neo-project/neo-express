@@ -1,9 +1,8 @@
 variables:
   BuildConfiguration: Release
   isMasterBranch: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
-  isInsidersBranch: $[eq(variables['Build.SourceBranch'], 'refs/heads/insiders')]
   isReleaseBranch: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')]
-  azureArtifactsBranch: $[or(eq(variables.isMasterBranch, true), eq(variables.isInsidersBranch, true), eq(variables.isReleaseBranch, true))]
+  azureArtifactsBranch: $[or(eq(variables.isMasterBranch, true), eq(variables.isReleaseBranch, true))]
   nugetOrgBranch: $[eq(variables.isReleaseBranch, true)]
 
 pool:
@@ -14,7 +13,7 @@ trigger:
   branches:
     include:
     - master
-    - insiders
+    - master-2.x
     - release/*
   paths:
     include:
@@ -33,19 +32,10 @@ steps:
     useGlobalJson: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet pack neo express 2'
+  displayName: 'dotnet pack'
   inputs:
     command: 'pack'
     packagesToPack: './src/neo-express/neo-express.csproj'
-    includesymbols: true
-    versioningScheme: 'off'
-
-    
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet pack neo express 3'
-  inputs:
-    command: 'pack'
-    packagesToPack: './src/nxp3/nxp3.csproj'
     includesymbols: true
     versioningScheme: 'off'
 

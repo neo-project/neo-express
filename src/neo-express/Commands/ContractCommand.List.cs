@@ -1,48 +1,64 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Neo2;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
+
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
-    internal partial class ContractCommand
+    partial class ContractCommand
     {
         [Command(Name = "list")]
         private class List
         {
-            [Option]
-            private string Input { get; } = string.Empty;
+            [Option(Description = "Path to neo-express data file")]
+            string Input { get; } = string.Empty;
 
-            private async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            [Option(Description = "Output as JSON")]
+            bool Json { get; } = false;
+
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
-                    var contracts = await blockchainOperations.ListContracts(chain);
-                    for (int i = 0; i < contracts.Count; i++)
-                    {
-                        var contract = contracts[i];
-                        var json = JsonConvert.SerializeObject(contract, Formatting.Indented);
-                        console.WriteLine(json);
-                    }
 
-                    if (contracts.Count == 0)
+                    var blockchainOperations = new BlockchainOperations();
+                    var contracts = await blockchainOperations.ListContractsAsync(chain)
+                        .ConfigureAwait(false);
+
+                    if (Json)
                     {
-                        console.WriteLine("no contracts deployed");
+                        using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
+                        writer.WriteStartArray();
+                        foreach (var (hash, manifest) in contracts)
+                        {
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("name");
+                            writer.WriteValue(manifest.Name);
+                            writer.WritePropertyName("hash");
+                            writer.WriteValue(hash.ToString());
+                            writer.WriteEndObject();
+                        }
+                        writer.WriteEndArray();
+                    }
+                    else
+                    {
+                        foreach (var (hash, manifest) in contracts)
+                        {
+                            console.WriteLine($"{manifest.Name} ({hash})");
+                        }
                     }
 
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    console.WriteError(ex.Message);
-                    app.ShowHelp();
+                    await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
             }
+
         }
     }
 }

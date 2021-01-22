@@ -1,35 +1,34 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
 using System;
 using System.IO;
-using System.Linq;
+using McMaster.Extensions.CommandLineUtils;
+
 
 namespace NeoExpress.Commands
 {
-    [Command("export")]
-    internal class ExportCommand
+    [Command("export", Description = "Export neo-express protocol, config and wallet files")]
+    class ExportCommand
     {
-        [Option]
-        private string Input { get; } = string.Empty;
+        [Option(Description = "Path to neo-express data file")]
+        string Input { get; } = string.Empty;
 
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
                 var (chain, _) = Program.LoadExpressChain(Input);
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
 
-                var blockchainOperations = new NeoExpress.Neo2.BlockchainOperations();
+                var blockchainOperations = new BlockchainOperations();
                 blockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, console.Out);
 
                 return 0;
             }
             catch (Exception ex)
             {
-                console.WriteError(ex.Message);
-                app.ShowHelp();
+                console.Error.WriteLine(ex.Message);
                 return 1;
             }
         }
+
     }
 }

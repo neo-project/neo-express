@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions.Models;
 
 namespace NeoExpress.Commands
 {
@@ -17,15 +16,15 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, filename) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
+                    // var (chain, filename) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
 
-                    var wallets = chain.ConsensusNodes.Select(n => n.Wallet)
-                        .Concat(chain.Wallets ?? Enumerable.Empty<ExpressWallet>());
-                    foreach (var wallet in wallets)
-                    {
-                        blockchainOperations.PrintWalletInfo(wallet, console.Out);
-                    }
+                    // var wallets = chain.ConsensusNodes.Select(n => n.Wallet)
+                    //     .Concat(chain.Wallets ?? Enumerable.Empty<ExpressWallet>());
+                    // foreach (var wallet in wallets)
+                    // {
+                    //     blockchainOperations.PrintWalletInfo(wallet, console.Out);
+                    // }
 
                     return 0;
                 }

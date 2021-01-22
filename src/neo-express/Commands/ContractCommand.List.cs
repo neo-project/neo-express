@@ -21,34 +21,34 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var blockchainOperations = new BlockchainOperations();
-                    var contracts = await blockchainOperations.ListContractsAsync(chain)
-                        .ConfigureAwait(false);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var contracts = await blockchainOperations.ListContractsAsync(chain)
+                    //     .ConfigureAwait(false);
 
-                    if (Json)
-                    {
-                        using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
-                        writer.WriteStartArray();
-                        foreach (var (hash, manifest) in contracts)
-                        {
-                            writer.WriteStartObject();
-                            writer.WritePropertyName("name");
-                            writer.WriteValue(manifest.Name);
-                            writer.WritePropertyName("hash");
-                            writer.WriteValue(hash.ToString());
-                            writer.WriteEndObject();
-                        }
-                        writer.WriteEndArray();
-                    }
-                    else
-                    {
-                        foreach (var (hash, manifest) in contracts)
-                        {
-                            console.WriteLine($"{manifest.Name} ({hash})");
-                        }
-                    }
+                    // if (Json)
+                    // {
+                    //     using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
+                    //     writer.WriteStartArray();
+                    //     foreach (var (hash, manifest) in contracts)
+                    //     {
+                    //         writer.WriteStartObject();
+                    //         writer.WritePropertyName("name");
+                    //         writer.WriteValue(manifest.Name);
+                    //         writer.WritePropertyName("hash");
+                    //         writer.WriteValue(hash.ToString());
+                    //         writer.WriteEndObject();
+                    //     }
+                    //     writer.WriteEndArray();
+                    // }
+                    // else
+                    // {
+                    //     foreach (var (hash, manifest) in contracts)
+                    //     {
+                    //         console.WriteLine($"{manifest.Name} ({hash})");
+                    //     }
+                    // }
 
                     return 0;
                 }

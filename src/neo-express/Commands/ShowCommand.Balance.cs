@@ -26,17 +26,17 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
-                    var account = blockchainOperations.GetAccount(chain, Account);
-                    if (account == null)
-                    {
-                        throw new Exception($"{Account} account not found.");
-                    }
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var account = blockchainOperations.GetAccount(chain, Account);
+                    // if (account == null)
+                    // {
+                    //     throw new Exception($"{Account} account not found.");
+                    // }
 
-                    var (balance, contract) = await blockchainOperations.ShowBalanceAsync(chain, account, Asset);
+                    // var (balance, contract) = await blockchainOperations.ShowBalanceAsync(chain, account, Asset);
 
-                    console.WriteLine($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance}");
+                    // console.WriteLine($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance}");
                     return 0;
                 }
                 catch (Exception ex)

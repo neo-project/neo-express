@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions;
 
 namespace NeoExpress.Commands
 {

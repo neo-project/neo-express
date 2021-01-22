@@ -10,7 +10,6 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
-using NeoExpress.Abstractions.Models;
 using NeoExpress.Models;
 
 namespace NeoExpress.Node

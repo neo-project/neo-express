@@ -32,51 +32,51 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    if (!File.Exists(ResponsePath))
-                    {
-                        throw new Exception($"Response File {ResponsePath} couldn't be found");
-                    }
+                    // if (!File.Exists(ResponsePath))
+                    // {
+                    //     throw new Exception($"Response File {ResponsePath} couldn't be found");
+                    // }
 
-                    JObject responseJson;
-                    {
-                        using var stream = File.OpenRead(ResponsePath);
-                        using var reader = new StreamReader(stream);
-                        using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
-                        responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
-                    }
+                    // JObject responseJson;
+                    // {
+                    //     using var stream = File.OpenRead(ResponsePath);
+                    //     using var reader = new StreamReader(stream);
+                    //     using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
+                    //     responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+                    // }
 
-                    var requestId = RequestId.hasValue ? (ulong?)RequestId.value : null;
+                    // var requestId = RequestId.hasValue ? (ulong?)RequestId.value : null;
 
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
-                    var txs = await blockchainOperations.SubmitOracleResponseAsync(chain, Url, OracleResponseCode.Success, responseJson, requestId)
-                        .ConfigureAwait(false);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var txs = await blockchainOperations.SubmitOracleResponseAsync(chain, Url, OracleResponseCode.Success, responseJson, requestId)
+                    //     .ConfigureAwait(false);
 
-                    if (Json)
-                    {
-                        using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
-                        writer.WriteStartArray();
-                        for (int i = 0; i < txs.Count; i++)
-                        {
-                            writer.WriteValue(txs[i].ToString());
-                        }
-                        writer.WriteEndArray();
-                    }
-                    else
-                    {
-                        if (txs.Count == 0)
-                        {
-                            console.WriteLine("No oracle response transactions submitted");
-                        }
-                        else
-                        {
-                            console.WriteLine("Oracle response transactions submitted:");
-                            for (int i = 0; i < txs.Count; i++)
-                            {
-                                console.WriteLine($"    {txs[i]}");
-                            }
-                        }
-                    }
+                    // if (Json)
+                    // {
+                    //     using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
+                    //     writer.WriteStartArray();
+                    //     for (int i = 0; i < txs.Count; i++)
+                    //     {
+                    //         writer.WriteValue(txs[i].ToString());
+                    //     }
+                    //     writer.WriteEndArray();
+                    // }
+                    // else
+                    // {
+                    //     if (txs.Count == 0)
+                    //     {
+                    //         console.WriteLine("No oracle response transactions submitted");
+                    //     }
+                    //     else
+                    //     {
+                    //         console.WriteLine("Oracle response transactions submitted:");
+                    //         for (int i = 0; i < txs.Count; i++)
+                    //         {
+                    //             console.WriteLine($"    {txs[i]}");
+                    //         }
+                    //     }
+                    // }
                     return 0;
                 }
                 catch (Exception ex)

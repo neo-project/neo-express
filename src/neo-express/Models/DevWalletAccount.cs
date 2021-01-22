@@ -3,7 +3,6 @@ using System.Linq;
 using Neo.SmartContract;
 using Neo.Wallets;
 using Neo;
-using NeoExpress.Abstractions.Models;
 
 namespace NeoExpress.Models
 {

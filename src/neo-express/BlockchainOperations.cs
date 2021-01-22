@@ -19,7 +19,6 @@ using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
-using NeoExpress.Abstractions.Models;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Newtonsoft.Json;

@@ -16,18 +16,18 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
-                    var requests = await blockchainOperations
-                        .GetOracleRequestsAsync(chain)
-                        .ConfigureAwait(false);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var requests = await blockchainOperations
+                    //     .GetOracleRequestsAsync(chain)
+                    //     .ConfigureAwait(false);
 
-                    foreach (var (id, request) in requests)
-                    {
-                        console.WriteLine($"request #{id}:");
-                        console.WriteLine($"    Original Tx Hash: {request.OriginalTxid}");
-                        console.WriteLine($"    Request Url:      \"{request.Url}\"");
-                    }
+                    // foreach (var (id, request) in requests)
+                    // {
+                    //     console.WriteLine($"request #{id}:");
+                    //     console.WriteLine($"    Original Tx Hash: {request.OriginalTxid}");
+                    //     console.WriteLine($"    Request Url:      \"{request.Url}\"");
+                    // }
 
                     return 0;
                 }

@@ -5,7 +5,6 @@ using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
-using NeoExpress.Abstractions.Models;
 using NeoExpress.Models;
 using System;
 using System.Collections.Generic;

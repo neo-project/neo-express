@@ -24,18 +24,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
+    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.67-preview" />
-    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
-    <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
-    <PackageReference Include="Nerdbank.Streams" Version="2.6.81" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Nito.Disposables" Version="2.2.0" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.67-preview"/>
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)"/>
+    <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)"/>
+    <PackageReference Include="Nerdbank.Streams" Version="2.6.81"/>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
+    <PackageReference Include="Nito.Disposables" Version="2.2.0"/>
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0"/>
+    <PackageReference Include="System.IO.Abstractions" Version="13.2.9"/>
   </ItemGroup>
 
 </Project>

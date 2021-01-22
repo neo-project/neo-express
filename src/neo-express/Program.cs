@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Abstractions.Models;
+using Microsoft.Extensions.DependencyInjection;
 using NeoExpress.Commands;
 
 namespace NeoExpress
@@ -21,10 +23,20 @@ namespace NeoExpress
         typeof(WalletCommand))]
     class Program
     {
-        public static int Main(string[] args)
+        public static Task<int> Main(string[] args)
         {
             EnableAnsiEscapeSequences();
-            return CommandLineApplication.Execute<Program>(args);
+
+            var services = new ServiceCollection()
+                .AddSingleton<IFileSystem, FileSystem>()
+                .BuildServiceProvider();
+
+            var app = new CommandLineApplication<Program>();
+            app.Conventions
+                .UseDefaultConventions()
+                .UseConstructorInjection(services);
+
+            return app.ExecuteAsync(args);
         }
 
         [Option]
@@ -47,15 +59,16 @@ namespace NeoExpress
            ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express")
            : filename;
 
-        public static (ExpressChain chain, string filename) LoadExpressChain(string filename)
+        public static (Models.ExpressChain chain, string filename) LoadExpressChain(string filename)
         {
-            filename = GetDefaultFilename(filename);
-            if (!File.Exists(filename))
-            {
-                throw new Exception($"{filename} file doesn't exist");
-            }
-            var chain = ExpressChain.Load(filename);
-            return (chain, filename);
+            throw new NotImplementedException();
+            // filename = GetDefaultFilename(filename);
+            // if (!File.Exists(filename))
+            // {
+            //     throw new Exception($"{filename} file doesn't exist");
+            // }
+            // var chain = ExpressChain.Load(filename);
+            // return (chain, filename);
         }
 
         static void EnableAnsiEscapeSequences()

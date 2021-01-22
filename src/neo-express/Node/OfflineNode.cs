@@ -15,7 +15,6 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
-using NeoExpress.Abstractions.Models;
 using NeoExpress.Models;
 using System;
 using System.Collections.Generic;

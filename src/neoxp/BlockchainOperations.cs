@@ -31,65 +31,6 @@ namespace NeoExpress
 
     public class BlockchainOperations
     {
-        public ExpressChain CreateBlockchain(FileInfo output, int count, TextWriter writer)
-        {
-            if (File.Exists(output.FullName))
-            {
-                throw new ArgumentException($"{output.FullName} already exists", nameof(output));
-            }
-
-            if (count != 1 && count != 4 && count != 7)
-            {
-                throw new ArgumentException("invalid blockchain node count", nameof(count));
-            }
-
-            var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(count);
-
-            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
-
-            for (var i = 1; i <= count; i++)
-            {
-                var wallet = new DevWallet($"node{i}");
-                var account = wallet.CreateAccount();
-                account.IsDefault = true;
-                wallets.Add((wallet, account));
-            }
-
-            var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
-
-            var contract = Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
-
-            foreach (var (wallet, account) in wallets)
-            {
-                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-                multiSigContractAccount.Label = "MultiSigContract";
-            }
-
-            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
-            // http://www.iana.org/assignments/port-numbers
-            var nodes = new List<ExpressConsensusNode>(count);
-            for (var i = 0; i < count; i++)
-            {
-                nodes.Add(new ExpressConsensusNode()
-                {
-                    TcpPort = GetPortNumber(i, 3),
-                    WebSocketPort = GetPortNumber(i, 4),
-                    RpcPort = GetPortNumber(i, 2),
-                    Wallet = wallets[i].wallet.ToExpressWallet()
-                });
-            }
-
-            writer.WriteLine($"Created {count} node privatenet at {output.FullName}");
-            writer.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-            writer.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
-
-            return new ExpressChain()
-            {
-                Magic = ExpressChain.GenerateMagicValue(),
-                ConsensusNodes = nodes,
-            };
-        }
-
         public void PrintWalletInfo(ExpressWallet wallet, TextWriter writer)
         {
             writer.WriteLine(wallet.Name);

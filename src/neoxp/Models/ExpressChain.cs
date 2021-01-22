@@ -28,25 +28,6 @@ namespace NeoExpress.Models
             }
         }
 
-        public static ExpressChain Load(string filename)
-        {
-            var serializer = new JsonSerializer();
-            using var stream = File.OpenRead(filename);
-            using var reader = new JsonTextReader(new StreamReader(stream));
-            return serializer.Deserialize<ExpressChain>(reader)
-                ?? throw new Exception($"Cannot load Neo-Express instance information from {filename}");
-        }
-
-        public void Save(string fileName)
-        {
-            var serializer = new JsonSerializer();
-            using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write))
-            using (var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented })
-            {
-                serializer.Serialize(writer, this);
-            }
-        }
-
         [JsonProperty("magic")]
         public long Magic { get; set; }
 

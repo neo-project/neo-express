@@ -13,16 +13,16 @@ namespace NeoExpress.Commands
     internal class CreateCommand
     {
         [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
-        internal string Output { get; } = string.Empty;
+        internal string Output { get; set; } = string.Empty;
 
         [Option(Description = "Number of consensus nodes to create\nDefault: 1")]
         [AllowedValues("1", "4", "7")]
-        internal int Count { get; } = 1;
+        internal int Count { get; set; } = 1;
 
         [Option(Description = "Overwrite existing data")]
-        internal bool Force { get; }
+        internal bool Force { get; set; }
 
-        internal int OnExecute(CommandLineApplication app, IFileSystem fileSystem, IConsole console)
+        internal int OnExecute(IFileSystem fileSystem, IConsole console)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace NeoExpress.Commands
                     ConsensusNodes = nodes,
                 };
 
-                chain.Save(output);
+                fileSystem.SaveChain(chain, output);
 
                 return 0;
             }

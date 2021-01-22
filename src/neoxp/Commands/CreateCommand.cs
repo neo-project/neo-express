@@ -10,17 +10,17 @@ using NeoExpress.Models;
 namespace NeoExpress.Commands
 {
     [Command("create", Description = "Create new neo-express instance")]
-    class CreateCommand
+    internal class CreateCommand
     {
         [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
-        string Output { get; } = string.Empty;
+        internal string Output { get; } = string.Empty;
 
         [Option(Description = "Number of consensus nodes to create\nDefault: 1")]
         [AllowedValues("1", "4", "7")]
-        int Count { get; } = 1;
+        internal int Count { get; } = 1;
 
         [Option(Description = "Overwrite existing data")]
-        bool Force { get; }
+        internal bool Force { get; }
 
         internal int OnExecute(CommandLineApplication app, IFileSystem fileSystem, IConsole console)
         {

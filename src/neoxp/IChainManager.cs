@@ -1,3 +1,4 @@
+using System.IO;
 using NeoExpress.Models;
 
 namespace NeoExpress
@@ -9,5 +10,6 @@ namespace NeoExpress
         (ExpressChain chain, string filename) Load(string filename);
         bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0);
         void Save(ExpressChain chain, string fileName);
+        void ExportBlockchain(ExpressChain chain, string password, TextWriter writer);
     }
 }

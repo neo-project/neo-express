@@ -8,6 +8,11 @@ using Neo;
 using NeoExpress.Models;
 using Newtonsoft.Json;
 
+using FileAccess = System.IO.FileAccess;
+using FileMode = System.IO.FileMode;
+using StreamWriter = System.IO.StreamWriter;
+using TextWriter = System.IO.TextWriter;
+
 namespace NeoExpress
 {
     class ChainManager : IChainManager
@@ -145,6 +150,99 @@ namespace NeoExpress
                 .Build();
 
             return ProtocolSettings.Initialize(config);
+        }
+
+        public void ExportBlockchain(ExpressChain chain, string password, TextWriter writer)
+        {
+            var folder = fileSystem.Directory.GetCurrentDirectory();
+            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var node = chain.ConsensusNodes[i];
+                writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node wallet");
+
+                var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
+                if (fileSystem.File.Exists(walletPath))
+                {
+                    fileSystem.File.Delete(walletPath);
+                }
+
+                var devWallet = DevWallet.FromExpressWallet(node.Wallet);
+                devWallet.Export(walletPath, password);
+
+                var path = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
+                using var stream = fileSystem.File.Open(path, FileMode.Create, FileAccess.Write);
+                using var configWriter = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+
+                // use neo-cli defaults for Logger & Storage
+
+                configWriter.WriteStartObject();
+                configWriter.WritePropertyName("ApplicationConfiguration");
+                configWriter.WriteStartObject();
+
+                configWriter.WritePropertyName("P2P");
+                configWriter.WriteStartObject();
+                configWriter.WritePropertyName("Port");
+                configWriter.WriteValue(node.TcpPort);
+                configWriter.WritePropertyName("WsPort");
+                configWriter.WriteValue(node.WebSocketPort);
+                configWriter.WriteEndObject();
+
+                configWriter.WritePropertyName("UnlockWallet");
+                configWriter.WriteStartObject();
+                configWriter.WritePropertyName("Path");
+                configWriter.WriteValue(walletPath);
+                configWriter.WritePropertyName("Password");
+                configWriter.WriteValue(password);
+                configWriter.WritePropertyName("StartConsensus");
+                configWriter.WriteValue(true);
+                configWriter.WritePropertyName("IsActive");
+                configWriter.WriteValue(true);
+                configWriter.WriteEndObject();
+
+                configWriter.WriteEndObject();
+                configWriter.WriteEndObject();
+            }
+
+            {
+                var path = fileSystem.Path.Combine(folder, "protocol.json");
+                using var stream = fileSystem.File.Open(path, FileMode.Create, FileAccess.Write);
+                using var protocolWriter = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+
+                // use neo defaults for MillisecondsPerBlock & AddressVersion
+
+                protocolWriter.WriteStartObject();
+                protocolWriter.WritePropertyName("ProtocolConfiguration");
+                protocolWriter.WriteStartObject();
+
+                protocolWriter.WritePropertyName("Magic");
+                protocolWriter.WriteValue(chain.Magic);
+                protocolWriter.WritePropertyName("ValidatorsCount");
+                protocolWriter.WriteValue(chain.ConsensusNodes.Count);
+
+                protocolWriter.WritePropertyName("StandbyCommittee");
+                protocolWriter.WriteStartArray();
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                {
+                    var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount);
+                    var key = account.GetKey();
+                    if (key != null)
+                    {
+                        protocolWriter.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
+                    }
+                }
+                protocolWriter.WriteEndArray();
+
+                protocolWriter.WritePropertyName("SeedList");
+                protocolWriter.WriteStartArray();
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    protocolWriter.WriteValue($"{IPAddress.Loopback}:{node.TcpPort}");
+                }
+                protocolWriter.WriteEndArray();
+
+                protocolWriter.WriteEndObject();
+                protocolWriter.WriteEndObject();
+            }
         }
     }
 }

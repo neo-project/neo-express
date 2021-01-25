@@ -30,30 +30,30 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chain, _) = Program.LoadExpressChain(Input);
-                var blockchainOperations = new BlockchainOperations();
-                var senderAccount = blockchainOperations.GetAccount(chain, Sender);
-                if (senderAccount == null)
-                {
-                    throw new Exception($"{Sender} sender not found.");
-                }
+                // var (chain, _) = Program.LoadExpressChain(Input);
+                // var blockchainOperations = new BlockchainOperations();
+                // var senderAccount = blockchainOperations.GetAccount(chain, Sender);
+                // if (senderAccount == null)
+                // {
+                //     throw new Exception($"{Sender} sender not found.");
+                // }
 
-                var receiverAccount = blockchainOperations.GetAccount(chain, Receiver);
-                if (receiverAccount == null)
-                {
-                    throw new Exception($"{Receiver} receiver not found.");
-                }
+                // var receiverAccount = blockchainOperations.GetAccount(chain, Receiver);
+                // if (receiverAccount == null)
+                // {
+                //     throw new Exception($"{Receiver} receiver not found.");
+                // }
 
-                var txHash = await blockchainOperations.TransferAsync(chain, Asset, Quantity, senderAccount, receiverAccount)
-                    .ConfigureAwait(false);
-                if (Json)
-                {
-                    console.WriteLine($"{txHash}");
-                }
-                else
-                {
-                    console.WriteLine($"Transfer Transaction {txHash} submitted");
-                }
+                // var txHash = await blockchainOperations.TransferAsync(chain, Asset, Quantity, senderAccount, receiverAccount)
+                //     .ConfigureAwait(false);
+                // if (Json)
+                // {
+                //     console.WriteLine($"{txHash}");
+                // }
+                // else
+                // {
+                //     console.WriteLine($"Transfer Transaction {txHash} submitted");
+                // }
 
                 return 0;
             }

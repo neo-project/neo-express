@@ -22,13 +22,13 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var blockchainOperations = new BlockchainOperations();
-                    var manifest = await blockchainOperations.GetContractAsync(chain, Contract)
-                        .ConfigureAwait(false);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var manifest = await blockchainOperations.GetContractAsync(chain, Contract)
+                    //     .ConfigureAwait(false);
 
-                    console.WriteLine(manifest.ToJson().ToString(true));
+                    // console.WriteLine(manifest.ToJson().ToString(true));
 
                     return 0;
                 }

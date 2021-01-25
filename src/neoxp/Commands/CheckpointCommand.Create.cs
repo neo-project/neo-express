@@ -23,33 +23,33 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
 
-                    if (chain.ConsensusNodes.Count > 1)
-                    {
-                        throw new Exception("Checkpoint create is only supported on single node express instances");
-                    }
+                    // if (chain.ConsensusNodes.Count > 1)
+                    // {
+                    //     throw new Exception("Checkpoint create is only supported on single node express instances");
+                    // }
 
-                    var blockchainOperations = new BlockchainOperations();
-                    var filename = blockchainOperations.ResolveCheckpointFileName(Name);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var filename = blockchainOperations.ResolveCheckpointFileName(Name);
 
-                    if (File.Exists(filename))
-                    {
-                        if (!Force)
-                        {
-                            throw new Exception("You must specify --force to overwrite an existing file");
-                        }
+                    // if (File.Exists(filename))
+                    // {
+                    //     if (!Force)
+                    //     {
+                    //         throw new Exception("You must specify --force to overwrite an existing file");
+                    //     }
 
-                        File.Delete(filename);
-                    }
+                    //     File.Delete(filename);
+                    // }
 
-                    var parentPath = Path.GetDirectoryName(filename);
-                    if (!Directory.Exists(parentPath))
-                    {
-                        Directory.CreateDirectory(parentPath);
-                    }
+                    // var parentPath = Path.GetDirectoryName(filename);
+                    // if (!Directory.Exists(parentPath))
+                    // {
+                    //     Directory.CreateDirectory(parentPath);
+                    // }
 
-                    await blockchainOperations.CreateCheckpointAsync(chain, filename, Console.Out);
+                    // await blockchainOperations.CreateCheckpointAsync(chain, filename, Console.Out);
 
                     return 0;
                 }

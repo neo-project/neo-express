@@ -20,11 +20,11 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
 
-                    var block = await blockchainOperations.ShowBlockAsync(chain, BlockHash).ConfigureAwait(false);
-                    console.WriteLine(block.ToJson().ToString(true));
+                    // var block = await blockchainOperations.ShowBlockAsync(chain, BlockHash).ConfigureAwait(false);
+                    // console.WriteLine(block.ToJson().ToString(true));
                     return 0;
                 }
                 catch (Exception ex)

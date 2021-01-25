@@ -29,24 +29,24 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var blockchainOperations = new BlockchainOperations();
-                    var account = blockchainOperations.GetAccount(chain, Account);
-                    if (account == null)
-                    {
-                        throw new Exception($"Account {Account} not found.");
-                    }
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var account = blockchainOperations.GetAccount(chain, Account);
+                    // if (account == null)
+                    // {
+                    //     throw new Exception($"Account {Account} not found.");
+                    // }
 
-                    var txHash = await blockchainOperations.DeployContractAsync(chain, Contract, account);
-                    if (Json)
-                    {
-                        console.WriteLine($"{txHash}");
-                    } 
-                    else
-                    {
-                        console.WriteLine($"Deployment Transaction {txHash} submitted");
-                    }
+                    // var txHash = await blockchainOperations.DeployContractAsync(chain, Contract, account);
+                    // if (Json)
+                    // {
+                    //     console.WriteLine($"{txHash}");
+                    // } 
+                    // else
+                    // {
+                    //     console.WriteLine($"Deployment Transaction {txHash} submitted");
+                    // }
 
                     return 0;
                 }

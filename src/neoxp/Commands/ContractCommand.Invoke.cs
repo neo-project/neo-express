@@ -90,50 +90,50 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    if (!File.Exists(InvocationFile))
-                    {
-                        throw new Exception($"Invocation file {InvocationFile} couldn't be found");
-                    }
+                    // if (!File.Exists(InvocationFile))
+                    // {
+                    //     throw new Exception($"Invocation file {InvocationFile} couldn't be found");
+                    // }
 
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
 
-                    if (Test)
-                    {
-                        var result = await blockchainOperations.TestInvokeContractAsync(chain, InvocationFile);
-                        console.WriteLine($"VM State:     {result.State}");
-                        console.WriteLine($"Gas Consumed: {result.GasConsumed}");
-                        if (result.Exception != null)
-                        {
-                            console.WriteLine($"Expception:   {result.Exception}");
-                        }
-                        if (result.Stack.Length > 0)
-                        {
-                            var stack = result.Stack;
-                            console.WriteLine("Result Stack:");
-                            for (int i = 0; i < stack.Length; i++)
-                            {
-                                WriteStackItem(console, stack[i]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var account = blockchainOperations.GetAccount(chain, Account);
-                        if (account == null)
-                        {
-                            throw new Exception($"{Account} account not found.");
-                        }
-                        var txHash = await blockchainOperations.InvokeContractAsync(chain, InvocationFile, account, Trace, AdditionalGas);
-                        if (Json)
-                        {
-                            console.WriteLine($"{txHash}");
-                        }
-                        else
-                        {
-                            console.WriteLine($"Invocation Transaction {txHash} submitted");
-                        }
-                    }
+                    // if (Test)
+                    // {
+                    //     var result = await blockchainOperations.TestInvokeContractAsync(chain, InvocationFile);
+                    //     console.WriteLine($"VM State:     {result.State}");
+                    //     console.WriteLine($"Gas Consumed: {result.GasConsumed}");
+                    //     if (result.Exception != null)
+                    //     {
+                    //         console.WriteLine($"Expception:   {result.Exception}");
+                    //     }
+                    //     if (result.Stack.Length > 0)
+                    //     {
+                    //         var stack = result.Stack;
+                    //         console.WriteLine("Result Stack:");
+                    //         for (int i = 0; i < stack.Length; i++)
+                    //         {
+                    //             WriteStackItem(console, stack[i]);
+                    //         }
+                    //     }
+                    // }
+                    // else
+                    // {
+                    //     var account = blockchainOperations.GetAccount(chain, Account);
+                    //     if (account == null)
+                    //     {
+                    //         throw new Exception($"{Account} account not found.");
+                    //     }
+                    //     var txHash = await blockchainOperations.InvokeContractAsync(chain, InvocationFile, account, Trace, AdditionalGas);
+                    //     if (Json)
+                    //     {
+                    //         console.WriteLine($"{txHash}");
+                    //     }
+                    //     else
+                    //     {
+                    //         console.WriteLine($"Invocation Transaction {txHash} submitted");
+                    //     }
+                    // }
                     return 0;
                 }
                 catch (Exception ex)

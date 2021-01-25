@@ -30,24 +30,24 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var blockchainOperations = new BlockchainOperations();
-                    var filename = blockchainOperations.ResolveCheckpointFileName(Name);
-                    if (!File.Exists(filename))
-                    {
-                        throw new Exception($"Checkpoint {filename} couldn't be found");
-                    }
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var filename = blockchainOperations.ResolveCheckpointFileName(Name);
+                    // if (!File.Exists(filename))
+                    // {
+                    //     throw new Exception($"Checkpoint {filename} couldn't be found");
+                    // }
 
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    using var cts = new CancellationTokenSource();
-                    console.CancelKeyPress += (sender, args) => cts.Cancel();
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // using var cts = new CancellationTokenSource();
+                    // console.CancelKeyPress += (sender, args) => cts.Cancel();
 
-                    await blockchainOperations.RunCheckpointAsync(chain,
-                                                                  filename,
-                                                                  SecondsPerBlock,
-                                                                  Trace,
-                                                                  console.Out,
-                                                                  cts.Token)
-                            .ConfigureAwait(false);
+                    // await blockchainOperations.RunCheckpointAsync(chain,
+                    //                                               filename,
+                    //                                               SecondsPerBlock,
+                    //                                               Trace,
+                    //                                               console.Out,
+                    //                                               cts.Token)
+                    //         .ConfigureAwait(false);
 
                     return 0;
                 }

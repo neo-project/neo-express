@@ -24,18 +24,18 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var blockchainOperations = new BlockchainOperations();
-                    var filename = blockchainOperations.ResolveCheckpointFileName(Name);
-                    if (!File.Exists(filename))
-                    {
-                        throw new Exception($"Checkpoint {filename} couldn't be found");
-                    }
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var filename = blockchainOperations.ResolveCheckpointFileName(Name);
+                    // if (!File.Exists(filename))
+                    // {
+                    //     throw new Exception($"Checkpoint {filename} couldn't be found");
+                    // }
 
-                    blockchainOperations.RestoreCheckpoint(chain, filename, Force);
+                    // blockchainOperations.RestoreCheckpoint(chain, filename, Force);
 
-                    console.WriteLine($"Checkpoint {Name} successfully restored");
+                    // console.WriteLine($"Checkpoint {Name} successfully restored");
                     return 0;
                 }
                 catch (Exception ex)

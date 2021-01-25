@@ -23,27 +23,27 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
-                    var account = blockchainOperations.GetAccount(chain, Account);
-                    if (account == null)
-                    {
-                        throw new Exception($"{Account} account not found.");
-                    }
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var account = blockchainOperations.GetAccount(chain, Account);
+                    // if (account == null)
+                    // {
+                    //     throw new Exception($"{Account} account not found.");
+                    // }
 
-                    var balances = await blockchainOperations.GetBalancesAsync(chain, account);
+                    // var balances = await blockchainOperations.GetBalancesAsync(chain, account);
 
-                    if (balances.Length == 0)
-                    {
-                        console.WriteLine($"No balances for {Account}");
-                    }
+                    // if (balances.Length == 0)
+                    // {
+                    //     console.WriteLine($"No balances for {Account}");
+                    // }
 
-                    for (int i = 0; i < balances.Length; i++)
-                    {
-                        var balance = new BigDecimal(balances[i].balance.Amount, balances[i].contract.Decimals);
-                        console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
-                        console.WriteLine($"  balance: {balance}");
-                    }
+                    // for (int i = 0; i < balances.Length; i++)
+                    // {
+                    //     var balance = new BigDecimal(balances[i].balance.Amount, balances[i].contract.Decimals);
+                    //     console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
+                    //     console.WriteLine($"  balance: {balance}");
+                    // }
                     return 0;
                 }
                 catch (Exception ex)

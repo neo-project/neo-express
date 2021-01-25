@@ -16,17 +16,17 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
-                    var oracleNodes = await blockchainOperations
-                        .GetOracleNodesAsync(chain)
-                        .ConfigureAwait(false);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var oracleNodes = await blockchainOperations
+                    //     .GetOracleNodesAsync(chain)
+                    //     .ConfigureAwait(false);
                     
-                    console.WriteLine($"Oracle Nodes ({oracleNodes.Length}): ");
-                    for (var x = 0; x < oracleNodes.Length; x++)
-                    {
-                        console.WriteLine($"  {oracleNodes[x]}");
-                    }
+                    // console.WriteLine($"Oracle Nodes ({oracleNodes.Length}): ");
+                    // for (var x = 0; x < oracleNodes.Length; x++)
+                    // {
+                    //     console.WriteLine($"  {oracleNodes[x]}");
+                    // }
 
                     return 0;
                 }

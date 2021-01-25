@@ -20,21 +20,21 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
-                    var blockchainOperations = new BlockchainOperations();
-                    var txHash = await blockchainOperations
-                        .DesignateOracleRolesAsync(chain, chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount))
-                        .ConfigureAwait(false);
-                    console.WriteLine($"Oracle Enable Transaction {txHash} submitted");
+                    // var (chain, _) = Program.LoadExpressChain(Input);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var txHash = await blockchainOperations
+                    //     .DesignateOracleRolesAsync(chain, chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount))
+                    //     .ConfigureAwait(false);
+                    // console.WriteLine($"Oracle Enable Transaction {txHash} submitted");
 
-                    if (Json)
-                    {
-                        console.WriteLine($"{txHash}");
-                    }
-                    else
-                    {
-                        console.WriteLine($"Transfer Transaction {txHash} submitted");
-                    }
+                    // if (Json)
+                    // {
+                    //     console.WriteLine($"{txHash}");
+                    // }
+                    // else
+                    // {
+                    //     console.WriteLine($"Transfer Transaction {txHash} submitted");
+                    // }
 
                     return 0;
                 }

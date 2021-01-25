@@ -49,27 +49,27 @@ namespace NeoExpress
 
         public void ResetNode(ExpressChain chain, int index, bool force)
         {
-            if (index >= chain.ConsensusNodes.Count)
-            {
-                throw new InvalidOperationException($"Invalid node index {index}");
-            }
+            // if (index >= chain.ConsensusNodes.Count)
+            // {
+            //     throw new InvalidOperationException($"Invalid node index {index}");
+            // }
 
-            var node = chain.ConsensusNodes[index];
-            if (node.IsRunning())
-            {
-                throw new InvalidOperationException($"node {index} currently running");
-            }
+            // var node = chain.ConsensusNodes[index];
+            // if (node.IsRunning())
+            // {
+            //     throw new InvalidOperationException($"node {index} currently running");
+            // }
 
-            var folder = node.GetBlockchainPath();
-            if (Directory.Exists(folder))
-            {
-                if (!force)
-                {
-                    throw new InvalidOperationException("--force must be specified when resetting a node");
-                }
+            // var folder = node.GetBlockchainPath();
+            // if (Directory.Exists(folder))
+            // {
+            //     if (!force)
+            //     {
+            //         throw new InvalidOperationException("--force must be specified when resetting a node");
+            //     }
 
-                Directory.Delete(folder, true);
-            }
+            //     Directory.Delete(folder, true);
+            // }
         }
 
         private const string GENESIS = "genesis";
@@ -108,54 +108,54 @@ namespace NeoExpress
 
         public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
-            if (index >= chain.ConsensusNodes.Count)
-            {
-                throw new ArgumentException(nameof(index));
-            }
+            // if (index >= chain.ConsensusNodes.Count)
+            // {
+            //     throw new ArgumentException(nameof(index));
+            // }
 
-            var node = chain.ConsensusNodes[index];
-            if (node.IsRunning())
-            {
-                throw new Exception($"node {index} already running");
-            }
+            // var node = chain.ConsensusNodes[index];
+            // if (node.IsRunning())
+            // {
+            //     throw new Exception($"node {index} already running");
+            // }
 
-            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
+            // if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
+            // {
+            //     throw new Exception("could not initialize protocol settings");
+            // }
 
-            var folder = node.GetBlockchainPath();
-            if (!Directory.Exists(folder))
-            {
-                Directory.CreateDirectory(folder);
-            }
-            await writer.WriteLineAsync(folder);
+            // var folder = node.GetBlockchainPath();
+            // if (!Directory.Exists(folder))
+            // {
+            //     Directory.CreateDirectory(folder);
+            // }
+            // await writer.WriteLineAsync(folder);
 
-            // create a named mutex so that checkpoint create command
-            // can detect if blockchain is running automatically
-            using var runningMutex = node.CreateRunningMutex();
-            using var store = GetStore();
-            await NodeUtility.RunAsync(store, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
+            // // create a named mutex so that checkpoint create command
+            // // can detect if blockchain is running automatically
+            // using var runningMutex = node.CreateRunningMutex();
+            // using var store = GetStore();
+            // await NodeUtility.RunAsync(store, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
 
-            Neo.Persistence.IStore GetStore()
-            {
-                if (discard)
-                {
-                    try
-                    {
-                        var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
-                        return new CheckpointStore(rocksDbStore);
-                    }
-                    catch
-                    {
-                        return new CheckpointStore(NullReadOnlyStore.Instance);
-                    }
-                }
-                else
-                {
-                    return RocksDbStore.Open(folder);
-                }
-            }
+            // Neo.Persistence.IStore GetStore()
+            // {
+            //     if (discard)
+            //     {
+            //         try
+            //         {
+            //             var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
+            //             return new CheckpointStore(rocksDbStore);
+            //         }
+            //         catch
+            //         {
+            //             return new CheckpointStore(NullReadOnlyStore.Instance);
+            //         }
+            //     }
+            //     else
+            //     {
+            //         return RocksDbStore.Open(folder);
+            //     }
+            // }
         }
 
         public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
@@ -204,33 +204,33 @@ namespace NeoExpress
 
         public async Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, TextWriter writer)
         {
-            if (File.Exists(checkPointFileName))
-            {
-                throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
-            }
+            // if (File.Exists(checkPointFileName))
+            // {
+            //     throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
+            // }
 
-            if (chain.ConsensusNodes.Count != 1)
-            {
-                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
-            }
+            // if (chain.ConsensusNodes.Count != 1)
+            // {
+            //     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+            // }
 
-            var node = chain.ConsensusNodes[0];
-            var folder = node.GetBlockchainPath();
+            // var node = chain.ConsensusNodes[0];
+            // var folder = node.GetBlockchainPath();
 
-            if (node.IsRunning())
-            {
-                var uri = chain.GetUri();
-                var rpcClient = new RpcClient(uri.ToString());
-                await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
-                await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
-            }
-            else
-            {
-                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-                using var db = RocksDbStore.Open(folder);
-                db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
-                await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
-            }
+            // if (node.IsRunning())
+            // {
+            //     var uri = chain.GetUri();
+            //     var rpcClient = new RpcClient(uri.ToString());
+            //     await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
+            //     await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
+            // }
+            // else
+            // {
+            //     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            //     using var db = RocksDbStore.Open(folder);
+            //     db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
+            //     await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
+            // }
         }
 
         private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
@@ -251,40 +251,40 @@ namespace NeoExpress
 
         public void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force)
         {
-            string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            // string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            try
-            {
-                if (chain.ConsensusNodes.Count != 1)
-                {
-                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-                }
+            // try
+            // {
+            //     if (chain.ConsensusNodes.Count != 1)
+            //     {
+            //         throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            //     }
 
-                var node = chain.ConsensusNodes[0];
-                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-                var blockchainDataPath = node.GetBlockchainPath();
+            //     var node = chain.ConsensusNodes[0];
+            //     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            //     var blockchainDataPath = node.GetBlockchainPath();
 
-                if (!force && Directory.Exists(blockchainDataPath))
-                {
-                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
-                }
+            //     if (!force && Directory.Exists(blockchainDataPath))
+            //     {
+            //         throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+            //     }
 
-                RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            //     RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
 
-                if (Directory.Exists(blockchainDataPath))
-                {
-                    Directory.Delete(blockchainDataPath, true);
-                }
+            //     if (Directory.Exists(blockchainDataPath))
+            //     {
+            //         Directory.Delete(blockchainDataPath, true);
+            //     }
 
-                Directory.Move(checkpointTempPath, blockchainDataPath);
-            }
-            finally
-            {
-                if (Directory.Exists(checkpointTempPath))
-                {
-                    Directory.Delete(checkpointTempPath, true);
-                }
-            }
+            //     Directory.Move(checkpointTempPath, blockchainDataPath);
+            // }
+            // finally
+            // {
+            //     if (Directory.Exists(checkpointTempPath))
+            //     {
+            //         Directory.Delete(checkpointTempPath, true);
+            //     }
+            // }
         }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md

@@ -27,34 +27,34 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = Program.LoadExpressChain(Input);
+                    // var (chain, _) = Program.LoadExpressChain(Input);
 
-                    var blockchainOperations = new BlockchainOperations();
-                    var storages = await blockchainOperations.GetStoragesAsync(chain, Contract);
+                    // var blockchainOperations = new BlockchainOperations();
+                    // var storages = await blockchainOperations.GetStoragesAsync(chain, Contract);
 
-                    if (Json)
-                    {
-                        using var writer = new Utf8JsonWriter(Console.OpenStandardOutput(), new JsonWriterOptions() { Indented = true });
-                        writer.WriteStartArray();
-                        foreach (var storage in storages)
-                        {
-                            writer.WriteStartObject();
-                            writer.WriteString("key", storage.Key);
-                            writer.WriteString("value", storage.Value);
-                            writer.WriteBoolean("constant", storage.Constant);
-                            writer.WriteEndObject();
-                        }
-                        writer.WriteEndArray();
-                    }
-                    else
-                    {
-                        foreach (var storage in storages)
-                        {
-                            console.WriteLine($"key:        0x{storage.Key}");
-                            console.WriteLine($"  value:    0x{storage.Value}");
-                            console.WriteLine($"  constant: {storage.Constant}");
-                        }
-                    }
+                    // if (Json)
+                    // {
+                    //     using var writer = new Utf8JsonWriter(Console.OpenStandardOutput(), new JsonWriterOptions() { Indented = true });
+                    //     writer.WriteStartArray();
+                    //     foreach (var storage in storages)
+                    //     {
+                    //         writer.WriteStartObject();
+                    //         writer.WriteString("key", storage.Key);
+                    //         writer.WriteString("value", storage.Value);
+                    //         writer.WriteBoolean("constant", storage.Constant);
+                    //         writer.WriteEndObject();
+                    //     }
+                    //     writer.WriteEndArray();
+                    // }
+                    // else
+                    // {
+                    //     foreach (var storage in storages)
+                    //     {
+                    //         console.WriteLine($"key:        0x{storage.Key}");
+                    //         console.WriteLine($"  value:    0x{storage.Value}");
+                    //         console.WriteLine($"  constant: {storage.Constant}");
+                    //     }
+                    // }
 
                     return 0;
                 }

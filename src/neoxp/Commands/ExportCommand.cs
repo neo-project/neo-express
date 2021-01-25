@@ -15,11 +15,11 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chain, _) = Program.LoadExpressChain(Input);
-                var password = Prompt.GetPassword("Input password to use for exported wallets");
+                // var (chain, _) = Program.LoadExpressChain(Input);
+                // var password = Prompt.GetPassword("Input password to use for exported wallets");
 
-                var blockchainOperations = new BlockchainOperations();
-                blockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, console.Out);
+                // var blockchainOperations = new BlockchainOperations();
+                // blockchainOperations.ExportBlockchain(chain, Directory.GetCurrentDirectory(), password, console.Out);
 
                 return 0;
             }

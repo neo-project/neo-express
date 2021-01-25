@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="test.$(AssemblyName)" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
   <ItemGroup>

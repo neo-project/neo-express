@@ -28,7 +28,9 @@ namespace NeoExpress
             EnableAnsiEscapeSequences();
 
             var services = new ServiceCollection()
+                .AddSingleton<IChainManager, ChainManager>()
                 .AddSingleton<IFileSystem, FileSystem>()
+                .AddSingleton<INodeManager, NodeManager>()
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();
@@ -53,22 +55,6 @@ namespace NeoExpress
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp(false);
             return 1;
-        }
-
-        public static string GetDefaultFilename(string filename) => string.IsNullOrEmpty(filename)
-           ? Path.Combine(Directory.GetCurrentDirectory(), "default.neo-express")
-           : filename;
-
-        public static (Models.ExpressChain chain, string filename) LoadExpressChain(string filename)
-        {
-            throw new NotImplementedException();
-            // filename = GetDefaultFilename(filename);
-            // if (!File.Exists(filename))
-            // {
-            //     throw new Exception($"{filename} file doesn't exist");
-            // }
-            // var chain = ExpressChain.Load(filename);
-            // return (chain, filename);
         }
 
         static void EnableAnsiEscapeSequences()

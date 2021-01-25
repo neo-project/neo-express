@@ -60,15 +60,18 @@ namespace NeoExpress.Node
             return ProtocolSettings.Initialize(config);
         }
 
+        public static Task RunAsync(Func<IStore> getStore, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+        
         public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
-#pragma warning disable VSTHRD103
             writer.WriteLine(store.GetType().Name);
-#pragma warning restore VSTHRD103
 
             var tcs = new TaskCompletionSource<bool>();
 
-            _ = Task.Run(() =>
+            Task.Run(() =>
             {
                 try
                 {

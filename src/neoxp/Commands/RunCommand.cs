@@ -1,8 +1,10 @@
 using System;
+using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-
+using Neo.BlockchainToolkit.Persistence;
+using Neo.Persistence;
 
 namespace NeoExpress.Commands
 {
@@ -10,43 +12,48 @@ namespace NeoExpress.Commands
     class RunCommand
     {
         [Argument(0, Description = "Index of node to run")]
-        int NodeIndex { get; } = 0;
+        internal int NodeIndex { get; } = 0;
 
         [Option(Description = "Path to neo-express data file")]
-        string Input { get; } = string.Empty;
+        internal string Input { get; } = string.Empty;
 
         [Option(Description = "Time between blocks")]
-        uint SecondsPerBlock { get; }
+        internal uint SecondsPerBlock { get; }
 
         [Option(Description = "Discard blockchain changes on shutdown")]
-        bool Discard { get; } = false;
+        internal bool Discard { get; } = false;
 
         [Option(Description = "Enable contract execution tracing")]
-        bool Trace { get; } = false;
+        internal bool Trace { get; } = false;
 
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        internal async Task<int> OnExecuteAsync(IFileSystem fileSystem, INodeManager nodeManager, IConsole console, CancellationToken token)
         {
             try
             {
-                var (chain, _) = Program.LoadExpressChain(Input);
+                // var (chain, _) = Program.LoadExpressChain(Input);
 
-                if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
-                {
-                    throw new Exception("Invalid node index");
-                }
+                // if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
+                // {
+                //     throw new Exception("Invalid node index");
+                // }
 
-                using var cts = new CancellationTokenSource();
-                console.CancelKeyPress += (sender, args) => cts.Cancel();
-                var blockchainOperations = new BlockchainOperations();
+                // var node = chain.ConsensusNodes[NodeIndex];
 
-                await blockchainOperations.RunBlockchainAsync(chain,
-                                                            NodeIndex,
-                                                            SecondsPerBlock,
-                                                            Discard,
-                                                            Trace,
-                                                            console.Out,
-                                                            cts.Token)
-                    .ConfigureAwait(false);
+                // if (node.IsRunning())
+                // {
+                //     throw new Exception("Node already running");
+                // }
+
+                // var folder = fileSystem.GetNodePath(node);
+                // console.WriteLine(folder);
+
+                // if (!nodeManager.InitializeProtocolSettings(chain, SecondsPerBlock))
+                // {
+                //     throw new Exception("could not initialize protocol settings");
+                // }
+
+                // using IStore store = GetStore(folder);
+                // await nodeManager.RunAsync(store, node, Trace, console, token).ConfigureAwait(false);
 
                 return 0;
             }
@@ -54,6 +61,26 @@ namespace NeoExpress.Commands
             {
                 await console.Error.WriteLineAsync(ex.Message);
                 return 1;
+            }
+        }
+
+        IStore GetStore(string folder)
+        {
+            if (Discard)
+            {
+                try
+                {
+                    var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
+                    return new CheckpointStore(rocksDbStore);
+                }
+                catch
+                {
+                    return new CheckpointStore(NullReadOnlyStore.Instance);
+                }
+            }
+            else
+            {
+                return RocksDbStore.Open(folder);
             }
         }
     }

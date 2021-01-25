@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -15,6 +16,13 @@ namespace NeoExpress
 {
     class NodeManager : INodeManager
     {
+        readonly IFileSystem fileSystem;
+
+        public NodeManager(IFileSystem fileSystem)
+        {
+            this.fileSystem = fileSystem;
+        }
+
         public async Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, IConsole console, CancellationToken token)
         {
             await console.Out.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
@@ -25,7 +33,8 @@ namespace NeoExpress
             {
                 try
                 {
-                    using var mutex = node.CreateRunningMutex();
+                    var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
+                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
                     var wallet = DevWallet.FromExpressWallet(node.Wallet);
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
@@ -63,6 +72,44 @@ namespace NeoExpress
             });
 
             await tcs.Task.ConfigureAwait(false);
+        }
+
+        const string GLOBAL_PREFIX = "Global\\";
+
+        public bool IsRunning(ExpressConsensusNode node)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
+        }
+
+        string GetNodePath(ExpressWalletAccount account)
+        {
+            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
+            if (account == null) throw new ArgumentNullException(nameof(account));
+
+            var rootPath = fileSystem.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
+                "Neo-Express", 
+                "blockchain-nodes");
+            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
+        }
+
+        string GetNodePath(ExpressWallet wallet)
+        {
+            if (wallet == null) throw new ArgumentNullException(nameof(wallet));
+
+            var defaultAccount = wallet.Accounts.Single(a => a.IsDefault);
+            return GetNodePath(defaultAccount);
+        }
+
+        public string GetNodePath(ExpressConsensusNode node)
+        {
+            if (node == null) throw new ArgumentNullException(nameof(node));
+
+            return GetNodePath(node.Wallet);
         }
     }
 }

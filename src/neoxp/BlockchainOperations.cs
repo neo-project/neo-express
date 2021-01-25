@@ -160,46 +160,46 @@ namespace NeoExpress
 
         public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
-            if (chain.ConsensusNodes.Count != 1)
-            {
-                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-            }
+            // if (chain.ConsensusNodes.Count != 1)
+            // {
+            //     throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            // }
 
-            var node = chain.ConsensusNodes[0];
-            if (node.IsRunning())
-            {
-                throw new Exception($"checkpoint node already running");
-            }
+            // var node = chain.ConsensusNodes[0];
+            // if (node.IsRunning())
+            // {
+            //     throw new Exception($"checkpoint node already running");
+            // }
 
-            if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
+            // if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
+            // {
+            //     throw new Exception("could not initialize protocol settings");
+            // }
 
-            string checkpointTempPath;
-            do
-            {
-                checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            }
-            while (Directory.Exists(checkpointTempPath));
+            // string checkpointTempPath;
+            // do
+            // {
+            //     checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            // }
+            // while (Directory.Exists(checkpointTempPath));
 
-            using var folderCleanup = AnonymousDisposable.Create(() =>
-            {
-                if (Directory.Exists(checkpointTempPath))
-                {
-                    Directory.Delete(checkpointTempPath, true);
-                }
-            });
+            // using var folderCleanup = AnonymousDisposable.Create(() =>
+            // {
+            //     if (Directory.Exists(checkpointTempPath))
+            //     {
+            //         Directory.Delete(checkpointTempPath, true);
+            //     }
+            // });
 
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            // var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            // RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
 
-            // create a named mutex so that checkpoint create command
-            // can detect if blockchain is running automatically
-            using var runningMutex = node.CreateRunningMutex();
-            using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
-            using var checkpointStore = new CheckpointStore(rocksDbStore);
-            await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
+            // // create a named mutex so that checkpoint create command
+            // // can detect if blockchain is running automatically
+            // using var runningMutex = node.CreateRunningMutex();
+            // using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
+            // using var checkpointStore = new CheckpointStore(rocksDbStore);
+            // await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, TextWriter writer)

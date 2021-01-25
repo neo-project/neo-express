@@ -11,6 +11,15 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
+        readonly IChainManager chainManager;
+        readonly INodeManager nodeManager;
+
+        public RunCommand(IChainManager chainManager, INodeManager nodeManager)
+        {
+            this.chainManager = chainManager;
+            this.nodeManager = nodeManager;
+        }
+
         [Argument(0, Description = "Index of node to run")]
         internal int NodeIndex { get; } = 0;
 
@@ -26,35 +35,39 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; } = false;
 
-        internal async Task<int> OnExecuteAsync(IFileSystem fileSystem, INodeManager nodeManager, IConsole console, CancellationToken token)
+        internal async Task ExecuteAsync(IConsole console, CancellationToken token)
+        {
+            var (chain, _) = chainManager.Load(Input);
+
+            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
+            {
+                throw new Exception("Invalid node index");
+            }
+
+            var node = chain.ConsensusNodes[NodeIndex];
+
+            if (nodeManager.IsRunning(node))
+            {
+                throw new Exception("Node already running");
+            }
+
+            var folder = nodeManager.GetNodePath(node);
+            await console.Out.WriteLineAsync(folder).ConfigureAwait(false);
+
+            if (!chainManager.InitializeProtocolSettings(chain, SecondsPerBlock))
+            {
+                throw new Exception("could not initialize protocol settings");
+            }
+
+            using IStore store = GetStore(folder);
+            await nodeManager.RunAsync(store, node, Trace, console, token).ConfigureAwait(false);
+        }
+
+        internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)
         {
             try
             {
-                // var (chain, _) = Program.LoadExpressChain(Input);
-
-                // if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
-                // {
-                //     throw new Exception("Invalid node index");
-                // }
-
-                // var node = chain.ConsensusNodes[NodeIndex];
-
-                // if (node.IsRunning())
-                // {
-                //     throw new Exception("Node already running");
-                // }
-
-                // var folder = fileSystem.GetNodePath(node);
-                // console.WriteLine(folder);
-
-                // if (!nodeManager.InitializeProtocolSettings(chain, SecondsPerBlock))
-                // {
-                //     throw new Exception("could not initialize protocol settings");
-                // }
-
-                // using IStore store = GetStore(folder);
-                // await nodeManager.RunAsync(store, node, Trace, console, token).ConfigureAwait(false);
-
+                await ExecuteAsync(console, token);
                 return 0;
             }
             catch (Exception ex)

@@ -8,6 +8,8 @@ namespace NeoExpress
 {
     internal interface INodeManager
     {
+        string GetNodePath(ExpressConsensusNode node);
+        bool IsRunning(ExpressConsensusNode node);
         Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, IConsole console, CancellationToken token);
     }
 }

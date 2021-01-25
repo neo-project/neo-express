@@ -35,66 +35,66 @@ namespace NeoExpress
         //     }
         // }
 
-        static string GetNodePath(this IFileSystem fileSystem, ExpressWalletAccount account)
-        {
-            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
-            if (account == null) throw new ArgumentNullException(nameof(account));
+        // static string GetNodePath(this IFileSystem fileSystem, ExpressWalletAccount account)
+        // {
+        //     if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
+        //     if (account == null) throw new ArgumentNullException(nameof(account));
 
-            var rootPath = fileSystem.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
-                "Neo-Express", 
-                "blockchain-nodes");
-            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
-        }
+        //     var rootPath = fileSystem.Path.Combine(
+        //         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
+        //         "Neo-Express", 
+        //         "blockchain-nodes");
+        //     return fileSystem.Path.Combine(rootPath, account.ScriptHash);
+        // }
 
-        static string GetNodePath(this IFileSystem fileSystem, ExpressWallet wallet)
-        {
-            if (wallet == null) throw new ArgumentNullException(nameof(wallet));
+        // static string GetNodePath(this IFileSystem fileSystem, ExpressWallet wallet)
+        // {
+        //     if (wallet == null) throw new ArgumentNullException(nameof(wallet));
 
-            var defaultAccount = wallet.Accounts.Single(a => a.IsDefault);
-            return fileSystem.GetNodePath(defaultAccount);
-        }
+        //     var defaultAccount = wallet.Accounts.Single(a => a.IsDefault);
+        //     return fileSystem.GetNodePath(defaultAccount);
+        // }
 
-        public static string GetNodePath(this IFileSystem fileSystem, ExpressConsensusNode node)
-        {
-            if (node == null) throw new ArgumentNullException(nameof(node));
+        // public static string GetNodePath(this IFileSystem fileSystem, ExpressConsensusNode node)
+        // {
+        //     if (node == null) throw new ArgumentNullException(nameof(node));
 
-            return fileSystem.GetNodePath(node.Wallet);
-        }
+        //     return fileSystem.GetNodePath(node.Wallet);
+        // }
 
-        const string GLOBAL_PREFIX = "Global\\";
+        // const string GLOBAL_PREFIX = "Global\\";
 
-        public static Mutex CreateRunningMutex(this ExpressConsensusNode node)
-        {
-            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return new Mutex(true, GLOBAL_PREFIX + account.ScriptHash);
-        }
+        // public static Mutex CreateRunningMutex(this ExpressConsensusNode node)
+        // {
+        //     var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+        //     return new Mutex(true, GLOBAL_PREFIX + account.ScriptHash);
+        // }
 
-        public static bool IsRunning(this ExpressChain chain, [MaybeNullWhen(false)] out ExpressConsensusNode node)
-        {
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
+        // public static bool IsRunning(this ExpressChain chain, [MaybeNullWhen(false)] out ExpressConsensusNode node)
+        // {
+        //     // Check to see if there's a neo-express blockchain currently running by
+        //     // attempting to open a mutex with the multisig account address for a name
 
-            foreach (var consensusNode in chain.ConsensusNodes)
-            {
-                if (consensusNode.IsRunning())
-                {
-                    node = consensusNode;
-                    return true;
-                }
-            }
+        //     foreach (var consensusNode in chain.ConsensusNodes)
+        //     {
+        //         if (consensusNode.IsRunning())
+        //         {
+        //             node = consensusNode;
+        //             return true;
+        //         }
+        //     }
 
-            node = default;
-            return false;
-        }
+        //     node = default;
+        //     return false;
+        // }
 
-        public static bool IsRunning(this ExpressConsensusNode node)
-        {
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
+        // public static bool IsRunning(this ExpressConsensusNode node)
+        // {
+        //     // Check to see if there's a neo-express blockchain currently running by
+        //     // attempting to open a mutex with the multisig account address for a name
 
-            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
-        }
+        //     var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+        //     return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
+        // }
     }
 }

@@ -88,6 +88,11 @@ namespace NeoExpress
 
         public (Models.ExpressChain chain, string filename) Load(string filename)
         {
+            filename = ResolveFileName(filename);
+            if (!fileSystem.File.Exists(filename))
+            {
+                throw new Exception($"{filename} file doesn't exist");
+            }
             var serializer = new JsonSerializer();
             using var stream = fileSystem.File.OpenRead(filename);
             using var reader = new JsonTextReader(new System.IO.StreamReader(stream));

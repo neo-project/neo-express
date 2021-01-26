@@ -31,261 +31,137 @@ namespace NeoExpress
 
     public class BlockchainOperations
     {
-        public void PrintWalletInfo(ExpressWallet wallet, TextWriter writer)
-        {
-            writer.WriteLine(wallet.Name);
 
-            foreach (var account in wallet.Accounts)
-            {
-                var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-                var key = devAccount.GetKey() ?? throw new Exception();
+        // public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
+        // {
+        //     await Task.Delay(0);
+        //     // if (chain.ConsensusNodes.Count != 1)
+        //     // {
+        //     //     throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+        //     // }
 
-                writer.WriteLine($"  {account.ScriptHash} ({(account.IsDefault ? "Default" : account.Label)})");
-                writer.WriteLine($"    address bytes: {BitConverter.ToString(devAccount.ScriptHash.ToArray())}");
-                writer.WriteLine($"    public key:    {key.PublicKey.EncodePoint(true).ToHexString()}");
-                writer.WriteLine($"    private key:   {key.PrivateKey.ToHexString()}");
-            }
-        }
+        //     // var node = chain.ConsensusNodes[0];
+        //     // if (node.IsRunning())
+        //     // {
+        //     //     throw new Exception($"checkpoint node already running");
+        //     // }
 
-        public void ResetNode(ExpressChain chain, int index, bool force)
-        {
-            // if (index >= chain.ConsensusNodes.Count)
-            // {
-            //     throw new InvalidOperationException($"Invalid node index {index}");
-            // }
+        //     // if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
+        //     // {
+        //     //     throw new Exception("could not initialize protocol settings");
+        //     // }
 
-            // var node = chain.ConsensusNodes[index];
-            // if (node.IsRunning())
-            // {
-            //     throw new InvalidOperationException($"node {index} currently running");
-            // }
+        //     // string checkpointTempPath;
+        //     // do
+        //     // {
+        //     //     checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        //     // }
+        //     // while (Directory.Exists(checkpointTempPath));
 
-            // var folder = node.GetBlockchainPath();
-            // if (Directory.Exists(folder))
-            // {
-            //     if (!force)
-            //     {
-            //         throw new InvalidOperationException("--force must be specified when resetting a node");
-            //     }
+        //     // using var folderCleanup = AnonymousDisposable.Create(() =>
+        //     // {
+        //     //     if (Directory.Exists(checkpointTempPath))
+        //     //     {
+        //     //         Directory.Delete(checkpointTempPath, true);
+        //     //     }
+        //     // });
 
-            //     Directory.Delete(folder, true);
-            // }
-        }
+        //     // var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+        //     // RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
 
-        private const string GENESIS = "genesis";
+        //     // // create a named mutex so that checkpoint create command
+        //     // // can detect if blockchain is running automatically
+        //     // using var runningMutex = node.CreateRunningMutex();
+        //     // using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
+        //     // using var checkpointStore = new CheckpointStore(rocksDbStore);
+        //     // await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
+        // }
 
-        public ExpressWallet CreateWallet(ExpressChain chain, string name)
-        {
-            if (IsReservedName())
-            {
-                throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
-            }
+        // public async Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, TextWriter writer)
+        // {
+        //     await Task.Delay(0);
+        //     // if (File.Exists(checkPointFileName))
+        //     // {
+        //     //     throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
+        //     // }
 
-            if (chain.Wallets.Any(w => string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new Exception($"There is already a wallet named {name}. Choose a different wallet name.");
-            }
+        //     // if (chain.ConsensusNodes.Count != 1)
+        //     // {
+        //     //     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+        //     // }
 
-            var wallet = new DevWallet(name);
-            var account = wallet.CreateAccount();
-            account.IsDefault = true;
-            return wallet.ToExpressWallet();
+        //     // var node = chain.ConsensusNodes[0];
+        //     // var folder = node.GetBlockchainPath();
 
-            bool IsReservedName()
-            {
-                if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
-                    return true;
+        //     // if (node.IsRunning())
+        //     // {
+        //     //     var uri = chain.GetUri();
+        //     //     var rpcClient = new RpcClient(uri.ToString());
+        //     //     await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
+        //     //     await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
+        //     // }
+        //     // else
+        //     // {
+        //     //     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+        //     //     using var db = RocksDbStore.Open(folder);
+        //     //     db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
+        //     //     await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
+        //     // }
+        // }
 
-                foreach (var node in chain.ConsensusNodes)
-                {
-                    if (string.Equals(node.Wallet.Name, name, StringComparison.OrdinalIgnoreCase))
-                        return true;
-                }
+        // private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
 
-                return false;
-            }
-        }
+        // public string ResolveCheckpointFileName(string checkPointFileName)
+        // {
+        //     checkPointFileName = string.IsNullOrEmpty(checkPointFileName)
+        //         ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}{CHECKPOINT_EXTENSION}"
+        //         : checkPointFileName;
 
-        public async Task RunBlockchainAsync(ExpressChain chain, int index, uint secondsPerBlock, bool discard, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
-        {
-            // if (index >= chain.ConsensusNodes.Count)
-            // {
-            //     throw new ArgumentException(nameof(index));
-            // }
+        //     if (!Path.GetExtension(checkPointFileName).Equals(CHECKPOINT_EXTENSION))
+        //     {
+        //         checkPointFileName += CHECKPOINT_EXTENSION;
+        //     }
 
-            // var node = chain.ConsensusNodes[index];
-            // if (node.IsRunning())
-            // {
-            //     throw new Exception($"node {index} already running");
-            // }
+        //     return Path.GetFullPath(checkPointFileName);
+        // }
 
-            // if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-            // {
-            //     throw new Exception("could not initialize protocol settings");
-            // }
+        // public void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force)
+        // {
+        //     // string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            // var folder = node.GetBlockchainPath();
-            // if (!Directory.Exists(folder))
-            // {
-            //     Directory.CreateDirectory(folder);
-            // }
-            // await writer.WriteLineAsync(folder);
+        //     // try
+        //     // {
+        //     //     if (chain.ConsensusNodes.Count != 1)
+        //     //     {
+        //     //         throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+        //     //     }
 
-            // // create a named mutex so that checkpoint create command
-            // // can detect if blockchain is running automatically
-            // using var runningMutex = node.CreateRunningMutex();
-            // using var store = GetStore();
-            // await NodeUtility.RunAsync(store, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
+        //     //     var node = chain.ConsensusNodes[0];
+        //     //     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+        //     //     var blockchainDataPath = node.GetBlockchainPath();
 
-            // Neo.Persistence.IStore GetStore()
-            // {
-            //     if (discard)
-            //     {
-            //         try
-            //         {
-            //             var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
-            //             return new CheckpointStore(rocksDbStore);
-            //         }
-            //         catch
-            //         {
-            //             return new CheckpointStore(NullReadOnlyStore.Instance);
-            //         }
-            //     }
-            //     else
-            //     {
-            //         return RocksDbStore.Open(folder);
-            //     }
-            // }
-        }
+        //     //     if (!force && Directory.Exists(blockchainDataPath))
+        //     //     {
+        //     //         throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+        //     //     }
 
-        public async Task RunCheckpointAsync(ExpressChain chain, string checkPointArchive, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
-        {
-            // if (chain.ConsensusNodes.Count != 1)
-            // {
-            //     throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-            // }
+        //     //     RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
 
-            // var node = chain.ConsensusNodes[0];
-            // if (node.IsRunning())
-            // {
-            //     throw new Exception($"checkpoint node already running");
-            // }
+        //     //     if (Directory.Exists(blockchainDataPath))
+        //     //     {
+        //     //         Directory.Delete(blockchainDataPath, true);
+        //     //     }
 
-            // if (!NodeUtility.InitializeProtocolSettings(chain, secondsPerBlock))
-            // {
-            //     throw new Exception("could not initialize protocol settings");
-            // }
-
-            // string checkpointTempPath;
-            // do
-            // {
-            //     checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            // }
-            // while (Directory.Exists(checkpointTempPath));
-
-            // using var folderCleanup = AnonymousDisposable.Create(() =>
-            // {
-            //     if (Directory.Exists(checkpointTempPath))
-            //     {
-            //         Directory.Delete(checkpointTempPath, true);
-            //     }
-            // });
-
-            // var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            // RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
-
-            // // create a named mutex so that checkpoint create command
-            // // can detect if blockchain is running automatically
-            // using var runningMutex = node.CreateRunningMutex();
-            // using var rocksDbStore = RocksDbStore.OpenReadOnly(checkpointTempPath);
-            // using var checkpointStore = new CheckpointStore(rocksDbStore);
-            // await NodeUtility.RunAsync(checkpointStore, node, enableTrace, writer, cancellationToken).ConfigureAwait(false);
-        }
-
-        public async Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, TextWriter writer)
-        {
-            // if (File.Exists(checkPointFileName))
-            // {
-            //     throw new ArgumentException("Checkpoint file already exists", nameof(checkPointFileName));
-            // }
-
-            // if (chain.ConsensusNodes.Count != 1)
-            // {
-            //     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
-            // }
-
-            // var node = chain.ConsensusNodes[0];
-            // var folder = node.GetBlockchainPath();
-
-            // if (node.IsRunning())
-            // {
-            //     var uri = chain.GetUri();
-            //     var rpcClient = new RpcClient(uri.ToString());
-            //     await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
-            //     await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint online");
-            // }
-            // else
-            // {
-            //     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            //     using var db = RocksDbStore.Open(folder);
-            //     db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
-            //     await writer.WriteLineAsync($"Created {Path.GetFileName(checkPointFileName)} checkpoint offline");
-            // }
-        }
-
-        private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
-
-        public string ResolveCheckpointFileName(string checkPointFileName)
-        {
-            checkPointFileName = string.IsNullOrEmpty(checkPointFileName)
-                ? $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}{CHECKPOINT_EXTENSION}"
-                : checkPointFileName;
-
-            if (!Path.GetExtension(checkPointFileName).Equals(CHECKPOINT_EXTENSION))
-            {
-                checkPointFileName += CHECKPOINT_EXTENSION;
-            }
-
-            return Path.GetFullPath(checkPointFileName);
-        }
-
-        public void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force)
-        {
-            // string checkpointTempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-
-            // try
-            // {
-            //     if (chain.ConsensusNodes.Count != 1)
-            //     {
-            //         throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-            //     }
-
-            //     var node = chain.ConsensusNodes[0];
-            //     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            //     var blockchainDataPath = node.GetBlockchainPath();
-
-            //     if (!force && Directory.Exists(blockchainDataPath))
-            //     {
-            //         throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
-            //     }
-
-            //     RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
-
-            //     if (Directory.Exists(blockchainDataPath))
-            //     {
-            //         Directory.Delete(blockchainDataPath, true);
-            //     }
-
-            //     Directory.Move(checkpointTempPath, blockchainDataPath);
-            // }
-            // finally
-            // {
-            //     if (Directory.Exists(checkpointTempPath))
-            //     {
-            //         Directory.Delete(checkpointTempPath, true);
-            //     }
-            // }
-        }
+        //     //     Directory.Move(checkpointTempPath, blockchainDataPath);
+        //     // }
+        //     // finally
+        //     // {
+        //     //     if (Directory.Exists(checkpointTempPath))
+        //     //     {
+        //     //         Directory.Delete(checkpointTempPath, true);
+        //     //     }
+        //     // }
+        // }
 
         // https://github.com/neo-project/docs/blob/release-neo3/docs/en-us/tooldev/sdk/transaction.md
         public async Task<UInt256> TransferAsync(ExpressChain chain, string asset, string quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
@@ -454,12 +330,12 @@ namespace NeoExpress
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
-                var account = GetAccount(chain, name);
-                if (account != null)
-                {
-                    scriptHash = account.GetScriptHashAsUInt160();
-                    return true;
-                }
+                // var account = GetAccount(chain, name);
+                // if (account != null)
+                // {
+                //     scriptHash = account.GetScriptHashAsUInt160();
+                //     return true;
+                // }
 
                 scriptHash = null!;
                 return false;
@@ -490,31 +366,31 @@ namespace NeoExpress
             return new ContractParameterParser(tryGetAccount, tryGetContract);
         }
 
-        public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
-        {
-            var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase));
-            if (wallet != null)
-            {
-                return wallet.DefaultAccount;
-            }
+        // public ExpressWalletAccount? GetAccount(ExpressChain chain, string name)
+        // {
+        //     var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+        //         .SingleOrDefault(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase));
+        //     if (wallet != null)
+        //     {
+        //         return wallet.DefaultAccount;
+        //     }
 
-            var node = chain.ConsensusNodes
-                .SingleOrDefault(n => name.Equals(n.Wallet.Name, StringComparison.OrdinalIgnoreCase));
-            if (node != null)
-            {
-                return node.Wallet.DefaultAccount;
-            }
+        //     var node = chain.ConsensusNodes
+        //         .SingleOrDefault(n => name.Equals(n.Wallet.Name, StringComparison.OrdinalIgnoreCase));
+        //     if (node != null)
+        //     {
+        //         return node.Wallet.DefaultAccount;
+        //     }
 
-            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                return chain.ConsensusNodes
-                    .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
-                    .FirstOrDefault();
-            }
+        //     if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
+        //     {
+        //         return chain.ConsensusNodes
+        //             .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
+        //             .FirstOrDefault();
+        //     }
 
-            return null;
-        }
+        //     return null;
+        // }
 
         public async Task<(BigDecimal balance, Nep17Contract contract)> ShowBalanceAsync(ExpressChain chain, ExpressWalletAccount account, string asset)
         {
@@ -649,108 +525,6 @@ namespace NeoExpress
             throw new ArgumentException(nameof(hashOrContract));
         }
 
-        public void ExportBlockchain(ExpressChain chain, string folder, string password, TextWriter writer)
-        {
-            void WriteNodeConfigJson(ExpressConsensusNode _node, string walletPath)
-            {
-                using var stream = File.Open(Path.Combine(folder, $"{_node.Wallet.Name}.config.json"), FileMode.Create, FileAccess.Write);
-                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
-
-                // use neo-cli defaults for Logger & Storage
-
-                writer.WriteStartObject();
-                writer.WritePropertyName("ApplicationConfiguration");
-                writer.WriteStartObject();
-
-                writer.WritePropertyName("P2P");
-                writer.WriteStartObject();
-                writer.WritePropertyName("Port");
-                writer.WriteValue(_node.TcpPort);
-                writer.WritePropertyName("WsPort");
-                writer.WriteValue(_node.WebSocketPort);
-                writer.WriteEndObject();
-
-                writer.WritePropertyName("UnlockWallet");
-                writer.WriteStartObject();
-                writer.WritePropertyName("Path");
-                writer.WriteValue(walletPath);
-                writer.WritePropertyName("Password");
-                writer.WriteValue(password);
-                writer.WritePropertyName("StartConsensus");
-                writer.WriteValue(true);
-                writer.WritePropertyName("IsActive");
-                writer.WriteValue(true);
-                writer.WriteEndObject();
-
-                writer.WriteEndObject();
-                writer.WriteEndObject();
-            }
-
-            void WriteProtocolJson()
-            {
-                using var stream = File.Open(Path.Combine(folder, "protocol.json"), FileMode.Create, FileAccess.Write);
-                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
-
-                // use neo defaults for MillisecondsPerBlock & AddressVersion
-
-                writer.WriteStartObject();
-                writer.WritePropertyName("ProtocolConfiguration");
-                writer.WriteStartObject();
-
-                writer.WritePropertyName("Magic");
-                writer.WriteValue(chain.Magic);
-                writer.WritePropertyName("ValidatorsCount");
-                writer.WriteValue(chain.ConsensusNodes.Count);
-
-                writer.WritePropertyName("StandbyCommittee");
-                writer.WriteStartArray();
-                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-                {
-                    var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount);
-                    var key = account.GetKey();
-                    if (key != null)
-                    {
-                        writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
-                    }
-                }
-                writer.WriteEndArray();
-
-                writer.WritePropertyName("SeedList");
-                writer.WriteStartArray();
-                foreach (var node in chain.ConsensusNodes)
-                {
-                    writer.WriteValue($"{IPAddress.Loopback}:{node.TcpPort}");
-                }
-                writer.WriteEndArray();
-
-                writer.WriteEndObject();
-                writer.WriteEndObject();
-            }
-
-            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var node = chain.ConsensusNodes[i];
-                writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node wallet");
-
-                var walletPath = Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
-                if (File.Exists(walletPath))
-                {
-                    File.Delete(walletPath);
-                }
-
-                ExportWallet(node.Wallet, walletPath, password);
-                WriteNodeConfigJson(node, walletPath);
-            }
-
-            WriteProtocolJson();
-        }
-
-        public void ExportWallet(ExpressWallet wallet, string filename, string password)
-        {
-            var devWallet = DevWallet.FromExpressWallet(wallet);
-            devWallet.Export(filename, password);
-        }
-
         public async Task<UInt256> DesignateOracleRolesAsync(ExpressChain chain, IEnumerable<ExpressWalletAccount> accounts)
         {
             if (!NodeUtility.InitializeProtocolSettings(chain))
@@ -758,29 +532,32 @@ namespace NeoExpress
                 throw new Exception("could not initialize protocol settings");
             }
 
-            var genesisAccount = GetAccount(chain, "genesis") ?? throw new Exception();
+            await Task.Delay(0);
 
-            byte[] script;
-            {
-                using var sb = new ScriptBuilder();
-                var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
-                var oracles = new ContractParameter(ContractParameterType.Array);
-                var oraclesList = (List<ContractParameter>)oracles.Value;
+            throw new NotImplementedException();
+            // var genesisAccount = GetAccount(chain, "genesis") ?? throw new Exception();
 
-                foreach (var account in accounts)
-                {
-                    var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception();
-                    oraclesList.Add(new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey });
-                }
+            // byte[] script;
+            // {
+            //     using var sb = new ScriptBuilder();
+            //     var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+            //     var oracles = new ContractParameter(ContractParameterType.Array);
+            //     var oraclesList = (List<ContractParameter>)oracles.Value;
 
-                sb.EmitAppCall(NativeContract.Designation.Hash, "designateAsRole", role, oracles);
-                script = sb.ToArray();
-            }
+            //     foreach (var account in accounts)
+            //     {
+            //         var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception();
+            //         oraclesList.Add(new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey });
+            //     }
 
-            using var expressNode = chain.GetExpressNode();
-            return await expressNode
-                .ExecuteAsync(chain, genesisAccount, script)
-                .ConfigureAwait(false);
+            //     sb.EmitAppCall(NativeContract.Designation.Hash, "designateAsRole", role, oracles);
+            //     script = sb.ToArray();
+            // }
+
+            // using var expressNode = chain.GetExpressNode();
+            // return await expressNode
+            //     .ExecuteAsync(chain, genesisAccount, script)
+            //     .ConfigureAwait(false);
 
         }
 

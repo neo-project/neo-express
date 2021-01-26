@@ -120,7 +120,7 @@ namespace NeoExpress.Node
 
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                var account = chain.ConsensusNodes[i].Wallet.DefaultAccount;
+                var account = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception();
                 var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception();
                 if (oracleNodes.Contains(key.PublicKey))
                 {

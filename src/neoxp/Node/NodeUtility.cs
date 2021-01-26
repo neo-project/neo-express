@@ -67,11 +67,11 @@ namespace NeoExpress.Node
         
         public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
         {
-            writer.WriteLine(store.GetType().Name);
+            // writer.WriteLine(store.GetType().Name);
 
             var tcs = new TaskCompletionSource<bool>();
 
-            Task.Run(() =>
+            _ = Task.Run(() =>
             {
                 try
                 {

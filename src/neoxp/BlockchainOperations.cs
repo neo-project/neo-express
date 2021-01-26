@@ -469,6 +469,19 @@ namespace NeoExpress
             }
         }
 
+        string GetTempFolder() 
+        {
+            string path;
+            do
+            {
+                path = fileSystem.Path.Combine(
+                    fileSystem.Path.GetTempPath(), 
+                    fileSystem.Path.GetRandomFileName());
+            }
+            while (fileSystem.Directory.Exists(path));
+            return path;
+        }
+
         public void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force)
         {
             if (chain.ConsensusNodes.Count != 1)
@@ -489,9 +502,7 @@ namespace NeoExpress
                 throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
             }
 
-            var checkpointTempPath = fileSystem.Path.Combine(
-                fileSystem.Path.GetTempPath(), 
-                fileSystem.Path.GetRandomFileName());
+            var checkpointTempPath = GetTempFolder();
             using var folderCleanup = AnonymousDisposable.Create(() =>
             {
                 if (fileSystem.Directory.Exists(checkpointTempPath)) 
@@ -516,6 +527,39 @@ namespace NeoExpress
 
             RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
+        }
+
+        public IStore GetCheckpointStore(ExpressChain chain, string checkPointArchive)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            if (IsRunning(node))
+            {
+                throw new Exception($"node already running");
+            }
+
+            checkPointArchive = ResolveCheckpointFileName(checkPointArchive);
+            if (!fileSystem.File.Exists(checkPointArchive))
+            {
+                throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
+            }
+
+            var checkpointTempPath = GetTempFolder();
+            var folderCleanup = AnonymousDisposable.Create(() =>
+            {
+                if (fileSystem.Directory.Exists(checkpointTempPath)) 
+                {
+                    fileSystem.Directory.Delete(checkpointTempPath, true);
+                }
+            });
+
+            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
         }
     }
 }

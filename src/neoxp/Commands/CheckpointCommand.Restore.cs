@@ -27,7 +27,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             bool Force { get; }
 
-            internal int OnExecute(CommandLineApplication app, IConsole console)
+            internal int OnExecute(IConsole console)
             {
                 try
                 {

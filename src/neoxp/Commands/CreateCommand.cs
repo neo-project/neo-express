@@ -12,13 +12,11 @@ namespace NeoExpress.Commands
     [Command("create", Description = "Create new neo-express instance")]
     internal class CreateCommand
     {
-        readonly IFileSystem fileSystem; 
-        readonly IBlockchainOperations chainManger;
+        readonly IBlockchainOperations blockchainOperations;
 
-        public CreateCommand(IFileSystem fileSystem, IBlockchainOperations chainManger)
+        public CreateCommand(IBlockchainOperations blockchainOperations)
         {
-            this.fileSystem = fileSystem;
-            this.chainManger = chainManger;
+            this.blockchainOperations = blockchainOperations;
         }
 
         [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
@@ -31,37 +29,11 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
-        internal string Execute()
-        {
-            var output = chainManger.ResolveChainFileName(Output);
-            if (fileSystem.File.Exists(output))
-            {
-                if (Force)
-                {
-                    fileSystem.File.Delete(output);
-                }
-                else
-                {
-                    throw new Exception("You must specify --force to overwrite an existing file");
-                }
-            }
-
-            if (fileSystem.File.Exists(output))
-            {
-                throw new ArgumentException($"{output} already exists", nameof(output));
-            }
-
-            var chain = chainManger.CreateChain(Count);
-            chainManger.SaveChain(chain, output);
-
-            return output;
-        }
-
         internal int OnExecute(IConsole console)
         {
             try
             {
-                var output = Execute();
+                var output = blockchainOperations.CreateChain(Count, Output, Force);
 
                 console.Out.WriteLine($"Created {Count} node privatenet at {output}");
                 console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");

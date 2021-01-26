@@ -29,6 +29,77 @@ namespace NeoExpress
             this.fileSystem = fileSystem;
         }
 
+        public string CreateChain(int nodeCount, string output, bool force)
+        {
+            output = ResolveChainFileName(output);
+            if (fileSystem.File.Exists(output))
+            {
+                if (force)
+                {
+                    fileSystem.File.Delete(output);
+                }
+                else
+                {
+                    throw new Exception("You must specify --force to overwrite an existing file");
+                }
+            }
+
+            if (fileSystem.File.Exists(output))
+            {
+                throw new ArgumentException($"{output} already exists", nameof(output));
+            }
+
+            if (nodeCount != 1 && nodeCount != 4 && nodeCount != 7)
+            {
+                throw new ArgumentException("invalid blockchain node count", nameof(nodeCount));
+            }
+
+            var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(nodeCount);
+
+            for (var i = 1; i <= nodeCount; i++)
+            {
+                var wallet = new DevWallet($"node{i}");
+                var account = wallet.CreateAccount();
+                account.IsDefault = true;
+                wallets.Add((wallet, account));
+            }
+
+            var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
+
+            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+
+            foreach (var (wallet, account) in wallets)
+            {
+                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
+                multiSigContractAccount.Label = "MultiSigContract";
+            }
+
+            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
+            // http://www.iana.org/assignments/port-numbers
+            var nodes = new List<ExpressConsensusNode>(nodeCount);
+            for (var i = 0; i < nodeCount; i++)
+            {
+                nodes.Add(new ExpressConsensusNode()
+                {
+                    TcpPort = GetPortNumber(i, 3),
+                    WebSocketPort = GetPortNumber(i, 4),
+                    RpcPort = GetPortNumber(i, 2),
+                    Wallet = wallets[i].wallet.ToExpressWallet()
+                });
+            }
+
+            var chain = new ExpressChain()
+            {
+                Magic = ExpressChain.GenerateMagicValue(),
+                ConsensusNodes = nodes,
+            };
+            SaveChain(chain, output);
+            return output;
+
+            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
+        }
+
+
         public async Task RunAsync(IStore store, ExpressChain chain, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, IConsole console, CancellationToken token)
         {
             if (IsRunning(node))
@@ -110,7 +181,7 @@ namespace NeoExpress
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 
-        public void ResetChain(ExpressConsensusNode node, bool force)
+        public void ResetNode(ExpressConsensusNode node, bool force)
         {
             if (IsRunning(node))
             {
@@ -152,60 +223,10 @@ namespace NeoExpress
             return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain, offlineTrace);
         }
 
-        public ExpressChain CreateChain(int nodeCount)
-        {
-            if (nodeCount != 1 && nodeCount != 4 && nodeCount != 7)
-            {
-                throw new ArgumentException("invalid blockchain node count", nameof(nodeCount));
-            }
-
-            var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(nodeCount);
-
-            for (var i = 1; i <= nodeCount; i++)
-            {
-                var wallet = new DevWallet($"node{i}");
-                var account = wallet.CreateAccount();
-                account.IsDefault = true;
-                wallets.Add((wallet, account));
-            }
-
-            var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
-
-            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
-
-            foreach (var (wallet, account) in wallets)
-            {
-                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-                multiSigContractAccount.Label = "MultiSigContract";
-            }
-
-            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
-            // http://www.iana.org/assignments/port-numbers
-            var nodes = new List<ExpressConsensusNode>(nodeCount);
-            for (var i = 0; i < nodeCount; i++)
-            {
-                nodes.Add(new ExpressConsensusNode()
-                {
-                    TcpPort = GetPortNumber(i, 3),
-                    WebSocketPort = GetPortNumber(i, 4),
-                    RpcPort = GetPortNumber(i, 2),
-                    Wallet = wallets[i].wallet.ToExpressWallet()
-                });
-            }
-
-            return new ExpressChain()
-            {
-                Magic = ExpressChain.GenerateMagicValue(),
-                ConsensusNodes = nodes,
-            };
-
-            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
-        }
-
         internal const string EXPRESS_EXTENSION = ".neo-express";
         internal const string DEFAULT_EXPRESS_FILENAME = "default" + EXPRESS_EXTENSION;
 
-        public string ResolveChainFileName(string filename) 
+        string ResolveChainFileName(string filename) 
         {
             if (string.IsNullOrEmpty(filename))
             {

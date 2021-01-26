@@ -9,18 +9,18 @@ namespace NeoExpress
 {
     internal interface IBlockchainOperations
     {
-        ExpressChain CreateChain(int nodeCount);
+        string CreateChain(int nodeCount, string output, bool force);
+        (ExpressChain chain, string filename) LoadChain(string filename);
+        void SaveChain(ExpressChain chain, string fileName);
+        void ResetNode(ExpressConsensusNode node, bool force);
+
+
+         
         ExpressWallet CreateWallet(ExpressChain chain, string name);
         void ExportChain(ExpressChain chain, string password, TextWriter writer);
-        (ExpressChain chain, string filename) LoadChain(string filename);
-        string ResolveChainFileName(string filename);
-        void SaveChain(ExpressChain chain, string fileName);
 
         IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false);
         string GetNodePath(ExpressConsensusNode node);
-        void ResetChain(ExpressConsensusNode node, bool force);
         Task RunAsync(IStore store, ExpressChain chain, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, IConsole console, CancellationToken token);
-
     }
-
 }

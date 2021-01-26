@@ -22,34 +22,34 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            void PrintWalletInfo(ExpressWallet wallet, TextWriter writer)
-            {
-                writer.WriteLine(wallet.Name);
-
-                foreach (var account in wallet.Accounts)
-                {
-                    var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
-                    var key = devAccount.GetKey() ?? throw new Exception();
-
-                    writer.WriteLine($"  {account.ScriptHash} ({(account.IsDefault ? "Default" : account.Label)})");
-                    writer.WriteLine($"    address bytes: {BitConverter.ToString(devAccount.ScriptHash.ToArray())}");
-                    writer.WriteLine($"    public key:    {key.PublicKey.EncodePoint(true).ToHexString()}");
-                    writer.WriteLine($"    private key:   {key.PrivateKey.ToHexString()}");
-                }
-            }
-
             internal void Execute(TextWriter writer)
             {
                 var (chain, _) = chainManager.LoadChain(Input);
 
                 foreach (var wallet in chain.ConsensusNodes.Select(n => n.Wallet))
                 {
-                    PrintWalletInfo(wallet, writer);
+                    PrintWalletInfo(wallet);
                 }
 
                 foreach (var wallet in chain.Wallets)
                 {
-                    PrintWalletInfo(wallet, writer);
+                    PrintWalletInfo(wallet);
+                }
+
+                void PrintWalletInfo(ExpressWallet wallet)
+                {
+                    writer.WriteLine(wallet.Name);
+
+                    foreach (var account in wallet.Accounts)
+                    {
+                        var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+                        var key = devAccount.GetKey() ?? throw new Exception();
+
+                        writer.WriteLine($"  {account.ScriptHash} ({(account.IsDefault ? "Default" : account.Label)})");
+                        writer.WriteLine($"    address bytes: {BitConverter.ToString(devAccount.ScriptHash.ToArray())}");
+                        writer.WriteLine($"    public key:    {key.PublicKey.EncodePoint(true).ToHexString()}");
+                        writer.WriteLine($"    private key:   {key.PrivateKey.ToHexString()}");
+                    }
                 }
             }
 

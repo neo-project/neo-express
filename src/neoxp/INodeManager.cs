@@ -8,6 +8,7 @@ namespace NeoExpress
 {
     internal interface INodeManager
     {
+        IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false);
         string GetNodePath(ExpressConsensusNode node);
         bool IsRunning(ExpressConsensusNode node);
         void Reset(ExpressConsensusNode node, bool force);

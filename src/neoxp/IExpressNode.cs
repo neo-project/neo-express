@@ -10,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace NeoExpress.Node
+namespace NeoExpress
 {
     internal interface IExpressNode : IDisposable
     {

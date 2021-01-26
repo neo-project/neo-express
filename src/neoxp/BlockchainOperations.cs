@@ -215,7 +215,7 @@ namespace NeoExpress
             }
         }
 
-        static async Task<UInt160> ParseAssetAsync(Node.IExpressNode expressNode, string asset)
+        static async Task<UInt160> ParseAssetAsync(IExpressNode expressNode, string asset)
         {
             if ("neo".Equals(asset, StringComparison.CurrentCultureIgnoreCase))
             {

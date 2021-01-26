@@ -120,7 +120,7 @@ namespace NeoExpress
             }
         }
 
-        public Node.IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false)
+        public IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false)
         {
             // Check to see if there's a neo-express blockchain currently running by
             // attempting to open a mutex with the multisig account address for a name

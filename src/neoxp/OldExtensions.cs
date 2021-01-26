@@ -140,7 +140,7 @@ namespace NeoExpress
             return transactionManager;
         }
 
-        public static Node.IExpressNode GetExpressNode(this ExpressChain chain, bool offlineTrace = false)
+        public static IExpressNode GetExpressNode(this ExpressChain chain, bool offlineTrace = false)
         {
             throw new NotImplementedException();
             // if (chain.IsRunning(out var node))

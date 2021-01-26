@@ -87,8 +87,8 @@ namespace NeoExpress
             filename = fileSystem.Path.IsPathFullyQualified(filename)
                 ? filename : fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), filename);
 
-            return fileSystem.Path.GetExtension(filename) != EXPRESS_EXTENSION
-                ? filename + EXPRESS_EXTENSION : filename;
+            return EXPRESS_EXTENSION.Equals(fileSystem.Path.GetExtension(filename), StringComparison.OrdinalIgnoreCase)
+                ? filename : filename + EXPRESS_EXTENSION;
         }
 
         public (Models.ExpressChain chain, string filename) Load(string filename)

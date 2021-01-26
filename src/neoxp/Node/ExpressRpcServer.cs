@@ -302,7 +302,7 @@ namespace NeoExpress.Node
             var contracts = new JArray();
             foreach (var contract in NativeContract.Management.ListContracts(snapshot))
             {
-                if (param.Equals(contract.Manifest.Name, StringComparison.InvariantCultureIgnoreCase))
+                if (param.Equals(contract.Manifest.Name, StringComparison.OrdinalIgnoreCase))
                 {
                     contracts.Add(contract.ToJson());
                 }

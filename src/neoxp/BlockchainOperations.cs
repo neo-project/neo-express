@@ -217,12 +217,12 @@ namespace NeoExpress
 
         static async Task<UInt160> ParseAssetAsync(IExpressNode expressNode, string asset)
         {
-            if ("neo".Equals(asset, StringComparison.CurrentCultureIgnoreCase))
+            if ("neo".Equals(asset, StringComparison.OrdinalIgnoreCase))
             {
                 return NativeContract.NEO.Hash;
             }
 
-            if ("gas".Equals(asset, StringComparison.CurrentCultureIgnoreCase))
+            if ("gas".Equals(asset, StringComparison.OrdinalIgnoreCase))
             {
                 return NativeContract.GAS.Hash;
             }
@@ -235,7 +235,7 @@ namespace NeoExpress
             var contracts = await expressNode.ListNep17ContractsAsync().ConfigureAwait(false);
             for (int i = 0; i < contracts.Count; i++)
             {
-                if (contracts[i].Symbol.Equals(asset, StringComparison.CurrentCultureIgnoreCase))
+                if (contracts[i].Symbol.Equals(asset, StringComparison.OrdinalIgnoreCase))
                 {
                     return contracts[i].ScriptHash;
                 }

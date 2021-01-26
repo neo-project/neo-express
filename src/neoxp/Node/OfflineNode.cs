@@ -78,7 +78,7 @@ namespace NeoExpress.Node
             return Task.FromResult(result);
         }
 
-        public Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
+        public Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 

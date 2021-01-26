@@ -20,10 +20,12 @@ namespace NeoExpress.Node
 
     internal class OnlineNode : IExpressNode
     {
+        private readonly ExpressChain chain;
         private readonly RpcClient rpcClient;
 
-        public OnlineNode(ExpressConsensusNode node)
+        public OnlineNode(ExpressChain chain, ExpressConsensusNode node)
         {
+            this.chain = chain;
             rpcClient = new RpcClient(node.GetUri().ToString());
         }
 
@@ -31,7 +33,7 @@ namespace NeoExpress.Node
         {
         }
 
-        public async Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0)
+        public async Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.GetScriptHashAsUInt160() } };
             var factory = new TransactionManagerFactory(rpcClient);

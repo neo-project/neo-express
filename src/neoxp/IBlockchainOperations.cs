@@ -3,6 +3,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo.Persistence;
+using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using NeoExpress.Models;
 
 namespace NeoExpress
@@ -23,5 +25,6 @@ namespace NeoExpress
 
         Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, bool force, TextWriter writer);
         void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force);
+        Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(string contractPath);
     }
 }

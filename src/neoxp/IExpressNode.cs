@@ -14,7 +14,7 @@ namespace NeoExpress
 {
     internal interface IExpressNode : IDisposable
     {
-        Task<UInt256> ExecuteAsync(ExpressChain chain, ExpressWalletAccount account, Script script, decimal additionalGas = 0);
+        Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0);
         Task<UInt256> SubmitTransactionAsync(Transaction tx);
         Task<InvokeResult> InvokeAsync(Script script);
         Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address);

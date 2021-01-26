@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-
+using Neo;
 
 namespace NeoExpress.Commands
 {
@@ -11,6 +11,13 @@ namespace NeoExpress.Commands
         [Command("deploy", Description = "Deploy contract to a neo-express instance")]
         class Deploy
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public Deploy(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Argument(0, Description = "Path to contract .nef file")]
             [Required]
             string Contract { get; } = string.Empty;
@@ -25,29 +32,28 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
+            private async Task<UInt256> ExecuteAsync()
+            {
+                var (chain, _) = blockchainOperations.LoadChain(Input);
+                var account = chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
+                var (nefFile, manifest) = await blockchainOperations.LoadContractAsync(Contract).ConfigureAwait(false);
+                var expressNode = blockchainOperations.GetExpressNode(chain);
+                return await expressNode.DeployAsync(nefFile, manifest, account);
+            }
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var account = blockchainOperations.GetAccount(chain, Account);
-                    // if (account == null)
-                    // {
-                    //     throw new Exception($"Account {Account} not found.");
-                    // }
-
-                    // var txHash = await blockchainOperations.DeployContractAsync(chain, Contract, account);
-                    // if (Json)
-                    // {
-                    //     console.WriteLine($"{txHash}");
-                    // } 
-                    // else
-                    // {
-                    //     console.WriteLine($"Deployment Transaction {txHash} submitted");
-                    // }
-
+                    var txHash = await ExecuteAsync().ConfigureAwait(false);
+                    if (Json)
+                    {
+                        await console.Out.WriteLineAsync($"{txHash}");
+                    }
+                    else
+                    {
+                        await console.Out.WriteLineAsync($"Deployment Transaction {txHash} submitted");
+                    }
                     return 0;
                 }
                 catch (Exception ex)
@@ -55,7 +61,7 @@ namespace NeoExpress.Commands
                     await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
-            }
+            } 
 
         }
     }

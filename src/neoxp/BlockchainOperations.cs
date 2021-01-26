@@ -6,8 +6,11 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.IO;
 using Neo.Network.RPC;
 using Neo.Persistence;
+using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using NeoExpress.Models;
 using Newtonsoft.Json;
 using Nito.Disposables;
@@ -234,7 +237,7 @@ namespace NeoExpress
                 if (IsRunning(consensusNode))
                 {
                     chain.InitalizeProtocolSettings();
-                    return new Node.OnlineNode(consensusNode);
+                    return new Node.OnlineNode(chain, consensusNode);
                 }
             }
 
@@ -274,7 +277,7 @@ namespace NeoExpress
             {
                 throw new Exception($"{filename} file doesn't exist");
             }
-            var serializer = new JsonSerializer();
+            var serializer = new Newtonsoft.Json.JsonSerializer();
             using var stream = fileSystem.File.OpenRead(filename);
             using var reader = new JsonTextReader(new System.IO.StreamReader(stream));
             var chain = serializer.Deserialize<ExpressChain>(reader)
@@ -286,7 +289,7 @@ namespace NeoExpress
 
         public void SaveChain(ExpressChain chain, string fileName)
         {
-            var serializer = new JsonSerializer();
+            var serializer = new Newtonsoft.Json.JsonSerializer();
             using (var stream = fileSystem.File.Open(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
             using (var writer = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented })
             {
@@ -561,5 +564,21 @@ namespace NeoExpress
             RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
             return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
         }
+
+            public async Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(string contractPath)
+            {
+                var nefTask = Task.Run(() =>
+                {
+                    using var stream = fileSystem.File.OpenRead(contractPath);
+                    using var reader = new System.IO.BinaryReader(stream, System.Text.Encoding.UTF8, false);
+                    return reader.ReadSerializable<NefFile>();
+                });
+
+                var manifestTask = fileSystem.File.ReadAllBytesAsync(fileSystem.Path.ChangeExtension(contractPath, ".manifest.json"))
+                    .ContinueWith(t => ContractManifest.Parse(t.Result), default, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+
+                await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
+                return (await nefTask, await manifestTask);
+            }
     }
 }

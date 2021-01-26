@@ -11,11 +11,11 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly IBlockchainOperations chainManager;
+        readonly IBlockchainOperations blockchainOperations;
 
-        public RunCommand(IBlockchainOperations chainManager)
+        public RunCommand(IBlockchainOperations blockchainOperations)
         {
-            this.chainManager = chainManager;
+            this.blockchainOperations = blockchainOperations;
         }
 
         [Argument(0, Description = "Index of node to run")]
@@ -35,19 +35,14 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {
-            var (chain, _) = chainManager.LoadChain(Input);
+            var (chain, _) = blockchainOperations.LoadChain(Input);
 
-            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
-            {
-                throw new Exception("Invalid node index");
-            }
+            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 
             var node = chain.ConsensusNodes[NodeIndex];
-            var folder = chainManager.GetNodePath(node);
-            await console.Out.WriteLineAsync(folder).ConfigureAwait(false);
-
-            using IStore store = GetStore(folder);
-            await chainManager.RunAsync(store, chain, node, SecondsPerBlock, Trace, console, token).ConfigureAwait(false);
+            var nodeRunner = blockchainOperations.GetNodeRunner(chain, SecondsPerBlock);
+            using var store = blockchainOperations.GetNodeStore(node, Discard);
+            await nodeRunner(store, node, Trace, console.Out, token).ConfigureAwait(false);
         }
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)
@@ -61,26 +56,6 @@ namespace NeoExpress.Commands
             {
                 await console.Error.WriteLineAsync(ex.Message);
                 return 1;
-            }
-        }
-
-        IStore GetStore(string folder)
-        {
-            if (Discard)
-            {
-                try
-                {
-                    var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
-                    return new CheckpointStore(rocksDbStore);
-                }
-                catch
-                {
-                    return new CheckpointStore(NullReadOnlyStore.Instance);
-                }
-            }
-            else
-            {
-                return RocksDbStore.Open(folder);
             }
         }
     }

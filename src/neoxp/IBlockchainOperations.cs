@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,14 +14,11 @@ namespace NeoExpress
         (ExpressChain chain, string filename) LoadChain(string filename);
         void SaveChain(ExpressChain chain, string fileName);
         void ResetNode(ExpressConsensusNode node, bool force);
-
-
-         
         ExpressWallet CreateWallet(ExpressChain chain, string name);
         void ExportChain(ExpressChain chain, string password, TextWriter writer);
 
         IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false);
-        string GetNodePath(ExpressConsensusNode node);
-        Task RunAsync(IStore store, ExpressChain chain, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, IConsole console, CancellationToken token);
+        Func<IStore, ExpressConsensusNode, bool, TextWriter, CancellationToken, Task> GetNodeRunner(ExpressChain chain, uint secondsPerBlock);
+        IStore GetNodeStore(ExpressConsensusNode node, bool discard);
     }
 }

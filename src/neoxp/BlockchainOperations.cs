@@ -99,17 +99,42 @@ namespace NeoExpress
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
+        public IStore GetNodeStore(ExpressConsensusNode node, bool discard)
+        {
+            var folder = GetNodePath(node);
 
-        public async Task RunAsync(IStore store, ExpressChain chain, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, IConsole console, CancellationToken token)
+            if (discard)
+            {
+                try
+                {
+                    var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
+                    return new CheckpointStore(rocksDbStore);
+                }
+                catch
+                {
+                    return new CheckpointStore(NullReadOnlyStore.Instance);
+                }
+            }
+            else
+            {
+                return RocksDbStore.Open(folder);
+            }
+        }
+
+        public Func<IStore, ExpressConsensusNode, bool, TextWriter, CancellationToken, Task> GetNodeRunner(ExpressChain chain, uint secondsPerBlock)
+        {
+            chain.InitalizeProtocolSettings(secondsPerBlock);
+            return RunAsync;
+        }
+
+        static async Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (IsRunning(node))
             {
                 throw new Exception("Node already running");
             }
             
-            await console.Out.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
-
-            chain.InitalizeProtocolSettings(secondsPerBlock);
+            await writer.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
 
             var tcs = new TaskCompletionSource<bool>();
             _ = Task.Run(() =>
@@ -122,7 +147,7 @@ namespace NeoExpress
                     var wallet = DevWallet.FromExpressWallet(node.Wallet);
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
-                    var logPlugin = new Node.LogPlugin(console.Out);
+                    var logPlugin = new Node.LogPlugin(writer);
                     var storageProvider = new Node.ExpressStorageProvider(store);
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);

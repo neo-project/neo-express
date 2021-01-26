@@ -5,11 +5,11 @@ namespace NeoExpress
 {
     internal interface IChainManager
     {
-        string ResolveFileName(string filename);
         ExpressChain Create(int nodeCount);
-        (ExpressChain chain, string filename) Load(string filename);
+        void Export(ExpressChain chain, string password, TextWriter writer);
         bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0);
+        (ExpressChain chain, string filename) Load(string filename);
+        string ResolveFileName(string filename);
         void Save(ExpressChain chain, string fileName);
-        void ExportBlockchain(ExpressChain chain, string password, TextWriter writer);
     }
 }

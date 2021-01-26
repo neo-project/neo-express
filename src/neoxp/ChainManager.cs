@@ -152,7 +152,7 @@ namespace NeoExpress
             return ProtocolSettings.Initialize(config);
         }
 
-        public void ExportBlockchain(ExpressChain chain, string password, TextWriter writer)
+        public void Export(ExpressChain chain, string password, TextWriter writer)
         {
             var folder = fileSystem.Directory.GetCurrentDirectory();
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)

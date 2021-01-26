@@ -10,6 +10,7 @@ namespace NeoExpress
     {
         string GetNodePath(ExpressConsensusNode node);
         bool IsRunning(ExpressConsensusNode node);
+        void Reset(ExpressConsensusNode node, bool force);
         Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, IConsole console, CancellationToken token);
     }
 }

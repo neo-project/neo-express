@@ -13,7 +13,7 @@ namespace NeoExpress.Models
         public List<ExpressWalletAccount> Accounts { get; set; } = new List<ExpressWalletAccount>();
 
         [JsonIgnore]
-        public ExpressWalletAccount DefaultAccount => Accounts
+        public ExpressWalletAccount? DefaultAccount => Accounts
             .SingleOrDefault(a => a.IsDefault);
     }
 }

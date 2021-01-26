@@ -10,6 +10,11 @@ namespace NeoExpress.Commands
     {
         readonly IChainManager chainManager;
 
+        public ExportCommand(IChainManager chainManager)
+        {
+            this.chainManager = chainManager;
+        }
+
         [Option(Description = "Path to neo-express data file")]
         string Input { get; } = string.Empty;
 
@@ -19,7 +24,7 @@ namespace NeoExpress.Commands
             {
                 var (chain, _) = chainManager.Load(Input);
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
-                chainManager.ExportBlockchain(chain, password, console.Out);
+                chainManager.Export(chain, password, console.Out);
                 return 0;
             }
             catch (Exception ex)

@@ -8,6 +8,15 @@ namespace NeoExpress.Commands
     [Command("reset", "Reset neo-express instance node")]
     class ResetCommand
     {
+        readonly IChainManager chainManager;
+        readonly INodeManager nodeManager;
+
+        public ResetCommand(IChainManager chainManager, INodeManager nodeManager)
+        {
+            this.chainManager = chainManager;
+            this.nodeManager = nodeManager;
+        }
+
         [Argument(0, Description = "Index of node to reset")]
         int? NodeIndex { get; }
 
@@ -20,36 +29,41 @@ namespace NeoExpress.Commands
         [Option(Description = "Reset all nodes")]
         bool All { get; }
 
-        internal int OnExecute(CommandLineApplication app, IConsole console)
+        internal void Execute(IConsole console)
+        {
+            if (NodeIndex.HasValue && All)
+            {
+                throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
+            }
+
+            var (chain, _) = chainManager.Load(Input);
+
+            if (All)
+            {
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                {
+                    nodeManager.Reset(chain.ConsensusNodes[i], Force);
+                    console.Out.WriteLine($"node {i} reset");
+                }
+            }
+            else
+            {
+                var nodeIndex = NodeIndex.HasValue
+                    ? NodeIndex.Value
+                    : chain.ConsensusNodes.Count == 1
+                        ? 0
+                        : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
+
+                nodeManager.Reset(chain.ConsensusNodes[nodeIndex], Force);
+                console.Out.WriteLine($"node {nodeIndex} reset");
+            }
+        }
+
+        internal int OnExecute(IConsole console)
         {
             try
             {
-                // if (NodeIndex.HasValue && All)
-                // {
-                //     throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
-                // }
-
-                // var (chain, _) = Program.LoadExpressChain(Input);
-                // var blockchainOperations = new BlockchainOperations();
-
-                // if (All)
-                // {
-                //     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-                //     {
-                //         blockchainOperations.ResetNode(chain, i, Force);
-                //     }
-                // }
-                // else
-                // {
-                //     var nodeIndex = NodeIndex.HasValue
-                //         ? NodeIndex.Value
-                //         : chain.ConsensusNodes.Count == 1
-                //             ? 0
-                //             : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
-
-                //     blockchainOperations.ResetNode(chain, nodeIndex, Force);
-                // }
-
+                Execute(console);
                 return 0;
             }
             catch (Exception ex)

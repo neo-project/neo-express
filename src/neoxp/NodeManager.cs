@@ -85,10 +85,11 @@ namespace NeoExpress
             return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
-        string GetNodePath(ExpressWalletAccount account)
+        public string GetNodePath(ExpressConsensusNode node)
         {
-            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
-            if (account == null) throw new ArgumentNullException(nameof(account));
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (node.Wallet == null) throw new ArgumentNullException(nameof(node.Wallet));
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
 
             var rootPath = fileSystem.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
@@ -97,19 +98,23 @@ namespace NeoExpress
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 
-        string GetNodePath(ExpressWallet wallet)
+        public void Reset(ExpressConsensusNode node, bool force)
         {
-            if (wallet == null) throw new ArgumentNullException(nameof(wallet));
+            if (IsRunning(node))
+            {
+                throw new InvalidOperationException($"node {node.Wallet.DefaultAccount?.ScriptHash} currently running");
+            }
 
-            var defaultAccount = wallet.Accounts.Single(a => a.IsDefault);
-            return GetNodePath(defaultAccount);
-        }
+            var folder = GetNodePath(node);
+            if (fileSystem.Directory.Exists(folder))
+            {
+                if (!force)
+                {
+                    throw new InvalidOperationException("--force must be specified when resetting a node");
+                }
 
-        public string GetNodePath(ExpressConsensusNode node)
-        {
-            if (node == null) throw new ArgumentNullException(nameof(node));
-
-            return GetNodePath(node.Wallet);
+                fileSystem.Directory.Delete(folder, true);
+            }
         }
     }
 }

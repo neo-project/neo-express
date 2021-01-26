@@ -45,12 +45,6 @@ namespace NeoExpress.Commands
             }
 
             var node = chain.ConsensusNodes[NodeIndex];
-
-            if (nodeManager.IsRunning(node))
-            {
-                throw new Exception("Node already running");
-            }
-
             var folder = nodeManager.GetNodePath(node);
             await console.Out.WriteLineAsync(folder).ConfigureAwait(false);
 

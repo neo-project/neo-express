@@ -26,6 +26,11 @@ namespace NeoExpress
 
         public async Task RunAsync(IStore store, ExpressChain chain, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, IConsole console, CancellationToken token)
         {
+            if (IsRunning(node))
+            {
+                throw new Exception("Node already running");
+            }
+            
             await console.Out.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
 
             chain.InitalizeProtocolSettings(secondsPerBlock);
@@ -78,7 +83,7 @@ namespace NeoExpress
 
         const string GLOBAL_PREFIX = "Global\\";
 
-        public bool IsRunning(ExpressConsensusNode node)
+        static bool IsRunning(ExpressConsensusNode node)
         {
             // Check to see if there's a neo-express blockchain currently running by
             // attempting to open a mutex with the multisig account address for a name

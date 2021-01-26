@@ -10,7 +10,6 @@ namespace NeoExpress
     {
         IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false);
         string GetNodePath(ExpressConsensusNode node);
-        bool IsRunning(ExpressConsensusNode node);
         void Reset(ExpressConsensusNode node, bool force);
         Task RunAsync(IStore store, ExpressChain chain, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, IConsole console, CancellationToken token);
     }

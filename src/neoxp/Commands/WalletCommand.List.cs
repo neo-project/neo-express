@@ -12,9 +12,9 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List neo-express wallets")]
         class List
         {
-            readonly IChainManager chainManager;
+            readonly IBlockchainOperations chainManager;
 
-            public List(IChainManager chainManager)
+            public List(IBlockchainOperations chainManager)
             {
                 this.chainManager = chainManager;
             }

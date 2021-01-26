@@ -8,9 +8,9 @@ namespace NeoExpress.Commands
     [Command("export", Description = "Export neo-express protocol, config and wallet files")]
     class ExportCommand
     {
-        readonly IChainManager chainManager;
+        readonly IBlockchainOperations chainManager;
 
-        public ExportCommand(IChainManager chainManager)
+        public ExportCommand(IBlockchainOperations chainManager)
         {
             this.chainManager = chainManager;
         }

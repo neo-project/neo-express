@@ -8,13 +8,11 @@ namespace NeoExpress.Commands
     [Command("reset", "Reset neo-express instance node")]
     class ResetCommand
     {
-        readonly IChainManager chainManager;
-        readonly INodeManager nodeManager;
+        readonly IBlockchainOperations chainManager;
 
-        public ResetCommand(IChainManager chainManager, INodeManager nodeManager)
+        public ResetCommand(IBlockchainOperations chainManager)
         {
             this.chainManager = chainManager;
-            this.nodeManager = nodeManager;
         }
 
         [Argument(0, Description = "Index of node to reset")]
@@ -42,7 +40,7 @@ namespace NeoExpress.Commands
             {
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    nodeManager.Reset(chain.ConsensusNodes[i], Force);
+                    chainManager.Reset(chain.ConsensusNodes[i], Force);
                     console.Out.WriteLine($"node {i} reset");
                 }
             }
@@ -54,7 +52,7 @@ namespace NeoExpress.Commands
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                nodeManager.Reset(chain.ConsensusNodes[nodeIndex], Force);
+                chainManager.Reset(chain.ConsensusNodes[nodeIndex], Force);
                 console.Out.WriteLine($"node {nodeIndex} reset");
             }
         }

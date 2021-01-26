@@ -11,13 +11,11 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly IChainManager chainManager;
-        readonly INodeManager nodeManager;
+        readonly IBlockchainOperations chainManager;
 
-        public RunCommand(IChainManager chainManager, INodeManager nodeManager)
+        public RunCommand(IBlockchainOperations chainManager)
         {
             this.chainManager = chainManager;
-            this.nodeManager = nodeManager;
         }
 
         [Argument(0, Description = "Index of node to run")]
@@ -45,11 +43,11 @@ namespace NeoExpress.Commands
             }
 
             var node = chain.ConsensusNodes[NodeIndex];
-            var folder = nodeManager.GetNodePath(node);
+            var folder = chainManager.GetNodePath(node);
             await console.Out.WriteLineAsync(folder).ConfigureAwait(false);
 
             using IStore store = GetStore(folder);
-            await nodeManager.RunAsync(store, chain, node, SecondsPerBlock, Trace, console, token).ConfigureAwait(false);
+            await chainManager.RunAsync(store, chain, node, SecondsPerBlock, Trace, console, token).ConfigureAwait(false);
         }
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)

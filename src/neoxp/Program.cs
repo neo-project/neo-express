@@ -28,9 +28,8 @@ namespace NeoExpress
             EnableAnsiEscapeSequences();
 
             var services = new ServiceCollection()
-                .AddSingleton<IChainManager, ChainManager>()
+                .AddSingleton<IBlockchainOperations, BlockchainOperations>()
                 .AddSingleton<IFileSystem, FileSystem>()
-                .AddSingleton<INodeManager, NodeManager>()
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();

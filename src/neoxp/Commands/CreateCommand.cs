@@ -13,9 +13,9 @@ namespace NeoExpress.Commands
     internal class CreateCommand
     {
         readonly IFileSystem fileSystem; 
-        readonly IChainManager chainManger;
+        readonly IBlockchainOperations chainManger;
 
-        public CreateCommand(IFileSystem fileSystem, IChainManager chainManger)
+        public CreateCommand(IFileSystem fileSystem, IBlockchainOperations chainManger)
         {
             this.fileSystem = fileSystem;
             this.chainManger = chainManger;

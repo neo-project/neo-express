@@ -11,10 +11,10 @@ namespace NeoExpress.Commands
         [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
         class Export
         {
-            readonly IChainManager chainManager;
+            readonly IBlockchainOperations chainManager;
             readonly IFileSystem fileSystem;
 
-            public Export(IChainManager chainManager, IFileSystem fileSystem)
+            public Export(IBlockchainOperations chainManager, IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
                 this.chainManager = chainManager;

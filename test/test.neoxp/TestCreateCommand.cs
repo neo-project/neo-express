@@ -20,7 +20,7 @@ namespace test.neo_express
             var path = fileSystem.Path.Join(fileSystem.Directory.GetCurrentDirectory(), "default.neo-express");
 
             var chain = new ExpressChain();
-            var chainManager = new Mock<IChainManager>();
+            var chainManager = new Mock<IBlockchainOperations>();
             chainManager.Setup(o => o.ResolveFileName("")).Returns(path);
             chainManager.Setup(o => o.Create(1)).Returns(chain);
 
@@ -39,7 +39,7 @@ namespace test.neo_express
             fileSystem.AddFile(path, MockFileData.NullObject);
 
             var chain = new ExpressChain();
-            var chainManager = new Mock<IChainManager>();
+            var chainManager = new Mock<IBlockchainOperations>();
             chainManager.Setup(o => o.ResolveFileName("")).Returns(path);
 
             var cmd = new CreateCommand(fileSystem, chainManager.Object);
@@ -54,7 +54,7 @@ namespace test.neo_express
             fileSystem.AddFile(path, MockFileData.NullObject);
 
             var chain = new ExpressChain();
-            var chainManager = new Mock<IChainManager>();
+            var chainManager = new Mock<IBlockchainOperations>();
             chainManager.Setup(o => o.ResolveFileName("")).Returns(path);
             chainManager.Setup(o => o.Create(1)).Returns(chain);
 

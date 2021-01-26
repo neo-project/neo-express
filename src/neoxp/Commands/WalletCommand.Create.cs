@@ -11,9 +11,9 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         class Create
         {
-            readonly IChainManager chainManager;
+            readonly IBlockchainOperations chainManager;
 
-            public Create(IChainManager chainManager)
+            public Create(IBlockchainOperations chainManager)
             {
                 this.chainManager = chainManager;
             }

@@ -51,10 +51,6 @@ namespace NeoExpress
             return result;
         }
 
-        public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
-            => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
-
         public static void WriteResult(this TextWriter writer, JToken? result)
         {
             if (result != null)

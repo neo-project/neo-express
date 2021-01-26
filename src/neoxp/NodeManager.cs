@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Neo;
+using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
 using NeoExpress.Models;
 using NeoExpress.Node;
@@ -23,12 +24,13 @@ namespace NeoExpress
             this.fileSystem = fileSystem;
         }
 
-        public async Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, IConsole console, CancellationToken token)
+        public async Task RunAsync(IStore store, ExpressChain chain, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, IConsole console, CancellationToken token)
         {
             await console.Out.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
 
-            var tcs = new TaskCompletionSource<bool>();
+            chain.InitalizeProtocolSettings(secondsPerBlock);
 
+            var tcs = new TaskCompletionSource<bool>();
             _ = Task.Run(() =>
             {
                 try
@@ -102,7 +104,8 @@ namespace NeoExpress
         {
             if (IsRunning(node))
             {
-                throw new InvalidOperationException($"node {node.Wallet.DefaultAccount?.ScriptHash} currently running");
+                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
+                throw new InvalidOperationException($"node {scriptHash} currently running");
             }
 
             var folder = GetNodePath(node);
@@ -115,6 +118,28 @@ namespace NeoExpress
 
                 fileSystem.Directory.Delete(folder, true);
             }
+        }
+
+        public Node.IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            foreach (var consensusNode in chain.ConsensusNodes)
+            {
+                if (IsRunning(consensusNode))
+                {
+                    chain.InitalizeProtocolSettings();
+                    return new Node.OnlineNode(consensusNode);
+                }
+            }
+
+            var node = chain.ConsensusNodes[0];
+            var folder = GetNodePath(node);
+            if (!fileSystem.Directory.Exists(folder)) fileSystem.Directory.CreateDirectory(folder);
+
+            chain.InitalizeProtocolSettings();
+            return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain, offlineTrace);
         }
     }
 }

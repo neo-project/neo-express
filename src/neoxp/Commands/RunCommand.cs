@@ -54,13 +54,8 @@ namespace NeoExpress.Commands
             var folder = nodeManager.GetNodePath(node);
             await console.Out.WriteLineAsync(folder).ConfigureAwait(false);
 
-            if (!chainManager.InitializeProtocolSettings(chain, SecondsPerBlock))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
-
             using IStore store = GetStore(folder);
-            await nodeManager.RunAsync(store, node, Trace, console, token).ConfigureAwait(false);
+            await nodeManager.RunAsync(store, chain, node, SecondsPerBlock, Trace, console, token).ConfigureAwait(false);
         }
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)

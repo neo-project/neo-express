@@ -118,40 +118,6 @@ namespace NeoExpress
             }
         }
 
-        public bool InitializeProtocolSettings(ExpressChain chain, uint secondsPerBlock = 0)
-        {
-            secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
-
-            IEnumerable<KeyValuePair<string, string>> settings()
-            {
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:Magic", $"{chain.Magic}");
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:MillisecondsPerBlock", $"{secondsPerBlock * 1000}");
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:ValidatorsCount", $"{chain.ConsensusNodes.Count}");
-
-                foreach (var (node, index) in chain.ConsensusNodes.Select((n, i) => (n, i)))
-                {
-                    var privateKey = node.Wallet.Accounts
-                        .Select(a => a.PrivateKey)
-                        .Distinct().Single().HexToBytes();
-                    var encodedPublicKey = new Neo.Wallets.KeyPair(privateKey).PublicKey
-                        .EncodePoint(true).ToHexString();
-                    yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:StandbyCommittee:{index}", encodedPublicKey);
-                    yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:SeedList:{index}", $"{IPAddress.Loopback}:{node.TcpPort}");
-                }
-            }
-
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(settings())
-                .Build();
-
-            return ProtocolSettings.Initialize(config);
-        }
-
         private const string GENESIS = "genesis";
 
         public ExpressWallet CreateWallet(ExpressChain chain, string name)
@@ -257,8 +223,9 @@ namespace NeoExpress
                 protocolWriter.WriteStartArray();
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount!);
-                    var key = account.GetKey();
+                    var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
+                    var devAccount = DevWalletAccount.FromExpressWalletAccount(expressAccount);
+                    var key = devAccount.GetKey();
                     if (key != null)
                     {
                         protocolWriter.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());

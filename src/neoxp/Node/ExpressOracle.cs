@@ -120,8 +120,8 @@ namespace NeoExpress.Node
 
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                var account = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception();
-                var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception();
+                var account = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
+                var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception("Invalid KeyPair");
                 if (oracleNodes.Contains(key.PublicKey))
                 {
                     signatures.Add(key.PublicKey, tx.Sign(key));

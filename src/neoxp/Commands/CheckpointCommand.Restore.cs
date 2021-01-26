@@ -10,6 +10,13 @@ namespace NeoExpress.Commands
         [Command("restore", Description = "Restore a neo-express checkpoint")]
         class Restore
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public Restore(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Argument(0, "Checkpoint file name")]
             [Required]
             string Name { get; } = string.Empty;
@@ -24,18 +31,9 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var filename = blockchainOperations.ResolveCheckpointFileName(Name);
-                    // if (!File.Exists(filename))
-                    // {
-                    //     throw new Exception($"Checkpoint {filename} couldn't be found");
-                    // }
-
-                    // blockchainOperations.RestoreCheckpoint(chain, filename, Force);
-
-                    // console.WriteLine($"Checkpoint {Name} successfully restored");
+                    var (chain, _) = blockchainOperations.LoadChain(Input);
+                    blockchainOperations.RestoreCheckpoint(chain, Name, Force);
+                    console.WriteLine($"Checkpoint {Name} successfully restored");
                     return 0;
                 }
                 catch (Exception ex)

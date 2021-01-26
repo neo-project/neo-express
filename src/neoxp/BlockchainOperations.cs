@@ -5,14 +5,12 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Configuration;
-using Neo;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.Network.RPC;
 using Neo.Persistence;
 using NeoExpress.Models;
 using Newtonsoft.Json;
-
+using Nito.Disposables;
 using FileAccess = System.IO.FileAccess;
 using FileMode = System.IO.FileMode;
 using StreamWriter = System.IO.StreamWriter;
@@ -133,7 +131,7 @@ namespace NeoExpress
             {
                 throw new Exception("Node already running");
             }
-            
+
             await writer.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
 
             var tcs = new TaskCompletionSource<bool>();
@@ -201,7 +199,7 @@ namespace NeoExpress
 
             var rootPath = fileSystem.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
-                "Neo-Express", 
+                "Neo-Express",
                 "blockchain-nodes");
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
@@ -251,18 +249,22 @@ namespace NeoExpress
         internal const string EXPRESS_EXTENSION = ".neo-express";
         internal const string DEFAULT_EXPRESS_FILENAME = "default" + EXPRESS_EXTENSION;
 
-        string ResolveChainFileName(string filename) 
+        string ResolveChainFileName(string filename) => ResolveFileName(filename, EXPRESS_EXTENSION, () => "default");
+
+        string ResolveFileName(string filename, string extension, Func<string> getDefaultFileName)
         {
             if (string.IsNullOrEmpty(filename))
             {
-                return fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), DEFAULT_EXPRESS_FILENAME);
+                filename = getDefaultFileName();
             }
 
-            filename = fileSystem.Path.IsPathFullyQualified(filename)
-                ? filename : fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), filename);
+            if (!fileSystem.Path.IsPathFullyQualified(filename))
+            {
+                filename = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), filename);
+            }
 
-            return EXPRESS_EXTENSION.Equals(fileSystem.Path.GetExtension(filename), StringComparison.OrdinalIgnoreCase)
-                ? filename : filename + EXPRESS_EXTENSION;
+            return extension.Equals(fileSystem.Path.GetExtension(filename), StringComparison.OrdinalIgnoreCase)
+                ? filename : filename + extension;
         }
 
         public (Models.ExpressChain chain, string filename) LoadChain(string filename)
@@ -418,6 +420,102 @@ namespace NeoExpress
                 protocolWriter.WriteEndObject();
                 protocolWriter.WriteEndObject();
             }
+        }
+
+        private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
+
+        internal string ResolveCheckpointFileName(string filename) => ResolveFileName(filename, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
+
+        public async Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, bool force, TextWriter writer)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+            }
+
+            checkPointFileName = ResolveCheckpointFileName(checkPointFileName);
+            if (fileSystem.File.Exists(checkPointFileName))
+            {
+                if (force)
+                {
+                    fileSystem.File.Delete(checkPointFileName);
+                }
+                else
+                {
+                    throw new Exception("You must specify --force to overwrite an existing file");
+                }
+            }
+
+            var parentPath = fileSystem.Path.GetDirectoryName(checkPointFileName);
+            if (!fileSystem.Directory.Exists(parentPath))
+            {
+                fileSystem.Directory.CreateDirectory(parentPath);
+            }
+
+            var node = chain.ConsensusNodes[0];
+            if (IsRunning(node))
+            {
+                var uri = chain.GetUri();
+                var rpcClient = new RpcClient(uri.ToString());
+                await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
+                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkPointFileName)} checkpoint online").ConfigureAwait(false);
+            }
+            else
+            {
+                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+                using var db = RocksDbStore.Open(GetNodePath(node));
+                db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
+                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkPointFileName)} checkpoint offline");
+            }
+        }
+
+        public void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            if (IsRunning(node))
+            {
+                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
+                throw new InvalidOperationException($"node {scriptHash} currently running");
+            }
+
+            checkPointArchive = ResolveCheckpointFileName(checkPointArchive);
+            if (!fileSystem.File.Exists(checkPointArchive))
+            {
+                throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
+            }
+
+            var checkpointTempPath = fileSystem.Path.Combine(
+                fileSystem.Path.GetTempPath(), 
+                fileSystem.Path.GetRandomFileName());
+            using var folderCleanup = AnonymousDisposable.Create(() =>
+            {
+                if (fileSystem.Directory.Exists(checkpointTempPath)) 
+                {
+                    fileSystem.Directory.Delete(checkpointTempPath, true);
+                }
+            });
+
+            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            var nodeFolder = GetNodePath(node);
+            if (fileSystem.Directory.Exists(nodeFolder))
+            {
+                if (force)
+                {
+                    fileSystem.Directory.Delete(nodeFolder, true);
+                }
+                else
+                {
+                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+                }
+            }
+
+            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
         }
     }
 }

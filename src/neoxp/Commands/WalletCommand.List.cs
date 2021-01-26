@@ -1,6 +1,9 @@
 using System;
+using System.IO;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.IO;
+using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
@@ -9,23 +12,52 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List neo-express wallets")]
         class List
         {
+            readonly IChainManager chainManager;
+
+            public List(IChainManager chainManager)
+            {
+                this.chainManager = chainManager;
+            }
+
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            internal int OnExecute(CommandLineApplication app, IConsole console)
+            void PrintWalletInfo(ExpressWallet wallet, TextWriter writer)
+            {
+                writer.WriteLine(wallet.Name);
+
+                foreach (var account in wallet.Accounts)
+                {
+                    var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+                    var key = devAccount.GetKey() ?? throw new Exception();
+
+                    writer.WriteLine($"  {account.ScriptHash} ({(account.IsDefault ? "Default" : account.Label)})");
+                    writer.WriteLine($"    address bytes: {BitConverter.ToString(devAccount.ScriptHash.ToArray())}");
+                    writer.WriteLine($"    public key:    {key.PublicKey.EncodePoint(true).ToHexString()}");
+                    writer.WriteLine($"    private key:   {key.PrivateKey.ToHexString()}");
+                }
+            }
+
+            internal void Execute(TextWriter writer)
+            {
+                var (chain, _) = chainManager.Load(Input);
+
+                foreach (var wallet in chain.ConsensusNodes.Select(n => n.Wallet))
+                {
+                    PrintWalletInfo(wallet, writer);
+                }
+
+                foreach (var wallet in chain.Wallets)
+                {
+                    PrintWalletInfo(wallet, writer);
+                }
+            }
+
+            internal int OnExecute(IConsole console)
             {
                 try
                 {
-                    // var (chain, filename) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-
-                    // var wallets = chain.ConsensusNodes.Select(n => n.Wallet)
-                    //     .Concat(chain.Wallets ?? Enumerable.Empty<ExpressWallet>());
-                    // foreach (var wallet in wallets)
-                    // {
-                    //     blockchainOperations.PrintWalletInfo(wallet, console.Out);
-                    // }
-
+                    Execute(console.Out);
                     return 0;
                 }
                 catch (Exception ex)

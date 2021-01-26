@@ -152,6 +152,40 @@ namespace NeoExpress
             return ProtocolSettings.Initialize(config);
         }
 
+        private const string GENESIS = "genesis";
+
+        public ExpressWallet CreateWallet(ExpressChain chain, string name)
+        {
+            if (IsReservedName())
+            {
+                throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
+            }
+
+            if (chain.Wallets.Any(w => string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new Exception($"There is already a wallet named {name}. Choose a different wallet name.");
+            }
+
+            var wallet = new DevWallet(name);
+            var account = wallet.CreateAccount();
+            account.IsDefault = true;
+            return wallet.ToExpressWallet();
+
+            bool IsReservedName()
+            {
+                if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    if (string.Equals(node.Wallet.Name, name, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
         public void Export(ExpressChain chain, string password, TextWriter writer)
         {
             var folder = fileSystem.Directory.GetCurrentDirectory();
@@ -223,7 +257,7 @@ namespace NeoExpress
                 protocolWriter.WriteStartArray();
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount);
+                    var account = DevWalletAccount.FromExpressWalletAccount(chain.ConsensusNodes[i].Wallet.DefaultAccount!);
                     var key = account.GetKey();
                     if (key != null)
                     {

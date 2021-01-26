@@ -9,6 +9,13 @@ namespace NeoExpress.Commands
         [Command("delete", Description = "Delete neo-express wallet")]
         class Delete
         {
+            readonly IChainManager chainManager;
+
+            public Delete(IChainManager chainManager)
+            {
+                this.chainManager = chainManager;
+            }
+
             [Argument(0, Description = "Wallet name")]
             [Required]
             string Name { get; } = string.Empty;
@@ -19,29 +26,33 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            internal int OnExecute(CommandLineApplication app, IConsole console)
+            internal void Execute()
+            {
+                var (chain, filename) = chainManager.Load(Input);
+                var wallet = chain.GetWallet(Name);
+
+                if (wallet == null)
+                {
+                    throw new Exception($"{Name} privatenet wallet not found.");
+                }
+                else
+                {
+                    if (!Force)
+                    {
+                        throw new Exception("You must specify force to delete a privatenet wallet.");
+                    }
+
+                    chain.Wallets.Remove(wallet);
+                    chainManager.Save(chain, filename);
+                }
+            }
+
+            internal int OnExecute(IConsole console)
             {
                 try
                 {
-                    // var (chain, filename) = Program.LoadExpressChain(Input);
-                    // var wallet = chain.GetWallet(Name);
-
-                    // if (wallet == null)
-                    // {
-                    //     console.WriteLine($"{Name} privatenet wallet not found.");
-                    // }
-                    // else
-                    // {
-                    //     if (!Force)
-                    //     {
-                    //         throw new Exception("You must specify force to delete a privatenet wallet.");
-                    //     }
-
-                    //     chain.Wallets.Remove(wallet);
-                    //     chain.Save(filename);
-                    //     console.WriteLine($"{Name} privatenet wallet deleted.");
-                    // }
-
+                    Execute();
+                    console.WriteLine($"{Name} privatenet wallet deleted.");
                     return 0;
                 }
                 catch (Exception ex)

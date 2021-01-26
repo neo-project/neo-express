@@ -110,7 +110,7 @@ namespace NeoExpress
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 
-        public void Reset(ExpressConsensusNode node, bool force)
+        public void ResetChain(ExpressConsensusNode node, bool force)
         {
             if (IsRunning(node))
             {
@@ -152,7 +152,7 @@ namespace NeoExpress
             return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain, offlineTrace);
         }
 
-        public ExpressChain Create(int nodeCount)
+        public ExpressChain CreateChain(int nodeCount)
         {
             if (nodeCount != 1 && nodeCount != 4 && nodeCount != 7)
             {
@@ -205,7 +205,7 @@ namespace NeoExpress
         internal const string EXPRESS_EXTENSION = ".neo-express";
         internal const string DEFAULT_EXPRESS_FILENAME = "default" + EXPRESS_EXTENSION;
 
-        public string ResolveFileName(string filename) 
+        public string ResolveChainFileName(string filename) 
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -219,9 +219,9 @@ namespace NeoExpress
                 ? filename : filename + EXPRESS_EXTENSION;
         }
 
-        public (Models.ExpressChain chain, string filename) Load(string filename)
+        public (Models.ExpressChain chain, string filename) LoadChain(string filename)
         {
-            filename = ResolveFileName(filename);
+            filename = ResolveChainFileName(filename);
             if (!fileSystem.File.Exists(filename))
             {
                 throw new Exception($"{filename} file doesn't exist");
@@ -236,7 +236,7 @@ namespace NeoExpress
         }
 
 
-        public void Save(ExpressChain chain, string fileName)
+        public void SaveChain(ExpressChain chain, string fileName)
         {
             var serializer = new JsonSerializer();
             using (var stream = fileSystem.File.Open(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
@@ -280,7 +280,7 @@ namespace NeoExpress
             }
         }
 
-        public void Export(ExpressChain chain, string password, TextWriter writer)
+        public void ExportChain(ExpressChain chain, string password, TextWriter writer)
         {
             var folder = fileSystem.Directory.GetCurrentDirectory();
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)

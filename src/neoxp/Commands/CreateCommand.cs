@@ -33,7 +33,7 @@ namespace NeoExpress.Commands
 
         internal string Execute()
         {
-            var output = chainManger.ResolveFileName(Output);
+            var output = chainManger.ResolveChainFileName(Output);
             if (fileSystem.File.Exists(output))
             {
                 if (Force)
@@ -51,8 +51,8 @@ namespace NeoExpress.Commands
                 throw new ArgumentException($"{output} already exists", nameof(output));
             }
 
-            var chain = chainManger.Create(Count);
-            chainManger.Save(chain, output);
+            var chain = chainManger.CreateChain(Count);
+            chainManger.SaveChain(chain, output);
 
             return output;
         }

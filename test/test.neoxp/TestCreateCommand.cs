@@ -21,14 +21,14 @@ namespace test.neo_express
 
             var chain = new ExpressChain();
             var chainManager = new Mock<IBlockchainOperations>();
-            chainManager.Setup(o => o.ResolveFileName("")).Returns(path);
-            chainManager.Setup(o => o.Create(1)).Returns(chain);
+            chainManager.Setup(o => o.ResolveChainFileName("")).Returns(path);
+            chainManager.Setup(o => o.CreateChain(1)).Returns(chain);
 
             var cmd = new CreateCommand(fileSystem, chainManager.Object);
             var result = cmd.Execute();
             
             result.Should().Be(path);
-            chainManager.Verify(o => o.Save(chain, path));
+            chainManager.Verify(o => o.SaveChain(chain, path));
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace test.neo_express
 
             var chain = new ExpressChain();
             var chainManager = new Mock<IBlockchainOperations>();
-            chainManager.Setup(o => o.ResolveFileName("")).Returns(path);
+            chainManager.Setup(o => o.ResolveChainFileName("")).Returns(path);
 
             var cmd = new CreateCommand(fileSystem, chainManager.Object);
             Assert.Throws<Exception>(() => cmd.Execute());
@@ -55,14 +55,14 @@ namespace test.neo_express
 
             var chain = new ExpressChain();
             var chainManager = new Mock<IBlockchainOperations>();
-            chainManager.Setup(o => o.ResolveFileName("")).Returns(path);
-            chainManager.Setup(o => o.Create(1)).Returns(chain);
+            chainManager.Setup(o => o.ResolveChainFileName("")).Returns(path);
+            chainManager.Setup(o => o.CreateChain(1)).Returns(chain);
 
             var cmd = new CreateCommand(fileSystem, chainManager.Object) { Force = true };
             var result = cmd.Execute();
             
             result.Should().Be(path);
-            chainManager.Verify(o => o.Save(chain, path));
+            chainManager.Verify(o => o.SaveChain(chain, path));
         }
     }
 }

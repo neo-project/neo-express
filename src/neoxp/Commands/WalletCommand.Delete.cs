@@ -28,7 +28,7 @@ namespace NeoExpress.Commands
 
             internal void Execute()
             {
-                var (chain, filename) = chainManager.Load(Input);
+                var (chain, filename) = chainManager.LoadChain(Input);
                 var wallet = chain.GetWallet(Name);
 
                 if (wallet == null)
@@ -43,7 +43,7 @@ namespace NeoExpress.Commands
                     }
 
                     chain.Wallets.Remove(wallet);
-                    chainManager.Save(chain, filename);
+                    chainManager.SaveChain(chain, filename);
                 }
             }
 

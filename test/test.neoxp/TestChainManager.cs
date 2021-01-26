@@ -15,7 +15,7 @@ namespace test.neo_express
             var expected = Path.Join(fileSystem.Directory.GetCurrentDirectory(), BlockchainOperations.DEFAULT_EXPRESS_FILENAME);
 
             var chainManager = new BlockchainOperations(fileSystem);
-            var actual = chainManager.ResolveFileName(string.Empty);
+            var actual = chainManager.ResolveChainFileName(string.Empty);
 
             actual.Should().Be(expected);
         }
@@ -27,7 +27,7 @@ namespace test.neo_express
             var expected = Path.Join(fileSystem.Directory.GetCurrentDirectory(), "test" + BlockchainOperations.EXPRESS_EXTENSION);
 
             var chainManager = new BlockchainOperations(fileSystem);
-            var actual = chainManager.ResolveFileName("test");
+            var actual = chainManager.ResolveChainFileName("test");
 
             actual.Should().Be(expected);
         }
@@ -39,7 +39,7 @@ namespace test.neo_express
             var expected = Path.Join(fileSystem.Directory.GetCurrentDirectory(), "test" + BlockchainOperations.EXPRESS_EXTENSION);
 
             var chainManager = new BlockchainOperations(fileSystem);
-            var actual = chainManager.ResolveFileName("test" + BlockchainOperations.EXPRESS_EXTENSION);
+            var actual = chainManager.ResolveChainFileName("test" + BlockchainOperations.EXPRESS_EXTENSION);
 
             actual.Should().Be(expected);
         }
@@ -52,7 +52,7 @@ namespace test.neo_express
             var expected = "x:\\test" + BlockchainOperations.EXPRESS_EXTENSION;
 
             var chainManager = new BlockchainOperations(fileSystem);
-            var actual = chainManager.ResolveFileName("x:\\test");
+            var actual = chainManager.ResolveChainFileName("x:\\test");
 
             actual.Should().Be(expected);
         }
@@ -64,7 +64,7 @@ namespace test.neo_express
             var expected = "x:\\test.foo" + BlockchainOperations.EXPRESS_EXTENSION;
 
             var chainManager = new BlockchainOperations(fileSystem);
-            var actual = chainManager.ResolveFileName("x:\\test.foo");
+            var actual = chainManager.ResolveChainFileName("x:\\test.foo");
 
             actual.Should().Be(expected);
         }

@@ -30,7 +30,7 @@ namespace NeoExpress.Commands
 
             internal ExpressWallet Execute()
             {
-                var (chain, filename) = chainManager.Load(Input);
+                var (chain, filename) = chainManager.LoadChain(Input);
                 var existingWallet = chain.GetWallet(Name);
                 if (existingWallet != null)
                 {
@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
                 var wallet = chainManager.CreateWallet(chain, Name);
                 chain.Wallets ??= new List<ExpressWallet>(1);
                 chain.Wallets.Add(wallet);
-                chainManager.Save(chain, filename);
+                chainManager.SaveChain(chain, filename);
                 return wallet;
             }
 

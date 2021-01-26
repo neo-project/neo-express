@@ -40,7 +40,7 @@ namespace NeoExpress.Commands
 
             internal void Execute(TextWriter writer)
             {
-                var (chain, _) = chainManager.Load(Input);
+                var (chain, _) = chainManager.LoadChain(Input);
 
                 foreach (var wallet in chain.ConsensusNodes.Select(n => n.Wallet))
                 {

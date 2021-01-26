@@ -35,7 +35,7 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {
-            var (chain, _) = chainManager.Load(Input);
+            var (chain, _) = chainManager.LoadChain(Input);
 
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
             {

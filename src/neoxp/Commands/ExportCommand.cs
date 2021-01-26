@@ -22,9 +22,9 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chain, _) = chainManager.Load(Input);
+                var (chain, _) = chainManager.LoadChain(Input);
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
-                chainManager.Export(chain, password, console.Out);
+                chainManager.ExportChain(chain, password, console.Out);
                 return 0;
             }
             catch (Exception ex)

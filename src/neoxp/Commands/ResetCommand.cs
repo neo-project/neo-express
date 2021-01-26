@@ -34,13 +34,13 @@ namespace NeoExpress.Commands
                 throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
             }
 
-            var (chain, _) = chainManager.Load(Input);
+            var (chain, _) = chainManager.LoadChain(Input);
 
             if (All)
             {
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    chainManager.Reset(chain.ConsensusNodes[i], Force);
+                    chainManager.ResetChain(chain.ConsensusNodes[i], Force);
                     console.Out.WriteLine($"node {i} reset");
                 }
             }
@@ -52,7 +52,7 @@ namespace NeoExpress.Commands
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                chainManager.Reset(chain.ConsensusNodes[nodeIndex], Force);
+                chainManager.ResetChain(chain.ConsensusNodes[nodeIndex], Force);
                 console.Out.WriteLine($"node {nodeIndex} reset");
             }
         }

@@ -12,11 +12,11 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List neo-express wallets")]
         class List
         {
-            readonly IBlockchainOperations chainManager;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public List(IBlockchainOperations chainManager)
+            public List(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.chainManager = chainManager;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Option(Description = "Path to neo-express data file")]
@@ -24,16 +24,17 @@ namespace NeoExpress.Commands
 
             internal void Execute(TextWriter writer)
             {
-                var (chain, _) = chainManager.LoadChain(Input);
-
-                foreach (var wallet in chain.ConsensusNodes.Select(n => n.Wallet))
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var chain = chainManager.Chain;
+                
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    PrintWalletInfo(wallet);
+                    PrintWalletInfo(chain.ConsensusNodes[i].Wallet);
                 }
 
-                foreach (var wallet in chain.Wallets)
+                for (int i = 0; i < chain.Wallets.Count; i++)
                 {
-                    PrintWalletInfo(wallet);
+                    PrintWalletInfo(chain.Wallets[i]);
                 }
 
                 void PrintWalletInfo(ExpressWallet wallet)

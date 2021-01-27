@@ -9,11 +9,11 @@ namespace NeoExpress.Commands
         [Command("delete", Description = "Delete neo-express wallet")]
         class Delete
         {
-            readonly IBlockchainOperations chainManager;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Delete(IBlockchainOperations chainManager)
+            public Delete(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.chainManager = chainManager;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, Description = "Wallet name")]
@@ -28,7 +28,8 @@ namespace NeoExpress.Commands
 
             internal void Execute()
             {
-                var (chain, filename) = chainManager.LoadChain(Input);
+                var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+                var chain = chainManager.Chain;
                 var wallet = chain.GetWallet(Name);
 
                 if (wallet == null)
@@ -43,7 +44,7 @@ namespace NeoExpress.Commands
                     }
 
                     chain.Wallets.Remove(wallet);
-                    chainManager.SaveChain(chain, filename);
+                    chainManager.SaveChain(chainPath);
                 }
             }
 

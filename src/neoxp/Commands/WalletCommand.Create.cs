@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Models;
 
@@ -11,11 +12,11 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         class Create
         {
-            readonly IBlockchainOperations chainManager;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Create(IBlockchainOperations chainManager)
+            public Create(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.chainManager = chainManager;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, Description = "Wallet name")]
@@ -30,7 +31,14 @@ namespace NeoExpress.Commands
 
             internal ExpressWallet Execute()
             {
-                var (chain, filename) = chainManager.LoadChain(Input);
+                var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+                var chain = chainManager.Chain;
+                
+                if (chain.IsReservedName(Name))
+                {
+                    throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
+                }
+
                 var existingWallet = chain.GetWallet(Name);
                 if (existingWallet != null)
                 {
@@ -42,11 +50,15 @@ namespace NeoExpress.Commands
                     chain.Wallets.Remove(existingWallet);
                 }
 
-                var wallet = chainManager.CreateWallet(chain, Name);
+                var wallet = new DevWallet(Name);
+                var account = wallet.CreateAccount();
+                account.IsDefault = true;
+                
+                var expressWallet = wallet.ToExpressWallet();
                 chain.Wallets ??= new List<ExpressWallet>(1);
-                chain.Wallets.Add(wallet);
-                chainManager.SaveChain(chain, filename);
-                return wallet;
+                chain.Wallets.Add(expressWallet);
+                chainManager.SaveChain(chainPath);
+                return expressWallet;
             }
 
             internal int OnExecute(IConsole console)
@@ -55,9 +67,9 @@ namespace NeoExpress.Commands
                 {
                     var wallet = Execute();
                     console.WriteLine(Name);
-                    foreach (var account in wallet.Accounts)
+                    for (int i = 0; i < wallet.Accounts.Count; i++)
                     {
-                        console.WriteLine($"    {account.ScriptHash}");
+                        console.WriteLine($"    {wallet.Accounts[i].ScriptHash}");
                     }
                     console.WriteLine("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
                     console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
@@ -69,6 +81,8 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
+
+
         }
     }
 }

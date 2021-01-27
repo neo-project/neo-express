@@ -36,6 +36,20 @@ namespace NeoExpress
 
         const string GENESIS = "genesis";
 
+        public static bool IsReservedName(this ExpressChain chain, string name)
+        {
+            if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            foreach (var node in chain.ConsensusNodes)
+            {
+                if (string.Equals(node.Wallet.Name, name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
         public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
         {
             var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())

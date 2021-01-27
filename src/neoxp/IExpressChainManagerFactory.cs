@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
 using NeoExpress.Models;
+using Newtonsoft.Json;
 
 namespace NeoExpress
 {
     internal interface IExpressChainManagerFactory
     {
-        (IExpressChainManager, string) CreateChain(int nodeCount, string outputPath, bool force);
-        // IExpressChainManager LoadChain(string path);
+        (IExpressChainManager manager, string path) CreateChain(int nodeCount, string outputPath, bool force);
+        (IExpressChainManager manager, string path) LoadChain(string path);
     }
 
     internal class ExpressChainManagerFactory : IExpressChainManagerFactory
@@ -26,7 +27,7 @@ namespace NeoExpress
 
         string ResolveChainFileName(string filename) => fileSystem.ResolveFileName(filename, EXPRESS_EXTENSION, () => "default");
 
-        public (IExpressChainManager, string) CreateChain(int nodeCount, string output, bool force)
+        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, string output, bool force)
         {
             output = ResolveChainFileName(output);
             if (fileSystem.File.Exists(output))
@@ -93,6 +94,23 @@ namespace NeoExpress
 
             return (new ExpressChainManager(fileSystem, chain), output);
 
-            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);        }
+            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
+        }
+
+        public (IExpressChainManager manager, string path) LoadChain(string path)
+        {
+            path = ResolveChainFileName(path);
+            if (!fileSystem.File.Exists(path))
+            {
+                throw new Exception($"{path} file doesn't exist");
+            }
+            var serializer = new JsonSerializer();
+            using var stream = fileSystem.File.OpenRead(path);
+            using var reader = new JsonTextReader(new System.IO.StreamReader(stream));
+            var chain = serializer.Deserialize<ExpressChain>(reader)
+                ?? throw new Exception($"Cannot load Neo-Express instance information from {path}");
+
+            return (new ExpressChainManager(fileSystem, chain), path);
+        }
     }
 }

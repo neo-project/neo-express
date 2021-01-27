@@ -12,6 +12,13 @@ namespace NeoExpress.Commands
         [Command(Name = "invoke")]
         class Invoke
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public Invoke(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Argument(0, Description = "Path to contract invocation JSON file")]
             [Required]
             string InvocationFile { get; } = string.Empty;
@@ -90,6 +97,8 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    var (chain, _) = blockchainOperations.LoadChain(Input);
+                    
                     // if (!File.Exists(InvocationFile))
                     // {
                     //     throw new Exception($"Invocation file {InvocationFile} couldn't be found");

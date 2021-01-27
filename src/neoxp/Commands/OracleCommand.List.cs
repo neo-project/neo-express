@@ -9,6 +9,13 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List oracle nodes")]
         class List
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public List(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
@@ -16,6 +23,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    var (chain, _) = blockchainOperations.LoadChain(Input);
                     // var (chain, _) = Program.LoadExpressChain(Input);
                     // var blockchainOperations = new BlockchainOperations();
                     // var oracleNodes = await blockchainOperations

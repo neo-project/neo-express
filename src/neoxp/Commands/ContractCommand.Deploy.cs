@@ -32,7 +32,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
-            private async Task<UInt256> ExecuteAsync()
+            internal async Task<UInt256> ExecuteAsync()
             {
                 var (chain, _) = blockchainOperations.LoadChain(Input);
                 var account = chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");

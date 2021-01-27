@@ -31,7 +31,8 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, _) = blockchainOperations.LoadChain(Input);
-                    await blockchainOperations.CreateCheckpointAsync(chain, Name, Force, console.Out);
+                    var (path, online) = await blockchainOperations.CreateCheckpointAsync(chain, Name, Force).ConfigureAwait(false);
+                    await console.Out.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {(online ? "online" : "offline")}").ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

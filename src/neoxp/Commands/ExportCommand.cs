@@ -24,7 +24,11 @@ namespace NeoExpress.Commands
             {
                 var (chain, _) = chainManager.LoadChain(Input);
                 var password = Prompt.GetPassword("Input password to use for exported wallets");
-                chainManager.ExportChain(chain, password, console.Out);
+                chainManager.ExportChain(chain, password);
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    console.Out.WriteLine($"Exported {node.Wallet.Name} Conensus Node config + wallet");
+                }
                 return 0;
             }
             catch (Exception ex)

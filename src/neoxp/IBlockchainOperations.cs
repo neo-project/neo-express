@@ -16,14 +16,14 @@ namespace NeoExpress
         void SaveChain(ExpressChain chain, string fileName);
         void ResetNode(ExpressConsensusNode node, bool force);
         ExpressWallet CreateWallet(ExpressChain chain, string name);
-        void ExportChain(ExpressChain chain, string password, TextWriter writer);
+        void ExportChain(ExpressChain chain, string password);
 
         IExpressNode GetExpressNode(ExpressChain chain, bool offlineTrace = false);
         Func<IStore, ExpressConsensusNode, bool, TextWriter, CancellationToken, Task> GetNodeRunner(ExpressChain chain, uint secondsPerBlock);
         IStore GetNodeStore(ExpressConsensusNode node, bool discard);
         IStore GetCheckpointStore(ExpressChain chain, string name);
 
-        Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, bool force, TextWriter writer);
+        Task<(string path, bool online)> CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, bool force);
         void RestoreCheckpoint(ExpressChain chain, string checkPointArchive, bool force);
         Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(string contractPath);
     }

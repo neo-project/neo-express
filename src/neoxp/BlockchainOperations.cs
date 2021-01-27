@@ -331,14 +331,12 @@ namespace NeoExpress
             }
         }
 
-        public void ExportChain(ExpressChain chain, string password, TextWriter writer)
+        public void ExportChain(ExpressChain chain, string password)
         {
             var folder = fileSystem.Directory.GetCurrentDirectory();
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var node = chain.ConsensusNodes[i];
-                writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node wallet");
-
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
                 if (fileSystem.File.Exists(walletPath))
                 {
@@ -429,7 +427,7 @@ namespace NeoExpress
 
         internal string ResolveCheckpointFileName(string filename) => ResolveFileName(filename, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
 
-        public async Task CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, bool force, TextWriter writer)
+        public async Task<(string path, bool online)> CreateCheckpointAsync(ExpressChain chain, string checkPointFileName, bool force)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -461,14 +459,14 @@ namespace NeoExpress
                 var uri = chain.GetUri();
                 var rpcClient = new RpcClient(uri.ToString());
                 await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointFileName).ConfigureAwait(false);
-                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkPointFileName)} checkpoint online").ConfigureAwait(false);
+                return (checkPointFileName, true);
             }
             else
             {
                 var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
                 using var db = RocksDbStore.Open(GetNodePath(node));
                 db.CreateCheckpoint(checkPointFileName, chain.Magic, multiSigAccount.ScriptHash);
-                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkPointFileName)} checkpoint offline");
+                return (checkPointFileName, false);
             }
         }
 

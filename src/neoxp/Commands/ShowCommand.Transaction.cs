@@ -11,6 +11,13 @@ namespace NeoExpress.Commands
         [Command("transaction", "tx", Description = "Show transaction")]
         class Transaction
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public Transaction(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Argument(0, Description = "Transaction hash")]
             [Required]
             string TransactionHash { get; } = string.Empty;
@@ -22,6 +29,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    var (chain, _) = blockchainOperations.LoadChain(Input);
                     // var (chain, _) = Program.LoadExpressChain(Input);
                     // var blockchainOperations = new BlockchainOperations();
 

@@ -12,6 +12,13 @@ namespace NeoExpress.Commands
         [Command("balances")]
         class Balances
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public Balances(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Argument(0, Description = "Account to show asset balances for")]
             [Required]
             string Account { get; } = string.Empty;
@@ -23,6 +30,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    var (chain, _) = blockchainOperations.LoadChain(Input);
                     // var (chain, _) = Program.LoadExpressChain(Input);
                     // var blockchainOperations = new BlockchainOperations();
                     // var account = blockchainOperations.GetAccount(chain, Account);

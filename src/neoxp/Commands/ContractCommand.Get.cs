@@ -11,6 +11,13 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Get information for a deployed contract")]
         private class Get
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public Get(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
             string Contract { get; } = string.Empty;
@@ -22,6 +29,8 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    var (chain, _) = blockchainOperations.LoadChain(Input);
+
                     // var (chain, _) = Program.LoadExpressChain(Input);
 
                     // var blockchainOperations = new BlockchainOperations();

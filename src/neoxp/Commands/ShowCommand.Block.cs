@@ -10,6 +10,13 @@ namespace NeoExpress.Commands
         [Command("block", Description = "Show block")]
         class Block
         {
+            readonly IBlockchainOperations blockchainOperations;
+
+            public Block(IBlockchainOperations blockchainOperations)
+            {
+                this.blockchainOperations = blockchainOperations;
+            }
+
             [Argument(0, Description = "Optional block hash or index. Show most recent block if unspecified")]
             string BlockHash { get; } = string.Empty;
 
@@ -20,6 +27,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    var (chain, _) = blockchainOperations.LoadChain(Input);
                     // var (chain, _) = Program.LoadExpressChain(Input);
                     // var blockchainOperations = new BlockchainOperations();
 

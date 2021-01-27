@@ -124,7 +124,9 @@ namespace NeoExpress
             var senderHash = sender.GetScriptHashAsUInt160();
             var receiverHash = receiver.GetScriptHashAsUInt160();
 
-            if (quantity.IsT0)
+            return await quantity.Match<Task<UInt256>>(TransferAmountAsync, TransferAllAsync);
+
+            async Task<UInt256> TransferAmountAsync(decimal amount)
             {
                 var results = await expressNode.InvokeAsync(asset.MakeScript("decimals")).ConfigureAwait(false);
                 if (results.Stack.Length > 0 && results.Stack[0].Type == Neo.VM.Types.StackItemType.Integer)
@@ -138,7 +140,8 @@ namespace NeoExpress
                     throw new Exception("Invalid response from decimals operation");
                 }
             }
-            else if (quantity.IsT1)
+
+            async Task<UInt256> TransferAllAsync(All _)
             {
                 using var sb = new ScriptBuilder();
                 // balanceOf operation places current balance on eval stack
@@ -157,10 +160,7 @@ namespace NeoExpress
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
                 return await expressNode.ExecuteAsync(sender, sb.ToArray()).ConfigureAwait(false);
             }
-            else
-            {
-                throw new Exception($"Invalid quantity value {quantity}");
-            }
+
         }
 
         public static async Task<UInt256> DeployAsync(this IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, ExpressWalletAccount account)

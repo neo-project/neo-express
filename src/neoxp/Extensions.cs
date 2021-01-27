@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +18,22 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static string ResolveFileName(this IFileSystem fileSystem, string fileName, string extension, Func<string> getDefaultFileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+            {
+                fileName = getDefaultFileName();
+            }
+
+            if (!fileSystem.Path.IsPathFullyQualified(fileName))
+            {
+                fileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
+            }
+
+            return extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.OrdinalIgnoreCase)
+                ? fileName : fileName + extension;
+        }
+
         const string GENESIS = "genesis";
 
         public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
@@ -160,7 +177,6 @@ namespace NeoExpress
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
                 return await expressNode.ExecuteAsync(sender, sb.ToArray()).ConfigureAwait(false);
             }
-
         }
 
         public static async Task<UInt256> DeployAsync(this IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, ExpressWalletAccount account)

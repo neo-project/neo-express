@@ -12,11 +12,11 @@ namespace NeoExpress.Commands
     [Command("create", Description = "Create new neo-express instance")]
     internal class CreateCommand
     {
-        readonly IBlockchainOperations blockchainOperations;
+        readonly IExpressChainManagerFactory chainManagerFactory;
 
-        public CreateCommand(IBlockchainOperations blockchainOperations)
+        public CreateCommand(IExpressChainManagerFactory chainManagerFactory)
         {
-            this.blockchainOperations = blockchainOperations;
+            this.chainManagerFactory = chainManagerFactory;
         }
 
         [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
@@ -33,9 +33,10 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var output = blockchainOperations.CreateChain(Count, Output, Force);
+                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, Output, Force);
+                chainManager.SaveChain(outputPath);
 
-                console.Out.WriteLine($"Created {Count} node privatenet at {output}");
+                console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");
                 console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
                 console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 

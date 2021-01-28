@@ -1,10 +1,7 @@
 using System;
-using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit.Persistence;
-using Neo.Persistence;
 
 namespace NeoExpress.Commands
 {

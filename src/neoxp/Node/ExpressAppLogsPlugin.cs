@@ -56,7 +56,7 @@ namespace NeoExpress.Node
 
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
         // to avoid dependency on LevelDBStore package
-        
+
         static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
         {
             global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);

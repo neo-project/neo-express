@@ -58,7 +58,7 @@ namespace NeoExpress.Commands
                         throw new Exception("You must specify force to overwrite an exported wallet.");
                     }
                 }
-                
+
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
                 var devWallet = DevWallet.FromExpressWallet(wallet);
                 devWallet.Export(output, password);

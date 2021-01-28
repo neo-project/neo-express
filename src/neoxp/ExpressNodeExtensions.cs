@@ -18,6 +18,7 @@ using Neo.VM;
 using NeoExpress.Models;
 using OneOf;
 using All = OneOf.Types.All;
+
 namespace NeoExpress
 {
     static class ExpressNodeExtensions
@@ -167,9 +168,10 @@ namespace NeoExpress
 
         public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, ExpressWalletAccount account, IEnumerable<ExpressWalletAccount> oracleAccounts)
         {
-            var oracles = oracleAccounts.Select(o => {
+            var oracles = oracleAccounts.Select(o =>
+            {
                 var key = DevWalletAccount.FromExpressWalletAccount(o).GetKey() ?? throw new Exception();
-                return new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey }; 
+                return new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey };
             });
 
             var roleParam = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
@@ -232,7 +234,7 @@ namespace NeoExpress
 
                 var txHash = await expressNode.SubmitOracleResponseAsync(response, oracleNodes);
                 txHashes.Add(txHash);
-            }  
+            }
             return txHashes;
 
             byte[] GetResponseData(string filter)
@@ -245,7 +247,7 @@ namespace NeoExpress
                 System.Diagnostics.Debug.Assert(responseJson != null);
 
                 var json = string.IsNullOrEmpty(filter)
-                    ? (Newtonsoft.Json.Linq.JContainer)responseJson 
+                    ? (Newtonsoft.Json.Linq.JContainer)responseJson
                     : new Newtonsoft.Json.Linq.JArray(responseJson.SelectTokens(filter, true));
                 return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
             }
@@ -271,7 +273,7 @@ namespace NeoExpress
                 var decimals = (byte)(stack[2].GetInteger());
 
                 return (
-                    new RpcNep17Balance() { Amount = balance, AssetHash = assetHash }, 
+                    new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },
                     new Nep17Contract(name, symbol, decimals, assetHash));
             }
 

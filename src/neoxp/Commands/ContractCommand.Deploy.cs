@@ -65,7 +65,7 @@ namespace NeoExpress.Commands
                     await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
-            } 
+            }
 
         }
     }

@@ -236,7 +236,7 @@ namespace NeoExpress
             else
             {
                 return RocksDbStore.Open(folder);
-            }        
+            }
         }
 
         public IStore GetCheckpointStore(string checkPointPath)
@@ -258,7 +258,7 @@ namespace NeoExpress
             var checkpointTempPath = fileSystem.GetTempFolder();
             var folderCleanup = AnonymousDisposable.Create(() =>
             {
-                if (fileSystem.Directory.Exists(checkpointTempPath)) 
+                if (fileSystem.Directory.Exists(checkpointTempPath))
                 {
                     fileSystem.Directory.Delete(checkpointTempPath, true);
                 }

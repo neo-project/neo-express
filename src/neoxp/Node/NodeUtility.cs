@@ -64,7 +64,7 @@
 //         {
 //             throw new NotImplementedException();
 //         }
-        
+
 //         public static Task RunAsync(IStore store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken cancellationToken)
 //         {
 //             // writer.WriteLine(store.GetType().Name);

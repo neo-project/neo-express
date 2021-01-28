@@ -2,11 +2,6 @@ using System;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
-using Neo.Network.RPC;
-using Neo.SmartContract;
-using Neo.SmartContract.Native;
-using Neo.VM;
-using NeoExpress.Models;
 using OneOf;
 using All = OneOf.Types.All;
 namespace NeoExpress.Commands

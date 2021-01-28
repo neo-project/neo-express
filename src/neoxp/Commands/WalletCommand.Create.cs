@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Models;
 
@@ -33,7 +32,7 @@ namespace NeoExpress.Commands
             {
                 var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
                 var chain = chainManager.Chain;
-                
+
                 if (chain.IsReservedName(Name))
                 {
                     throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
@@ -53,7 +52,7 @@ namespace NeoExpress.Commands
                 var wallet = new DevWallet(Name);
                 var account = wallet.CreateAccount();
                 account.IsDefault = true;
-                
+
                 var expressWallet = wallet.ToExpressWallet();
                 chain.Wallets ??= new List<ExpressWallet>(1);
                 chain.Wallets.Add(expressWallet);

@@ -1,11 +1,8 @@
+using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-
-using System.Text;
-using System;
-using System.Text.Json;
-using System.IO;
 
 namespace NeoExpress.Commands
 {

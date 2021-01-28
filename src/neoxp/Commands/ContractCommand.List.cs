@@ -1,8 +1,6 @@
+using System;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-
-using System;
-using System.Linq;
 
 namespace NeoExpress.Commands
 {

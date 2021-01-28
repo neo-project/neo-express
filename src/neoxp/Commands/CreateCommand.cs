@@ -1,11 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
-using System.Linq;
-using System.Threading;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {

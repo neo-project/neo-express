@@ -4,7 +4,6 @@ using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
-
 namespace NeoExpress.Commands
 {
     partial class ContractCommand

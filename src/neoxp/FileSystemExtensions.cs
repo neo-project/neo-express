@@ -26,13 +26,13 @@ namespace NeoExpress
                 ? fileName : fileName + extension;
         }
 
-        public static string GetTempFolder(this IFileSystem fileSystem) 
+        public static string GetTempFolder(this IFileSystem fileSystem)
         {
             string path;
             do
             {
                 path = fileSystem.Path.Combine(
-                    fileSystem.Path.GetTempPath(), 
+                    fileSystem.Path.GetTempPath(),
                     fileSystem.Path.GetRandomFileName());
             }
             while (fileSystem.Directory.Exists(path));

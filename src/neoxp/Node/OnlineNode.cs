@@ -178,7 +178,7 @@ namespace NeoExpress.Node
                 var callbackContract = UInt160.Parse(json["callbackcontract"].AsString());
                 var callbackMethod = json["callbackmethod"].AsString();
                 var userData = Convert.FromBase64String(json["userdata"].AsString());
- 
+
                 return (id, new OracleRequest
                 {
                     OriginalTxid = originalTxId,

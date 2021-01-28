@@ -82,7 +82,7 @@ namespace NeoExpress.Node
                 && notification.State.Count == 3
                 && (notification.EventName == "Transfer" || notification.EventName == "transfer");
 
-        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IReadOnlyStore store) 
+        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IReadOnlyStore store)
             => ExpressAppLogsPlugin
                 .GetNotifications(store)
                 .Where(t => IsNep17Transfer(t.notification));
@@ -306,7 +306,7 @@ namespace NeoExpress.Node
                 {
                     contracts.Add(contract.ToJson());
                 }
-            } 
+            }
             return contracts;
         }
 

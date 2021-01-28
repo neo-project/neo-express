@@ -26,7 +26,7 @@ namespace NeoExpress.Commands
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var chain = chainManager.Chain;
-                
+
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
                     PrintWalletInfo(chain.ConsensusNodes[i].Wallet);

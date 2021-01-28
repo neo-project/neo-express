@@ -1,6 +1,5 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands

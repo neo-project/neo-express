@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Models;
@@ -22,7 +21,7 @@ namespace NeoExpress.Commands
         [Option(Description = "Path to neo-express data file")]
         string Input { get; } = string.Empty;
 
-        internal void Execute(TextWriter writer)
+        internal void Execute(System.IO.TextWriter writer)
         {
             var password = Prompt.GetPassword("Input password to use for exported wallets");
             var (chainManager, _) = chainManagerFactory.LoadChain(Input);

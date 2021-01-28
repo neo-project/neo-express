@@ -23,16 +23,15 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-
-                    // var block = await blockchainOperations.ShowBlockAsync(chain, BlockHash).ConfigureAwait(false);
-                    // console.WriteLine(block.ToJson().ToString(true));
+                    using var expressNode = chainManager.GetExpressNode();
+                    var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
+                    console.WriteLine(block.ToJson().ToString(true));
                     return 0;
                 }
                 catch (Exception ex)

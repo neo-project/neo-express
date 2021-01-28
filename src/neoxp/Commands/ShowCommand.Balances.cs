@@ -26,32 +26,26 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var account = blockchainOperations.GetAccount(chain, Account);
-                    // if (account == null)
-                    // {
-                    //     throw new Exception($"{Account} account not found.");
-                    // }
+                    var account = chainManager.Chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
+                    using var expressNode = chainManager.GetExpressNode();
+                    var balances = await expressNode.GetBalancesAsync(account.AsUInt160()).ConfigureAwait(false);
 
-                    // var balances = await blockchainOperations.GetBalancesAsync(chain, account);
+                    if (balances.Length == 0)
+                    {
+                        console.WriteLine($"No balances for {Account}");
+                    }
 
-                    // if (balances.Length == 0)
-                    // {
-                    //     console.WriteLine($"No balances for {Account}");
-                    // }
+                    for (int i = 0; i < balances.Length; i++)
+                    {
+                        console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
+                        console.WriteLine($"  balance: {balances[i].balance.ToBigDecimal(balances[i].contract.Decimals)}");
+                    }
 
-                    // for (int i = 0; i < balances.Length; i++)
-                    // {
-                    //     var balance = new BigDecimal(balances[i].balance.Amount, balances[i].contract.Decimals);
-                    //     console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
-                    //     console.WriteLine($"  balance: {balance}");
-                    // }
                     return 0;
                 }
                 catch (Exception ex)

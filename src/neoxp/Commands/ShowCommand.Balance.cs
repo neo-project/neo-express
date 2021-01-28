@@ -29,22 +29,15 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var account = blockchainOperations.GetAccount(chain, Account);
-                    // if (account == null)
-                    // {
-                    //     throw new Exception($"{Account} account not found.");
-                    // }
-
-                    // var (balance, contract) = await blockchainOperations.ShowBalanceAsync(chain, account, Asset);
-
-                    // console.WriteLine($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance}");
+                    var account = chainManager.Chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
+                    using var expressNode = chainManager.GetExpressNode();
+                    var (balance, contract) = await expressNode.GetBalanceAsync(account, Asset).ConfigureAwait(false);
+                    await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
                     return 0;
                 }
                 catch (Exception ex)

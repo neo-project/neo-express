@@ -35,7 +35,7 @@ namespace NeoExpress.Node
 
         public async Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0)
         {
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.GetScriptHashAsUInt160() } };
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.AsUInt160() } };
             var factory = new TransactionManagerFactory(rpcClient);
             var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
             var tx = await tm

@@ -30,12 +30,10 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-
-                    // var (tx, log) = await blockchainOperations.ShowTransactionAsync(chain, TransactionHash).ConfigureAwait(false);
-                    // console.WriteLine(tx.ToJson().ToString(true));
-                    // if (log != null) console.WriteLine(log.ToJson().ToString(true));
+                    using var expressNode = chainManager.GetExpressNode();
+                    var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
+                    console.WriteLine(tx.ToJson().ToString(true));
+                    if (log != null) console.WriteLine(log.ToJson().ToString(true));
                     return 0;
                 }
                 catch (Exception ex)

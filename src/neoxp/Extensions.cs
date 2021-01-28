@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.IO;
+using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
@@ -195,8 +198,8 @@ namespace NeoExpress
 
         public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
-            var senderHash = sender.GetScriptHashAsUInt160();
-            var receiverHash = receiver.GetScriptHashAsUInt160();
+            var senderHash = sender.AsUInt160();
+            var receiverHash = receiver.AsUInt160();
 
             return await quantity.Match<Task<UInt256>>(TransferAmountAsync, TransferAllAsync);
 
@@ -262,5 +265,56 @@ namespace NeoExpress
             sb.EmitAppCall(NativeContract.Management.Hash, "deploy", nefFile.ToArray(), manifest.ToJson().ToString());
             return await expressNode.ExecuteAsync(account, sb.ToArray()).ConfigureAwait(false);
         }
+
+        public static async Task<(RpcNep17Balance balance, Nep17Contract token)> GetBalanceAsync(this IExpressNode expressNode, ExpressWalletAccount account, string asset)
+        {
+            var accountHash = account.AsUInt160();
+            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
+
+            using var sb = new ScriptBuilder();
+            sb.EmitAppCall(assetHash, "balanceOf", accountHash);
+            sb.EmitAppCall(assetHash, "symbol");
+            sb.EmitAppCall(assetHash, "decimals");
+
+            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
+            var stack = result.Stack;
+            if (stack.Length >= 3)
+            {
+                var balance = stack[0].GetInteger();
+                // TODO: retrieve name correctly
+                var name = string.Empty; //Encoding.UTF8.GetString(stack[1].GetSpan());
+                var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
+                var decimals = (byte)(stack[2].GetInteger());
+
+                return (
+                    new RpcNep17Balance() { Amount = balance, AssetHash = assetHash }, 
+                    new Nep17Contract(name, symbol, decimals, assetHash));
+            }
+
+            throw new Exception("invalid script results");
+        }
+
+        public static async Task<Block> GetBlockAsync(this IExpressNode expressNode, string blockHash)
+        {
+            if (string.IsNullOrEmpty(blockHash))
+            {
+                return await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
+            }
+
+            if (UInt256.TryParse(blockHash, out var uint256))
+            {
+                return await expressNode.GetBlockAsync(uint256).ConfigureAwait(false);
+            }
+
+            if (uint.TryParse(blockHash, out var index))
+            {
+                return await expressNode.GetBlockAsync(index).ConfigureAwait(false);
+            }
+
+            throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
+        }
+
+        public static BigDecimal ToBigDecimal(this RpcNep17Balance balance, byte decimals)
+            => new BigDecimal(balance.Amount, decimals);
     }
 }

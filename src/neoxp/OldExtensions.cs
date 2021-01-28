@@ -91,7 +91,7 @@ namespace NeoExpress
 
         public static KeyPair GetKey(this ExpressWalletAccount account) => new KeyPair(account.PrivateKey.HexToBytes());
 
-        public static UInt160 GetScriptHashAsUInt160(this ExpressWalletAccount account) => account.ScriptHash.ToScriptHash();
+        public static UInt160 AsUInt160(this ExpressWalletAccount account) => account.ScriptHash.ToScriptHash();
 
         public static TransactionManager AddSignatures(this TransactionManager tm, ExpressChain chain, ExpressWalletAccount account)
         {

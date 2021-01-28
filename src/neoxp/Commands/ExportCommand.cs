@@ -65,8 +65,8 @@ namespace NeoExpress.Commands
 
         void ExportNodeConfig(ExpressConsensusNode node, string path, string password, string walletPath)
         {
-            using var stream = fileSystem.File.Open(path, FileMode.Create, FileAccess.Write);
-            using var configWriter = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+            using var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+            using var configWriter = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented };
 
             // use neo-cli defaults for Logger & Storage
 
@@ -100,8 +100,8 @@ namespace NeoExpress.Commands
 
         void ExportProtocolConfig(ExpressChain chain, string path)
         {
-            using var stream = fileSystem.File.Open(path, FileMode.Create, FileAccess.Write);
-            using var protocolWriter = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+            using var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+            using var protocolWriter = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented };
 
             // use neo defaults for MillisecondsPerBlock & AddressVersion
 

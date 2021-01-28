@@ -11,11 +11,11 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly IBlockchainOperations blockchainOperations;
+        readonly IExpressChainManagerFactory chainManagerFactory;
 
-        public RunCommand(IBlockchainOperations blockchainOperations)
+        public RunCommand(IExpressChainManagerFactory chainManagerFactory)
         {
-            this.blockchainOperations = blockchainOperations;
+            this.chainManagerFactory = chainManagerFactory;
         }
 
         [Argument(0, Description = "Index of node to run")]
@@ -35,14 +35,14 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {
-            var (chain, _) = blockchainOperations.LoadChain(Input);
+            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var chain = chainManager.Chain;
 
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 
             var node = chain.ConsensusNodes[NodeIndex];
-            var nodeRunner = blockchainOperations.GetNodeRunner(chain, SecondsPerBlock);
-            using var store = blockchainOperations.GetNodeStore(node, Discard);
-            await nodeRunner(store, node, Trace, console.Out, token).ConfigureAwait(false);
+            using var store = chainManager.GetNodeStore(node, Discard);
+            await chainManager.RunAsync(store, node, SecondsPerBlock, Trace, console.Out, token);
         }
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)

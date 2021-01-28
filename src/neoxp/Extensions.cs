@@ -106,17 +106,6 @@ namespace NeoExpress
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 
-        const string GLOBAL_PREFIX = "Global\\";
-
-        public static bool IsRunning(this ExpressConsensusNode node)
-        {
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
-
-            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
-        }
-
         public static void InitalizeProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
         {
             if (!chain.TryInitializeProtocolSettings(secondsPerBlock))

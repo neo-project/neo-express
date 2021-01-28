@@ -1,9 +1,13 @@
 using System;
+using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Network.RPC;
+using Neo.Persistence;
 using NeoExpress.Models;
 using Newtonsoft.Json;
 using Nito.Disposables;
@@ -13,6 +17,11 @@ namespace NeoExpress
     internal interface IExpressChainManager
     {
         ExpressChain Chain { get; }
+
+        Task RunAsync(IStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token);
+        IStore GetNodeStore(ExpressConsensusNode node, bool discard);
+        IStore GetCheckpointStore(string checkPointPath);
+
         void SaveChain(string path);
         Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force);
         void RestoreCheckpoint(string checkPointPath, bool force);
@@ -21,6 +30,9 @@ namespace NeoExpress
 
     internal class ExpressChainManager : IExpressChainManager
     {
+        const string GLOBAL_PREFIX = "Global\\";
+        const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
+
         readonly IFileSystem fileSystem;
         readonly ExpressChain chain;
 
@@ -32,9 +44,16 @@ namespace NeoExpress
 
         public ExpressChain Chain => chain;
 
-        private const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
+        string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
 
-        internal string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
+        static bool IsRunning(ExpressConsensusNode node)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
+        }
 
         public async Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force)
         {
@@ -63,7 +82,7 @@ namespace NeoExpress
             }
 
             var node = chain.ConsensusNodes[0];
-            if (node.IsRunning())
+            if (IsRunning(node))
             {
                 var uri = chain.GetUri();
                 var rpcClient = new RpcClient(uri.ToString());
@@ -93,7 +112,7 @@ namespace NeoExpress
             }
 
             var node = chain.ConsensusNodes[0];
-            if (node.IsRunning())
+            if (IsRunning(node))
             {
                 var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
                 throw new InvalidOperationException($"node {scriptHash} currently running");
@@ -138,7 +157,7 @@ namespace NeoExpress
 
         public void ResetNode(ExpressConsensusNode node, bool force)
         {
-            if (node.IsRunning())
+            if (IsRunning(node))
             {
                 var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
                 throw new InvalidOperationException($"node {scriptHash} currently running");
@@ -154,6 +173,114 @@ namespace NeoExpress
 
                 fileSystem.Directory.Delete(folder, true);
             }
+        }
+
+        public async Task RunAsync(IStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token)
+        {
+            if (IsRunning(node))
+            {
+                throw new Exception("Node already running");
+            }
+
+            chain.InitalizeProtocolSettings(secondsPerBlock);
+
+            await writer.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
+
+            var tcs = new TaskCompletionSource<bool>();
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
+                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
+
+                    var wallet = DevWallet.FromExpressWallet(node.Wallet);
+                    var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+
+                    var logPlugin = new Node.LogPlugin(writer);
+                    var storageProvider = new Node.ExpressStorageProvider(store);
+                    var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
+                    var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
+
+                    using var system = new Neo.NeoSystem(storageProvider.Name);
+                    var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
+                    var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
+                    var expressRpcServer = new Node.ExpressRpcServer(multiSigAccount);
+                    rpcServer.RegisterMethods(expressRpcServer);
+                    rpcServer.RegisterMethods(appLogsPlugin);
+                    rpcServer.StartRpcServer();
+
+                    system.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    {
+                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
+                        WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
+                    });
+                    system.StartConsensus(wallet);
+
+                    token.WaitHandle.WaitOne();
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+                finally
+                {
+                    tcs.TrySetResult(true);
+                }
+            });
+            await tcs.Task.ConfigureAwait(false);
+        }
+
+        public IStore GetNodeStore(ExpressConsensusNode node, bool discard)
+        {
+            var folder = fileSystem.GetNodePath(node);
+
+            if (discard)
+            {
+                try
+                {
+                    var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
+                    return new CheckpointStore(rocksDbStore);
+                }
+                catch
+                {
+                    return new CheckpointStore(NullReadOnlyStore.Instance);
+                }
+            }
+            else
+            {
+                return RocksDbStore.Open(folder);
+            }        
+        }
+
+        public IStore GetCheckpointStore(string checkPointPath)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            }
+
+            var node = chain.ConsensusNodes[0];
+            if (IsRunning(node)) throw new Exception($"node already running");
+
+            checkPointPath = ResolveCheckpointFileName(checkPointPath);
+            if (!fileSystem.File.Exists(checkPointPath))
+            {
+                throw new Exception($"Checkpoint {checkPointPath} couldn't be found");
+            }
+
+            var checkpointTempPath = fileSystem.GetTempFolder();
+            var folderCleanup = AnonymousDisposable.Create(() =>
+            {
+                if (fileSystem.Directory.Exists(checkpointTempPath)) 
+                {
+                    fileSystem.Directory.Delete(checkpointTempPath, true);
+                }
+            });
+
+            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
         }
     }
 }

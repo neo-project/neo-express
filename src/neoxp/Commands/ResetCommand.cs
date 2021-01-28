@@ -8,11 +8,11 @@ namespace NeoExpress.Commands
     [Command("reset", "Reset neo-express instance node")]
     class ResetCommand
     {
-        readonly IBlockchainOperations chainManager;
+        readonly IExpressChainManagerFactory chainManagerFactory;
 
-        public ResetCommand(IBlockchainOperations chainManager)
+        public ResetCommand(IExpressChainManagerFactory chainManagerFactory)
         {
-            this.chainManager = chainManager;
+            this.chainManagerFactory = chainManagerFactory;
         }
 
         [Argument(0, Description = "Index of node to reset")]
@@ -34,7 +34,8 @@ namespace NeoExpress.Commands
                 throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
             }
 
-            var (chain, _) = chainManager.LoadChain(Input);
+            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var chain = chainManager.Chain;
 
             if (All)
             {

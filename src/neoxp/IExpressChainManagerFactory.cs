@@ -25,7 +25,7 @@ namespace NeoExpress
         internal const string EXPRESS_EXTENSION = ".neo-express";
         internal const string DEFAULT_EXPRESS_FILENAME = "default" + EXPRESS_EXTENSION;
 
-        string ResolveChainFileName(string filename) => fileSystem.ResolveFileName(filename, EXPRESS_EXTENSION, () => "default");
+        string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => "default");
 
         public (IExpressChainManager manager, string path) CreateChain(int nodeCount, string output, bool force)
         {

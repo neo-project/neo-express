@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Neo;
@@ -78,6 +79,43 @@ namespace NeoExpress
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
+
+        public static string GetTempFolder(this IFileSystem fileSystem) 
+        {
+            string path;
+            do
+            {
+                path = fileSystem.Path.Combine(
+                    fileSystem.Path.GetTempPath(), 
+                    fileSystem.Path.GetRandomFileName());
+            }
+            while (fileSystem.Directory.Exists(path));
+            return path;
+        }
+
+        public static string GetNodePath(this IFileSystem fileSystem, ExpressConsensusNode node)
+        {
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (node.Wallet == null) throw new ArgumentNullException(nameof(node.Wallet));
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+
+            var rootPath = fileSystem.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
+                "Neo-Express",
+                "blockchain-nodes");
+            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
+        }
+
+        const string GLOBAL_PREFIX = "Global\\";
+
+        public static bool IsRunning(this ExpressConsensusNode node)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
+        }
 
         public static void InitalizeProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
         {

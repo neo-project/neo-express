@@ -10,11 +10,11 @@ namespace NeoExpress.Commands
         [Command("restore", Description = "Restore a neo-express checkpoint")]
         class Restore
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Restore(IBlockchainOperations blockchainOperations)
+            public Restore(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, "Checkpoint file name")]
@@ -31,8 +31,8 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = blockchainOperations.LoadChain(Input);
-                    blockchainOperations.RestoreCheckpoint(chain, Name, Force);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    chainManager.RestoreCheckpoint(Name, Force);
                     console.WriteLine($"Checkpoint {Name} successfully restored");
                     return 0;
                 }

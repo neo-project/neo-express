@@ -10,11 +10,11 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create a new neo-express checkpoint")]
         class Create
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Create(IBlockchainOperations blockchainOperations)
+            public Create(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, "Checkpoint file name")]
@@ -30,8 +30,8 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = blockchainOperations.LoadChain(Input);
-                    var (path, online) = await blockchainOperations.CreateCheckpointAsync(chain, Name, Force).ConfigureAwait(false);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (path, online) = await chainManager.CreateCheckpointAsync(Name, Force).ConfigureAwait(false);
                     await console.Out.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {(online ? "online" : "offline")}").ConfigureAwait(false);
                     return 0;
                 }

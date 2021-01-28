@@ -25,7 +25,7 @@ namespace NeoExpress.Commands
         internal void Execute(TextWriter writer)
         {
             var password = Prompt.GetPassword("Input password to use for exported wallets");
-            var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
             var chain = chainManager.Chain;
             var folder = fileSystem.Directory.GetCurrentDirectory();
 

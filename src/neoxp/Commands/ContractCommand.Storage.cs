@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             bool Json { get; }
 
-            internal async Task Execute(TextWriter writer)
+            internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();

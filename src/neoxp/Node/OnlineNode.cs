@@ -192,7 +192,7 @@ namespace NeoExpress.Node
             }
         }
 
-        public async Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes)
+        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, ECPoint[] oracleNodes)
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -17,39 +18,43 @@ namespace NeoExpress.Commands
                 this.chainManagerFactory = chainManagerFactory;
             }
 
+            [Argument(0, Description = "Account to pay contract invocation GAS fee")]
+            string Account { get; } = string.Empty;
+
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var txHash = await blockchainOperations
-                    //     .DesignateOracleRolesAsync(chain, chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount))
-                    //     .ConfigureAwait(false);
-                    // console.WriteLine($"Oracle Enable Transaction {txHash} submitted");
-
-                    // if (Json)
-                    // {
-                    //     console.WriteLine($"{txHash}");
-                    // }
-                    // else
-                    // {
-                    //     console.WriteLine($"Transfer Transaction {txHash} submitted");
-                    // }
-
+                    await ExecuteAsync(console.Out);
                     return 0;
                 }
                 catch (Exception ex)
                 {
                     await console.Error.WriteLineAsync(ex.Message);
                     return 1;
+                }
+            }
+
+            internal async Task ExecuteAsync(TextWriter writer)
+            {
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var account = chainManager.Chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
+                var oracles = chainManager.Chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount ?? throw new Exception());
+                var expressNode = chainManager.GetExpressNode();
+                var txHash = await expressNode.DesignateOracleRolesAsync(account, oracles);
+                if (Json)
+                {
+                    await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
+                }
+                else
+                {
+                    await writer.WriteLineAsync($"Oracle Enable Transaction {txHash} submitted").ConfigureAwait(false);
                 }
             }
         }

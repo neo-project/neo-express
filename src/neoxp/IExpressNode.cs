@@ -28,6 +28,6 @@ namespace NeoExpress
         Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
         Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync();
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
-        Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes);
+        Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, ECPoint[] oracleNodes);
     }
 }

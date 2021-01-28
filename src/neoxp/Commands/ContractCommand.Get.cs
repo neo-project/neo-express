@@ -30,7 +30,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    await Execute(console.Out).ConfigureAwait(false);
+                    await ExecuteAsync(console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -40,7 +40,7 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal async Task Execute(TextWriter writer)
+            internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();

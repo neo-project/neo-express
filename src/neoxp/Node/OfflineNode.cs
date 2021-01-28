@@ -493,7 +493,7 @@ namespace NeoExpress.Node
             return Task.FromResult<IReadOnlyList<(ulong, OracleRequest)>>(requests);
         }
 
-        public Task<UInt256> SubmitOracleResponseAsync(ExpressChain chain, OracleResponse response, ECPoint[] oracleNodes)
+        public Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, ECPoint[] oracleNodes)
         {
             using var snapshot = Blockchain.Singleton.GetSnapshot();
             var tx = ExpressOracle.CreateResponseTx(snapshot, response);

@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
@@ -325,6 +327,91 @@ namespace NeoExpress
             return await expressNode.ExecuteAsync(account, sb.ToArray()).ConfigureAwait(false);
         }
 
+        public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, ExpressWalletAccount account, IEnumerable<ExpressWalletAccount> oracleAccounts)
+        {
+            var oracles = oracleAccounts.Select(o => {
+                var key = DevWalletAccount.FromExpressWalletAccount(o).GetKey() ?? throw new Exception();
+                return new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey }; 
+            });
+
+            var roleParam = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+            var oraclesParam = new ContractParameter(ContractParameterType.Array) { Value = oracles.ToList() };
+
+            using var sb = new ScriptBuilder();
+            sb.EmitAppCall(NativeContract.Designation.Hash, "designateAsRole", roleParam, oraclesParam);
+            return await expressNode.ExecuteAsync(account, sb.ToArray()).ConfigureAwait(false);
+        }
+
+        public static async Task<ECPoint[]> GetOracleNodesAsync(this IExpressNode expressNode)
+        {
+            var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
+
+            var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+            var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
+
+            using var sb = new ScriptBuilder();
+            sb.EmitAppCall(NativeContract.Designation.Hash, "getDesignatedByRole", role, index);
+            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
+
+            if (result.State == Neo.VM.VMState.HALT
+                && result.Stack.Length >= 1
+                && result.Stack[0] is Neo.VM.Types.Array array)
+            {
+                var nodes = new ECPoint[array.Count];
+                for (var x = 0; x < array.Count; x++)
+                {
+                    nodes[x] = ECPoint.DecodePoint(array[x].GetSpan(), ECCurve.Secp256r1);
+                }
+                return nodes;
+            }
+
+            return Array.Empty<ECPoint>();
+        }
+
+        public static async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(this IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)
+        {
+            if (responseCode == OracleResponseCode.Success && responseJson == null)
+            {
+                throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
+            }
+
+            var oracleNodes = await GetOracleNodesAsync(expressNode);
+
+            var txHashes = new List<UInt256>();
+            var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+            for (var x = 0; x < requests.Count; x++)
+            {
+                var (id, request) = requests[x];
+                if (requestId.HasValue && requestId.Value != id) continue;
+                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var response = new OracleResponse
+                {
+                    Code = responseCode,
+                    Id = id,
+                    Result = GetResponseData(request.Filter),
+                };
+
+                var txHash = await expressNode.SubmitOracleResponseAsync(response, oracleNodes);
+                txHashes.Add(txHash);
+            }  
+            return txHashes;
+
+            byte[] GetResponseData(string filter)
+            {
+                if (responseCode != OracleResponseCode.Success)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                System.Diagnostics.Debug.Assert(responseJson != null);
+
+                var json = string.IsNullOrEmpty(filter)
+                    ? (Newtonsoft.Json.Linq.JContainer)responseJson 
+                    : new Newtonsoft.Json.Linq.JArray(responseJson.SelectTokens(filter, true));
+                return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
+            }
+        }
         public static async Task<(RpcNep17Balance balance, Nep17Contract token)> GetBalanceAsync(this IExpressNode expressNode, ExpressWalletAccount account, string asset)
         {
             var accountHash = account.AsUInt160();

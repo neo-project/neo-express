@@ -1,6 +1,7 @@
 using McMaster.Extensions.CommandLineUtils;
 using System.Threading.Tasks;
 using System;
+using System.IO;
 
 namespace NeoExpress.Commands
 {
@@ -19,24 +20,25 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             string Input { get; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task ExecuteAsync(TextWriter writer)
+            {
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                using var expressNode = chainManager.GetExpressNode();
+                var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+
+                foreach (var (id, request) in requests)
+                {
+                    await writer.WriteLineAsync($"request #{id}:").ConfigureAwait(false);
+                    await writer.WriteLineAsync($"    Original Tx Hash: {request.OriginalTxid}").ConfigureAwait(false);
+                    await writer.WriteLineAsync($"    Request Url:      \"{request.Url}\"").ConfigureAwait(false);
+                }
+            }
+
+            internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var requests = await blockchainOperations
-                    //     .GetOracleRequestsAsync(chain)
-                    //     .ConfigureAwait(false);
-
-                    // foreach (var (id, request) in requests)
-                    // {
-                    //     console.WriteLine($"request #{id}:");
-                    //     console.WriteLine($"    Original Tx Hash: {request.OriginalTxid}");
-                    //     console.WriteLine($"    Request Url:      \"{request.Url}\"");
-                    // }
-
+                    await ExecuteAsync(console.Out);
                     return 0;
                 }
                 catch (Exception ex)

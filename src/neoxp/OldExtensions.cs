@@ -51,18 +51,6 @@ namespace NeoExpress
             return result;
         }
 
-        public static void WriteResult(this TextWriter writer, JToken? result)
-        {
-            if (result != null)
-            {
-                writer.WriteLine(result.ToString(Formatting.Indented));
-            }
-            else
-            {
-                writer.WriteLine("<no result provided>");
-            }
-        }
-
         public static Uri GetUri(this ExpressChain chain, int node = 0)
             => GetUri(chain.ConsensusNodes[node]);
 
@@ -138,23 +126,6 @@ namespace NeoExpress
                 transactionManager.Tx.SystemFee += (long)gas.ToBigInteger(NativeContract.GAS.Decimals);
             }
             return transactionManager;
-        }
-
-        public static IExpressNode GetExpressNode(this ExpressChain chain, bool offlineTrace = false)
-        {
-            throw new NotImplementedException();
-            // if (chain.IsRunning(out var node))
-            // {
-            //     return new Node.OnlineNode(node);
-            // }
-
-            // node = chain.ConsensusNodes[0];
-            // var folder = node.GetBlockchainPath();
-            // if (!Directory.Exists(folder))
-            // {
-            //     Directory.CreateDirectory(folder);
-            // }
-            // return new Node.OfflineNode(RocksDbStore.Open(folder), node.Wallet, chain, offlineTrace);
         }
     }
 }

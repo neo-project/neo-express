@@ -13,11 +13,11 @@ namespace NeoExpress.Commands
         [Command(Name = "storage")]
         private class Storage
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Storage(IBlockchainOperations blockchainOperations)
+            public Storage(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, Description = "Contract name or invocation hash")]
@@ -34,7 +34,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = blockchainOperations.LoadChain(Input);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     // var (chain, _) = Program.LoadExpressChain(Input);
 
                     // var blockchainOperations = new BlockchainOperations();

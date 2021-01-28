@@ -12,11 +12,11 @@ namespace NeoExpress.Commands
         [Command(Name = "invoke")]
         class Invoke
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Invoke(IBlockchainOperations blockchainOperations)
+            public Invoke(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, Description = "Path to contract invocation JSON file")]
@@ -97,7 +97,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = blockchainOperations.LoadChain(Input);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     
                     // if (!File.Exists(InvocationFile))
                     // {

@@ -10,11 +10,11 @@ namespace NeoExpress.Commands
         [Command("enable", Description = "Enable oracles for neo-express instance")]
         class Enable
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Enable(IBlockchainOperations blockchainOperations)
+            public Enable(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Option(Description = "Path to neo-express data file")]
@@ -27,7 +27,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = blockchainOperations.LoadChain(Input);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     // var (chain, _) = Program.LoadExpressChain(Input);
                     // var blockchainOperations = new BlockchainOperations();
                     // var txHash = await blockchainOperations

@@ -14,11 +14,11 @@ namespace NeoExpress.Commands
     [Command("transfer", Description = "Transfer asset between accounts")]
     class TransferCommand
     {
-        readonly IBlockchainOperations blockchainOperations;
+        readonly IExpressChainManagerFactory chainManagerFactory;
 
-        public TransferCommand(IBlockchainOperations blockchainOperations)
+        public TransferCommand(IExpressChainManagerFactory chainManagerFactory)
         {
-            this.blockchainOperations = blockchainOperations;
+            this.chainManagerFactory = chainManagerFactory;
         }
 
         [Argument(0, Description = "Asset to transfer (symbol or script hash)")]
@@ -57,11 +57,12 @@ namespace NeoExpress.Commands
         private async Task<UInt256> ExecuteAsync()
         {
             var quantity = ParseQuantity();
-            var (chain, _) = blockchainOperations.LoadChain(Input);
+            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var chain = chainManager.Chain;
             var sender = chain.GetAccount(Sender) ?? throw new Exception($"{Sender} sender not found.");
             var receiver = chain.GetAccount(Receiver) ?? throw new Exception($"{Receiver} receiver not found.");
 
-            var expressNode = blockchainOperations.GetExpressNode(chain);
+            using var expressNode = chainManager.GetExpressNode();
             var assetHash = await expressNode.ParseAssetAsync(Asset).ConfigureAwait(false);
             return await expressNode.TransferAsync(assetHash, quantity, sender, receiver);
         }

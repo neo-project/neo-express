@@ -11,11 +11,11 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Get information for a deployed contract")]
         private class Get
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Get(IBlockchainOperations blockchainOperations)
+            public Get(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, Description = "Contract name or invocation hash")]
@@ -29,7 +29,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = blockchainOperations.LoadChain(Input);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
 
                     // var (chain, _) = Program.LoadExpressChain(Input);
 

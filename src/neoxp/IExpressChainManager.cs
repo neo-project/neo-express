@@ -26,6 +26,8 @@ namespace NeoExpress
         Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force);
         void RestoreCheckpoint(string checkPointPath, bool force);
         void ResetNode(ExpressConsensusNode node, bool force);
+        IExpressNode GetExpressNode(bool offlineTrace = false);
+
     }
 
     internal class ExpressChainManager : IExpressChainManager
@@ -281,6 +283,28 @@ namespace NeoExpress
             var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
             RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
             return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
+        }
+
+        public IExpressNode GetExpressNode(bool offlineTrace = false)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            chain.InitalizeProtocolSettings();
+
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var consensusNode = chain.ConsensusNodes[i];
+                if (IsRunning(consensusNode))
+                {
+                    return new Node.OnlineNode(chain, consensusNode);
+                }
+            }
+
+            var node = chain.ConsensusNodes[0];
+            var nodePath = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            return new Node.OfflineNode(RocksDbStore.Open(nodePath), node.Wallet, chain, offlineTrace);
         }
     }
 }

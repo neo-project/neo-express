@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -11,11 +12,13 @@ namespace NeoExpress.Commands
         [Command("deploy", Description = "Deploy contract to a neo-express instance")]
         class Deploy
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Deploy(IBlockchainOperations blockchainOperations)
+            public Deploy(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Path to contract .nef file")]
@@ -34,10 +37,11 @@ namespace NeoExpress.Commands
 
             internal async Task<UInt256> ExecuteAsync()
             {
-                var (chain, _) = blockchainOperations.LoadChain(Input);
-                var account = chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
-                var (nefFile, manifest) = await blockchainOperations.LoadContractAsync(Contract).ConfigureAwait(false);
-                var expressNode = blockchainOperations.GetExpressNode(chain);
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var account = chainManager.Chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
+                var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
+
+                using var expressNode = chainManager.GetExpressNode();
                 return await expressNode.DeployAsync(nefFile, manifest, account);
             }
 

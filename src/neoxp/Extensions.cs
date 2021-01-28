@@ -106,6 +106,22 @@ namespace NeoExpress
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 
+        public static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(this IFileSystem fileSystem, string contractPath)
+        {
+            var nefTask = Task.Run(() =>
+            {
+                using var stream = fileSystem.File.OpenRead(contractPath);
+                using var reader = new System.IO.BinaryReader(stream, System.Text.Encoding.UTF8, false);
+                return reader.ReadSerializable<NefFile>();
+            });
+
+            var manifestTask = fileSystem.File.ReadAllBytesAsync(fileSystem.Path.ChangeExtension(contractPath, ".manifest.json"))
+                .ContinueWith(t => ContractManifest.Parse(t.Result), default, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+
+            await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
+            return (await nefTask, await manifestTask);
+        }
+
         public static void InitalizeProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
         {
             if (!chain.TryInitializeProtocolSettings(secondsPerBlock))

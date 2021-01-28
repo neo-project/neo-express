@@ -13,11 +13,11 @@ namespace NeoExpress.Commands
         [Command("response", Description = "Submit oracle response")]
         class Response
         {
-            readonly IBlockchainOperations blockchainOperations;
+            readonly IExpressChainManagerFactory chainManagerFactory;
 
-            public Response(IBlockchainOperations blockchainOperations)
+            public Response(IExpressChainManagerFactory chainManagerFactory)
             {
-                this.blockchainOperations = blockchainOperations;
+                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, Description = "URL of oracle request")]
@@ -39,7 +39,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = blockchainOperations.LoadChain(Input);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     // if (!File.Exists(ResponsePath))
                     // {
                     //     throw new Exception($"Response File {ResponsePath} couldn't be found");

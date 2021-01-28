@@ -24,45 +24,48 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
+            internal async Task ExecuteAsync(System.IO.TextWriter writer)
+            {
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                using var expressNode = chainManager.GetExpressNode();
+
+                var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+
+                if (Json)
+                {
+                    using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
+                    await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+                    foreach (var (hash, manifest) in contracts)
+                    {
+
+                        await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
+                        await jsonWriter.WritePropertyNameAsync("name").ConfigureAwait(false);
+                        await jsonWriter.WriteValueAsync(manifest.Name).ConfigureAwait(false);
+                        await jsonWriter.WritePropertyNameAsync("hash").ConfigureAwait(false);
+                        await jsonWriter.WriteValueAsync(hash.ToString()).ConfigureAwait(false);
+                        await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
+                    }
+                    await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    foreach (var (hash, manifest) in contracts)
+                    {
+                        await writer.WriteLineAsync($"{manifest.Name} ({hash})").ConfigureAwait(false);
+                    }
+                }
+            }
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var contracts = await blockchainOperations.ListContractsAsync(chain)
-                    //     .ConfigureAwait(false);
-
-                    // if (Json)
-                    // {
-                    //     using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out);
-                    //     writer.WriteStartArray();
-                    //     foreach (var (hash, manifest) in contracts)
-                    //     {
-                    //         writer.WriteStartObject();
-                    //         writer.WritePropertyName("name");
-                    //         writer.WriteValue(manifest.Name);
-                    //         writer.WritePropertyName("hash");
-                    //         writer.WriteValue(hash.ToString());
-                    //         writer.WriteEndObject();
-                    //     }
-                    //     writer.WriteEndArray();
-                    // }
-                    // else
-                    // {
-                    //     foreach (var (hash, manifest) in contracts)
-                    //     {
-                    //         console.WriteLine($"{manifest.Name} ({hash})");
-                    //     }
-                    // }
-
+                    await ExecuteAsync(Console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync(ex.Message);
+                    await console.Error.WriteLineAsync(ex.Message).ConfigureAwait(false);
                     return 1;
                 }
             }

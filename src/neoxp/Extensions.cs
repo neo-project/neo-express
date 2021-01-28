@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
@@ -165,6 +165,65 @@ namespace NeoExpress
                 .Build();
 
             return ProtocolSettings.Initialize(config);
+        }
+
+        public static Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, IExpressChainManager chainManager)
+            => expressNode.GetContractParameterParserAsync(chainManager.Chain);
+
+        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, ExpressChain? chain = null)
+        {
+            ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
+            {
+                var account = chain?.GetAccount(name);
+                if (account != null)
+                {
+                    scriptHash = account.AsUInt160();
+                    return true;
+                }
+
+                scriptHash = null!;
+                return false;
+            };
+
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            var lookup = contracts.ToDictionary(c => c.manifest.Name, c => c.hash);
+            ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
+            {
+                if (lookup.TryGetValue(name, out var value))
+                {
+                    scriptHash = value;
+                    return true;
+                }
+
+                foreach (var kvp in lookup)
+                {
+                    if (string.Equals(name, kvp.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        scriptHash = kvp.Value;
+                        return true;
+                    }
+                }
+
+                scriptHash = default!;
+                return false;
+            };
+
+            return new ContractParameterParser(tryGetAccount, tryGetContract);
+        }
+
+        public static UInt160 ParseScriptHash(this ContractParameterParser parser, string hashOrContract)
+        {
+            if (UInt160.TryParse(hashOrContract, out var hash))
+            {
+                return hash;
+            }
+
+            if (parser.TryLoadScriptHash(hashOrContract, out var value))
+            {
+                return value;
+            }
+
+            throw new ArgumentException(nameof(hashOrContract));
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)

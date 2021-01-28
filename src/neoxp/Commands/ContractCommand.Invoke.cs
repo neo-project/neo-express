@@ -1,6 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -13,10 +13,12 @@ namespace NeoExpress.Commands
         class Invoke
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Invoke(IExpressChainManagerFactory chainManagerFactory)
+            public Invoke(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
             {
                 this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Path to contract invocation JSON file")]
@@ -41,116 +43,118 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             bool Json { get; } = false;
 
-            static void WriteStackItem(IConsole console, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
+            static async Task WriteStackItemAsync(System.IO.TextWriter writer, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
             {
                 switch (item)
                 {
                     case Neo.VM.Types.Boolean _:
-                        WriteLine(item.GetBoolean() ? "true" : "false");
+                        await WriteLineAsync(item.GetBoolean() ? "true" : "false").ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.Integer @int:
-                        WriteLine(@int.GetInteger().ToString());
+                        await WriteLineAsync(@int.GetInteger().ToString()).ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.Buffer buffer:
-                        WriteLine(Neo.Helper.ToHexString(buffer.GetSpan()));
+                        await WriteLineAsync(Neo.Helper.ToHexString(buffer.GetSpan())).ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.ByteString byteString:
-                        WriteLine(Neo.Helper.ToHexString(byteString.GetSpan()));
+                        await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.Null _:
-                        WriteLine("<null>");
+                        await WriteLineAsync("<null>").ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.Array array:
-                        WriteLine($"Array: ({array.Count})");
+                        await WriteLineAsync($"Array: ({array.Count})").ConfigureAwait(false);
                         for (int i = 0; i < array.Count; i++)
                         {
-                            WriteStackItem(console, array[i], indent + 1);
+                            await WriteStackItemAsync(writer, array[i], indent + 1).ConfigureAwait(false);
                         }
                         break;
                     case Neo.VM.Types.Map map:
-                        WriteLine($"Map: ({map.Count})");
+                        await WriteLineAsync($"Map: ({map.Count})").ConfigureAwait(false);
                         foreach (var m in map)
                         {
-                            WriteStackItem(console, m.Key, indent + 1, "key:   ");
-                            WriteStackItem(console, m.Value, indent + 1, "value: ");
+                            await WriteStackItemAsync(writer, m.Key, indent + 1, "key:   ").ConfigureAwait(false);
+                            await WriteStackItemAsync(writer, m.Value, indent + 1, "value: ").ConfigureAwait(false);
                         }
                         break;
                 }
 
-                void WriteLine(string value)
+                async Task WriteLineAsync(string value)
                 {
                     for (var i = 0; i < indent; i++)
                     {
-                        console.Write("  ");
+                        await writer.WriteAsync("  ").ConfigureAwait(false);
                     }
 
                     if (!string.IsNullOrEmpty(prefix))
                     {
-                        console.Write(prefix);
+                        await writer.WriteAsync(prefix).ConfigureAwait(false);
                     }
 
-                    console.WriteLine(value);
+                    await writer.WriteLineAsync(value).ConfigureAwait(false);
                 }
             }
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task ExecuteAsync(System.IO.TextWriter writer)
+            {
+                if (!fileSystem.File.Exists(InvocationFile))
+                {
+                    throw new Exception($"Invocation file {InvocationFile} couldn't be found");
+                }
+
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+
+                using var expressNode = chainManager.GetExpressNode();
+                var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+                var script = await parser.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
+
+                if (Test)
+                {
+                    var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
+                    await writer.WriteLineAsync($"VM State:     {result.State}").ConfigureAwait(false);
+                    await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
+                    if (result.Exception != null)
+                    {
+                        await writer.WriteLineAsync($"Expception:   {result.Exception}").ConfigureAwait(false);
+                    }
+                    if (result.Stack.Length > 0)
+                    {
+                        var stack = result.Stack;
+                        await writer.WriteLineAsync("Result Stack:").ConfigureAwait(false);
+                        for (int i = 0; i < stack.Length; i++)
+                        {
+                            await WriteStackItemAsync(writer, stack[i]).ConfigureAwait(false);
+                        }
+                    }
+                }
+                else
+                {
+                    var account = chainManager.Chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
+                    var txHash = await expressNode.ExecuteAsync(account, script).ConfigureAwait(false);
+                    if (Json)
+                    {
+                        await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await writer.WriteLineAsync($"Invocation Transaction {txHash} submitted").ConfigureAwait(false);
+                    }
+                }
+            }
+
+            internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    
-                    // if (!File.Exists(InvocationFile))
-                    // {
-                    //     throw new Exception($"Invocation file {InvocationFile} couldn't be found");
-                    // }
-
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-                    // var blockchainOperations = new BlockchainOperations();
-
-                    // if (Test)
-                    // {
-                    //     var result = await blockchainOperations.TestInvokeContractAsync(chain, InvocationFile);
-                    //     console.WriteLine($"VM State:     {result.State}");
-                    //     console.WriteLine($"Gas Consumed: {result.GasConsumed}");
-                    //     if (result.Exception != null)
-                    //     {
-                    //         console.WriteLine($"Expception:   {result.Exception}");
-                    //     }
-                    //     if (result.Stack.Length > 0)
-                    //     {
-                    //         var stack = result.Stack;
-                    //         console.WriteLine("Result Stack:");
-                    //         for (int i = 0; i < stack.Length; i++)
-                    //         {
-                    //             WriteStackItem(console, stack[i]);
-                    //         }
-                    //     }
-                    // }
-                    // else
-                    // {
-                    //     var account = blockchainOperations.GetAccount(chain, Account);
-                    //     if (account == null)
-                    //     {
-                    //         throw new Exception($"{Account} account not found.");
-                    //     }
-                    //     var txHash = await blockchainOperations.InvokeContractAsync(chain, InvocationFile, account, Trace, AdditionalGas);
-                    //     if (Json)
-                    //     {
-                    //         console.WriteLine($"{txHash}");
-                    //     }
-                    //     else
-                    //     {
-                    //         console.WriteLine($"Invocation Transaction {txHash} submitted");
-                    //     }
-                    // }
+                    await ExecuteAsync(console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync($"{ex.Message} [{ex.GetType().Name}]");
+                    await console.Error.WriteLineAsync($"{ex.Message} [{ex.GetType().Name}]").ConfigureAwait(false);
                     while (ex.InnerException != null)
                     {
-                        await console.Error.WriteLineAsync($"  Contract Exception: {ex.InnerException.Message} [{ex.InnerException.GetType().Name}]");
+                        await console.Error.WriteLineAsync($"  Contract Exception: {ex.InnerException.Message} [{ex.InnerException.GetType().Name}]").ConfigureAwait(false);
                         ex = ex.InnerException;
                     }
                     return 1;

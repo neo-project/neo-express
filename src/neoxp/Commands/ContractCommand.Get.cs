@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
 using System;
+using System.IO;
 
 namespace NeoExpress.Commands
 {
@@ -29,16 +30,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var manifest = await blockchainOperations.GetContractAsync(chain, Contract)
-                    //     .ConfigureAwait(false);
-
-                    // console.WriteLine(manifest.ToJson().ToString(true));
-
+                    await Execute(console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -46,6 +38,16 @@ namespace NeoExpress.Commands
                     await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
+            }
+
+            internal async Task Execute(TextWriter writer)
+            {
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var expressNode = chainManager.GetExpressNode();
+                var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+                var scriptHash = parser.ParseScriptHash(Contract);
+                var manifest = await expressNode.GetContractAsync(scriptHash).ConfigureAwait(false);
+                await writer.WriteLineAsync(manifest.ToJson().ToString(true)).ConfigureAwait(false);
             }
         }
     }

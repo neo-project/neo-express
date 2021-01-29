@@ -2,8 +2,7 @@
 # Neo-Express
 
 [![Nuget](https://img.shields.io/nuget/v/Neo.Express)](https://www.nuget.org/packages/Neo.Express/)
-
-Neo 3 branch builds: [![Build Status](https://dev.azure.com/ngdenterprise/Build/_apis/build/status/neo-project.neo-express?branchName=insiders)](https://dev.azure.com/ngdenterprise/Build/_build/latest?definitionId=2&branchName=insiders)
+[![Build Status](https://dev.azure.com/ngdenterprise/Build/_apis/build/status/neo-project.neo-express?branchName=master)](https://dev.azure.com/ngdenterprise/Build/_build/latest?definitionId=2&branchName=master)
 
 Neo-Express is a Private Net that is optimized for
 development scenarios. It is built on the same Neo platform core as

@@ -15,7 +15,7 @@ namespace NeoExpress.Node
 
     class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
-        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
+        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, long gas)
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx
@@ -25,7 +25,7 @@ namespace NeoExpress.Node
             {
                 var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
                 var sink = new TraceDebugSink(SysIO.File.OpenWrite(path));
-                return new ExpressApplicationEngine(sink, trigger, container, snapshot, gas);
+                return new ExpressApplicationEngine(sink, trigger, container, snapshot, persistingBlock, gas);
             }
 
             return null;
@@ -43,8 +43,7 @@ namespace NeoExpress.Node
                 }
 
                 if (i.OpCode == OpCode.SYSCALL
-                    && ((i.TokenU32 == ApplicationEngine.System_Contract_Call.Hash)
-                        || (i.TokenU32 == ApplicationEngine.System_Contract_CallEx.Hash)))
+                    && i.TokenU32 == ApplicationEngine.System_Contract_Call.Hash)
                 {
                     yield return scriptHash;
                 }

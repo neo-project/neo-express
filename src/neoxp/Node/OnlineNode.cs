@@ -3,7 +3,6 @@ using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
-using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -16,7 +15,6 @@ using System.Threading.Tasks;
 
 namespace NeoExpress.Node
 {
-    using StackItem = Neo.VM.Types.StackItem;
 
     internal class OnlineNode : IExpressNode
     {
@@ -26,7 +24,7 @@ namespace NeoExpress.Node
         public OnlineNode(ExpressChain chain, ExpressConsensusNode node)
         {
             this.chain = chain;
-            rpcClient = new RpcClient(node.GetUri().ToString());
+            rpcClient = new RpcClient(node.GetUri());
         }
 
         public void Dispose()

@@ -14,6 +14,6 @@ namespace NeoExpress.Node
             this.store = store;
         }
 
-        public IStore GetStore() => store;
+        public IStore GetStore(string path) => store;
     }
 }

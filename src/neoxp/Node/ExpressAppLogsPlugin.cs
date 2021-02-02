@@ -1,45 +1,49 @@
-﻿using System.Collections.Generic;
-using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
+﻿using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using Neo;
+using Neo.BlockchainToolkit.Persistence;
+using Neo.IO;
+using Neo.IO.Json;
+using Neo.Ledger;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Plugins;
-using Neo.IO.Json;
-using System;
-using System.Linq;
-using Neo.VM;
-using Neo.IO;
-using System.Text;
-using Neo;
-using System.Buffers.Binary;
-using Neo.Ledger;
 using Neo.SmartContract.Native;
+using Neo.VM;
 using NeoExpress.Models;
+using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
+
 
 namespace NeoExpress.Node
 {
     internal partial class ExpressAppLogsPlugin : Plugin, IPersistencePlugin
     {
-        private readonly IStore store;
+        private readonly IExpressStore store;
         private const byte APP_LOGS_PREFIX = 0xf0;
         private const byte NOTIFICATIONS_PREFIX = 0xf1;
 
-        public ExpressAppLogsPlugin(IStore store)
+        public ExpressAppLogsPlugin(IExpressStore store)
         {
             this.store = store;
         }
 
-        public static JObject? TryGetAppLog(IReadOnlyStore store, UInt256 txHash)
+        public static JObject? TryGetAppLog(IExpressReadOnlyStore store, UInt256 hash)
         {
-            var value = store.TryGet(APP_LOGS_PREFIX, txHash.ToArray());
+            var value = store.TryGet(APP_LOGS_PREFIX, hash.ToArray());
             if (value != null && value.Length != 0)
             {
-                return JObject.Parse(Encoding.UTF8.GetString(value));
+                return JObject.Parse(Neo.Utility.StrictUTF8.GetString(value));
             }
+
             return null;
         }
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IReadOnlyStore store)
+        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IExpressReadOnlyStore store)
         {
-            return store.Seek(NOTIFICATIONS_PREFIX, null, Neo.IO.Caching.SeekDirection.Forward)
+            return store.Seek(NOTIFICATIONS_PREFIX, null, SeekDirection.Forward)
                 .Select(t =>
                 {
                     var (blockIndex, txIndex) = ParseNotificationKey(t.Key);
@@ -54,10 +58,62 @@ namespace NeoExpress.Node
             }
         }
 
+        public void OnPersist(Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
+        {
+            if (applicationExecutedList.Count > ushort.MaxValue)
+            {
+                throw new Exception("applicationExecutedList too big");
+            }
+
+            var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
+            BinaryPrimitives.WriteUInt32BigEndian(
+                notificationIndex.AsSpan(0, sizeof(uint)),
+                block.Index);
+
+            for (int i = 0; i < applicationExecutedList.Count; i++)
+            {
+                ApplicationExecuted appExec = applicationExecutedList[i];
+                if (appExec.Transaction == null) continue;
+
+                var txJson = TxLogToJson(appExec);
+                store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
+
+                if (appExec.VMState != VMState.FAULT)
+                {
+                    if (appExec.Notifications.Length > ushort.MaxValue)
+                    {
+                        throw new Exception("appExec.Notifications too big");
+                    }
+
+                    BinaryPrimitives.WriteUInt16BigEndian(
+                           notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)),
+                           (ushort)i);
+
+                    for (int j = 0; j < appExec.Notifications.Length; j++)
+                    {
+                        BinaryPrimitives.WriteUInt16BigEndian(
+                            notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
+                            (ushort)j);
+                        var record = new NotificationRecord(appExec.Notifications[j]);
+                        store.Put(
+                            NOTIFICATIONS_PREFIX,
+                            notificationIndex.ToArray(),
+                            record.ToArray());
+                    }
+                }
+            }
+
+            var blockJson = BlockLogToJson(block, applicationExecutedList);
+            if (blockJson != null)
+            {
+                store.Put(APP_LOGS_PREFIX, block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
+            }
+        }
+
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
         // to avoid dependency on LevelDBStore package
 
-        static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
+        public static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
         {
             global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
 
@@ -67,7 +123,7 @@ namespace NeoExpress.Node
             trigger["trigger"] = appExec.Trigger;
             trigger["vmstate"] = appExec.VMState;
             trigger["exception"] = GetExceptionMessage(appExec.Exception);
-            trigger["gasconsumed"] = new BigDecimal(appExec.GasConsumed, NativeContract.GAS.Decimals).ToString();
+            trigger["gasconsumed"] = new BigDecimal(new BigInteger(appExec.GasConsumed), NativeContract.GAS.Decimals).ToString();
             try
             {
                 trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
@@ -94,35 +150,23 @@ namespace NeoExpress.Node
 
             txJson["executions"] = new List<JObject>() { trigger }.ToArray();
             return txJson;
-
-            static string? GetExceptionMessage(Exception exception)
-            {
-                if (exception == null) return null;
-
-                if (exception.InnerException != null)
-                {
-                    return GetExceptionMessage(exception.InnerException);
-                }
-
-                return exception.Message;
-            }
         }
 
-        static JObject? BlockLogToJson(StoreView snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        public static JObject? BlockLogToJson(Block block, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
         {
-            var blocks = applicationExecutedList.Where(p => p.Transaction == null);
-            if (blocks.Count() > 0)
+            var blocks = applicationExecutedList.Where(p => p.Transaction is null).ToArray();
+            if (blocks.Length > 0)
             {
                 var blockJson = new JObject();
-                var blockHash = snapshot.PersistingBlock.Hash.ToArray();
-                blockJson["blockhash"] = snapshot.PersistingBlock.Hash.ToString();
+                var blockHash = block.Hash.ToArray();
+                blockJson["blockhash"] = block.Hash.ToString();
                 var triggerList = new List<JObject>();
                 foreach (var appExec in blocks)
                 {
                     JObject trigger = new JObject();
                     trigger["trigger"] = appExec.Trigger;
                     trigger["vmstate"] = appExec.VMState;
-                    trigger["gasconsumed"] = new BigDecimal(appExec.GasConsumed, NativeContract.GAS.Decimals).ToString();
+                    trigger["gasconsumed"] = new BigDecimal(new BigInteger(appExec.GasConsumed), NativeContract.GAS.Decimals).ToString();
                     try
                     {
                         trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
@@ -155,59 +199,9 @@ namespace NeoExpress.Node
             return null;
         }
 
-        public void OnPersist(StoreView snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
+        static string? GetExceptionMessage(Exception exception)
         {
-            if (applicationExecutedList.Count > ushort.MaxValue)
-            {
-                throw new Exception("applicationExecutedList too big");
-            }
-
-            var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
-            BinaryPrimitives.WriteUInt32BigEndian(
-                notificationIndex.AsSpan(0, sizeof(uint)),
-                snapshot.PersistingBlock.Index);
-
-            for (int i = 0; i < applicationExecutedList.Count; i++)
-            {
-                ApplicationExecuted? appExec = applicationExecutedList[i];
-                if (appExec.Transaction == null)
-                {
-                    continue;
-                }
-
-                var txJson = TxLogToJson(appExec);
-                store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
-
-                if (appExec.VMState != VMState.FAULT)
-                {
-                    if (appExec.Notifications.Length > ushort.MaxValue)
-                    {
-                        throw new Exception("appExec.Notifications too big");
-                    }
-
-                    BinaryPrimitives.WriteUInt16BigEndian(
-                           notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)),
-                           (ushort)i);
-
-                    for (int j = 0; j < appExec.Notifications.Length; j++)
-                    {
-                        BinaryPrimitives.WriteUInt16BigEndian(
-                            notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
-                            (ushort)j);
-                        var record = new NotificationRecord(appExec.Notifications[j]);
-                        store.Put(
-                            NOTIFICATIONS_PREFIX,
-                            notificationIndex.ToArray(),
-                            record.ToArray());
-                    }
-                }
-
-                var blockJson = BlockLogToJson(snapshot, applicationExecutedList);
-                if (blockJson != null)
-                {
-                    store.Put(APP_LOGS_PREFIX, snapshot.PersistingBlock.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
-                }
-            }
+            return exception?.GetBaseException().Message;
         }
     }
 }

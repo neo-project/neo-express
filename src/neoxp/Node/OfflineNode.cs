@@ -164,15 +164,18 @@ namespace NeoExpress.Node
 
             // find the primary node for this consensus round
             var primary = contexts.Single(c => c.IsPrimary);
-            var prepareRequest = primary.MakePrepareRequest();
+            var prepareRequestPayload = primary.MakePrepareRequest();
 
-            // for (int x = 0; x < contexts.Length; x++)
-            // {
-            //     if (contexts[x].MyIndex == primary.MyIndex) continue;
-            //     OnPrepareRequestReceived(contexts[x], prepareRequest);
-            //     var commit = contexts[x].MakeCommit();
-            //     OnCommitReceived(primary, commit);
-            // }
+            for (int x = 0; x < contexts.Length; x++)
+            {
+                var context = contexts[x];
+                if (context.MyIndex == primary.MyIndex) continue;
+                var prepareRequestMessage = context.GetMessage<PrepareRequest>(prepareRequestPayload);
+                OnPrepareRequestReceived(context, prepareRequestPayload, prepareRequestMessage);
+                var commitPayload = context.MakeCommit();
+                var commitMessage = primary.GetMessage<Commit>(commitPayload);
+                OnCommitReceived(primary, commitPayload, commitMessage);
+            }
 
             return primary.CreateBlock();
         }
@@ -180,183 +183,178 @@ namespace NeoExpress.Node
         // TODO: remove if https://github.com/neo-project/neo/issues/2061 is fixed
         // this logic is lifted from ConsensusService.OnPrepareRequestReceived
         // Log, Timer, Task and CheckPrepare logic has been commented out for offline consensus
-        // private static void OnPrepareRequestReceived(ConsensusContext context, ConsensusPayload payload)
-        // {
-        //     var message = (PrepareRequest)payload.ConsensusMessage;
+        private static void OnPrepareRequestReceived(ConsensusContext context, ExtensiblePayload payload, PrepareRequest message)
+        {
+            if (context.RequestSentOrReceived || context.NotAcceptingPayloadsDueToViewChanging) return;
+            if (message.ValidatorIndex != context.Block.ConsensusData.PrimaryIndex || message.ViewNumber != context.ViewNumber) return;
+            if (message.Version != context.Block.Version || message.PrevHash != context.Block.PrevHash) return;
+            // Log($"{nameof(OnPrepareRequestReceived)}: height={message.BlockIndex} view={message.ViewNumber} index={message.ValidatorIndex} tx={message.TransactionHashes.Length}");
+            if (message.Timestamp <= context.PrevHeader.Timestamp || message.Timestamp > TimeProvider.Current.UtcNow.AddMilliseconds(8 * Blockchain.MillisecondsPerBlock).ToTimestampMS())
+            {
+                // Log($"Timestamp incorrect: {message.Timestamp}", LogLevel.Warning);
+                return;
+            }
+            if (message.TransactionHashes.Any(p => NativeContract.Ledger.ContainsTransaction(context.Snapshot, p)))
+            {
+                // Log($"Invalid request: transaction already exists", LogLevel.Warning);
+                return;
+            }
 
-        //     if (context.RequestSentOrReceived || context.NotAcceptingPayloadsDueToViewChanging) return;
-        //     if (payload.ValidatorIndex != context.Block.ConsensusData.PrimaryIndex || message.ViewNumber != context.ViewNumber) return;
-        //     // Log($"{nameof(OnPrepareRequestReceived)}: height={payload.BlockIndex} view={message.ViewNumber} index={payload.ValidatorIndex} tx={message.TransactionHashes.Length}");
-        //     if (message.Timestamp <= context.PrevHeader.Timestamp || message.Timestamp > TimeProvider.Current.UtcNow.AddMilliseconds(8 * Blockchain.MillisecondsPerBlock).ToTimestampMS())
-        //     {
-        //         // Log($"Timestamp incorrect: {message.Timestamp}", LogLevel.Warning);
-        //         return;
-        //     }
-        //     if (message.TransactionHashes.Any(p => context.Snapshot.ContainsTransaction(p)))
-        //     {
-        //         // Log($"Invalid request: transaction already exists", LogLevel.Warning);
-        //         return;
-        //     }
+            // Timeout extension: prepare request has been received with success
+            // around 2*15/M=30.0/5 ~ 40% block time (for M=5)
+            // ExtendTimerByFactor(2);
 
-        //     // Timeout extension: prepare request has been received with success
-        //     // around 2*15/M=30.0/5 ~ 40% block time (for M=5)
-        //     // ExtendTimerByFactor(2);
+            context.Block.Timestamp = message.Timestamp;
+            context.Block.ConsensusData.Nonce = message.Nonce;
+            context.TransactionHashes = message.TransactionHashes;
+            context.Transactions = new Dictionary<UInt256, Transaction>();
+            context.VerificationContext = new TransactionVerificationContext();
+            for (int i = 0; i < context.PreparationPayloads.Length; i++)
+                if (context.PreparationPayloads[i] != null)
+                    if (!context.GetMessage<PrepareResponse>(context.PreparationPayloads[i]).PreparationHash.Equals(payload.Hash))
+                        context.PreparationPayloads[i] = null;
+            context.PreparationPayloads[message.ValidatorIndex] = payload;
+            byte[] hashData = context.EnsureHeader().GetHashData();
+            for (int i = 0; i < context.CommitPayloads.Length; i++)
+                if (context.GetMessage(context.CommitPayloads[i])?.ViewNumber == context.ViewNumber)
+                    if (!Crypto.VerifySignature(hashData, context.GetMessage<Commit>(context.CommitPayloads[i]).Signature, context.Validators[i]))
+                        context.CommitPayloads[i] = null;
 
-        //     context.Block.Timestamp = message.Timestamp;
-        //     context.Block.ConsensusData.Nonce = message.Nonce;
-        //     context.TransactionHashes = message.TransactionHashes;
-        //     context.Transactions = new Dictionary<UInt256, Transaction>();
-        //     context.VerificationContext = new TransactionVerificationContext();
-        //     for (int i = 0; i < context.PreparationPayloads.Length; i++)
-        //         if (context.PreparationPayloads[i] != null)
-        //             if (!context.PreparationPayloads[i].GetDeserializedMessage<PrepareResponse>().PreparationHash.Equals(payload.Hash))
-        //                 context.PreparationPayloads[i] = null;
-        //     context.PreparationPayloads[payload.ValidatorIndex] = payload;
-        //     byte[] hashData = context.EnsureHeader().GetHashData();
-        //     for (int i = 0; i < context.CommitPayloads.Length; i++)
-        //         if (context.CommitPayloads[i]?.ConsensusMessage.ViewNumber == context.ViewNumber)
-        //             if (!Crypto.VerifySignature(hashData, context.CommitPayloads[i].GetDeserializedMessage<Commit>().Signature, context.Validators[i]))
-        //                 context.CommitPayloads[i] = null;
+            if (context.TransactionHashes.Length == 0)
+            {
+                // There are no tx so we should act like if all the transactions were filled
+                // CheckPrepareResponse();
+                return;
+            }
 
-        //     if (context.TransactionHashes.Length == 0)
-        //     {
-        //         // There are no tx so we should act like if all the transactions were filled
-        //         // CheckPrepareResponse();
-        //         return;
-        //     }
+            Dictionary<UInt256, Transaction> mempoolVerified = Blockchain.Singleton.MemPool.GetVerifiedTransactions().ToDictionary(p => p.Hash);
+            List<Transaction> unverified = new List<Transaction>();
+            foreach (UInt256 hash in context.TransactionHashes)
+            {
+                if (mempoolVerified.TryGetValue(hash, out var tx))
+                {
+                    if (!AddTransaction(tx, false))
+                        return;
+                }
+                else
+                {
+                    if (Blockchain.Singleton.MemPool.TryGetValue(hash, out tx))
+                        unverified.Add(tx);
+                }
+            }
+            foreach (Transaction tx in unverified)
+                if (!AddTransaction(tx, true))
+                    return;
+            if (context.Transactions.Count < context.TransactionHashes.Length)
+            {
+                UInt256[] hashes = context.TransactionHashes.Where(i => !context.Transactions.ContainsKey(i)).ToArray();
+                // taskManager.Tell(new TaskManager.RestartTasks
+                // {
+                //     Payload = InvPayload.Create(InventoryType.TX, hashes)
+                // });
+            }
 
-        //     Dictionary<UInt256, Transaction> mempoolVerified = Blockchain.Singleton.MemPool.GetVerifiedTransactions().ToDictionary(p => p.Hash);
-        //     List<Transaction> unverified = new List<Transaction>();
-        //     foreach (UInt256 hash in context.TransactionHashes)
-        //     {
-        //         if (mempoolVerified.TryGetValue(hash, out Transaction? tx))
-        //         {
-        //             if (!AddTransaction(tx, false))
-        //                 return;
-        //         }
-        //         else
-        //         {
-        //             if (Blockchain.Singleton.MemPool.TryGetValue(hash, out tx))
-        //                 unverified.Add(tx);
-        //         }
-        //     }
-        //     foreach (Transaction tx in unverified)
-        //         if (!AddTransaction(tx, true))
-        //             return;
-        //     // if (context.Transactions.Count < context.TransactionHashes.Length)
-        //     // {
-        //     //     UInt256[] hashes = context.TransactionHashes.Where(i => !context.Transactions.ContainsKey(i)).ToArray();
-        //     //     taskManager.Tell(new TaskManager.RestartTasks
-        //     //     {
-        //     //         Payload = InvPayload.Create(InventoryType.TX, hashes)
-        //     //     });
-        //     // }
+            bool AddTransaction(Transaction tx, bool verify)
+            {
+                if (verify)
+                {
+                    VerifyResult result = tx.Verify(context.Snapshot, context.VerificationContext);
+                    if (result != VerifyResult.Succeed)
+                    {
+                        // Log($"Rejected tx: {tx.Hash}, {result}{Environment.NewLine}{tx.ToArray().ToHexString()}", LogLevel.Warning);
+                        // RequestChangeView(result == VerifyResult.PolicyFail ? ChangeViewReason.TxRejectedByPolicy : ChangeViewReason.TxInvalid);
+                        return false;
+                    }
+                }
+                context.Transactions[tx.Hash] = tx;
+                context.VerificationContext.AddTransaction(tx);
+                return CheckPrepareResponse();
+            }
 
-        //     bool AddTransaction(Transaction tx, bool verify)
-        //     {
-        //         if (verify)
-        //         {
-        //             VerifyResult result = tx.Verify(context.Snapshot, context.VerificationContext);
-        //             if (result == VerifyResult.PolicyFail)
-        //             {
-        //                 // Log($"reject tx: {tx.Hash}{Environment.NewLine}{tx.ToArray().ToHexString()}", LogLevel.Warning);
-        //                 // RequestChangeView(ChangeViewReason.TxRejectedByPolicy);
-        //                 return false;
-        //             }
-        //             else if (result != VerifyResult.Succeed)
-        //             {
-        //                 // Log($"Invalid transaction: {tx.Hash}{Environment.NewLine}{tx.ToArray().ToHexString()}", LogLevel.Warning);
-        //                 // RequestChangeView(ChangeViewReason.TxInvalid);
-        //                 return false;
-        //             }
-        //         }
-        //         context.Transactions[tx.Hash] = tx;
-        //         context.VerificationContext.AddTransaction(tx);
-        //         return CheckPrepareResponse();
-        //     }
+            bool CheckPrepareResponse()
+            {
+                if (context.TransactionHashes.Length == context.Transactions.Count)
+                {
+                    // if we are the primary for this view, but acting as a backup because we recovered our own
+                    // previously sent prepare request, then we don't want to send a prepare response.
+                    if (context.IsPrimary || context.WatchOnly) return true;
 
-        //     bool CheckPrepareResponse()
-        //     {
-        //         if (context.TransactionHashes.Length == context.Transactions.Count)
-        //         {
-        //             // if we are the primary for this view, but acting as a backup because we recovered our own
-        //             // previously sent prepare request, then we don't want to send a prepare response.
-        //             if (context.IsPrimary || context.WatchOnly) return true;
+                    // TODO: Replace reflection after https://github.com/neo-project/neo-modules/pull/503 is merged
+                    // Check maximum block size via Native Contract policy
+                    var expectedBlockSize = (int)(getExpectedBlockSizeMethodInfo.Value.Invoke(context, Array.Empty<object>()))!;
+                    if (expectedBlockSize > NativeContract.Policy.GetMaxBlockSize(context.Snapshot))
+                    {
+                        // Log($"Rejected block: {context.Block.Index} The size exceed the policy", LogLevel.Warning);
+                        // RequestChangeView(ChangeViewReason.BlockRejectedByPolicy);
+                        return false;
+                    }
 
-        //             // Check maximum block size via Native Contract policy
-        //             var expectedBlockSize = (int)(getExpectedBlockSizeMethodInfo.Value.Invoke(context, Array.Empty<object>()))!;
-        //             if (expectedBlockSize > NativeContract.Policy.GetMaxBlockSize(context.Snapshot))
-        //             {
-        //                 // Log($"rejected block: {context.Block.Index} The size exceed the policy", LogLevel.Warning);
-        //                 // RequestChangeView(ChangeViewReason.BlockRejectedByPolicy);
-        //                 return false;
-        //             }
-        //             // Check maximum block system fee via Native Contract policy
-        //             var expectedSystemFee = context.Transactions.Values.Sum(u => u.SystemFee);
-        //             if (expectedSystemFee > NativeContract.Policy.GetMaxBlockSystemFee(context.Snapshot))
-        //             {
-        //                 // Log($"rejected block: {context.Block.Index} The system fee exceed the policy", LogLevel.Warning);
-        //                 // RequestChangeView(ChangeViewReason.BlockRejectedByPolicy);
-        //                 return false;
-        //             }
+                    // TODO: Replace duplicate code for calculating blockSystemFee after https://github.com/neo-project/neo-modules/pull/503 is merged
+                    // Check maximum block system fee via Native Contract policy
+                    var blockSystemFee = context.Transactions.Values.Sum(u => u.SystemFee); 
+                    if (blockSystemFee > NativeContract.Policy.GetMaxBlockSystemFee(context.Snapshot))
+                    {
+                        // Log($"Rejected block: {context.Block.Index} The system fee exceed the policy", LogLevel.Warning);
+                        // RequestChangeView(ChangeViewReason.BlockRejectedByPolicy);
+                        return false;
+                    }
 
-        //             // Timeout extension due to prepare response sent
-        //             // around 2*15/M=30.0/5 ~ 40% block time (for M=5)
-        //             // ExtendTimerByFactor(2);
+                    // Timeout extension due to prepare response sent
+                    // around 2*15/M=30.0/5 ~ 40% block time (for M=5)
+                    // ExtendTimerByFactor(2);
 
-        //             // Log($"send prepare response");
-        //             // localNode.Tell(new LocalNode.SendDirectly { Inventory = context.MakePrepareResponse() });
-        //             // CheckPreparations();
-        //         }
-        //         return true;
-        //     }
-        // }
+                    // Log($"Sending {nameof(PrepareResponse)}");
+                    // localNode.Tell(new LocalNode.SendDirectly { Inventory = context.MakePrepareResponse() });
+                    // CheckPreparations();
+                }
+                return true;
+            }
+        }
 
         static Lazy<MethodInfo> getExpectedBlockSizeMethodInfo = new Lazy<MethodInfo>(
             () => typeof(ConsensusContext).GetMethod("GetExpectedBlockSize", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?? throw new InvalidOperationException("could not retrieve GetExpectedBlockSize methodInfo"));
 
+
         // TODO: remove if https://github.com/neo-project/neo/issues/2061 is fixed
         // this logic is lifted from ConsensusService.OnCommitReceived
         // Log, Timer,  CheckCommits logic has been commented out for offline consensus
-        // private static void OnCommitReceived(ConsensusContext context, ConsensusPayload payload)
-        // {
-        //     Commit commit = (Commit)payload.ConsensusMessage;
+        private static void OnCommitReceived(ConsensusContext context, ExtensiblePayload payload, Commit commit)
+        {
+            ref ExtensiblePayload existingCommitPayload = ref context.CommitPayloads[commit.ValidatorIndex];
+            if (existingCommitPayload != null)
+            {
+                // if (existingCommitPayload.Hash != payload.Hash)
+                //     Log($"Rejected {nameof(Commit)}: height={commit.BlockIndex} index={commit.ValidatorIndex} view={commit.ViewNumber} existingView={context.GetMessage(existingCommitPayload).ViewNumber}", LogLevel.Warning);
+                return;
+            }
 
-        //     ref ConsensusPayload existingCommitPayload = ref context.CommitPayloads[payload.ValidatorIndex];
-        //     if (existingCommitPayload != null)
-        //     {
-        //         if (existingCommitPayload.Hash != payload.Hash)
-        //         {
-        //             // Log($"{nameof(OnCommitReceived)}: different commit from validator! height={payload.BlockIndex} index={payload.ValidatorIndex} view={commit.ViewNumber} existingView={existingCommitPayload.ConsensusMessage.ViewNumber}", LogLevel.Warning);
-        //         }
-        //         return;
-        //     }
+            // Timeout extension: commit has been received with success
+            // around 4*15s/M=60.0s/5=12.0s ~ 80% block time (for M=5)
+            // ExtendTimerByFactor(4);
 
-        //     // Timeout extension: commit has been received with success
-        //     // around 4*15s/M=60.0s/5=12.0s ~ 80% block time (for M=5)
-        //     // ExtendTimerByFactor(4);
+            if (commit.ViewNumber == context.ViewNumber)
+            {
+                // Log($"{nameof(OnCommitReceived)}: height={commit.BlockIndex} view={commit.ViewNumber} index={commit.ValidatorIndex} nc={context.CountCommitted} nf={context.CountFailed}");
 
-        //     if (commit.ViewNumber == context.ViewNumber)
-        //     {
-        //         // Log($"{nameof(OnCommitReceived)}: height={payload.BlockIndex} view={commit.ViewNumber} index={payload.ValidatorIndex} nc={context.CountCommitted} nf={context.CountFailed}");
-
-        //         byte[]? hashData = context.EnsureHeader()?.GetHashData();
-        //         if (hashData == null)
-        //         {
-        //             existingCommitPayload = payload;
-        //         }
-        //         else if (Crypto.VerifySignature(hashData, commit.Signature, context.Validators[payload.ValidatorIndex]))
-        //         {
-        //             existingCommitPayload = payload;
-        //             // CheckCommits();
-        //         }
-        //         return;
-        //     }
-        //     // Receiving commit from another view
-        //     // Log($"{nameof(OnCommitReceived)}: record commit for different view={commit.ViewNumber} index={payload.ValidatorIndex} height={payload.BlockIndex}");
-        //     existingCommitPayload = payload;
-        // }
+                byte[]? hashData = context.EnsureHeader()?.GetHashData();
+                if (hashData == null)
+                {
+                    existingCommitPayload = payload;
+                }
+                else if (Crypto.VerifySignature(hashData, commit.Signature, context.Validators[commit.ValidatorIndex]))
+                {
+                    existingCommitPayload = payload;
+                    // CheckCommits();
+                }
+                return;
+            }
+            else
+            {
+                // Receiving commit from another view
+                existingCommitPayload = payload;
+            }
+        }
 
         protected virtual void Dispose(bool disposing)
         {

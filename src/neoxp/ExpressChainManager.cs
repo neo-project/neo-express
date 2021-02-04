@@ -19,7 +19,7 @@ namespace NeoExpress
     internal class ExpressChainManager : IExpressChainManager
     {
         const string GLOBAL_PREFIX = "Global\\";
-        const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
+        const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";
 
         readonly IFileSystem fileSystem;
         readonly ExpressChain chain;

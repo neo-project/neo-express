@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Network.RPC;
 using Neo.Persistence;
@@ -133,12 +135,7 @@ namespace NeoExpress
 
         public void SaveChain(string path)
         {
-            var serializer = new JsonSerializer();
-            using (var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write))
-            using (var writer = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented })
-            {
-                serializer.Serialize(writer, chain);
-            }
+            fileSystem.SaveChain(chain, path);
         }
 
         public void ResetNode(ExpressConsensusNode node, bool force)

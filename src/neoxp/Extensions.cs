@@ -1,5 +1,6 @@
 ﻿using Neo;
 using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Native;

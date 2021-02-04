@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit.Models;
 using Neo.IO;
 using NeoExpress.Models;
 

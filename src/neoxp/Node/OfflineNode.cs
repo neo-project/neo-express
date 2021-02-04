@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Neo;
+using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Consensus;
 using Neo.Cryptography;

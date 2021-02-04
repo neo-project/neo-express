@@ -3,6 +3,7 @@ using System.Linq;
 using Neo.SmartContract;
 using Neo.Wallets;
 using Neo;
+using Neo.BlockchainToolkit.Models;
 
 namespace NeoExpress.Models
 {

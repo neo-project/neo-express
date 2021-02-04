@@ -2,6 +2,7 @@ using System;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo.BlockchainToolkit.Models;
 using Neo.IO;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;

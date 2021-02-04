@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
@@ -122,7 +123,7 @@ namespace NeoExpress
             {
                 using var sb = new ScriptBuilder();
                 // balanceOf operation places current balance on eval stack
-                sb.EmitAppCall(asset, "balanceOf", senderHash);
+                sb.EmitDynamicCall(asset, "balanceOf", senderHash);
                 // transfer operation takes 4 arguments, amount is 3rd parameter
                 // push null onto the stack and then switch positions of the top
                 // two items on eval stack so null is 4th arg and balance is 3rd
@@ -162,7 +163,7 @@ namespace NeoExpress
             }
 
             using var sb = new ScriptBuilder();
-            sb.EmitAppCall(NativeContract.Management.Hash, "deploy", nefFile.ToArray(), manifest.ToJson().ToString());
+            sb.EmitDynamicCall(NativeContract.ContractManagement.Hash, "deploy", nefFile.ToArray(), manifest.ToJson().ToString());
             return await expressNode.ExecuteAsync(account, sb.ToArray()).ConfigureAwait(false);
         }
 
@@ -178,7 +179,7 @@ namespace NeoExpress
             var oraclesParam = new ContractParameter(ContractParameterType.Array) { Value = oracles.ToList() };
 
             using var sb = new ScriptBuilder();
-            sb.EmitAppCall(NativeContract.Designation.Hash, "designateAsRole", roleParam, oraclesParam);
+            sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "designateAsRole", roleParam, oraclesParam);
             return await expressNode.ExecuteAsync(account, sb.ToArray()).ConfigureAwait(false);
         }
 
@@ -190,7 +191,7 @@ namespace NeoExpress
             var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
 
             using var sb = new ScriptBuilder();
-            sb.EmitAppCall(NativeContract.Designation.Hash, "getDesignatedByRole", role, index);
+            sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "getDesignatedByRole", role, index);
             var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
 
             if (result.State == Neo.VM.VMState.HALT
@@ -258,9 +259,9 @@ namespace NeoExpress
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
 
             using var sb = new ScriptBuilder();
-            sb.EmitAppCall(assetHash, "balanceOf", accountHash);
-            sb.EmitAppCall(assetHash, "symbol");
-            sb.EmitAppCall(assetHash, "decimals");
+            sb.EmitDynamicCall(assetHash, "balanceOf", accountHash);
+            sb.EmitDynamicCall(assetHash, "symbol");
+            sb.EmitDynamicCall(assetHash, "decimals");
 
             var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
             var stack = result.Stack;

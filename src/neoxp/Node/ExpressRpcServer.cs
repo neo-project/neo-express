@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Neo;
+using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
-using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
@@ -20,11 +20,13 @@ namespace NeoExpress.Node
 {
     class ExpressRpcServer
     {
+        readonly IExpressReadOnlyStore store;
         readonly ExpressWalletAccount multiSigAccount;
         readonly string cacheId;
 
-        public ExpressRpcServer(ExpressWalletAccount multiSigAccount)
+        public ExpressRpcServer(IExpressReadOnlyStore store, ExpressWalletAccount multiSigAccount)
         {
+            this.store = store;
             this.multiSigAccount = multiSigAccount;
             cacheId = DateTimeOffset.Now.Ticks.ToString();
         }
@@ -32,7 +34,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject ExpressGetPopulatedBlocks(JArray @params)
         {
-            var height = Blockchain.Singleton.Height;
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            var height = NativeContract.Ledger.CurrentIndex(snapshot);
 
             var count = @params.Count >= 1 ? uint.Parse(@params[0].AsString()) : 20;
             count = count > 100 ? 100 : count;
@@ -43,13 +46,13 @@ namespace NeoExpress.Node
             var populatedBlocks = new JArray();
             while (populatedBlocks.Count < count)
             {
-                var hash = Blockchain.Singleton.GetBlockHash(start);
-                var blockState = Blockchain.Singleton.View.Blocks.TryGet(hash);
+                var hash = NativeContract.Ledger.GetBlockHash(snapshot, start);
+                var trimmedBlock = NativeContract.Ledger.GetTrimmedBlock(snapshot, hash);
 
-                if (blockState != null
-                    && blockState.Hashes.Length > 1)
+                if (trimmedBlock != null
+                    && trimmedBlock.Hashes.Length > 1)
                 {
-                    populatedBlocks.Add(blockState.Index);
+                    populatedBlocks.Add(trimmedBlock.Index);
                 }
 
                 if (start == 0)
@@ -72,7 +75,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0].AsString());
-            return ExpressAppLogsPlugin.TryGetAppLog(Blockchain.Singleton.Store, hash) ?? throw new RpcException(-100, "Unknown transaction");
+            return ExpressAppLogsPlugin.TryGetAppLog(store, hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
         // TODO: should the event name comparison be case insensitive?
@@ -82,12 +85,12 @@ namespace NeoExpress.Node
                 && notification.State.Count == 3
                 && (notification.EventName == "Transfer" || notification.EventName == "transfer");
 
-        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IReadOnlyStore store)
+        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IExpressReadOnlyStore store)
             => ExpressAppLogsPlugin
                 .GetNotifications(store)
                 .Where(t => IsNep17Transfer(t.notification));
 
-        public static IEnumerable<Nep17Contract> GetNep17Contracts(IReadOnlyStore store)
+        public static IEnumerable<Nep17Contract> GetNep17Contracts(IExpressReadOnlyStore store)
         {
             var scriptHashes = new HashSet<UInt160>();
             foreach (var (_, _, notification) in GetNep17Transfers(store))
@@ -98,7 +101,7 @@ namespace NeoExpress.Node
             scriptHashes.Add(NativeContract.NEO.Hash);
             scriptHashes.Add(NativeContract.GAS.Hash);
 
-            var snapshot = new ReadOnlyView(store);
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
             foreach (var scriptHash in scriptHashes)
             {
                 if (Nep17Contract.TryLoad(snapshot, scriptHash, out var contract))
@@ -125,7 +128,7 @@ namespace NeoExpress.Node
                     : throw new ArgumentException("invalid UInt160", nameof(item));
         }
 
-        public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(IReadOnlyStore store, UInt160 address)
+        public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(IExpressReadOnlyStore store, UInt160 address)
         {
             // assets key is the script hash of the asset contract
             // assets value is the last updated block of the assoicated asset for address
@@ -151,7 +154,7 @@ namespace NeoExpress.Node
                 assets[NativeContract.GAS.Hash] = 0;
             }
 
-            var snapshot = new ReadOnlyView(store);
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
             foreach (var kvp in assets)
             {
                 if (TryGetBalance(kvp.Key, out var balance)
@@ -166,7 +169,7 @@ namespace NeoExpress.Node
             bool TryGetBalance(UInt160 asset, out BigInteger balance)
             {
                 using var sb = new ScriptBuilder();
-                sb.EmitAppCall(asset, "balanceOf", address.ToArray());
+                sb.EmitDynamicCall(asset, "balanceOf", address.ToArray());
 
                 using var engine = ApplicationEngine.Run(sb.ToArray(), snapshot);
                 if (!engine.State.HasFlag(VMState.FAULT) && engine.ResultStack.Count >= 1)
@@ -183,9 +186,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject ExpressGetNep17Contracts(JArray _)
         {
-            using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
             var jsonContracts = new JArray();
-            foreach (var contract in GetNep17Contracts(snapshot))
+            foreach (var contract in GetNep17Contracts(store))
             {
                 var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());
@@ -197,9 +199,8 @@ namespace NeoExpress.Node
         public JObject GetNep17Balances(JArray @params)
         {
             var address = GetScriptHashFromParam(@params[0].AsString());
-            using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
             var balances = new JArray();
-            foreach (var (contract, balance, lastUpdatedBlock) in GetNep17Balances(snapshot, address))
+            foreach (var (contract, balance, lastUpdatedBlock) in GetNep17Balances(store, address))
             {
                 balances.Add(new JObject()
                 {
@@ -231,10 +232,10 @@ namespace NeoExpress.Node
             var received = new JArray();
 
             {
-                using var snapshot = Blockchain.Singleton.Store.GetSnapshot();
-                foreach (var (blockIndex, txIndex, notification) in GetNep17Transfers(snapshot))
+                using var snapshot = Blockchain.Singleton.GetSnapshot();
+                foreach (var (blockIndex, txIndex, notification) in GetNep17Transfers(store))
                 {
-                    var header = Blockchain.Singleton.GetHeader(blockIndex);
+                    var header = NativeContract.Ledger.GetHeader(snapshot, blockIndex);
                     if (startTime <= header.Timestamp && header.Timestamp <= endTime)
                     {
                         var from = ToUInt160(notification.State[0]);
@@ -276,7 +277,7 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject? ExpressGetContractState(JArray @params)
         {
-            using SnapshotView snapshot = Blockchain.Singleton.GetSnapshot();
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
 
             if (@params[0] is JNumber number)
             {
@@ -285,7 +286,7 @@ namespace NeoExpress.Node
                 {
                     if (id == native.Id)
                     {
-                        var contract = NativeContract.Management.GetContract(snapshot, native.Hash);
+                        var contract = NativeContract.ContractManagement.GetContract(snapshot, native.Hash);
                         return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
                     }
                 }
@@ -295,12 +296,12 @@ namespace NeoExpress.Node
 
             if (UInt160.TryParse(param, out var scriptHash))
             {
-                var contract = NativeContract.Management.GetContract(snapshot, scriptHash);
+                var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
                 return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
             }
 
             var contracts = new JArray();
-            foreach (var contract in NativeContract.Management.ListContracts(snapshot))
+            foreach (var contract in NativeContract.ContractManagement.ListContracts(snapshot))
             {
                 if (param.Equals(contract.Manifest.Name, StringComparison.OrdinalIgnoreCase))
                 {
@@ -314,20 +315,19 @@ namespace NeoExpress.Node
         public JObject? ExpressGetContractStorage(JArray @params)
         {
             var scriptHash = UInt160.Parse(@params[0].AsString());
-            var contract = NativeContract.Management.GetContract(Blockchain.Singleton.View, scriptHash);
+            var contract = NativeContract.ContractManagement.GetContract(Blockchain.Singleton.View, scriptHash);
             if (contract == null) return null;
 
             var storages = new JArray();
-            foreach (var (key, value) in Blockchain.Singleton.View.Storages.Find())
+            byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
+            using var snapshot = Blockchain.Singleton.GetSnapshot();
+            foreach (var (key, value) in snapshot.Find(prefix))
             {
-                if (key.Id == contract.Id)
-                {
-                    var storage = new JObject();
-                    storage["key"] = key.Key.ToHexString();
-                    storage["value"] = value.Value.ToHexString();
-                    storage["constant"] = value.IsConstant;
-                    storages.Add(storage);
-                }
+                var storage = new JObject();
+                storage["key"] = key.Key.ToHexString();
+                storage["value"] = value.Value.ToHexString();
+                storage["constant"] = value.IsConstant;
+                storages.Add(storage);
             }
             return storages;
         }
@@ -335,7 +335,7 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject? ExpressListContracts(JArray @params)
         {
-            var contracts = NativeContract.Management.ListContracts(Blockchain.Singleton.View)
+            var contracts = NativeContract.ContractManagement.ListContracts(Blockchain.Singleton.View)
                 .OrderBy(c => c.Id);
 
             var json = new JArray();
@@ -408,7 +408,10 @@ namespace NeoExpress.Node
             };
 
             using var snapshot = Blockchain.Singleton.GetSnapshot();
-            var tx = ExpressOracle.CreateResponseTx(snapshot, response);
+            var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
+            var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
+            var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
+            var tx = OracleService.CreateResponseTx(snapshot, request, response, oracleNodes);
             return tx == null ? null : Convert.ToBase64String(tx.ToArray());
         }
     }

@@ -6,8 +6,8 @@
     <Company>The Neo Project</Company>
     <Copyright>2015-2020 The Neo Project</Copyright>
     <Description>neo-express is a Neo developer blockchain tool</Description>
-    <LangVersion>8</LangVersion>
-    <NeoVersion>3.0.0-preview4</NeoVersion>
+    <LangVersion>9</LangVersion>
+    <NeoVersion>3.0.0-preview5</NeoVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>
@@ -20,7 +20,7 @@
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
     <RootNamespace>NeoExpress</RootNamespace>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,18 +28,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="test.$(AssemblyName)" />
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="InternalsVisibleTo.MSBuild" Version="1.0.4">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="0.4.67-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.5-preview" />
+    <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
+    <PackageReference Include="Neo.Plugins.OracleService" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
     <PackageReference Include="Nerdbank.Streams" Version="2.6.81" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />

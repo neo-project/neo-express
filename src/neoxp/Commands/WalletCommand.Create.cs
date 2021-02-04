@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 
 namespace NeoExpress.Commands

@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using Neo;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Native;
@@ -21,7 +22,7 @@ namespace NeoExpress.Models
             return new InvokeResult
             {
                 State = result.State,
-                GasConsumed = BigDecimal.Parse(result.GasConsumed, NativeContract.GAS.Decimals),
+                GasConsumed = new BigDecimal((BigInteger)result.GasConsumed, NativeContract.GAS.Decimals),
                 Stack = result.Stack,
                 Exception = string.IsNullOrEmpty(result.Exception)
                     ? null : new Exception(result.Exception)

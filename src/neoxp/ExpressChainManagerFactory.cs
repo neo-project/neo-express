@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
 
@@ -98,12 +100,8 @@ namespace NeoExpress
             {
                 throw new Exception($"{path} file doesn't exist");
             }
-            var serializer = new JsonSerializer();
-            using var stream = fileSystem.File.OpenRead(path);
-            using var reader = new JsonTextReader(new System.IO.StreamReader(stream));
-            var chain = serializer.Deserialize<ExpressChain>(reader)
-                ?? throw new Exception($"Cannot load Neo-Express instance information from {path}");
 
+            var chain = fileSystem.LoadChain(path);
             return (new ExpressChainManager(fileSystem, chain), path);
         }
     }

@@ -23,7 +23,7 @@ namespace NeoExpress.Models
             ScriptHash = scriptHash;
         }
 
-        public Nep17Contract(Nep17Token<AccountState> token)
+        public Nep17Contract(FungibleToken<AccountState> token)
         {
             Name = token.Name;
             Symbol = token.Symbol;
@@ -33,7 +33,7 @@ namespace NeoExpress.Models
 
         public static Nep17Contract Unknown(UInt160 scriptHash) => new Nep17Contract("unknown", "unknown", 0, scriptHash);
 
-        public static bool TryLoad(StoreView snapshot, UInt160 scriptHash, out Nep17Contract contract)
+        public static bool TryLoad(DataCache snapshot, UInt160 scriptHash, out Nep17Contract contract)
         {
             if (scriptHash == NativeContract.NEO.Hash)
             {
@@ -55,13 +55,12 @@ namespace NeoExpress.Models
                 return true;
             }
 
-            var contractState = NativeContract.Management.GetContract(snapshot, scriptHash);
-
+            var contractState = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
             if (contractState != null)
             {
                 using var sb = new ScriptBuilder();
-                sb.EmitAppCall(scriptHash, "symbol");
-                sb.EmitAppCall(scriptHash, "decimals");
+                sb.EmitDynamicCall(scriptHash, "symbol");
+                sb.EmitDynamicCall(scriptHash, "decimals");
 
                 using var engine = Neo.SmartContract.ApplicationEngine.Run(sb.ToArray(), snapshot);
                 if (engine.State != VMState.FAULT && engine.ResultStack.Count >= 2)

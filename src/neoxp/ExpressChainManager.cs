@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Network.RPC;
 using Neo.Persistence;
@@ -17,7 +19,7 @@ namespace NeoExpress
     internal class ExpressChainManager : IExpressChainManager
     {
         const string GLOBAL_PREFIX = "Global\\";
-        const string CHECKPOINT_EXTENSION = ".nxp3-checkpoint";
+        const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";
 
         readonly IFileSystem fileSystem;
         readonly ExpressChain chain;
@@ -71,7 +73,7 @@ namespace NeoExpress
             if (IsRunning(node))
             {
                 var uri = chain.GetUri();
-                var rpcClient = new RpcClient(uri.ToString());
+                var rpcClient = new RpcClient(uri);
                 await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointPath).ConfigureAwait(false);
                 return (checkPointPath, true);
             }
@@ -133,12 +135,7 @@ namespace NeoExpress
 
         public void SaveChain(string path)
         {
-            var serializer = new JsonSerializer();
-            using (var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write))
-            using (var writer = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented })
-            {
-                serializer.Serialize(writer, chain);
-            }
+            fileSystem.SaveChain(chain, path);
         }
 
         public void ResetNode(ExpressConsensusNode node, bool force)
@@ -161,7 +158,7 @@ namespace NeoExpress
             }
         }
 
-        public async Task RunAsync(IStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token)
+        public async Task RunAsync(IExpressStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (IsRunning(node))
             {
@@ -183,16 +180,17 @@ namespace NeoExpress
                     var wallet = DevWallet.FromExpressWallet(node.Wallet);
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
+                    var dbftPlugin = new Neo.Consensus.DBFTPlugin();
                     var logPlugin = new Node.LogPlugin(writer);
-                    var storageProvider = new Node.ExpressStorageProvider(store);
+                    var storageProvider = new Node.ExpressStorageProvider((IStore)store);
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
                     using var system = new Neo.NeoSystem(storageProvider.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
                     var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
-                    var expressRpcServer = new Node.ExpressRpcServer(multiSigAccount);
-                    rpcServer.RegisterMethods(expressRpcServer);
+                    // var expressRpcServer = new Node.ExpressRpcServer(multiSigAccount);
+                    // rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
 
@@ -201,7 +199,7 @@ namespace NeoExpress
                         Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
                         WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
                     });
-                    system.StartConsensus(wallet);
+                    dbftPlugin.Start(wallet);
 
                     token.WaitHandle.WaitOne();
                 }
@@ -217,7 +215,7 @@ namespace NeoExpress
             await tcs.Task.ConfigureAwait(false);
         }
 
-        public IStore GetNodeStore(ExpressConsensusNode node, bool discard)
+        public IExpressStore GetNodeStore(ExpressConsensusNode node, bool discard)
         {
             var folder = fileSystem.GetNodePath(node);
 
@@ -239,7 +237,7 @@ namespace NeoExpress
             }
         }
 
-        public IStore GetCheckpointStore(string checkPointPath)
+        public IExpressStore GetCheckpointStore(string checkPointPath)
         {
             if (chain.ConsensusNodes.Count != 1)
             {

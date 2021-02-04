@@ -13,14 +13,12 @@ namespace NeoExpress.Node
     internal class ExpressApplicationEngine : ApplicationEngine
     {
         private readonly ITraceDebugSink traceDebugSink;
-        private readonly StoreView snapshot;
         private readonly Dictionary<UInt160, string> contractNameMap = new Dictionary<UInt160, string>();
 
-        public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, StoreView snapshot, long gas)
-            : base(trigger, container, snapshot, gas)
+        public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, DataCache snapshot, Block? persistingBlock = null, long gas = 2000000000)
+            : base(trigger, container, snapshot, persistingBlock, gas)
         {
             this.traceDebugSink = traceDebugSink;
-            this.snapshot = snapshot;
 
             Log += OnLog!;
             Notify += OnNotify!;
@@ -41,7 +39,7 @@ namespace NeoExpress.Node
                 return name;
             }
 
-            var state = NativeContract.Management.GetContract(snapshot, scriptId);
+            var state = NativeContract.ContractManagement.GetContract(Snapshot, scriptId);
             name = state != null ? state.Manifest.Name : "";
             contractNameMap[scriptId] = name;
             return name;
@@ -97,10 +95,10 @@ namespace NeoExpress.Node
         {
             if (scriptHash != null)
             {
-                var contractState = NativeContract.Management.GetContract(Snapshot, scriptHash);
+                var contractState = NativeContract.ContractManagement.GetContract(Snapshot, scriptHash);
                 if (contractState != null)
                 {
-                    var storages = Snapshot.Storages.Find(StorageKey.CreateSearchPrefix(contractState.Id, default));
+                    var storages = Snapshot.Find(StorageKey.CreateSearchPrefix(contractState.Id, default));
                     traceDebugSink.Storages(scriptHash, storages);
                 }
             }

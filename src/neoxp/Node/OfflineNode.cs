@@ -69,17 +69,19 @@ namespace NeoExpress.Node
             Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
-        public Task<InvokeResult> InvokeAsync(Neo.VM.Script script)
+        public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             using ApplicationEngine engine = ApplicationEngine.Run(script, container: null, gas: 20000000L);
-            var result = new InvokeResult()
+            var result = new RpcInvokeResult()
             {
                 State = engine.State,
+                Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
+                GasConsumed = engine.GasConsumed,
                 Stack = engine.ResultStack.ToArray(),
-                Exception = engine.FaultException,
-                GasConsumed = new BigDecimal((BigInteger)engine.GasConsumed, NativeContract.GAS.Decimals)
+                Script = string.Empty,
+                Tx = string.Empty
             };
             return Task.FromResult(result);
         }

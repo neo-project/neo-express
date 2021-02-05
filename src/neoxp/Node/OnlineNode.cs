@@ -4,6 +4,7 @@ using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -123,10 +124,9 @@ namespace NeoExpress.Node
             return (response.Transaction, log);
         }
 
-        public async Task<InvokeResult> InvokeAsync(Script script)
+        public async Task<RpcInvokeResult> InvokeAsync(Script script)
         {
-            var invokeResult = await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
-            return InvokeResult.FromRpcInvokeResult(invokeResult);
+            return await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()

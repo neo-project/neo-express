@@ -110,19 +110,26 @@ namespace NeoExpress.Commands
                 if (Test)
                 {
                     var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
-                    await writer.WriteLineAsync($"VM State:     {result.State}").ConfigureAwait(false);
-                    await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
-                    if (result.Exception != null)
+                    if (Json)
                     {
-                        await writer.WriteLineAsync($"Expception:   {result.Exception}").ConfigureAwait(false);
+                        await writer.WriteLineAsync(result.ToJson().ToString(true)).ConfigureAwait(false);
                     }
-                    if (result.Stack.Length > 0)
+                    else
                     {
-                        var stack = result.Stack;
-                        await writer.WriteLineAsync("Result Stack:").ConfigureAwait(false);
-                        for (int i = 0; i < stack.Length; i++)
+                        await writer.WriteLineAsync($"VM State:     {result.State}").ConfigureAwait(false);
+                        await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
+                        if (result.Exception != null)
                         {
-                            await WriteStackItemAsync(writer, stack[i]).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Expception:   {result.Exception}").ConfigureAwait(false);
+                        }
+                        if (result.Stack.Length > 0)
+                        {
+                            var stack = result.Stack;
+                            await writer.WriteLineAsync("Result Stack:").ConfigureAwait(false);
+                            for (int i = 0; i < stack.Length; i++)
+                            {
+                                await WriteStackItemAsync(writer, stack[i]).ConfigureAwait(false);
+                            }
                         }
                     }
                 }

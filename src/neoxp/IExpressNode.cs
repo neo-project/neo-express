@@ -17,7 +17,7 @@ namespace NeoExpress
     {
         Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0);
         Task<UInt256> SubmitTransactionAsync(Transaction tx);
-        Task<InvokeResult> InvokeAsync(Script script);
+        Task<RpcInvokeResult> InvokeAsync(Script script);
         Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address);
         Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
         Task<Block> GetBlockAsync(UInt256 blockHash);

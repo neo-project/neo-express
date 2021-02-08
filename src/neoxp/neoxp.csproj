@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.8-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.9-preview" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.OracleService" Version="$(NeoVersion)" />

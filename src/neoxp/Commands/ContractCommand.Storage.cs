@@ -64,16 +64,11 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var (chain, _) = Program.LoadExpressChain(Input);
-
-                    // var blockchainOperations = new BlockchainOperations();
-                    // var storages = await blockchainOperations.GetStoragesAsync(chain, Contract);
-
+                    await ExecuteAsync(console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -82,7 +77,6 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
-
         }
     }
 }

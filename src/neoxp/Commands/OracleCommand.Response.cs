@@ -38,8 +38,8 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(System.IO.TextWriter writer)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 if (!fileSystem.File.Exists(ResponsePath)) throw new Exception($"Response File {ResponsePath} couldn't be found");
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
 
                 JObject responseJson;
                 {

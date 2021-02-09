@@ -6,6 +6,7 @@ using Neo.Network.RPC.Models;
 using Neo.SmartContract.Native;
 using NeoExpress.Models;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,6 +14,18 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static async Task WriteTxHashAsync(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false)
+        {
+            if (json)
+            {
+                await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(txType)) await writer.WriteLineAsync($"{txType} ").ConfigureAwait(false);
+                await writer.WriteLineAsync($"Transaction {txHash} submitted").ConfigureAwait(false);
+            }
+        }
         public static BigDecimal ToBigDecimal(this RpcNep17Balance balance, byte decimals)
             => new BigDecimal(balance.Amount, decimals);
 

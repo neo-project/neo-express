@@ -7,7 +7,7 @@ namespace NeoExpress.Commands
     partial class CheckpointCommand
     {
         [Command("create", Description = "Create a new neo-express checkpoint")]
-        class Create
+        internal class Create
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -25,13 +25,18 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             bool Force { get; }
 
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, string name, bool force, System.IO.TextWriter writer)
+            {
+                var (path, online) = await chainManager.CreateCheckpointAsync(name, force).ConfigureAwait(false);
+                await writer.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {(online ? "online" : "offline")}").ConfigureAwait(false);
+            }
+
             internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    var (path, online) = await chainManager.CreateCheckpointAsync(Name, Force).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {(online ? "online" : "offline")}").ConfigureAwait(false);
+                    await ExecuteAsync(chainManager, Name, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

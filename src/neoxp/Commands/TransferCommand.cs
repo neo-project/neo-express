@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -16,11 +17,11 @@ namespace NeoExpress.Commands
             this.chainManagerFactory = chainManagerFactory;
         }
 
-        [Argument(0, Description = "Asset to transfer (symbol or script hash)")]
-        string Asset { get; } = string.Empty;
-
-        [Argument(1, Description = "Amount to transfer")]
+        [Argument(0, Description = "Amount to transfer")]
         string Quantity { get; } = string.Empty;
+
+        [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
+        string Asset { get; } = string.Empty;
 
         [Argument(2, Description = "Account to send asset from")]
         string Sender { get; } = string.Empty;
@@ -34,47 +35,37 @@ namespace NeoExpress.Commands
         [Option(Description = "Output as JSON")]
         bool Json { get; } = false;
 
-        OneOf<decimal, All> ParseQuantity()
+        internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string quantity, string asset, string sender, string receiver, TextWriter writer, bool json = false)
         {
-            if ("all".Equals(Quantity, StringComparison.OrdinalIgnoreCase))
+            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
+            var senderAccount = chainManager.Chain.GetAccount(sender) ?? throw new Exception($"{sender} sender not found.");
+            var receiverAccount = chainManager.Chain.GetAccount(receiver) ?? throw new Exception($"{receiver} receiver not found.");
+            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderAccount, receiverAccount);
+            await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
+
+            static OneOf<decimal, All> ParseQuantity(string quantity)
             {
-                return new All();
+                if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new All();
+                }
+
+                if (decimal.TryParse(quantity, out var amount))
+                {
+                    return amount;
+                }
+
+                throw new Exception($"Invalid quantity value {quantity}");
             }
-
-            if (decimal.TryParse(Quantity, out var amount))
-            {
-                return amount;
-            }
-
-            throw new Exception($"Invalid quantity value {Quantity}");
-        }
-
-        private async Task<UInt256> ExecuteAsync()
-        {
-            var quantity = ParseQuantity();
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-            var chain = chainManager.Chain;
-            var sender = chain.GetAccount(Sender) ?? throw new Exception($"{Sender} sender not found.");
-            var receiver = chain.GetAccount(Receiver) ?? throw new Exception($"{Receiver} receiver not found.");
-
-            using var expressNode = chainManager.GetExpressNode();
-            var assetHash = await expressNode.ParseAssetAsync(Asset).ConfigureAwait(false);
-            return await expressNode.TransferAsync(assetHash, quantity, sender, receiver);
         }
 
         internal async Task<int> OnExecuteAsync(IConsole console)
         {
             try
             {
-                var txHash = await ExecuteAsync().ConfigureAwait(false);
-                if (Json)
-                {
-                    await console.Out.WriteLineAsync($"{txHash}");
-                }
-                else
-                {
-                    await console.Out.WriteLineAsync($"Transfer Transaction {txHash} submitted");
-                }
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                using var expressNode = chainManager.GetExpressNode();
+                await ExecuteAsync(chainManager, expressNode, Quantity, Asset, Sender, Receiver, console.Out, Json).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)

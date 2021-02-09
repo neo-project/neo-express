@@ -11,6 +11,7 @@ using Neo.BlockchainToolkit.Persistence;
 using Neo.Network.RPC;
 using Neo.Persistence;
 using NeoExpress.Models;
+using NeoExpress.Node;
 using Newtonsoft.Json;
 using Nito.Disposables;
 
@@ -189,8 +190,8 @@ namespace NeoExpress
                     using var system = new Neo.NeoSystem(storageProvider.Name);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
                     var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
-                    // var expressRpcServer = new Node.ExpressRpcServer(multiSigAccount);
-                    // rpcServer.RegisterMethods(expressRpcServer);
+                    var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
+                    rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
 

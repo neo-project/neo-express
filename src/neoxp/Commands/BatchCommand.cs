@@ -69,50 +69,67 @@ namespace NeoExpress.Commands
                 var pr = batchApp.Parse(args);
                 switch (pr.SelectedCommand)
                 {
-                    case CommandLineApplication<BatchTransfer> transferApp: 
+                    case CommandLineApplication<BatchTransfer> cmd: 
                     {
-                        var model = transferApp.Model;
                         await TransferCommand.ExecuteAsync(
                             chainManager, 
                             expressNode, 
-                            model.Quantity, 
-                            model.Asset, 
-                            model.Sender, 
-                            model.Receiver, 
+                            cmd.Model.Quantity, 
+                            cmd.Model.Asset, 
+                            cmd.Model.Sender, 
+                            cmd.Model.Receiver, 
                             writer).ConfigureAwait(false);
                         break;
                     }
-                    case CommandLineApplication<BatchCheckpointCreate> checkpointCreateApp: 
+                    case CommandLineApplication<BatchCheckpointCreate> cmd: 
                     {
-                        var model = checkpointCreateApp.Model;
                         await CheckpointCommand.Create.ExecuteAsync(
                             chainManager, 
-                            model.Name,
-                            model.Force,
+                            cmd.Model.Name,
+                            cmd.Model.Force,
                             writer).ConfigureAwait(false);
                         break;
                     }
-                    case CommandLineApplication<BatchContractDeploy> deployApp: 
+                    case CommandLineApplication<BatchContractDeploy> cmd: 
                     {
-                        var model = deployApp.Model;
                         await ContractCommand.Deploy.ExecuteAsync(
                             chainManager,
                             expressNode,
                             fileSystem,
-                            model.Contract,
-                            model.Account,
+                            cmd.Model.Contract,
+                            cmd.Model.Account,
                             writer).ConfigureAwait(false);
                         break;
                     }
-                    case CommandLineApplication<BatchContractInvoke> invokeApp: 
+                    case CommandLineApplication<BatchContractInvoke> cmd: 
                     {
-                        var model = invokeApp.Model;
                         await ContractCommand.Invoke.ExecuteTxAsync(
                             chainManager,
                             expressNode,
-                            model.InvocationFile,
-                            model.Account,
+                            cmd.Model.InvocationFile,
+                            cmd.Model.Account,
                             fileSystem,
+                            writer).ConfigureAwait(false);
+                        break;
+                    }
+                    case CommandLineApplication<BatchOracleEnable> cmd:
+                    {
+                        await OracleCommand.Enable.ExecuteAsync(
+                            chainManager, 
+                            expressNode, 
+                            cmd.Model.Account, 
+                            writer).ConfigureAwait(false);
+                        break;
+                    }
+                    case CommandLineApplication<BatchOracleResponse> cmd:
+                    {
+                        await OracleCommand.Response.ExecuteAsync(
+                            chainManager, 
+                            expressNode, 
+                            fileSystem,
+                            cmd.Model.Url,
+                            cmd.Model.ResponsePath,
+                            null, 
                             writer).ConfigureAwait(false);
                         break;
                     }
@@ -123,7 +140,7 @@ namespace NeoExpress.Commands
         }
 
         [Command]
-        [Subcommand(typeof(BatchCheckpoint), typeof(BatchContract), typeof(BatchTransfer))]
+        [Subcommand(typeof(BatchCheckpoint), typeof(BatchContract), typeof(BatchOracle), typeof(BatchTransfer))]
         internal class RootBatchCommand
         {
         }
@@ -184,7 +201,6 @@ namespace NeoExpress.Commands
 
         }
 
-
         [Command("invoke")]
         internal class BatchContractInvoke
         {
@@ -193,7 +209,34 @@ namespace NeoExpress.Commands
             internal string InvocationFile { get; } = string.Empty;
 
             [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+            [Required]
             internal string Account { get; } = string.Empty;
+        }
+
+        [Command("oracle")]
+        [Subcommand(typeof(BatchOracleEnable), typeof(BatchOracleResponse))]
+        internal class BatchOracle
+        {
+        }
+
+        [Command("enable")]
+        internal class BatchOracleEnable
+        {
+            [Argument(0, Description = "Account to pay contract invocation GAS fee")]
+            [Required]
+            internal string Account { get; } = string.Empty;
+        }
+
+        [Command("response")]
+        internal class BatchOracleResponse
+        {
+            [Argument(0, Description = "URL of oracle request")]
+            [Required]
+            internal string Url { get; } = string.Empty;
+
+            [Argument(1, Description = "Path to JSON file with oracle response cotnent")]
+            [Required]
+            internal string ResponsePath { get; } = string.Empty;
         }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api

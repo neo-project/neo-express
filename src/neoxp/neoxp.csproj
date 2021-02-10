@@ -28,6 +28,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="test-$(AssemblyName)" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="InternalsVisibleTo.MSBuild" Version="1.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
     <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.9-preview" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />

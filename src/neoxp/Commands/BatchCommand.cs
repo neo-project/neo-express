@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -10,11 +12,14 @@ namespace NeoExpress.Commands
     [Command("batch", Description = "Execute a series of offline Neo-Express operations")]
     partial class BatchCommand
     {
-        [Argument(0, Description = "path to batch file to run")]
-        string BatchFile { get; } = string.Empty;
+        [Argument(0, Description = "Path to batch file to run")]
+        internal string BatchFile { get; } = string.Empty;
 
         [Option(Description = "Path to neo-express data file")]
-        string Input { get; } = string.Empty;
+        internal string Input { get; } = string.Empty;
+
+        [Option(Description = "Reset blockchain before running batch file commands")]
+        internal bool Reset { get; set; } = false;
 
         readonly IExpressChainManagerFactory chainManagerFactory;
         readonly IFileSystem fileSystem;
@@ -23,82 +28,6 @@ namespace NeoExpress.Commands
         {
             this.chainManagerFactory = chainManagerFactory;
             this.fileSystem = fileSystem;
-        }
-
-        internal async Task ExecuteAsync(IReadOnlyList<string> commands, System.IO.TextWriter writer)
-        {
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-            using var expressNode = chainManager.GetExpressNode();
-
-            var batchCmd = new CommandLineApplication();
-            batchCmd.Command("transfer", transferCmd =>
-            {
-                var quantityArg = transferCmd.Argument("quantity", "Amount to Transfer").IsRequired();
-                var assetArg = transferCmd.Argument("asset", "Asset to transfer (symbol or script hash)").IsRequired();
-                var senderArg = transferCmd.Argument("sender", "Account to send asset from").IsRequired();
-                var receiverArg = transferCmd.Argument("receiver", "Account to send asset to").IsRequired();
-
-                transferCmd.OnExecuteAsync(async (token) =>
-                {
-                    await TransferCommand.ExecuteAsync(
-                        chainManager,
-                        expressNode,
-                        quantityArg.Value ?? throw new Exception(),
-                        assetArg.Value ?? throw new Exception(),
-                        senderArg.Value ?? throw new Exception(),
-                        receiverArg.Value ?? throw new Exception(),
-                        writer).ConfigureAwait(false);
-                    return 0;
-                });
-            });
-
-            batchCmd.Command("checkpoint", checkpointCmd =>
-            {
-                checkpointCmd.Command("create", checkpointCreateCmd =>
-                {
-                    var nameArg = checkpointCreateCmd.Argument("name", "Checkpoint file name").IsRequired();
-                    var forceOpt = checkpointCmd.Option<bool>("-f|--force", "Overwrite existing data", CommandOptionType.NoValue);
-
-                    checkpointCreateCmd.OnExecuteAsync(async (token) =>
-                    {
-                        await CheckpointCommand.Create.ExecuteAsync(
-                            chainManager,
-                            nameArg.Value ?? throw new Exception(),
-                            forceOpt.ParsedValue,
-                            writer).ConfigureAwait(false);
-                        return 0;
-                    });
-                });
-            });
-
-            batchCmd.Command("contract", contractCmd =>
-            {
-                contractCmd.Command("deploy", contractDeployCmd =>
-                {
-                    var contractArg = contractDeployCmd.Argument("contract", "Path to contract .nef file").IsRequired();
-                    var accountArg = contractDeployCmd.Argument("account", "Account to pay contract deployment GAS fee").IsRequired();
-
-                    contractDeployCmd.OnExecuteAsync(async (token) =>
-                    {
-                        await ContractCommand.Deploy.ExecuteAsync(
-                            chainManager,
-                            expressNode,
-                            fileSystem,
-                            contractArg.Value ?? throw new Exception(),
-                            accountArg.Value ?? throw new Exception(),
-                            writer).ConfigureAwait(false);
-                        return 0;
-                    });
-                });
-
-                contractCmd.Command("invoke", contractInvokeCmd => 
-                {
-                    var invokeFileArg = contractInvokeCmd.Argument("invocationFile", "Path to contract invocation JSON file").IsRequired();
-                    var accountArg = contractInvokeCmd.Argument("account", "Account to pay contract deployment GAS fee").IsRequired();
-
-
-                });
-            });
         }
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)
@@ -115,6 +44,156 @@ namespace NeoExpress.Commands
                 await console.Error.WriteLineAsync(ex.Message).ConfigureAwait(false);
                 return 1;
             }
+        }
+
+        internal async Task ExecuteAsync(ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
+        {
+            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+
+            if (Reset)
+            {
+                for (int i = 0; i < chainManager.Chain.ConsensusNodes.Count; i++)
+                {
+                    chainManager.ResetNode(chainManager.Chain.ConsensusNodes[i], true);
+                }
+            }
+
+            using var expressNode = chainManager.GetExpressNode();
+
+            var batchApp = new CommandLineApplication<RootBatchCommand>();
+            batchApp.Conventions.UseDefaultConventions();
+
+            for (var i = 0; i < commands.Length; i++)
+            {
+                var args = SplitCommandLine(commands.Span[i]).ToArray();
+                var pr = batchApp.Parse(args);
+                switch (pr.SelectedCommand)
+                {
+                    case CommandLineApplication<BatchTransfer> transferApp: 
+                    {
+                        var model = transferApp.Model;
+                        await TransferCommand.ExecuteAsync(
+                            chainManager, 
+                            expressNode, 
+                            model.Quantity, 
+                            model.Asset, 
+                            model.Sender, 
+                            model.Receiver, 
+                            writer).ConfigureAwait(false);
+                        break;
+                    }
+                    case CommandLineApplication<BatchCheckpointCreate> checkpointCreateApp: 
+                    {
+                        var model = checkpointCreateApp.Model;
+                        await CheckpointCommand.Create.ExecuteAsync(
+                            chainManager, 
+                            model.Name,
+                            model.Force,
+                            writer).ConfigureAwait(false);
+                        break;
+                    }
+                    case CommandLineApplication<BatchContractDeploy> deployApp: 
+                    {
+                        var model = deployApp.Model;
+                        await ContractCommand.Deploy.ExecuteAsync(
+                            chainManager,
+                            expressNode,
+                            fileSystem,
+                            model.Contract,
+                            model.Account,
+                            writer).ConfigureAwait(false);
+                        break;
+                    }
+                    case CommandLineApplication<BatchContractInvoke> invokeApp: 
+                    {
+                        var model = invokeApp.Model;
+                        await ContractCommand.Invoke.ExecuteTxAsync(
+                            chainManager,
+                            expressNode,
+                            model.InvocationFile,
+                            model.Account,
+                            fileSystem,
+                            writer).ConfigureAwait(false);
+                        break;
+                    }
+                    default:
+                        throw new Exception();
+                }
+            }
+        }
+
+        [Command]
+        [Subcommand(typeof(BatchCheckpoint), typeof(BatchContract), typeof(BatchTransfer))]
+        internal class RootBatchCommand
+        {
+        }
+
+        [Command("transfer")]
+        internal class BatchTransfer
+        {
+            [Argument(0, Description = "Amount to transfer")]
+            [Required]
+            internal string Quantity { get; } = string.Empty;
+
+            [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
+            [Required]
+            internal string Asset { get; } = string.Empty;
+
+            [Argument(2, Description = "Account to send asset from")]
+            [Required]
+            internal string Sender { get; } = string.Empty;
+
+            [Argument(3, Description = "Account to send asset to")]
+            [Required]
+            internal string Receiver { get; } = string.Empty;
+        }
+
+        [Command("checkpoint")]
+        [Subcommand(typeof(BatchCheckpointCreate))]
+        internal class BatchCheckpoint
+        {
+        }
+
+        [Command("create")]
+        internal class BatchCheckpointCreate
+        {
+            [Argument(0, "Checkpoint file name")]
+            [Required]
+            internal string Name { get; } = string.Empty;
+
+            [Option(Description = "Overwrite existing data")]
+            internal bool Force { get; }
+        }
+
+        [Command("contract")]
+        [Subcommand(typeof(BatchContractDeploy), typeof(BatchContractInvoke))]
+        internal class BatchContract
+        {
+        }
+
+        [Command("deploy")]
+        internal class BatchContractDeploy
+        {
+            [Argument(0, Description = "Path to contract .nef file")]
+            [Required]
+            internal string Contract { get; } = string.Empty;
+
+            [Argument(1, Description = "Account to pay contract deployment GAS fee")]
+            [Required]
+            internal string Account { get; } = string.Empty;
+
+        }
+
+
+        [Command("invoke")]
+        internal class BatchContractInvoke
+        {
+            [Argument(0, Description = "Path to contract invocation JSON file")]
+            [Required]
+            internal string InvocationFile { get; } = string.Empty;
+
+            [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+            internal string Account { get; } = string.Empty;
         }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api

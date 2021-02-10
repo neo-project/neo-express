@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -17,6 +18,7 @@ namespace NeoExpress.Commands
             }
 
             [Argument(0, "Checkpoint file name")]
+            [Required]
             string Name { get; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]

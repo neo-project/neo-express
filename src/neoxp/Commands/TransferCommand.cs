@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -18,15 +19,19 @@ namespace NeoExpress.Commands
         }
 
         [Argument(0, Description = "Amount to transfer")]
+        [Required]
         string Quantity { get; } = string.Empty;
 
         [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
+        [Required]
         string Asset { get; } = string.Empty;
 
         [Argument(2, Description = "Account to send asset from")]
+        [Required]
         string Sender { get; } = string.Empty;
 
         [Argument(3, Description = "Account to send asset to")]
+        [Required]
         string Receiver { get; } = string.Empty;
 
         [Option(Description = "Path to neo-express data file")]

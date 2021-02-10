@@ -21,13 +21,13 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Account to pay contract invocation GAS fee")]
             [Required]
-            string Account { get; } = string.Empty;
+            internal string Account { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; } = false;
+            internal bool Json { get; init; } = false;
 
             internal async Task<int> OnExecuteAsync(IConsole console)
             {

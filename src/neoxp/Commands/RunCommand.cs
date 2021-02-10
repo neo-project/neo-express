@@ -16,19 +16,19 @@ namespace NeoExpress.Commands
         }
 
         [Argument(0, Description = "Index of node to run")]
-        internal int NodeIndex { get; } = 0;
+        internal int NodeIndex { get; init; } = 0;
 
         [Option(Description = "Path to neo-express data file")]
-        internal string Input { get; } = string.Empty;
+        internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Time between blocks")]
         internal uint SecondsPerBlock { get; }
 
         [Option(Description = "Discard blockchain changes on shutdown")]
-        internal bool Discard { get; } = false;
+        internal bool Discard { get; init; } = false;
 
         [Option(Description = "Enable contract execution tracing")]
-        internal bool Trace { get; } = false;
+        internal bool Trace { get; init; } = false;
 
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {

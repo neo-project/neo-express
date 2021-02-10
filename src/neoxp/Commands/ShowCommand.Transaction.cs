@@ -8,7 +8,7 @@ namespace NeoExpress.Commands
     partial class ShowCommand
     {
         [Command("transaction", "tx", Description = "Show transaction")]
-        class Transaction
+        internal class Transaction
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -19,10 +19,10 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Transaction hash")]
             [Required]
-            string TransactionHash { get; } = string.Empty;
+            internal string TransactionHash { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {

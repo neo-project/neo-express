@@ -8,7 +8,7 @@ namespace NeoExpress.Commands
     partial class ShowCommand
     {
         [Command("balances")]
-        class Balances
+        internal class Balances
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -19,10 +19,10 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Account to show asset balances for")]
             [Required]
-            string Account { get; } = string.Empty;
+            internal string Account { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(IConsole console)
             {

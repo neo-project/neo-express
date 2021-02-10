@@ -24,17 +24,17 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Path to contract .nef file")]
             [Required]
-            string Contract { get; } = string.Empty;
+            internal string Contract { get; init; } = string.Empty;
 
             [Argument(1, Description = "Account to pay contract deployment GAS fee")]
             [Required]
-            string Account { get; } = string.Empty;
+            internal string Account { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; } = false;
+            internal bool Json { get; init; } = false;
 
             internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string account, System.IO.TextWriter writer, bool json = false)
             {

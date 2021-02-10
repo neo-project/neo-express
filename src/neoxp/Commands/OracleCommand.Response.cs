@@ -24,20 +24,20 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "URL of oracle request")]
             [Required]
-            string Url { get; } = string.Empty;
+            internal string Url { get; init; } = string.Empty;
 
             [Argument(1, Description = "Path to JSON file with oracle response cotnent")]
             [Required]
-            string ResponsePath { get; } = string.Empty;
+            internal string ResponsePath { get; init; } = string.Empty;
 
             [Option(Description = "Oracle request ID")]
-            (bool hasValue, ulong value) RequestId { get; }
+            internal (bool hasValue, ulong value) RequestId { get; }
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; } = false;
+            internal bool Json { get; init; } = false;
 
             internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string url, string responsePath, ulong? requestId, System.IO.TextWriter writer, bool json = false)
             {

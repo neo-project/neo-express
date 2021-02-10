@@ -20,25 +20,25 @@ namespace NeoExpress.Commands
 
         [Argument(0, Description = "Amount to transfer")]
         [Required]
-        string Quantity { get; } = string.Empty;
+        internal string Quantity { get; init; } = string.Empty;
 
         [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
         [Required]
-        string Asset { get; } = string.Empty;
+        internal string Asset { get; init; } = string.Empty;
 
         [Argument(2, Description = "Account to send asset from")]
         [Required]
-        string Sender { get; } = string.Empty;
+        internal string Sender { get; init; } = string.Empty;
 
         [Argument(3, Description = "Account to send asset to")]
         [Required]
-        string Receiver { get; } = string.Empty;
+        internal string Receiver { get; init; } = string.Empty;
 
         [Option(Description = "Path to neo-express data file")]
-        string Input { get; } = string.Empty;
+        internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Output as JSON")]
-        bool Json { get; } = false;
+        internal bool Json { get; init; } = false;
 
         internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string quantity, string asset, string sender, string receiver, TextWriter writer, bool json = false)
         {

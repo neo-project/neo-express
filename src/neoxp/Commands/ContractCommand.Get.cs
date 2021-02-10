@@ -9,7 +9,7 @@ namespace NeoExpress.Commands
     partial class ContractCommand
     {
         [Command(Name = "get", Description = "Get information for a deployed contract")]
-        private class Get
+        internal class Get
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -20,10 +20,10 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
-            string Contract { get; } = string.Empty;
+            internal string Contract { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {

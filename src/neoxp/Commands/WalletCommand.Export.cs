@@ -9,7 +9,7 @@ namespace NeoExpress.Commands
     partial class WalletCommand
     {
         [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
-        class Export
+        internal class Export
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
             readonly IFileSystem fileSystem;
@@ -22,16 +22,16 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Wallet name")]
             [Required]
-            private string Name { get; } = string.Empty;
+            internal string Name { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            private string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "NEP-5 wallet name (Defaults to Neo-Express name if unspecified)")]
-            private string Output { get; } = string.Empty;
+            internal string Output { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]
-            private bool Force { get; }
+            internal bool Force { get; }
 
             internal string Execute()
             {

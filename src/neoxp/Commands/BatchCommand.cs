@@ -12,15 +12,6 @@ namespace NeoExpress.Commands
     [Command("batch", Description = "Execute a series of offline Neo-Express operations")]
     partial class BatchCommand
     {
-        [Argument(0, Description = "Path to batch file to run")]
-        internal string BatchFile { get; } = string.Empty;
-
-        [Option(Description = "Path to neo-express data file")]
-        internal string Input { get; } = string.Empty;
-
-        [Option(Description = "Reset blockchain before running batch file commands")]
-        internal bool Reset { get; set; } = false;
-
         readonly IExpressChainManagerFactory chainManagerFactory;
         readonly IFileSystem fileSystem;
 
@@ -29,6 +20,16 @@ namespace NeoExpress.Commands
             this.chainManagerFactory = chainManagerFactory;
             this.fileSystem = fileSystem;
         }
+
+        [Argument(0, Description = "Path to batch file to run")]
+        [Required]
+        internal string BatchFile { get; init; } = string.Empty;
+
+        [Option(Description = "Path to neo-express data file")]
+        internal string Input { get; init; } = string.Empty;
+
+        [Option(Description = "Reset blockchain before running batch file commands")]
+        internal bool Reset { get; init; } = false;
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)
         {
@@ -150,19 +151,19 @@ namespace NeoExpress.Commands
         {
             [Argument(0, Description = "Amount to transfer")]
             [Required]
-            internal string Quantity { get; } = string.Empty;
+            internal string Quantity { get; init; } = string.Empty;
 
             [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
             [Required]
-            internal string Asset { get; } = string.Empty;
+            internal string Asset { get; init; } = string.Empty;
 
             [Argument(2, Description = "Account to send asset from")]
             [Required]
-            internal string Sender { get; } = string.Empty;
+            internal string Sender { get; init; } = string.Empty;
 
             [Argument(3, Description = "Account to send asset to")]
             [Required]
-            internal string Receiver { get; } = string.Empty;
+            internal string Receiver { get; init; } = string.Empty;
         }
 
         [Command("checkpoint")]
@@ -176,7 +177,7 @@ namespace NeoExpress.Commands
         {
             [Argument(0, "Checkpoint file name")]
             [Required]
-            internal string Name { get; } = string.Empty;
+            internal string Name { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
@@ -193,11 +194,11 @@ namespace NeoExpress.Commands
         {
             [Argument(0, Description = "Path to contract .nef file")]
             [Required]
-            internal string Contract { get; } = string.Empty;
+            internal string Contract { get; init; } = string.Empty;
 
             [Argument(1, Description = "Account to pay contract deployment GAS fee")]
             [Required]
-            internal string Account { get; } = string.Empty;
+            internal string Account { get; init; } = string.Empty;
 
         }
 
@@ -206,11 +207,11 @@ namespace NeoExpress.Commands
         {
             [Argument(0, Description = "Path to contract invocation JSON file")]
             [Required]
-            internal string InvocationFile { get; } = string.Empty;
+            internal string InvocationFile { get; init; } = string.Empty;
 
             [Argument(1, Description = "Account to pay contract invocation GAS fee")]
             [Required]
-            internal string Account { get; } = string.Empty;
+            internal string Account { get; init; } = string.Empty;
         }
 
         [Command("oracle")]
@@ -224,7 +225,7 @@ namespace NeoExpress.Commands
         {
             [Argument(0, Description = "Account to pay contract invocation GAS fee")]
             [Required]
-            internal string Account { get; } = string.Empty;
+            internal string Account { get; init; } = string.Empty;
         }
 
         [Command("response")]
@@ -232,11 +233,11 @@ namespace NeoExpress.Commands
         {
             [Argument(0, Description = "URL of oracle request")]
             [Required]
-            internal string Url { get; } = string.Empty;
+            internal string Url { get; init; } = string.Empty;
 
             [Argument(1, Description = "Path to JSON file with oracle response cotnent")]
             [Required]
-            internal string ResponsePath { get; } = string.Empty;
+            internal string ResponsePath { get; init; } = string.Empty;
         }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api

@@ -9,7 +9,7 @@ namespace NeoExpress.Commands
     partial class ContractCommand
     {
         [Command(Name = "storage")]
-        private class Storage
+        internal class Storage
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -20,13 +20,13 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
-            string Contract { get; } = string.Empty;
+            internal string Contract { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; }
+            internal bool Json { get; }
 
             internal async Task ExecuteAsync(TextWriter writer)
             {

@@ -14,16 +14,16 @@ namespace NeoExpress.Commands
         }
 
         [Argument(0, Description = "Index of node to reset")]
-        int? NodeIndex { get; }
+        internal int? NodeIndex { get; }
 
         [Option(Description = "Path to neo-express data file")]
-        string Input { get; } = string.Empty;
+        internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Overwrite existing data")]
-        bool Force { get; }
+        internal bool Force { get; }
 
         [Option(Description = "Reset all nodes")]
-        bool All { get; }
+        internal bool All { get; }
 
         internal void Execute(IConsole console)
         {

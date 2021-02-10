@@ -22,25 +22,25 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Path to contract invocation JSON file")]
             [Required]
-            string InvocationFile { get; } = string.Empty;
+            internal string InvocationFile { get; init; } = string.Empty;
 
             [Argument(1, Description = "Account to pay contract invocation GAS fee")]
-            string Account { get; } = string.Empty;
+            internal string Account { get; init; } = string.Empty;
 
             [Option("--test", Description = "Test invocation (does not cost GAS)")]
-            bool Test { get; } = false;
+            internal bool Test { get; init; } = false;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract invocation")]
-            decimal AdditionalGas { get; } = 0;
+            internal decimal AdditionalGas { get; init; } = 0;
 
             [Option(Description = "Enable contract execution tracing")]
-            bool Trace { get; } = false;
+            internal bool Trace { get; init; } = false;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; } = false;
+            internal bool Json { get; init; } = false;
 
             internal static async Task ExecuteTxAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, string account, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
             {

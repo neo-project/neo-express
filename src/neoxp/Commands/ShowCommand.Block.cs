@@ -7,7 +7,7 @@ namespace NeoExpress.Commands
     partial class ShowCommand
     {
         [Command("block", Description = "Show block")]
-        class Block
+        internal class Block
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -17,11 +17,10 @@ namespace NeoExpress.Commands
             }
 
             [Argument(0, Description = "Optional block hash or index. Show most recent block if unspecified")]
-            string BlockHash { get; } = string.Empty;
+            internal string BlockHash { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
-
+            internal string Input { get; init; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {

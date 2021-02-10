@@ -10,7 +10,7 @@ namespace NeoExpress.Commands
     partial class CheckpointCommand
     {
         [Command("run", Description = "Run a neo-express checkpoint (discarding changes on shutdown)")]
-        class Run
+        internal class Run
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -21,16 +21,16 @@ namespace NeoExpress.Commands
 
             [Argument(0, "Checkpoint file name")]
             [Required]
-            string Name { get; } = string.Empty;
+            internal string Name { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Time between blocks")]
-            uint SecondsPerBlock { get; }
+            internal uint SecondsPerBlock { get; }
 
             [Option(Description = "Enable contract execution tracing")]
-            bool Trace { get; } = false;
+            internal bool Trace { get; init; } = false;
 
             internal async Task ExecuteAsync(IConsole console, CancellationToken token)
             {

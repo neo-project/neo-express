@@ -55,7 +55,9 @@ namespace NeoExpress.Commands
             {
                 for (int i = 0; i < chainManager.Chain.ConsensusNodes.Count; i++)
                 {
-                    chainManager.ResetNode(chainManager.Chain.ConsensusNodes[i], true);
+                    var node = chainManager.Chain.ConsensusNodes[i];
+                    await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
+                    chainManager.ResetNode(node, true);
                 }
             }
 
@@ -86,6 +88,7 @@ namespace NeoExpress.Commands
                         {
                             await CheckpointCommand.Create.ExecuteAsync(
                                 chainManager,
+                                expressNode,
                                 cmd.Model.Name,
                                 cmd.Model.Force,
                                 writer).ConfigureAwait(false);

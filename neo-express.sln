@@ -7,10 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{35A16713-AEB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neoxp", "src\neoxp\neoxp.csproj", "{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F645EF43-19E8-4ACB-85FA-4CE1D89D1731}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test-neoxp", "test\test-neoxp\test-neoxp.csproj", "{0401BE70-999B-4F69-B464-0EAF35B8DFDC}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,10 +17,6 @@ Global
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0401BE70-999B-4F69-B464-0EAF35B8DFDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0401BE70-999B-4F69-B464-0EAF35B8DFDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0401BE70-999B-4F69-B464-0EAF35B8DFDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0401BE70-999B-4F69-B464-0EAF35B8DFDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -34,6 +26,5 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C} = {35A16713-AEB8-45CE-B393-EA9263B665F9}
-		{0401BE70-999B-4F69-B464-0EAF35B8DFDC} = {F645EF43-19E8-4ACB-85FA-4CE1D89D1731}
 	EndGlobalSection
 EndGlobal

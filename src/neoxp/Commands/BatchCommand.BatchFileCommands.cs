@@ -33,7 +33,6 @@ namespace NeoExpress.Commands
             [Subcommand(typeof(Create))]
             internal class Checkpoint
             {
-
                 [Command("create")]
                 internal class Create
                 {
@@ -50,7 +49,6 @@ namespace NeoExpress.Commands
             [Subcommand(typeof(Deploy), typeof(Invoke))]
             internal class Contract
             {
-
                 [Command("deploy")]
                 internal class Deploy
                 {
@@ -81,7 +79,6 @@ namespace NeoExpress.Commands
             [Subcommand(typeof(Enable), typeof(Response))]
             internal class Oracle
             {
-
                 [Command("enable")]
                 internal class Enable
                 {

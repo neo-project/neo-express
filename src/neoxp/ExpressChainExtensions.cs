@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Neo;
@@ -78,11 +79,30 @@ namespace NeoExpress
             {
                 return chain.ConsensusNodes
                     .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
-                    .FirstOrDefault();
+                    .Distinct(ExpressWalletAccountEqualityComparer.Instance)
+                    .Single();
             }
 
             return null;
         }
+
+        class ExpressWalletAccountEqualityComparer : EqualityComparer<ExpressWalletAccount>
+        {
+            public readonly static ExpressWalletAccountEqualityComparer Instance = new ExpressWalletAccountEqualityComparer();
+
+            private ExpressWalletAccountEqualityComparer() {}
+
+            public override bool Equals(ExpressWalletAccount? x, ExpressWalletAccount? y)
+            {
+                return x?.ScriptHash == y?.ScriptHash;
+            }
+
+            public override int GetHashCode([DisallowNull] ExpressWalletAccount obj)
+            {
+                return obj.ScriptHash.GetHashCode();
+            }
+        }
+
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));

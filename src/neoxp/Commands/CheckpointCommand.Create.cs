@@ -27,9 +27,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, string name, bool force, System.IO.TextWriter writer)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string name, bool force, System.IO.TextWriter writer)
             {
-                var (path, online) = await chainManager.CreateCheckpointAsync(name, force).ConfigureAwait(false);
+                var (path, online) = await chainManager.CreateCheckpointAsync(expressNode, name, force).ConfigureAwait(false);
                 await writer.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {(online ? "online" : "offline")}").ConfigureAwait(false);
             }
 
@@ -38,7 +38,8 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    await ExecuteAsync(chainManager, Name, Force, console.Out).ConfigureAwait(false);
+                    using var expressNode = chainManager.GetExpressNode();
+                    await ExecuteAsync(chainManager, expressNode, Name, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

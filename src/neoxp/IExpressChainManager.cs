@@ -17,7 +17,7 @@ namespace NeoExpress
         IExpressStore GetCheckpointStore(string checkPointPath);
 
         void SaveChain(string path);
-        Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force);
+        Task<(string path, bool online)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force);
         void RestoreCheckpoint(string checkPointPath, bool force);
         void ResetNode(ExpressConsensusNode node, bool force);
         IExpressNode GetExpressNode(bool offlineTrace = false);

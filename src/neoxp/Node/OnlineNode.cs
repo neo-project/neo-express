@@ -198,5 +198,11 @@ namespace NeoExpress.Node
             ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
             return await SubmitTransactionAsync(tx);
         }
+
+        public async Task<bool> CreateCheckpointAsync(string checkPointPath)
+        {
+            await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointPath).ConfigureAwait(false);
+            return true;
+        }
     }
 }

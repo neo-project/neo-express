@@ -22,7 +22,7 @@ namespace NeoExpress
             }
             else
             {
-                if (!string.IsNullOrEmpty(txType)) await writer.WriteLineAsync($"{txType} ").ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(txType)) await writer.WriteAsync($"{txType} ").ConfigureAwait(false);
                 await writer.WriteLineAsync($"Transaction {txHash} submitted").ConfigureAwait(false);
             }
         }

@@ -10,6 +10,7 @@ namespace NeoExpress
 {
     [Command("nxp3", Description = "Neo 3 blockchain private net for developers", UsePagerForHelpText = false)]
     [Subcommand(
+        typeof(BatchCommand),
         typeof(CheckpointCommand),
         typeof(ContractCommand),
         typeof(CreateCommand),

@@ -61,7 +61,7 @@ namespace NeoExpress.Commands
 
             using var expressNode = chainManager.GetExpressNode();
 
-            var batchApp = new CommandLineApplication<RootBatchCommand>();
+            var batchApp = new CommandLineApplication<BatchFileCommands>();
             batchApp.Conventions.UseDefaultConventions();
 
             for (var i = 0; i < commands.Length; i++)
@@ -70,174 +70,74 @@ namespace NeoExpress.Commands
                 var pr = batchApp.Parse(args);
                 switch (pr.SelectedCommand)
                 {
-                    case CommandLineApplication<BatchTransfer> cmd: 
-                    {
-                        await TransferCommand.ExecuteAsync(
-                            chainManager, 
-                            expressNode, 
-                            cmd.Model.Quantity, 
-                            cmd.Model.Asset, 
-                            cmd.Model.Sender, 
-                            cmd.Model.Receiver, 
-                            writer).ConfigureAwait(false);
-                        break;
-                    }
-                    case CommandLineApplication<BatchCheckpointCreate> cmd: 
-                    {
-                        await CheckpointCommand.Create.ExecuteAsync(
-                            chainManager, 
-                            cmd.Model.Name,
-                            cmd.Model.Force,
-                            writer).ConfigureAwait(false);
-                        break;
-                    }
-                    case CommandLineApplication<BatchContractDeploy> cmd: 
-                    {
-                        await ContractCommand.Deploy.ExecuteAsync(
-                            chainManager,
-                            expressNode,
-                            fileSystem,
-                            cmd.Model.Contract,
-                            cmd.Model.Account,
-                            writer).ConfigureAwait(false);
-                        break;
-                    }
-                    case CommandLineApplication<BatchContractInvoke> cmd: 
-                    {
-                        await ContractCommand.Invoke.ExecuteTxAsync(
-                            chainManager,
-                            expressNode,
-                            cmd.Model.InvocationFile,
-                            cmd.Model.Account,
-                            fileSystem,
-                            writer).ConfigureAwait(false);
-                        break;
-                    }
-                    case CommandLineApplication<BatchOracleEnable> cmd:
-                    {
-                        await OracleCommand.Enable.ExecuteAsync(
-                            chainManager, 
-                            expressNode, 
-                            cmd.Model.Account, 
-                            writer).ConfigureAwait(false);
-                        break;
-                    }
-                    case CommandLineApplication<BatchOracleResponse> cmd:
-                    {
-                        await OracleCommand.Response.ExecuteAsync(
-                            chainManager, 
-                            expressNode, 
-                            fileSystem,
-                            cmd.Model.Url,
-                            cmd.Model.ResponsePath,
-                            null, 
-                            writer).ConfigureAwait(false);
-                        break;
-                    }
+                    case CommandLineApplication<BatchFileCommands.Transfer> cmd:
+                        {
+                            await TransferCommand.ExecuteAsync(
+                                chainManager,
+                                expressNode,
+                                cmd.Model.Quantity,
+                                cmd.Model.Asset,
+                                cmd.Model.Sender,
+                                cmd.Model.Receiver,
+                                writer).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
+                        {
+                            await CheckpointCommand.Create.ExecuteAsync(
+                                chainManager,
+                                cmd.Model.Name,
+                                cmd.Model.Force,
+                                writer).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
+                        {
+                            await ContractCommand.Deploy.ExecuteAsync(
+                                chainManager,
+                                expressNode,
+                                fileSystem,
+                                cmd.Model.Contract,
+                                cmd.Model.Account,
+                                writer).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
+                        {
+                            await ContractCommand.Invoke.ExecuteTxAsync(
+                                chainManager,
+                                expressNode,
+                                cmd.Model.InvocationFile,
+                                cmd.Model.Account,
+                                fileSystem,
+                                writer).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
+                        {
+                            await OracleCommand.Enable.ExecuteAsync(
+                                chainManager,
+                                expressNode,
+                                cmd.Model.Account,
+                                writer).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Oracle.Response> cmd:
+                        {
+                            await OracleCommand.Response.ExecuteAsync(
+                                chainManager,
+                                expressNode,
+                                fileSystem,
+                                cmd.Model.Url,
+                                cmd.Model.ResponsePath,
+                                null,
+                                writer).ConfigureAwait(false);
+                            break;
+                        }
                     default:
                         throw new Exception();
                 }
             }
-        }
-
-        [Command]
-        [Subcommand(typeof(BatchCheckpoint), typeof(BatchContract), typeof(BatchOracle), typeof(BatchTransfer))]
-        internal class RootBatchCommand
-        {
-        }
-
-        [Command("transfer")]
-        internal class BatchTransfer
-        {
-            [Argument(0, Description = "Amount to transfer")]
-            [Required]
-            internal string Quantity { get; init; } = string.Empty;
-
-            [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
-            [Required]
-            internal string Asset { get; init; } = string.Empty;
-
-            [Argument(2, Description = "Account to send asset from")]
-            [Required]
-            internal string Sender { get; init; } = string.Empty;
-
-            [Argument(3, Description = "Account to send asset to")]
-            [Required]
-            internal string Receiver { get; init; } = string.Empty;
-        }
-
-        [Command("checkpoint")]
-        [Subcommand(typeof(BatchCheckpointCreate))]
-        internal class BatchCheckpoint
-        {
-        }
-
-        [Command("create")]
-        internal class BatchCheckpointCreate
-        {
-            [Argument(0, "Checkpoint file name")]
-            [Required]
-            internal string Name { get; init; } = string.Empty;
-
-            [Option(Description = "Overwrite existing data")]
-            internal bool Force { get; }
-        }
-
-        [Command("contract")]
-        [Subcommand(typeof(BatchContractDeploy), typeof(BatchContractInvoke))]
-        internal class BatchContract
-        {
-        }
-
-        [Command("deploy")]
-        internal class BatchContractDeploy
-        {
-            [Argument(0, Description = "Path to contract .nef file")]
-            [Required]
-            internal string Contract { get; init; } = string.Empty;
-
-            [Argument(1, Description = "Account to pay contract deployment GAS fee")]
-            [Required]
-            internal string Account { get; init; } = string.Empty;
-
-        }
-
-        [Command("invoke")]
-        internal class BatchContractInvoke
-        {
-            [Argument(0, Description = "Path to contract invocation JSON file")]
-            [Required]
-            internal string InvocationFile { get; init; } = string.Empty;
-
-            [Argument(1, Description = "Account to pay contract invocation GAS fee")]
-            [Required]
-            internal string Account { get; init; } = string.Empty;
-        }
-
-        [Command("oracle")]
-        [Subcommand(typeof(BatchOracleEnable), typeof(BatchOracleResponse))]
-        internal class BatchOracle
-        {
-        }
-
-        [Command("enable")]
-        internal class BatchOracleEnable
-        {
-            [Argument(0, Description = "Account to pay contract invocation GAS fee")]
-            [Required]
-            internal string Account { get; init; } = string.Empty;
-        }
-
-        [Command("response")]
-        internal class BatchOracleResponse
-        {
-            [Argument(0, Description = "URL of oracle request")]
-            [Required]
-            internal string Url { get; init; } = string.Empty;
-
-            [Argument(1, Description = "Path to JSON file with oracle response cotnent")]
-            [Required]
-            internal string ResponsePath { get; init; } = string.Empty;
         }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api

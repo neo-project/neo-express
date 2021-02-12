@@ -69,6 +69,10 @@ namespace NeoExpress.Commands
             for (var i = 0; i < commands.Length; i++)
             {
                 var args = SplitCommandLine(commands.Span[i]).ToArray();
+                if (args.Length == 0 
+                    || args[0].StartsWith('#')
+                    || args[0].StartsWith("//")) continue;
+
                 var pr = batchApp.Parse(args);
                 switch (pr.SelectedCommand)
                 {

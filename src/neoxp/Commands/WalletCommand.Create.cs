@@ -10,7 +10,7 @@ namespace NeoExpress.Commands
     partial class WalletCommand
     {
         [Command("create", Description = "Create neo-express wallet")]
-        class Create
+        internal class Create
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -21,13 +21,13 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Wallet name")]
             [Required]
-            string Name { get; } = string.Empty;
+            internal string Name { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]
-            bool Force { get; }
+            internal bool Force { get; }
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             internal ExpressWallet Execute()
             {

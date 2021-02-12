@@ -11,7 +11,7 @@ namespace NeoExpress.Commands
     partial class WalletCommand
     {
         [Command("list", Description = "List neo-express wallets")]
-        class List
+        internal class List
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -21,7 +21,7 @@ namespace NeoExpress.Commands
             }
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             internal void Execute(TextWriter writer)
             {

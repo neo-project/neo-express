@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ namespace NeoExpress.Commands
     partial class OracleCommand
     {
         [Command("enable", Description = "Enable oracles for neo-express instance")]
-        class Enable
+        internal class Enable
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -19,19 +20,22 @@ namespace NeoExpress.Commands
             }
 
             [Argument(0, Description = "Account to pay contract invocation GAS fee")]
-            string Account { get; } = string.Empty;
+            [Required]
+            internal string Account { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; } = false;
+            internal bool Json { get; init; } = false;
 
             internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
-                    await ExecuteAsync(console.Out);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    using var expressNode = chainManager.GetExpressNode();
+                    await ExecuteAsync(chainManager, expressNode, Account, console.Out, Json);
                     return 0;
                 }
                 catch (Exception ex)
@@ -41,14 +45,12 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal async Task ExecuteAsync(TextWriter writer)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string account, TextWriter writer, bool json = false)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                var account = chainManager.Chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
+                var _account = chainManager.Chain.GetAccount(account) ?? throw new Exception($"{account} account not found.");
                 var oracles = chainManager.Chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount ?? throw new Exception());
-                var expressNode = chainManager.GetExpressNode();
-                var txHash = await expressNode.DesignateOracleRolesAsync(account, oracles);
-                if (Json)
+                var txHash = await expressNode.DesignateOracleRolesAsync(_account, oracles);
+                if (json)
                 {
                     await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
                 }

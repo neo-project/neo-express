@@ -44,7 +44,7 @@ namespace NeoExpress
             return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
-        public async Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force)
+        public async Task<(string path, bool online)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -70,21 +70,8 @@ namespace NeoExpress
                 fileSystem.Directory.CreateDirectory(parentPath);
             }
 
-            var node = chain.ConsensusNodes[0];
-            if (IsRunning(node))
-            {
-                var uri = chain.GetUri();
-                var rpcClient = new RpcClient(uri);
-                await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointPath).ConfigureAwait(false);
-                return (checkPointPath, true);
-            }
-            else
-            {
-                var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-                using var db = RocksDbStore.Open(fileSystem.GetNodePath(node));
-                db.CreateCheckpoint(checkPointPath, chain.Magic, multiSigAccount.ScriptHash);
-                return (checkPointPath, false);
-            }
+            var online = await expressNode.CreateCheckpointAsync(checkPointPath).ConfigureAwait(false);
+            return (checkPointPath, online);
         }
 
         public void RestoreCheckpoint(string checkPointArchive, bool force)
@@ -288,6 +275,11 @@ namespace NeoExpress
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
             return new Node.OfflineNode(RocksDbStore.Open(nodePath), node.Wallet, chain, offlineTrace);
+        }
+
+        public Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force)
+        {
+            throw new NotImplementedException();
         }
     }
 }

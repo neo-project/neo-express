@@ -23,26 +23,8 @@ namespace NeoExpress
 
         string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => "default");
 
-        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, string output, bool force)
+        internal static ExpressChain CreateChain(int nodeCount)
         {
-            output = ResolveChainFileName(output);
-            if (fileSystem.File.Exists(output))
-            {
-                if (force)
-                {
-                    fileSystem.File.Delete(output);
-                }
-                else
-                {
-                    throw new Exception("You must specify --force to overwrite an existing file");
-                }
-            }
-
-            if (fileSystem.File.Exists(output))
-            {
-                throw new ArgumentException($"{output} already exists", nameof(output));
-            }
-
             if (nodeCount != 1 && nodeCount != 4 && nodeCount != 7)
             {
                 throw new ArgumentException("invalid blockchain node count", nameof(nodeCount));
@@ -82,15 +64,37 @@ namespace NeoExpress
                 });
             }
 
-            var chain = new ExpressChain()
+            return new ExpressChain()
             {
                 Magic = ExpressChain.GenerateMagicValue(),
                 ConsensusNodes = nodes,
             };
 
-            return (new ExpressChainManager(fileSystem, chain), output);
-
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
+        }
+
+        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, string output, bool force)
+        {
+            output = ResolveChainFileName(output);
+            if (fileSystem.File.Exists(output))
+            {
+                if (force)
+                {
+                    fileSystem.File.Delete(output);
+                }
+                else
+                {
+                    throw new Exception("You must specify --force to overwrite an existing file");
+                }
+            }
+
+            if (fileSystem.File.Exists(output))
+            {
+                throw new ArgumentException($"{output} already exists", nameof(output));
+            }
+
+            var chain = CreateChain(nodeCount);
+            return (new ExpressChainManager(fileSystem, chain), output);
         }
 
         public (IExpressChainManager manager, string path) LoadChain(string path)

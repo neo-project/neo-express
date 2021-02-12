@@ -514,5 +514,17 @@ namespace NeoExpress.Node
             ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
             return SubmitTransactionAsync(tx);
         }
+
+        public Task<bool> CreateCheckpointAsync(string checkPointPath)
+        {
+            if (store is RocksDbStore rocksDbStore)
+            {
+                var multiSigAccount = nodeWallet.GetAccounts().Single(a => a.IsMultiSigContract());
+                rocksDbStore.CreateCheckpoint(checkPointPath, chain.Magic, multiSigAccount.ScriptHash.ToAddress());
+                return Task.FromResult(false);
+            }
+
+            return Task.FromException<bool>(new Exception());
+        }
     }
 }

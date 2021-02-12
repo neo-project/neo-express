@@ -7,7 +7,7 @@ namespace NeoExpress.Commands
     partial class CheckpointCommand
     {
         [Command("restore", Description = "Restore a neo-express checkpoint")]
-        class Restore
+        internal class Restore
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -18,13 +18,13 @@ namespace NeoExpress.Commands
 
             [Argument(0, "Checkpoint file name")]
             [Required]
-            string Name { get; } = string.Empty;
+            internal string Name { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]
-            bool Force { get; }
+            internal bool Force { get; }
 
             internal int OnExecute(IConsole console)
             {

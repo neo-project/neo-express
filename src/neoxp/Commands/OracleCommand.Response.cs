@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -10,7 +11,7 @@ namespace NeoExpress.Commands
     partial class OracleCommand
     {
         [Command("response", Description = "Submit oracle response")]
-        class Response
+        internal class Response
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
             readonly IFileSystem fileSystem;
@@ -22,39 +23,37 @@ namespace NeoExpress.Commands
             }
 
             [Argument(0, Description = "URL of oracle request")]
-            string Url { get; } = string.Empty;
+            [Required]
+            internal string Url { get; init; } = string.Empty;
 
             [Argument(1, Description = "Path to JSON file with oracle response cotnent")]
-            string ResponsePath { get; } = string.Empty;
+            [Required]
+            internal string ResponsePath { get; init; } = string.Empty;
 
             [Option(Description = "Oracle request ID")]
-            (bool hasValue, ulong value) RequestId { get; }
+            internal (bool hasValue, ulong value) RequestId { get; }
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; } = false;
+            internal bool Json { get; init; } = false;
 
-            internal async Task ExecuteAsync(System.IO.TextWriter writer)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string url, string responsePath, ulong? requestId, System.IO.TextWriter writer, bool json = false)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                if (!fileSystem.File.Exists(ResponsePath)) throw new Exception($"Response File {ResponsePath} couldn't be found");
+                if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");
 
                 JObject responseJson;
                 {
-                    using var stream = fileSystem.File.OpenRead(ResponsePath);
+                    using var stream = fileSystem.File.OpenRead(responsePath);
                     using var reader = new System.IO.StreamReader(stream);
                     using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
                     responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
                 }
 
-                var requestId = RequestId.hasValue ? (ulong?)RequestId.value : null;
+                var txHashes = await expressNode.SubmitOracleResponseAsync(url, OracleResponseCode.Success, responseJson, requestId).ConfigureAwait(false);
 
-                using var expressNode = chainManager.GetExpressNode();
-                var txHashes = await expressNode.SubmitOracleResponseAsync(Url, OracleResponseCode.Success, responseJson, requestId).ConfigureAwait(false);
-
-                if (Json)
+                if (json)
                 {
                     using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
                     await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
@@ -85,7 +84,18 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    await ExecuteAsync(console.Out).ConfigureAwait(false);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    using var expressNode = chainManager.GetExpressNode();
+
+                    await ExecuteAsync(
+                        chainManager,
+                        expressNode,
+                        fileSystem,
+                        Url,
+                        ResponsePath,
+                        RequestId.hasValue ? RequestId.value : null,
+                        console.Out,
+                        Json).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

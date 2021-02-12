@@ -15,6 +15,7 @@ namespace NeoExpress
 {
     internal interface IExpressNode : IDisposable
     {
+        Task<bool> CreateCheckpointAsync(string checkPointPath);
         Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0);
         Task<UInt256> SubmitTransactionAsync(Transaction tx);
         Task<RpcInvokeResult> InvokeAsync(Script script);

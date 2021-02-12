@@ -7,7 +7,7 @@ namespace NeoExpress.Commands
     partial class ContractCommand
     {
         [Command(Name = "list")]
-        private class List
+        internal class List
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
 
@@ -17,10 +17,10 @@ namespace NeoExpress.Commands
             }
 
             [Option(Description = "Path to neo-express data file")]
-            string Input { get; } = string.Empty;
+            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
-            bool Json { get; } = false;
+            internal bool Json { get; init; } = false;
 
             internal async Task ExecuteAsync(System.IO.TextWriter writer)
             {

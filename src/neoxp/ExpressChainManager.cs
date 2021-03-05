@@ -5,14 +5,12 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.Network.RPC;
 using Neo.Persistence;
 using NeoExpress.Models;
-using NeoExpress.Node;
-using Newtonsoft.Json;
 using Nito.Disposables;
 
 namespace NeoExpress
@@ -24,14 +22,17 @@ namespace NeoExpress
 
         readonly IFileSystem fileSystem;
         readonly ExpressChain chain;
+        readonly Lazy<ProtocolSettings> protocolSettings;
 
         public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain)
         {
             this.fileSystem = fileSystem;
             this.chain = chain;
+            this.protocolSettings = new Lazy<ProtocolSettings>(chain.GetProtocolSettings());
         }
 
         public ExpressChain Chain => chain;
+        public ProtocolSettings ProtocolSettings => protocolSettings.Value;
 
         string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
 
@@ -153,8 +154,6 @@ namespace NeoExpress
                 throw new Exception("Node already running");
             }
 
-            chain.InitalizeProtocolSettings(secondsPerBlock);
-
             await writer.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
 
             var tcs = new TaskCompletionSource<bool>();
@@ -165,7 +164,7 @@ namespace NeoExpress
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
                     using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
-                    var wallet = DevWallet.FromExpressWallet(node.Wallet);
+                    var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
                     var dbftPlugin = new Neo.Consensus.DBFTPlugin();
@@ -174,8 +173,9 @@ namespace NeoExpress
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
-                    throw new NotImplementedException();
-                    // using var system = new Neo.NeoSystem(storageProvider.Name);
+                    using var system = new Neo.NeoSystem(ProtocolSettings, storageProvider.Name);
+
+                    // TODO: uncomment once https://github.com/neo-project/neo-modules/pull/539 is merged
                     // var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
                     // var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
                     // var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
@@ -183,14 +183,14 @@ namespace NeoExpress
                     // rpcServer.RegisterMethods(appLogsPlugin);
                     // rpcServer.StartRpcServer();
 
-                    // system.StartNode(new Neo.Network.P2P.ChannelsConfig
-                    // {
-                    //     Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
-                    //     WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
-                    // });
-                    // dbftPlugin.Start(wallet);
+                    system.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    {
+                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
+                        WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
+                    });
+                    dbftPlugin.Start(wallet);
 
-                    // token.WaitHandle.WaitOne();
+                    token.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)
                 {
@@ -202,7 +202,7 @@ namespace NeoExpress
                 }
             });
             await tcs.Task.ConfigureAwait(false);
-        }
+       }
 
         public IExpressStore GetNodeStore(ExpressConsensusNode node, bool discard)
         {
@@ -261,26 +261,19 @@ namespace NeoExpress
             // Check to see if there's a neo-express blockchain currently running by
             // attempting to open a mutex with the multisig account address for a name
 
-            chain.InitalizeProtocolSettings();
-
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var consensusNode = chain.ConsensusNodes[i];
                 if (IsRunning(consensusNode))
                 {
-                    return new Node.OnlineNode(chain, consensusNode);
+                    return new Node.OnlineNode(ProtocolSettings, chain, consensusNode);
                 }
             }
 
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-            return new Node.OfflineNode(RocksDbStore.Open(nodePath), node.Wallet, chain, offlineTrace);
-        }
-
-        public Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force)
-        {
-            throw new NotImplementedException();
+            return new Node.OfflineNode(ProtocolSettings, RocksDbStore.Open(nodePath), node.Wallet, chain, offlineTrace);
         }
     }
 }

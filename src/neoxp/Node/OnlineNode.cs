@@ -23,8 +23,11 @@ namespace NeoExpress.Node
         private readonly ExpressChain chain;
         private readonly RpcClient rpcClient;
 
-        public OnlineNode(ExpressChain chain, ExpressConsensusNode node)
+        public ProtocolSettings ProtocolSettings { get; }
+
+        public OnlineNode(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node)
         {
+            this.ProtocolSettings = settings;
             this.chain = chain;
             rpcClient = new RpcClient(node.GetUri());
         }
@@ -35,7 +38,8 @@ namespace NeoExpress.Node
 
         public async Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0)
         {
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.AsUInt160() } };
+            var protocolSettings = chain.GetProtocolSettings();
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.AsUInt160(protocolSettings.AddressVersion) } };
             var factory = new TransactionManagerFactory(rpcClient);
             var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
             var tx = await tm

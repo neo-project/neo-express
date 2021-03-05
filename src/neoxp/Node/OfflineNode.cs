@@ -33,7 +33,7 @@ namespace NeoExpress.Node
 
     internal class OfflineNode : IDisposable, IExpressNode
     {
-        // private readonly NeoSystem neoSystem;
+        private readonly NeoSystem neoSystem;
         private readonly ExpressStorageProvider storageProvider;
         private readonly ExpressApplicationEngineProvider? applicationEngineProvider;
         private readonly Wallet nodeWallet;
@@ -41,23 +41,25 @@ namespace NeoExpress.Node
         private readonly IExpressStore store;
         private bool disposedValue;
 
-        public OfflineNode(IExpressStore store, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
-            : this(store, DevWallet.FromExpressWallet(nodeWallet), chain, enableTrace)
+        public ProtocolSettings ProtocolSettings { get; }
+
+        public OfflineNode(ProtocolSettings settings, IExpressStore store, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
+            : this(settings, store, DevWallet.FromExpressWallet(settings, nodeWallet), chain, enableTrace)
         {
         }
 
-        public OfflineNode(IExpressStore store, Wallet nodeWallet, ExpressChain chain, bool enableTrace)
+        public OfflineNode(ProtocolSettings settings, IExpressStore store, Wallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
+            this.ProtocolSettings = settings;
             this.nodeWallet = nodeWallet;
             this.chain = chain;
             this.store = store;
             applicationEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
             storageProvider = new ExpressStorageProvider((IStore)store);
             _ = new ExpressAppLogsPlugin(store);
-            throw new NotImplementedException();
-            // neoSystem = new NeoSystem(storageProvider.Name);
+            neoSystem = new NeoSystem(settings, storageProvider.Name);
 
-            // ApplicationEngine.Log += OnLog!;
+            ApplicationEngine.Log += OnLog!;
         }
 
         private void OnLog(object sender, LogEventArgs args)

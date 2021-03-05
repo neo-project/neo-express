@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
 
                     foreach (var account in wallet.Accounts)
                     {
-                        var devAccount = DevWalletAccount.FromExpressWalletAccount(account);
+                        var devAccount = DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, account);
                         var key = devAccount.GetKey() ?? throw new Exception();
 
                         writer.WriteLine($"  {account.ScriptHash} ({(account.IsDefault ? "Default" : account.Label)})");

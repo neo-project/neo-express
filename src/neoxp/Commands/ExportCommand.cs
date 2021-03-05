@@ -1,6 +1,7 @@
 using System;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
@@ -34,13 +35,13 @@ namespace NeoExpress.Commands
                 var node = chain.ConsensusNodes[i];
                 writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node config + wallet");
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
-                ExportNodeWallet(node, walletPath, password);
+                ExportNodeWallet(chainManager.ProtocolSettings, node, walletPath, password);
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
                 ExportNodeConfig(node, nodeConfigPath, password, walletPath);
             }
 
             var protocolConfigPath = fileSystem.Path.Combine(folder, "protocol.json");
-            ExportProtocolConfig(chain, protocolConfigPath);
+            ExportProtocolConfig(chainManager.ProtocolSettings, chain, protocolConfigPath);
         }
 
         internal int OnExecute(CommandLineApplication app, IConsole console)
@@ -57,10 +58,10 @@ namespace NeoExpress.Commands
             }
         }
 
-        void ExportNodeWallet(ExpressConsensusNode node, string path, string password)
+        void ExportNodeWallet(ProtocolSettings settings, ExpressConsensusNode node, string path, string password)
         {
             if (fileSystem.File.Exists(path)) fileSystem.File.Delete(path);
-            var devWallet = DevWallet.FromExpressWallet(node.Wallet);
+            var devWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
             devWallet.Export(path, password);
         }
 
@@ -99,7 +100,7 @@ namespace NeoExpress.Commands
             configWriter.WriteEndObject();
         }
 
-        void ExportProtocolConfig(ExpressChain chain, string path)
+        void ExportProtocolConfig(ProtocolSettings settings, ExpressChain chain, string path)
         {
             using var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
             using var protocolWriter = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented };
@@ -112,6 +113,8 @@ namespace NeoExpress.Commands
 
             protocolWriter.WritePropertyName("Magic");
             protocolWriter.WriteValue(chain.Magic);
+            protocolWriter.WritePropertyName("AddressVersion");
+            protocolWriter.WriteValue(settings.AddressVersion);
             protocolWriter.WritePropertyName("ValidatorsCount");
             protocolWriter.WriteValue(chain.ConsensusNodes.Count);
 
@@ -120,7 +123,7 @@ namespace NeoExpress.Commands
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
-                var devAccount = DevWalletAccount.FromExpressWalletAccount(expressAccount);
+                var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
                 var key = devAccount.GetKey();
                 if (key != null)
                 {

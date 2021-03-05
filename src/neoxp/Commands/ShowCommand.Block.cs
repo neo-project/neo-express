@@ -29,7 +29,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
                     var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
-                    // console.WriteLine(block.ToJson().ToString(true));
+                    console.WriteLine(block.ToJson(chainManager.ProtocolSettings).ToString(true));
                     return 0;
                 }
                 catch (Exception ex)

@@ -60,7 +60,7 @@ namespace NeoExpress.Commands
                 }
 
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
-                var devWallet = DevWallet.FromExpressWallet(wallet);
+                var devWallet = DevWallet.FromExpressWallet(chainManager.ProtocolSettings, wallet);
                 devWallet.Export(output, password);
                 return output;
             }

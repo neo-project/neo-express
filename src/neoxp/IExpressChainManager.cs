@@ -1,6 +1,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
@@ -11,6 +12,7 @@ namespace NeoExpress
     internal interface IExpressChainManager
     {
         ExpressChain Chain { get; }
+        ProtocolSettings ProtocolSettings { get; }
 
         Task RunAsync(IExpressStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token);
         IExpressStore GetNodeStore(ExpressConsensusNode node, bool discard);

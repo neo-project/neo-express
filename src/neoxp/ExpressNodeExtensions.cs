@@ -34,7 +34,7 @@ namespace NeoExpress
                 var account = chain?.GetAccount(name);
                 if (account != null)
                 {
-                    scriptHash = account.AsUInt160();
+                    scriptHash = account.AsUInt160(expressNode.ProtocolSettings);
                     return true;
                 }
 
@@ -100,8 +100,8 @@ namespace NeoExpress
 
         public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
         {
-            var senderHash = sender.AsUInt160();
-            var receiverHash = receiver.AsUInt160();
+            var senderHash = sender.AsUInt160(expressNode.ProtocolSettings);
+            var receiverHash = receiver.AsUInt160(expressNode.ProtocolSettings);
 
             return await quantity.Match<Task<UInt256>>(TransferAmountAsync, TransferAllAsync);
 
@@ -172,7 +172,7 @@ namespace NeoExpress
         {
             var oracles = oracleAccounts.Select(o =>
             {
-                var key = DevWalletAccount.FromExpressWalletAccount(o).GetKey() ?? throw new Exception();
+                var key = DevWalletAccount.FromExpressWalletAccount(expressNode.ProtocolSettings, o).GetKey() ?? throw new Exception();
                 return new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey };
             });
 
@@ -256,7 +256,7 @@ namespace NeoExpress
         }
         public static async Task<(RpcNep17Balance balance, Nep17Contract token)> GetBalanceAsync(this IExpressNode expressNode, ExpressWalletAccount account, string asset)
         {
-            var accountHash = account.AsUInt160();
+            var accountHash = account.AsUInt160(expressNode.ProtocolSettings);
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
 
             using var sb = new ScriptBuilder();

@@ -20,6 +20,9 @@ namespace NeoExpress.Commands
         [AllowedValues("1", "4", "7")]
         internal int Count { get; set; } = 1;
 
+        [Option(Description = "Version to use for addresses in this blockchain instance\nDefault: 53")]
+        internal byte? AddressVersion { get; set; }
+
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
@@ -27,7 +30,7 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, Output, Force);
+                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force);
                 chainManager.SaveChain(outputPath);
 
                 console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");

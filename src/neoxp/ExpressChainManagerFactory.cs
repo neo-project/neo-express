@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
-using Newtonsoft.Json;
 
 namespace NeoExpress
 {
@@ -23,58 +23,57 @@ namespace NeoExpress
 
         string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => "default");
 
-        internal static ExpressChain CreateChain(int nodeCount)
+        internal static ExpressChain CreateChain(int nodeCount, byte? addressVersion)
         {
             if (nodeCount != 1 && nodeCount != 4 && nodeCount != 7)
             {
                 throw new ArgumentException("invalid blockchain node count", nameof(nodeCount));
             }
 
+            var protocolSettings = ProtocolSettings.Default with 
+            { 
+                AddressVersion = addressVersion ?? ProtocolSettings.Default.AddressVersion 
+            };
+
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(nodeCount);
+            for (var i = 1; i <= nodeCount; i++)
+            {
+                var wallet = new DevWallet(protocolSettings, $"node{i}");
+                var account = wallet.CreateAccount();
+                account.IsDefault = true;
+                wallets.Add((wallet, account));
+            }
 
-            throw new NotImplementedException();
-            // for (var i = 1; i <= nodeCount; i++)
-            // {
-            //     var wallet = new DevWallet($"node{i}");
-            //     var account = wallet.CreateAccount();
-            //     account.IsDefault = true;
-            //     wallets.Add((wallet, account));
-            // }
+            var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
+            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
 
-            // var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
+            foreach (var (wallet, account) in wallets)
+            {
+                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
+                multiSigContractAccount.Label = "Consensus Nodes MultiSigContract";
+            }
 
-            // var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+            var nodes = wallets.Select((w, i) => new ExpressConsensusNode
+                {
+                    TcpPort = GetPortNumber(i, 3),
+                    WebSocketPort = GetPortNumber(i, 4),
+                    RpcPort = GetPortNumber(i, 2),
+                    Wallet = w.wallet.ToExpressWallet()
+                });
 
-            // foreach (var (wallet, account) in wallets)
-            // {
-            //     var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-            //     multiSigContractAccount.Label = "MultiSigContract";
-            // }
+            return new ExpressChain()
+            {
+                Magic = ExpressChain.GenerateMagicValue(),
+                AddressVersion = protocolSettings.AddressVersion,
+                ConsensusNodes = nodes.ToList(),
+            };
 
-            // // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
-            // // http://www.iana.org/assignments/port-numbers
-            // var nodes = new List<ExpressConsensusNode>(nodeCount);
-            // for (var i = 0; i < nodeCount; i++)
-            // {
-            //     nodes.Add(new ExpressConsensusNode()
-            //     {
-            //         TcpPort = GetPortNumber(i, 3),
-            //         WebSocketPort = GetPortNumber(i, 4),
-            //         RpcPort = GetPortNumber(i, 2),
-            //         Wallet = wallets[i].wallet.ToExpressWallet()
-            //     });
-            // }
-
-            // return new ExpressChain()
-            // {
-            //     Magic = ExpressChain.GenerateMagicValue(),
-            //     ConsensusNodes = nodes,
-            // };
-
-            // static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
+            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
+            // http://www.iana.org/assignments/port-numbers
+            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, string output, bool force)
+        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force)
         {
             output = ResolveChainFileName(output);
             if (fileSystem.File.Exists(output))
@@ -94,7 +93,7 @@ namespace NeoExpress
                 throw new ArgumentException($"{output} already exists", nameof(output));
             }
 
-            var chain = CreateChain(nodeCount);
+            var chain = CreateChain(nodeCount, addressVersion);
             return (new ExpressChainManager(fileSystem, chain), output);
         }
 

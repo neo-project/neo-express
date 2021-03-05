@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Cryptography.ECC;
 using Neo.Wallets;
 using NeoExpress.Models;
 
@@ -14,11 +15,10 @@ namespace NeoExpress
     {
         public static KeyPair GetKey(this ExpressWalletAccount account) => new KeyPair(account.PrivateKey.HexToBytes());
 
-        public static UInt160 AsUInt160(this ExpressWalletAccount account) =>             throw new NotImplementedException();
-// account.ScriptHash.ToScriptHash();
+        public static UInt160 AsUInt160(this ExpressWalletAccount account, ProtocolSettings settings) => AsUInt160(account, settings.AddressVersion);
+        public static UInt160 AsUInt160(this ExpressWalletAccount account, byte version) => account.ScriptHash.ToScriptHash(version);
 
-        public static Uri GetUri(this ExpressConsensusNode node)
-            => new Uri($"http://localhost:{node.RpcPort}");
+        public static Uri GetUri(this ExpressConsensusNode node) => new Uri($"http://localhost:{node.RpcPort}");
 
         public static bool IsMultiSigContract(this ExpressWalletAccount account)
             => Neo.SmartContract.Helper.IsMultiSigContract(account.Contract.Script.ToByteArray());
@@ -31,7 +31,7 @@ namespace NeoExpress
                 .Select(n => n.Wallet)
                 .Concat(chain.Wallets)
                 .Where(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash) != null)
-                .Select(Models.DevWallet.FromExpressWallet);
+                .Select(w => Models.DevWallet.FromExpressWallet(chain.GetProtocolSettings(), w));
 
         public static IEnumerable<DevWalletAccount> GetMultiSigAccounts(this ExpressChain chain, ExpressWalletAccount account)
             => chain.ConsensusNodes
@@ -39,7 +39,7 @@ namespace NeoExpress
                 .Concat(chain.Wallets)
                 .Select(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash))
                 .Where(a => a != null)
-                .Select(DevWalletAccount.FromExpressWalletAccount!);
+                .Select(a => DevWalletAccount.FromExpressWalletAccount(chain.GetProtocolSettings(), a!));
 
         public static Uri GetUri(this ExpressChain chain, int node = 0)
             => GetUri(chain.ConsensusNodes[node]);
@@ -108,48 +108,21 @@ namespace NeoExpress
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
 
-        public static void InitalizeProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
+        public static ProtocolSettings GetProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
         {
-            if (!chain.TryInitializeProtocolSettings(secondsPerBlock))
-            {
-                throw new Exception("could not initialize protocol settings");
-            }
-        }
+            return ProtocolSettings.Default with {
+                Magic = chain.Magic,
+                AddressVersion = chain.AddressVersion,
+                MillisecondsPerBlock = secondsPerBlock == 0 ? 15000 : secondsPerBlock * 1000,
+                ValidatorsCount = chain.ConsensusNodes.Count,
+                StandbyCommittee = chain.ConsensusNodes.Select(GetPublicKey).ToArray(),
+                SeedList = chain.ConsensusNodes
+                    .Select(n => $"{System.Net.IPAddress.Loopback}:{n.TcpPort}")
+                    .ToArray(),
+            };
 
-        public static bool TryInitializeProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
-        {
-            secondsPerBlock = secondsPerBlock == 0 ? 15 : secondsPerBlock;
-
-            IEnumerable<KeyValuePair<string, string>> settings()
-            {
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:Magic", $"{chain.Magic}");
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:MillisecondsPerBlock", $"{secondsPerBlock * 1000}");
-                yield return new KeyValuePair<string, string>(
-                    "ProtocolConfiguration:ValidatorsCount", $"{chain.ConsensusNodes.Count}");
-
-                foreach (var (node, index) in chain.ConsensusNodes.Select((n, i) => (n, i)))
-                {
-                    var privateKey = node.Wallet.Accounts
-                        .Select(a => a.PrivateKey)
-                        .Distinct().Single().HexToBytes();
-                    var encodedPublicKey = new Neo.Wallets.KeyPair(privateKey).PublicKey
-                        .EncodePoint(true).ToHexString();
-                    yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:StandbyCommittee:{index}", encodedPublicKey);
-                    yield return new KeyValuePair<string, string>(
-                        $"ProtocolConfiguration:SeedList:{index}", $"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
-                }
-            }
-
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(settings())
-                .Build();
-
-            throw new NotImplementedException();
-
-            // return ProtocolSettings.Initialize(config);
+            static ECPoint GetPublicKey(ExpressConsensusNode node)
+                => new KeyPair(node.Wallet.Accounts.Select(a => a.PrivateKey).Distinct().Single().HexToBytes()).PublicKey;
         }
     }
 }

@@ -31,7 +31,7 @@ namespace NeoExpress
                 .Select(n => n.Wallet)
                 .Concat(chain.Wallets)
                 .Where(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash) != null)
-                .Select(w => Models.DevWallet.FromExpressWallet(chain.GetProtocolSettings(), w));
+                .Select(w => DevWallet.FromExpressWallet(chain.GetProtocolSettings(), w));
 
         public static IEnumerable<DevWalletAccount> GetMultiSigAccounts(this ExpressChain chain, ExpressWalletAccount account)
             => chain.ConsensusNodes

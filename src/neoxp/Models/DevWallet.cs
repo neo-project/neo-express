@@ -6,6 +6,7 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Wallets.NEP6;
 
 namespace NeoExpress.Models
 {
@@ -48,7 +49,7 @@ namespace NeoExpress.Models
 
         public void Export(string filename, string password)
         {
-            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(filename, ProtocolSettings, Name);
+            var nep6Wallet = new NEP6Wallet(filename, ProtocolSettings, Name);
             nep6Wallet.Unlock(password);
             foreach (var account in GetAccounts())
             {

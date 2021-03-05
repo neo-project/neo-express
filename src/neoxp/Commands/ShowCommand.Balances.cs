@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var account = chainManager.Chain.GetAccount(Account) ?? throw new Exception($"{Account} account not found.");
                     using var expressNode = chainManager.GetExpressNode();
-                    var balances = await expressNode.GetBalancesAsync(account.AsUInt160(chainManager.ProtocolSettings.AddressVersion)).ConfigureAwait(false);
+                    var balances = await expressNode.GetBalancesAsync(account.AsUInt160(chainManager.ProtocolSettings)).ConfigureAwait(false);
 
                     if (balances.Length == 0)
                     {

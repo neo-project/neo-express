@@ -5,6 +5,8 @@ using System.Linq;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
+using Neo.Wallets;
 using NeoExpress.Models;
 
 namespace NeoExpress
@@ -35,7 +37,7 @@ namespace NeoExpress
                 AddressVersion = addressVersion ?? ProtocolSettings.Default.AddressVersion 
             };
 
-            var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(nodeCount);
+            var wallets = new List<(DevWallet wallet, WalletAccount account)>(nodeCount);
             for (var i = 1; i <= nodeCount; i++)
             {
                 var wallet = new DevWallet(protocolSettings, $"node{i}");
@@ -45,12 +47,12 @@ namespace NeoExpress
             }
 
             var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
-            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+            var contract = Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
 
             foreach (var (wallet, account) in wallets)
             {
                 var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-                multiSigContractAccount.Label = "Consensus Nodes MultiSigContract";
+                multiSigContractAccount.Label = "Consensus MultiSigContract";
             }
 
             var nodes = wallets.Select((w, i) => new ExpressConsensusNode

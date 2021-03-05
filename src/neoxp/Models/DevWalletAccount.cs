@@ -19,14 +19,10 @@ namespace NeoExpress.Models
 
         public override bool HasKey => key != null;
 
-        public override KeyPair? GetKey()
-        {
-            return key;
-        }
+        public override KeyPair? GetKey() => key;
 
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
-            
             PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
             ScriptHash = ScriptHash.ToAddress(ProtocolSettings.AddressVersion),
             Label = Label,

@@ -16,7 +16,7 @@ namespace NeoExpress.Node
         private readonly Dictionary<UInt160, string> contractNameMap = new Dictionary<UInt160, string>();
 
         public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, DataCache snapshot, Block? persistingBlock = null, long gas = 2000000000)
-            : base(trigger, container, snapshot, persistingBlock, gas)
+            : base(trigger, container, snapshot, persistingBlock, null!, gas)
         {
             this.traceDebugSink = traceDebugSink;
 

@@ -174,22 +174,23 @@ namespace NeoExpress
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
-                    using var system = new Neo.NeoSystem(storageProvider.Name);
-                    var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
-                    var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
-                    var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
-                    rpcServer.RegisterMethods(expressRpcServer);
-                    rpcServer.RegisterMethods(appLogsPlugin);
-                    rpcServer.StartRpcServer();
+                    throw new NotImplementedException();
+                    // using var system = new Neo.NeoSystem(storageProvider.Name);
+                    // var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
+                    // var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
+                    // var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
+                    // rpcServer.RegisterMethods(expressRpcServer);
+                    // rpcServer.RegisterMethods(appLogsPlugin);
+                    // rpcServer.StartRpcServer();
 
-                    system.StartNode(new Neo.Network.P2P.ChannelsConfig
-                    {
-                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
-                        WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
-                    });
-                    dbftPlugin.Start(wallet);
+                    // system.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    // {
+                    //     Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
+                    //     WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
+                    // });
+                    // dbftPlugin.Start(wallet);
 
-                    token.WaitHandle.WaitOne();
+                    // token.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)
                 {

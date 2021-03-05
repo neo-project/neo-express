@@ -11,7 +11,7 @@ namespace NeoExpress.Models
     {
         private readonly KeyPair? key;
 
-        public DevWalletAccount(KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash)
+        public DevWalletAccount(KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash, null!)
         {
             this.key = key;
             Contract = contract;
@@ -24,20 +24,23 @@ namespace NeoExpress.Models
             return key;
         }
 
-        public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
-        {
-            PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
-            ScriptHash = ScriptHash.ToAddress(),
-            Label = Label,
-            IsDefault = IsDefault,
-            Contract = new ExpressWalletAccount.AccountContract()
-            {
-                Script = Contract.Script.ToHexString(),
-                Parameters = Contract.ParameterList
-                        .Select(p => Enum.GetName(typeof(ContractParameterType), p) ?? string.Empty)
-                        .ToList()
-            }
-        };
+        public ExpressWalletAccount ToExpressWalletAccount() => throw new NotImplementedException();
+        
+        // new ExpressWalletAccount()
+        // {
+            
+        //     // PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
+        //     // ScriptHash = ScriptHash.ToAddress(),
+        //     // Label = Label,
+        //     // IsDefault = IsDefault,
+        //     // Contract = new ExpressWalletAccount.AccountContract()
+        //     // {
+        //     //     Script = Contract.Script.ToHexString(),
+        //     //     Parameters = Contract.ParameterList
+        //     //             .Select(p => Enum.GetName(typeof(ContractParameterType), p) ?? string.Empty)
+        //     //             .ToList()
+        //     // }
+        // };
 
         public static DevWalletAccount FromExpressWalletAccount(ExpressWalletAccount account)
         {
@@ -49,13 +52,14 @@ namespace NeoExpress.Models
                     .Select(Enum.Parse<ContractParameterType>)
                     .ToArray()
             };
-            var scriptHash = account.ScriptHash.ToScriptHash();
+            throw new NotImplementedException();
+            // var scriptHash = account.ScriptHash.ToScriptHash();
 
-            return new DevWalletAccount(keyPair, contract, scriptHash)
-            {
-                Label = account.Label,
-                IsDefault = account.IsDefault
-            };
+            // return new DevWalletAccount(keyPair, contract, scriptHash)
+            // {
+            //     Label = account.Label,
+            //     IsDefault = account.IsDefault
+            // };
         }
     }
 }

@@ -50,15 +50,16 @@ namespace NeoExpress.Commands
                     chain.Wallets.Remove(existingWallet);
                 }
 
-                var wallet = new DevWallet(Name);
-                var account = wallet.CreateAccount();
-                account.IsDefault = true;
+                throw new NotImplementedException();
+                // var wallet = new DevWallet(Name);
+                // var account = wallet.CreateAccount();
+                // account.IsDefault = true;
 
-                var expressWallet = wallet.ToExpressWallet();
-                chain.Wallets ??= new List<ExpressWallet>(1);
-                chain.Wallets.Add(expressWallet);
-                chainManager.SaveChain(chainPath);
-                return expressWallet;
+                // var expressWallet = wallet.ToExpressWallet();
+                // chain.Wallets ??= new List<ExpressWallet>(1);
+                // chain.Wallets.Add(expressWallet);
+                // chainManager.SaveChain(chainPath);
+                // return expressWallet;
             }
 
             internal int OnExecute(IConsole console)

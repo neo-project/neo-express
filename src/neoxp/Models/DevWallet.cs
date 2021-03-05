@@ -16,7 +16,7 @@ namespace NeoExpress.Models
         private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
 
-        public DevWallet(string name, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty)
+        public DevWallet(string name, ProtocolSettings settings, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty, settings)
         {
             this.name = name;
 
@@ -26,7 +26,7 @@ namespace NeoExpress.Models
             }
         }
 
-        public DevWallet(string name, DevWalletAccount account) : base(string.Empty)
+        public DevWallet(string name, ProtocolSettings settings, DevWalletAccount account) : base(string.Empty, settings)
         {
             this.name = name;
             accounts.Add(account.ScriptHash, account);
@@ -42,19 +42,21 @@ namespace NeoExpress.Models
 
         public static DevWallet FromExpressWallet(ExpressWallet wallet)
         {
-            var accounts = wallet.Accounts.Select(DevWalletAccount.FromExpressWalletAccount);
-            return new DevWallet(wallet.Name, accounts);
+            throw new NotImplementedException();
+            // var accounts = wallet.Accounts.Select(DevWalletAccount.FromExpressWalletAccount);
+            // return new DevWallet(wallet.Name, accounts);
         }
 
         public void Export(string filename, string password)
         {
-            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(filename, Name);
-            nep6Wallet.Unlock(password);
-            foreach (var account in GetAccounts())
-            {
-                nep6Wallet.CreateAccount(account.Contract, account.GetKey());
-            }
-            nep6Wallet.Save();
+            throw new NotImplementedException();
+            // var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(filename, Name);
+            // nep6Wallet.Unlock(password);
+            // foreach (var account in GetAccounts())
+            // {
+            //     nep6Wallet.CreateAccount(account.Contract, account.GetKey());
+            // }
+            // nep6Wallet.Save();
         }
 
         public override string Name => name;

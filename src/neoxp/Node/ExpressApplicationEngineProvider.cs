@@ -15,6 +15,11 @@ namespace NeoExpress.Node
 
     class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
+        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas)
+        {
+            throw new NotImplementedException();
+        }
+
         public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, long gas)
         {
             if (trigger == TriggerType.Application

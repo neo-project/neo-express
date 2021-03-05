@@ -32,45 +32,46 @@ namespace NeoExpress
 
             var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(nodeCount);
 
-            for (var i = 1; i <= nodeCount; i++)
-            {
-                var wallet = new DevWallet($"node{i}");
-                var account = wallet.CreateAccount();
-                account.IsDefault = true;
-                wallets.Add((wallet, account));
-            }
+            throw new NotImplementedException();
+            // for (var i = 1; i <= nodeCount; i++)
+            // {
+            //     var wallet = new DevWallet($"node{i}");
+            //     var account = wallet.CreateAccount();
+            //     account.IsDefault = true;
+            //     wallets.Add((wallet, account));
+            // }
 
-            var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
+            // var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
 
-            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+            // var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
 
-            foreach (var (wallet, account) in wallets)
-            {
-                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-                multiSigContractAccount.Label = "MultiSigContract";
-            }
+            // foreach (var (wallet, account) in wallets)
+            // {
+            //     var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
+            //     multiSigContractAccount.Label = "MultiSigContract";
+            // }
 
-            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
-            // http://www.iana.org/assignments/port-numbers
-            var nodes = new List<ExpressConsensusNode>(nodeCount);
-            for (var i = 0; i < nodeCount; i++)
-            {
-                nodes.Add(new ExpressConsensusNode()
-                {
-                    TcpPort = GetPortNumber(i, 3),
-                    WebSocketPort = GetPortNumber(i, 4),
-                    RpcPort = GetPortNumber(i, 2),
-                    Wallet = wallets[i].wallet.ToExpressWallet()
-                });
-            }
+            // // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
+            // // http://www.iana.org/assignments/port-numbers
+            // var nodes = new List<ExpressConsensusNode>(nodeCount);
+            // for (var i = 0; i < nodeCount; i++)
+            // {
+            //     nodes.Add(new ExpressConsensusNode()
+            //     {
+            //         TcpPort = GetPortNumber(i, 3),
+            //         WebSocketPort = GetPortNumber(i, 4),
+            //         RpcPort = GetPortNumber(i, 2),
+            //         Wallet = wallets[i].wallet.ToExpressWallet()
+            //     });
+            // }
 
-            return new ExpressChain()
-            {
-                Magic = ExpressChain.GenerateMagicValue(),
-                ConsensusNodes = nodes,
-            };
+            // return new ExpressChain()
+            // {
+            //     Magic = ExpressChain.GenerateMagicValue(),
+            //     ConsensusNodes = nodes,
+            // };
 
-            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
+            // static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
         public (IExpressChainManager manager, string path) CreateChain(int nodeCount, string output, bool force)

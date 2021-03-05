@@ -14,7 +14,8 @@ namespace NeoExpress
     {
         public static KeyPair GetKey(this ExpressWalletAccount account) => new KeyPair(account.PrivateKey.HexToBytes());
 
-        public static UInt160 AsUInt160(this ExpressWalletAccount account) => account.ScriptHash.ToScriptHash();
+        public static UInt160 AsUInt160(this ExpressWalletAccount account) =>             throw new NotImplementedException();
+// account.ScriptHash.ToScriptHash();
 
         public static Uri GetUri(this ExpressConsensusNode node)
             => new Uri($"http://localhost:{node.RpcPort}");
@@ -146,7 +147,9 @@ namespace NeoExpress
                 .AddInMemoryCollection(settings())
                 .Build();
 
-            return ProtocolSettings.Initialize(config);
+            throw new NotImplementedException();
+
+            // return ProtocolSettings.Initialize(config);
         }
     }
 }

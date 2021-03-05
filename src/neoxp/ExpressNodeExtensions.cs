@@ -65,7 +65,8 @@ namespace NeoExpress
                 return false;
             };
 
-            return new ContractParameterParser(tryGetAccount, tryGetContract);
+            throw new NotImplementedException();
+            // return new ContractParameterParser(tryGetAccount, tryGetContract);
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)

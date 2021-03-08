@@ -111,7 +111,6 @@ namespace NeoExpress.Node
                 {
                     Key = s["key"].AsString(),
                     Value = s["value"].AsString(),
-                    Constant = s["constant"].AsBoolean()
                 })
                     .ToList();
             }

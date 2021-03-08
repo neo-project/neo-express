@@ -278,6 +278,7 @@ namespace NeoExpress.Node
                 return CheckPrepareResponse(context);
             }
 
+            // TODO: is this related to https://github.com/neo-project/neo-express/issues/109?
             const uint maxBlockSize = 262144u;
             const long maxBlockSystemFee = 900000000000L;
 

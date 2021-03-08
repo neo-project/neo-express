@@ -38,8 +38,7 @@ namespace NeoExpress.Node
 
         public async Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0)
         {
-            var protocolSettings = chain.GetProtocolSettings();
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.AsUInt160(protocolSettings.AddressVersion) } };
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.AsUInt160(ProtocolSettings.AddressVersion) } };
             var factory = new TransactionManagerFactory(rpcClient);
             var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
             var tx = await tm
@@ -199,7 +198,7 @@ namespace NeoExpress.Node
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
+            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
             return await SubmitTransactionAsync(tx);
         }
 

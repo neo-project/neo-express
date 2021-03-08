@@ -169,13 +169,12 @@ namespace NeoExpress
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
                     var dbftPlugin = new Neo.Consensus.DBFTPlugin();
-                    var logPlugin = new Node.LogPlugin(writer);
                     var storageProvider = new Node.ExpressStorageProvider((IStore)store);
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
-                    using var system = new Neo.NeoSystem(ProtocolSettings, storageProvider.Name);
-
+                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProvider.Name);
+                    var logPlugin = new Node.LogPlugin(neoSystem, writer);
                     var rpcSettings = new Neo.Plugins.RpcServerSettings
                     {
                         BindAddress = IPAddress.Loopback,
@@ -185,13 +184,13 @@ namespace NeoExpress
                         // MaxGasInvoke = 0,
                         // MaxFee = 0,
                     };
-                    var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
-                    var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
+                    var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
+                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount);
                     rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
 
-                    system.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {
                         Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
                         WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),

@@ -381,8 +381,8 @@ namespace NeoExpress.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var contracts = ExpressRpcServer.GetNep17Contracts(store).ToDictionary(c => c.ScriptHash);
-            var balances = ExpressRpcServer.GetNep17Balances(store, address)
+            var contracts = ExpressRpcServer.GetNep17Contracts(neoSystem, store).ToDictionary(c => c.ScriptHash);
+            var balances = ExpressRpcServer.GetNep17Balances(neoSystem, store, address)
                 .Select(b => (
                     balance: new RpcNep17Balance
                     {
@@ -490,7 +490,7 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
         {
             return Task.FromResult<IReadOnlyList<Nep17Contract>>(
-                ExpressRpcServer.GetNep17Contracts(store).ToList());
+                ExpressRpcServer.GetNep17Contracts(neoSystem, store).ToList());
         }
 
         public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
@@ -507,7 +507,7 @@ namespace NeoExpress.Node
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = OracleService.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-            ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
+            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
             return SubmitTransactionAsync(tx);
         }
 

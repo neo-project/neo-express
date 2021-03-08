@@ -21,9 +21,12 @@ namespace NeoExpress.Models
         {
             this.Name = name;
 
-            foreach (var a in accounts ?? Enumerable.Empty<DevWalletAccount>())
+            if (accounts != null)
             {
-                this.accounts.Add(a.ScriptHash, a);
+                foreach (var account in accounts)
+                {
+                    this.accounts.Add(account.ScriptHash, account);
+                }
             }
         }
 

@@ -32,15 +32,16 @@ namespace NeoExpress
                 throw new ArgumentException("invalid blockchain node count", nameof(nodeCount));
             }
 
-            var protocolSettings = ProtocolSettings.Default with 
+            var settings = ProtocolSettings.Default with 
             { 
+                Magic = ExpressChain.GenerateMagicValue(),
                 AddressVersion = addressVersion ?? ProtocolSettings.Default.AddressVersion 
             };
 
             var wallets = new List<(DevWallet wallet, WalletAccount account)>(nodeCount);
             for (var i = 1; i <= nodeCount; i++)
             {
-                var wallet = new DevWallet(protocolSettings, $"node{i}");
+                var wallet = new DevWallet(settings, $"node{i}");
                 var account = wallet.CreateAccount();
                 account.IsDefault = true;
                 wallets.Add((wallet, account));
@@ -65,8 +66,8 @@ namespace NeoExpress
 
             return new ExpressChain()
             {
-                Magic = ExpressChain.GenerateMagicValue(),
-                AddressVersion = protocolSettings.AddressVersion,
+                Magic = settings.Magic,
+                AddressVersion = settings.AddressVersion,
                 ConsensusNodes = nodes.ToList(),
             };
 

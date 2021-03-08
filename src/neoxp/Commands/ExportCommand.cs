@@ -105,7 +105,7 @@ namespace NeoExpress.Commands
             using var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
             using var protocolWriter = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented };
 
-            // use neo defaults for MillisecondsPerBlock & AddressVersion
+            // use neo defaults for MillisecondsPerBlock
 
             protocolWriter.WriteStartObject();
             protocolWriter.WritePropertyName("ProtocolConfiguration");

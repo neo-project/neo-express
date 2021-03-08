@@ -65,8 +65,7 @@ namespace NeoExpress
                 return false;
             };
 
-            throw new NotImplementedException();
-            // return new ContractParameterParser(tryGetAccount, tryGetContract);
+            return new ContractParameterParser(expressNode.ProtocolSettings, tryGetAccount, tryGetContract);
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)
@@ -269,14 +268,12 @@ namespace NeoExpress
             if (stack.Length >= 3)
             {
                 var balance = stack[0].GetInteger();
-                // TODO: retrieve name correctly
-                var name = string.Empty; //Encoding.UTF8.GetString(stack[1].GetSpan());
                 var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
                 var decimals = (byte)(stack[2].GetInteger());
 
                 return (
                     new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },
-                    new Nep17Contract(name, symbol, decimals, assetHash));
+                    new Nep17Contract(symbol, decimals, assetHash));
             }
 
             throw new Exception("invalid script results");

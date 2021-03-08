@@ -58,19 +58,17 @@ namespace NeoExpress.Node
 
         public async Task<(Neo.Network.RPC.Models.RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address)
         {
-            await Task.Delay(0);
-            throw new NotImplementedException();
-            // var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
-            //     .Select(json => Nep17Contract.FromJson(json))
-            //     .ToDictionary(c => c.ScriptHash);
-            // var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress()).ConfigureAwait(false);
-            // return balances.Balances
-            //     .Select(b => (
-            //         balance: b,
-            //         contract: contracts.TryGetValue(b.AssetHash, out var value)
-            //             ? value
-            //             : Nep17Contract.Unknown(b.AssetHash)))
-            //     .ToArray();
+            var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
+                .Select(json => Nep17Contract.FromJson(json))
+                .ToDictionary(c => c.ScriptHash);
+            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion)).ConfigureAwait(false);
+            return balances.Balances
+                .Select(b => (
+                    balance: b,
+                    contract: contracts.TryGetValue(b.AssetHash, out var value)
+                        ? value
+                        : Nep17Contract.Unknown(b.AssetHash)))
+                .ToArray();
         }
 
         public async Task<Block> GetBlockAsync(UInt256 blockHash)

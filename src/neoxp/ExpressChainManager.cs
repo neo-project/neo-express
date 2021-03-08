@@ -11,6 +11,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
 using NeoExpress.Models;
+using NeoExpress.Node;
 using Nito.Disposables;
 
 namespace NeoExpress
@@ -175,13 +176,20 @@ namespace NeoExpress
 
                     using var system = new Neo.NeoSystem(ProtocolSettings, storageProvider.Name);
 
-                    // TODO: uncomment once https://github.com/neo-project/neo-modules/pull/539 is merged
-                    // var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
-                    // var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
-                    // var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
-                    // rpcServer.RegisterMethods(expressRpcServer);
-                    // rpcServer.RegisterMethods(appLogsPlugin);
-                    // rpcServer.StartRpcServer();
+                    var rpcSettings = new Neo.Plugins.RpcServerSettings
+                    {
+                        BindAddress = IPAddress.Loopback,
+                        Network = ProtocolSettings.Magic,
+                        Port = node.RpcPort,
+                        // TODO: Make these configurable (https://github.com/neo-project/neo-express/issues/109)
+                        // MaxGasInvoke = 0,
+                        // MaxFee = 0,
+                    };
+                    var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
+                    var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
+                    rpcServer.RegisterMethods(expressRpcServer);
+                    rpcServer.RegisterMethods(appLogsPlugin);
+                    rpcServer.StartRpcServer();
 
                     system.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {

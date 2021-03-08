@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Neo;
-using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
@@ -15,8 +14,9 @@ namespace NeoExpress.Node
         private readonly ITraceDebugSink traceDebugSink;
         private readonly Dictionary<UInt160, string> contractNameMap = new Dictionary<UInt160, string>();
 
-        public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container, DataCache snapshot, Block? persistingBlock = null, long gas = 2000000000)
-            : base(trigger, container, snapshot, persistingBlock, null!, gas)
+        public ExpressApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container,
+                                        DataCache snapshot, Block? persistingBlock, ProtocolSettings settings, long gas)
+            : base(trigger, container, snapshot, persistingBlock, settings, gas)
         {
             this.traceDebugSink = traceDebugSink;
 

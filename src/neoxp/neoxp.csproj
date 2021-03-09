@@ -7,7 +7,7 @@
     <Copyright>2015-2020 The Neo Project</Copyright>
     <Description>neo-express is a Neo developer blockchain tool</Description>
     <LangVersion>9</LangVersion>
-    <NeoVersion>3.0.0-mono-master-00668</NeoVersion>
+    <NeoVersion>3.0.0-mono-master-00676</NeoVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>
@@ -21,6 +21,10 @@
     <RootNamespace>NeoExpress</RootNamespace>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,7 +42,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.12-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.15-preview" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.OracleService" Version="$(NeoVersion)" />
@@ -47,7 +51,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Nito.Disposables" Version="2.2.0" />
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
-    <PackageReference Include="System.IO.Abstractions" Version="13.2.9" />
+    <PackageReference Include="System.IO.Abstractions" Version="13.2.25" />
   </ItemGroup>
 
 </Project>

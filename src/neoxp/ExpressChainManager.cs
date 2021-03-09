@@ -119,7 +119,7 @@ namespace NeoExpress
                 }
             }
 
-            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
         }
 
@@ -259,7 +259,7 @@ namespace NeoExpress
             });
 
             var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
             return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
         }
 

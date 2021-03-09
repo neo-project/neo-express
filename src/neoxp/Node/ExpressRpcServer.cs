@@ -363,10 +363,7 @@ namespace NeoExpress.Node
 
             if (store is RocksDbStore rocksDbStore)
             {
-                rocksDbStore.CreateCheckpoint(
-                    filename,
-                    ProtocolSettings.Default.Magic,
-                    multiSigAccount.ScriptHash);
+                rocksDbStore.CreateCheckpoint(filename, neoSystem.Settings, multiSigAccount.ScriptHash);
 
                 return filename;
             }

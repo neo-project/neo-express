@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.Wallets;
@@ -26,20 +27,20 @@ namespace NeoExpress
         public static bool IsMultiSigContract(this Neo.Wallets.WalletAccount account)
             => Neo.SmartContract.Helper.IsMultiSigContract(account.Contract.Script);
 
-        public static IEnumerable<DevWallet> GetMultiSigWallets(this ExpressChain chain, ExpressWalletAccount account)
+        public static IEnumerable<DevWallet> GetMultiSigWallets(this ExpressChain chain, ExpressWalletAccount account, ProtocolSettings? settings = null)
             => chain.ConsensusNodes
                 .Select(n => n.Wallet)
                 .Concat(chain.Wallets)
                 .Where(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash) != null)
-                .Select(w => DevWallet.FromExpressWallet(chain.GetProtocolSettings(), w));
+                .Select(w => DevWallet.FromExpressWallet(settings ?? chain.GetProtocolSettings(), w));
 
-        public static IEnumerable<DevWalletAccount> GetMultiSigAccounts(this ExpressChain chain, ExpressWalletAccount account)
+        public static IEnumerable<DevWalletAccount> GetMultiSigAccounts(this ExpressChain chain, ExpressWalletAccount account, ProtocolSettings? settings = null)
             => chain.ConsensusNodes
                 .Select(n => n.Wallet)
                 .Concat(chain.Wallets)
                 .Select(w => w.Accounts.Find(a => a.ScriptHash == account.ScriptHash))
                 .Where(a => a != null)
-                .Select(a => DevWalletAccount.FromExpressWalletAccount(chain.GetProtocolSettings(), a!));
+                .Select(a => DevWalletAccount.FromExpressWalletAccount(settings ?? chain.GetProtocolSettings(), a!));
 
         public static Uri GetUri(this ExpressChain chain, int node = 0)
             => GetUri(chain.ConsensusNodes[node]);
@@ -107,22 +108,5 @@ namespace NeoExpress
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
-
-        public static ProtocolSettings GetProtocolSettings(this ExpressChain chain, uint secondsPerBlock = 0)
-        {
-            return ProtocolSettings.Default with {
-                Magic = chain.Magic,
-                AddressVersion = chain.AddressVersion,
-                MillisecondsPerBlock = secondsPerBlock == 0 ? 15000 : secondsPerBlock * 1000,
-                ValidatorsCount = chain.ConsensusNodes.Count,
-                StandbyCommittee = chain.ConsensusNodes.Select(GetPublicKey).ToArray(),
-                SeedList = chain.ConsensusNodes
-                    .Select(n => $"{System.Net.IPAddress.Loopback}:{n.TcpPort}")
-                    .ToArray(),
-            };
-
-            static ECPoint GetPublicKey(ExpressConsensusNode node)
-                => new KeyPair(node.Wallet.Accounts.Select(a => a.PrivateKey).Distinct().Single().HexToBytes()).PublicKey;
-        }
     }
 }

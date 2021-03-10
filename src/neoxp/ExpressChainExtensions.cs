@@ -61,6 +61,14 @@ namespace NeoExpress
             return false;
         }
 
+        public static ExpressWalletAccount GetGenesisAccount(this ExpressChain chain)
+        {
+            return chain.ConsensusNodes
+                .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
+                .Distinct(ExpressWalletAccountEqualityComparer.Instance)
+                .Single();
+        }
+
         public static ExpressWalletAccount? GetAccount(this ExpressChain chain, string name)
         {
             var wallet = (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
@@ -79,10 +87,7 @@ namespace NeoExpress
 
             if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
-                return chain.ConsensusNodes
-                    .Select(n => n.Wallet.Accounts.Single(a => a.IsMultiSigContract()))
-                    .Distinct(ExpressWalletAccountEqualityComparer.Instance)
-                    .Single();
+                return chain.GetGenesisAccount();
             }
 
             return null;

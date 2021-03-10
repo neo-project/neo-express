@@ -91,7 +91,7 @@ namespace NeoExpress.Node
             var devAccount = DevWalletAccount.FromExpressWalletAccount(ProtocolSettings, account);
             var devWallet = new DevWallet(ProtocolSettings, string.Empty, devAccount);
             var signer = new Signer() { Account = devAccount.ScriptHash, Scopes = WitnessScope.CalledByEntry };
-            var tx = devWallet.MakeTransaction(neoSystem.StoreView, script); //, devAccount.ScriptHash, new[] { signer });
+            var tx = devWallet.MakeTransaction(neoSystem.StoreView, script, devAccount.ScriptHash, new[] { signer });
             if (additionalGas > 0.0m)
             {
                 tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);

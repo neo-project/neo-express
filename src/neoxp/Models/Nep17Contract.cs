@@ -3,6 +3,7 @@ using System.Text;
 using Neo;
 using Neo.IO.Json;
 using Neo.Persistence;
+using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 
@@ -29,7 +30,7 @@ namespace NeoExpress.Models
 
         public static Nep17Contract Unknown(UInt160 scriptHash) => new Nep17Contract("unknown", 0, scriptHash);
 
-        public static bool TryLoad(DataCache snapshot, UInt160 scriptHash, out Nep17Contract contract)
+        public static bool TryLoad(ProtocolSettings settings, DataCache snapshot, UInt160 scriptHash, out Nep17Contract contract)
         {
             if (scriptHash == NativeContract.NEO.Hash)
             {
@@ -50,7 +51,7 @@ namespace NeoExpress.Models
                 sb.EmitDynamicCall(scriptHash, "symbol");
                 sb.EmitDynamicCall(scriptHash, "decimals");
 
-                using var engine = Neo.SmartContract.ApplicationEngine.Run(sb.ToArray(), snapshot);
+                using var engine = sb.Invoke(settings, snapshot);
                 if (engine.State != VMState.FAULT && engine.ResultStack.Count >= 2)
                 {
                     var decimals = (byte)engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();

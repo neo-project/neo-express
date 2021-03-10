@@ -106,7 +106,7 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             foreach (var scriptHash in scriptHashes)
             {
-                if (Nep17Contract.TryLoad(snapshot, scriptHash, out var contract))
+                if (Nep17Contract.TryLoad(neoSystem.Settings, snapshot, scriptHash, out var contract))
                 {
                     yield return contract;
                 }
@@ -162,7 +162,7 @@ namespace NeoExpress.Node
                 if (TryGetBalance(kvp.Key, out var balance)
                     && balance > BigInteger.Zero)
                 {
-                    var contract = Nep17Contract.TryLoad(snapshot, kvp.Key, out var _contract)
+                    var contract = Nep17Contract.TryLoad(neoSystem.Settings, snapshot, kvp.Key, out var _contract)
                         ? _contract : Nep17Contract.Unknown(kvp.Key);
                     yield return (contract, balance, kvp.Value);
                 }
@@ -173,7 +173,7 @@ namespace NeoExpress.Node
                 using var sb = new ScriptBuilder();
                 sb.EmitDynamicCall(asset, "balanceOf", address.ToArray());
 
-                using var engine = ApplicationEngine.Run(sb.ToArray(), snapshot);
+                using var engine = sb.Invoke(neoSystem.Settings, snapshot);
                 if (!engine.State.HasFlag(VMState.FAULT) && engine.ResultStack.Count >= 1)
                 {
                     balance = engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();

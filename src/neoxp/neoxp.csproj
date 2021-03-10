@@ -9,7 +9,7 @@
     <DebugType>embedded</DebugType>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <LangVersion>9</LangVersion>
-    <NeoVersion>3.0.0-mono-master-00676</NeoVersion>
+    <NeoVersion>3.0.0-mono-master-00681</NeoVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>

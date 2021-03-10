@@ -3,6 +3,8 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
+using Neo.Persistence;
+using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using NeoExpress.Models;
 using System;
@@ -14,6 +16,13 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot) => Invoke(builder.ToArray(), settings, snapshot);
+
+        public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot) => ApplicationEngine.Run(
+            script: script, 
+            snapshot: snapshot,
+            settings: settings);
+
         public static async Task WriteTxHashAsync(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false)
         {
             if (json)

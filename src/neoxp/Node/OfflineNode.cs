@@ -71,11 +71,7 @@ namespace NeoExpress.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            using ApplicationEngine engine = ApplicationEngine.Run(
-                script: script,
-                snapshot: neoSystem.StoreView, 
-                settings: ProtocolSettings);
-
+            using ApplicationEngine engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView);
             var result = new RpcInvokeResult()
             {
                 State = engine.State,
@@ -95,7 +91,7 @@ namespace NeoExpress.Node
             var devAccount = DevWalletAccount.FromExpressWalletAccount(ProtocolSettings, account);
             var devWallet = new DevWallet(ProtocolSettings, string.Empty, devAccount);
             var signer = new Signer() { Account = devAccount.ScriptHash, Scopes = WitnessScope.CalledByEntry };
-            var tx = devWallet.MakeTransaction(neoSystem.StoreView, script, devAccount.ScriptHash, new[] { signer });
+            var tx = devWallet.MakeTransaction(neoSystem.StoreView, script); //, devAccount.ScriptHash, new[] { signer });
             if (additionalGas > 0.0m)
             {
                 tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
@@ -108,9 +104,8 @@ namespace NeoExpress.Node
 
                 foreach (var wallet in wallets)
                 {
-                    if (context.Completed) break;
-
                     wallet.Sign(context);
+                    if (context.Completed) break;
                 }
             }
             else
@@ -124,6 +119,10 @@ namespace NeoExpress.Node
             }
 
             tx.Witnesses = context.GetWitnesses();
+            var size = devWallet.CalculateNetworkFee(neoSystem.StoreView, tx);
+
+            var verificationContext = new TransactionVerificationContext();
+            var result = tx.Verify(ProtocolSettings, neoSystem.StoreView, verificationContext);
 
             return SubmitTransactionAsync(tx);
         }
@@ -153,6 +152,7 @@ namespace NeoExpress.Node
             var verificationContext = new TransactionVerificationContext();
             for (int i = 0; i < transactions.Length; i++)
             {
+                var q = transactions[i].Size * NativeContract.Policy.GetFeePerByte(snapshot);
                 if (transactions[i].Verify(ProtocolSettings, snapshot, verificationContext) != VerifyResult.Succeed)
                 {
                     throw new Exception("Verification failed");
@@ -225,6 +225,8 @@ namespace NeoExpress.Node
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             var contracts = ExpressRpcServer.GetNep17Contracts(neoSystem, store).ToDictionary(c => c.ScriptHash);
+
+            
             var balances = ExpressRpcServer.GetNep17Balances(neoSystem, store, address)
                 .Select(b => (
                     balance: new RpcNep17Balance

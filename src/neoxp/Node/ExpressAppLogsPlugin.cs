@@ -58,7 +58,7 @@ namespace NeoExpress.Node
             }
         }
 
-        public void OnPersist(Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
+        public void OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             if (applicationExecutedList.Count > ushort.MaxValue)
             {

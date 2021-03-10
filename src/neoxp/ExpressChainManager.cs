@@ -168,14 +168,15 @@ namespace NeoExpress
                     var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
                     var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
 
-                    var dbftPlugin = new Neo.Consensus.DBFTPlugin();
-                    var storageProvider = new Node.ExpressStorageProvider((IStore)store);
+                    var logPlugin = new Node.LogPlugin(writer);
+                    var storageProvider = new Node.ExpressStorageProvider(store);
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
+                    // TODO: configure DBFTPlugin correctly once https://github.com/neo-project/neo-modules/pull/545 is merged
+                    var dbftPlugin = new Neo.Consensus.DBFTPlugin();
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProvider.Name);
-                    var logPlugin = new Node.LogPlugin(neoSystem, writer);
-                    var rpcSettings = new Neo.Plugins.RpcServerSettings
+                    var rpcSettings = Neo.Plugins.RpcServerSettings.Default with 
                     {
                         BindAddress = IPAddress.Loopback,
                         Network = ProtocolSettings.Magic,

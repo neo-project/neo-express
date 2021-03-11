@@ -6,6 +6,7 @@ using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
+using Neo.Wallets;
 using NeoExpress.Models;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ namespace NeoExpress
         ProtocolSettings ProtocolSettings { get; }
 
         Task<bool> CreateCheckpointAsync(string checkPointPath);
-        Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0);
+        Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, Script script, decimal additionalGas = 0);
         Task<UInt256> SubmitTransactionAsync(Transaction tx);
         Task<RpcInvokeResult> InvokeAsync(Script script);
         Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address);

@@ -42,26 +42,22 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal static async Task ExecuteTxAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, string account, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
+            internal static async Task ExecuteTxAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, string accountName, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
             {
                 if (!fileSystem.File.Exists(invocationFile))
                 {
                     throw new Exception($"Invocation file {invocationFile} couldn't be found");
                 }
 
+                if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
+                {
+                    throw new Exception($"{accountName} account not found.");
+                }
+
                 var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
                 var script = await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
-
-                var _account = chainManager.Chain.GetAccount(account) ?? throw new Exception($"{account} account not found.");
-                var txHash = await expressNode.ExecuteAsync(_account, script).ConfigureAwait(false);
-                if (json)
-                {
-                    await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
-                }
-                else
-                {
-                    await writer.WriteLineAsync($"Invocation Transaction {txHash} submitted").ConfigureAwait(false);
-                }
+                var txHash = await expressNode.ExecuteAsync(wallet, account.ScriptHash, script).ConfigureAwait(false);
+                await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
             }
 
             internal static async Task ExecuteTestAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)

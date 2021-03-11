@@ -6,8 +6,10 @@ using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using Neo.Wallets;
 using NeoExpress.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,6 +18,10 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
+
+        public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
+
         public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot) => Invoke(builder.ToArray(), settings, snapshot);
 
         public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot) => ApplicationEngine.Run(
@@ -35,6 +41,7 @@ namespace NeoExpress
                 await writer.WriteLineAsync($"Transaction {txHash} submitted").ConfigureAwait(false);
             }
         }
+
         public static BigDecimal ToBigDecimal(this RpcNep17Balance balance, byte decimals)
             => new BigDecimal(balance.Amount, decimals);
 
@@ -86,7 +93,6 @@ namespace NeoExpress
             return result;
         }
 
-
         public static async Task<Neo.IO.Json.JObject> RpcSendAsync(this RpcClient @this, string method, params Neo.IO.Json.JObject[] paraArgs)
         {
             var request = new Neo.Network.RPC.Models.RpcRequest
@@ -99,38 +105,6 @@ namespace NeoExpress
 
             var response = await @this.SendAsync(request).ConfigureAwait(false);
             return response.Result;
-        }
-
-        public static TransactionManager AddSignatures(this TransactionManager tm, ExpressChain chain, ExpressWalletAccount account)
-        {
-            if (account.IsMultiSigContract())
-            {
-                var signers = chain.GetMultiSigAccounts(account);
-
-                var publicKeys = signers.Select(s => s.GetKey()!.PublicKey).ToArray();
-                var sigCount = account.Contract.Parameters.Count;
-
-                foreach (var signer in signers.Take(sigCount))
-                {
-                    var keyPair = signer.GetKey() ?? throw new Exception();
-                    tm = tm.AddMultiSig(keyPair, sigCount, publicKeys);
-                }
-
-                return tm;
-            }
-            else
-            {
-                return tm.AddSignature(account.GetKey()!);
-            }
-        }
-
-        public static TransactionManager AddGas(this TransactionManager transactionManager, decimal gas)
-        {
-            if (transactionManager.Tx != null && gas > 0.0m)
-            {
-                transactionManager.Tx.SystemFee += (long)gas.ToBigInteger(NativeContract.GAS.Decimals);
-            }
-            return transactionManager;
         }
     }
 }

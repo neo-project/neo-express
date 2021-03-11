@@ -35,7 +35,7 @@ namespace NeoExpress.Node
         private readonly IExpressStore store;
         private bool disposedValue;
 
-        public ProtocolSettings ProtocolSettings { get; }
+        public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
         public OfflineNode(ProtocolSettings settings, IExpressStore store, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
             : this(settings, store, DevWallet.FromExpressWallet(settings, nodeWallet), chain, enableTrace)
@@ -44,7 +44,6 @@ namespace NeoExpress.Node
 
         public OfflineNode(ProtocolSettings settings, IExpressStore store, Wallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
-            this.ProtocolSettings = settings;
             this.nodeWallet = nodeWallet;
             this.chain = chain;
             this.store = store;
@@ -84,33 +83,31 @@ namespace NeoExpress.Node
             return Task.FromResult(result);
         }
 
-        public Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Neo.VM.Script script, decimal additionalGas = 0)
+        public Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, Neo.VM.Script script, decimal additionalGas = 0)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var devAccount = DevWalletAccount.FromExpressWalletAccount(ProtocolSettings, account);
-            var devWallet = new DevWallet(ProtocolSettings, string.Empty, devAccount);
-            var signer = new Signer() { Account = devAccount.ScriptHash, Scopes = WitnessScope.CalledByEntry };
-            var tx = devWallet.MakeTransaction(neoSystem.StoreView, script, devAccount.ScriptHash, new[] { signer });
+            var signer = new Signer() { Account = accountHash, Scopes = WitnessScope.CalledByEntry };
+            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer });
             if (additionalGas > 0.0m)
             {
                 tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
             }
+
             var context = new ContractParametersContext(neoSystem.StoreView, tx);
-
-            if (devAccount.IsMultiSigContract())
+            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            if (account.IsMultiSigContract())
             {
-                var wallets = chain.GetMultiSigWallets(account);
-
-                foreach (var wallet in wallets)
+                var multiSigWallets = chain.GetMultiSigWallets(neoSystem.Settings, accountHash);
+                for (int i = 0; i < multiSigWallets.Count; i++)
                 {
-                    wallet.Sign(context);
+                    multiSigWallets[i].Sign(context);
                     if (context.Completed) break;
                 }
             }
             else
             {
-                devWallet.Sign(context);
+                wallet.Sign(context);
             }
 
             if (!context.Completed)
@@ -119,11 +116,6 @@ namespace NeoExpress.Node
             }
 
             tx.Witnesses = context.GetWitnesses();
-            var size = devWallet.CalculateNetworkFee(neoSystem.StoreView, tx);
-
-            var verificationContext = new TransactionVerificationContext();
-            var result = tx.Verify(ProtocolSettings, neoSystem.StoreView, verificationContext);
-
             return SubmitTransactionAsync(tx);
         }
 
@@ -183,15 +175,17 @@ namespace NeoExpress.Node
 
             // finally we sign the block, following the logic in ConsensusContext.MakeCommit (create signature)
             // and ConsensusContext.CreateBlock (sign block)
-            var genesis = DevWalletAccount.FromExpressWalletAccount(ProtocolSettings, chain.GetGenesisAccount());
+            var (_, genesisAccount) = chain.GetGenesisAccount(ProtocolSettings);
+           
             var signingContext = new ContractParametersContext(snapshot, block.Header);
             foreach (var node in chain.ConsensusNodes)
             {
-                var account = DevWalletAccount.FromExpressWalletAccount(ProtocolSettings, node.Wallet.Accounts.Single(a => a.IsMultiSigContract()));
-                var key = account.GetKey() ?? throw new Exception();
+                var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+                var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
+                var key = multiSigAccount.GetKey() ?? throw new Exception();
 
                 var signature = block.Header.Sign(key, ProtocolSettings.Magic);
-                signingContext.AddSignature(genesis.Contract, key.PublicKey, signature);
+                signingContext.AddSignature(genesisAccount.Contract, key.PublicKey, signature);
                 if (signingContext.Completed) break;
             }
             if (!signingContext.Completed) throw new Exception("block signing incomplete");
@@ -360,7 +354,7 @@ namespace NeoExpress.Node
         {
             if (store is RocksDbStore rocksDbStore)
             {
-                var multiSigAccount = nodeWallet.GetAccounts().Single(a => a.IsMultiSigContract());
+                var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
                 rocksDbStore.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash.ToAddress(ProtocolSettings.AddressVersion));
                 return Task.FromResult(false);
             }

@@ -9,7 +9,8 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.Persistence;
+using Neo.SmartContract;
+using Neo.Wallets;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
@@ -105,7 +106,6 @@ namespace NeoExpress
                 }
             });
 
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
             var nodeFolder = fileSystem.GetNodePath(node);
             if (fileSystem.Directory.Exists(nodeFolder))
             {
@@ -119,7 +119,9 @@ namespace NeoExpress
                 }
             }
 
-            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
+            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.Address);
             fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
         }
 
@@ -166,7 +168,7 @@ namespace NeoExpress
                     using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
                     var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-                    var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+                    var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
                     var logPlugin = new Node.LogPlugin(writer);
                     var storageProvider = new Node.ExpressStorageProvider(store);
@@ -186,7 +188,7 @@ namespace NeoExpress
                         // MaxFee = 0,
                     };
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
-                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount);
+                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.Address);
                     rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
@@ -259,8 +261,9 @@ namespace NeoExpress
                 }
             });
 
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
+            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.Address);
             return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
         }
 

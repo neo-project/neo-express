@@ -36,11 +36,15 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string account, System.IO.TextWriter writer, bool json = false)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string accountName, System.IO.TextWriter writer, bool json = false)
             {
+                if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
+                {
+                    throw new Exception($"{accountName} account not found.");
+                }
+
                 var (nefFile, manifest) = await fileSystem.LoadContractAsync(contract).ConfigureAwait(false);
-                var _account = chainManager.Chain.GetAccount(account) ?? throw new Exception($"{account} account not found.");
-                var txHash = await expressNode.DeployAsync(nefFile, manifest, _account).ConfigureAwait(false);
+                var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, account.ScriptHash).ConfigureAwait(false);
                 await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
             }
 

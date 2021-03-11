@@ -22,14 +22,14 @@ namespace NeoExpress.Node
     {
         readonly NeoSystem neoSystem;
         readonly IExpressReadOnlyStore store;
-        readonly ExpressWalletAccount multiSigAccount;
+        readonly string nodeAccountAddress;
         readonly string cacheId;
 
-        public ExpressRpcServer(NeoSystem neoSystem, IExpressReadOnlyStore store, ExpressWalletAccount multiSigAccount)
+        public ExpressRpcServer(NeoSystem neoSystem, IExpressReadOnlyStore store, string nodeAccountAddress)
         {
             this.neoSystem = neoSystem;
             this.store = store;
-            this.multiSigAccount = multiSigAccount;
+            this.nodeAccountAddress = nodeAccountAddress;
             cacheId = DateTimeOffset.Now.Ticks.ToString();
         }
 
@@ -140,6 +140,10 @@ namespace NeoExpress.Node
             {
                 var from = ToUInt160(notification.State[0]);
                 var to = ToUInt160(notification.State[1]);
+
+                var fromAddress = notification.State[0].IsNull ? "<null>" : from.ToAddress(neoSystem.Settings.AddressVersion);
+                var toAddress = notification.State[1].IsNull ? "<null>" : to.ToAddress(neoSystem.Settings.AddressVersion);
+
                 if (from == address || to == address)
                 {
                     assets[notification.ScriptHash] = blockIndex;
@@ -213,7 +217,7 @@ namespace NeoExpress.Node
             }
             return new JObject
             {
-                ["address"] = Neo.Wallets.Helper.ToAddress(address, neoSystem.Settings.AddressVersion),
+                ["address"] = address.ToAddress(neoSystem.Settings.AddressVersion),
                 ["balance"] = balances,
             };
         }
@@ -259,7 +263,7 @@ namespace NeoExpress.Node
 
             return new JObject
             {
-                ["address"] = Neo.Wallets.Helper.ToAddress(address, neoSystem.Settings.AddressVersion),
+                ["address"] = address.ToAddress(neoSystem.Settings.AddressVersion),
                 ["sent"] = sent,
                 ["received"] = received,
             };
@@ -269,7 +273,7 @@ namespace NeoExpress.Node
                 {
                     ["timestamp"] = timestamp,
                     ["asset_hash"] = notification.ScriptHash.ToString(),
-                    ["transfer_address"] = Neo.Wallets.Helper.ToAddress(transferAddress, addressVersion),
+                    ["transfer_address"] = transferAddress.ToAddress(addressVersion),
                     ["amount"] = notification.State[2].GetInteger().ToString(),
                     ["block_index"] = blockIndex,
                     ["transfer_notify_index"] = txIndex,
@@ -363,7 +367,7 @@ namespace NeoExpress.Node
 
             if (store is RocksDbStore rocksDbStore)
             {
-                rocksDbStore.CreateCheckpoint(filename, neoSystem.Settings, multiSigAccount.ScriptHash);
+                rocksDbStore.CreateCheckpoint(filename, neoSystem.Settings, nodeAccountAddress);
 
                 return filename;
             }

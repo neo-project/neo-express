@@ -355,7 +355,7 @@ namespace NeoExpress.Node
             if (store is RocksDbStore rocksDbStore)
             {
                 var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-                rocksDbStore.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash.ToAddress(ProtocolSettings.AddressVersion));
+                rocksDbStore.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash);
                 return Task.FromResult(false);
             }
 

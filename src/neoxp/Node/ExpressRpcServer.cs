@@ -22,10 +22,10 @@ namespace NeoExpress.Node
     {
         readonly NeoSystem neoSystem;
         readonly IExpressReadOnlyStore store;
-        readonly string nodeAccountAddress;
+        readonly UInt160 nodeAccountAddress;
         readonly string cacheId;
 
-        public ExpressRpcServer(NeoSystem neoSystem, IExpressReadOnlyStore store, string nodeAccountAddress)
+        public ExpressRpcServer(NeoSystem neoSystem, IExpressReadOnlyStore store, UInt160 nodeAccountAddress)
         {
             this.neoSystem = neoSystem;
             this.store = store;

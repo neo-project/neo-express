@@ -121,7 +121,7 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.Address);
+            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
         }
 
@@ -188,7 +188,7 @@ namespace NeoExpress
                         // MaxFee = 0,
                     };
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
-                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.Address);
+                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.ScriptHash);
                     rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
@@ -263,7 +263,7 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.Address);
+            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
             return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
         }
 

@@ -33,12 +33,12 @@ namespace NeoExpress
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
-                // var account = chain?.GetAccount(name);
-                // if (account != null)
-                // {
-                //     scriptHash = account.ScriptHash.ToScriptHash(expressNode.ProtocolSettings.AddressVersion);
-                //     return true;
-                // }
+                if (chain != null 
+                    && chain.TryGetAccount(name, out _, out var account, expressNode.ProtocolSettings))
+                {
+                    scriptHash = account.ScriptHash;
+                    return true;
+                }
 
                 scriptHash = null!;
                 return false;

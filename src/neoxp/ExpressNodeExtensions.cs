@@ -33,7 +33,7 @@ namespace NeoExpress
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
-                if (chain != null 
+                if (chain != null
                     && chain.TryGetAccount(name, out _, out var account, expressNode.ProtocolSettings))
                 {
                     scriptHash = account.ScriptHash;
@@ -169,11 +169,11 @@ namespace NeoExpress
         public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, IEnumerable<ECPoint> oracles)
         {
             var roleParam = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
-            var oraclesParam = new ContractParameter(ContractParameterType.Array) 
-            { 
+            var oraclesParam = new ContractParameter(ContractParameterType.Array)
+            {
                 Value = oracles
                     .Select(o => new ContractParameter(ContractParameterType.PublicKey) { Value = o })
-                    .ToList() 
+                    .ToList()
             };
 
             using var sb = new ScriptBuilder();

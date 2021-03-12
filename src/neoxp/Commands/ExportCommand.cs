@@ -100,7 +100,7 @@ namespace NeoExpress.Commands
             writer.WriteEndObject();
 
             WriteProtocolConfiguration(writer, settings, chain);
-            
+
             writer.WriteEndObject();
         }
 

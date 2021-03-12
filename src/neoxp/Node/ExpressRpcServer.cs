@@ -113,10 +113,10 @@ namespace NeoExpress.Node
             }
         }
 
-         UInt160 GetScriptHashFromParam(string addressOrScriptHash)
-            => addressOrScriptHash.Length < 40
-                ? addressOrScriptHash.ToScriptHash(neoSystem.Settings.AddressVersion)
-                : UInt160.Parse(addressOrScriptHash);
+        UInt160 GetScriptHashFromParam(string addressOrScriptHash)
+           => addressOrScriptHash.Length < 40
+               ? addressOrScriptHash.ToScriptHash(neoSystem.Settings.AddressVersion)
+               : UInt160.Parse(addressOrScriptHash);
 
         static UInt160 ToUInt160(Neo.VM.Types.StackItem item)
         {

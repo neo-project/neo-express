@@ -60,7 +60,7 @@ namespace NeoExpress.Node
             var engine = sender as ApplicationEngine;
             var tx = engine?.ScriptContainer as Transaction;
             var colorCode = tx?.Witnesses?.Any() ?? false ? "96" : "93";
-            
+
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, args.ScriptHash);
             var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
             Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
@@ -123,7 +123,7 @@ namespace NeoExpress.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var block = CreateSignedBlock(new [] { tx });
+            var block = CreateSignedBlock(new[] { tx });
             var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block);
             if (blockRelay.Result != VerifyResult.Succeed)
             {
@@ -176,7 +176,7 @@ namespace NeoExpress.Node
             // finally we sign the block, following the logic in ConsensusContext.MakeCommit (create signature)
             // and ConsensusContext.CreateBlock (sign block)
             var (_, genesisAccount) = chain.GetGenesisAccount(ProtocolSettings);
-           
+
             var signingContext = new ContractParametersContext(snapshot, block.Header);
             foreach (var node in chain.ConsensusNodes)
             {
@@ -220,7 +220,7 @@ namespace NeoExpress.Node
 
             var contracts = ExpressRpcServer.GetNep17Contracts(neoSystem, store).ToDictionary(c => c.ScriptHash);
 
-            
+
             var balances = ExpressRpcServer.GetNep17Balances(neoSystem, store, address)
                 .Select(b => (
                     balance: new RpcNep17Balance
@@ -283,7 +283,7 @@ namespace NeoExpress.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            using var snapshot = neoSystem.GetSnapshot();            
+            using var snapshot = neoSystem.GetSnapshot();
             var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
 
             if (contract != null)

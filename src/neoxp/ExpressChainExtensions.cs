@@ -70,7 +70,7 @@ namespace NeoExpress
                     {
                         wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
                         account = wallet.GetAccounts().Single(a => a.IsDefault);
-                        return true; 
+                        return true;
                     }
                 }
             }
@@ -84,7 +84,7 @@ namespace NeoExpress
                 {
                     wallet = DevWallet.FromExpressWallet(settings, nodeWallet);
                     account = wallet.GetAccounts().Single(a => a.IsDefault);
-                    return true; 
+                    return true;
                 }
             }
 
@@ -103,7 +103,7 @@ namespace NeoExpress
         {
             public readonly static ExpressWalletAccountEqualityComparer Instance = new ExpressWalletAccountEqualityComparer();
 
-            private ExpressWalletAccountEqualityComparer() {}
+            private ExpressWalletAccountEqualityComparer() { }
 
             public override bool Equals(ExpressWalletAccount? x, ExpressWalletAccount? y)
             {

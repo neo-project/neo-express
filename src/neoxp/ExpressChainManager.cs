@@ -178,7 +178,7 @@ namespace NeoExpress
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProvider.Name);
-                    var rpcSettings = Neo.Plugins.RpcServerSettings.Default with 
+                    var rpcSettings = Neo.Plugins.RpcServerSettings.Default with
                     {
                         BindAddress = IPAddress.Loopback,
                         Network = ProtocolSettings.Magic,
@@ -212,7 +212,7 @@ namespace NeoExpress
                 }
             });
             await tcs.Task.ConfigureAwait(false);
-       }
+        }
 
         public IExpressStore GetNodeStore(ExpressConsensusNode node, bool discard)
         {

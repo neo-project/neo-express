@@ -25,7 +25,7 @@ namespace NeoExpress
         public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot) => Invoke(builder.ToArray(), settings, snapshot);
 
         public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot) => ApplicationEngine.Run(
-            script: script, 
+            script: script,
             snapshot: snapshot,
             settings: settings);
 

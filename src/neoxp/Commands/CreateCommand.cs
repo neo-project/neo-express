@@ -1,5 +1,6 @@
 using System;
 using McMaster.Extensions.CommandLineUtils;
+using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress.Commands
 {
@@ -13,7 +14,7 @@ namespace NeoExpress.Commands
             this.chainManagerFactory = chainManagerFactory;
         }
 
-        [Argument(0, Description = "name of .neo-express file to create (Default: ./default.neo-express")]
+        [Argument(0, Description = "name of " + EXPRESS_EXTENSION + " file to create (Default: ./" + DEFAULT_EXPRESS_FILENAME + ")")]
         internal string Output { get; set; } = string.Empty;
 
         [Option(Description = "Number of consensus nodes to create\nDefault: 1")]

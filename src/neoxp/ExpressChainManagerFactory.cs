@@ -8,6 +8,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
+using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress
 {
@@ -20,10 +21,7 @@ namespace NeoExpress
             this.fileSystem = fileSystem;
         }
 
-        internal const string EXPRESS_EXTENSION = ".neo-express";
-        internal const string DEFAULT_EXPRESS_FILENAME = "default" + EXPRESS_EXTENSION;
-
-        string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => "default");
+        string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
 
         internal static ExpressChain CreateChain(int nodeCount, byte? addressVersion)
         {

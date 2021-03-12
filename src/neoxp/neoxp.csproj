@@ -9,7 +9,7 @@
     <DebugType>embedded</DebugType>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <LangVersion>9</LangVersion>
-    <NeoVersion>3.0.0-mono-master-00686</NeoVersion>
+    <NeoVersion>3.0.0-mono-master-00695</NeoVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>
@@ -45,7 +45,7 @@
     </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.17-preview" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.19-preview" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.OracleService" Version="$(NeoVersion)" />

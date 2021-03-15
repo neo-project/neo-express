@@ -74,7 +74,7 @@ namespace NeoExpress
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force)
+        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock)
         {
             output = ResolveChainFileName(output);
             if (fileSystem.File.Exists(output))
@@ -95,10 +95,10 @@ namespace NeoExpress
             }
 
             var chain = CreateChain(nodeCount, addressVersion);
-            return (new ExpressChainManager(fileSystem, chain), output);
+            return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), output);
         }
 
-        public (IExpressChainManager manager, string path) LoadChain(string path)
+        public (IExpressChainManager manager, string path) LoadChain(string path, uint secondsPerBlock)
         {
             path = ResolveChainFileName(path);
             if (!fileSystem.File.Exists(path))
@@ -107,7 +107,8 @@ namespace NeoExpress
             }
 
             var chain = fileSystem.LoadChain(path);
-            return (new ExpressChainManager(fileSystem, chain), path);
+            
+            return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), path);
         }
     }
 }

@@ -26,11 +26,11 @@ namespace NeoExpress
         readonly ExpressChain chain;
         readonly Lazy<ProtocolSettings> protocolSettings;
 
-        public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain)
+        public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain, uint secondsPerBlock)
         {
             this.fileSystem = fileSystem;
             this.chain = chain;
-            this.protocolSettings = new Lazy<ProtocolSettings>(chain.GetProtocolSettings());
+            this.protocolSettings = new Lazy<ProtocolSettings>(chain.GetProtocolSettings(secondsPerBlock));
         }
 
         public ExpressChain Chain => chain;

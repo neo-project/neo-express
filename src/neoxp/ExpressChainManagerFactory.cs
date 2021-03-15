@@ -74,7 +74,7 @@ namespace NeoExpress
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock)
+        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock = 0)
         {
             output = ResolveChainFileName(output);
             if (fileSystem.File.Exists(output))
@@ -98,7 +98,7 @@ namespace NeoExpress
             return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), output);
         }
 
-        public (IExpressChainManager manager, string path) LoadChain(string path, uint secondsPerBlock)
+        public (IExpressChainManager manager, string path) LoadChain(string path, uint secondsPerBlock = 0)
         {
             path = ResolveChainFileName(path);
             if (!fileSystem.File.Exists(path))
@@ -107,7 +107,17 @@ namespace NeoExpress
             }
 
             var chain = fileSystem.LoadChain(path);
-            
+
+            // validate neo-express file by ensuring stored node zero default account SignatureRedeemScript matches a generated script
+            var account = chain.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("conensus node 0 missing default account");
+            var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
+            var contractScript = account.Contract.Script.HexToBytes();
+
+            if (!Contract.CreateSignatureRedeemScript(keyPair.PublicKey).AsSpan().SequenceEqual(contractScript))
+            {
+                throw new Exception("Invalid Signature Redeem Script. Was this neo-express file created before RC1?");
+            }
+
             return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), path);
         }
     }

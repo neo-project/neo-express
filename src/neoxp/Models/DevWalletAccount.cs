@@ -17,6 +17,12 @@ namespace NeoExpress.Models
             Contract = contract;
         }
 
+        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract contract) : base(contract.ScriptHash, settings)
+        {
+            this.key = key;
+            Contract = contract;
+        }
+
         public override bool HasKey => key != null;
 
         public override KeyPair? GetKey() => key;

@@ -21,14 +21,14 @@ namespace NeoExpress.Node
     class ExpressRpcServer
     {
         readonly NeoSystem neoSystem;
-        readonly IExpressReadOnlyStore store;
+        readonly IStorageProvider storageProvider;
         readonly UInt160 nodeAccountAddress;
         readonly string cacheId;
 
-        public ExpressRpcServer(NeoSystem neoSystem, IExpressReadOnlyStore store, UInt160 nodeAccountAddress)
+        public ExpressRpcServer(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 nodeAccountAddress)
         {
             this.neoSystem = neoSystem;
-            this.store = store;
+            this.storageProvider = storageProvider;
             this.nodeAccountAddress = nodeAccountAddress;
             cacheId = DateTimeOffset.Now.Ticks.ToString();
         }
@@ -77,7 +77,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0].AsString());
-            return ExpressAppLogsPlugin.TryGetAppLog(store, hash) ?? throw new RpcException(-100, "Unknown transaction");
+            return ExpressAppLogsPlugin.GetAppLog(storageProvider, hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
         // TODO: should the event name comparison be case insensitive?
@@ -87,15 +87,15 @@ namespace NeoExpress.Node
                 && notification.State.Count == 3
                 && (notification.EventName == "Transfer" || notification.EventName == "transfer");
 
-        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IExpressReadOnlyStore store)
+        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IStorageProvider storageProvider)
             => ExpressAppLogsPlugin
-                .GetNotifications(store)
+                .GetNotifications(storageProvider)
                 .Where(t => IsNep17Transfer(t.notification));
 
-        public static IEnumerable<Nep17Contract> GetNep17Contracts(NeoSystem neoSystem, IExpressReadOnlyStore store)
+        public static IEnumerable<Nep17Contract> GetNep17Contracts(NeoSystem neoSystem, IStorageProvider storageProvider)
         {
             var scriptHashes = new HashSet<UInt160>();
-            foreach (var (_, _, notification) in GetNep17Transfers(store))
+            foreach (var (_, _, notification) in GetNep17Transfers(storageProvider))
             {
                 scriptHashes.Add(notification.ScriptHash);
             }
@@ -130,13 +130,13 @@ namespace NeoExpress.Node
                     : throw new ArgumentException("invalid UInt160", nameof(item));
         }
 
-        public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(NeoSystem neoSystem, IExpressReadOnlyStore store, UInt160 address)
+        public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 address)
         {
             // assets key is the script hash of the asset contract
             // assets value is the last updated block of the assoicated asset for address
             var assets = new Dictionary<UInt160, uint>();
 
-            foreach (var (blockIndex, _, notification) in GetNep17Transfers(store))
+            foreach (var (blockIndex, _, notification) in GetNep17Transfers(storageProvider))
             {
                 var from = ToUInt160(notification.State[0]);
                 var to = ToUInt160(notification.State[1]);
@@ -193,7 +193,7 @@ namespace NeoExpress.Node
         public JObject ExpressGetNep17Contracts(JArray _)
         {
             var jsonContracts = new JArray();
-            foreach (var contract in GetNep17Contracts(neoSystem, store))
+            foreach (var contract in GetNep17Contracts(neoSystem, storageProvider))
             {
                 var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());
@@ -206,7 +206,7 @@ namespace NeoExpress.Node
         {
             var address = GetScriptHashFromParam(@params[0].AsString());
             var balances = new JArray();
-            foreach (var (contract, balance, lastUpdatedBlock) in GetNep17Balances(neoSystem, store, address))
+            foreach (var (contract, balance, lastUpdatedBlock) in GetNep17Balances(neoSystem, storageProvider, address))
             {
                 balances.Add(new JObject()
                 {
@@ -240,7 +240,7 @@ namespace NeoExpress.Node
             {
                 var addressVersion = neoSystem.Settings.AddressVersion;
                 using var snapshot = neoSystem.GetSnapshot();
-                foreach (var (blockIndex, txIndex, notification) in GetNep17Transfers(store))
+                foreach (var (blockIndex, txIndex, notification) in GetNep17Transfers(storageProvider))
                 {
                     var header = NativeContract.Ledger.GetHeader(snapshot, blockIndex);
                     if (startTime <= header.Timestamp && header.Timestamp <= endTime)
@@ -365,16 +365,13 @@ namespace NeoExpress.Node
                 throw new Exception("Checkpoint create is only supported on single node express instances");
             }
 
-            if (store is RocksDbStore rocksDbStore)
+            if (storageProvider is RocksDbStorageProvider rocksDbStorageProvider)
             {
-                rocksDbStore.CreateCheckpoint(filename, neoSystem.Settings, nodeAccountAddress);
-
+                rocksDbStorageProvider.CreateCheckpoint(filename, neoSystem.Settings, nodeAccountAddress);
                 return filename;
             }
-            else
-            {
-                throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
-            }
+
+            throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
         }
 
         [RpcMethod]

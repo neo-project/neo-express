@@ -1,14 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
@@ -121,7 +124,7 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
+            RocksDbStorageProvider.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
         }
 
@@ -150,7 +153,7 @@ namespace NeoExpress
             }
         }
 
-        public async Task RunAsync(IExpressStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token)
+        public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (IsRunning(node))
             {
@@ -171,13 +174,12 @@ namespace NeoExpress
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
                     var logPlugin = new Node.LogPlugin(writer);
-                    var storageProvider = new Node.ExpressStorageProvider(store);
+                    var storageProviderPlugin = new Node.StorageProviderPlugin(store);
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
-                    // TODO: configure DBFTPlugin correctly once https://github.com/neo-project/neo-modules/pull/545 is merged
-                    var dbftPlugin = new Neo.Consensus.DBFTPlugin();
+                    var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
-                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProvider.Name);
+                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
                     var rpcSettings = Neo.Plugins.RpcServerSettings.Default with
                     {
                         BindAddress = IPAddress.Loopback,
@@ -212,9 +214,17 @@ namespace NeoExpress
                 }
             });
             await tcs.Task.ConfigureAwait(false);
+
+            static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
+            {
+                var settings = new Dictionary<string, string>() { { "PluginConfiguration:Network", $"{chain.Magic}" } };
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
+            }
+
         }
 
-        public IExpressStore GetNodeStore(ExpressConsensusNode node, bool discard)
+        public IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var folder = fileSystem.GetNodePath(node);
 
@@ -222,21 +232,21 @@ namespace NeoExpress
             {
                 try
                 {
-                    var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
-                    return new CheckpointStore(rocksDbStore);
+                    var rocksDbStore = RocksDbStorageProvider.OpenReadOnly(folder);
+                    return new CheckpointStorageProvider(rocksDbStore);
                 }
                 catch
                 {
-                    return new CheckpointStore(NullReadOnlyStore.Instance);
+                    return new CheckpointStorageProvider(null);
                 }
             }
             else
             {
-                return RocksDbStore.Open(folder);
+                return RocksDbStorageProvider.Open(folder);
             }
         }
 
-        public IExpressStore GetCheckpointStore(string checkPointPath)
+        public IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -263,8 +273,9 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
-            return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
+            RocksDbStorageProvider.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
+            var rocksDbStorageProvider = RocksDbStorageProvider.OpenReadOnly(checkpointTempPath);
+            return new CheckpointStorageProvider(rocksDbStorageProvider, folderCleanup);
         }
 
         public IExpressNode GetExpressNode(bool offlineTrace = false)
@@ -284,7 +295,12 @@ namespace NeoExpress
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-            return new Node.OfflineNode(ProtocolSettings, RocksDbStore.Open(nodePath), node.Wallet, chain, offlineTrace);
+
+            return new Node.OfflineNode(ProtocolSettings,
+                RocksDbStorageProvider.Open(nodePath),
+                node.Wallet,
+                chain,
+                offlineTrace);
         }
     }
 }

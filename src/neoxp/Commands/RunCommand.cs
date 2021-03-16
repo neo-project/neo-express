@@ -32,14 +32,14 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
             var chain = chainManager.Chain;
 
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 
             var node = chain.ConsensusNodes[NodeIndex];
-            using var store = chainManager.GetNodeStore(node, Discard);
-            await chainManager.RunAsync(store, node, SecondsPerBlock, Trace, console.Out, token);
+            using var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
+            await chainManager.RunAsync(storageProvider, node, Trace, console.Out, token);
         }
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)

@@ -2,48 +2,50 @@
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using Neo;
-using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Plugins;
-using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
 using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
-
 
 namespace NeoExpress.Node
 {
     internal partial class ExpressAppLogsPlugin : Plugin, IPersistencePlugin
     {
-        private readonly IExpressStore store;
-        private const byte APP_LOGS_PREFIX = 0xf0;
-        private const byte NOTIFICATIONS_PREFIX = 0xf1;
+        private const string APP_LOGS_STORE_PATH = "app-logs-store";
+        private const string NOTIFICATIONS_STORE_PATH = "notifications-store";
 
-        public ExpressAppLogsPlugin(IExpressStore store)
+        static IStore GetAppLogStore(IStorageProvider storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
+        static IStore GetNotificationsStore(IStorageProvider storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
+
+        private readonly IStore appLogsStore;
+        private readonly IStore notificationsStore;
+
+        public ExpressAppLogsPlugin(IStorageProvider storageProvider)
         {
-            this.store = store;
+            appLogsStore = GetAppLogStore(storageProvider);
+            notificationsStore = GetNotificationsStore(storageProvider);
         }
 
-        public static JObject? TryGetAppLog(IExpressReadOnlyStore store, UInt256 hash)
+        public static JObject? GetAppLog(IStorageProvider storageProvider, UInt256 hash)
         {
-            var value = store.TryGet(APP_LOGS_PREFIX, hash.ToArray());
-            if (value != null && value.Length != 0)
-            {
-                return JObject.Parse(Neo.Utility.StrictUTF8.GetString(value));
-            }
-
-            return null;
+            var store = GetAppLogStore(storageProvider);
+            var value = store.TryGet(hash.ToArray());
+            return value != null && value.Length != 0
+                ? JObject.Parse(Neo.Utility.StrictUTF8.GetString(value))
+                : null;
         }
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IExpressReadOnlyStore store)
+        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IStorageProvider storageProvider)
         {
-            return store.Seek(NOTIFICATIONS_PREFIX, null, SeekDirection.Forward)
+            var store = GetNotificationsStore(storageProvider);
+
+            return store.Seek(Array.Empty<byte>(), SeekDirection.Forward)
                 .Select(t =>
                 {
                     var (blockIndex, txIndex) = ParseNotificationKey(t.Key);
@@ -60,10 +62,7 @@ namespace NeoExpress.Node
 
         public void OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
-            if (applicationExecutedList.Count > ushort.MaxValue)
-            {
-                throw new Exception("applicationExecutedList too big");
-            }
+            if (applicationExecutedList.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
 
             var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
             BinaryPrimitives.WriteUInt32BigEndian(
@@ -76,18 +75,13 @@ namespace NeoExpress.Node
                 if (appExec.Transaction == null) continue;
 
                 var txJson = TxLogToJson(appExec);
-                store.Put(APP_LOGS_PREFIX, appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
+                appLogsStore.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
                 if (appExec.VMState != VMState.FAULT)
                 {
-                    if (appExec.Notifications.Length > ushort.MaxValue)
-                    {
-                        throw new Exception("appExec.Notifications too big");
-                    }
+                    if (appExec.Notifications.Length > ushort.MaxValue) throw new Exception("appExec.Notifications too big");
 
-                    BinaryPrimitives.WriteUInt16BigEndian(
-                           notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)),
-                           (ushort)i);
+                    BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)i);
 
                     for (int j = 0; j < appExec.Notifications.Length; j++)
                     {
@@ -95,10 +89,7 @@ namespace NeoExpress.Node
                             notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
                             (ushort)j);
                         var record = new NotificationRecord(appExec.Notifications[j]);
-                        store.Put(
-                            NOTIFICATIONS_PREFIX,
-                            notificationIndex.ToArray(),
-                            record.ToArray());
+                        notificationsStore.Put(notificationIndex.ToArray(), record.ToArray());
                     }
                 }
             }
@@ -106,7 +97,7 @@ namespace NeoExpress.Node
             var blockJson = BlockLogToJson(block, applicationExecutedList);
             if (blockJson != null)
             {
-                store.Put(APP_LOGS_PREFIX, block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
+                appLogsStore.Put(block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
             }
         }
 

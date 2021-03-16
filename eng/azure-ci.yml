@@ -35,19 +35,19 @@ steps:
   displayName: 'dotnet restore'
   inputs:
     script: |
-      dotnet restore
+      dotnet restore ./src/neoxp/neoxp.csproj
 
 - task: CmdLine@2
   displayName: 'dotnet build'
   inputs:
     script: |
-      dotnet build --no-restore -c $(BuildConfiguration)
+      dotnet build ./src/neoxp/neoxp.csproj --no-restore -c $(BuildConfiguration)
 
 - task: CmdLine@2
   displayName: 'dotnet pack'
   inputs:
     script: |
-      dotnet pack --no-restore --no-build --include-symbols -c $(BuildConfiguration) -o $(Build.ArtifactStagingDirectory)
+      dotnet pack ./src/neoxp/neoxp.csproj --no-restore --no-build --include-symbols -c $(BuildConfiguration) -o $(Build.ArtifactStagingDirectory)
 
 - publish: '$(Build.ArtifactStagingDirectory)'
   displayName: 'publish build artifact'

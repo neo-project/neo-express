@@ -31,29 +31,23 @@ steps:
     packageType: 'sdk'
     useGlobalJson: true
 
-- task: DotNetCoreCLI@2
+- task: CmdLine@2
   displayName: 'dotnet restore'
   inputs:
-    command: 'restore'
-    projects: './src/neoxp/neoxp.csproj'
-    feedsToUse: 'config'
-    nugetConfigPath: './NuGet.Config'
+    script: |
+      dotnet restore
 
-- task: DotNetCoreCLI@2
+- task: CmdLine@2
   displayName: 'dotnet build'
   inputs:
-    command: 'build'
-    projects: './src/neoxp/neoxp.csproj'
-    arguments: '--no-restore -c $(BuildConfiguration)'
+    script: |
+      dotnet build --no-restore -c $(BuildConfiguration)
 
-- task: DotNetCoreCLI@2
+- task: CmdLine@2
   displayName: 'dotnet pack'
   inputs:
-    command: 'pack'
-    packagesToPack: './src/neoxp/neoxp.csproj'
-    nobuild: true
-    includesymbols: true
-    versioningScheme: 'off'
+    script: |
+      dotnet pack --no-restore --no-build --include-symbols -c $(BuildConfiguration) -o $(Build.ArtifactStagingDirectory)
 
 - publish: '$(Build.ArtifactStagingDirectory)'
   displayName: 'publish build artifact'

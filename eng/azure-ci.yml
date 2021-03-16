@@ -32,6 +32,7 @@ steps:
     useGlobalJson: true
 
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
   inputs:
     command: 'restore'
     projects: './src/neoxp/neoxp.csproj'
@@ -39,6 +40,7 @@ steps:
     nugetConfigPath: './NuGet.Config'
 
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
   inputs:
     command: 'build'
     projects: './src/neoxp/neoxp.csproj'

@@ -27,17 +27,16 @@ namespace NeoExpress
 
         readonly IFileSystem fileSystem;
         readonly ExpressChain chain;
-        readonly Lazy<ProtocolSettings> protocolSettings;
+        public ProtocolSettings ProtocolSettings { get; }
 
         public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain, uint secondsPerBlock)
         {
             this.fileSystem = fileSystem;
             this.chain = chain;
-            this.protocolSettings = new Lazy<ProtocolSettings>(chain.GetProtocolSettings(secondsPerBlock));
+            this.ProtocolSettings = chain.GetProtocolSettings(secondsPerBlock);
         }
 
         public ExpressChain Chain => chain;
-        public ProtocolSettings ProtocolSettings => protocolSettings.Value;
 
         string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
 
@@ -180,15 +179,7 @@ namespace NeoExpress
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
-                    var rpcSettings = Neo.Plugins.RpcServerSettings.Default with
-                    {
-                        BindAddress = IPAddress.Loopback,
-                        Network = ProtocolSettings.Magic,
-                        Port = node.RpcPort,
-                        // TODO: Make these configurable (https://github.com/neo-project/neo-express/issues/109)
-                        // MaxGasInvoke = 0,
-                        // MaxFee = 0,
-                    };
+                    var rpcSettings = GetRpcServerSettings(chain, node);
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
                     var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.ScriptHash);
                     rpcServer.RegisterMethods(expressRpcServer);
@@ -217,11 +208,37 @@ namespace NeoExpress
 
             static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
             {
-                var settings = new Dictionary<string, string>() { { "PluginConfiguration:Network", $"{chain.Magic}" } };
+                var settings = new Dictionary<string, string>() 
+                { 
+                    { "PluginConfiguration:Network", $"{chain.Magic}" } 
+                };
+                
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
                 return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
             }
 
+            static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+            {
+                var settings = new Dictionary<string, string>() 
+                { 
+                    { "PluginConfiguration:Network", $"{chain.Magic}" },
+                    { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
+                    { "PluginConfiguration:Port", $"{node.RpcPort}" }
+                };
+
+                if (chain.TryReadSetting<long>("rpc.MaxGasInvoke", long.TryParse, out var maxGasInvoke))
+                {
+                    settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
+                }
+
+                if (chain.TryReadSetting<long>("rpc.MaxFee", long.TryParse, out var maxFee))
+                {
+                    settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
+                }
+
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+            }
         }
 
         public IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)

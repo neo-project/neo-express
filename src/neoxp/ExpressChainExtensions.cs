@@ -119,5 +119,20 @@ namespace NeoExpress
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
+
+        public delegate bool TryParse<T>(string value, [MaybeNullWhen(false)] out T parsedValue);
+
+        public static bool TryReadSetting<T>(this ExpressChain chain, string setting, TryParse<T> tryParse, [MaybeNullWhen(false)] out T value)
+        {
+            if (chain.Settings.TryGetValue(setting, out var stringValue)
+                && tryParse(stringValue, out var result))
+            {
+                value = result;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
     }
 }

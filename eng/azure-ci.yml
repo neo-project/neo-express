@@ -32,10 +32,24 @@ steps:
     useGlobalJson: true
 
 - task: DotNetCoreCLI@2
+  inputs:
+    command: 'restore'
+    projects: './src/neoxp/neoxp.csproj'
+    feedsToUse: 'config'
+    nugetConfigPath: './NuGet.Config'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'build'
+    projects: './src/neoxp/neoxp.csproj'
+    arguments: '--no-restore'
+
+- task: DotNetCoreCLI@2
   displayName: 'dotnet pack'
   inputs:
     command: 'pack'
     packagesToPack: './src/neoxp/neoxp.csproj'
+    nobuild: true
     includesymbols: true
     versioningScheme: 'off'
 

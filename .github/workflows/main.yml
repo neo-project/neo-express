@@ -14,5 +14,7 @@ jobs:
           fetch-depth: 0
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
+      - name: dotnet restore
+        run: dotnet restore
       - name: dotnet pack
         run: dotnet pack --output ./out --configuration Release --no-restore --verbosity normal

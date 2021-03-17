@@ -292,7 +292,7 @@ namespace NeoExpress
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
             RocksDbStorageProvider.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
             var rocksDbStorageProvider = RocksDbStorageProvider.OpenReadOnly(checkpointTempPath);
-            return new CheckpointStorageProvider(rocksDbStorageProvider, folderCleanup);
+            return new CheckpointStorageProvider(rocksDbStorageProvider, checkpointCleanup: folderCleanup);
         }
 
         public IExpressNode GetExpressNode(bool offlineTrace = false)

@@ -31,13 +31,12 @@ steps:
     packageType: 'sdk'
     useGlobalJson: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet pack'
+- task: CmdLine@2
   inputs:
-    command: 'pack'
-    packagesToPack: './src/neoxp/neoxp.csproj'
-    includesymbols: true
-    versioningScheme: 'off'
+    script: |
+      dotnet restore
+      dotnet build -c Release --no-restore
+      dotnet pack -c Release --no-build -o '$(Build.ArtifactStagingDirectory)'
 
 - publish: '$(Build.ArtifactStagingDirectory)'
   displayName: 'publish build artifact'

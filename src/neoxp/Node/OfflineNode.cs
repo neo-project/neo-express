@@ -13,6 +13,7 @@ using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
+using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
@@ -46,7 +47,7 @@ namespace NeoExpress.Node
             this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
             applicationEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
-            
+
             var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
             _ = new ExpressAppLogsPlugin(rocksDbStorageProvider);
             neoSystem = new NeoSystem(settings, storageProviderPlugin.Name);
@@ -65,9 +66,9 @@ namespace NeoExpress.Node
             Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
-// Disable "This async method lacks 'await' operators and will run synchronously" warnings.
-// these methods are async because of the OnlineNode implementation of IExpressNode
-// using async methods ensures exceptions in these methods are returned to calling code correctly
+        // Disable "This async method lacks 'await' operators and will run synchronously" warnings.
+        // these methods are async because of the OnlineNode implementation of IExpressNode
+        // using async methods ensures exceptions in these methods are returned to calling code correctly
 #pragma warning disable 1998
 
         public async Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script)
@@ -347,7 +348,7 @@ namespace NeoExpress.Node
 
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = OracleService.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
             ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
             return await SubmitTransactionAsync(tx);

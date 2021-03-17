@@ -208,19 +208,19 @@ namespace NeoExpress
 
             static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
             {
-                var settings = new Dictionary<string, string>() 
-                { 
-                    { "PluginConfiguration:Network", $"{chain.Magic}" } 
+                var settings = new Dictionary<string, string>()
+                {
+                    { "PluginConfiguration:Network", $"{chain.Magic}" }
                 };
-                
+
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
                 return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
             }
 
             static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
             {
-                var settings = new Dictionary<string, string>() 
-                { 
+                var settings = new Dictionary<string, string>()
+                {
                     { "PluginConfiguration:Network", $"{chain.Magic}" },
                     { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
                     { "PluginConfiguration:Port", $"{node.RpcPort}" }

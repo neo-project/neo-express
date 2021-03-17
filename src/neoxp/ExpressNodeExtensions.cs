@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -16,6 +17,7 @@ using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
+using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
 using All = OneOf.Types.All;
@@ -31,10 +33,10 @@ namespace NeoExpress
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
-                var account = chain?.GetAccount(name);
-                if (account != null)
+                if (chain != null
+                    && chain.TryGetAccount(name, out _, out var account, expressNode.ProtocolSettings))
                 {
-                    scriptHash = account.AsUInt160();
+                    scriptHash = account.ScriptHash;
                     return true;
                 }
 
@@ -65,7 +67,7 @@ namespace NeoExpress
                 return false;
             };
 
-            return new ContractParameterParser(tryGetAccount, tryGetContract);
+            return new ContractParameterParser(expressNode.ProtocolSettings, tryGetAccount, tryGetContract);
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)
@@ -97,30 +99,27 @@ namespace NeoExpress
             throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
         }
 
-        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, ExpressWalletAccount sender, ExpressWalletAccount receiver)
+        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, Wallet sender, UInt160 senderHash, UInt160 receiverHash)
         {
-            var senderHash = sender.AsUInt160();
-            var receiverHash = receiver.AsUInt160();
-
-            return await quantity.Match<Task<UInt256>>(TransferAmountAsync, TransferAllAsync);
-
-            async Task<UInt256> TransferAmountAsync(decimal amount)
+            if (quantity.IsT0)
             {
                 var results = await expressNode.InvokeAsync(asset.MakeScript("decimals")).ConfigureAwait(false);
                 if (results.Stack.Length > 0 && results.Stack[0].Type == Neo.VM.Types.StackItemType.Integer)
                 {
                     var decimals = (byte)(results.Stack[0].GetInteger());
                     var value = quantity.AsT0.ToBigInteger(decimals);
-                    return await expressNode.ExecuteAsync(sender, asset.MakeScript("transfer", senderHash, receiverHash, value, null)).ConfigureAwait(false);
+                    var script = asset.MakeScript("transfer", senderHash, receiverHash, value, null);
+                    return await expressNode.ExecuteAsync(sender, senderHash, script).ConfigureAwait(false);
                 }
                 else
                 {
                     throw new Exception("Invalid response from decimals operation");
                 }
             }
-
-            async Task<UInt256> TransferAllAsync(All _)
+            else
             {
+                Debug.Assert(quantity.IsT1);
+
                 using var sb = new ScriptBuilder();
                 // balanceOf operation places current balance on eval stack
                 sb.EmitDynamicCall(asset, "balanceOf", senderHash);
@@ -136,11 +135,11 @@ namespace NeoExpress
                 sb.EmitPush("transfer");
                 sb.EmitPush(asset);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                return await expressNode.ExecuteAsync(sender, sb.ToArray()).ConfigureAwait(false);
+                return await expressNode.ExecuteAsync(sender, senderHash, sb.ToArray()).ConfigureAwait(false);
             }
         }
 
-        public static async Task<UInt256> DeployAsync(this IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, ExpressWalletAccount account)
+        public static async Task<UInt256> DeployAsync(this IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, Wallet wallet, UInt160 accountHash)
         {
             // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
             Neo.VM.Script script = nefFile.Script;
@@ -164,23 +163,22 @@ namespace NeoExpress
 
             using var sb = new ScriptBuilder();
             sb.EmitDynamicCall(NativeContract.ContractManagement.Hash, "deploy", nefFile.ToArray(), manifest.ToJson().ToString());
-            return await expressNode.ExecuteAsync(account, sb.ToArray()).ConfigureAwait(false);
+            return await expressNode.ExecuteAsync(wallet, accountHash, sb.ToArray()).ConfigureAwait(false);
         }
 
-        public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, ExpressWalletAccount account, IEnumerable<ExpressWalletAccount> oracleAccounts)
+        public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, IEnumerable<ECPoint> oracles)
         {
-            var oracles = oracleAccounts.Select(o =>
-            {
-                var key = DevWalletAccount.FromExpressWalletAccount(o).GetKey() ?? throw new Exception();
-                return new ContractParameter(ContractParameterType.PublicKey) { Value = key.PublicKey };
-            });
-
             var roleParam = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
-            var oraclesParam = new ContractParameter(ContractParameterType.Array) { Value = oracles.ToList() };
+            var oraclesParam = new ContractParameter(ContractParameterType.Array)
+            {
+                Value = oracles
+                    .Select(o => new ContractParameter(ContractParameterType.PublicKey) { Value = o })
+                    .ToList()
+            };
 
             using var sb = new ScriptBuilder();
             sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "designateAsRole", roleParam, oraclesParam);
-            return await expressNode.ExecuteAsync(account, sb.ToArray()).ConfigureAwait(false);
+            return await expressNode.ExecuteAsync(wallet, accountHash, sb.ToArray()).ConfigureAwait(false);
         }
 
         public static async Task<ECPoint[]> GetOracleNodesAsync(this IExpressNode expressNode)
@@ -253,9 +251,9 @@ namespace NeoExpress
                 return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
             }
         }
-        public static async Task<(RpcNep17Balance balance, Nep17Contract token)> GetBalanceAsync(this IExpressNode expressNode, ExpressWalletAccount account, string asset)
+
+        public static async Task<(RpcNep17Balance balance, Nep17Contract token)> GetBalanceAsync(this IExpressNode expressNode, UInt160 accountHash, string asset)
         {
-            var accountHash = account.AsUInt160();
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
 
             using var sb = new ScriptBuilder();
@@ -268,14 +266,12 @@ namespace NeoExpress
             if (stack.Length >= 3)
             {
                 var balance = stack[0].GetInteger();
-                // TODO: retrieve name correctly
-                var name = string.Empty; //Encoding.UTF8.GetString(stack[1].GetSpan());
                 var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
                 var decimals = (byte)(stack[2].GetInteger());
 
                 return (
                     new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },
-                    new Nep17Contract(name, symbol, decimals, assetHash));
+                    new Nep17Contract(symbol, decimals, assetHash));
             }
 
             throw new Exception("invalid script results");

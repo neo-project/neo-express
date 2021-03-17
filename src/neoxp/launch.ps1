@@ -2,7 +2,7 @@ param([int]$secondsPerBlock = 5, [switch]$debug, [string]$checkpoint, [switch]$t
 
 dotnet publish -o .\bin\launch
 
-$expressDllPath = '.\bin\launch\nxp3.dll'
+$expressDllPath = '.\bin\launch\neoxp.dll'
 $traceArg = if ($trace) { "--trace" } else { "" }
 
 function launch($index) {

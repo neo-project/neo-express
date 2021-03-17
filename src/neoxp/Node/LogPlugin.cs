@@ -9,6 +9,7 @@ namespace NeoExpress.Node
 {
     class LogPlugin : Plugin, ILogPlugin
     {
+        private NeoSystem? neoSystem;
         private readonly TextWriter writer;
 
         public LogPlugin(TextWriter writer)
@@ -17,11 +18,29 @@ namespace NeoExpress.Node
             ApplicationEngine.Log += OnLog!;
         }
 
-        private void OnLog(object sender, LogEventArgs args)
+        protected override void OnSystemLoaded(NeoSystem system)
         {
-            var contract = NativeContract.ContractManagement.GetContract(Neo.Ledger.Blockchain.Singleton.View, args.ScriptHash);
-            var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
-            writer.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[96m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
+            neoSystem = system;
+            base.OnSystemLoaded(system);
+        }
+
+        string GetContractName(UInt160 scriptHash)
+        {
+            if (neoSystem != null)
+            {
+                var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
+                if (contract != null)
+                {
+                    return contract.Manifest.Name;
+                }
+            }
+
+            return scriptHash.ToString();
+        }
+
+        void OnLog(object sender, LogEventArgs args)
+        {
+            writer.WriteLine($"\x1b[35m{GetContractName(args.ScriptHash)}\x1b[0m Log: \x1b[96m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
         void ILogPlugin.Log(string source, LogLevel level, object message)

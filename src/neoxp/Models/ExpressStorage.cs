@@ -9,8 +9,5 @@ namespace NeoExpress.Models
 
         [JsonProperty("value")]
         public string Value { get; set; } = string.Empty;
-
-        [JsonProperty("constant")]
-        public bool Constant { get; set; }
     }
 }

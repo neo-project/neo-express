@@ -11,7 +11,13 @@ namespace NeoExpress.Models
     {
         private readonly KeyPair? key;
 
-        public DevWalletAccount(KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash)
+        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash, settings)
+        {
+            this.key = key;
+            Contract = contract;
+        }
+
+        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract contract) : base(contract.ScriptHash, settings)
         {
             this.key = key;
             Contract = contract;
@@ -19,15 +25,12 @@ namespace NeoExpress.Models
 
         public override bool HasKey => key != null;
 
-        public override KeyPair? GetKey()
-        {
-            return key;
-        }
+        public override KeyPair? GetKey() => key;
 
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
             PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
-            ScriptHash = ScriptHash.ToAddress(),
+            ScriptHash = ScriptHash.ToAddress(ProtocolSettings.AddressVersion),
             Label = Label,
             IsDefault = IsDefault,
             Contract = new ExpressWalletAccount.AccountContract()
@@ -39,7 +42,7 @@ namespace NeoExpress.Models
             }
         };
 
-        public static DevWalletAccount FromExpressWalletAccount(ExpressWalletAccount account)
+        public static DevWalletAccount FromExpressWalletAccount(ProtocolSettings settings, ExpressWalletAccount account)
         {
             var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
             var contract = new Contract()
@@ -49,9 +52,10 @@ namespace NeoExpress.Models
                     .Select(Enum.Parse<ContractParameterType>)
                     .ToArray()
             };
-            var scriptHash = account.ScriptHash.ToScriptHash();
 
-            return new DevWalletAccount(keyPair, contract, scriptHash)
+            var scriptHash = account.ScriptHash.ToScriptHash(settings.AddressVersion);
+
+            return new DevWalletAccount(settings, keyPair, contract, scriptHash)
             {
                 Label = account.Label,
                 IsDefault = account.IsDefault

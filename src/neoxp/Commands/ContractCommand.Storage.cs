@@ -47,8 +47,6 @@ namespace NeoExpress.Commands
                         await jsonWriter.WriteValueAsync(storage.Key).ConfigureAwait(false);
                         await jsonWriter.WritePropertyNameAsync("value").ConfigureAwait(false);
                         await jsonWriter.WriteValueAsync(storage.Value).ConfigureAwait(false);
-                        await jsonWriter.WritePropertyNameAsync("constant").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(storage.Constant).ConfigureAwait(false);
                         await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
                     }
                     await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
@@ -59,7 +57,6 @@ namespace NeoExpress.Commands
                     {
                         await writer.WriteLineAsync($"key:        0x{storage.Key}").ConfigureAwait(false);
                         await writer.WriteLineAsync($"  value:    0x{storage.Value}").ConfigureAwait(false);
-                        await writer.WriteLineAsync($"  constant: {storage.Constant}").ConfigureAwait(false);
                     }
                 }
             }

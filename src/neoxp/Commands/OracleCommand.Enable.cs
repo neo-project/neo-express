@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
@@ -45,19 +46,18 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string account, TextWriter writer, bool json = false)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string accountName, TextWriter writer, bool json = false)
             {
-                var _account = chainManager.Chain.GetAccount(account) ?? throw new Exception($"{account} account not found.");
-                var oracles = chainManager.Chain.ConsensusNodes.Select(n => n.Wallet.DefaultAccount ?? throw new Exception());
-                var txHash = await expressNode.DesignateOracleRolesAsync(_account, oracles);
-                if (json)
+                if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
                 {
-                    await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
+                    throw new Exception($"{accountName} account not found.");
                 }
-                else
-                {
-                    await writer.WriteLineAsync($"Oracle Enable Transaction {txHash} submitted").ConfigureAwait(false);
-                }
+
+                var oracles = chainManager.Chain.ConsensusNodes
+                    .Select(n => DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, n.Wallet.DefaultAccount ?? throw new Exception()))
+                    .Select(a => a.GetKey()?.PublicKey ?? throw new Exception());
+                var txHash = await expressNode.DesignateOracleRolesAsync(wallet, account.ScriptHash, oracles).ConfigureAwait(false);
+                await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
             }
         }
     }

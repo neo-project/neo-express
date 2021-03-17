@@ -1,18 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.Network.RPC;
-using Neo.Persistence;
+using Neo.Plugins;
+using Neo.SmartContract;
+using Neo.Wallets;
 using NeoExpress.Models;
 using NeoExpress.Node;
-using Newtonsoft.Json;
 using Nito.Disposables;
 
 namespace NeoExpress
@@ -24,11 +27,13 @@ namespace NeoExpress
 
         readonly IFileSystem fileSystem;
         readonly ExpressChain chain;
+        public ProtocolSettings ProtocolSettings { get; }
 
-        public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain)
+        public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain, uint secondsPerBlock)
         {
             this.fileSystem = fileSystem;
             this.chain = chain;
+            this.ProtocolSettings = chain.GetProtocolSettings(secondsPerBlock);
         }
 
         public ExpressChain Chain => chain;
@@ -103,7 +108,6 @@ namespace NeoExpress
                 }
             });
 
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
             var nodeFolder = fileSystem.GetNodePath(node);
             if (fileSystem.Directory.Exists(nodeFolder))
             {
@@ -117,7 +121,9 @@ namespace NeoExpress
                 }
             }
 
-            RocksDbStore.RestoreCheckpoint(checkPointArchive, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
+            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            RocksDbStorageProvider.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
         }
 
@@ -146,14 +152,12 @@ namespace NeoExpress
             }
         }
 
-        public async Task RunAsync(IExpressStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token)
+        public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (IsRunning(node))
             {
                 throw new Exception("Node already running");
             }
-
-            chain.InitalizeProtocolSettings(secondsPerBlock);
 
             await writer.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
 
@@ -165,24 +169,24 @@ namespace NeoExpress
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
                     using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
-                    var wallet = DevWallet.FromExpressWallet(node.Wallet);
-                    var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
+                    var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+                    var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-                    var dbftPlugin = new Neo.Consensus.DBFTPlugin();
                     var logPlugin = new Node.LogPlugin(writer);
-                    var storageProvider = new Node.ExpressStorageProvider((IStore)store);
+                    var storageProviderPlugin = new Node.StorageProviderPlugin(store);
                     var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
+                    var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
-                    using var system = new Neo.NeoSystem(storageProvider.Name);
-                    var rpcSettings = new Neo.Plugins.RpcServerSettings(port: node.RpcPort);
-                    var rpcServer = new Neo.Plugins.RpcServer(system, rpcSettings);
-                    var expressRpcServer = new ExpressRpcServer(store, multiSigAccount);
+                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
+                    var rpcSettings = GetRpcServerSettings(chain, node);
+                    var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
+                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.ScriptHash);
                     rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
 
-                    system.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {
                         Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
                         WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
@@ -201,9 +205,43 @@ namespace NeoExpress
                 }
             });
             await tcs.Task.ConfigureAwait(false);
+
+            static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
+            {
+                var settings = new Dictionary<string, string>() 
+                { 
+                    { "PluginConfiguration:Network", $"{chain.Magic}" } 
+                };
+                
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
+            }
+
+            static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+            {
+                var settings = new Dictionary<string, string>() 
+                { 
+                    { "PluginConfiguration:Network", $"{chain.Magic}" },
+                    { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
+                    { "PluginConfiguration:Port", $"{node.RpcPort}" }
+                };
+
+                if (chain.TryReadSetting<long>("rpc.MaxGasInvoke", long.TryParse, out var maxGasInvoke))
+                {
+                    settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
+                }
+
+                if (chain.TryReadSetting<long>("rpc.MaxFee", long.TryParse, out var maxFee))
+                {
+                    settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
+                }
+
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+            }
         }
 
-        public IExpressStore GetNodeStore(ExpressConsensusNode node, bool discard)
+        public IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var folder = fileSystem.GetNodePath(node);
 
@@ -211,21 +249,21 @@ namespace NeoExpress
             {
                 try
                 {
-                    var rocksDbStore = RocksDbStore.OpenReadOnly(folder);
-                    return new CheckpointStore(rocksDbStore);
+                    var rocksDbStore = RocksDbStorageProvider.OpenReadOnly(folder);
+                    return new CheckpointStorageProvider(rocksDbStore);
                 }
                 catch
                 {
-                    return new CheckpointStore(NullReadOnlyStore.Instance);
+                    return new CheckpointStorageProvider(null);
                 }
             }
             else
             {
-                return RocksDbStore.Open(folder);
+                return RocksDbStorageProvider.Open(folder);
             }
         }
 
-        public IExpressStore GetCheckpointStore(string checkPointPath)
+        public IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -250,9 +288,11 @@ namespace NeoExpress
                 }
             });
 
-            var multiSigAccount = node.Wallet.Accounts.Single(a => a.IsMultiSigContract());
-            RocksDbStore.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, multiSigAccount.ScriptHash);
-            return new CheckpointStore(RocksDbStore.OpenReadOnly(checkpointTempPath), true, folderCleanup);
+            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            RocksDbStorageProvider.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
+            var rocksDbStorageProvider = RocksDbStorageProvider.OpenReadOnly(checkpointTempPath);
+            return new CheckpointStorageProvider(rocksDbStorageProvider, checkpointCleanup: folderCleanup);
         }
 
         public IExpressNode GetExpressNode(bool offlineTrace = false)
@@ -260,26 +300,24 @@ namespace NeoExpress
             // Check to see if there's a neo-express blockchain currently running by
             // attempting to open a mutex with the multisig account address for a name
 
-            chain.InitalizeProtocolSettings();
-
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var consensusNode = chain.ConsensusNodes[i];
                 if (IsRunning(consensusNode))
                 {
-                    return new Node.OnlineNode(chain, consensusNode);
+                    return new Node.OnlineNode(ProtocolSettings, chain, consensusNode);
                 }
             }
 
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-            return new Node.OfflineNode(RocksDbStore.Open(nodePath), node.Wallet, chain, offlineTrace);
-        }
 
-        public Task<(string path, bool online)> CreateCheckpointAsync(string checkPointPath, bool force)
-        {
-            throw new NotImplementedException();
+            return new Node.OfflineNode(ProtocolSettings,
+                RocksDbStorageProvider.Open(nodePath),
+                node.Wallet,
+                chain,
+                offlineTrace);
         }
     }
 }

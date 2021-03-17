@@ -42,10 +42,18 @@ namespace NeoExpress.Commands
 
         internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string quantity, string asset, string sender, string receiver, TextWriter writer, bool json = false)
         {
+            if (!chainManager.Chain.TryGetAccount(sender, out var senderWallet, out var senderAccount, chainManager.ProtocolSettings))
+            {
+                throw new Exception($"{sender} sender not found.");
+            }
+
+            if (!chainManager.Chain.TryGetAccount(receiver, out _, out var receiverAccount, chainManager.ProtocolSettings))
+            {
+                throw new Exception($"{receiver} receiver not found.");
+            }
+
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-            var senderAccount = chainManager.Chain.GetAccount(sender) ?? throw new Exception($"{sender} sender not found.");
-            var receiverAccount = chainManager.Chain.GetAccount(receiver) ?? throw new Exception($"{receiver} receiver not found.");
-            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderAccount, receiverAccount);
+            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccount.ScriptHash, receiverAccount.ScriptHash);
             await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
 
             static OneOf<decimal, All> ParseQuantity(string quantity)

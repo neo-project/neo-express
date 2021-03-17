@@ -5,6 +5,7 @@ using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
+using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -23,26 +24,53 @@ namespace NeoExpress.Node
         private readonly ExpressChain chain;
         private readonly RpcClient rpcClient;
 
-        public OnlineNode(ExpressChain chain, ExpressConsensusNode node)
+        public ProtocolSettings ProtocolSettings { get; }
+
+        public OnlineNode(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node)
         {
+            this.ProtocolSettings = settings;
             this.chain = chain;
-            rpcClient = new RpcClient(node.GetUri());
+            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"));
         }
 
         public void Dispose()
         {
         }
 
-        public async Task<UInt256> ExecuteAsync(ExpressWalletAccount account, Script script, decimal additionalGas = 0)
+        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, Script script, decimal additionalGas = 0)
         {
-            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = account.AsUInt160() } };
+            var signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = accountHash } };
             var factory = new TransactionManagerFactory(rpcClient);
             var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
-            var tx = await tm
-                .AddGas(additionalGas)
-                .AddSignatures(chain, account)
-                .SignAsync()
-                .ConfigureAwait(false);
+
+            if (additionalGas > 0.0m)
+            {
+                tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
+            }
+
+            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            if (account.Contract.Script.IsMultiSigContract())
+            {
+                var signatureCount = account.Contract.ParameterList.Length;
+                var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
+                if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
+
+                var publicKeys = multiSigWallets
+                    .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
+                    .ToArray();
+
+                for (var i = 0; i < signatureCount; i++)
+                {
+                    var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey() ?? throw new Exception();
+                    tm.AddMultiSig(key, signatureCount, publicKeys);
+                }
+            }
+            else
+            {
+                tm.AddSignature(account.GetKey() ?? throw new Exception());
+            }
+
+            var tx = await tm.SignAsync().ConfigureAwait(false);
 
             return await SubmitTransactionAsync(tx).ConfigureAwait(false);
         }
@@ -57,7 +85,7 @@ namespace NeoExpress.Node
             var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
                 .Select(json => Nep17Contract.FromJson(json))
                 .ToDictionary(c => c.ScriptHash);
-            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress()).ConfigureAwait(false);
+            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion)).ConfigureAwait(false);
             return balances.Balances
                 .Select(b => (
                     balance: b,
@@ -108,7 +136,6 @@ namespace NeoExpress.Node
                 {
                     Key = s["key"].AsString(),
                     Value = s["value"].AsString(),
-                    Constant = s["constant"].AsBoolean()
                 })
                     .ToList();
             }
@@ -195,7 +222,7 @@ namespace NeoExpress.Node
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            ExpressOracle.SignOracleResponseTransaction(chain, tx, oracleNodes);
+            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
             return await SubmitTransactionAsync(tx);
         }
 

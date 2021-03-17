@@ -1,9 +1,11 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
+using Neo.Plugins;
 using NeoExpress.Models;
 
 namespace NeoExpress
@@ -11,10 +13,11 @@ namespace NeoExpress
     internal interface IExpressChainManager
     {
         ExpressChain Chain { get; }
+        ProtocolSettings ProtocolSettings { get; }
 
-        Task RunAsync(IExpressStore store, ExpressConsensusNode node, uint secondsPerBlock, bool enableTrace, TextWriter writer, CancellationToken token);
-        IExpressStore GetNodeStore(ExpressConsensusNode node, bool discard);
-        IExpressStore GetCheckpointStore(string checkPointPath);
+        Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token);
+        IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard);
+        IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath);
 
         void SaveChain(string path);
         Task<(string path, bool online)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force);

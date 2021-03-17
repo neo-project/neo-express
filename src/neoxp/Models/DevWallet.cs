@@ -2,53 +2,57 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.Wallets;
-using Newtonsoft.Json;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Wallets.NEP6;
 
 namespace NeoExpress.Models
 {
     class DevWallet : Wallet
     {
-        private readonly string name;
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
 
-        public DevWallet(string name, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty)
-        {
-            this.name = name;
+        public override string Name { get; }
+        public override Version? Version => null;
 
-            foreach (var a in accounts ?? Enumerable.Empty<DevWalletAccount>())
+        public DevWallet(ProtocolSettings settings, string name, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty, settings)
+        {
+            this.Name = name;
+
+            if (accounts != null)
             {
-                this.accounts.Add(a.ScriptHash, a);
+                foreach (var account in accounts)
+                {
+                    this.accounts.Add(account.ScriptHash, account);
+                }
             }
         }
 
-        public DevWallet(string name, DevWalletAccount account) : base(string.Empty)
+        public DevWallet(ProtocolSettings settings, string name, DevWalletAccount account) : base(string.Empty, settings)
         {
-            this.name = name;
+            this.Name = name;
             accounts.Add(account.ScriptHash, account);
         }
 
         public ExpressWallet ToExpressWallet() => new ExpressWallet()
         {
-            Name = name,
+            Name = Name,
             Accounts = accounts.Values
                     .Select(a => a.ToExpressWalletAccount())
                     .ToList(),
         };
 
-        public static DevWallet FromExpressWallet(ExpressWallet wallet)
+        public static DevWallet FromExpressWallet(ProtocolSettings settings, ExpressWallet wallet)
         {
-            var accounts = wallet.Accounts.Select(DevWalletAccount.FromExpressWalletAccount);
-            return new DevWallet(wallet.Name, accounts);
+            var accounts = wallet.Accounts.Select(a => DevWalletAccount.FromExpressWalletAccount(settings, a));
+            return new DevWallet(settings, wallet.Name, accounts);
         }
 
         public void Export(string filename, string password)
         {
-            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(filename, Name);
+            var nep6Wallet = new NEP6Wallet(filename, ProtocolSettings, Name);
             nep6Wallet.Unlock(password);
             foreach (var account in GetAccounts())
             {
@@ -56,10 +60,6 @@ namespace NeoExpress.Models
             }
             nep6Wallet.Save();
         }
-
-        public override string Name => name;
-
-        public override Version? Version => null;
 
         public override bool Contains(UInt160 scriptHash) => accounts.ContainsKey(scriptHash);
 
@@ -75,25 +75,21 @@ namespace NeoExpress.Models
         public override WalletAccount CreateAccount(byte[] privateKey)
         {
             var key = new KeyPair(privateKey);
-            var contract = new Contract
-            {
-                Script = Contract.CreateSignatureRedeemScript(key.PublicKey),
-                ParameterList = new[] { ContractParameterType.Signature },
-            };
+            var contract = Contract.CreateSignatureContract(key.PublicKey);
 
-            var account = new DevWalletAccount(key, contract, contract.ScriptHash);
+            var account = new DevWalletAccount(ProtocolSettings, key, contract);
             return AddAccount(account);
         }
 
         public override WalletAccount CreateAccount(Contract contract, KeyPair? key = null)
         {
-            var account = new DevWalletAccount(key, contract, contract.ScriptHash);
+            var account = new DevWalletAccount(ProtocolSettings, key, contract);
             return AddAccount(account);
         }
 
         public override WalletAccount CreateAccount(UInt160 scriptHash)
         {
-            var account = new DevWalletAccount(null, null, scriptHash);
+            var account = new DevWalletAccount(ProtocolSettings, null, null, scriptHash);
             return AddAccount(account);
         }
 

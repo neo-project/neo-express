@@ -34,15 +34,15 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console, CancellationToken token)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
                 var chain = chainManager.Chain;
                 if (chain.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
                 }
 
-                using var store = chainManager.GetCheckpointStore(Name);
-                await chainManager.RunAsync(store, chain.ConsensusNodes[0], SecondsPerBlock, Trace, console.Out, token);
+                using var storageProvider = chainManager.GetCheckpointStorageProvider(Name);
+                await chainManager.RunAsync(storageProvider, chain.ConsensusNodes[0], Trace, console.Out, token);
             }
 
             internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)

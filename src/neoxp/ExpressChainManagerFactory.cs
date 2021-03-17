@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
+using Neo.Wallets;
 using NeoExpress.Models;
-using Newtonsoft.Json;
+using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress
 {
@@ -18,62 +21,60 @@ namespace NeoExpress
             this.fileSystem = fileSystem;
         }
 
-        internal const string EXPRESS_EXTENSION = ".neo-express";
-        internal const string DEFAULT_EXPRESS_FILENAME = "default" + EXPRESS_EXTENSION;
+        string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
 
-        string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => "default");
-
-        internal static ExpressChain CreateChain(int nodeCount)
+        internal static ExpressChain CreateChain(int nodeCount, byte? addressVersion)
         {
             if (nodeCount != 1 && nodeCount != 4 && nodeCount != 7)
             {
                 throw new ArgumentException("invalid blockchain node count", nameof(nodeCount));
             }
 
-            var wallets = new List<(DevWallet wallet, Neo.Wallets.WalletAccount account)>(nodeCount);
+            var settings = ProtocolSettings.Default with
+            {
+                Magic = ExpressChain.GenerateMagicValue(),
+                AddressVersion = addressVersion ?? ProtocolSettings.Default.AddressVersion
+            };
 
+            var wallets = new List<(DevWallet wallet, WalletAccount account)>(nodeCount);
             for (var i = 1; i <= nodeCount; i++)
             {
-                var wallet = new DevWallet($"node{i}");
+                var wallet = new DevWallet(settings, $"node{i}");
                 var account = wallet.CreateAccount();
                 account.IsDefault = true;
                 wallets.Add((wallet, account));
             }
 
             var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
-
-            var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+            var contract = Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
 
             foreach (var (wallet, account) in wallets)
             {
                 var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
-                multiSigContractAccount.Label = "MultiSigContract";
+                multiSigContractAccount.Label = "Consensus MultiSigContract";
             }
 
-            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
-            // http://www.iana.org/assignments/port-numbers
-            var nodes = new List<ExpressConsensusNode>(nodeCount);
-            for (var i = 0; i < nodeCount; i++)
+            var nodes = wallets.Select((w, i) => new ExpressConsensusNode
             {
-                nodes.Add(new ExpressConsensusNode()
-                {
-                    TcpPort = GetPortNumber(i, 3),
-                    WebSocketPort = GetPortNumber(i, 4),
-                    RpcPort = GetPortNumber(i, 2),
-                    Wallet = wallets[i].wallet.ToExpressWallet()
-                });
-            }
+                TcpPort = GetPortNumber(i, 3),
+                WebSocketPort = GetPortNumber(i, 4),
+                RpcPort = GetPortNumber(i, 2),
+                Wallet = w.wallet.ToExpressWallet()
+            });
 
             return new ExpressChain()
             {
-                Magic = ExpressChain.GenerateMagicValue(),
-                ConsensusNodes = nodes,
+                Magic = settings.Magic,
+                AddressVersion = settings.AddressVersion,
+                ConsensusNodes = nodes.ToList(),
             };
 
+            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
+            // http://www.iana.org/assignments/port-numbers
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, string output, bool force)
+        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock = 0)
         {
             output = ResolveChainFileName(output);
             if (fileSystem.File.Exists(output))
@@ -93,11 +94,11 @@ namespace NeoExpress
                 throw new ArgumentException($"{output} already exists", nameof(output));
             }
 
-            var chain = CreateChain(nodeCount);
-            return (new ExpressChainManager(fileSystem, chain), output);
+            var chain = CreateChain(nodeCount, addressVersion);
+            return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), output);
         }
 
-        public (IExpressChainManager manager, string path) LoadChain(string path)
+        public (IExpressChainManager manager, string path) LoadChain(string path, uint secondsPerBlock = 0)
         {
             path = ResolveChainFileName(path);
             if (!fileSystem.File.Exists(path))
@@ -106,7 +107,18 @@ namespace NeoExpress
             }
 
             var chain = fileSystem.LoadChain(path);
-            return (new ExpressChainManager(fileSystem, chain), path);
+
+            // validate neo-express file by ensuring stored node zero default account SignatureRedeemScript matches a generated script
+            var account = chain.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("conensus node 0 missing default account");
+            var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
+            var contractScript = account.Contract.Script.HexToBytes();
+
+            if (!Contract.CreateSignatureRedeemScript(keyPair.PublicKey).AsSpan().SequenceEqual(contractScript))
+            {
+                throw new Exception("Invalid Signature Redeem Script. Was this neo-express file created before RC1?");
+            }
+
+            return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), path);
         }
     }
 }

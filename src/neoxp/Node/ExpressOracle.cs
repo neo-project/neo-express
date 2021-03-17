@@ -17,17 +17,17 @@ namespace NeoExpress.Node
 {
     class ExpressOracle
     {
-        public static void SignOracleResponseTransaction(ExpressChain chain, Transaction tx, ECPoint[] oracleNodes)
+        public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, ECPoint[] oracleNodes)
         {
             var signatures = new Dictionary<ECPoint, byte[]>();
 
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var account = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
-                var key = DevWalletAccount.FromExpressWalletAccount(account).GetKey() ?? throw new Exception("Invalid KeyPair");
+                var key = DevWalletAccount.FromExpressWalletAccount(settings, account).GetKey() ?? throw new Exception("Invalid KeyPair");
                 if (oracleNodes.Contains(key.PublicKey))
                 {
-                    signatures.Add(key.PublicKey, tx.Sign(key));
+                    signatures.Add(key.PublicKey, tx.Sign(key, chain.Magic));
                 }
             }
 

@@ -27,8 +27,8 @@ namespace NeoExpress.Commands
             [Argument(1, Description = "Account to pay contract invocation GAS fee")]
             internal string Account { get; init; } = string.Empty;
 
-            [Option("--test", Description = "Test invocation (does not cost GAS)")]
-            internal bool Test { get; init; } = false;
+            [Option(Description = "Invoke contract for results (does not cost GAS)")]
+            internal bool Results { get; init; } = false;
 
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
@@ -60,7 +60,7 @@ namespace NeoExpress.Commands
                 await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
             }
 
-            internal static async Task ExecuteTestAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
+            internal static async Task InvokeForResultsAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
             {
                 if (!fileSystem.File.Exists(invocationFile))
                 {
@@ -100,11 +100,11 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.GetExpressNode(Trace);
 
-                    if (Test)
+                    if (Results)
                     {
-                        await ExecuteTestAsync(chainManager, expressNode, InvocationFile, fileSystem, console.Out, Json);
+                        await InvokeForResultsAsync(chainManager, expressNode, InvocationFile, fileSystem, console.Out, Json);
                     }
                     else
                     {

@@ -30,7 +30,7 @@ namespace NeoExpress.Node
         {
             this.ProtocolSettings = settings;
             this.chain = chain;
-            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"));
+            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
         }
 
         public void Dispose()

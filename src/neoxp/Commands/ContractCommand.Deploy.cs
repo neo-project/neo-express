@@ -33,6 +33,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
+            [Option(Description = "Enable contract execution tracing")]
+            internal bool Trace { get; init; } = false;
+
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
@@ -53,7 +56,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.GetExpressNode(Trace);
                     await ExecuteAsync(chainManager, expressNode, fileSystem, Contract, Account, console.Out, Json).ConfigureAwait(false);
                     return 0;
                 }

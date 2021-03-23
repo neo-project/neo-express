@@ -46,25 +46,23 @@ namespace NeoExpress.Node
             start = start > height ? height : start;
 
             var populatedBlocks = new JArray();
-            while (populatedBlocks.Count < count)
+            var index = start;
+            while (true)
             {
-                var hash = NativeContract.Ledger.GetBlockHash(snapshot, start);
-                var trimmedBlock = NativeContract.Ledger.GetTrimmedBlock(snapshot, hash);
+                var hash = NativeContract.Ledger.GetBlockHash(snapshot, index) 
+                    ?? throw new Exception($"GetBlockHash for {index} returned null");
+                var block = NativeContract.Ledger.GetTrimmedBlock(snapshot, hash)
+                    ?? throw new Exception($"GetTrimmedBlock for {index} returned null");
 
-                if (trimmedBlock != null
-                    && trimmedBlock.Hashes.Length > 1)
+                System.Diagnostics.Debug.Assert(block.Index == index);
+
+                if (index == 0 || block.Hashes.Length > 0)
                 {
-                    populatedBlocks.Add(trimmedBlock.Index);
+                    populatedBlocks.Add(index);
                 }
 
-                if (start == 0)
-                {
-                    break;
-                }
-                else
-                {
-                    start--;
-                }
+                if (index == 0 || populatedBlocks.Count >= count) break;
+                index--;
             }
 
             var response = new JObject();

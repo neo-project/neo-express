@@ -1,5 +1,7 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.Network.P2P.Payloads;
 
 namespace NeoExpress.Commands
 {
@@ -60,6 +62,9 @@ namespace NeoExpress.Commands
                     [Required]
                     internal string Account { get; init; } = string.Empty;
 
+                    [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
                 }
 
                 [Command("invoke")]
@@ -72,6 +77,10 @@ namespace NeoExpress.Commands
                     [Argument(1, Description = "Account to pay contract invocation GAS fee")]
                     [Required]
                     internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
                 }
             }
 

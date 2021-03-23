@@ -88,11 +88,11 @@ namespace NeoExpress.Node
             return result;
         }
 
-        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, Neo.VM.Script script, decimal additionalGas = 0)
+        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var signer = new Signer() { Account = accountHash, Scopes = WitnessScope.CalledByEntry };
+            var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
             var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer });
             if (additionalGas > 0.0m)
             {

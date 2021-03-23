@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 
@@ -30,6 +31,10 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
+            [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
+            [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+            internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
+
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
@@ -39,7 +44,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string accountName, System.IO.TextWriter writer, bool json = false)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string accountName, WitnessScope witnessScope, System.IO.TextWriter writer, bool json = false)
             {
                 if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
                 {
@@ -47,7 +52,7 @@ namespace NeoExpress.Commands
                 }
 
                 var (nefFile, manifest) = await fileSystem.LoadContractAsync(contract).ConfigureAwait(false);
-                var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, account.ScriptHash).ConfigureAwait(false);
+                var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, account.ScriptHash, witnessScope).ConfigureAwait(false);
                 await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
             }
 
@@ -57,7 +62,7 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode(Trace);
-                    await ExecuteAsync(chainManager, expressNode, fileSystem, Contract, Account, console.Out, Json).ConfigureAwait(false);
+                    await ExecuteAsync(chainManager, expressNode, fileSystem, Contract, Account, WitnessScope, console.Out, Json).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

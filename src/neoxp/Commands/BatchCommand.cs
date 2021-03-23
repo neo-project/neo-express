@@ -106,6 +106,7 @@ namespace NeoExpress.Commands
                                 fileSystem,
                                 cmd.Model.Contract,
                                 cmd.Model.Account,
+                                cmd.Model.WitnessScope,
                                 writer).ConfigureAwait(false);
                             break;
                         }
@@ -116,6 +117,7 @@ namespace NeoExpress.Commands
                                 expressNode,
                                 cmd.Model.InvocationFile,
                                 cmd.Model.Account,
+                                cmd.Model.WitnessScope,
                                 fileSystem,
                                 writer).ConfigureAwait(false);
                             break;

@@ -109,7 +109,7 @@ namespace NeoExpress
                     var decimals = (byte)(results.Stack[0].GetInteger());
                     var value = quantity.AsT0.ToBigInteger(decimals);
                     var script = asset.MakeScript("transfer", senderHash, receiverHash, value, null);
-                    return await expressNode.ExecuteAsync(sender, senderHash, script).ConfigureAwait(false);
+                    return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
                 }
                 else
                 {
@@ -135,11 +135,11 @@ namespace NeoExpress
                 sb.EmitPush("transfer");
                 sb.EmitPush(asset);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                return await expressNode.ExecuteAsync(sender, senderHash, sb.ToArray()).ConfigureAwait(false);
+                return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
             }
         }
 
-        public static async Task<UInt256> DeployAsync(this IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, Wallet wallet, UInt160 accountHash)
+        public static async Task<UInt256> DeployAsync(this IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, Wallet wallet, UInt160 accountHash, WitnessScope witnessScope)
         {
             // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
             Neo.VM.Script script = nefFile.Script;
@@ -163,7 +163,7 @@ namespace NeoExpress
 
             using var sb = new ScriptBuilder();
             sb.EmitDynamicCall(NativeContract.ContractManagement.Hash, "deploy", nefFile.ToArray(), manifest.ToJson().ToString());
-            return await expressNode.ExecuteAsync(wallet, accountHash, sb.ToArray()).ConfigureAwait(false);
+            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
         }
 
         public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, IEnumerable<ECPoint> oracles)
@@ -178,7 +178,7 @@ namespace NeoExpress
 
             using var sb = new ScriptBuilder();
             sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "designateAsRole", roleParam, oraclesParam);
-            return await expressNode.ExecuteAsync(wallet, accountHash, sb.ToArray()).ConfigureAwait(false);
+            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
         }
 
         public static async Task<ECPoint[]> GetOracleNodesAsync(this IExpressNode expressNode)

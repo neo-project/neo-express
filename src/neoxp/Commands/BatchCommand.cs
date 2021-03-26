@@ -25,11 +25,14 @@ namespace NeoExpress.Commands
         [Required]
         internal string BatchFile { get; init; } = string.Empty;
 
-        [Option(Description = "Path to neo-express data file")]
-        internal string Input { get; init; } = string.Empty;
-
         [Option(Description = "Reset blockchain before running batch file commands")]
         internal bool Reset { get; init; } = false;
+
+        [Option(Description = "Enable contract execution tracing")]
+        internal bool Trace { get; init; } = false;
+
+        [Option(Description = "Path to neo-express data file")]
+        internal string Input { get; init; } = string.Empty;
 
         internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)
         {
@@ -61,7 +64,7 @@ namespace NeoExpress.Commands
                 }
             }
 
-            using var expressNode = chainManager.GetExpressNode();
+            using var expressNode = chainManager.GetExpressNode(Trace);
 
             var batchApp = new CommandLineApplication<BatchFileCommands>();
             batchApp.Conventions.UseDefaultConventions();

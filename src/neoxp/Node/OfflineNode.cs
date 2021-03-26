@@ -32,6 +32,7 @@ namespace NeoExpress.Node
         private readonly Wallet nodeWallet;
         private readonly ExpressChain chain;
         private readonly RocksDbStorageProvider rocksDbStorageProvider;
+        private readonly Lazy<KeyPair[]> consensusNodesKeys;
         private bool disposedValue;
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
@@ -47,6 +48,10 @@ namespace NeoExpress.Node
             this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
             applicationEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
+                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
+                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
+                .ToArray());
 
             var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
             _ = new ExpressAppLogsPlugin(rocksDbStorageProvider);
@@ -144,8 +149,8 @@ namespace NeoExpress.Node
 
             var snapshot = neoSystem.StoreView;
 
-            // First, we make verify the provided transactions. When running, Neo does verification in two steps: VerifyStateIndependent
-            // and VerifyStateDependent. However, Verify does both parts and there's no point in verifying offline in separate steps.
+            // Verify the provided transactions. When running, Blockchain class does verification in two steps: VerifyStateIndependent and VerifyStateDependent.
+            // However, Verify does both parts and there's no point in verifying dependent/independent in separate steps here
             var verificationContext = new TransactionVerificationContext();
             for (int i = 0; i < transactions.Length; i++)
             {
@@ -156,7 +161,7 @@ namespace NeoExpress.Node
                 }
             }
 
-            // Then we create the block instance
+            // create the block instance
             var prevHash = NativeContract.Ledger.CurrentHash(snapshot);
             var prevBlock = NativeContract.Ledger.GetHeader(snapshot, prevHash);
             var blockHeight = prevBlock.Index + 1;
@@ -178,20 +183,21 @@ namespace NeoExpress.Node
                 Transactions = transactions
             };
 
-            // finally we sign the block, following the logic in ConsensusContext.MakeCommit (create signature)
-            // and ConsensusContext.CreateBlock (sign block)
-            var (_, genesisAccount) = chain.GetGenesisAccount(ProtocolSettings);
+            // retrieve the validators for the next block. Logic lifted from ConensusContext.Reset
+            var validators = NativeContract.NEO.GetNextBlockValidators(snapshot, ProtocolSettings.ValidatorsCount);
+            var m = validators.Length - (validators.Length - 1) / 3;
 
+            // generate the block header witness. Logic lifted from ConsensusContext.CreateBlock
+            var contract = Contract.CreateMultiSigContract(m, validators);
             var signingContext = new ContractParametersContext(snapshot, block.Header);
-            foreach (var node in chain.ConsensusNodes)
+            for (int i = 0, j = 0; i < validators.Length && j < m; i++)
             {
-                var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-                var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-                var key = multiSigAccount.GetKey() ?? throw new Exception();
+                var key = consensusNodesKeys.Value.SingleOrDefault(k => k.PublicKey.Equals(validators[i]));
+                if (key == null) continue;
 
                 var signature = block.Header.Sign(key, ProtocolSettings.Magic);
-                signingContext.AddSignature(genesisAccount.Contract, key.PublicKey, signature);
-                if (signingContext.Completed) break;
+                signingContext.AddSignature(contract, validators[i], signature);
+                j++;
             }
             if (!signingContext.Completed) throw new Exception("block signing incomplete");
             block.Header.Witness = signingContext.GetWitnesses()[0];

@@ -112,7 +112,7 @@ namespace NeoExpress.Commands
             writer.WriteStartObject();
 
             writer.WritePropertyName("Magic");
-            writer.WriteValue(chain.Magic);
+            writer.WriteValue(chain.Network);
             writer.WritePropertyName("AddressVersion");
             writer.WriteValue(settings.AddressVersion);
             writer.WritePropertyName("ValidatorsCount");

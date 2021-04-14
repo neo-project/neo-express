@@ -28,7 +28,7 @@ namespace NeoExpress.Node
                 var key = DevWalletAccount.FromExpressWalletAccount(settings, account).GetKey() ?? throw new Exception("Invalid KeyPair");
                 if (oracleNodes.Contains(key.PublicKey))
                 {
-                    signatures.Add(key.PublicKey, tx.Sign(key, chain.Magic));
+                    signatures.Add(key.PublicKey, tx.Sign(key, chain.Network));
                 }
             }
 

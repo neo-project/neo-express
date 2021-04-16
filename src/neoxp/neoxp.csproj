@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <AssemblyName>neoxp</AssemblyName>
     <Authors>Neo Global Development Seattle</Authors>
@@ -7,7 +6,7 @@
     <Copyright>2015-2021 The Neo Project</Copyright>
     <Description>neo-express is a Neo developer blockchain tool</Description>
     <LangVersion>9</LangVersion>
-    <NeoVersion>3.0.0-mono-master-00762</NeoVersion>
+    <NeoVersion>3.0.0-mono-master-00768</NeoVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>
@@ -22,16 +21,13 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
     <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
-
   <ItemGroup>
     <InternalsVisibleTo Include="test-$(AssemblyName)" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="InternalsVisibleTo.MSBuild" Version="1.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -39,7 +35,7 @@
     </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.35-preview-gbea56fc0dc" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.36-preview-g8ff36622d1" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
@@ -48,5 +44,4 @@
     <PackageReference Include="Nito.Disposables" Version="2.2.0" />
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
   </ItemGroup>
-
 </Project>

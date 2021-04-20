@@ -108,23 +108,21 @@ namespace NeoExpress
                 }
             });
 
-            var nodeFolder = fileSystem.GetNodePath(node);
-            if (fileSystem.Directory.Exists(nodeFolder))
+            var nodePath = fileSystem.GetNodePath(node);
+            if (fileSystem.Directory.Exists(nodePath))
             {
-                if (force)
-                {
-                    fileSystem.Directory.Delete(nodeFolder, true);
-                }
-                else
+                if (!force)
                 {
                     throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
                 }
+
+                fileSystem.Directory.Delete(nodePath, true);
             }
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
             RocksDbStorageProvider.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
-            fileSystem.Directory.Move(checkpointTempPath, nodeFolder);
+            fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
         public void SaveChain(string path)
@@ -140,15 +138,15 @@ namespace NeoExpress
                 throw new InvalidOperationException($"node {scriptHash} currently running");
             }
 
-            var folder = fileSystem.GetNodePath(node);
-            if (fileSystem.Directory.Exists(folder))
+            var nodePath = fileSystem.GetNodePath(node);
+            if (fileSystem.Directory.Exists(nodePath))
             {
                 if (!force)
                 {
                     throw new InvalidOperationException("--force must be specified when resetting a node");
                 }
 
-                fileSystem.Directory.Delete(folder, true);
+                fileSystem.Directory.Delete(nodePath, true);
             }
         }
 
@@ -243,14 +241,14 @@ namespace NeoExpress
 
         public IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
-            var folder = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(folder)) fileSystem.Directory.CreateDirectory(folder);
+            var nodePath = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
             if (discard)
             {
                 try
                 {
-                    var rocksDbStore = RocksDbStorageProvider.OpenReadOnly(folder);
+                    var rocksDbStore = RocksDbStorageProvider.OpenReadOnly(nodePath);
                     return new CheckpointStorageProvider(rocksDbStore);
                 }
                 catch
@@ -260,7 +258,7 @@ namespace NeoExpress
             }
             else
             {
-                return RocksDbStorageProvider.Open(folder);
+                return RocksDbStorageProvider.Open(nodePath);
             }
         }
 

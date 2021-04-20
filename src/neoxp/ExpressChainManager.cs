@@ -242,6 +242,18 @@ namespace NeoExpress
         public IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
+            
+            var c = Console.ForegroundColor;
+            try
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"REMOVE ME Node Path: {nodePath}");
+            }
+            finally
+            {
+                Console.ForegroundColor = c;
+            }
+
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
             if (discard)

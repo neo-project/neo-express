@@ -244,6 +244,7 @@ namespace NeoExpress
         public IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var folder = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(folder)) fileSystem.Directory.CreateDirectory(folder);
 
             if (discard)
             {

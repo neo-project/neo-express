@@ -35,7 +35,7 @@
     </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.44-preview-gce5a10aac8" />
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.45-preview-g65519cee8d" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />

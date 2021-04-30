@@ -60,7 +60,7 @@ namespace NeoExpress.Node
             {
                 Version = 0,
                 Nonce = unchecked((uint)response.Id),
-                ValidUntilBlock = requestTx.BlockIndex + Transaction.MaxValidUntilBlockIncrement,
+                ValidUntilBlock = requestTx.BlockIndex + settings.MaxValidUntilBlockIncrement,
                 Signers = new[]
                 {
                     new Signer

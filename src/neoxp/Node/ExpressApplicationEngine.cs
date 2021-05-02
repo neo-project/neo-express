@@ -65,7 +65,7 @@ namespace NeoExpress.Node
 
         public override VMState Execute()
         {
-            traceDebugSink.Script(CurrentContext.Script);
+            traceDebugSink.Script(CurrentContext?.Script ?? Array.Empty<byte>());
             traceDebugSink.Trace(State, InvocationStack);
             WriteStorages(CurrentScriptHash);
 

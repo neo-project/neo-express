@@ -32,7 +32,7 @@ namespace NeoExpress
 
             var settings = ProtocolSettings.Default with
             {
-                Magic = ExpressChain.GenerateMagicValue(),
+                Network = ExpressChain.GenerateNetworkValue(),
                 AddressVersion = addressVersion ?? ProtocolSettings.Default.AddressVersion
             };
 
@@ -64,7 +64,7 @@ namespace NeoExpress
 
             return new ExpressChain()
             {
-                Magic = settings.Magic,
+                Network = settings.Network,
                 AddressVersion = settings.AddressVersion,
                 ConsensusNodes = nodes.ToList(),
             };

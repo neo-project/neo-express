@@ -104,7 +104,7 @@ namespace NeoExpress.Node
                 tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
             }
 
-            var context = new ContractParametersContext(neoSystem.StoreView, tx);
+            var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
             var account = wallet.GetAccount(accountHash) ?? throw new Exception();
             if (account.IsMultiSigContract())
             {
@@ -189,13 +189,13 @@ namespace NeoExpress.Node
 
             // generate the block header witness. Logic lifted from ConsensusContext.CreateBlock
             var contract = Contract.CreateMultiSigContract(m, validators);
-            var signingContext = new ContractParametersContext(snapshot, block.Header);
+            var signingContext = new ContractParametersContext(snapshot, block.Header, ProtocolSettings.Network);
             for (int i = 0, j = 0; i < validators.Length && j < m; i++)
             {
                 var key = consensusNodesKeys.Value.SingleOrDefault(k => k.PublicKey.Equals(validators[i]));
                 if (key == null) continue;
 
-                var signature = block.Header.Sign(key, ProtocolSettings.Magic);
+                var signature = block.Header.Sign(key, ProtocolSettings.Network);
                 signingContext.AddSignature(contract, validators[i], signature);
                 j++;
             }

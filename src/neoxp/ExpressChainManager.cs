@@ -208,7 +208,7 @@ namespace NeoExpress
             {
                 var settings = new Dictionary<string, string>()
                 {
-                    { "PluginConfiguration:Network", $"{chain.Magic}" }
+                    { "PluginConfiguration:Network", $"{chain.Network}" }
                 };
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
@@ -219,7 +219,7 @@ namespace NeoExpress
             {
                 var settings = new Dictionary<string, string>()
                 {
-                    { "PluginConfiguration:Network", $"{chain.Magic}" },
+                    { "PluginConfiguration:Network", $"{chain.Network}" },
                     { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
                     { "PluginConfiguration:Port", $"{node.RpcPort}" }
                 };
@@ -289,7 +289,7 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbStorageProvider.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Magic, chain.AddressVersion, multiSigAccount.ScriptHash);
+            RocksDbStorageProvider.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Network, chain.AddressVersion, multiSigAccount.ScriptHash);
             var rocksDbStorageProvider = RocksDbStorageProvider.OpenReadOnly(checkpointTempPath);
             return new CheckpointStorageProvider(rocksDbStorageProvider, checkpointCleanup: folderCleanup);
         }

@@ -39,8 +39,7 @@
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
-    <PackageReference Include="Nerdbank.Streams" Version="2.6.81" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Nerdbank.Streams" Version="2.7.74" />
     <PackageReference Include="Nito.Disposables" Version="2.2.0" />
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
   </ItemGroup>

@@ -20,7 +20,7 @@ Neo-Express provides the following features:
 - Blockchain checkpoint and rollback
 
 Docs are somewhat limited at this point. Please review the
-[Command Reference](docs\command-reference.md) to get an understanding of
+[Command Reference](docs/command-reference.md) to get an understanding of
 Neo-Express capabilities.
 
 ## A Message from the Engineer

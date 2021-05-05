@@ -90,7 +90,7 @@ To upgrade Neo-Express, enter the following command in a terminal window:
 Installing on Ubuntu 18.04 requires installing libsnappy-dev and libc6-dev via apt-get
 
 ``` shell
-> sudo apt install libsnappy-dev libc6-dev -y
+> sudo apt install libsnappy-dev libc6-dev librocksdb-dev -y
 ```
 
 ### MacOS Installation

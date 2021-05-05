@@ -38,25 +38,33 @@ namespace NeoExpress.Commands
 
                 if (Json)
                 {
-                    using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
+                    using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer) { Indentation = 4 };
+                    await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
+
+                    await jsonWriter.WritePropertyNameAsync("script-hash").ConfigureAwait(false);
+                    await jsonWriter.WriteValueAsync(scriptHash.ToString()).ConfigureAwait(false);
+
+                    await jsonWriter.WritePropertyNameAsync("storages").ConfigureAwait(false);
                     await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
                     foreach (var storage in storages)
                     {
                         await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
                         await jsonWriter.WritePropertyNameAsync("key").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(storage.Key).ConfigureAwait(false);
+                        await jsonWriter.WriteValueAsync($"0x{storage.Key}").ConfigureAwait(false);
                         await jsonWriter.WritePropertyNameAsync("value").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(storage.Value).ConfigureAwait(false);
+                        await jsonWriter.WriteValueAsync($"0x{storage.Value}").ConfigureAwait(false);
                         await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
                     }
                     await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                    await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
                 }
                 else
                 {
+                    await writer.WriteLineAsync($"contract:  {scriptHash}").ConfigureAwait(false);
                     foreach (var storage in storages)
                     {
-                        await writer.WriteLineAsync($"key:        0x{storage.Key}").ConfigureAwait(false);
-                        await writer.WriteLineAsync($"  value:    0x{storage.Value}").ConfigureAwait(false);
+                        await writer.WriteLineAsync($"  key:     0x{storage.Key}").ConfigureAwait(false);
+                        await writer.WriteLineAsync($"    value: 0x{storage.Value}").ConfigureAwait(false);
                     }
                 }
             }

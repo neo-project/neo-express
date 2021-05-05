@@ -45,7 +45,7 @@ namespace NeoExpress
             };
 
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            var lookup = contracts.ToDictionary(c => c.manifest.Name, c => c.hash);
+            var lookup = contracts.Distinct(new ContractNameEqualityComparer()).ToDictionary(c => c.manifest.Name, c => c.hash);
             ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
             {
                 if (lookup.TryGetValue(name, out var value))
@@ -68,6 +68,19 @@ namespace NeoExpress
             };
 
             return new ContractParameterParser(expressNode.ProtocolSettings, tryGetAccount, tryGetContract);
+        }
+
+        class ContractNameEqualityComparer : IEqualityComparer<(UInt160 hash, ContractManifest manifest)>
+        {
+            public bool Equals((UInt160 hash, ContractManifest manifest) x, (UInt160 hash, ContractManifest manifest) y)
+            {
+                return x.manifest.Name.Equals(y.manifest.Name);
+            }
+
+            public int GetHashCode((UInt160 hash, ContractManifest manifest) obj)
+            {
+                return obj.manifest.Name.GetHashCode();
+            }
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)

@@ -65,6 +65,9 @@ namespace NeoExpress.Commands
                     [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
                     [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
+
+                    [Option(Description = "Deploy contract regardless of name conflict")]
+                    internal bool Force { get; }
                 }
 
                 [Command("invoke")]

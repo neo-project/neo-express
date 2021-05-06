@@ -12,8 +12,6 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Plugins;
-using Neo.SmartContract;
-using Neo.Wallets;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
@@ -157,8 +155,6 @@ namespace NeoExpress
                 throw new Exception("Node already running");
             }
 
-            await writer.WriteLineAsync(store.GetType().Name).ConfigureAwait(false);
-
             var tcs = new TaskCompletionSource<bool>();
             _ = Task.Run(() =>
             {
@@ -190,6 +186,10 @@ namespace NeoExpress
                         WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
                     });
                     dbftPlugin.Start(wallet);
+
+                    // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
+                    // Do not remove or re-word this console output:
+                    writer.WriteLine($"Neo express is running ({store.GetType().Name})"); 
 
                     token.WaitHandle.WaitOne();
                 }

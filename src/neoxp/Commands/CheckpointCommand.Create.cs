@@ -29,8 +29,8 @@ namespace NeoExpress.Commands
 
             internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string name, bool force, System.IO.TextWriter writer)
             {
-                var (path, online) = await chainManager.CreateCheckpointAsync(expressNode, name, force).ConfigureAwait(false);
-                await writer.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {(online ? "online" : "offline")}").ConfigureAwait(false);
+                var (path, mode) = await chainManager.CreateCheckpointAsync(expressNode, name, force).ConfigureAwait(false);
+                await writer.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {mode}").ConfigureAwait(false);
             }
 
             internal async Task<int> OnExecuteAsync(IConsole console)

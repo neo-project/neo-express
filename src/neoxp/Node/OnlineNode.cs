@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
@@ -11,10 +15,6 @@ using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NeoExpress.Node
 {
@@ -35,6 +35,17 @@ namespace NeoExpress.Node
 
         public void Dispose()
         {
+        }
+
+        public async Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
+        {
+            await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointPath).ConfigureAwait(false);
+            return IExpressNode.CheckpointMode.Online;
+        }
+
+        public Task<RpcInvokeResult> InvokeAsync(Script script)
+        {
+            return rpcClient.InvokeScriptAsync(script);
         }
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script,  decimal additionalGas = 0)
@@ -72,27 +83,16 @@ namespace NeoExpress.Node
 
             var tx = await tm.SignAsync().ConfigureAwait(false);
 
-            return await SubmitTransactionAsync(tx).ConfigureAwait(false);
+            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
-        public Task<UInt256> SubmitTransactionAsync(Transaction tx)
+        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
         {
-            return rpcClient.SendRawTransactionAsync(tx);
-        }
+            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
+            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
+            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
-        public async Task<(Neo.Network.RPC.Models.RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address)
-        {
-            var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
-                .Select(json => Nep17Contract.FromJson(json))
-                .ToDictionary(c => c.ScriptHash);
-            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion)).ConfigureAwait(false);
-            return balances.Balances
-                .Select(b => (
-                    balance: b,
-                    contract: contracts.TryGetValue(b.AssetHash, out var value)
-                        ? value
-                        : Nep17Contract.Unknown(b.AssetHash)))
-                .ToArray();
+            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
         public async Task<Block> GetBlockAsync(UInt256 blockHash)
@@ -120,29 +120,6 @@ namespace NeoExpress.Node
             return rpcBlock.Block;
         }
 
-        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
-        {
-            return rpcClient.GetTransactionHeightAsync(txHash.ToString());
-        }
-
-        public async Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash)
-        {
-            var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
-                .ConfigureAwait(false);
-
-            if (json != null && json is Neo.IO.Json.JArray array)
-            {
-                return array.Select(s => new ExpressStorage()
-                {
-                    Key = s["key"].AsString(),
-                    Value = s["value"].AsString(),
-                })
-                    .ToList();
-            }
-
-            return Array.Empty<ExpressStorage>();
-        }
-
         public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
         {
             var hash = txHash.ToString();
@@ -151,9 +128,24 @@ namespace NeoExpress.Node
             return (response.Transaction, log);
         }
 
-        public async Task<RpcInvokeResult> InvokeAsync(Script script)
+        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
         {
-            return await rpcClient.InvokeScriptAsync(script).ConfigureAwait(false);
+            return rpcClient.GetTransactionHeightAsync(txHash.ToString());
+        }
+
+        public async Task<IReadOnlyList<(Neo.Network.RPC.Models.RpcNep17Balance balance, Nep17Contract contract)>> ListBalancesAsync(UInt160 address)
+        {
+            var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
+                .Select(json => Nep17Contract.FromJson(json))
+                .ToDictionary(c => c.ScriptHash);
+            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion)).ConfigureAwait(false);
+            return balances.Balances
+                .Select(b => (
+                    balance: b,
+                    contract: contracts.TryGetValue(b.AssetHash, out var value)
+                        ? value
+                        : Nep17Contract.Unknown(b.AssetHash)))
+                .ToArray();
         }
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
@@ -218,18 +210,22 @@ namespace NeoExpress.Node
             }
         }
 
-        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, ECPoint[] oracleNodes)
+        public async Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
         {
-            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
-            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
-            return await SubmitTransactionAsync(tx);
-        }
+            var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
+                .ConfigureAwait(false);
 
-        public async Task<bool> CreateCheckpointAsync(string checkPointPath)
-        {
-            await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointPath).ConfigureAwait(false);
-            return true;
+            if (json != null && json is Neo.IO.Json.JArray array)
+            {
+                return array.Select(s => new ExpressStorage()
+                {
+                    Key = s["key"].AsString(),
+                    Value = s["value"].AsString(),
+                })
+                    .ToList();
+            }
+
+            return Array.Empty<ExpressStorage>();
         }
     }
 }

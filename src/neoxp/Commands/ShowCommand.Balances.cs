@@ -35,14 +35,14 @@ namespace NeoExpress.Commands
                     }
 
                     using var expressNode = chainManager.GetExpressNode();
-                    var balances = await expressNode.GetBalancesAsync(account.ScriptHash).ConfigureAwait(false);
+                    var balances = await expressNode.ListBalancesAsync(account.ScriptHash).ConfigureAwait(false);
 
-                    if (balances.Length == 0)
+                    if (balances.Count == 0)
                     {
                         console.WriteLine($"No balances for {Account}");
                     }
 
-                    for (int i = 0; i < balances.Length; i++)
+                    for (int i = 0; i < balances.Count; i++)
                     {
                         console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
                         console.WriteLine($"  balance: {balances[i].balance.ToBigDecimal(balances[i].contract.Decimals)}");

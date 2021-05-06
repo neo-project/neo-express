@@ -3,6 +3,7 @@ using System.IO;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 
 namespace NeoExpress.Commands
 {
@@ -43,10 +44,44 @@ namespace NeoExpress.Commands
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();
-                var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
-                var scriptHash = parser.ParseScriptHash(Contract);
-                var manifest = await expressNode.GetContractAsync(scriptHash).ConfigureAwait(false);
-                await writer.WriteLineAsync(manifest.ToJson().ToString(true)).ConfigureAwait(false);
+
+                if (UInt160.TryParse(Contract, out var hash))
+                {
+                    var manifest = await expressNode.GetContractAsync(hash).ConfigureAwait(false);
+                    await writer.WriteLineAsync(manifest.ToJson().ToString(true)).ConfigureAwait(false);
+                }
+                else
+                {
+                    var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
+                    if (contracts.Count == 0)
+                    {
+                        await writer.WriteLineAsync($"No contracts named {Contract} found").ConfigureAwait(false);
+                    }
+                    else if (contracts.Count == 1)
+                    {
+                        await writer.WriteLineAsync(contracts[0].manifest.ToJson().ToString(true)).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await writer.WriteLineAsync("[").ConfigureAwait(false);
+                        var first = true;
+                        for (int i = 0; i < contracts.Count; i++)
+                        {
+                            if (!contracts[i].manifest.Name.Equals(Contract)) continue;
+
+                            await writer.WriteLineAsync(contracts[i].manifest.ToJson().ToString(true)).ConfigureAwait(false);
+                            if (first)
+                            {
+                                first = false;
+                            }
+                            else
+                            {
+                                await writer.WriteLineAsync(",").ConfigureAwait(false);
+                            }
+                        }
+                        await writer.WriteLineAsync("]").ConfigureAwait(false);
+                    }
+                }
             }
         }
     }

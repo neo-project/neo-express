@@ -1,8 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.SmartContract.Manifest;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -28,36 +33,75 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; }
 
+            internal async Task WriteStoragesAsync(IExpressNode expressNode, TextWriter writer, IReadOnlyList<(UInt160 hash, ContractManifest)> contracts)
+            {
+                if (Json)
+                {
+                    using var jsonWriter = new JsonTextWriter(writer);
+
+                    if (contracts.Count > 1) await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+
+                    for (int i = 0; i < contracts.Count; i++)
+                    {
+                        var storages = await expressNode.ListStoragesAsync(contracts[i].hash).ConfigureAwait(false);
+
+                        await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
+
+                        await jsonWriter.WritePropertyNameAsync("script-hash").ConfigureAwait(false);
+                        await jsonWriter.WriteValueAsync(contracts[i].hash.ToString()).ConfigureAwait(false);
+
+                        await jsonWriter.WritePropertyNameAsync("storages").ConfigureAwait(false);
+                        await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+                        for (int j = 0; j < storages.Count; j++)
+                        {
+                            await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
+                            await jsonWriter.WritePropertyNameAsync("key").ConfigureAwait(false);
+                            await jsonWriter.WriteValueAsync($"0x{storages[j].Key}").ConfigureAwait(false);
+                            await jsonWriter.WritePropertyNameAsync("value").ConfigureAwait(false);
+                            await jsonWriter.WriteValueAsync($"0x{storages[j].Value}").ConfigureAwait(false);
+                            await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
+                        }
+                        await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                        await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
+                    }
+
+                    if (contracts.Count > 1) await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    if (contracts.Count == 0)
+                    {
+                        await writer.WriteLineAsync($"No contracts found matching the name {Contract}").ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < contracts.Count; i++)
+                        {
+                            var storages = await expressNode.ListStoragesAsync(contracts[i].hash).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"contract:  {contracts[i].hash}").ConfigureAwait(false);
+                            for (int j = 0; j < storages.Count; j++)
+                            {
+                                await writer.WriteLineAsync($"  key:     0x{storages[j].Key}").ConfigureAwait(false);
+                                await writer.WriteLineAsync($"    value: 0x{storages[j].Value}").ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+            }
+
             internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();
-                var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
-                var scriptHash = parser.ParseScriptHash(Contract);
-                var storages = await expressNode.GetStoragesAsync(scriptHash).ConfigureAwait(false);
 
-                if (Json)
+                if (UInt160.TryParse(Contract, out var hash))
                 {
-                    using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
-                    await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
-                    foreach (var storage in storages)
-                    {
-                        await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
-                        await jsonWriter.WritePropertyNameAsync("key").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(storage.Key).ConfigureAwait(false);
-                        await jsonWriter.WritePropertyNameAsync("value").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(storage.Value).ConfigureAwait(false);
-                        await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
-                    }
-                    await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                    await WriteStoragesAsync(expressNode, writer, new (UInt160, ContractManifest)[] { (hash, null!) }).ConfigureAwait(false);
                 }
                 else
                 {
-                    foreach (var storage in storages)
-                    {
-                        await writer.WriteLineAsync($"key:        0x{storage.Key}").ConfigureAwait(false);
-                        await writer.WriteLineAsync($"  value:    0x{storage.Value}").ConfigureAwait(false);
-                    }
+                    var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
+                    await WriteStoragesAsync(expressNode, writer, contracts).ConfigureAwait(false);
                 }
             }
 

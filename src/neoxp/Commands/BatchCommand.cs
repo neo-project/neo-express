@@ -110,6 +110,8 @@ namespace NeoExpress.Commands
                                 cmd.Model.Contract,
                                 cmd.Model.Account,
                                 cmd.Model.WitnessScope,
+                                cmd.Model.Force,
+                                false,
                                 writer).ConfigureAwait(false);
                             break;
                         }

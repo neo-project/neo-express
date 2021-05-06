@@ -24,10 +24,10 @@ namespace NeoExpress.Commands
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();
-                var oracleNodes = await expressNode.GetOracleNodesAsync();
+                var oracleNodes = await expressNode.ListOracleNodesAsync();
 
-                await writer.WriteLineAsync($"Oracle Nodes ({oracleNodes.Length}): ").ConfigureAwait(false);
-                for (var x = 0; x < oracleNodes.Length; x++)
+                await writer.WriteLineAsync($"Oracle Nodes ({oracleNodes.Count}): ").ConfigureAwait(false);
+                for (var x = 0; x < oracleNodes.Count; x++)
                 {
                     await writer.WriteLineAsync($"  {oracleNodes[x]}").ConfigureAwait(false);
                 }

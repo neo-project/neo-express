@@ -1,18 +1,14 @@
-﻿using Neo;
-using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
-using Neo.Network.RPC;
-using Neo.Network.RPC.Models;
-using Neo.Persistence;
-using Neo.SmartContract;
-using Neo.SmartContract.Native;
-using Neo.Wallets;
-using NeoExpress.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo;
+using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
+using Neo.Persistence;
+using Neo.SmartContract;
+using Neo.Wallets;
 
 namespace NeoExpress
 {
@@ -44,21 +40,6 @@ namespace NeoExpress
 
         public static BigDecimal ToBigDecimal(this RpcNep17Balance balance, byte decimals)
             => new BigDecimal(balance.Amount, decimals);
-
-        public static UInt160 ParseScriptHash(this ContractParameterParser parser, string hashOrContract)
-        {
-            if (UInt160.TryParse(hashOrContract, out var hash))
-            {
-                return hash;
-            }
-
-            if (parser.TryLoadScriptHash(hashOrContract, out var value))
-            {
-                return value;
-            }
-
-            throw new ArgumentException(nameof(hashOrContract));
-        }
 
         public static string ToHexString(this byte[] value, bool reverse = false)
         {

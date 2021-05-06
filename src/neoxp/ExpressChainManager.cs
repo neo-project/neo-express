@@ -12,8 +12,6 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Plugins;
-using Neo.SmartContract;
-using Neo.Wallets;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
@@ -49,7 +47,7 @@ namespace NeoExpress
             return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
-        public async Task<(string path, bool online)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force)
+        public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -75,8 +73,8 @@ namespace NeoExpress
                 fileSystem.Directory.CreateDirectory(parentPath);
             }
 
-            var online = await expressNode.CreateCheckpointAsync(checkPointPath).ConfigureAwait(false);
-            return (checkPointPath, online);
+            var checkpointMode = await expressNode.CreateCheckpointAsync(checkPointPath).ConfigureAwait(false);
+            return (checkPointPath, checkpointMode);
         }
 
         public void RestoreCheckpoint(string checkPointArchive, bool force)

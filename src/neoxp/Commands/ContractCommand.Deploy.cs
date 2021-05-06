@@ -56,13 +56,10 @@ namespace NeoExpress.Commands
 
                 if (!force)
                 {
-                    var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-                    for (int i = 0; i < contracts.Count; i++)
+                    var contracts = await expressNode.ListContractsAsync(manifest.Name).ConfigureAwait(false);
+                    if (contracts.Count > 0)
                     {
-                        if (contracts[i].manifest.Name.Equals(manifest.Name))
-                        {
-                            throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
-                        }
+                        throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
                     }
                 }
 

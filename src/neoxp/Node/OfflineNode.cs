@@ -13,19 +13,16 @@ using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
-using Neo.Persistence;
-using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.Wallets;
 using NeoExpress.Models;
-
 using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
 {
-    internal class OfflineNode : IDisposable, IExpressNode
+    internal sealed class OfflineNode : IDisposable, IExpressNode
     {
         private readonly NeoSystem neoSystem;
         private readonly ExpressApplicationEngineProvider? applicationEngineProvider;
@@ -60,6 +57,26 @@ namespace NeoExpress.Node
             ApplicationEngine.Log += OnLog!;
         }
 
+        void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    neoSystem.Dispose();
+                    rocksDbStorageProvider.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
         private void OnLog(object sender, LogEventArgs args)
         {
             var engine = sender as ApplicationEngine;
@@ -71,26 +88,43 @@ namespace NeoExpress.Node
             Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
-        // Disable "This async method lacks 'await' operators and will run synchronously" warnings.
-        // these methods are async because of the OnlineNode implementation of IExpressNode
-        // using async methods ensures exceptions in these methods are returned to calling code correctly
-#pragma warning disable 1998
-
-        public async Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script)
+        public Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            using ApplicationEngine engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView);
-            var result = new RpcInvokeResult()
+            try
             {
-                State = engine.State,
-                Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
-                GasConsumed = engine.GasConsumed,
-                Stack = engine.ResultStack.ToArray(),
-                Script = string.Empty,
-                Tx = string.Empty
-            };
-            return result;
+                if (disposedValue) return Task.FromException<IExpressNode.CheckpointMode>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
+                rocksDbStorageProvider.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash);
+                return Task.FromResult(IExpressNode.CheckpointMode.Offline);
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<IExpressNode.CheckpointMode>(ex);
+            }
+        }
+
+        public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script)
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<RpcInvokeResult>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                using ApplicationEngine engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView);
+                return Task.FromResult(new RpcInvokeResult()
+                {
+                    State = engine.State,
+                    Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
+                    GasConsumed = engine.GasConsumed,
+                    Stack = engine.ResultStack.ToArray(),
+                    Script = string.Empty,
+                    Tx = string.Empty
+                });
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<RpcInvokeResult>(ex);
+            }
         }
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
@@ -126,10 +160,24 @@ namespace NeoExpress.Node
             }
 
             tx.Witnesses = context.GetWitnesses();
+            return await SubmitTransactionAsync(tx).ConfigureAwait(false);
+        }
+
+        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            using var snapshot = neoSystem.GetSnapshot();
+            var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
+            var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
+            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
+            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+
             return await SubmitTransactionAsync(tx);
         }
 
-        public async Task<UInt256> SubmitTransactionAsync(Transaction tx)
+        async Task<UInt256> SubmitTransactionAsync(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
@@ -205,169 +253,208 @@ namespace NeoExpress.Node
             return block;
         }
 
-        protected virtual void Dispose(bool disposing)
+        public Task<Block> GetBlockAsync(UInt256 blockHash)
         {
-            if (!disposedValue)
+            try
             {
-                if (disposing)
-                {
-                    neoSystem.Dispose();
-                    rocksDbStorageProvider.Dispose();
-                }
+                if (disposedValue) return Task.FromException<Block>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                disposedValue = true;
+                return Task.FromResult(NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockHash));
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<Block>(ex);
             }
         }
 
-        public void Dispose()
+        public Task<Block> GetBlockAsync(uint blockIndex)
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-        public async Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            var contracts = ExpressRpcServer.GetNep17Contracts(neoSystem, rocksDbStorageProvider).ToDictionary(c => c.ScriptHash);
-            var balances = ExpressRpcServer.GetNep17Balances(neoSystem, rocksDbStorageProvider, address)
-                .Select(b => (
-                    balance: new RpcNep17Balance
-                    {
-                        Amount = b.balance,
-                        AssetHash = b.contract.ScriptHash,
-                        LastUpdatedBlock = b.lastUpdatedBlock
-                    },
-                    contract: contracts.TryGetValue(b.contract.ScriptHash, out var value)
-                        ? value
-                        : Nep17Contract.Unknown(b.contract.ScriptHash)))
-                .ToArray();
-
-            return balances;
-        }
-
-        public async Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
-            var log = ExpressAppLogsPlugin.GetAppLog(rocksDbStorageProvider, txHash);
-            return (tx, log != null ? RpcApplicationLog.FromJson(log, ProtocolSettings) : null);
-        }
-
-        public async Task<Block> GetBlockAsync(UInt256 blockHash)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-            var block = NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockHash);
-            return block;
-        }
-
-        public async Task<Block> GetBlockAsync(uint blockIndex)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-            var block = NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockIndex);
-            return block;
-        }
-
-        public async Task<Block> GetLatestBlockAsync()
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            using var snapshot = neoSystem.GetSnapshot();
-            var hash = NativeContract.Ledger.CurrentHash(snapshot);
-            var block = NativeContract.Ledger.GetBlock(snapshot, hash);
-            return block;
-        }
-
-        public async Task<uint> GetTransactionHeightAsync(UInt256 txHash)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            uint? height = NativeContract.Ledger.GetTransactionState(neoSystem.StoreView, txHash)?.BlockIndex;
-            return height.HasValue ? height.Value : throw new Exception("Unknown transaction");
-        }
-
-        public async Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            using var snapshot = neoSystem.GetSnapshot();
-            var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
-
-            if (contract != null)
+            try
             {
+                if (disposedValue) return Task.FromException<Block>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                return Task.FromResult(NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockIndex));
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<Block>(ex);
+            }
+        }
+
+        public Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<ContractManifest>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
+                return contractState != null
+                    ? Task.FromResult(contractState.Manifest)
+                    : Task.FromException<ContractManifest>(new Exception("Unknown contract"));
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<ContractManifest>(ex);
+            }
+        }
+
+        public Task<Block> GetLatestBlockAsync()
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<Block>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                using var snapshot = neoSystem.GetSnapshot();
+                var hash = NativeContract.Ledger.CurrentHash(snapshot);
+                return Task.FromResult(NativeContract.Ledger.GetBlock(snapshot, hash));
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<Block>(ex);
+            }
+        }
+
+        public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<(Transaction, RpcApplicationLog?)>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
+                if (tx == null) return Task.FromException<(Transaction, RpcApplicationLog?)>(new Exception("Unknown Transaction"));
+
+                var jsonLog = ExpressAppLogsPlugin.GetAppLog(rocksDbStorageProvider, txHash);
+                var result = jsonLog != null
+                    ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
+                    : (tx, null);
+
+                return Task.FromResult(result);
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<(Transaction, RpcApplicationLog?)>(ex);
+            }
+        }
+
+        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
+        {
+            try
+            {
+                if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+                var height = NativeContract.Ledger.GetTransactionState(neoSystem.StoreView, txHash)?.BlockIndex;
+                return height.HasValue
+                    ? Task.FromResult(height.Value)
+                    : Task.FromException<uint>(new Exception("Unknown Transaction"));
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<uint>(ex);
+            }
+        }
+
+        public Task<IReadOnlyList<(RpcNep17Balance balance, Nep17Contract contract)>> ListBalancesAsync(UInt160 address)
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                var contractMap = ExpressRpcServer.GetNep17Contracts(neoSystem, rocksDbStorageProvider).ToDictionary(c => c.ScriptHash);
+                var results = ExpressRpcServer.GetNep17Balances(neoSystem, rocksDbStorageProvider, address)
+                    .Select(b => (
+                        balance: new RpcNep17Balance
+                        {
+                            Amount = b.balance,
+                            AssetHash = b.contract.ScriptHash,
+                            LastUpdatedBlock = b.lastUpdatedBlock
+                        },
+                        contract: contractMap.TryGetValue(b.contract.ScriptHash, out var value)
+                            ? value
+                            : Nep17Contract.Unknown(b.contract.ScriptHash)));
+
+                return Task.FromResult<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(results.ToArray());
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(ex);
+            }
+        }
+
+        public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<IReadOnlyList<(UInt160, ContractManifest)>>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                var contracts = NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
+                    .OrderBy(c => c.Id)
+                    .Select(c => (c.Hash, c.Manifest));
+
+                return Task.FromResult<IReadOnlyList<(UInt160, ContractManifest)>>(contracts.ToArray());
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<IReadOnlyList<(UInt160, ContractManifest)>>(ex);
+            }
+        }
+
+        public Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<IReadOnlyList<Nep17Contract>>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                var contracts = ExpressRpcServer.GetNep17Contracts(neoSystem, rocksDbStorageProvider);
+
+                return Task.FromResult<IReadOnlyList<Nep17Contract>>(contracts.ToArray());
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<IReadOnlyList<Nep17Contract>>(ex);
+            }
+        }
+
+        public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<IReadOnlyList<(ulong, OracleRequest)>>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                var requests = NativeContract.Oracle.GetRequests(neoSystem.StoreView);
+
+                return Task.FromResult<IReadOnlyList<(ulong, OracleRequest)>>(requests.ToArray());
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<IReadOnlyList<(ulong, OracleRequest)>>(ex);
+            }
+        }
+
+        public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
+        {
+            try
+            {
+                if (disposedValue) return Task.FromException<IReadOnlyList<ExpressStorage>>(new ObjectDisposedException(nameof(OfflineNode)));
+
+                using var snapshot = neoSystem.GetSnapshot();
+                var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
+
+                if (contract == null) return Task.FromResult<IReadOnlyList<ExpressStorage>>(Array.Empty<ExpressStorage>());
+
                 byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
-                return snapshot.Find(prefix)
+                var results = snapshot.Find(prefix)
                     .Select(t => new ExpressStorage()
                     {
                         Key = t.Key.Key.ToHexString(),
                         Value = t.Value.Value.ToHexString(),
-                    })
-                    .ToList();
+                    });
+
+                return Task.FromResult<IReadOnlyList<ExpressStorage>>(results.ToArray());
             }
-
-            return Array.Empty<ExpressStorage>();
-        }
-
-        public async Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-            if (contractState == null)
+            catch (Exception ex)
             {
-                throw new Exception("Unknown contract");
+                return Task.FromException<IReadOnlyList<ExpressStorage>>(ex);
             }
-            return contractState.Manifest;
         }
-
-        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            return NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
-                .OrderBy(c => c.Id)
-                .Select(c => (c.Hash, c.Manifest))
-                .ToList();
-        }
-
-        public async Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            return ExpressRpcServer.GetNep17Contracts(neoSystem, rocksDbStorageProvider).ToList();
-        }
-
-        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            var requests = NativeContract.Oracle.GetRequests(neoSystem.StoreView).ToList();
-            return requests;
-        }
-
-        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, ECPoint[] oracleNodes)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            using var snapshot = neoSystem.GetSnapshot();
-
-            var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
-            var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
-            if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
-            return await SubmitTransactionAsync(tx);
-        }
-
-        public async Task<bool> CreateCheckpointAsync(string checkPointPath)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-            rocksDbStorageProvider.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash);
-            return false;
-        }
-#pragma warning restore // "This async method lacks 'await' operators and will run synchronously" 
     }
 }

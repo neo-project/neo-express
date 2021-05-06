@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
@@ -26,15 +25,11 @@ namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
-        public static Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, IExpressChainManager chainManager)
-            => expressNode.GetContractParameterParserAsync(chainManager.Chain);
-
-        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, ExpressChain? chain = null)
+        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, IExpressChainManager chainManager, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
-                if (chain != null
-                    && chain.TryGetAccount(name, out _, out var account, expressNode.ProtocolSettings))
+                if (chainManager.Chain.TryGetAccount(name, out _, out var account, expressNode.ProtocolSettings))
                 {
                     scriptHash = account.ScriptHash;
                     return true;
@@ -45,42 +40,35 @@ namespace NeoExpress
             };
 
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            var lookup = contracts.Distinct(new ContractNameEqualityComparer()).ToDictionary(c => c.manifest.Name, c => c.hash);
             ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
             {
-                if (lookup.TryGetValue(name, out var value))
+                UInt160? _scriptHash = null;
+                for (int i = 0; i < contracts.Count; i++)
                 {
-                    scriptHash = value;
-                    return true;
-                }
-
-                foreach (var kvp in lookup)
-                {
-                    if (string.Equals(name, kvp.Key, StringComparison.OrdinalIgnoreCase))
+                    if (contracts[i].manifest.Name.Equals(name, comparison))
                     {
-                        scriptHash = kvp.Value;
-                        return true;
+                        if (_scriptHash == null)
+                        {
+                            _scriptHash = contracts[i].hash;
+                        }
+                        else
+                        {
+                            throw new Exception($"More than one deployed script named {name}");
+                        }
                     }
                 }
 
-                scriptHash = default!;
-                return false;
+                scriptHash = _scriptHash!;
+                return _scriptHash != null;
             };
 
             return new ContractParameterParser(expressNode.ProtocolSettings, tryGetAccount, tryGetContract);
         }
 
-        class ContractNameEqualityComparer : IEqualityComparer<(UInt160 hash, ContractManifest manifest)>
+        public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            public bool Equals((UInt160 hash, ContractManifest manifest) x, (UInt160 hash, ContractManifest manifest) y)
-            {
-                return x.manifest.Name.Equals(y.manifest.Name);
-            }
-
-            public int GetHashCode((UInt160 hash, ContractManifest manifest) obj)
-            {
-                return obj.manifest.Name.GetHashCode();
-            }
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            return contracts.Where(c => c.manifest.Name.Equals(contractName, comparison)).ToList();
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)
@@ -194,7 +182,7 @@ namespace NeoExpress
             return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
         }
 
-        public static async Task<ECPoint[]> GetOracleNodesAsync(this IExpressNode expressNode)
+        public static async Task<IReadOnlyList<ECPoint>> ListOracleNodesAsync(this IExpressNode expressNode)
         {
             var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
 
@@ -227,7 +215,7 @@ namespace NeoExpress
                 throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
             }
 
-            var oracleNodes = await GetOracleNodesAsync(expressNode);
+            var oracleNodes = await ListOracleNodesAsync(expressNode);
 
             var txHashes = new List<UInt256>();
             var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);

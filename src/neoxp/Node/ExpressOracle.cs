@@ -18,7 +18,7 @@ namespace NeoExpress.Node
 {
     class ExpressOracle
     {
-        public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, ECPoint[] oracleNodes)
+        public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, IReadOnlyList<ECPoint> oracleNodes)
         {
             var signatures = new Dictionary<ECPoint, byte[]>();
 
@@ -32,7 +32,7 @@ namespace NeoExpress.Node
                 }
             }
 
-            int m = oracleNodes.Length - (oracleNodes.Length - 1) / 3;
+            int m = oracleNodes.Count - (oracleNodes.Count - 1) / 3;
             if (signatures.Count < m)
             {
                 throw new Exception("Insufficient oracle response signatures");
@@ -49,10 +49,10 @@ namespace NeoExpress.Node
         }
 
         // Copied from OracleService.CreateResponseTx to avoid taking dependency on OracleService package and it's 110mb GRPC runtime
-        public static Transaction? CreateResponseTx(DataCache snapshot, OracleRequest request, OracleResponse response, ECPoint[] oracleNodes, ProtocolSettings settings)
+        public static Transaction? CreateResponseTx(DataCache snapshot, OracleRequest request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes, ProtocolSettings settings)
         {
             var requestTx = NativeContract.Ledger.GetTransactionState(snapshot, request.OriginalTxid);
-            var n = oracleNodes.Length;
+            var n = oracleNodes.Count;
             var m = n - (n - 1) / 3;
             var oracleSignContract = Contract.CreateMultiSigContract(m, oracleNodes);
 

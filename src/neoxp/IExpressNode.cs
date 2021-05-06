@@ -1,5 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo;
-using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
@@ -8,9 +10,6 @@ using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace NeoExpress
 {
@@ -18,21 +17,25 @@ namespace NeoExpress
     {
         ProtocolSettings ProtocolSettings { get; }
 
-        Task<bool> CreateCheckpointAsync(string checkPointPath);
-        Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0);
-        Task<UInt256> SubmitTransactionAsync(Transaction tx);
+        enum CheckpointMode { Online, Offline }
+
+        Task<CheckpointMode> CreateCheckpointAsync(string checkPointPath);
+
         Task<RpcInvokeResult> InvokeAsync(Script script);
-        Task<(RpcNep17Balance balance, Nep17Contract contract)[]> GetBalancesAsync(UInt160 address);
-        Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
+        Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0);
+        Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes);
+
         Task<Block> GetBlockAsync(UInt256 blockHash);
         Task<Block> GetBlockAsync(uint blockIndex);
-        Task<Block> GetLatestBlockAsync();
-        Task<uint> GetTransactionHeightAsync(UInt256 txHash);
-        Task<IReadOnlyList<ExpressStorage>> GetStoragesAsync(UInt160 scriptHash);
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
+        Task<Block> GetLatestBlockAsync();
+        Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
+        Task<uint> GetTransactionHeightAsync(UInt256 txHash);
+
+        Task<IReadOnlyList<(RpcNep17Balance balance, Nep17Contract contract)>> ListBalancesAsync(UInt160 address);
         Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
         Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync();
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
-        Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, ECPoint[] oracleNodes);
+        Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash);
     }
 }

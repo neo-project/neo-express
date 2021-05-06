@@ -22,25 +22,26 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath="" />
+    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="test-$(AssemblyName)" />
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+    <InternalsVisibleTo Include="test-$(AssemblyName)"/>
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="InternalsVisibleTo.MSBuild" Version="1.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.36-preview" />
-    <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
-    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
-    <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
-    <PackageReference Include="Nerdbank.Streams" Version="2.7.74" />
-    <PackageReference Include="Nito.Disposables" Version="2.2.0" />
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.36-preview"/>
+    <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)"/>
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)"/>
+    <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)"/>
+    <PackageReference Include="Nerdbank.Streams" Version="2.7.74"/>
+    <PackageReference Include="Nito.Disposables" Version="2.2.0"/>
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0"/>
+    <PackageReference Include="System.Linq.Async" Version="5.0.0"/>
   </ItemGroup>
 </Project>

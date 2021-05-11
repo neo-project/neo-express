@@ -94,5 +94,10 @@ namespace NeoExpress.Node
         {
             Write((seq, opt) => StorageRecord.Write(seq, opt, scriptHash, storages));
         }
+
+        public void ProtocolSettings(uint network, byte addressVersion)
+        {
+            Write((seq, opt) => ProtocolSettingsRecord.Write(seq, opt, network, addressVersion));
+        }
     }
 }

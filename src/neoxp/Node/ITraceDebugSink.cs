@@ -16,5 +16,6 @@ namespace NeoExpress.Node
         void Fault(Exception exception);
         void Script(byte[] script);
         void Storages(UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages);
+        void ProtocolSettings(uint network, byte addressVersion);
     }
 }

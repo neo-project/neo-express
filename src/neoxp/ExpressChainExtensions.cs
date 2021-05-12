@@ -58,6 +58,59 @@ namespace NeoExpress
             return (wallet, account);
         }
 
+        public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash, ProtocolSettings? settings = null)
+        {
+            if (chain.ConsensusNodes.Count < 1) throw new FormatException("Invalid Express Chain");
+            settings ??= chain.GetProtocolSettings();
+
+            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                var account = chain.ConsensusNodes[0].Wallet.DefaultAccount;
+                if (account == null) throw new FormatException("Consensus Node 0 Wallet missing default account");
+                accountHash = account.ToScriptHash(settings.AddressVersion);
+                return true;
+            }
+
+            if (chain.Wallets != null)
+            {
+                for (int i = 0; i < chain.Wallets.Count; i++)
+                {
+                    if (name.Equals(chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var account = chain.Wallets[i].Accounts.Single();
+                        accountHash = account.ToScriptHash(settings.AddressVersion);
+                        return true;
+                    }
+                }
+            }
+
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var nodeWallet = chain.ConsensusNodes[i].Wallet;
+                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    var account = nodeWallet.DefaultAccount;
+                    if (account == null) throw new FormatException($"Consensus Node {i} Wallet missing default account");
+                    accountHash = account.ToScriptHash(settings.AddressVersion);
+                    return true;
+                }
+            }
+
+            try
+            {
+                accountHash = name.ToScriptHash(settings.AddressVersion);
+                return true;
+            }
+            catch (FormatException)
+            {
+                // format exception means the means the provided name string isn't a valid address string
+            }
+
+            accountHash = UInt160.Zero;
+            return false;
+        }
+
+
         public static bool TryGetAccount(this ExpressChain chain, string name, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out WalletAccount account, ProtocolSettings? settings = null)
         {
             settings ??= chain.GetProtocolSettings();

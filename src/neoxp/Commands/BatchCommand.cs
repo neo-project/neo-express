@@ -94,9 +94,8 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
-                            await CheckpointCommand.Create.ExecuteAsync(
-                                chainManager,
-                                expressNode,
+                            _ = await chainManager.CreateCheckpointAsync(
+                                expressNode, 
                                 cmd.Model.Name,
                                 cmd.Model.Force,
                                 writer).ConfigureAwait(false);

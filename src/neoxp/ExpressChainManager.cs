@@ -47,7 +47,7 @@ namespace NeoExpress
             return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
-        public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force)
+        public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force, System.IO.TextWriter? writer = null)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -74,6 +74,12 @@ namespace NeoExpress
             }
 
             var checkpointMode = await expressNode.CreateCheckpointAsync(checkPointPath).ConfigureAwait(false);
+
+            if (writer != null)
+            {
+                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkPointPath)} checkpoint {checkpointMode}").ConfigureAwait(false);
+            }
+
             return (checkPointPath, checkpointMode);
         }
 

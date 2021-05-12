@@ -24,6 +24,9 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
+            [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+            internal string Password { get; init; } = string.Empty;
+
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
@@ -39,7 +42,9 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode(Trace);
-                    await ExecuteAsync(chainManager, expressNode, Account, console.Out, Json);
+                    var password = chainManager.Chain.GetPassword(Account, Password);
+
+                    await ExecuteAsync(chainManager, expressNode, Account, password, console.Out, Json);
                     return 0;
                 }
                 catch (Exception ex)
@@ -49,7 +54,7 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string accountName, TextWriter writer, bool json = false)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string accountName, string password, TextWriter writer, bool json = false)
             {
                 if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
                 {

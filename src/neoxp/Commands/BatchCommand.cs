@@ -135,6 +135,7 @@ namespace NeoExpress.Commands
                                 chainManager,
                                 expressNode,
                                 cmd.Model.Account,
+                                cmd.Model.Password,
                                 writer).ConfigureAwait(false);
                             break;
                         }

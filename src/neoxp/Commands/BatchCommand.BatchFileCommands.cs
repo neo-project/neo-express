@@ -106,6 +106,9 @@ namespace NeoExpress.Commands
                     [Argument(0, Description = "Account to pay contract invocation GAS fee")]
                     [Required]
                     internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
                 }
 
                 [Command("response")]

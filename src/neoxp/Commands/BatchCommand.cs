@@ -87,6 +87,7 @@ namespace NeoExpress.Commands
                                 cmd.Model.Quantity,
                                 cmd.Model.Asset,
                                 cmd.Model.Sender,
+                                cmd.Model.Password,
                                 cmd.Model.Receiver,
                                 writer).ConfigureAwait(false);
                             break;
@@ -109,6 +110,7 @@ namespace NeoExpress.Commands
                                 fileSystem,
                                 cmd.Model.Contract,
                                 cmd.Model.Account,
+                                cmd.Model.Password,
                                 cmd.Model.WitnessScope,
                                 cmd.Model.Force,
                                 false,
@@ -122,6 +124,7 @@ namespace NeoExpress.Commands
                                 expressNode,
                                 cmd.Model.InvocationFile,
                                 cmd.Model.Account,
+                                cmd.Model.Password,
                                 cmd.Model.WitnessScope,
                                 fileSystem,
                                 writer).ConfigureAwait(false);

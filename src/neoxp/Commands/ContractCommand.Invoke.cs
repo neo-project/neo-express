@@ -38,6 +38,9 @@ namespace NeoExpress.Commands
             [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract invocation")]
             internal decimal AdditionalGas { get; init; } = 0;
 
+            [Option(Description = "password to use for NEP-2/NEP-6 account")]
+            internal string Password { get; init; } = string.Empty;
+
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
@@ -47,7 +50,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            internal static async Task ExecuteTxAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, string accountName, WitnessScope witnessScope, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
+            internal static async Task ExecuteTxAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, string accountName, string password, WitnessScope witnessScope, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
             {
                 if (!fileSystem.File.Exists(invocationFile))
                 {
@@ -113,7 +116,8 @@ namespace NeoExpress.Commands
                     }
                     else
                     {
-                        await ExecuteTxAsync(chainManager, expressNode, InvocationFile, Account, WitnessScope, fileSystem, console.Out, Json);
+                        var password = chainManager.Chain.GetPassword(Account, Password);
+                        await ExecuteTxAsync(chainManager, expressNode, InvocationFile, Account, password, WitnessScope, fileSystem, console.Out, Json);
                     }
 
                     return 0;

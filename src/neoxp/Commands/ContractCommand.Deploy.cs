@@ -33,6 +33,9 @@ namespace NeoExpress.Commands
             [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
             internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
+            [Option(Description = "password to use for NEP-2/NEP-6 account")]
+            internal string Password { get; init; } = string.Empty;
+
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
@@ -45,7 +48,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string accountName, WitnessScope witnessScope, bool force, bool json, System.IO.TextWriter writer)
+            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string accountName, string password, WitnessScope witnessScope, bool force, bool json, System.IO.TextWriter writer)
             {
                 if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
                 {
@@ -73,7 +76,8 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode(Trace);
-                    await ExecuteAsync(chainManager, expressNode, fileSystem, Contract, Account, WitnessScope, Force, Json, console.Out).ConfigureAwait(false);
+                    var password = chainManager.Chain.GetPassword(Account, Password);
+                    await ExecuteAsync(chainManager, expressNode, fileSystem, Contract, Account, password, WitnessScope, Force, Json, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

@@ -48,6 +48,19 @@ namespace NeoExpress
             return false;
         }
 
+        public static string GetPassword(this ExpressChain chain, string name, string password)
+        {
+            // if the user specified a password, use it
+            if (!string.IsNullOrEmpty(password)) return password;
+
+            // if the name is a valid Neo Express account name, no password is needed
+            if (chain.IsReservedName(name)) return password;
+            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return password;
+
+            // if a password is needed but not provided, prompt the user
+            return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
+        }
+
         public static (Wallet wallet, WalletAccount account) GetGenesisAccount(this ExpressChain chain, ProtocolSettings? settings = null)
         {
             Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
@@ -109,7 +122,6 @@ namespace NeoExpress
             accountHash = UInt160.Zero;
             return false;
         }
-
 
         public static bool TryGetAccount(this ExpressChain chain, string name, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out WalletAccount account, ProtocolSettings? settings = null)
         {

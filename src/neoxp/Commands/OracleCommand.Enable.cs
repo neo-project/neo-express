@@ -1,10 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
@@ -14,15 +11,20 @@ namespace NeoExpress.Commands
         internal class Enable
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ITransactionExecutorFactory txExecutorFactory;
 
-            public Enable(IExpressChainManagerFactory chainManagerFactory)
+            public Enable(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
+                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Account to pay contract invocation GAS fee")]
             [Required]
             internal string Account { get; init; } = string.Empty;
+
+            [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+            internal string Password { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
@@ -38,8 +40,9 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode(Trace);
-                    await ExecuteAsync(chainManager, expressNode, Account, console.Out, Json);
+                    var password = chainManager.Chain.ResolvePassword(Account, Password);
+                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    await txExec.OracleEnableAsync(Account, password).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -47,20 +50,6 @@ namespace NeoExpress.Commands
                     await console.Error.WriteLineAsync(ex.Message);
                     return 1;
                 }
-            }
-
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string accountName, TextWriter writer, bool json = false)
-            {
-                if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
-                {
-                    throw new Exception($"{accountName} account not found.");
-                }
-
-                var oracles = chainManager.Chain.ConsensusNodes
-                    .Select(n => DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, n.Wallet.DefaultAccount ?? throw new Exception()))
-                    .Select(a => a.GetKey()?.PublicKey ?? throw new Exception());
-                var txHash = await expressNode.DesignateOracleRolesAsync(wallet, account.ScriptHash, oracles).ConfigureAwait(false);
-                await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
             }
         }
     }

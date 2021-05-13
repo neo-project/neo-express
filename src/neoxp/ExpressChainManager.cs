@@ -47,19 +47,19 @@ namespace NeoExpress
             return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
-        public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force)
+        public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkpointPath, bool force, System.IO.TextWriter? writer = null)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
                 throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
             }
 
-            checkPointPath = ResolveCheckpointFileName(checkPointPath);
-            if (fileSystem.File.Exists(checkPointPath))
+            checkpointPath = ResolveCheckpointFileName(checkpointPath);
+            if (fileSystem.File.Exists(checkpointPath))
             {
                 if (force)
                 {
-                    fileSystem.File.Delete(checkPointPath);
+                    fileSystem.File.Delete(checkpointPath);
                 }
                 else
                 {
@@ -67,14 +67,20 @@ namespace NeoExpress
                 }
             }
 
-            var parentPath = fileSystem.Path.GetDirectoryName(checkPointPath);
+            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath);
             if (!fileSystem.Directory.Exists(parentPath))
             {
                 fileSystem.Directory.CreateDirectory(parentPath);
             }
 
-            var checkpointMode = await expressNode.CreateCheckpointAsync(checkPointPath).ConfigureAwait(false);
-            return (checkPointPath, checkpointMode);
+            var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+
+            if (writer != null)
+            {
+                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
+            }
+
+            return (checkpointPath, mode);
         }
 
         public void RestoreCheckpoint(string checkPointArchive, bool force)

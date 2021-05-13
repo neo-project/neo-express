@@ -18,7 +18,7 @@ namespace NeoExpress
         IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath);
 
         void SaveChain(string path);
-        Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force);
+        Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force, System.IO.TextWriter? writer = null);
         void RestoreCheckpoint(string checkPointPath, bool force);
         void ResetNode(ExpressConsensusNode node, bool force);
         IExpressNode GetExpressNode(bool offlineTrace = false);

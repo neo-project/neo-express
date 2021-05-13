@@ -29,9 +29,9 @@ namespace NeoExpress
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
             {
-                if (chainManager.Chain.TryGetAccount(name, out _, out var account, expressNode.ProtocolSettings))
+                if (chainManager.Chain.TryGetAccountHash(name, out var accountHash, expressNode.ProtocolSettings))
                 {
-                    scriptHash = account.ScriptHash;
+                    scriptHash = accountHash;
                     return true;
                 }
 

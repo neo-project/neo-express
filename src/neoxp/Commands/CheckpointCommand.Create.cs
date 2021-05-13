@@ -27,19 +27,13 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string name, bool force, System.IO.TextWriter writer)
-            {
-                var (path, mode) = await chainManager.CreateCheckpointAsync(expressNode, name, force).ConfigureAwait(false);
-                await writer.WriteLineAsync($"Created {System.IO.Path.GetFileName(path)} checkpoint {mode}").ConfigureAwait(false);
-            }
-
             internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
-                    await ExecuteAsync(chainManager, expressNode, Name, Force, console.Out).ConfigureAwait(false);
+                    _ = await chainManager.CreateCheckpointAsync(expressNode, Name, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

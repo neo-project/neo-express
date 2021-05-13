@@ -14,6 +14,7 @@ namespace NeoExpress
 {
     static class ExpressChainExtensions
     {
+        // this method only used in Online/OfflineNode ExecuteAsync
         public static IReadOnlyList<Wallet> GetMultiSigWallets(this ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
         {
             var builder = ImmutableList.CreateBuilder<Wallet>();
@@ -32,33 +33,36 @@ namespace NeoExpress
             return builder.ToImmutable();
         }
 
-        const string GENESIS = "genesis";
+        internal const string GENESIS = "genesis";
 
         public static bool IsReservedName(this ExpressChain chain, string name)
         {
             if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            foreach (var node in chain.ConsensusNodes)
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                if (string.Equals(node.Wallet.Name, name, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(chain.ConsensusNodes[i].Wallet.Name, name, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 
             return false;
         }
 
-        public static (Wallet wallet, WalletAccount account) GetGenesisAccount(this ExpressChain chain, ProtocolSettings? settings = null)
+        public static string ResolvePassword(this ExpressChain chain, string name, string password)
         {
-            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
+            // if the user specified a password, use it
+            if (!string.IsNullOrEmpty(password)) return password;
 
-            settings ??= chain.GetProtocolSettings();
-            var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
-            var account = wallet.GetMultiSigAccounts().Single();
-            return (wallet, account);
+            // if the name is a valid Neo Express account name, no password is needed
+            if (chain.IsReservedName(name)) return password;
+            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return password;
+
+            // if a password is needed but not provided, prompt the user
+            return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
         }
 
-        public static bool TryGetAccount(this ExpressChain chain, string name, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out WalletAccount account, ProtocolSettings? settings = null)
+        public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash, ProtocolSettings? settings = null)
         {
             settings ??= chain.GetProtocolSettings();
 
@@ -68,8 +72,9 @@ namespace NeoExpress
                 {
                     if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                        account = wallet.GetAccounts().Single(a => a.IsDefault);
+                        var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
+                        var account = wallet.GetAccounts().Single(a => a.IsDefault);
+                        accountHash = account.ScriptHash;
                         return true;
                     }
                 }
@@ -82,38 +87,49 @@ namespace NeoExpress
                 var nodeWallet = chain.ConsensusNodes[i].Wallet;
                 if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    wallet = DevWallet.FromExpressWallet(settings, nodeWallet);
-                    account = wallet.GetAccounts().Single(a => a.IsDefault);
+                    var wallet = DevWallet.FromExpressWallet(settings, nodeWallet);
+                    var account = wallet.GetAccounts().Single(a => a.IsDefault);
+                    accountHash = account.ScriptHash;
                     return true;
                 }
             }
 
             if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
-                (wallet, account) = chain.GetGenesisAccount();
+                (_, accountHash) = chain.GetGenesisAccount(settings);
                 return true;
             }
 
-            wallet = null!;
-            account = null!;
+            if (TryToScriptHash(name, settings.AddressVersion, out accountHash))
+            {
+                return true;
+            }
+
+            accountHash = default;
             return false;
+
+            static bool TryToScriptHash(string name, byte version, [MaybeNullWhen(false)] out UInt160 hash)
+            {
+                try
+                {
+                    hash = name.ToScriptHash(version);
+                    return true;
+                }
+                catch
+                {
+                    hash = null;
+                    return false;
+                }
+            }
         }
 
-        class ExpressWalletAccountEqualityComparer : EqualityComparer<ExpressWalletAccount>
+        public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
         {
-            public readonly static ExpressWalletAccountEqualityComparer Instance = new ExpressWalletAccountEqualityComparer();
+            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
 
-            private ExpressWalletAccountEqualityComparer() { }
-
-            public override bool Equals(ExpressWalletAccount? x, ExpressWalletAccount? y)
-            {
-                return x?.ScriptHash == y?.ScriptHash;
-            }
-
-            public override int GetHashCode([DisallowNull] ExpressWalletAccount obj)
-            {
-                return obj.ScriptHash.GetHashCode();
-            }
+            var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
+            var account = wallet.GetMultiSigAccounts().Single();
+            return (wallet, account.ScriptHash);
         }
 
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)

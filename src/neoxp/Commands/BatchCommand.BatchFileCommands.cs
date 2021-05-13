@@ -29,6 +29,9 @@ namespace NeoExpress.Commands
                 [Argument(3, Description = "Account to send asset to")]
                 [Required]
                 internal string Receiver { get; init; } = string.Empty;
+
+                [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+                internal string Password { get; init; } = string.Empty;
             }
 
             [Command("checkpoint")]
@@ -62,6 +65,9 @@ namespace NeoExpress.Commands
                     [Required]
                     internal string Account { get; init; } = string.Empty;
 
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+
                     [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
                     [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
@@ -81,6 +87,9 @@ namespace NeoExpress.Commands
                     [Required]
                     internal string Account { get; init; } = string.Empty;
 
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+
                     [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
                     [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
@@ -97,6 +106,9 @@ namespace NeoExpress.Commands
                     [Argument(0, Description = "Account to pay contract invocation GAS fee")]
                     [Required]
                     internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
                 }
 
                 [Command("response")]

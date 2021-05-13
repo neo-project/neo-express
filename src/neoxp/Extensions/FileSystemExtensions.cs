@@ -6,7 +6,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.IO;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
-using NeoExpress.Models;
+
 namespace NeoExpress
 {
     static class FileSystemExtensions

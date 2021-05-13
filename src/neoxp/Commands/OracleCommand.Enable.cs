@@ -54,20 +54,6 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
-
-            // internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string accountName, string password, TextWriter writer, bool json = false)
-            // {
-            //     if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
-            //     {
-            //         throw new Exception($"{accountName} account not found.");
-            //     }
-
-            //     var oracles = chainManager.Chain.ConsensusNodes
-            //         .Select(n => DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, n.Wallet.DefaultAccount ?? throw new Exception()))
-            //         .Select(a => a.GetKey()?.PublicKey ?? throw new Exception());
-            //     var txHash = await expressNode.DesignateOracleRolesAsync(wallet, account.ScriptHash, oracles).ConfigureAwait(false);
-            //     await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
-            // }
         }
     }
 }

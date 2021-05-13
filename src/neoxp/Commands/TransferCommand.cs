@@ -50,34 +50,7 @@ namespace NeoExpress.Commands
 
         // internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string quantity, string asset, string sender, string password, string receiver, TextWriter writer, bool json = false)
         // {
-        //     if (!chainManager.Chain.TryGetAccount(sender, out var senderWallet, out var senderAccount, chainManager.ProtocolSettings))
-        //     {
-        //         throw new Exception($"{sender} sender not found.");
-        //     }
 
-        //     if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash, chainManager.ProtocolSettings))
-        //     {
-        //         throw new Exception($"{receiver} account not found.");
-        //     }
-
-        //     var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-        //     var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccount.ScriptHash, receiverHash);
-        //     await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
-
-        //     static OneOf<decimal, All> ParseQuantity(string quantity)
-        //     {
-        //         if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
-        //         {
-        //             return new All();
-        //         }
-
-        //         if (decimal.TryParse(quantity, out var amount))
-        //         {
-        //             return amount;
-        //         }
-
-        //         throw new Exception($"Invalid quantity value {quantity}");
-        //     }
         // }
 
         internal async Task<int> OnExecuteAsync(IConsole console)

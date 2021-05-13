@@ -31,6 +31,7 @@ namespace NeoExpress
                 .AddSingleton<IExpressChainManagerFactory, ExpressChainManagerFactory>()
                 .AddSingleton<ITransactionExecutorFactory, TransactionExecutorFactory>()
                 .AddSingleton<IFileSystem, FileSystem>()
+                .AddSingleton<IConsole>(PhysicalConsole.Singleton)
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();

@@ -45,11 +45,6 @@ namespace NeoExpress.Commands
         [Option(Description = "Output as JSON")]
         internal bool Json { get; init; } = false;
 
-        // internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string quantity, string asset, string sender, string password, string receiver, TextWriter writer, bool json = false)
-        // {
-
-        // }
-
         internal async Task<int> OnExecuteAsync(IConsole console)
         {
             try

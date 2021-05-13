@@ -33,7 +33,7 @@ namespace NeoExpress
             return builder.ToImmutable();
         }
 
-        const string GENESIS = "genesis";
+        internal const string GENESIS = "genesis";
 
         public static bool IsReservedName(this ExpressChain chain, string name)
         {
@@ -96,80 +96,40 @@ namespace NeoExpress
 
             if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
-                var (wallet, account) = GetGenesisAccount(chain, settings);
-                accountHash = account.ScriptHash;
+                (_, accountHash) = chain.GetGenesisAccount(settings);
                 return true;
             }
 
-            try
+            if (TryToScriptHash(name, settings.AddressVersion, out accountHash))
             {
-                accountHash = name.ToScriptHash(settings.AddressVersion);
                 return true;
             }
-            catch {} // ignore if ToScriptHash throws
 
             accountHash = default;
             return false;
 
-            static (Wallet wallet, WalletAccount account) GetGenesisAccount(ExpressChain chain, ProtocolSettings settings)
+            static bool TryToScriptHash(string name, byte version, [MaybeNullWhen(false)] out UInt160 hash)
             {
-                Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
-
-                var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
-                var account = wallet.GetMultiSigAccounts().Single();
-                return (wallet, account);
+                try
+                {
+                    hash = name.ToScriptHash(version);
+                    return true;
+                }
+                catch
+                {
+                    hash = null;
+                    return false;
+                }
             }
         }
 
-
-        public static bool TryGetAccount(this ExpressChain chain, string name, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out WalletAccount account, ProtocolSettings? settings = null)
+        public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
         {
-            settings ??= chain.GetProtocolSettings();
-
-            if (chain.Wallets != null && chain.Wallets.Count > 0)
-            {
-                for (int i = 0; i < chain.Wallets.Count; i++)
-                {
-                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                        account = wallet.GetAccounts().Single(a => a.IsDefault);
-                        return true;
-                    }
-                }
-            }
-
             Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
 
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var nodeWallet = chain.ConsensusNodes[i].Wallet;
-                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    wallet = DevWallet.FromExpressWallet(settings, nodeWallet);
-                    account = wallet.GetAccounts().Single(a => a.IsDefault);
-                    return true;
-                }
-            }
-
-            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                (wallet, account) = GetGenesisAccount(chain, settings);
-                return true;
-            }
-
-            wallet = null!;
-            account = null!;
-            return false;
-
-            static (Wallet wallet, WalletAccount account) GetGenesisAccount(ExpressChain chain, ProtocolSettings settings)
-            {
-                Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
-
-                var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
-                var account = wallet.GetMultiSigAccounts().Single();
-                return (wallet, account);
-            }
+            var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
+            var account = wallet.GetMultiSigAccounts().Single();
+            return (wallet, account.ScriptHash);
         }
 
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)

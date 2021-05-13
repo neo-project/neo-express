@@ -1,11 +1,8 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using Neo;
-using OneOf;
-using All = OneOf.Types.All;
+
 namespace NeoExpress.Commands
 {
     [Command("transfer", Description = "Transfer asset between accounts")]

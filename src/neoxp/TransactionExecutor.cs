@@ -22,6 +22,11 @@ namespace NeoExpress
             this.writer = writer;
         }
 
+        public void Dispose()
+        {
+            expressNode.Dispose();
+        }
+
         public IExpressNode ExpressNode => expressNode;
 
         public Task ContractDeployAsync(string contract, string account, string password, WitnessScope witnessScope, bool force)
@@ -34,9 +39,9 @@ namespace NeoExpress
             throw new System.NotImplementedException();
         }
 
-        public void Dispose()
+        public Task InvokeForResultsAsync(string invocationFile)
         {
-            expressNode.Dispose();
+            throw new System.NotImplementedException();
         }
 
         public Task OracleEnableAsync(string account, string password)

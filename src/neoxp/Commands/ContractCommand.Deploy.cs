@@ -13,13 +13,11 @@ namespace NeoExpress.Commands
         internal class Deploy
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
-            readonly IFileSystem fileSystem;
             readonly ITransactionExecutorFactory txExecutorFactory;
 
-            public Deploy(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
+            public Deploy(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
-                this.fileSystem = fileSystem;
                 this.txExecutorFactory = txExecutorFactory;
             }
 

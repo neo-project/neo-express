@@ -13,13 +13,11 @@ namespace NeoExpress.Commands
         internal class Invoke
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
-            readonly IFileSystem fileSystem;
             readonly ITransactionExecutorFactory txExecutorFactory;
 
-            public Invoke(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
+            public Invoke(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
-                this.fileSystem = fileSystem;
                 this.txExecutorFactory = txExecutorFactory;
             }
 
@@ -70,40 +68,40 @@ namespace NeoExpress.Commands
             //     await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
             // }
 
-            internal async Task InvokeForResultsAsync(IExpressChainManager chainManager, IExpressNode expressNode, System.IO.TextWriter writer)
-            {
-                if (!fileSystem.File.Exists(InvocationFile))
-                {
-                    throw new Exception($"Invocation file {InvocationFile} couldn't be found");
-                }
+            // internal async Task InvokeForResultsAsync(IExpressChainManager chainManager, IExpressNode expressNode, System.IO.TextWriter writer)
+            // {
+            //     if (!fileSystem.File.Exists(InvocationFile))
+            //     {
+            //         throw new Exception($"Invocation file {InvocationFile} couldn't be found");
+            //     }
 
-                var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
-                var script = await parser.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
+            //     var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            //     var script = await parser.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 
-                var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
-                if (Json)
-                {
-                    await writer.WriteLineAsync(result.ToJson().ToString(true)).ConfigureAwait(false);
-                }
-                else
-                {
-                    await writer.WriteLineAsync($"VM State:     {result.State}").ConfigureAwait(false);
-                    await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
-                    if (result.Exception != null)
-                    {
-                        await writer.WriteLineAsync($"Expception:   {result.Exception}").ConfigureAwait(false);
-                    }
-                    if (result.Stack.Length > 0)
-                    {
-                        var stack = result.Stack;
-                        await writer.WriteLineAsync("Result Stack:").ConfigureAwait(false);
-                        for (int i = 0; i < stack.Length; i++)
-                        {
-                            await WriteStackItemAsync(writer, stack[i]).ConfigureAwait(false);
-                        }
-                    }
-                }
-            }
+            //     var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
+            //     if (Json)
+            //     {
+            //         await writer.WriteLineAsync(result.ToJson().ToString(true)).ConfigureAwait(false);
+            //     }
+            //     else
+            //     {
+            //         await writer.WriteLineAsync($"VM State:     {result.State}").ConfigureAwait(false);
+            //         await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
+            //         if (result.Exception != null)
+            //         {
+            //             await writer.WriteLineAsync($"Expception:   {result.Exception}").ConfigureAwait(false);
+            //         }
+            //         if (result.Stack.Length > 0)
+            //         {
+            //             var stack = result.Stack;
+            //             await writer.WriteLineAsync("Result Stack:").ConfigureAwait(false);
+            //             for (int i = 0; i < stack.Length; i++)
+            //             {
+            //                 await WriteStackItemAsync(writer, stack[i]).ConfigureAwait(false);
+            //             }
+            //         }
+            //     }
+            // }
 
             internal async Task<int> OnExecuteAsync(IConsole console)
             {
@@ -113,8 +111,8 @@ namespace NeoExpress.Commands
 
                     if (Results)
                     {
-                        using var expressNode = chainManager.GetExpressNode(Trace);
-                        await InvokeForResultsAsync(chainManager, expressNode, console.Out);
+                        using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                        await txExec.InvokeForResultsAsync(InvocationFile);
                     }
                     else
                     {

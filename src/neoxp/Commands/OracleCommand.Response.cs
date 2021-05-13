@@ -15,12 +15,10 @@ namespace NeoExpress.Commands
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
             readonly ITransactionExecutorFactory txExecutorFactory;
-            readonly IFileSystem fileSystem;
 
-            public Response(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
+            public Response(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
-                this.fileSystem = fileSystem;
                 this.txExecutorFactory = txExecutorFactory;
             }
 

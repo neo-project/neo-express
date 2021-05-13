@@ -225,13 +225,13 @@ namespace NeoExpress
                 throw new Exception($"{sender} sender not found.");
             }
 
-            if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash, chainManager.ProtocolSettings))
+            if (!chainManager.Chain.TryGetAccount(receiver, out var receiverWallet, out var receiverAccount, chainManager.ProtocolSettings))
             {
                 throw new Exception($"{receiver} account not found.");
             }
 
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccount.ScriptHash, receiverHash);
+            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccount.ScriptHash, receiverAccount.ScriptHash);
             await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
 
             static OneOf<decimal, All> ParseQuantity(string quantity)

@@ -14,11 +14,13 @@ namespace NeoExpress.Commands
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
             readonly IFileSystem fileSystem;
+            readonly ITransactionExecutorFactory txExecutorFactory;
 
-            public Deploy(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Deploy(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.fileSystem = fileSystem;
+                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Path to contract .nef file")]
@@ -48,36 +50,36 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string accountName, string password, WitnessScope witnessScope, bool force, bool json, System.IO.TextWriter writer)
-            {
-                if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
-                {
-                    throw new Exception($"{accountName} account not found.");
-                }
+            // internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string contract, string accountName, string password, WitnessScope witnessScope, bool force, bool json, System.IO.TextWriter writer)
+            // {
+            //     if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
+            //     {
+            //         throw new Exception($"{accountName} account not found.");
+            //     }
 
-                var (nefFile, manifest) = await fileSystem.LoadContractAsync(contract).ConfigureAwait(false);
+            //     var (nefFile, manifest) = await fileSystem.LoadContractAsync(contract).ConfigureAwait(false);
 
-                if (!force)
-                {
-                    var contracts = await expressNode.ListContractsAsync(manifest.Name).ConfigureAwait(false);
-                    if (contracts.Count > 0)
-                    {
-                        throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
-                    }
-                }
+            //     if (!force)
+            //     {
+            //         var contracts = await expressNode.ListContractsAsync(manifest.Name).ConfigureAwait(false);
+            //         if (contracts.Count > 0)
+            //         {
+            //             throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
+            //         }
+            //     }
 
-                var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, account.ScriptHash, witnessScope).ConfigureAwait(false);
-                await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
-            }
+            //     var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, account.ScriptHash, witnessScope).ConfigureAwait(false);
+            //     await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
+            // }
 
             internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode(Trace);
                     var password = chainManager.Chain.GetPassword(Account, Password);
-                    await ExecuteAsync(chainManager, expressNode, fileSystem, Contract, Account, password, WitnessScope, Force, Json, console.Out).ConfigureAwait(false);
+                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Force).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

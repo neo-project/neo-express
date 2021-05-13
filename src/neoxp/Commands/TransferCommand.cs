@@ -12,10 +12,12 @@ namespace NeoExpress.Commands
     class TransferCommand
     {
         readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ITransactionExecutorFactory txExecutorFactory;
 
-        public TransferCommand(IExpressChainManagerFactory chainManagerFactory)
+        public TransferCommand(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
+            this.txExecutorFactory = txExecutorFactory;
         }
 
         [Argument(0, Description = "Amount to transfer")]
@@ -46,46 +48,46 @@ namespace NeoExpress.Commands
         [Option(Description = "Output as JSON")]
         internal bool Json { get; init; } = false;
 
-        internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string quantity, string asset, string sender, string password, string receiver, TextWriter writer, bool json = false)
-        {
-            if (!chainManager.Chain.TryGetAccount(sender, out var senderWallet, out var senderAccount, chainManager.ProtocolSettings))
-            {
-                throw new Exception($"{sender} sender not found.");
-            }
+        // internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string quantity, string asset, string sender, string password, string receiver, TextWriter writer, bool json = false)
+        // {
+        //     if (!chainManager.Chain.TryGetAccount(sender, out var senderWallet, out var senderAccount, chainManager.ProtocolSettings))
+        //     {
+        //         throw new Exception($"{sender} sender not found.");
+        //     }
 
-            if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash, chainManager.ProtocolSettings))
-            {
-                throw new Exception($"{receiver} account not found.");
-            }
+        //     if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash, chainManager.ProtocolSettings))
+        //     {
+        //         throw new Exception($"{receiver} account not found.");
+        //     }
 
-            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccount.ScriptHash, receiverHash);
-            await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
+        //     var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
+        //     var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccount.ScriptHash, receiverHash);
+        //     await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
 
-            static OneOf<decimal, All> ParseQuantity(string quantity)
-            {
-                if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
-                {
-                    return new All();
-                }
+        //     static OneOf<decimal, All> ParseQuantity(string quantity)
+        //     {
+        //         if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
+        //         {
+        //             return new All();
+        //         }
 
-                if (decimal.TryParse(quantity, out var amount))
-                {
-                    return amount;
-                }
+        //         if (decimal.TryParse(quantity, out var amount))
+        //         {
+        //             return amount;
+        //         }
 
-                throw new Exception($"Invalid quantity value {quantity}");
-            }
-        }
+        //         throw new Exception($"Invalid quantity value {quantity}");
+        //     }
+        // }
 
         internal async Task<int> OnExecuteAsync(IConsole console)
         {
             try
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                using var expressNode = chainManager.GetExpressNode(Trace);
                 var password = chainManager.Chain.GetPassword(Sender, Password);
-                await ExecuteAsync(chainManager, expressNode, Quantity, Asset, Sender, password, Receiver, console.Out, Json).ConfigureAwait(false);
+                using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                await txExec.TransferAsync(Quantity, Asset, Sender, password, Receiver).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)

@@ -13,12 +13,14 @@ namespace NeoExpress.Commands
     partial class BatchCommand
     {
         readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ITransactionExecutorFactory txExecutorFactory;
         readonly IFileSystem fileSystem;
 
-        public BatchCommand(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+        public BatchCommand(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
             this.fileSystem = fileSystem;
+            this.txExecutorFactory = txExecutorFactory;
         }
 
         [Argument(0, Description = "Path to batch file to run")]
@@ -64,7 +66,7 @@ namespace NeoExpress.Commands
                 }
             }
 
-            using var expressNode = chainManager.GetExpressNode(Trace);
+            using var txExec = txExecutorFactory.Create(chainManager, Trace, false);
 
             var batchApp = new CommandLineApplication<BatchFileCommands>();
             batchApp.Conventions.UseDefaultConventions();
@@ -81,21 +83,18 @@ namespace NeoExpress.Commands
                 {
                     case CommandLineApplication<BatchFileCommands.Transfer> cmd:
                         {
-                            await TransferCommand.ExecuteAsync(
-                                chainManager,
-                                expressNode,
+                            await txExec.TransferAsync(
                                 cmd.Model.Quantity,
                                 cmd.Model.Asset,
                                 cmd.Model.Sender,
                                 cmd.Model.Password,
-                                cmd.Model.Receiver,
-                                writer).ConfigureAwait(false);
+                                cmd.Model.Receiver).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
                             _ = await chainManager.CreateCheckpointAsync(
-                                expressNode, 
+                                txExec.ExpressNode, 
                                 cmd.Model.Name,
                                 cmd.Model.Force,
                                 writer).ConfigureAwait(false);
@@ -103,52 +102,35 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
                         {
-                            await ContractCommand.Deploy.ExecuteAsync(
-                                chainManager,
-                                expressNode,
-                                fileSystem,
+                            await txExec.ContractDeployAsync(
                                 cmd.Model.Contract,
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope,
-                                cmd.Model.Force,
-                                false,
-                                writer).ConfigureAwait(false);
+                                cmd.Model.Force).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                         {
-                            await ContractCommand.Invoke.ExecuteTxAsync(
-                                chainManager,
-                                expressNode,
+                            await txExec.ContractInvokeAsync(
                                 cmd.Model.InvocationFile,
                                 cmd.Model.Account,
                                 cmd.Model.Password,
-                                cmd.Model.WitnessScope,
-                                fileSystem,
-                                writer).ConfigureAwait(false);
+                                cmd.Model.WitnessScope).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
                         {
-                            await OracleCommand.Enable.ExecuteAsync(
-                                chainManager,
-                                expressNode,
+                            await txExec.OracleEnableAsync(
                                 cmd.Model.Account,
-                                cmd.Model.Password,
-                                writer).ConfigureAwait(false);
+                                cmd.Model.Password).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Oracle.Response> cmd:
                         {
-                            await OracleCommand.Response.ExecuteAsync(
-                                chainManager,
-                                expressNode,
-                                fileSystem,
+                            await txExec.OracleResponseAsync(
                                 cmd.Model.Url,
-                                cmd.Model.ResponsePath,
-                                null,
-                                writer).ConfigureAwait(false);
+                                cmd.Model.ResponsePath).ConfigureAwait(false);
                             break;
                         }
                     default:

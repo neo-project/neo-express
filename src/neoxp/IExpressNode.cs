@@ -13,7 +13,7 @@ using NeoExpress.Models;
 
 namespace NeoExpress
 {
-    internal interface IExpressNode : IDisposable
+    interface IExpressNode : IDisposable
     {
         ProtocolSettings ProtocolSettings { get; }
 

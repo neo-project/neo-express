@@ -14,11 +14,13 @@ namespace NeoExpress.Commands
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
             readonly IFileSystem fileSystem;
+            readonly ITransactionExecutorFactory txExecutorFactory;
 
-            public Invoke(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Invoke(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.fileSystem = fileSystem;
+                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Path to contract invocation JSON file")]
@@ -50,36 +52,36 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            internal static async Task ExecuteTxAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, string accountName, string password, WitnessScope witnessScope, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
-            {
-                if (!fileSystem.File.Exists(invocationFile))
-                {
-                    throw new Exception($"Invocation file {invocationFile} couldn't be found");
-                }
+            // internal static async Task ExecuteTxAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, string accountName, string password, WitnessScope witnessScope, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
+            // {
+            //     if (!fileSystem.File.Exists(invocationFile))
+            //     {
+            //         throw new Exception($"Invocation file {invocationFile} couldn't be found");
+            //     }
 
-                if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
+            //     if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
+            //     {
+            //         throw new Exception($"{accountName} account not found.");
+            //     }
+
+            //     var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            //     var script = await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
+            //     var txHash = await expressNode.ExecuteAsync(wallet, account.ScriptHash, witnessScope, script).ConfigureAwait(false);
+            //     await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
+            // }
+
+            internal async Task InvokeForResultsAsync(IExpressChainManager chainManager, IExpressNode expressNode, System.IO.TextWriter writer)
+            {
+                if (!fileSystem.File.Exists(InvocationFile))
                 {
-                    throw new Exception($"{accountName} account not found.");
+                    throw new Exception($"Invocation file {InvocationFile} couldn't be found");
                 }
 
                 var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
-                var script = await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
-                var txHash = await expressNode.ExecuteAsync(wallet, account.ScriptHash, witnessScope, script).ConfigureAwait(false);
-                await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
-            }
-
-            internal static async Task InvokeForResultsAsync(IExpressChainManager chainManager, IExpressNode expressNode, string invocationFile, IFileSystem fileSystem, System.IO.TextWriter writer, bool json = false)
-            {
-                if (!fileSystem.File.Exists(invocationFile))
-                {
-                    throw new Exception($"Invocation file {invocationFile} couldn't be found");
-                }
-
-                var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
-                var script = await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
+                var script = await parser.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 
                 var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
-                if (json)
+                if (Json)
                 {
                     await writer.WriteLineAsync(result.ToJson().ToString(true)).ConfigureAwait(false);
                 }
@@ -108,16 +110,17 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode(Trace);
 
                     if (Results)
                     {
-                        await InvokeForResultsAsync(chainManager, expressNode, InvocationFile, fileSystem, console.Out, Json);
+                        using var expressNode = chainManager.GetExpressNode(Trace);
+                        await InvokeForResultsAsync(chainManager, expressNode, console.Out);
                     }
                     else
                     {
                         var password = chainManager.Chain.GetPassword(Account, Password);
-                        await ExecuteTxAsync(chainManager, expressNode, InvocationFile, Account, password, WitnessScope, fileSystem, console.Out, Json);
+                        using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                        await txExec.ContractInvokeAsync(InvocationFile, Account, password, WitnessScope);
                     }
 
                     return 0;

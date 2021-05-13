@@ -14,12 +14,14 @@ namespace NeoExpress.Commands
         internal class Response
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ITransactionExecutorFactory txExecutorFactory;
             readonly IFileSystem fileSystem;
 
-            public Response(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Response(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.fileSystem = fileSystem;
+                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "URL of oracle request")]
@@ -39,63 +41,54 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string url, string responsePath, ulong? requestId, System.IO.TextWriter writer, bool json = false)
-            {
-                if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");
+            // internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, IFileSystem fileSystem, string url, string responsePath, ulong? requestId, System.IO.TextWriter writer, bool json = false)
+            // {
+            //     if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");
 
-                JObject responseJson;
-                {
-                    using var stream = fileSystem.File.OpenRead(responsePath);
-                    using var reader = new System.IO.StreamReader(stream);
-                    using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
-                    responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
-                }
+            //     JObject responseJson;
+            //     {
+            //         using var stream = fileSystem.File.OpenRead(responsePath);
+            //         using var reader = new System.IO.StreamReader(stream);
+            //         using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
+            //         responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+            //     }
 
-                var txHashes = await expressNode.SubmitOracleResponseAsync(url, OracleResponseCode.Success, responseJson, requestId).ConfigureAwait(false);
+            //     var txHashes = await expressNode.SubmitOracleResponseAsync(url, OracleResponseCode.Success, responseJson, requestId).ConfigureAwait(false);
 
-                if (json)
-                {
-                    using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
-                    await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
-                    for (int i = 0; i < txHashes.Count; i++)
-                    {
-                        await jsonWriter.WriteValueAsync(txHashes[i].ToString()).ConfigureAwait(false);
-                    }
-                    await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
-                }
-                else
-                {
-                    if (txHashes.Count == 0)
-                    {
-                        await writer.WriteLineAsync("No oracle response transactions submitted").ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        await writer.WriteLineAsync("Oracle response transactions submitted:").ConfigureAwait(false);
-                        for (int i = 0; i < txHashes.Count; i++)
-                        {
-                            await writer.WriteLineAsync($"    {txHashes[i]}").ConfigureAwait(false);
-                        }
-                    }
-                }
-            }
+            //     if (json)
+            //     {
+            //         using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
+            //         await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+            //         for (int i = 0; i < txHashes.Count; i++)
+            //         {
+            //             await jsonWriter.WriteValueAsync(txHashes[i].ToString()).ConfigureAwait(false);
+            //         }
+            //         await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+            //     }
+            //     else
+            //     {
+            //         if (txHashes.Count == 0)
+            //         {
+            //             await writer.WriteLineAsync("No oracle response transactions submitted").ConfigureAwait(false);
+            //         }
+            //         else
+            //         {
+            //             await writer.WriteLineAsync("Oracle response transactions submitted:").ConfigureAwait(false);
+            //             for (int i = 0; i < txHashes.Count; i++)
+            //             {
+            //                 await writer.WriteLineAsync($"    {txHashes[i]}").ConfigureAwait(false);
+            //             }
+            //         }
+            //     }
+            // }
 
             internal async Task<int> OnExecuteAsync(IConsole console)
             {
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode();
-
-                    await ExecuteAsync(
-                        chainManager,
-                        expressNode,
-                        fileSystem,
-                        Url,
-                        ResponsePath,
-                        RequestId.hasValue ? RequestId.value : null,
-                        console.Out,
-                        Json).ConfigureAwait(false);
+                    using var txExec = txExecutorFactory.Create(chainManager, false, Json);
+                    await txExec.OracleResponseAsync(Url, ResponsePath, RequestId.hasValue ? RequestId.value : null).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

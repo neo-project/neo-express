@@ -14,10 +14,12 @@ namespace NeoExpress.Commands
         internal class Enable
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ITransactionExecutorFactory txExecutorFactory;
 
-            public Enable(IExpressChainManagerFactory chainManagerFactory)
+            public Enable(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
+                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Account to pay contract invocation GAS fee")]
@@ -41,10 +43,9 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode(Trace);
                     var password = chainManager.Chain.GetPassword(Account, Password);
-
-                    await ExecuteAsync(chainManager, expressNode, Account, password, console.Out, Json);
+                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    await txExec.OracleEnableAsync(Account, password).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -54,19 +55,19 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string accountName, string password, TextWriter writer, bool json = false)
-            {
-                if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
-                {
-                    throw new Exception($"{accountName} account not found.");
-                }
+            // internal static async Task ExecuteAsync(IExpressChainManager chainManager, IExpressNode expressNode, string accountName, string password, TextWriter writer, bool json = false)
+            // {
+            //     if (!chainManager.Chain.TryGetAccount(accountName, out var wallet, out var account, chainManager.ProtocolSettings))
+            //     {
+            //         throw new Exception($"{accountName} account not found.");
+            //     }
 
-                var oracles = chainManager.Chain.ConsensusNodes
-                    .Select(n => DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, n.Wallet.DefaultAccount ?? throw new Exception()))
-                    .Select(a => a.GetKey()?.PublicKey ?? throw new Exception());
-                var txHash = await expressNode.DesignateOracleRolesAsync(wallet, account.ScriptHash, oracles).ConfigureAwait(false);
-                await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
-            }
+            //     var oracles = chainManager.Chain.ConsensusNodes
+            //         .Select(n => DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, n.Wallet.DefaultAccount ?? throw new Exception()))
+            //         .Select(a => a.GetKey()?.PublicKey ?? throw new Exception());
+            //     var txHash = await expressNode.DesignateOracleRolesAsync(wallet, account.ScriptHash, oracles).ConfigureAwait(false);
+            //     await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
+            // }
         }
     }
 }

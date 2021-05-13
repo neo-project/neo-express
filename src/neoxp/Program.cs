@@ -29,6 +29,7 @@ namespace NeoExpress
 
             var services = new ServiceCollection()
                 .AddSingleton<IExpressChainManagerFactory, ExpressChainManagerFactory>()
+                .AddSingleton<ITransactionExecutorFactory, TransactionExecutorFactory>()
                 .AddSingleton<IFileSystem, FileSystem>()
                 .BuildServiceProvider();
 

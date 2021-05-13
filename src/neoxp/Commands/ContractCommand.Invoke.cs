@@ -62,7 +62,7 @@ namespace NeoExpress.Commands
                     }
                     else
                     {
-                        var password = chainManager.Chain.GetPassword(Account, Password);
+                        var password = chainManager.Chain.ResolvePassword(Account, Password);
                         using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
                         await txExec.ContractInvokeAsync(InvocationFile, Account, password, WitnessScope);
                     }

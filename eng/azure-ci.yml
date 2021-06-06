@@ -6,7 +6,7 @@ variables:
   nugetOrgBranch: $[eq(variables.isReleaseBranch, true)]
 
 pool:
-  vmImage: 'windows-2019'
+  vmImage: 'ubuntu-20.04'
 
 trigger:
   batch: false

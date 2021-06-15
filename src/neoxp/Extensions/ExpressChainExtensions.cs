@@ -51,6 +51,8 @@ namespace NeoExpress
 
         public static string ResolvePassword(this ExpressChain chain, string name, string password)
         {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
+
             // if the user specified a password, use it
             if (!string.IsNullOrEmpty(password)) return password;
 

@@ -53,6 +53,11 @@ namespace NeoExpress.Commands
             {
                 try
                 {
+                    if (string.IsNullOrEmpty(Account) && !Results)
+                    {
+                        throw new Exception("Either Account or --results must be specified");
+                    }
+
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
 
                     if (Results)
@@ -80,7 +85,6 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
-
         }
     }
 }

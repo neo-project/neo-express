@@ -6,6 +6,7 @@ using Akka.Actor;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
@@ -110,15 +111,7 @@ namespace NeoExpress.Node
             {
                 if (disposedValue) return Task.FromException<RpcInvokeResult>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                Transaction? tx = signer != null
-                    ? new Transaction
-                        {
-                            Signers = new[] { signer },
-                            Attributes = Array.Empty<TransactionAttribute>(),
-                            Witnesses = Array.Empty<Witness>(),
-                        }
-                    : null;
-
+                Transaction tx = TestApplicationEngine.CreateTestTransaction(signer);
                 using ApplicationEngine engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView, tx);
                 return Task.FromResult(new RpcInvokeResult()
                 {

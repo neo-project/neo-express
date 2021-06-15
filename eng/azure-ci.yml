@@ -29,7 +29,7 @@ steps:
   displayName: 'use .NET Core SDK from global.json'
   inputs:
     packageType: 'sdk'
-    useGlobalJson: true
+    version: '5.0.x'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'

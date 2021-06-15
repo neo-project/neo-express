@@ -12,8 +12,10 @@ jobs:
         fetch-depth: 0
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
     - name: Install nbgv
-      run: dotnet tool install nbgv --tool-path ./tools --version 3.3.37
+      run: dotnet tool install nbgv --tool-path ./tools
     - name: Run nbgv
       run: echo "NUGET_PACKAGE_VERSION=$(./tools/nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_ENV
     - name: Install dependencies

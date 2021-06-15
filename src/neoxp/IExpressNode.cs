@@ -21,7 +21,7 @@ namespace NeoExpress
 
         Task<CheckpointMode> CreateCheckpointAsync(string checkPointPath);
 
-        Task<RpcInvokeResult> InvokeAsync(Script script);
+        Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null);
         Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0);
         Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes);
 

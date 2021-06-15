@@ -43,9 +43,11 @@ namespace NeoExpress.Node
             return IExpressNode.CheckpointMode.Online;
         }
 
-        public Task<RpcInvokeResult> InvokeAsync(Script script)
+        public Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null)
         {
-            return rpcClient.InvokeScriptAsync(script);
+            return signer == null
+                ? rpcClient.InvokeScriptAsync(script)
+                : rpcClient.InvokeScriptAsync(script, signer);
         }
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script,  decimal additionalGas = 0)

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo;
+using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.Persistence;
@@ -18,12 +19,15 @@ namespace NeoExpress
 
         public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
 
-        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot) => Invoke(builder.ToArray(), settings, snapshot);
+        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+            => Invoke(builder.ToArray(), settings, snapshot, container);
 
-        public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot) => ApplicationEngine.Run(
-            script: script,
-            snapshot: snapshot,
-            settings: settings);
+        public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+            => ApplicationEngine.Run(
+                script: script,
+                snapshot: snapshot,
+                settings: settings,
+                container: container);
 
         public static async Task WriteTxHashAsync(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false)
         {

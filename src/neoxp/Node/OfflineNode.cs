@@ -104,13 +104,22 @@ namespace NeoExpress.Node
             }
         }
 
-        public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script)
+        public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script, Signer? signer = null)
         {
             try
             {
                 if (disposedValue) return Task.FromException<RpcInvokeResult>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                using ApplicationEngine engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView);
+                Transaction? tx = signer != null
+                    ? new Transaction
+                        {
+                            Signers = new[] { signer },
+                            Attributes = Array.Empty<TransactionAttribute>(),
+                            Witnesses = Array.Empty<Witness>(),
+                        }
+                    : null;
+
+                using ApplicationEngine engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView, tx);
                 return Task.FromResult(new RpcInvokeResult()
                 {
                     State = engine.State,

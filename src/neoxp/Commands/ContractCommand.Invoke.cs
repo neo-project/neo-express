@@ -63,7 +63,7 @@ namespace NeoExpress.Commands
                     if (Results)
                     {
                         using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                        await txExec.InvokeForResultsAsync(InvocationFile);
+                        await txExec.InvokeForResultsAsync(InvocationFile, Account, WitnessScope);
                     }
                     else
                     {

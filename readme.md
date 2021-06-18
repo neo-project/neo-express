@@ -101,6 +101,22 @@ Installing on MacOS requires installing rocksdb via [Homebrew](https://brew.sh/)
 > brew install rocksdb
 ```
 
+#### Apple Silicon support
+
+.NET 5 supports Macs with Apple Silicon via [Rosetta 2](https://support.apple.com/guide/security/rosetta-2-on-a-mac-with-apple-silicon-secebb113be1/1/web/1).
+To run Neo-Express on an Mac with Apple Silicon, you need to [install homebrew under Rosetta](https://stackoverflow.com/questions/64882584/how-to-run-the-homebrew-installer-under-rosetta-2-on-m1-macbook/64883440#64883440) by using the `arch` command.
+
+``` shell
+> arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+```
+One you have Homebrew installed under emulation, you can then run it under emulation to install rocksdb and it's dependencies. 
+Note, if you have installed Homebrew both natively and under emulation, you'll need to provide the full path to the correct version.
+As per [install instructions](https://docs.brew.sh/Installation), Homebrew is installed under /usr/local for macOS Intel and under /opt/homebrew for Apple Silicon.
+
+``` shell
+> arch -x86_64 /usr/local/bin/brew install rocksdb
+```
+
 ### Install Preview Releases
 
 Neo-Express has a public [build server](https://dev.azure.com/NGDSeattle/Public/_build?definitionId=24)

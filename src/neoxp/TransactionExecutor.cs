@@ -133,7 +133,7 @@ namespace NeoExpress
             }
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, "Invocation", json).ConfigureAwait(false);
         }
 
         public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)

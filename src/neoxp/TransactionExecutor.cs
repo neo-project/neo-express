@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
@@ -74,6 +76,54 @@ namespace NeoExpress
             var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
             return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
         }
+
+        public async Task<Script> BuildInvocationScriptAsync(string contract, string operation, IReadOnlyList<string>? arguments = null)
+        {
+            if (string.IsNullOrEmpty(operation))
+                throw new InvalidOperationException($"invalid contract operation \"{operation}\"");
+
+            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            var scriptHash = parser.TryLoadScriptHash(contract, out var value)
+                ? value
+                : UInt160.TryParse(contract, out var uint160)
+                    ? uint160
+                    : throw new InvalidOperationException($"contract \"{contract}\" not found");
+
+            arguments ??= Array.Empty<string>();
+            var @params = new ContractParameter[arguments.Count];
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                @params[i] = ConvertArg(arguments[i], parser);
+            }
+
+            using var scriptBuilder = new ScriptBuilder();
+            scriptBuilder.EmitDynamicCall(scriptHash, operation, @params);
+            return scriptBuilder.ToArray();
+
+            static ContractParameter ConvertArg(string arg, ContractParameterParser parser)
+            {
+                if (bool.TryParse(arg, out var boolArg))
+                {
+                    return new ContractParameter()
+                    {
+                        Type = ContractParameterType.Boolean,
+                        Value = boolArg
+                    };
+                }
+
+                if (long.TryParse(arg, out var longArg))
+                {
+                    return new ContractParameter()
+                    {
+                        Type = ContractParameterType.Integer,
+                        Value = new BigInteger(longArg)
+                    };
+                }
+
+                return parser.ParseParameter(arg);
+            }
+        }
+
 
         public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope)
         {

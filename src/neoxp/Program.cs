@@ -19,6 +19,7 @@ namespace NeoExpress
         typeof(ResetCommand),
         typeof(RunCommand),
         typeof(ShowCommand),
+        typeof(StopCommand),
         typeof(TransferCommand),
         typeof(WalletCommand))]
     class Program

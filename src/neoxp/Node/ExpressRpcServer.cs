@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
@@ -23,14 +25,30 @@ namespace NeoExpress.Node
         readonly NeoSystem neoSystem;
         readonly IStorageProvider storageProvider;
         readonly UInt160 nodeAccountAddress;
+        readonly CancellationTokenSource cancellationToken;
         readonly string cacheId;
 
-        public ExpressRpcServer(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 nodeAccountAddress)
+        public ExpressRpcServer(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 nodeAccountAddress, CancellationTokenSource cancellationToken)
         {
             this.neoSystem = neoSystem;
             this.storageProvider = storageProvider;
             this.nodeAccountAddress = nodeAccountAddress;
+            this.cancellationToken = cancellationToken;
             cacheId = DateTimeOffset.Now.Ticks.ToString();
+        }
+
+        [RpcMethod]
+        public JObject ExpressShutdown(JArray @params)
+        {
+            const int SHUTDOWN_TIME = 2;
+
+            var proc = System.Diagnostics.Process.GetCurrentProcess();
+            var response = new JObject();
+            response["process-id"] = proc.Id;
+
+            Utility.Log(nameof(ExpressRpcServer), LogLevel.Info, $"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds");
+            cancellationToken.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
+            return response;
         }
 
         [RpcMethod]

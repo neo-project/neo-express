@@ -154,6 +154,18 @@ namespace NeoExpress
             }
         }
 
+        public async Task<bool> StopNodeAsync(ExpressConsensusNode node)
+        {
+            if (!IsRunning(node)) return false;
+
+            var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
+            var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+            var processId = int.Parse(json["process-id"].AsString());
+            var process = System.Diagnostics.Process.GetProcessById(processId);
+            await process.WaitForExitAsync().ConfigureAwait(false);
+            return true;
+        }
+
         public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (IsRunning(node))
@@ -166,6 +178,8 @@ namespace NeoExpress
             {
                 try
                 {
+                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token);
+
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
                     using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
@@ -181,7 +195,7 @@ namespace NeoExpress
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
                     var rpcSettings = GetRpcServerSettings(chain, node);
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
-                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.ScriptHash);
+                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
                     rpcServer.RegisterMethods(expressRpcServer);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
@@ -197,7 +211,7 @@ namespace NeoExpress
                     // Do not remove or re-word this console output:
                     writer.WriteLine($"Neo express is running ({store.GetType().Name})"); 
 
-                    token.WaitHandle.WaitOne();
+                    linkedToken.Token.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)
                 {

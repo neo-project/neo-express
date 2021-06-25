@@ -8,24 +8,30 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
-
-        [Command(Name = "invoke", Description = "Invoke a contract using parameters from .neo-invoke.json file")]
-        internal class Invoke
+        [Command(Name = "run", Description = "Invoke a contract using parameters passed on command line")]
+        internal class Run
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
             readonly ITransactionExecutorFactory txExecutorFactory;
 
-            public Invoke(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
+            public Run(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;
             }
 
-            [Argument(0, Description = "Path to contract invocation JSON file")]
+            [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
-            internal string InvocationFile { get; init; } = string.Empty;
+            internal string Contract { get; init; } = string.Empty;
 
-            [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+            [Argument(1, Description = "Contract method to invoke")]
+            [Required]
+            internal string Method { get; init; } = string.Empty;
+
+            [Argument(2, Description = "Contract method to invoke")]
+            internal string[] Arguments { get; init; } = Array.Empty<string>();
+
+            [Option(Description = "Account to pay contract invocation GAS fee")]
             internal string Account { get; init; } = string.Empty;
 
             [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
@@ -56,12 +62,12 @@ namespace NeoExpress.Commands
                 {
                     if (string.IsNullOrEmpty(Account) && !Results)
                     {
-                        throw new Exception("Either Account or --results must be specified");
+                        throw new Exception("Either --account or --results must be specified");
                     }
 
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
+                    var script = await txExec.BuildInvocationScriptAsync(Contract, Method, Arguments).ConfigureAwait(false);
 
                     if (Results)
                     {
@@ -72,6 +78,7 @@ namespace NeoExpress.Commands
                         var password = chainManager.Chain.ResolvePassword(Account, Password);
                         await txExec.ContractInvokeAsync(script, Account, password, WitnessScope);
                     }
+
 
                     return 0;
                 }

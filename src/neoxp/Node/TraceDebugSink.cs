@@ -60,9 +60,22 @@ namespace NeoExpress.Node
             }
         }
 
-        public void Trace(VMState vmState, IReadOnlyCollection<ExecutionContext> executionContexts)
+        public void Trace(VMState vmState, long gasConsumed, IReadOnlyCollection<ExecutionContext> executionContexts)
         {
-            Write((seq, opt) => TraceRecord.Write(seq, opt, scriptIdMap, vmState, executionContexts));
+            Write((seq, opt) => TraceRecord.Write(seq, opt, vmState, gasConsumed, executionContexts, GetScriptIdentifier));
+        }
+
+        UInt160 GetScriptIdentifier(ExecutionContext context)
+        {
+            var scriptHash = context.GetScriptHash();
+            if (scriptIdMap.TryGetValue(scriptHash, out var scriptId))
+            {
+                return scriptId;
+            }
+
+            scriptId = Neo.SmartContract.Helper.ToScriptHash(context.Script);
+            scriptIdMap[scriptHash] = scriptId;
+            return scriptId;
         }
 
         public void Notify(NotifyEventArgs args, string scriptName)

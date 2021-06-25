@@ -67,7 +67,7 @@ namespace NeoExpress.Node
         {
             traceDebugSink.ProtocolSettings(ProtocolSettings.Network, ProtocolSettings.AddressVersion);
             traceDebugSink.Script(CurrentContext?.Script ?? Array.Empty<byte>());
-            traceDebugSink.Trace(State, InvocationStack);
+            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
 
             return base.Execute();
@@ -81,7 +81,7 @@ namespace NeoExpress.Node
             {
                 traceDebugSink.Results(State, GasConsumed, ResultStack);
             }
-            traceDebugSink.Trace(State, InvocationStack);
+            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
         }
 
@@ -89,7 +89,7 @@ namespace NeoExpress.Node
         {
             base.OnFault(e);
             traceDebugSink.Fault(e);
-            traceDebugSink.Trace(State, InvocationStack);
+            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
         }
 
         private void WriteStorages(UInt160 scriptHash)

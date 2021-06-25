@@ -8,6 +8,7 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
+using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
@@ -63,31 +64,30 @@ namespace NeoExpress
             await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
         }
 
-        public async Task ContractInvokeAsync(string invocationFile, string accountName, string password, WitnessScope witnessScope)
+        public async Task<Script> LoadInvocationScriptAsync(string invocationFile)
         {
             if (!fileSystem.File.Exists(invocationFile))
             {
                 throw new Exception($"Invocation file {invocationFile} couldn't be found");
             }
 
+            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
+        }
+
+        public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope)
+        {
             if (!TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
 
-            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
-            var script = await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
         }
 
-        public async Task InvokeForResultsAsync(string invocationFile, string accountName, WitnessScope witnessScope)
+        public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)
         {
-            if (!fileSystem.File.Exists(invocationFile))
-            {
-                throw new Exception($"Invocation file {invocationFile} couldn't be found");
-            }
-
             Signer? signer = TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
                 ? signer = new Signer 
                     { 
@@ -97,9 +97,6 @@ namespace NeoExpress
                         AllowedGroups = Array.Empty<Neo.Cryptography.ECC.ECPoint>()
                     }
                 : null;
-
-            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
-            var script = await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
 
             var result = await expressNode.InvokeAsync(script, signer).ConfigureAwait(false);
             if (json)

@@ -112,8 +112,10 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                         {
+                            var script = await txExec.LoadInvocationScriptAsync(
+                                cmd.Model.InvocationFile).ConfigureAwait(false);
                             await txExec.ContractInvokeAsync(
-                                cmd.Model.InvocationFile,
+                                script,
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope).ConfigureAwait(false);

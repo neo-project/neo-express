@@ -8,7 +8,8 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
-        [Command(Name = "invoke")]
+
+        [Command(Name = "invoke", Description = "Invoke a contract using parameters from .neo-invoke.json file")]
         internal class Invoke
         {
             readonly IExpressChainManagerFactory chainManagerFactory;
@@ -59,17 +60,17 @@ namespace NeoExpress.Commands
                     }
 
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 
                     if (Results)
                     {
-                        using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                        await txExec.InvokeForResultsAsync(InvocationFile, Account, WitnessScope);
+                        await txExec.InvokeForResultsAsync(script, Account, WitnessScope);
                     }
                     else
                     {
                         var password = chainManager.Chain.ResolvePassword(Account, Password);
-                        using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                        await txExec.ContractInvokeAsync(InvocationFile, Account, password, WitnessScope);
+                        await txExec.ContractInvokeAsync(script, Account, password, WitnessScope);
                     }
 
                     return 0;

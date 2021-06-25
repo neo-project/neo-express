@@ -121,6 +121,19 @@ namespace NeoExpress.Commands
                                 cmd.Model.WitnessScope).ConfigureAwait(false);
                             break;
                         }
+                    case CommandLineApplication<BatchFileCommands.Contract.Run> cmd:
+                        {
+                            var script = await txExec.BuildInvocationScriptAsync(
+                                cmd.Model.Contract, 
+                                cmd.Model.Method, 
+                                cmd.Model.Arguments).ConfigureAwait(false);
+                            await txExec.ContractInvokeAsync(
+                                script,
+                                cmd.Model.Account,
+                                cmd.Model.Password,
+                                cmd.Model.WitnessScope).ConfigureAwait(false);
+                            break;
+                        }
                     case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
                         {
                             await txExec.OracleEnableAsync(

@@ -51,7 +51,7 @@ namespace NeoExpress.Commands
             }
 
             [Command("contract")]
-            [Subcommand(typeof(Deploy), typeof(Invoke))]
+            [Subcommand(typeof(Deploy), typeof(Invoke), typeof(Run))]
             internal class Contract
             {
                 [Command("deploy")]
@@ -84,6 +84,32 @@ namespace NeoExpress.Commands
                     internal string InvocationFile { get; init; } = string.Empty;
 
                     [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+
+                    [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
+                }
+
+                [Command("run")]
+                internal class Run
+                {
+                    [Argument(0, Description = "Contract name or invocation hash")]
+                    [Required]
+                    internal string Contract { get; init; } = string.Empty;
+
+                    [Argument(1, Description = "Contract method to invoke")]
+                    [Required]
+                    internal string Method { get; init; } = string.Empty;
+
+                    [Argument(2, Description = "Arguments to pass to contract")]
+                    internal string[] Arguments { get; init; } = Array.Empty<string>();
+
+                    [Option(Description = "Account to pay contract invocation GAS fee")]
                     [Required]
                     internal string Account { get; init; } = string.Empty;
 

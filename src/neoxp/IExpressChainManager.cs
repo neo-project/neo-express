@@ -21,6 +21,7 @@ namespace NeoExpress
         Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force, System.IO.TextWriter? writer = null);
         void RestoreCheckpoint(string checkPointPath, bool force);
         void ResetNode(ExpressConsensusNode node, bool force);
+        Task<bool> StopNodeAsync(ExpressConsensusNode node);
         IExpressNode GetExpressNode(bool offlineTrace = false);
     }
 }

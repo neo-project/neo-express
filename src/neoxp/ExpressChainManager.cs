@@ -11,6 +11,7 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.Ledger;
 using Neo.Plugins;
 using NeoExpress.Models;
 using NeoExpress.Node;
@@ -165,7 +166,6 @@ namespace NeoExpress
             await process.WaitForExitAsync().ConfigureAwait(false);
             return true;
         }
-
         public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (IsRunning(node))
@@ -193,6 +193,7 @@ namespace NeoExpress
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
+                    _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));
                     var rpcSettings = GetRpcServerSettings(chain, node);
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
                     var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
@@ -256,6 +257,19 @@ namespace NeoExpress
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
                 return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+            }
+        }
+
+        void OnApplicationExecuted(Blockchain.ApplicationExecuted applicationExecuted)
+        {
+            if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
+            {
+                var logMessage = $"Tx FAULT: hash={applicationExecuted.Transaction.Hash}";
+                if (!string.IsNullOrEmpty(applicationExecuted.Exception.Message))
+                {
+                    logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
+                }
+                Utility.Log(nameof(NeoExpress.ExpressChainManager), LogLevel.Error, logMessage);
             }
         }
 

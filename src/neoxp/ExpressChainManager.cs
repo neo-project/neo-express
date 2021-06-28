@@ -269,7 +269,7 @@ namespace NeoExpress
                 {
                     logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
                 }
-                Utility.Log(nameof(NeoExpress.ExpressChainManager), LogLevel.Error, logMessage);
+                Console.Error.WriteLine($"\x1b[31m{logMessage}\x1b[0m");
             }
         }
 

@@ -27,8 +27,9 @@ namespace NeoExpress.Commands
         [Required]
         internal string BatchFile { get; init; } = string.Empty;
 
-        [Option(Description = "Reset blockchain before running batch file commands")]
-        internal bool Reset { get; init; } = false;
+        [Option("-r|--reset[:<CHECKPOINT>]", CommandOptionType.SingleOrNoValue, 
+            Description = "Reset blockchain to genesis or specified checkpoint before running batch file commands")]
+        internal (bool hasValue, string value) Reset { get; init; }
 
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
@@ -56,13 +57,21 @@ namespace NeoExpress.Commands
         {
             var (chainManager, _) = chainManagerFactory.LoadChain(Input);
 
-            if (Reset)
+            if (Reset.hasValue)
             {
-                for (int i = 0; i < chainManager.Chain.ConsensusNodes.Count; i++)
+                if (string.IsNullOrEmpty(Reset.value))
                 {
-                    var node = chainManager.Chain.ConsensusNodes[i];
-                    await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
-                    chainManager.ResetNode(node, true);
+                    for (int i = 0; i < chainManager.Chain.ConsensusNodes.Count; i++)
+                    {
+                        var node = chainManager.Chain.ConsensusNodes[i];
+                        await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
+                        chainManager.ResetNode(node, true);
+                    }
+                }
+                else
+                {
+                    await writer.WriteLineAsync($"Restoring checkpoint {Reset.value}");
+                    chainManager.RestoreCheckpoint(Reset.value, true);
                 }
             }
 

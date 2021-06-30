@@ -8,7 +8,6 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
-
         [Command(Name = "invoke", Description = "Invoke a contract using parameters from .neo-invoke.json file")]
         internal class Invoke
         {
@@ -70,7 +69,7 @@ namespace NeoExpress.Commands
                     else
                     {
                         var password = chainManager.Chain.ResolvePassword(Account, Password);
-                        await txExec.ContractInvokeAsync(script, Account, password, WitnessScope);
+                        await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
                     }
 
                     return 0;

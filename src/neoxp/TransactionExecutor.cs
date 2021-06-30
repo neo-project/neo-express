@@ -125,14 +125,14 @@ namespace NeoExpress
         }
 
 
-        public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope)
+        public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope, decimal additionalGas = 0m)
         {
             if (!TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
 
-            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script).ConfigureAwait(false);
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script, additionalGas).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, "Invocation", json).ConfigureAwait(false);
         }
 

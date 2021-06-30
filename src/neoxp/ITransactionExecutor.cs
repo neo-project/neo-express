@@ -12,7 +12,7 @@ namespace NeoExpress
         Task ContractDeployAsync(string contract, string account, string password, WitnessScope witnessScope, bool force);
         Task<Script> LoadInvocationScriptAsync(string invocationFile);
         Task<Script> BuildInvocationScriptAsync(string contract, string operation, IReadOnlyList<string>? arguments = null);
-        Task ContractInvokeAsync(Script script, string account, string password, WitnessScope witnessScope);
+        Task ContractInvokeAsync(Script script, string account, string password, WitnessScope witnessScope, decimal additionalGas = 0m);
         Task InvokeForResultsAsync(Script script, string account, WitnessScope witnessScope);
         Task TransferAsync(string quantity, string asset, string sender, string password, string receiver);
         Task OracleEnableAsync(string account, string password);

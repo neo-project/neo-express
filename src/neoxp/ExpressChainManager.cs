@@ -238,19 +238,22 @@ namespace NeoExpress
 
             static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
             {
+                var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+                    ? bindAddress : IPAddress.Loopback;
+
                 var settings = new Dictionary<string, string>()
                 {
                     { "PluginConfiguration:Network", $"{chain.Network}" },
-                    { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
+                    { "PluginConfiguration:BindAddress", $"{ipAddress}" },
                     { "PluginConfiguration:Port", $"{node.RpcPort}" }
                 };
 
-                if (chain.TryReadSetting<long>("rpc.MaxGasInvoke", long.TryParse, out var maxGasInvoke))
+                if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
                 {
                     settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
                 }
 
-                if (chain.TryReadSetting<long>("rpc.MaxFee", long.TryParse, out var maxFee))
+                if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
                 {
                     settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
                 }

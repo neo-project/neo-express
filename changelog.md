@@ -8,23 +8,139 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This project uses [NerdBank.GitVersioning](https://github.com/AArnott/Nerdbank.GitVersioning)
 to manage version numbers. This tool automatically sets the Semantic Versioning Patch
 value based on the [Git height](https://github.com/AArnott/Nerdbank.GitVersioning#what-is-git-height)
-of the commit that generated the build. As such, released versions of this extension
+of the commit that generated the build. As such, released versions of this tool
 will not have contiguous patch numbers. Initial major and minor releases will be documented
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [1.1] - Unreleased
+## [3.0] - 2021-08-02
+
+### Changed
+
+* Neo N3 release support
+* Bumped major version to 3 for consistency with Neo N3 release
+* Update dependencies
+
+## [2.0.50-preview] - 2021-07-21
+
+### Changes
+
+* Neo N3 RC4 support
+* Adapt to Trace Model Changes in lib-bctk (#154)
+* Update Dependencies (#166)
+* ContractInvokeAsync should print "Invocation" not "Depoloyment" (8bd9f4368e2917bce84c45b2eed1919c27d611bb)
+* Pass AdditionalGas option value to ContractInvokeAsync in contract run + invoke (#163, fixes #161)
+
+### Added
+
+* Add `stop` command (#156, fixes #153)
+* Add `contract run` command (#157, fixes #150)
+* Log fault tx message when running (#159, fixes #155)
+* Add checkpoint reset support to batch command (#160, fixes #151)
+* Add rpc.BindAddress setting (#165, fixes #164)
+
+## [2.0.39-preview] - 2021-06-15
+
+### Changes
+
+* Neo N3 RC3 support
+* Contract invoke should check to ensure either account or --results is specified (#145)
+* Updated GitHub + Azure DevOps yaml files (#145)
+* Update Neo.BlockchainToolkit3 dependency
+
+### Added
+
+* contract invoke --results needs a mechanism to specify signers (#147)
+
+## [2.0.37-preview] - 2021-06-04
+
+### Changed
+
+* Update Neo.BlockchainToolkit3 dependency
+
+## [2.0.35-preview] - 2021-06-04
+
+### Changed
+
+* Neo N3 RC3 support
+
+## [2.0.32-preview] - 2021-05-04
+
+### Added
+
+* Write a known message to the console once the DB lock has been acquired (#139)
+* Gracefully handle multiple contracts w/ same name in contract storage (#137)
+* add ProtocolSettings to trace (#141)
+* Add NEP2/6 support (#142)
+
+## [2.0.26-preview] - 2021-05-04
+
+### Changed
+
+* Neo N3 RC2 support
+
+## [2.0.23-preview] - 2021-04-20
+
+### Fixed
+
+* Ensure node path exists before using it
+* consistency in GetNodePath use
+
+## [2.0.21-preview] - 2021-03-21
+
+### Changed
+
+* Neo N3 RC1 support
+
+## [2.0.9-preview] - 2021-02-08
+
+### Changed
+
+* Neo 3 Preview 5 support
+* Moved Neo 2 version of neo express to `master-2.x` branch for consistency with other Neo projects
+
+## [1.2.85-insiders] - 2020-12-29
+
+### Changed
+
+* Neo 3 Preview 4 support
+
+### Added
+
+* Offline Mode
+* Oracle Commands
+* NEP17 tracker RPC methods
+
+## [1.2.20-insiders] - 2020-08-03
+
+### Added
+
+* Debug Trace Capture support
+
+## [1.2.16-insiders] - 2020-08-03
+
+### Changed
+
+* Neo 3 Preview 3 support
+
+## [1.2.1-insiders] - 2020-06-22
+
+### Added
+
+* Neo 3 Preview 2 support
+
+## [1.1.28] - 2020-05-28
 
 - Added `--preload-gas` option to the `create` command that generates and claims a
   specified amount of GAS in the genesis account.
 
-## [1.0.8] - 2019-02-25
+## [1.0.8] - 2020-02-25
 
 ### Fixed
 
 - [don't block waiting for the user to hit 'q' when neo-express run/checkpoint run fails](https://github.com/neo-project/neo-express/issues/39)
 
-## [1.0] - 2019-02-06
+## [1.0] - 2020-02-06
 
 ### Added
 

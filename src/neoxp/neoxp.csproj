@@ -6,7 +6,7 @@
     <Copyright>2015-2021 The Neo Project</Copyright>
     <Description>neo-express is a Neo developer blockchain tool</Description>
     <LangVersion>9</LangVersion>
-    <NeoVersion>3.0.0-rc4</NeoVersion>
+    <NeoVersion>3.0.0</NeoVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <PackageIcon>neo-logo-72.png</PackageIcon>
@@ -35,11 +35,11 @@
     </PackageReference>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-    <PackageReference Include="Neo.BlockchainToolkit3" Version="1.0.56-preview"/>
+    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.2" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)"/>
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)"/>
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)"/>
-    <PackageReference Include="Nerdbank.Streams" Version="2.7.74"/>
+    <PackageReference Include="Nerdbank.Streams" Version="2.8.46"/>
     <PackageReference Include="Nito.Disposables" Version="2.2.0"/>
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0"/>
     <PackageReference Include="System.Linq.Async" Version="5.0.0"/>

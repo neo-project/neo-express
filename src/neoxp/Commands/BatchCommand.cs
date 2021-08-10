@@ -27,7 +27,7 @@ namespace NeoExpress.Commands
         [Required]
         internal string BatchFile { get; init; } = string.Empty;
 
-        [Option("-r|--reset[:<CHECKPOINT>]", CommandOptionType.SingleOrNoValue, 
+        [Option("-r|--reset[:<CHECKPOINT>]", CommandOptionType.SingleOrNoValue,
             Description = "Reset blockchain to genesis or specified checkpoint before running batch file commands")]
         internal (bool hasValue, string value) Reset { get; init; }
 
@@ -103,7 +103,7 @@ namespace NeoExpress.Commands
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
                             _ = await chainManager.CreateCheckpointAsync(
-                                txExec.ExpressNode, 
+                                txExec.ExpressNode,
                                 cmd.Model.Name,
                                 cmd.Model.Force,
                                 writer).ConfigureAwait(false);
@@ -133,8 +133,8 @@ namespace NeoExpress.Commands
                     case CommandLineApplication<BatchFileCommands.Contract.Run> cmd:
                         {
                             var script = await txExec.BuildInvocationScriptAsync(
-                                cmd.Model.Contract, 
-                                cmd.Model.Method, 
+                                cmd.Model.Contract,
+                                cmd.Model.Method,
                                 cmd.Model.Arguments).ConfigureAwait(false);
                             await txExec.ContractInvokeAsync(
                                 script,

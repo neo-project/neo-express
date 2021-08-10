@@ -210,7 +210,7 @@ namespace NeoExpress
 
                     // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
                     // Do not remove or re-word this console output:
-                    writer.WriteLine($"Neo express is running ({store.GetType().Name})"); 
+                    writer.WriteLine($"Neo express is running ({store.GetType().Name})");
 
                     linkedToken.Token.WaitHandle.WaitOne();
                 }

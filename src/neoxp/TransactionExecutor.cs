@@ -139,13 +139,13 @@ namespace NeoExpress
         public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)
         {
             Signer? signer = TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
-                ? signer = new Signer 
-                    { 
-                        Account = accountHash, 
-                        Scopes = witnessScope,
-                        AllowedContracts = Array.Empty<UInt160>(),
-                        AllowedGroups = Array.Empty<Neo.Cryptography.ECC.ECPoint>()
-                    }
+                ? signer = new Signer
+                {
+                    Account = accountHash,
+                    Scopes = witnessScope,
+                    AllowedContracts = Array.Empty<UInt160>(),
+                    AllowedGroups = Array.Empty<Neo.Cryptography.ECC.ECPoint>()
+                }
                 : null;
 
             var result = await expressNode.InvokeAsync(script, signer).ConfigureAwait(false);

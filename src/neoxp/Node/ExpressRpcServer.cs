@@ -67,7 +67,7 @@ namespace NeoExpress.Node
             var index = start;
             while (true)
             {
-                var hash = NativeContract.Ledger.GetBlockHash(snapshot, index) 
+                var hash = NativeContract.Ledger.GetBlockHash(snapshot, index)
                     ?? throw new Exception($"GetBlockHash for {index} returned null");
                 var block = NativeContract.Ledger.GetTrimmedBlock(snapshot, hash)
                     ?? throw new Exception($"GetTrimmedBlock for {index} returned null");

@@ -28,11 +28,18 @@ namespace NeoExpress
         readonly ExpressChain chain;
         public ProtocolSettings ProtocolSettings { get; }
 
-        public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain, uint secondsPerBlock)
+        public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain, uint? secondsPerBlock = null)
         {
             this.fileSystem = fileSystem;
             this.chain = chain;
-            this.ProtocolSettings = chain.GetProtocolSettings(secondsPerBlock);
+
+            uint secondsPerBlockResult = secondsPerBlock.HasValue 
+                ? secondsPerBlock.Value
+                : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
+                    ? secondsPerBlockSetting 
+                    : 0;
+
+            this.ProtocolSettings = chain.GetProtocolSettings(secondsPerBlockResult);
         }
 
         public ExpressChain Chain => chain;

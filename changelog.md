@@ -13,6 +13,13 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
+## Unreleased
+
+### Added
+
+* `contract hash` command (#170)
+* `chain.SecondsPerBlock` setting (#171)
+
 ## [3.0.5] 2021-08-10
 
 ### Changed

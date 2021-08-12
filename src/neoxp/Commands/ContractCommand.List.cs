@@ -6,7 +6,7 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
-        [Command(Name = "list")]
+        [Command(Name = "list", Description = "List deployed contracts")]
         internal class List
         {
             readonly IExpressChainManagerFactory chainManagerFactory;

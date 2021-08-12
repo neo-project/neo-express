@@ -3,6 +3,19 @@
 The `.neo-express` file for Neo N3 compatible versions of N3 includes a `settings` object property. 
 This document details the values that Neo-Express reads from the `settings` object.
 
+## `chain.SecondsPerBlock`
+
+The `chain.SecondsPerBlock` Neo-Express setting coresponds to the `MillisecondsPerBlock`
+[config.json property](https://github.com/neo-project/neo-node/blob/master/neo-cli/config.json#L25)
+and the `--secondsPerBlock` option for the Neo-Express `run` command. 
+
+By default, Neo-Express mints a new block every 15 seconds. The `chain.SecondsPerBlock` setting can
+be used to overide the default behavior. If the `run` command `--secondsPerBlock` option is specified,
+the `chain.SecondsPerBlock` setting is ignored.
+
+`chain.SecondsPerBlock` is specified as an unsigned integer. If you specify an invalid unsigned integer
+value for this setting, Neo-Express reverts to the default.
+
 ## `rpc.BindAddress`
 
 The `rpc.BindAddress` Neo-Express setting coresponds to the `BindAddress`

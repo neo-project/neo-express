@@ -98,7 +98,7 @@ namespace NeoExpress
             return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), output);
         }
 
-        public (IExpressChainManager manager, string path) LoadChain(string path, uint secondsPerBlock = 0)
+        public (IExpressChainManager manager, string path) LoadChain(string path, uint? secondsPerBlock = null)
         {
             path = ResolveChainFileName(path);
             if (!fileSystem.File.Exists(path))

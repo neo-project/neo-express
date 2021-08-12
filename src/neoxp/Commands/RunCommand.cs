@@ -22,7 +22,7 @@ namespace NeoExpress.Commands
         internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Time between blocks")]
-        internal uint SecondsPerBlock { get; }
+        internal uint? SecondsPerBlock { get; }
 
         [Option(Description = "Discard blockchain changes on shutdown")]
         internal bool Discard { get; init; } = false;

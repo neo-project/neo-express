@@ -13,7 +13,7 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
-        [Command(Name = "storage")]
+        [Command(Name = "storage", Description = "Display storage for specified contract")]
         internal class Storage
         {
             readonly IExpressChainManagerFactory chainManagerFactory;

@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
+using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
@@ -11,29 +12,6 @@ namespace NeoExpress.Commands
         [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(Oracle), typeof(Transfer))]
         internal class BatchFileCommands
         {
-            [Command("transfer")]
-            internal class Transfer
-            {
-                [Argument(0, Description = "Amount to transfer")]
-                [Required]
-                internal string Quantity { get; init; } = string.Empty;
-
-                [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
-                [Required]
-                internal string Asset { get; init; } = string.Empty;
-
-                [Argument(2, Description = "Account to send asset from")]
-                [Required]
-                internal string Sender { get; init; } = string.Empty;
-
-                [Argument(3, Description = "Account to send asset to")]
-                [Required]
-                internal string Receiver { get; init; } = string.Empty;
-
-                [Option(Description = "password to use for NEP-2/NEP-6 sender")]
-                internal string Password { get; init; } = string.Empty;
-            }
-
             [Command("checkpoint")]
             [Subcommand(typeof(Create))]
             internal class Checkpoint
@@ -148,6 +126,83 @@ namespace NeoExpress.Commands
                     [Required]
                     internal string ResponsePath { get; init; } = string.Empty;
                 }
+            }
+
+            [Command("policy")]
+            [Subcommand(typeof(Block), typeof(Set), typeof(Unblock))]
+            internal class Policy
+            {
+                [Command("block")]
+                internal class Block
+                {
+                    [Argument(0, Description = "Account to block")]
+                    [Required]
+                    internal string ScriptHash { get; init; } = string.Empty;
+
+                    [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+
+                [Command("set")]
+                internal class Set 
+                {
+                    [Argument(0, Description = "Policy to set")]
+                    [Required]
+                    internal PolicyName Policy { get; init; }
+
+                    [Argument(1, Description = "New Policy Value")]
+                    [Required]
+                    internal long Value { get; set; }
+
+                    [Argument(2, Description = "Account to pay contract invocation GAS fee")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+
+                [Command("unblock")]
+                internal class Unblock
+                {
+                    [Argument(0, Description = "Account to unblock")]
+                    [Required]
+                    internal string ScriptHash { get; init; } = string.Empty;
+
+                    [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+            }
+
+            [Command("transfer")]
+            internal class Transfer
+            {
+                [Argument(0, Description = "Amount to transfer")]
+                [Required]
+                internal string Quantity { get; init; } = string.Empty;
+
+                [Argument(1, Description = "Asset to transfer (symbol or script hash)")]
+                [Required]
+                internal string Asset { get; init; } = string.Empty;
+
+                [Argument(2, Description = "Account to send asset from")]
+                [Required]
+                internal string Sender { get; init; } = string.Empty;
+
+                [Argument(3, Description = "Account to send asset to")]
+                [Required]
+                internal string Receiver { get; init; } = string.Empty;
+
+                [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+                internal string Password { get; init; } = string.Empty;
             }
         }
     }

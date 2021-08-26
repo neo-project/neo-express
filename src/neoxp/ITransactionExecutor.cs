@@ -20,5 +20,7 @@ namespace NeoExpress
         Task OracleEnableAsync(string account, string password);
         Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null);
         Task SetPolicyAsync(PolicyName policy, BigInteger value, string account, string password);
+        Task BlockAsync(string scriptHash, string account, string password);
+        Task UnblockAsync(string scriptHash, string account, string password);
     }
 }

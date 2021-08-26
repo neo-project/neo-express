@@ -73,7 +73,7 @@ namespace NeoExpress
                 throw new Exception($"Invocation file {invocationFile} couldn't be found");
             }
 
-            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
             return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
         }
 
@@ -82,7 +82,7 @@ namespace NeoExpress
             if (string.IsNullOrEmpty(operation))
                 throw new InvalidOperationException($"invalid contract operation \"{operation}\"");
 
-            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
             var scriptHash = parser.TryLoadScriptHash(contract, out var value)
                 ? value
                 : UInt160.TryParse(contract, out var uint160)
@@ -320,6 +320,40 @@ namespace NeoExpress
 
             var txHash = await expressNode.SetPolicyAsync(wallet, accountHash, policy, value).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"{policy} Policy Set", json).ConfigureAwait(false);
+        }
+
+        public async Task BlockAsync(string scriptHash, string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+
+            var _scriptHash = await expressNode.TryParseScriptHashAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            if (_scriptHash.IsT1)
+            {
+                throw new Exception($"{scriptHash} script hash not found");
+            }
+
+            var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
+        }
+
+        public async Task UnblockAsync(string scriptHash, string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+
+            var _scriptHash = await expressNode.TryParseScriptHashAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            if (_scriptHash.IsT1)
+            {
+                throw new Exception($"{scriptHash} script hash not found");
+            }
+
+            var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{scriptHash} unblocked", json).ConfigureAwait(false);
         }
     }
 }

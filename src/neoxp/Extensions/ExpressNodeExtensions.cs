@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
@@ -20,42 +21,57 @@ using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
 using All = OneOf.Types.All;
+using None = OneOf.Types.None;
 
 namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
-        public static async Task<ContractParameterParser.TryGetUInt160> GetTryGetContractFunctionAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
+            UInt160? _scriptHash = null;
+            for (int i = 0; i < contracts.Count; i++)
             {
-                UInt160? _scriptHash = null;
-                for (int i = 0; i < contracts.Count; i++)
+                if (contracts[i].manifest.Name.Equals(name, comparison))
                 {
-                    if (contracts[i].manifest.Name.Equals(name, comparison))
+                    if (_scriptHash == null)
                     {
-                        if (_scriptHash == null)
-                        {
-                            _scriptHash = contracts[i].hash;
-                        }
-                        else
-                        {
-                            throw new Exception($"More than one deployed script named {name}");
-                        }
+                        _scriptHash = contracts[i].hash;
+                    }
+                    else
+                    {
+                        throw new Exception($"More than one deployed script named {name}");
                     }
                 }
+            }
 
-                scriptHash = _scriptHash!;
-                return _scriptHash != null;
-            };            
-            return tryGetContract;
+            scriptHash = _scriptHash!;
+            return _scriptHash != null;
         }
 
-        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, IExpressChainManager chainManager, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<OneOf<UInt160, None>> TryParseScriptHashAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            var tryGetContract = await expressNode.GetTryGetContractFunctionAsync(comparison).ConfigureAwait(false);
-            return new ContractParameterParser(expressNode.ProtocolSettings, chainManager.Chain.TryGetAccountHash, tryGetContract);
+            if (chain.TryGetAccountHash(name, out var accountHash))
+            {
+                return accountHash;
+            }
+
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            if (TryGetContractHash(contracts, name, out var contractHash, comparison))
+            {
+                return contractHash;
+            }
+
+            return new None();
+        }
+
+        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, ExpressChain chain, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        {
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            ContractParameterParser.TryGetUInt160 tryGetContract = 
+                (string name, out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
+
+            return new ContractParameterParser(expressNode.ProtocolSettings, chain.TryGetAccountHash, tryGetContract);
         }
 
         public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
@@ -327,6 +343,35 @@ namespace NeoExpress
 
             using var sb = new ScriptBuilder();
             sb.EmitDynamicCall(NativeContract.Policy.Hash, methodName, value);
+            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
+        }
+
+        public static async Task<bool> GetIsBlockedAsync(this IExpressNode expressNode, UInt160 scriptHash)
+        {
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(NativeContract.Policy.Hash, "isBlocked", scriptHash);
+            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
+            var stack = result.Stack;
+            if (stack.Length >= 1)
+            {
+                var value = stack[0].GetBoolean();
+                return value;
+            }
+
+            throw new Exception("invalid script results");
+        }
+
+        public static async Task<UInt256> BlockAccountAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, UInt160 scriptHash)
+        {
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(NativeContract.Policy.Hash, "blockAccount", scriptHash);
+            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
+        }
+
+        public static async Task<UInt256> UnblockAccountAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, UInt160 scriptHash)
+        {
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(NativeContract.Policy.Hash, "unblockAccount", scriptHash);
             return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
         }
     }

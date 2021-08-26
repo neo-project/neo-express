@@ -8,7 +8,7 @@ namespace NeoExpress.Commands
 {
     partial class PolicyCommand
     {
-        [Command(Name = "get", Description = "Get information for a deployed contract")]
+        [Command(Name = "get", Description = "Retrieve current value of a blockchain policy")]
         internal class Get
         {
             readonly IExpressChainManagerFactory chainManagerFactory;

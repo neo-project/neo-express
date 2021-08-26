@@ -9,7 +9,7 @@ namespace NeoExpress.Commands
 {
     partial class PolicyCommand
     {
-        [Command(Name = "set", Description = "Get information for a deployed contract")]
+        [Command(Name = "set", Description = "Change policy value")]
         internal class Set
         {
             readonly IExpressChainManagerFactory chainManagerFactory;

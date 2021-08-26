@@ -310,5 +310,16 @@ namespace NeoExpress
                 throw new Exception($"Invalid quantity value {quantity}");
             }
         }
+
+        public async Task SetPolicyAsync(PolicyName policy, BigInteger value, string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+
+            var txHash = await expressNode.SetPolicyAsync(wallet, accountHash, policy, value).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{policy} Policy Set", json).ConfigureAwait(false);
+        }
     }
 }

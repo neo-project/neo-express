@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Threading.Tasks;
 using Neo.Network.P2P.Payloads;
 using Neo.VM;
+using NeoExpress.Models;
 
 namespace NeoExpress
 {
@@ -17,5 +19,6 @@ namespace NeoExpress
         Task TransferAsync(string quantity, string asset, string sender, string password, string receiver);
         Task OracleEnableAsync(string account, string password);
         Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null);
+        Task SetPolicyAsync(PolicyName policy, BigInteger value, string account, string password);
     }
 }

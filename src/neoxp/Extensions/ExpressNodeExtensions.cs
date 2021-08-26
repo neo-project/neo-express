@@ -297,5 +297,44 @@ namespace NeoExpress
 
             throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
         }
+
+        public static async Task<BigInteger> GetPolicyAsync(this IExpressNode expressNode, PolicyName policy)
+        {
+            var methodName = policy switch
+            {
+                PolicyName.ExecFeeFactor => "getExecFeeFactor",
+                PolicyName.FeePerByte => "getFeePerByte",
+                PolicyName.StoragePrice => "getStoragePrice", 
+                _ => throw new ArgumentException($"Invalid Policy {policy}", nameof(policy))
+            };
+
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(NativeContract.Policy.Hash, methodName);
+
+            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
+            var stack = result.Stack;
+            if (stack.Length >= 1)
+            {
+                var value = stack[0].GetInteger();
+                return value;
+            }
+
+            throw new Exception("invalid script results");
+        }
+
+        public static async Task<UInt256> SetPolicyAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, PolicyName policy, BigInteger value)
+        {
+            var methodName = policy switch
+            {
+                PolicyName.ExecFeeFactor => "setExecFeeFactor",
+                PolicyName.FeePerByte => "setFeePerByte",
+                PolicyName.StoragePrice => "setStoragePrice", 
+                _ => throw new ArgumentException($"Invalid Policy {policy}", nameof(policy))
+            };
+
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(NativeContract.Policy.Hash, methodName, value);
+            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
+        }
     }
 }

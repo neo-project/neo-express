@@ -64,19 +64,24 @@ namespace NeoExpress
             return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
         }
 
-        public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash, ProtocolSettings? settings = null)
+        public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
         {
-            settings ??= chain.GetProtocolSettings();
+            if (@this == null) throw new ArgumentNullException(nameof(@this));
 
+            var keyPair = new KeyPair(@this.PrivateKey.HexToBytes());
+            var contract = Neo.SmartContract.Contract.CreateSignatureContract(keyPair.PublicKey);
+            return contract.ScriptHash;
+        }
+
+        public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash)
+        {
             if (chain.Wallets != null && chain.Wallets.Count > 0)
             {
                 for (int i = 0; i < chain.Wallets.Count; i++)
                 {
                     if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                        var account = wallet.GetAccounts().Single(a => a.IsDefault);
-                        accountHash = account.ScriptHash;
+                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash();
                         return true;
                     }
                 }
@@ -89,20 +94,23 @@ namespace NeoExpress
                 var nodeWallet = chain.ConsensusNodes[i].Wallet;
                 if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    var wallet = DevWallet.FromExpressWallet(settings, nodeWallet);
-                    var account = wallet.GetAccounts().Single(a => a.IsDefault);
-                    accountHash = account.ScriptHash;
+                    accountHash = nodeWallet.DefaultAccount.GetScriptHash();
                     return true;
                 }
             }
 
             if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
-                (_, accountHash) = chain.GetGenesisAccount(settings);
+                var keys = chain.ConsensusNodes
+                    .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
+                    .Select(a => new KeyPair(a.PrivateKey.HexToBytes()).PublicKey)
+                    .ToArray();
+                var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+                accountHash = contract.ScriptHash;
                 return true;
             }
 
-            if (TryToScriptHash(name, settings.AddressVersion, out accountHash))
+            if (TryToScriptHash(name, chain.AddressVersion, out accountHash))
             {
                 return true;
             }

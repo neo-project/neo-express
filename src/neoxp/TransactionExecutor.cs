@@ -286,7 +286,7 @@ namespace NeoExpress
                 throw new Exception($"{sender} sender not found.");
             }
 
-            if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash, chainManager.ProtocolSettings))
+            if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash))
             {
                 throw new Exception($"{receiver} account not found.");
             }

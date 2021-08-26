@@ -33,7 +33,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash, chainManager.ProtocolSettings))
+                    if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
                     {
                         throw new Exception($"{Account} account not found.");
                     }

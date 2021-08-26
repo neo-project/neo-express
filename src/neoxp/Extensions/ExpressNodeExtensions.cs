@@ -25,20 +25,8 @@ namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
-        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, IExpressChainManager chainManager, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<ContractParameterParser.TryGetUInt160> GetTryGetContractFunctionAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, out UInt160 scriptHash) =>
-            {
-                if (chainManager.Chain.TryGetAccountHash(name, out var accountHash, expressNode.ProtocolSettings))
-                {
-                    scriptHash = accountHash;
-                    return true;
-                }
-
-                scriptHash = null!;
-                return false;
-            };
-
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
             ContractParameterParser.TryGetUInt160 tryGetContract = (string name, out UInt160 scriptHash) =>
             {
@@ -60,9 +48,14 @@ namespace NeoExpress
 
                 scriptHash = _scriptHash!;
                 return _scriptHash != null;
-            };
+            };            
+            return tryGetContract;
+        }
 
-            return new ContractParameterParser(expressNode.ProtocolSettings, tryGetAccount, tryGetContract);
+        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, IExpressChainManager chainManager, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        {
+            var tryGetContract = await expressNode.GetTryGetContractFunctionAsync(comparison).ConfigureAwait(false);
+            return new ContractParameterParser(expressNode.ProtocolSettings, chainManager.Chain.TryGetAccountHash, tryGetContract);
         }
 
         public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)

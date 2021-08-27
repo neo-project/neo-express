@@ -56,6 +56,10 @@ namespace NeoExpress.Commands
         internal async Task ExecuteAsync(ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
         {
             var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            if (chainManager.IsRunning())
+            {
+                throw new Exception("Cannot run batch command while blockchain is running");
+            }
 
             if (Reset.hasValue)
             {
@@ -90,16 +94,6 @@ namespace NeoExpress.Commands
                 var pr = batchApp.Parse(args);
                 switch (pr.SelectedCommand)
                 {
-                    case CommandLineApplication<BatchFileCommands.Transfer> cmd:
-                        {
-                            await txExec.TransferAsync(
-                                cmd.Model.Quantity,
-                                cmd.Model.Asset,
-                                cmd.Model.Sender,
-                                cmd.Model.Password,
-                                cmd.Model.Receiver).ConfigureAwait(false);
-                            break;
-                        }
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
                             _ = await chainManager.CreateCheckpointAsync(
@@ -157,8 +151,43 @@ namespace NeoExpress.Commands
                                 cmd.Model.ResponsePath).ConfigureAwait(false);
                             break;
                         }
+                    case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
+                        {
+                            await txExec.BlockAsync(
+                                cmd.Model.ScriptHash,
+                                cmd.Model.Account,
+                                cmd.Model.Password).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
+                        {
+                            await txExec.SetPolicyAsync(
+                                cmd.Model.Policy,
+                                cmd.Model.Value,
+                                cmd.Model.Account,
+                                cmd.Model.Password).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
+                        {
+                            await txExec.UnblockAsync(
+                                cmd.Model.ScriptHash,
+                                cmd.Model.Account,
+                                cmd.Model.Password).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Transfer> cmd:
+                        {
+                            await txExec.TransferAsync(
+                                cmd.Model.Quantity,
+                                cmd.Model.Asset,
+                                cmd.Model.Sender,
+                                cmd.Model.Password,
+                                cmd.Model.Receiver).ConfigureAwait(false);
+                            break;
+                        }
                     default:
-                        throw new Exception();
+                        throw new Exception($"Unknown batch command {pr.SelectedCommand.GetType()}");
                 }
             }
         }

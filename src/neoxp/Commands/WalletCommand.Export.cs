@@ -27,7 +27,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            [Option(Description = "NEP-5 wallet name (Defaults to Neo-Express name if unspecified)")]
+            [Option(Description = "NEP-6 wallet name (Defaults to Neo-Express name if unspecified)")]
             internal string Output { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]

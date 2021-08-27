@@ -13,15 +13,15 @@ namespace NeoExpress
         ExpressChain Chain { get; }
         ProtocolSettings ProtocolSettings { get; }
 
-        Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token);
-        IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard);
-        IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath);
-
-        void SaveChain(string path);
         Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force, System.IO.TextWriter? writer = null);
-        void RestoreCheckpoint(string checkPointPath, bool force);
-        void ResetNode(ExpressConsensusNode node, bool force);
-        Task<bool> StopNodeAsync(ExpressConsensusNode node);
+        IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath);
         IExpressNode GetExpressNode(bool offlineTrace = false);
+        IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard);
+        bool IsRunning(ExpressConsensusNode? node = null);
+        void ResetNode(ExpressConsensusNode node, bool force);
+        void RestoreCheckpoint(string checkPointPath, bool force);
+        Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token);
+        void SaveChain(string path);
+        Task<bool> StopNodeAsync(ExpressConsensusNode node);
     }
 }

@@ -8,7 +8,7 @@ using NeoExpress.Commands;
 
 namespace NeoExpress
 {
-    [Command("neoxp", Description = "Neo 3 blockchain private net for developers", UsePagerForHelpText = false)]
+    [Command("neoxp", Description = "Neo N3 blockchain private net for developers", UsePagerForHelpText = false)]
     [Subcommand(
         typeof(BatchCommand),
         typeof(CheckpointCommand),
@@ -16,6 +16,7 @@ namespace NeoExpress
         typeof(CreateCommand),
         typeof(ExportCommand),
         typeof(OracleCommand),
+        typeof(PolicyCommand),
         typeof(ResetCommand),
         typeof(RunCommand),
         typeof(ShowCommand),

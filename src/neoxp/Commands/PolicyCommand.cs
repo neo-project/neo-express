@@ -2,9 +2,9 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
 {
-    [Command("show", Description = "Show information")]
-    [Subcommand(typeof(Balance), typeof(Balances), typeof(Block), typeof(Transaction))]
-    partial class ShowCommand
+    [Command("policy", Description = "Manage blockchain policy")]
+    [Subcommand(typeof(Block), typeof(Get), typeof(IsBlocked), typeof(Set), typeof(Unblock))]
+    partial class PolicyCommand
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)
         {

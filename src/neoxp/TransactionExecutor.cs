@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -11,7 +10,6 @@ using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
-using Neo.Wallets;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
 using OneOf;
@@ -46,7 +44,7 @@ namespace NeoExpress
 
         public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, bool force)
         {
-            if (!TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -73,7 +71,7 @@ namespace NeoExpress
                 throw new Exception($"Invocation file {invocationFile} couldn't be found");
             }
 
-            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
             return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
         }
 
@@ -82,7 +80,7 @@ namespace NeoExpress
             if (string.IsNullOrEmpty(operation))
                 throw new InvalidOperationException($"invalid contract operation \"{operation}\"");
 
-            var parser = await expressNode.GetContractParameterParserAsync(chainManager).ConfigureAwait(false);
+            var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
             var scriptHash = parser.TryLoadScriptHash(contract, out var value)
                 ? value
                 : UInt160.TryParse(contract, out var uint160)
@@ -124,10 +122,9 @@ namespace NeoExpress
             }
         }
 
-
         public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope, decimal additionalGas = 0m)
         {
-            if (!TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -138,7 +135,7 @@ namespace NeoExpress
 
         public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)
         {
-            Signer? signer = TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
+            Signer? signer = chainManager.TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
                 ? signer = new Signer
                 {
                     Account = accountHash,
@@ -227,7 +224,7 @@ namespace NeoExpress
 
         public async Task OracleEnableAsync(string accountName, string password)
         {
-            if (!TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -282,12 +279,12 @@ namespace NeoExpress
 
         public async Task TransferAsync(string quantity, string asset, string sender, string password, string receiver)
         {
-            if (!TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
+            if (!chainManager.TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
             {
                 throw new Exception($"{sender} sender not found.");
             }
 
-            if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash, chainManager.ProtocolSettings))
+            if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash))
             {
                 throw new Exception($"{receiver} account not found.");
             }
@@ -312,102 +309,49 @@ namespace NeoExpress
             }
         }
 
-        bool TryGetSigningAccount(string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+        public async Task SetPolicyAsync(PolicyName policy, BigInteger value, string account, string password)
         {
-            if (!string.IsNullOrEmpty(name))
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
-                var settings = chainManager.Chain.GetProtocolSettings();
-
-                if (name.Equals(ExpressChainExtensions.GENESIS, StringComparison.OrdinalIgnoreCase))
-                {
-                    (wallet, accountHash) = chainManager.Chain.GetGenesisAccount(settings);
-                    return true;
-                }
-
-                if (chainManager.Chain.Wallets != null && chainManager.Chain.Wallets.Count > 0)
-                {
-                    for (int i = 0; i < chainManager.Chain.Wallets.Count; i++)
-                    {
-                        var expWallet = chainManager.Chain.Wallets[i];
-                        if (name.Equals(expWallet.Name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            wallet = DevWallet.FromExpressWallet(settings, expWallet);
-                            accountHash = wallet.GetAccounts().Single(a => a.IsDefault).ScriptHash;
-                            return true;
-                        }
-                    }
-                }
-
-                for (int i = 0; i < chainManager.Chain.ConsensusNodes.Count; i++)
-                {
-                    var expWallet = chainManager.Chain.ConsensusNodes[i].Wallet;
-                    if (name.Equals(expWallet.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        wallet = DevWallet.FromExpressWallet(settings, expWallet);
-                        accountHash = wallet.GetAccounts().Single(a => !a.Contract.Script.IsMultiSigContract()).ScriptHash;
-                        return true;
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(password))
-                {
-                    if (TryGetNEP2Wallet(name, password, settings, out wallet, out accountHash))
-                    {
-                        return true;
-                    }
-
-                    if (TryGetNEP6Wallet(name, password, settings, out wallet, out accountHash))
-                    {
-                        return true;
-                    }
-                }
+                throw new Exception($"{account} account not found.");
             }
 
-            wallet = null;
-            accountHash = null;
-            return false;
+            var txHash = await expressNode.SetPolicyAsync(wallet, accountHash, policy, value).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{policy} Policy Set", json).ConfigureAwait(false);
+        }
 
-            static bool TryGetNEP2Wallet(string nep2, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+        public async Task BlockAsync(string scriptHash, string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
-                try
-                {
-                    var privateKey = Wallet.GetPrivateKeyFromNEP2(nep2, password, settings.AddressVersion);
-                    wallet = new DevWallet(settings, string.Empty);
-                    var account = wallet.CreateAccount(privateKey);
-                    accountHash = account.ScriptHash;
-                    return true;
-                }
-                catch
-                {
-                    wallet = null;
-                    accountHash = null;
-                    return false;
-                }
+                throw new Exception($"{account} account not found.");
             }
 
-            static bool TryGetNEP6Wallet(string path, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            if (_scriptHash.IsT1)
             {
-                try
-                {
-                    var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(path, settings);
-                    using var unlock = nep6wallet.Unlock(password);
-                    var nep6account = nep6wallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
-                        ?? nep6wallet.GetAccounts().SingleOrDefault()
-                        ?? throw new InvalidOperationException("Neo-express only supports NEP-6 wallets with a single default account or a single account");
-                    if (nep6account.IsMultiSigContract()) throw new Exception("Neo-express doesn't supports multi-sig NEP-6 accounts");
-                    var keyPair = nep6account.GetKey() ?? throw new Exception("account.GetKey() returned null");
-                    wallet = new DevWallet(settings, string.Empty);
-                    var account = wallet.CreateAccount(keyPair.PrivateKey);
-                    accountHash = account.ScriptHash;
-                    return true;
-                }
-                catch
-                {
-                    wallet = null;
-                    accountHash = null;
-                    return false;
-                }
+                throw new Exception($"{scriptHash} script hash not found or not supported");
             }
+
+            var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
+        }
+
+        public async Task UnblockAsync(string scriptHash, string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+
+            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            if (_scriptHash.IsT1)
+            {
+                throw new Exception($"{scriptHash} script hash not found or not supported");
+            }
+
+            var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{scriptHash} unblocked", json).ConfigureAwait(false);
         }
     }
 }

@@ -2,7 +2,7 @@
 # Neo-Express N3 Command Reference
 
 > Note, this is the command reference for Neo-Express 3.0, targeting N3.
-> The [Command Reference](docs/legacy-command-reference.md) for the Neo Legacy 
+> The [Command Reference](legacy-command-reference.md) for the Neo Legacy 
 > compatible version of Neo-Express is also available.
 
 > Note, you can pass -?|-h|--help to show a list of supported commands or to show
@@ -95,7 +95,7 @@ be run separately.
 When the blockchain is run, the user can specify how often a new block is minted. By default, a new
 block is minted every 15 seconds. If the user would like to run at a different rate, they can specify
 how many seconds per block via the `--seconds-per-block` argument. Additionally, the default seconds
-per block value can be modified via [a setting](docs/settings.md#chainsecondsperblock) in the .neo-express
+per block value can be modified via [a setting](settings.md#chainsecondsperblock) in the .neo-express
 file.
 
 > Note, the user may specify a different seconds per block value each time a blockchain is run, but

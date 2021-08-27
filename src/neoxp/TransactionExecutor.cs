@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -11,7 +10,6 @@ using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
-using Neo.Wallets;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
 using OneOf;
@@ -329,7 +327,7 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.TryParseScriptHashAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.TryParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
                 throw new Exception($"{scriptHash} script hash not found");
@@ -346,7 +344,7 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.TryParseScriptHashAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.TryParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
                 throw new Exception($"{scriptHash} script hash not found");

@@ -110,26 +110,20 @@ namespace NeoExpress
                 return true;
             }
 
-            if (TryToScriptHash(name, chain.AddressVersion, out accountHash))
+            return chain.TryParseScriptHash(name, out accountHash);
+        }
+
+        public static bool TryParseScriptHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 hash)
+        {
+            try
             {
+                hash = name.ToScriptHash(chain.AddressVersion);
                 return true;
             }
-
-            accountHash = default;
-            return false;
-
-            static bool TryToScriptHash(string name, byte version, [MaybeNullWhen(false)] out UInt160 hash)
+            catch
             {
-                try
-                {
-                    hash = name.ToScriptHash(version);
-                    return true;
-                }
-                catch
-                {
-                    hash = null;
-                    return false;
-                }
+                hash = null;
+                return false;
             }
         }
 

@@ -49,18 +49,31 @@ namespace NeoExpress
             return _scriptHash != null;
         }
 
-        public static async Task<OneOf<UInt160, None>> TryParseScriptHashAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<OneOf<UInt160, None>> TryParseScriptHashToBlockAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            if (chain.TryGetAccountHash(name, out var accountHash))
+            // only check express chain wallets to block, not consensus nodes or genesis accoutn
+            if (chain.Wallets != null && chain.Wallets.Count > 0)
             {
-                return accountHash;
+                for (int i = 0; i < chain.Wallets.Count; i++)
+                {
+                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return chain.Wallets[i].DefaultAccount.GetScriptHash();
+                    }
+                }
             }
 
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
             if (TryGetContractHash(contracts, name, out var contractHash, comparison))
             {
-                return contractHash;
+                // don't even try to block native contracts
+                if (!NativeContract.Contracts.Any(c => c.Hash == contractHash))
+                {
+                    return contractHash;
+                }
             }
+
+            if (chain.TryParseScriptHash(name, out var scriptHash)) return scriptHash;
 
             return new None();
         }

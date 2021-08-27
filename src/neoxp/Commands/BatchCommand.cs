@@ -56,6 +56,10 @@ namespace NeoExpress.Commands
         internal async Task ExecuteAsync(ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
         {
             var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            if (chainManager.IsRunning())
+            {
+                throw new Exception("Cannot run batch command while blockchain is running");
+            }
 
             if (Reset.hasValue)
             {

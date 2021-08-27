@@ -7,7 +7,7 @@ namespace NeoExpress.Commands
 {
     partial class ShowCommand
     {
-        [Command("balances")]
+        [Command("balances", Description = "Show all NEP-17 asset balances for an account")]
         internal class Balances
         {
             readonly IExpressChainManagerFactory chainManagerFactory;

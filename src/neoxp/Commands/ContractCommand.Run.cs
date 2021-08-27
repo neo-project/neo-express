@@ -28,7 +28,7 @@ namespace NeoExpress.Commands
             [Required]
             internal string Method { get; init; } = string.Empty;
 
-            [Argument(2, Description = "Contract method to invoke")]
+            [Argument(2, Description = "Arguments to pass to the invoked method")]
             internal string[] Arguments { get; init; } = Array.Empty<string>();
 
             [Option(Description = "Account to pay contract invocation GAS fee")]

@@ -3,7 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
 {
-    [Command("reset", "Reset neo-express instance node")]
+    [Command("reset", Description = "Reset neo-express instance node")]
     class ResetCommand
     {
         readonly IExpressChainManagerFactory chainManagerFactory;

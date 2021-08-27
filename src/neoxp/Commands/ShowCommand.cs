@@ -2,7 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
 {
-    [Command("show", "Show information")]
+    [Command("show", Description = "Show information")]
     [Subcommand(typeof(Balance), typeof(Balances), typeof(Block), typeof(Transaction))]
     partial class ShowCommand
     {

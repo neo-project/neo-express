@@ -327,10 +327,10 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.TryParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
-                throw new Exception($"{scriptHash} script hash not found");
+                throw new Exception($"{scriptHash} script hash not found or not supported");
             }
 
             var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);
@@ -344,10 +344,10 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.TryParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(chainManager.Chain, scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
-                throw new Exception($"{scriptHash} script hash not found");
+                throw new Exception($"{scriptHash} script hash not found or not supported");
             }
 
             var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);

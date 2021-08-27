@@ -31,10 +31,10 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
 
-                    var scriptHash = await expressNode.TryParseScriptHashToBlockAsync(chainManager.Chain, ScriptHash).ConfigureAwait(false);
+                    var scriptHash = await expressNode.ParseScriptHashToBlockAsync(chainManager.Chain, ScriptHash).ConfigureAwait(false);
                     if (scriptHash.IsT1)
                     {
-                        throw new Exception($"{ScriptHash} script hash not found");
+                        throw new Exception($"{ScriptHash} script hash not found or not supported");
                     }
 
                     var isBlocked = await expressNode.GetIsBlockedAsync(scriptHash.AsT0).ConfigureAwait(false);

@@ -2,7 +2,7 @@
 # Neo-Express Command Reference
 
 > Note, this is the command reference for Neo-Express 1.x, targeting Neo Legacy.
-> The [Command Reference](docs/command-reference.md) for the Neo N3 
+> The [Command Reference](command-reference.md) for the Neo N3 
 > compatible version of Neo-Express is also available.
 
 Note, you can pass -?|-h|--help to show a list of supported commands or to show

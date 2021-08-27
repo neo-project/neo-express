@@ -17,6 +17,7 @@ may not exactly match a publicly released version.
 
 ### Added
 
+* `policy` command (#173)
 * `contract hash` command (#170)
 * `chain.SecondsPerBlock` setting (#171)
 

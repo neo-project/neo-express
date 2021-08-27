@@ -449,11 +449,10 @@ representing the different  information that is available:
 
 ## neoxp checkpoint
 
-The `checkpoint` command has a series of subcomands for managing the state of a
-Neo-Express blockchain. In particular, allowing a blockchain to be reverted to a
-previous known state. While this is never something you would do on a production
-blockchain, the ability to revert changes to a Neo-Express blockchain enables a
-variety of debug and test scenarios.
+The `checkpoint` command has a series of subcomands for managing the state of a Neo-Express blockchain.
+In particular, allowing a blockchain to be reverted to a previous known state. While this is never
+something you would do on a production blockchain, the ability to revert changes to a Neo-Express blockchain
+enables a variety of debug and test scenarios.
 
 > Note, all `checkpoint` subcommands require a single-node Neo-Express blockchain.
 > Multi-node blockchains cannot be check pointed.
@@ -524,3 +523,228 @@ blockchain is not important beyond validating that all tests pass.
 
 > Note, like `checkpoint restore`, `checkpoint run` validates that the checkpoint being run matches
 > the current blockchain. If there is not a match, the run is canceled.
+
+## neoxp batch
+
+```
+Usage: neoxp batch [options] <BatchFile>
+
+Arguments:
+  BatchFile                  Path to batch file to run
+
+Options:
+  -r|--reset[:<CHECKPOINT>]  Reset blockchain to genesis or specified checkpoint
+                             before running batch file commands
+  -t|--trace                 Enable contract execution tracing
+  -i|--input <INPUT>         Path to neo-express data file
+```
+
+The `neo batch` command executes a series of blockchain modifying commands against a single Neo-express
+instance. Since the blockchain is only initialized once for the batch, it is usually faster than running
+the individual commands separately.
+
+> Note, the Neo-Express blockchain network cannot be running when the `batch` command is run
+
+Each batch command supports the same arguments and options as their normal command as documented
+in this file except for `--input` and `--trace`. These arguments are specified on the entire batch
+rather than on a command by command basis.
+
+Additionally, the blockchain can be reset back to these genesis block or to a specified checkpoint
+via the `--reset` argument. Using the `--reset` argument without specifying a checkpoint is operationally
+the same as using the `reset` command. Using the `--reset` argument with a checkpoint is operationally
+the same as using the `checkpoint restore` command.
+
+The commands supported in a batch file include:
+
+* `checkpoint create`
+* `contract deploy`
+* `contract invoke`
+* `contract run`
+* `oracle enable`
+* `oracle response`
+* `policy block`
+* `policy set`
+* `policy unblock`
+* `transfer`
+
+## neoxp oracle
+
+The `oracle` command has a series of subcomands for configuring Neo-express' oracle subsystem as well
+as responsing to oracle requests.
+
+> Note, unlike Neo N3 MainNet and TestNet, Neo-Express does not automatically fulfill oracle requests
+> by retrieving files from the internet. Insted, oracle requests are manually fulfilled via the 
+> `oracle response` command.
+
+### neoxp oracle enable
+
+```
+Enable oracles for neo-express instance
+
+Usage: neoxp oracle enable [options] <Account>
+
+Arguments:
+  Account                   Account to pay contract invocation GAS fee
+
+Options:
+  -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
+  -i|--input <INPUT>        Path to neo-express data file
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+```
+
+A new Neo N3 blockchain (including a freshly created or reset Neo-Express blockchain) does not have
+oracle roles enabled. The `oracle enable` command enables the Neo-Express consensus nodes to also
+respond to oracle requests (via the `oracle response` command detailed below)
+
+> Note, enabling oracles on a Neo N3 blockchain can only be performed by the governing committee.
+> In a Neo-Express blockchain, this is typically the `genesis` account. 
+
+### neoxp oracle response
+
+```
+Usage: neoxp oracle response [options] <Url> <ResponsePath>
+
+Arguments:
+  Url                             URL of oracle request
+  ResponsePath                    Path to JSON file with oracle response cotnent
+
+Options:
+  -r|--request-id[:<REQUEST_ID>]  Oracle request ID
+  -i|--input <INPUT>              Path to neo-express data file
+  -j|--json                       Output as JSON
+```
+
+The `oracle response` command enables a developer to submit a response for an existing oracle request.
+The command takes two arguments: The url of the file being requested and the path to a local JSON file
+containing the oracle response content. 
+
+> Note, it is possbile for there to be multiple oracle requests for the same url outstanding at a time.
+> In this case, all outstanding oracle requests are fullfilled by a single call to `oracle response`
+> unless the `--request-id` option is specified. The request ID can be retrieved via the `oracle requests`
+> command described below.
+
+### neoxp oracle requests
+
+```
+Usage: neoxp oracle requests [options]
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `oracle requests` command lists the request id, url and transaction hash that made the oracle request.
+
+### neoxp oracle list
+
+```
+Usage: neoxp oracle list [options]
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `oracle list` command lists public key of each oracle node in a Neo-express blockchain network. 
+Typically, these are the Neo-express consensus nodes when oracles have been enabled.
+
+## neoxp policy
+
+The `policy` command has a series of subcomands for configuring Neo-express' policy subsystem.
+
+> Note, changing Neo N3 blockchain policy (`set`, `block` and `unblock`) can only be performed by
+> the governing committee. In a Neo-Express blockchain, this is typically the `genesis` account. 
+
+### neoxp policy get
+
+```
+Usage: neoxp policy get [options] <Policy>
+
+Arguments:
+  Policy              Policy to set
+                      Allowed values are: FeePerByte, ExecFeeFactor, StoragePrice.
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `policy get` command retrieves the current value of the specified Neo-Express network policy.
+
+### neoxp policy set
+
+```
+Usage: neoxp policy set [options] <Policy> <Value> <Account>
+
+Arguments:
+  Policy                    Policy to set
+                            Allowed values are: FeePerByte, ExecFeeFactor, StoragePrice.
+  Value                     New Policy Value
+  Account                   Account to pay contract invocation GAS fee
+
+Options:
+  -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
+  -i|--input <INPUT>        Path to neo-express data file
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+```
+
+The `policy set` command updates the current value of the specified Neo-Express network policy.
+
+### neoxp policy block
+
+```
+Usage: neoxp policy block [options] <ScriptHash> <Account>
+
+Arguments:
+  ScriptHash                Account to block
+  Account                   Account to pay contract invocation GAS fee
+
+Options:
+  -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
+  -i|--input <INPUT>        Path to neo-express data file
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+```
+
+The `policy block` command blocks the specified non-signing user or contract account. The account
+to block can be specified in the following ways:
+
+- Neo-Express wallet nickname (see `wallet create` above). 
+  - Note, only Neo-Express wallets created by `wallet create` may be blocked. Consensus nodes and 
+    genesis accounts cannot be blocked via `policy block`.
+- Contract name
+  - Note, only deployed contracts may be blocked. Native contracts cannot be blocked via `policy block`.
+- A standard Neo N3 address such as `Ne4Ko2JkzjAd8q2sasXsQCLfZ7nu8Gm5vR`
+
+### neoxp policy unblock
+
+```
+Usage: neoxp policy unblock [options] <ScriptHash> <Account>
+
+Arguments:
+  ScriptHash                Account to unblock
+  Account                   Account to pay contract invocation GAS fee
+
+Options:
+  -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
+  -i|--input <INPUT>        Path to neo-express data file
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+```
+
+The `policy unblock` command unblocks the specified non-signing user or contract account. The account
+to block is specified as described in `policy block` above
+
+### neoxp policy isblocked
+
+```
+Usage: neoxp policy isBlocked [options] <ScriptHash>
+
+Arguments:
+  ScriptHash          Account to check block status of
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `policy isblocked` command checks the blocked status of the specified non-signing user or contract
+account. The account to check is specified as described in `policy block` above

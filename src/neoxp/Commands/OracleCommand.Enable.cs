@@ -35,7 +35,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task<int> OnExecuteAsync(IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -47,7 +47,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync(ex.Message);
+                    app.WriteException(ex);
                     return 1;
                 }
             }

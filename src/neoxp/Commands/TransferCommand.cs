@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
         [Option(Description = "Output as JSON")]
         internal bool Json { get; init; } = false;
 
-        internal async Task<int> OnExecuteAsync(IConsole console)
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {

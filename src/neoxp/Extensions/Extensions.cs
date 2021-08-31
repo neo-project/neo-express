@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
@@ -18,6 +19,25 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)
+        {
+            var stackTraceOption = (CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace");
+
+            var exceptionName = stackTraceOption.ParsedValue || showInnerExceptions 
+                ? $" [{exception.GetType()}]" : string.Empty;
+            app.Error.WriteLine($"\x1b[1m\x1b[31m\x1b[40m{exception.Message}{exceptionName}\x1b[0m");
+            if (stackTraceOption.ParsedValue) app.Error.WriteLine(exception.StackTrace);
+
+            if (showInnerExceptions)
+            {
+                while (exception.InnerException != null)
+                {
+                    app.Error.WriteLine($"  Inner Exception: {exception.InnerException.Message} [{exception.InnerException.GetType().Name}]");
+                    exception = exception.InnerException;
+                }
+            }
+        }
+
         public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
 
         public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);

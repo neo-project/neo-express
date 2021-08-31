@@ -65,7 +65,7 @@ namespace NeoExpress.Commands
                 return output;
             }
 
-            private int OnExecute(IConsole console)
+            private int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -75,7 +75,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    console.Error.WriteLine(ex.Message);
+                    app.WriteException(ex);
                     return 1;
                 }
             }

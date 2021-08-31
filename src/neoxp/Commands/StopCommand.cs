@@ -56,7 +56,7 @@ namespace NeoExpress.Commands
             }
         }
 
-        internal async Task<int> OnExecuteAsync(IConsole console)
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace NeoExpress.Commands
             }
             catch (Exception ex)
             {
-                await console.Error.WriteLineAsync(ex.Message).ConfigureAwait(false);
+                app.WriteException(ex);
                 return 1;
             }
         }

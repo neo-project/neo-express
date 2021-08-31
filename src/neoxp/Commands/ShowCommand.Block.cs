@@ -34,7 +34,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync(ex.Message);
+                    app.WriteException(ex);
                     return 1;
                 }
             }

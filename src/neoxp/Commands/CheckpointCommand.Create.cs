@@ -27,7 +27,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            internal async Task<int> OnExecuteAsync(IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -38,7 +38,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync(ex.Message);
+                    app.WriteException(ex);
                     return 1;
                 }
             }

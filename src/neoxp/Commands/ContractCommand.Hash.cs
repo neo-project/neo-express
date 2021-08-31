@@ -32,7 +32,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -51,7 +51,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync(ex.Message);
+                    app.WriteException(ex);
                     return 1;
                 }
             }

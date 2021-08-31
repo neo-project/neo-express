@@ -573,7 +573,7 @@ The `oracle` command has a series of subcomands for configuring Neo-express' ora
 as responsing to oracle requests.
 
 > Note, unlike Neo N3 MainNet and TestNet, Neo-Express does not automatically fulfill oracle requests
-> by retrieving files from the internet. Insted, oracle requests are manually fulfilled via the 
+> by retrieving files from the internet. Instead, oracle requests are manually fulfilled via the 
 > `oracle response` command.
 
 ### neoxp oracle enable

@@ -21,6 +21,10 @@ may not exactly match a publicly released version.
 * `contract hash` command (#170)
 * `chain.SecondsPerBlock` setting (#171)
 
+## Fixed
+
+* Update `oracle response` error message when oracles are not enabled (#175)
+
 ## [3.0.5] 2021-08-10
 
 ### Changed

@@ -20,6 +20,7 @@ may not exactly match a publicly released version.
 * `policy` command (#173)
 * `contract hash` command (#170)
 * `chain.SecondsPerBlock` setting (#171)
+* `--stack-trace` option (#174)
 
 ## [3.0.5] 2021-08-10
 

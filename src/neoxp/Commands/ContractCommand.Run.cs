@@ -56,7 +56,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(IConsole console)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
@@ -79,17 +79,11 @@ namespace NeoExpress.Commands
                         await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
                     }
 
-
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync($"{ex.Message} [{ex.GetType().Name}]").ConfigureAwait(false);
-                    while (ex.InnerException != null)
-                    {
-                        await console.Error.WriteLineAsync($"  Contract Exception: {ex.InnerException.Message} [{ex.InnerException.GetType().Name}]").ConfigureAwait(false);
-                        ex = ex.InnerException;
-                    }
+                    app.WriteException(ex, showInnerExceptions: true);
                     return 1;
                 }
             }

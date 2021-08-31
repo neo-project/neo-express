@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
                 await chainManager.RunAsync(storageProvider, chain.ConsensusNodes[0], Trace, console.Out, token);
             }
 
-            internal async Task<int> OnExecuteAsync(IConsole console, CancellationToken token)
+            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
             {
                 try
                 {
@@ -54,7 +54,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    await console.Error.WriteLineAsync(ex.Message);
+                    app.WriteException(ex);
                     return 1;
                 }
             }

@@ -17,9 +17,9 @@ may not exactly match a publicly released version.
 
 ### Documentation
 
-* Updated command reference for Neo-Express N3
+* Updated [command reference](docs/command-reference.md) for Neo-Express N3
 * Updated original command reference to reflect use in Neo-Express for Neo Legacy and renamed
-  as [legacy-command-reference.md](docs\legacy-command-reference.md)
+  as [legacy-command-reference.md](docs/legacy-command-reference.md)
 
 ### Added
 

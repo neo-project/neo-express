@@ -28,7 +28,7 @@ may not exactly match a publicly released version.
 * `chain.SecondsPerBlock` setting (#171)
 * `--stack-trace` option (#174)
 
-## Fixed
+### Fixed
 
 * Update `oracle response` error message when oracles are not enabled (#175)
 

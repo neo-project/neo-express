@@ -13,7 +13,13 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## Unreleased
+## [3.0.13] 2021-09-08
+
+### Documentation
+
+* Updated command reference for Neo-Express N3
+* Updated original command reference to reflect use in Neo-Express for Neo Legacy and renamed
+  as [legacy-command-reference.md](docs\legacy-command-reference.md)
 
 ### Added
 

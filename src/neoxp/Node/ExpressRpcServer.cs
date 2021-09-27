@@ -149,7 +149,7 @@ namespace NeoExpress.Node
         public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 address)
         {
             // assets key is the script hash of the asset contract
-            // assets value is the last updated block of the assoicated asset for address
+            // assets value is the last updated block of the associated asset for address
             var assets = new Dictionary<UInt160, uint>();
 
             foreach (var (blockIndex, _, notification) in GetNep17Transfers(storageProvider))

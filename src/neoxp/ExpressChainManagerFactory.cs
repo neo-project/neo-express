@@ -109,7 +109,7 @@ namespace NeoExpress
             var chain = fileSystem.LoadChain(path);
 
             // validate neo-express file by ensuring stored node zero default account SignatureRedeemScript matches a generated script
-            var account = chain.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("conensus node 0 missing default account");
+            var account = chain.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("consensus node 0 missing default account");
             var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
             var contractScript = account.Contract.Script.HexToBytes();
 

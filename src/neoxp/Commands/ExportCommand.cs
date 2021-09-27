@@ -33,7 +33,7 @@ namespace NeoExpress.Commands
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var node = chain.ConsensusNodes[i];
-                writer.WriteLine($"Exporting {node.Wallet.Name} Conensus Node config + wallet");
+                writer.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
                 ExportNodeWallet(chainManager.ProtocolSettings, node, walletPath, password);
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");

@@ -122,7 +122,7 @@ namespace NeoExpress.Commands
                     [Required]
                     internal string Url { get; init; } = string.Empty;
 
-                    [Argument(1, Description = "Path to JSON file with oracle response cotnent")]
+                    [Argument(1, Description = "Path to JSON file with oracle response content")]
                     [Required]
                     internal string ResponsePath { get; init; } = string.Empty;
                 }

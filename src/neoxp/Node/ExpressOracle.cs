@@ -132,7 +132,7 @@ namespace NeoExpress.Node
             size += tx.Attributes.GetVarSize();
             tx.NetworkFee += size * feePerByte;
 
-            // Calcualte system fee
+            // Calculate system fee
 
             tx.SystemFee = request.GasForResponse - tx.NetworkFee;
 

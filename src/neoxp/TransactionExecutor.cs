@@ -156,7 +156,7 @@ namespace NeoExpress
                 await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
                 if (!string.IsNullOrEmpty(result.Exception))
                 {
-                    await writer.WriteLineAsync($"Expception:   {result.Exception}").ConfigureAwait(false);
+                    await writer.WriteLineAsync($"Exception:   {result.Exception}").ConfigureAwait(false);
                 }
                 if (result.Stack.Length > 0)
                 {

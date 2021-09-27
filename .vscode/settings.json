@@ -1,8 +1,20 @@
 {
     "cSpell.words": [
+        "Akka",
+        "DBFT",
+        "expresscreateoracleresponsetx",
+        "expressgetnep",
+        "GRPC",
+        "hhmmss",
         "IANA",
+        "Merkle",
+        "neoxp",
         "Nito",
+        "originaltxid",
+        "requestid",
         "Secp",
-        "Unspents"
+        "txid",
+        "Unspents",
+        "vmstate"
     ],
 }

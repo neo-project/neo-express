@@ -233,7 +233,7 @@ namespace NeoExpress.Node
                 Transactions = transactions
             };
 
-            // retrieve the validators for the next block. Logic lifted from ConensusContext.Reset
+            // retrieve the validators for the next block. Logic lifted from ConsensusContext.Reset
             var validators = NativeContract.NEO.GetNextBlockValidators(snapshot, ProtocolSettings.ValidatorsCount);
             var m = validators.Length - (validators.Length - 1) / 3;
 

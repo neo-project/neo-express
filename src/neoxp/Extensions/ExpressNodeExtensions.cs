@@ -51,7 +51,7 @@ namespace NeoExpress
 
         public static async Task<OneOf<UInt160, None>> ParseScriptHashToBlockAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            // only check express chain wallets to block, not consensus nodes or genesis accoutn
+            // only check express chain wallets to block, not consensus nodes or genesis account
             if (chain.Wallets != null && chain.Wallets.Count > 0)
             {
                 for (int i = 0; i < chain.Wallets.Count; i++)

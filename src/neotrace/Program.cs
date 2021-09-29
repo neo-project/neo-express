@@ -1,0 +1,169 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.BlockchainToolkit.Persistence;
+using Neo.BlockchainToolkit.SmartContract;
+using Neo.BlockchainToolkit.TraceDebug;
+using Neo.IO;
+using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
+using Neo.Persistence;
+using Neo.SmartContract;
+using Neo.VM;
+using NeoTrace.Commands;
+using OneOf;
+using SysIO = System.IO;
+
+namespace NeoTrace
+{ 
+    [Command("neotrace", Description = "TBD", UsePagerForHelpText = false)]
+    [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
+    class Program
+    {
+        public static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
+
+        [Option]
+        bool Version { get; }
+
+        int OnExecute(CommandLineApplication app, IConsole console)
+        {
+            if (Version)
+            {
+                console.WriteLine(ThisAssembly.AssemblyInformationalVersion);
+                return 0;
+            }
+
+            console.WriteLine("You must specify a subcommand.");
+            app.ShowHelp(false);
+            return 1;
+        }
+
+        static IReadOnlyList<string> mainNetRpcUris = new string[] {
+            "http://seed1.neo.org:10332",
+            "http://seed2.neo.org:10332",
+            "http://seed3.neo.org:10332",
+            "http://seed4.neo.org:10332",
+            "http://seed5.neo.org:10332"
+        };
+
+        static IReadOnlyList<string> testNetRpcUris = new string[] {
+            "http://seed1t4.neo.org:20332",
+            "http://seed2t4.neo.org:20332",
+            "http://seed3t4.neo.org:20332",
+            "http://seed4t4.neo.org:20332",
+            "http://seed5t4.neo.org:20332"
+        };
+
+        internal static Uri ParseRpcUri(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return new Uri(mainNetRpcUris[0]);
+
+            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase)) return new Uri(mainNetRpcUris[0]);
+            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase)) return new Uri(testNetRpcUris[0]);
+            if (Uri.TryCreate(value, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                return uri;
+            }
+
+            throw new ArgumentException($"Invalid Neo RPC Uri {value}");
+        }
+
+        internal static async Task TraceBlockAsync(Uri uri, OneOf<uint, UInt256> blockId, IConsole console)
+        {
+            var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
+
+            using var rpcClient = new RpcClient(uri, protocolSettings: settings);
+            var block = await GetBlockAsync(rpcClient, blockId).ConfigureAwait(false);
+            TraceBlock(uri, block, settings, console);
+        }
+
+        internal static async Task TraceTransactionAsync(Uri uri, UInt256 txHash, IConsole console)
+        {
+            var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
+
+            using var rpcClient = new RpcClient(uri, protocolSettings: settings);
+            var rpcTx = await rpcClient.GetRawTransactionAsync($"{txHash}").ConfigureAwait(false);
+            var block = await GetBlockAsync(rpcClient, rpcTx.BlockHash).ConfigureAwait(false);
+            TraceBlock(uri, block, settings, console, rpcTx.Transaction.Hash);
+        }
+
+        static void TraceBlock(Uri uri, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
+        {
+            IReadOnlyStore roStore = block.Index > 0 
+                ? new StateServiceStore(uri, block.Index - 1) 
+                : NullStore.Instance;
+
+            using var store = new MemoryTrackingStore(roStore);
+            using var snapshot = new SnapshotCache(store.GetSnapshot());
+
+            using (var engine = ApplicationEngine.Create(TriggerType.OnPersist, null, snapshot, block, settings, 0))
+            {
+                using var sb = new ScriptBuilder();
+                sb.EmitSysCall(ApplicationEngine.System_Contract_NativeOnPersist);
+                engine.LoadScript(sb.ToArray());
+                if (engine.Execute() != VMState.HALT) throw new InvalidOperationException("NativeOnPersist operation failed", engine.FaultException);
+            }
+
+            var clonedSnapshot = snapshot.CreateSnapshot();
+            for (int i = 0; i < block.Transactions.Length; i++)
+            {
+                Transaction tx = block.Transactions[i];
+
+                using var engine = GetEngine(tx, clonedSnapshot);
+                engine.LoadScript(tx.Script);
+                if (engine.Execute() == VMState.HALT)
+                {
+                    clonedSnapshot.Commit();
+                }
+                else
+                {
+                    clonedSnapshot = snapshot.CreateSnapshot();
+                }
+            }
+
+            ApplicationEngine GetEngine(Transaction tx, DataCache snapshot)
+            {
+                if (txHash == null || txHash == tx.Hash)
+                {
+                    var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
+                    var sink = new TraceDebugStream(SysIO.File.OpenWrite(path));
+                    return new TraceApplicationEngine(sink, TriggerType.Application, tx, snapshot, block, settings, tx.SystemFee);
+                }
+                else
+                {
+                    return ApplicationEngine.Create(TriggerType.Application, tx, snapshot, block, settings, tx.SystemFee);
+                }
+            }
+        }
+
+        static async Task<Block> GetBlockAsync(RpcClient rpcClient, OneOf<uint, UInt256> id)
+        {
+            var task = id.Match(
+                index => rpcClient.GetBlockHexAsync($"{index}"),
+                hash => rpcClient.GetBlockHexAsync($"{hash}"));
+            var hex = await task.ConfigureAwait(false);
+            return Convert.FromBase64String(hex).AsSerializable<Block>();
+        }
+
+        static async Task<ProtocolSettings> GetProtocolSettingsAsync(Uri uri)
+        {
+            using var rpcClient = new RpcClient(uri);
+            var version = await rpcClient.GetVersionAsync().ConfigureAwait(false);
+            return ProtocolSettings.Default with
+            {
+                AddressVersion = version.Protocol.AddressVersion,
+                InitialGasDistribution = version.Protocol.InitialGasDistribution,
+                MaxTraceableBlocks = version.Protocol.MaxTraceableBlocks,
+                MaxTransactionsPerBlock = version.Protocol.MaxTransactionsPerBlock,
+                MemoryPoolMaxTransactions = version.Protocol.MemoryPoolMaxTransactions,
+                MillisecondsPerBlock = version.Protocol.MillisecondsPerBlock,
+                Network = version.Protocol.Network,
+            };
+        }
+    }
+}

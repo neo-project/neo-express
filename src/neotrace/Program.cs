@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -11,6 +9,7 @@ using Neo.BlockchainToolkit.TraceDebug;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.VM;
@@ -19,7 +18,7 @@ using OneOf;
 using SysIO = System.IO;
 
 namespace NeoTrace
-{ 
+{
     [Command("neotrace", Description = "TBD", UsePagerForHelpText = false)]
     [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
     class Program
@@ -153,7 +152,14 @@ namespace NeoTrace
         static async Task<ProtocolSettings> GetProtocolSettingsAsync(Uri uri)
         {
             using var rpcClient = new RpcClient(uri);
-            var version = await rpcClient.GetVersionAsync().ConfigureAwait(false);
+            var result = await rpcClient.RpcSendAsync("getversion").ConfigureAwait(false);
+            if (result["protocol"] == null)
+            {
+                var userAgent = result["useragent"].AsString();
+                throw new NotSupportedException($"Trace not supported by {userAgent} running on {uri}");
+            }
+
+            var version = RpcVersion.FromJson(result);
             return ProtocolSettings.Default with
             {
                 AddressVersion = version.Protocol.AddressVersion,

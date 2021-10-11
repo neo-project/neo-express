@@ -17,7 +17,7 @@ may not exactly match a publicly released version.
 
 ### Added
 
-* NeoTrace tool
+* NeoTrace tool (#178)
 
 ### Changed
 

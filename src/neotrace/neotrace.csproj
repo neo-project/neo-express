@@ -1,14 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+
+    <AssemblyName>neotrace</AssemblyName>
+    <Authors>ngd enterprise</Authors>
+    <Company>The Neo Project</Company>
+    <Copyright>2015-2021 The Neo Project</Copyright>
+    <Description>neotrace generates debug trace files for existing blocks and/or transactions</Description>
+    <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
+    <PackageIcon>neo-logo-72.png</PackageIcon>
+    <PackageId>Neo.Trace</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
+    <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>
+    <PackAsTool>true</PackAsTool>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
+    <RootNamespace>NeoTrace</RootNamespace>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
-    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.8" />
+    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.10" />
     <PackageReference Include="Nerdbank.Streams" Version="2.8.46" />
   </ItemGroup>
 

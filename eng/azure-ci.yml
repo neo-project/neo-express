@@ -39,6 +39,14 @@ steps:
     includesymbols: true
     versioningScheme: 'off'
 
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack'
+  inputs:
+    command: 'pack'
+    packagesToPack: './src/neotrace/neotrace.csproj'
+    includesymbols: true
+    versioningScheme: 'off'
+
 - publish: '$(Build.ArtifactStagingDirectory)'
   displayName: 'publish build artifact'
   name: nugetPackage

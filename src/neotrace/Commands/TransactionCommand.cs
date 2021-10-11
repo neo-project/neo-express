@@ -13,7 +13,7 @@ namespace NeoTrace.Commands
         [Required]
         internal string TransactionHash { get; } = string.Empty;
 
-        [Option]
+        [Option(Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
         internal string RpcUri { get; } = string.Empty;
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

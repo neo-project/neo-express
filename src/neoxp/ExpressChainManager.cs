@@ -152,7 +152,8 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbStorageProvider.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings, multiSigAccount.ScriptHash);
+            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, 
+                ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
@@ -352,7 +353,7 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbStorageProvider.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Network, chain.AddressVersion, multiSigAccount.ScriptHash);
+            RocksDbUtility.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Network, chain.AddressVersion, multiSigAccount.ScriptHash);
             var rocksDbStorageProvider = RocksDbStorageProvider.OpenReadOnly(checkpointTempPath);
             return new CheckpointStorageProvider(rocksDbStorageProvider, checkpointCleanup: folderCleanup);
         }

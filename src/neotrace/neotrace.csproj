@@ -8,11 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
+    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.8" />
     <PackageReference Include="Nerdbank.Streams" Version="2.8.46" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\lib-bctk\src\bctklib\bctklib.csproj" />
   </ItemGroup>
 
 </Project>

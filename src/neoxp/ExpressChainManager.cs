@@ -152,7 +152,8 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, 
+                ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 

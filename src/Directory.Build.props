@@ -24,7 +24,7 @@
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.12" />
+    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.13" />
     <PackageReference Include="Nerdbank.Streams" Version="2.8.46" />
   </ItemGroup>
 

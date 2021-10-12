@@ -1,5 +1,5 @@
 <!-- markdownlint-enable -->
-# Neo-Express
+# NeoExpress and NeoTrace
 
 [![Nuget](https://img.shields.io/nuget/v/Neo.Express)](https://www.nuget.org/packages/Neo.Express/)
 [![Build Status](https://dev.azure.com/ngdenterprise/Build/_apis/build/status/neo-project.neo-express?branchName=master)](https://dev.azure.com/ngdenterprise/Build/_build/latest?definitionId=2&branchName=master)
@@ -30,7 +30,7 @@ Neo-Express capabilities.
 ## Installation
 
 Neo-Express is distributed as a
-[.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
+[.NET Core Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
 Different versions of Neo-Express require different versions of .NET Core.
 
 |Neo-Express Version|.NET Core Version|
@@ -102,27 +102,58 @@ For more information, please see the
 [dotnet tool install command](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-tool-install#options)
 documentation.
 
+## NeoTrace
+
+In addition to NeoExpress, this repo contains the NeoTrace tool. NeoTrace is a tool
+to generate [Neo Smart Contract Debugger](https://github.com/neo-project/neo-debugger)
+trace files for existing blocks or transactions. You can specify a block by index or hash
+or a transaction by hash.
+
+
+```
+> neotrace block 365110  --rpc-url testnet
+> neotrace block 0xd2421d88919dccc1ac73647bf06089bae78ce02060302eff861a04e381bc91ad  --rpc-url testnet
+> neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-url testnet
+```
+
+NeoTrace depends on the Neo 3.0.3 [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService)
+running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet
+(such as `http://seed1.neo.org:10332` and `http://seed1t4.neo.org:20332`) are configured to
+run the StateService plugin with `FullState` enabled.
+
+> Note, As of this writing (2021-10-12) Neo 3.0.3 has not yet been deployed to MainNet.
+> MainNet is [scheduled for upgrade](https://neo-blockchain.medium.com/neo-cli-v-3-0-3-release-announcement-d5bbd1b41c62)
+> on 2021-10-14.
+
+Like NeoExpress, NeoTrace is distributed as a [.NET Core Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
+It can be installed via the `dotnet tool` command.
+
+``` shell
+> dotnet tool install Neo.Trace -g
+```
+
+> Note, NeoTrace has no additional dependencies beyond .NET 5.
+
 ## A Message from the Engineer
 
-Thanks for checking out Neo-Express! I am eager to hear your opinion of the product.
+Thanks for checking out NeoExpress and NeoTrace! I am eager to hear your opinion of the product.
 
-If you like Neo-Express, please let me know on [Twitter](https://twitter.com/devhawk),
+If you like these tools, please let me know on [Twitter](https://twitter.com/devhawk),
 [email](mailto:devhawk@outlook.com) or the [Neo Discord server](https://discord.gg/G5WEPwC).
 
-If there are things about Neo-Express you don't like, please file issues in our
+If there are things about these tools you don't like, please file issues in our
 [GitHub repo](https://github.com/neo-project/neo-express/issues). You can hit me up on
 Twitter, Discord or email as well, but GitHub issues are how we track improvements
-we make to Neo-Express. So don't be shy - file an issue if there is anything
-you'd like to see changed in the product.
+we make. So don't be shy - file an issue if there is anything you'd like to see changed in the product.
 
-Most software is built by teams of people. However, Neo-Express so far has been
+Most software is built by teams of people. However, NeoExpress and NeoTrace so far have been
 a solo effort. I'm looking forward to having other folks contribute in the future,
-but so far it's just been me. That means that Neo-Express has been designed around
+but so far it's just been me. That means that these tools have been designed around
 my experiences and my perspective. I can't help it, my perspective is the only
-one I have! :) So while I find Neo-Express intuitive, I realize that you may not
-feel the same. Please let me know if this is the case! I didn't build Neo-Express
+one I have! :) So while I find these tools intuitive, I realize that you may not
+feel the same. Please let me know if this is the case! I didn't build these tools
 for me, I built it for the Neo developer community at large. So if there are
-changes we can make to make Neo-Express more accessible, intuitive, easier to
+changes we can make to make NeoExpress and/or NeoTrace more accessible, intuitive, easier to
 use or just flat-out better - I want to hear about them.
 
 Thanks again for checking out Neo-Express. I look forward to hearing from you.

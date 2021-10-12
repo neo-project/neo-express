@@ -1,4 +1,4 @@
-name: Release
+name: Release NeoExpress
 
 on:
   workflow_dispatch:

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo;
+using Neo.BlockchainToolkit.SmartContract;
+using Neo.BlockchainToolkit.TraceDebug;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Plugins;
@@ -24,8 +26,8 @@ namespace NeoExpress.Node
                 && EnumerateContractCalls(tx.Script).Any())
             {
                 var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
-                var sink = new TraceDebugSink(SysIO.File.OpenWrite(path));
-                return new ExpressApplicationEngine(sink, trigger, container, snapshot, persistingBlock, settings, gas);
+                var sink = new TraceDebugStream(SysIO.File.OpenWrite(path));
+                return new TraceApplicationEngine(sink, trigger, container, snapshot, persistingBlock, settings, gas);
             }
 
             return null;

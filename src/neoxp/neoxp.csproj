@@ -1,47 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>neoxp</AssemblyName>
-    <Authors>Neo Global Development Seattle</Authors>
-    <Company>The Neo Project</Company>
-    <Copyright>2015-2021 The Neo Project</Copyright>
     <Description>neo-express is a Neo developer blockchain tool</Description>
-    <LangVersion>9</LangVersion>
     <NeoModulesVersion>3.0.3</NeoModulesVersion>
-    <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
-    <PackageIcon>neo-logo-72.png</PackageIcon>
     <PackageId>Neo.Express</PackageId>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
-    <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>
     <PackAsTool>true</PackAsTool>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
     <RootNamespace>NeoExpress</RootNamespace>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
-    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
-  </ItemGroup>
-  <ItemGroup>
-    <InternalsVisibleTo Include="test-$(AssemblyName)"/>
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2"/>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="InternalsVisibleTo.MSBuild" Version="1.0.4">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.10" />
     <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoModulesVersion)"/>
     <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoModulesVersion)"/>
     <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoModulesVersion)"/>
-    <PackageReference Include="Nerdbank.Streams" Version="2.8.46"/>
-    <PackageReference Include="Nito.Disposables" Version="2.2.0"/>
+    <PackageReference Include="Nito.Disposables" Version="2.2.1"/>
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0"/>
     <PackageReference Include="System.Linq.Async" Version="5.0.0"/>
   </ItemGroup>
+
 </Project>

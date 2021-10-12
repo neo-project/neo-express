@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: dotnet restore
     - name: Pack 
-      run: dotnet pack --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/neoxp --output ./out --configuration Release --no-restore --verbosity normal
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
@@ -32,7 +32,7 @@ jobs:
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: ${{ contains(env.NUGET_PACKAGE_VERSION, '-preview') }}
-        title: Release ${{ env.NUGET_PACKAGE_VERSION }}
+        title: Neo-Express Release ${{ env.NUGET_PACKAGE_VERSION }}
         automatic_release_tag: ${{ env.NUGET_PACKAGE_VERSION }}
         files: |
           ./out/*

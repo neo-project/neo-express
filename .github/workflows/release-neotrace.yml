@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
+    - name: Install nbgv
+      run: dotnet tool install nbgv --tool-path ./tools
+    - name: Run nbgv
+      run: echo "NUGET_PACKAGE_VERSION=$(./tools/nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_ENV
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Pack 
+      run: dotnet pack src/neotrace --output ./out --configuration Release --no-restore --verbosity normal
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: packages
+        path: ./out
+    - name: Create Release
+      uses: marvinpinto/action-automatic-releases@v1.1.1
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: ${{ contains(env.NUGET_PACKAGE_VERSION, '-preview') }}
+        title: Neo-Trace Release ${{ env.NUGET_PACKAGE_VERSION }}
+        automatic_release_tag: ${{ env.NUGET_PACKAGE_VERSION }}
+        files: |
+          ./out/*

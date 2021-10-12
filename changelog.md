@@ -13,10 +13,17 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## Unreleased
+## [3.0.19] 2021-10-12
+
+### Added
+
+* NeoTrace tool (#178)
 
 ### Changed
 
+* Moved ExpressApplicationEngine from NeoExpress
+  to [Blockchain Toolkit Library](https://github.com/ngdenterprise/neo-blockchaintoolkit-library)
+  and renamed as TraceApplicationEngine in order to share with NeoTrace
 * Update dependencies for Neo 3.0.3 release
 
 ## [3.0.13] 2021-09-08

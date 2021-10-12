@@ -7,14 +7,18 @@
         "GRPC",
         "hhmmss",
         "IANA",
+        "includesymbols",
         "Merkle",
+        "neotrace",
         "neoxp",
         "Nito",
+        "nupkg",
         "originaltxid",
         "requestid",
         "Secp",
         "txid",
         "Unspents",
-        "vmstate"
+        "vmstate",
+        "Vsts"
     ],
 }

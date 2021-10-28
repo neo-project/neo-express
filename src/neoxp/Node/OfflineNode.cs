@@ -162,7 +162,8 @@ namespace NeoExpress.Node
             }
 
             tx.Witnesses = context.GetWitnesses();
-            return await SubmitTransactionAsync(tx).ConfigureAwait(false);
+            var blockHash = await SubmitTransactionAsync(tx).ConfigureAwait(false);
+            return tx.Hash;
         }
 
         public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
@@ -176,21 +177,32 @@ namespace NeoExpress.Node
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
             ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
-            return await SubmitTransactionAsync(tx);
+            var blockHash = await SubmitTransactionAsync(tx);
+            return tx.Hash;
         }
 
-        async Task<UInt256> SubmitTransactionAsync(Transaction tx)
+        public async Task MintEmptyBlocksAsync(uint blockCount)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var block = CreateSignedBlock(new[] { tx });
+            for (int i = 0; i < blockCount; i++)
+            {
+                await SubmitTransactionAsync(null);
+            }
+        }
+
+        async Task<UInt256> SubmitTransactionAsync(Transaction? tx = null)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            var transactions = tx == null ? Array.Empty<Transaction>() : new[] { tx };
+            var block = CreateSignedBlock(transactions);
             var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block);
             if (blockRelay.Result != VerifyResult.Succeed)
             {
                 throw new Exception($"Block relay failed {blockRelay.Result}");
             }
-
-            return tx.Hash;
+            return block.Hash;
         }
 
         Block CreateSignedBlock(Transaction[] transactions)

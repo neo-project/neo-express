@@ -9,7 +9,7 @@ namespace NeoExpress.Commands
     partial class BatchCommand
     {
         [Command]
-        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(Oracle), typeof(Policy), typeof(Transfer))]
+        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer))]
         internal class BatchFileCommands
         {
             [Command("checkpoint")]
@@ -98,6 +98,14 @@ namespace NeoExpress.Commands
                     [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
                 }
+            }
+
+            [Command("fastfwd")]
+            internal class FastForward
+            {
+                [Argument(0, Description = "Number of blocks to mint")]
+                [Required]
+                internal uint Count { get; init; } = 1;
             }
 
             [Command("oracle")]

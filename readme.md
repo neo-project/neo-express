@@ -111,9 +111,9 @@ or a transaction by hash.
 
 
 ```
-> neotrace block 365110  --rpc-url testnet
-> neotrace block 0xd2421d88919dccc1ac73647bf06089bae78ce02060302eff861a04e381bc91ad  --rpc-url testnet
-> neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-url testnet
+> neotrace block 365110  --rpc-uri testnet
+> neotrace block 0xd2421d88919dccc1ac73647bf06089bae78ce02060302eff861a04e381bc91ad  --rpc-uri testnet
+> neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-uri testnet
 ```
 
 NeoTrace depends on the Neo 3.0.3 [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService)

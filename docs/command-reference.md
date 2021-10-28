@@ -508,7 +508,7 @@ Options:
   -t|--trace                                  Enable contract execution tracing
 ```
 
-The `checkpoint run` command enables the user run a checkpoint, similar to the standard `run` command
+The `checkpoint run` command enables the user to run a checkpoint, similar to the standard `run` command
 described above. However, checkpoint run stores any changes to the checkpoint in memory instead of on
 disk. When the blockchain is shut down, any changes to the blockchain that were saved to memory are 
 discarded.

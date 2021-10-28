@@ -15,7 +15,7 @@ account is used to sign a transaction that is submitted to the blockchain networ
 
 ### Specifying a Signing Account
 
-A account used for signing must have an accessable private key. Signing accounts can be specified in
+An account used for signing must have an accessible private key. Signing accounts can be specified in
 multiple ways:
 
 - `genesis` to use the consensus node multi-sig account which holds the genesis NEO and GAS
@@ -29,7 +29,7 @@ multiple ways:
 
 ### Specifying a Non-Signing Account
 
-A account used that is not used for signing doesn't need an accessable private key. Non-Signing accounts
+A account used that is not used for signing doesn't need an accessible private key. Non-Signing accounts
 can be specified in multiple ways:
 
 - `genesis` to use the consensus node multi-sig account which holds the genesis NEO and GAS
@@ -120,7 +120,7 @@ Options:
 ```
 
 When running in a terminal window, neo-express can be shutdown via standard CTRL-C or CTRL-BREAK operations.
-Additonally, you can stop a running neo-express network via the `stop` command. Like the `run` command, the
+Additionally, you can stop a running neo-express network via the `stop` command. Like the `run` command, the
 `stop` command takes a node index to stop, defaulting to 0. The `--all` option shuts down all running consensus
 nodes in the network.
 
@@ -270,7 +270,7 @@ blockchain network. The transfer command has four required arguments
 
 ## neoxp contract
 
-The `contract` command has a series of subcomands for managing smart contracts
+The `contract` command has a series of subcommands for managing smart contracts
 on a Neo-Express blockchain network
 
 ### neoxp contract deploy
@@ -449,7 +449,7 @@ representing the different  information that is available:
 
 ## neoxp checkpoint
 
-The `checkpoint` command has a series of subcomands for managing the state of a Neo-Express blockchain.
+The `checkpoint` command has a series of subcommands for managing the state of a Neo-Express blockchain.
 In particular, allowing a blockchain to be reverted to a previous known state. While this is never
 something you would do on a production blockchain, the ability to revert changes to a Neo-Express blockchain
 enables a variety of debug and test scenarios.
@@ -569,8 +569,8 @@ The commands supported in a batch file include:
 
 ## neoxp oracle
 
-The `oracle` command has a series of subcomands for configuring Neo-express' oracle subsystem as well
-as responsing to oracle requests.
+The `oracle` command has a series of subcommands for configuring Neo-express' oracle subsystem as well
+as responding to oracle requests.
 
 > Note, unlike Neo N3 MainNet and TestNet, Neo-Express does not automatically fulfill oracle requests
 > by retrieving files from the internet. Instead, oracle requests are manually fulfilled via the 
@@ -607,7 +607,7 @@ Usage: neoxp oracle response [options] <Url> <ResponsePath>
 
 Arguments:
   Url                             URL of oracle request
-  ResponsePath                    Path to JSON file with oracle response cotnent
+  ResponsePath                    Path to JSON file with oracle response content
 
 Options:
   -r|--request-id[:<REQUEST_ID>]  Oracle request ID
@@ -619,8 +619,8 @@ The `oracle response` command enables a developer to submit a response for an ex
 The command takes two arguments: The url of the file being requested and the path to a local JSON file
 containing the oracle response content. 
 
-> Note, it is possbile for there to be multiple oracle requests for the same url outstanding at a time.
-> In this case, all outstanding oracle requests are fullfilled by a single call to `oracle response`
+> Note, it is possible for there to be multiple oracle requests for the same url outstanding at a time.
+> In this case, all outstanding oracle requests are fulfilled by a single call to `oracle response`
 > unless the `--request-id` option is specified. The request ID can be retrieved via the `oracle requests`
 > command described below.
 
@@ -649,7 +649,7 @@ Typically, these are the Neo-express consensus nodes when oracles have been enab
 
 ## neoxp policy
 
-The `policy` command has a series of subcomands for configuring Neo-express' policy subsystem.
+The `policy` command has a series of subcommands for configuring Neo-express' policy subsystem.
 
 > Note, changing Neo N3 blockchain policy (`set`, `block` and `unblock`) can only be performed by
 > the governing committee. In a Neo-Express blockchain, this is typically the `genesis` account. 

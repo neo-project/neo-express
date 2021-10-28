@@ -139,8 +139,7 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.FastForward> cmd:
                         {
-                            var offlineNode = (Node.OfflineNode)txExec.ExpressNode;
-                            await offlineNode.MintEmptyBlocksAsync(cmd.Model.Count).ConfigureAwait(false);
+                            await txExec.ExpressNode.FastForwardAsync(cmd.Model.Count).ConfigureAwait(false);
                             await writer.WriteLineAsync($"{cmd.Model.Count} empty blocks minted").ConfigureAwait(false);
                             break;
                         }

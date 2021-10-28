@@ -387,19 +387,5 @@ namespace NeoExpress
 
             return GetOfflineNode(offlineTrace);
         }
-
-        public async Task FastForwardAsync(uint blockCount)
-        {
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                if (IsNodeRunning(chain.ConsensusNodes[i]))
-                {
-                    throw new InvalidOperationException("cannot fast forward while node is running");
-                }
-            }
-
-            var offlineNode = GetOfflineNode();
-            await offlineNode.MintEmptyBlocksAsync(blockCount).ConfigureAwait(false);
-        }
     }
 }

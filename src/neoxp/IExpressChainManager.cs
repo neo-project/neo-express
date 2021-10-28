@@ -15,7 +15,6 @@ namespace NeoExpress
 
         Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkPointPath, bool force, System.IO.TextWriter? writer = null);
         IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath);
-        Task FastForwardAsync(uint blockCount);
         IExpressNode GetExpressNode(bool offlineTrace = false);
         IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard);
         bool IsRunning(ExpressConsensusNode? node = null);

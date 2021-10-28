@@ -27,7 +27,8 @@ namespace NeoExpress.Commands
             try
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                await chainManager.FastForwardAsync(Count).ConfigureAwait(false);
+                using var expressNode = chainManager.GetExpressNode();
+                await expressNode.FastForwardAsync(Count).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"{Count} empty blocks minted").ConfigureAwait(false);
                 return 0;
             }

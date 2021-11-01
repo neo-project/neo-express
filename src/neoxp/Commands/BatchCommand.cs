@@ -137,6 +137,12 @@ namespace NeoExpress.Commands
                                 cmd.Model.WitnessScope).ConfigureAwait(false);
                             break;
                         }
+                    case CommandLineApplication<BatchFileCommands.FastForward> cmd:
+                        {
+                            await txExec.ExpressNode.FastForwardAsync(cmd.Model.Count).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"{cmd.Model.Count} empty blocks minted").ConfigureAwait(false);
+                            break;
+                        }
                     case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
                         {
                             await txExec.OracleEnableAsync(

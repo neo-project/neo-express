@@ -358,6 +358,19 @@ namespace NeoExpress
             return new CheckpointStorageProvider(rocksDbStorageProvider, checkpointCleanup: folderCleanup);
         }
 
+        OfflineNode GetOfflineNode(bool offlineTrace = false)
+        {
+            var node = chain.ConsensusNodes[0];
+            var nodePath = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+
+            return new Node.OfflineNode(ProtocolSettings,
+                RocksDbStorageProvider.Open(nodePath),
+                node.Wallet,
+                chain,
+                offlineTrace);
+        }
+
         public IExpressNode GetExpressNode(bool offlineTrace = false)
         {
             // Check to see if there's a neo-express blockchain currently running by
@@ -372,15 +385,7 @@ namespace NeoExpress
                 }
             }
 
-            var node = chain.ConsensusNodes[0];
-            var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
-            return new Node.OfflineNode(ProtocolSettings,
-                RocksDbStorageProvider.Open(nodePath),
-                node.Wallet,
-                chain,
-                offlineTrace);
+            return GetOfflineNode(offlineTrace);
         }
     }
 }

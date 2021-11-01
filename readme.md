@@ -87,13 +87,13 @@ As per [install instructions](https://docs.brew.sh/Installation), Homebrew is in
 
 ### Install Preview Releases
 
-Neo-Express has a public [build server](https://dev.azure.com/NGDSeattle/Public/_build?definitionId=24)
-and [NuGet feed](https://dev.azure.com/NGDSeattle/Public/_packaging?_a=package&feed=NeoPublicPackages&package=Neo.Express&protocolType=NuGet).
+Neo-Express has a public [build server](https://dev.azure.com/ngdenterprise/Build/_build?definitionId=2)
+and [artifacts feed](https://dev.azure.com/ngdenterprise/Build/_packaging?_a=feed&feed=public%40Local).
 You can install preview builds of Neo-express by specifying the nuget feed source
 when running the dotnet tool install or update command.
 
 ``` shell
-> dotnet tool install Neo.Express -g --add-source https://pkgs.dev.azure.com/NGDSeattle/Public/_packaging/NeoPublicPackages/nuget/v3/index.json --version <insert version>
+> dotnet tool install Neo.Express -g --add-source https://pkgs.dev.azure.com/ngdenterprise/Build/_packaging/public%40Local/nuget/v3/index.json --version <insert version>
 ```
 
 Note, if the version isn't specified, the most recent release branch build will

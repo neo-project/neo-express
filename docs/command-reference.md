@@ -567,6 +567,23 @@ The commands supported in a batch file include:
 * `policy unblock`
 * `transfer`
 
+## neoxp fastfwd
+
+```
+Usage: neoxp fastfwd [options] <Count>
+
+Arguments:
+  Count               Number of blocks to mint     
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+  -?|-h|--help        Show help information.   
+```
+
+The `fastfwd` command generates the specified number of empty blocks. This is useful for testing scenarios
+such as voting on a proposal where some amount of time (measured in minted blocks) must pass between
+operations.
+
 ## neoxp oracle
 
 The `oracle` command has a series of subcommands for configuring Neo-express' oracle subsystem as well

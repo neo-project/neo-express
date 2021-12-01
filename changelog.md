@@ -23,6 +23,7 @@ may not exactly match a publicly released version.
 
 * Enable transactions costing greater than 20 GAS offline (#190)
 * Print internal exception (if any) when `contract deploy` command fails (#190)
+
 ## [3.0.19] 2021-10-12
 
 ### Added

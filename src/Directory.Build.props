@@ -17,6 +17,14 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <BlockchainToolkitLibraryVersion>3.0.13</BlockchainToolkitLibraryVersion>
+    <BlockchainToolkitLibraryLocalPath>..\..\..\lib-bctk</BlockchainToolkitLibraryLocalPath>
+    <NeoModulesVersion>3.0.3</NeoModulesVersion>
+    <NeoModuleLocalPath>..\..\..\..\official\3neo-monorepo\modules\</NeoModuleLocalPath>
+    <!-- <BlockchainToolkitLibraryVersion>local</BlockchainToolkitLibraryVersion> -->
+  </PropertyGroup>
+
   <ItemGroup>
     <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
   </ItemGroup>
@@ -24,10 +32,22 @@
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.13" />
     <PackageReference Include="Nerdbank.Streams" Version="2.8.46" />
   </ItemGroup>
 
+  <Choose>
+    <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
+      <ItemGroup>
+        <ProjectReference Include="$(BlockchainToolkitLibraryLocalPath)\src\bctklib\bctklib.csproj" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Neo.BlockchainToolkit.Library" Version="$(BlockchainToolkitLibraryVersion)" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
 </Project>

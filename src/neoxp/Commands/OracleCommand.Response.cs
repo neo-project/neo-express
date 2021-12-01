@@ -33,6 +33,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
+            [Option(Description = "Enable contract execution tracing")]
+            internal bool Trace { get; init; } = false;
+
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
@@ -41,7 +44,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, false, Json);
+                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
                     await txExec.OracleResponseAsync(Url, ResponsePath, RequestId.hasValue ? RequestId.value : null).ConfigureAwait(false);
                     return 0;
                 }

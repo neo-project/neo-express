@@ -629,6 +629,7 @@ Arguments:
 Options:
   -r|--request-id[:<REQUEST_ID>]  Oracle request ID
   -i|--input <INPUT>              Path to neo-express data file
+  -t|--trace                      Enable contract execution tracing
   -j|--json                       Output as JSON
 ```
 

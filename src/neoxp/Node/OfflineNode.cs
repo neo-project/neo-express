@@ -134,7 +134,8 @@ namespace NeoExpress.Node
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
-            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer });
+            var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
+            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
             if (additionalGas > 0.0m)
             {
                 tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);

@@ -9,9 +9,9 @@ namespace NeoExpress.Commands
         [Command(Name = "list", Description = "List deployed contracts")]
         internal class List
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public List(IExpressChainManagerFactory chainManagerFactory)
+            public List(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

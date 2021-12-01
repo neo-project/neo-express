@@ -1,0 +1,60 @@
+{
+  "magic": 3167639104,
+  "address-version": 53,
+  "consensus-nodes": [
+    {
+      "tcp-port": 50013,
+      "ws-port": 50014,
+      "rpc-port": 50012,
+      "wallet": {
+        "name": "node1",
+        "accounts": [
+          {
+            "private-key": "2dda0553a53fadb6d531e268151291806decc9670e165ca001f9103196a61b60",
+            "script-hash": "NRnLMYm25QJnfrqBbbyDG9SzuzUeR6nfYS",
+            "label": null,
+            "is-default": true,
+            "contract": {
+              "script": "0c21037e8e2d85d6de263d2866c249d741b78e5de329af07d34157a93e82cda70ae6ff4156e7b327",
+              "parameters": [
+                "Signature"
+              ]
+            }
+          },
+          {
+            "private-key": "2dda0553a53fadb6d531e268151291806decc9670e165ca001f9103196a61b60",
+            "script-hash": "NZX7NT8BhxQcCQ3GsaSPB6GyJ4gY4HwYxq",
+            "label": "Consensus MultiSigContract",
+            "is-default": false,
+            "contract": {
+              "script": "110c21037e8e2d85d6de263d2866c249d741b78e5de329af07d34157a93e82cda70ae6ff11419ed0dc3a",
+              "parameters": [
+                "Signature"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "wallets": [
+    {
+      "name": "devhawk",
+      "accounts": [
+        {
+          "private-key": "ae9d60ba6dbd23f9833835a8553b5a9637871b7793244d171890a979427f59f3",
+          "script-hash": "NMHy1AWYy7RfRWLKDBLxUYZNepshZTb9bX",
+          "label": null,
+          "is-default": true,
+          "contract": {
+            "script": "0c21033a33673af7a3a45932290f95c884d123723e1698f4ca0dbb5be85ce87f24ee984156e7b327",
+            "parameters": [
+              "Signature"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "settings": {}
+}

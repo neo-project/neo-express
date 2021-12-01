@@ -10,9 +10,9 @@ namespace NeoExpress.Commands
         [Command("balances", Description = "Show all NEP-17 asset balances for an account")]
         internal class Balances
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Balances(IExpressChainManagerFactory chainManagerFactory)
+            public Balances(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

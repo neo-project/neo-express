@@ -10,9 +10,9 @@ namespace NeoExpress.Commands
         [Command("isBlocked", "blocked", Description = "Unblock account for usage")]
         internal class IsBlocked
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public IsBlocked(IExpressChainManagerFactory chainManagerFactory)
+            public IsBlocked(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

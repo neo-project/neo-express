@@ -16,9 +16,9 @@ namespace NeoExpress.Commands
         [Command(Name = "storage", Description = "Display storage for specified contract")]
         internal class Storage
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Storage(IExpressChainManagerFactory chainManagerFactory)
+            public Storage(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

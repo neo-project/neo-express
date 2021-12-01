@@ -10,9 +10,9 @@ namespace NeoExpress.Commands
         [Command("requests", Description = "List outstanding oracle requests")]
         internal class Requests
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Requests(IExpressChainManagerFactory chainManagerFactory)
+            public Requests(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

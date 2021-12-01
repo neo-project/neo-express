@@ -18,15 +18,15 @@ namespace NeoExpress
 {
     using All = OneOf.Types.All;
 
-    class TransactionExecutor : ITransactionExecutor
+    class TransactionExecutor : IDisposable
     {
-        readonly IExpressChainManager chainManager;
+        readonly ExpressChainManager chainManager;
         readonly IExpressNode expressNode;
         readonly IFileSystem fileSystem;
         readonly bool json;
         readonly System.IO.TextWriter writer;
 
-        public TransactionExecutor(IFileSystem fileSystem, IExpressChainManager chainManager, bool trace, bool json, TextWriter writer)
+        public TransactionExecutor(IFileSystem fileSystem, ExpressChainManager chainManager, bool trace, bool json, TextWriter writer)
         {
             this.chainManager = chainManager;
             expressNode = chainManager.GetExpressNode(trace);
@@ -236,7 +236,7 @@ namespace NeoExpress
             await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
         }
 
-        public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId)
+        public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null)
         {
             if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");
 

@@ -11,10 +11,10 @@ namespace NeoExpress.Commands
     [Command("export", Description = "Export neo-express protocol, config and wallet files")]
     class ExportCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
         readonly IFileSystem fileSystem;
 
-        public ExportCommand(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+        public ExportCommand(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
         {
             this.chainManagerFactory = chainManagerFactory;
             this.fileSystem = fileSystem;

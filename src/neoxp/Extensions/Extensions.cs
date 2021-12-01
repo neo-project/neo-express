@@ -115,7 +115,7 @@ namespace NeoExpress
             return response.Result;
         }
 
-        public static bool TryGetSigningAccount(this IExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+        public static bool TryGetSigningAccount(this ExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
         {
             if (!string.IsNullOrEmpty(name))
             {

@@ -7,9 +7,9 @@ namespace NeoExpress.Commands
     [Command("stop", Description = "Stop Neo-Express instance node")]
     class StopCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
 
-        public StopCommand(IExpressChainManagerFactory chainManagerFactory)
+        public StopCommand(ExpressChainManagerFactory chainManagerFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
         }

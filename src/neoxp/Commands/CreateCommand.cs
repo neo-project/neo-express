@@ -7,9 +7,9 @@ namespace NeoExpress.Commands
     [Command("create", Description = "Create new neo-express instance")]
     internal class CreateCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
 
-        public CreateCommand(IExpressChainManagerFactory chainManagerFactory)
+        public CreateCommand(ExpressChainManagerFactory chainManagerFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
         }

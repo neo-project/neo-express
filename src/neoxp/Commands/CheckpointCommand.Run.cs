@@ -12,9 +12,9 @@ namespace NeoExpress.Commands
         [Command("run", Description = "Run a neo-express checkpoint (discarding changes on shutdown)")]
         internal class Run
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Run(IExpressChainManagerFactory chainManagerFactory)
+            public Run(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

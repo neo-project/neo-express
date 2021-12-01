@@ -19,7 +19,7 @@ using Nito.Disposables;
 
 namespace NeoExpress
 {
-    internal class ExpressChainManager : IExpressChainManager
+    internal class ExpressChainManager
     {
         const string GLOBAL_PREFIX = "Global\\";
         const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";

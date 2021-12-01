@@ -10,10 +10,10 @@ namespace NeoExpress.Commands
         [Command(Name = "unblock", Description = "Unblock account for usage")]
         internal class Unblock
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
-            readonly ITransactionExecutorFactory txExecutorFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Unblock(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
+            public Unblock(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;

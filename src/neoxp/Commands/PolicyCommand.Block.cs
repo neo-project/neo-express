@@ -10,10 +10,10 @@ namespace NeoExpress.Commands
         [Command(Name = "block", Description = "Block account from usage")]
         internal class Block
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
-            readonly ITransactionExecutorFactory txExecutorFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Block(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
+            public Block(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;

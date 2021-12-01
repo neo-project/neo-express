@@ -10,9 +10,9 @@ namespace NeoExpress.Commands
         [Command("transaction", "tx", Description = "Show transaction")]
         internal class Transaction
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Transaction(IExpressChainManagerFactory chainManagerFactory)
+            public Transaction(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

@@ -12,11 +12,11 @@ namespace NeoExpress.Commands
     [Command("batch", Description = "Execute a series of offline Neo-Express operations")]
     partial class BatchCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
-        readonly ITransactionExecutorFactory txExecutorFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly TransactionExecutorFactory txExecutorFactory;
         readonly IFileSystem fileSystem;
 
-        public BatchCommand(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, ITransactionExecutorFactory txExecutorFactory)
+        public BatchCommand(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
             this.fileSystem = fileSystem;

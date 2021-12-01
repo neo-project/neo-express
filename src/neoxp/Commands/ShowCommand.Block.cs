@@ -9,9 +9,9 @@ namespace NeoExpress.Commands
         [Command("block", Description = "Show block")]
         internal class Block
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Block(IExpressChainManagerFactory chainManagerFactory)
+            public Block(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

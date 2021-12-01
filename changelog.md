@@ -18,6 +18,7 @@ may not exactly match a publicly released version.
 ### Added 
 
 * Added NeoExpress fast forward command (#182)
+* Added `--trace` option to `oracle response` command (#190)
 
 ### Changed
 

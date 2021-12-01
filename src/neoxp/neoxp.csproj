@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>neoxp</AssemblyName>
     <Description>neo-express is a Neo developer blockchain tool</Description>
-    <NeoModulesVersion>3.0.3</NeoModulesVersion>
     <OutputType>Exe</OutputType>
     <PackageId>Neo.Express</PackageId>
     <PackAsTool>true</PackAsTool>
@@ -10,12 +9,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoModulesVersion)"/>
-    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoModulesVersion)"/>
-    <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoModulesVersion)"/>
-    <PackageReference Include="Nito.Disposables" Version="2.2.1"/>
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0"/>
-    <PackageReference Include="System.Linq.Async" Version="5.0.0"/>
+    <PackageReference Include="Nito.Disposables" Version="2.2.1" />
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Linq.Async" Version="5.0.0" />
   </ItemGroup>
+
+  <Choose>
+    <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
+      <ItemGroup>
+        <ProjectReference Include="$(NeoModuleLocalPath)\src\DBFTPlugin\DBFTPlugin.csproj" />
+        <ProjectReference Include="$(NeoModuleLocalPath)\src\RpcClient\RpcClient.csproj" />
+        <ProjectReference Include="$(NeoModuleLocalPath)\src\RpcServer\RpcServer.csproj" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoModulesVersion)" />
+        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoModulesVersion)" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
 </Project>

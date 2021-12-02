@@ -58,7 +58,7 @@ namespace NeoExpress.Commands
                     }
                     else
                     {
-                        throw new Exception($"Could not load policy values from \"{Source}\"");
+                        throw new ArgumentException($"Could not load policy values from \"{Source}\"");
                     }
 
                     return 0;

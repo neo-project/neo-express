@@ -174,6 +174,21 @@ namespace NeoExpress.Commands
                     internal string Password { get; init; } = string.Empty;
                 }
 
+                [Command("sync")]
+                internal class Sync
+                {
+                    [Argument(0, Description = "Source of policy values. Must be path to policy settings JSON file")]
+                    [Required]
+                    internal string Source { get; } = string.Empty;
+
+                    [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+
                 [Command("unblock")]
                 internal class Unblock
                 {

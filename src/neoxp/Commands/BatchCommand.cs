@@ -48,7 +48,7 @@ namespace NeoExpress.Commands
             }
             catch (Exception ex)
             {
-                app.WriteException(ex);
+                app.WriteException(ex, showInnerExceptions: true);
                 return 1;
             }
         }
@@ -172,6 +172,19 @@ namespace NeoExpress.Commands
                                 cmd.Model.Value,
                                 cmd.Model.Account,
                                 cmd.Model.Password).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
+                        {
+                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source).ConfigureAwait(false);
+                            if (values.TryPickT0(out var policyValues, out _))
+                            {
+                                await txExec.SetPolicyAsync(policyValues, cmd.Model.Account, cmd.Model.Password);
+                            }
+                            else
+                            {
+                                throw new ArgumentException($"Could not load policy values from \"{cmd.Model.Source}\"");
+                            }
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:

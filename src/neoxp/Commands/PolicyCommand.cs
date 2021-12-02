@@ -3,7 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 namespace NeoExpress.Commands
 {
     [Command("policy", Description = "Manage blockchain policy")]
-    [Subcommand(typeof(Block), typeof(Get), typeof(IsBlocked), typeof(Set), typeof(Unblock))]
+    [Subcommand(typeof(Block), typeof(Get), typeof(IsBlocked), typeof(Set), typeof(Sync), typeof(Unblock))]
     partial class PolicyCommand
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)

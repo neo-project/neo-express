@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -8,11 +9,14 @@ using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
 using OneOf;
+using OneOf.Types;
 
 namespace NeoExpress
 {
@@ -309,15 +313,131 @@ namespace NeoExpress
             }
         }
 
-        public async Task SetPolicyAsync(PolicyName policy, BigInteger value, string account, string password)
+        public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
+        {
+            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase)) 
+            {
+                uri = new Uri("http://seed1.neo.org:10332");
+                return true;
+            }
+            
+            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase)) 
+            {
+                uri = new Uri("http://seed1t4.neo.org:20332");
+                return true;
+            }
+
+            return (Uri.TryCreate(value, UriKind.Absolute, out uri)
+                && uri != null
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
+        }
+
+        public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
+        {
+            if (TryParseRpcUri(rpcUri, out var uri))
+            {
+                using var rpcClient = new RpcClient(uri);
+                return await rpcClient.GetPolicyAsync().ConfigureAwait(false);
+            }
+
+            return new None();
+        }
+
+        public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string path)
+        {
+            if (fileSystem.File.Exists(path))
+            {
+                using var stream = fileSystem.File.OpenRead(path);
+                using var reader = new StreamReader(stream);
+                var text = await reader.ReadToEndAsync().ConfigureAwait(false);
+                var json = Neo.IO.Json.JObject.Parse(text);
+                try
+                {
+                    return PolicyValues.FromJson(json);
+                }
+                catch {}
+            }
+
+            return new None();
+        }
+
+        public async Task SetPolicyAsync(PolicyValues policyValues, string account, string password)
         {
             if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
 
-            var txHash = await expressNode.SetPolicyAsync(wallet, accountHash, policy, value).ConfigureAwait(false);
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "setGasPerBlock", policyValues.GasPerBlock.Value);
+            builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "setMinimumDeploymentFee", policyValues.MinimumDeploymentFee.Value);
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "setRegisterPrice", policyValues.CandidateRegistrationFee.Value);
+            builder.EmitDynamicCall(NativeContract.Oracle.Hash, "setPrice", policyValues.OracleRequestFee.Value);
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setFeePerByte", policyValues.NetworkFeePerByte.Value);
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setStoragePrice", policyValues.StorageFeeFactor);
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.ExecutionFeeFactor);
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
+        }
+
+        public async Task SetPolicyAsync(PolicySettings policy, decimal value, string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+
+            var (hash, operation) = policy switch
+            {
+                PolicySettings.GasPerBlock => (NativeContract.NEO.Hash, "setGasPerBlock"),
+                PolicySettings.MinimumDeploymentFee => (NativeContract.ContractManagement.Hash, "setMinimumDeploymentFee"),
+                PolicySettings.CandidateRegistrationFee => (NativeContract.NEO.Hash, "setRegisterPrice"),
+                PolicySettings.OracleRequestFee => (NativeContract.Oracle.Hash, "setPrice"),
+                PolicySettings.NetworkFeePerByte => (NativeContract.Policy.Hash, "setFeePerByte"),
+                PolicySettings.StorageFeeFactor => (NativeContract.Policy.Hash, "setStoragePrice"),
+                PolicySettings.ExecutionFeeFactor => (NativeContract.Policy.Hash, "setExecFeeFactor"),
+                _ => throw new InvalidOperationException($"Unknown policy {policy}"),
+            };
+
+
+            // Calculate decimal count : https://stackoverflow.com/a/13493771/1179731
+            int decimalCount = BitConverter.GetBytes(decimal.GetBits(value)[3])[2];
+            var decimalValue = new BigDecimal(value, (byte)decimalCount);
+            using var builder = new ScriptBuilder();
+            if (GasPolicySetting(policy))
+            {
+                if (decimalValue.Decimals > NativeContract.GAS.Decimals) 
+                    throw new InvalidOperationException($"{policy} policy requires a value with no more than eight decimal places");
+                decimalValue = decimalValue.ChangeDecimals(NativeContract.GAS.Decimals);
+                builder.EmitDynamicCall(hash, operation, decimalValue.Value);
+            }
+            else
+            {
+                if (decimalCount != 0)
+                    throw new InvalidOperationException($"{policy} policy requires a whole number value");
+                if (decimalValue.Value > uint.MaxValue)
+                    throw new InvalidOperationException($"{policy} policy requires a value less than {uint.MaxValue}");
+                builder.EmitDynamicCall(hash, operation, (uint)decimalValue.Value);
+            }
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"{policy} Policy Set", json).ConfigureAwait(false);
+
+            static bool GasPolicySetting(PolicySettings policy)
+            {
+                switch (policy)
+                {
+                    case PolicySettings.GasPerBlock:
+                    case PolicySettings.MinimumDeploymentFee:
+                    case PolicySettings.CandidateRegistrationFee:
+                    case PolicySettings.OracleRequestFee:
+                    case PolicySettings.NetworkFeePerByte:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
         }
 
         public async Task BlockAsync(string scriptHash, string account, string password)

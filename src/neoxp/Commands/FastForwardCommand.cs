@@ -5,7 +5,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
 {
-    [Command("fastfwd", Description = "")]
+    [Command("fastfwd", Description = "Mint empty blocks to fast forward the block chain")]
     class FastForwardCommand
     {
         readonly ExpressChainManagerFactory chainManagerFactory;
@@ -34,7 +34,7 @@ namespace NeoExpress.Commands
             }
             catch (Exception ex)
             {
-                await console.Error.WriteLineAsync(ex.Message);
+                app.WriteException(ex);
                 return 1;
             }
         }

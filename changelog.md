@@ -17,14 +17,22 @@ may not exactly match a publicly released version.
 
 ### Added 
 
-* Added NeoExpress fast forward command (#182)
+* Added NeoExpress `fastfwd` command (#182)
+* Added NeoExpress `policy sync` command and batch file operation (#192)
+* Added `--rpc-uri` option to `policy get` command (#192)
+* Added `--json` option to `policy get` command (#192)
+* Added additional policy settings to `policy set` command (#192)
 * Added `--trace` option to `oracle response` command (#190)
 
 ### Changed
 
-* Enable transactions costing greater than 20 GAS offline (#190)
+* Enable transactions costing greater than 20 GAS in offline mode (#190)
 * Print internal exception (if any) when `contract deploy` command fails (#190)
+* Print internal exception (if any) when any command involving a user contract fails (#192)
 
+### Removed
+
+* Removed `Policy` argument from NeoExpress `policy get` command. Command now retrieves all policy settings (#192)
 ## [3.0.19] 2021-10-12
 
 ### Added

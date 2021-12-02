@@ -344,19 +344,37 @@ namespace NeoExpress
             throw new Exception("invalid script results");
         }
 
-        public static async Task<UInt256> SetPolicyAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, PolicyName policy, BigInteger value)
+        internal static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
         {
-            var methodName = policy switch
-            {
-                PolicyName.ExecFeeFactor => "setExecFeeFactor",
-                PolicyName.FeePerByte => "setFeePerByte",
-                PolicyName.StoragePrice => "setStoragePrice", 
-                _ => throw new ArgumentException($"Invalid Policy {policy}", nameof(policy))
-            };
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "getGasPerBlock");
+            builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "getMinimumDeploymentFee");
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "getRegisterPrice");
+            builder.EmitDynamicCall(NativeContract.Oracle.Hash, "getPrice");
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getFeePerByte");
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getStoragePrice");
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getExecFeeFactor");
 
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, methodName, value);
-            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
+            var result = await invokeAsync(builder.ToArray()).ConfigureAwait(false);
+
+            if (result.State != VMState.HALT) throw new Exception(result.Exception);
+            if (result.Stack.Length != 7) throw new InvalidOperationException();
+
+            return new PolicyValues()
+            {
+                GasPerBlock = new BigDecimal(result.Stack[0].GetInteger(), NativeContract.GAS.Decimals),
+                MinimumDeploymentFee = new BigDecimal(result.Stack[1].GetInteger(), NativeContract.GAS.Decimals),
+                CandidateRegistrationFee = new BigDecimal(result.Stack[2].GetInteger(), NativeContract.GAS.Decimals),
+                OracleRequestFee = new BigDecimal(result.Stack[3].GetInteger(), NativeContract.GAS.Decimals),
+                NetworkFeePerByte = new BigDecimal(result.Stack[4].GetInteger(), NativeContract.GAS.Decimals),
+                StorageFeeFactor = (uint)result.Stack[5].GetInteger(),
+                ExecutionFeeFactor = (uint)result.Stack[6].GetInteger(),
+            };
+        }
+
+        public static Task<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)
+        {
+            return GetPolicyAsync(script => expressNode.InvokeAsync(script));
         }
 
         public static async Task<bool> GetIsBlockedAsync(this IExpressNode expressNode, UInt160 scriptHash)

@@ -8,10 +8,10 @@ namespace NeoExpress.Commands
     [Command("transfer", Description = "Transfer asset between accounts")]
     class TransferCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
-        readonly ITransactionExecutorFactory txExecutorFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly TransactionExecutorFactory txExecutorFactory;
 
-        public TransferCommand(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
+        public TransferCommand(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
             this.txExecutorFactory = txExecutorFactory;

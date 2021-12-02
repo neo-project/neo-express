@@ -11,9 +11,9 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Retrieve current value of a blockchain policy")]
         internal class Get
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Get(IExpressChainManagerFactory chainManagerFactory)
+            public Get(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

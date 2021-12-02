@@ -6,9 +6,9 @@ namespace NeoExpress.Commands
     [Command("reset", Description = "Reset neo-express instance node")]
     class ResetCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
 
-        public ResetCommand(IExpressChainManagerFactory chainManagerFactory)
+        public ResetCommand(ExpressChainManagerFactory chainManagerFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
         }

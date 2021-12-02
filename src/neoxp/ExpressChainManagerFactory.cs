@@ -12,7 +12,7 @@ using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress
 {
-    internal class ExpressChainManagerFactory : IExpressChainManagerFactory
+    internal class ExpressChainManagerFactory
     {
         readonly IFileSystem fileSystem;
 
@@ -74,7 +74,7 @@ namespace NeoExpress
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        public (IExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock = 0)
+        public (ExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock = 0)
         {
             output = ResolveChainFileName(output);
             if (fileSystem.File.Exists(output))
@@ -98,7 +98,7 @@ namespace NeoExpress
             return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), output);
         }
 
-        public (IExpressChainManager manager, string path) LoadChain(string path, uint? secondsPerBlock = null)
+        public (ExpressChainManager manager, string path) LoadChain(string path, uint? secondsPerBlock = null)
         {
             path = ResolveChainFileName(path);
             if (!fileSystem.File.Exists(path))

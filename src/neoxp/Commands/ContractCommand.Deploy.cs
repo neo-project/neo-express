@@ -11,10 +11,10 @@ namespace NeoExpress.Commands
         [Command("deploy", Description = "Deploy contract to a neo-express instance")]
         internal class Deploy
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
-            readonly ITransactionExecutorFactory txExecutorFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Deploy(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
+            public Deploy(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;

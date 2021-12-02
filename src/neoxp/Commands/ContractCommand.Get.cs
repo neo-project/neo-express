@@ -12,9 +12,9 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Get information for a deployed contract")]
         internal class Get
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Get(IExpressChainManagerFactory chainManagerFactory)
+            public Get(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

@@ -8,9 +8,9 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
 
-        public RunCommand(IExpressChainManagerFactory chainManagerFactory)
+        public RunCommand(ExpressChainManagerFactory chainManagerFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
         }

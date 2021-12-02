@@ -10,9 +10,9 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List oracle nodes")]
         internal class List
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public List(IExpressChainManagerFactory chainManagerFactory)
+            public List(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

@@ -10,10 +10,10 @@ namespace NeoExpress.Commands
         [Command("enable", Description = "Enable oracles for neo-express instance")]
         internal class Enable
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
-            readonly ITransactionExecutorFactory txExecutorFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Enable(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
+            public Enable(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;

@@ -8,9 +8,9 @@ namespace NeoExpress.Commands
     [Command("fastfwd", Description = "")]
     class FastForwardCommand
     {
-        readonly IExpressChainManagerFactory chainManagerFactory;
+        readonly ExpressChainManagerFactory chainManagerFactory;
 
-        public FastForwardCommand(IExpressChainManagerFactory chainManagerFactory)
+        public FastForwardCommand(ExpressChainManagerFactory chainManagerFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
         }

@@ -4,7 +4,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress
 {
-    class TransactionExecutorFactory : ITransactionExecutorFactory
+    class TransactionExecutorFactory
     {
         readonly IFileSystem fileSystem;
         readonly IConsole console;
@@ -15,7 +15,7 @@ namespace NeoExpress
             this.console = console;
         }
 
-        public ITransactionExecutor Create(IExpressChainManager chainManager, bool trace, bool json)
+        public TransactionExecutor Create(ExpressChainManager chainManager, bool trace, bool json)
         {
             return new TransactionExecutor(fileSystem, chainManager, trace, json, console.Out);
         }

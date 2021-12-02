@@ -12,10 +12,10 @@ namespace NeoExpress.Commands
         [Command(Name = "hash", Description = "Get contract hash for contract path and deployment account")]
         internal class Hash
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
             readonly IFileSystem fileSystem;
 
-            public Hash(IExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Hash(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.fileSystem = fileSystem;

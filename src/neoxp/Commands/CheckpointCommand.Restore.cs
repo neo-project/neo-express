@@ -9,9 +9,9 @@ namespace NeoExpress.Commands
         [Command("restore", Description = "Restore a neo-express checkpoint")]
         internal class Restore
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Restore(IExpressChainManagerFactory chainManagerFactory)
+            public Restore(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

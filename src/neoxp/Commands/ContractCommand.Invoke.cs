@@ -11,10 +11,10 @@ namespace NeoExpress.Commands
         [Command(Name = "invoke", Description = "Invoke a contract using parameters from .neo-invoke.json file")]
         internal class Invoke
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
-            readonly ITransactionExecutorFactory txExecutorFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Invoke(IExpressChainManagerFactory chainManagerFactory, ITransactionExecutorFactory txExecutorFactory)
+            public Invoke(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;

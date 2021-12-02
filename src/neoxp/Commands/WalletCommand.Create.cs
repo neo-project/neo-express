@@ -12,9 +12,9 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         internal class Create
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Create(IExpressChainManagerFactory chainManagerFactory)
+            public Create(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

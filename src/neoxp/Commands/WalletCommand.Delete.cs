@@ -9,9 +9,9 @@ namespace NeoExpress.Commands
         [Command("delete", Description = "Delete neo-express wallet")]
         internal class Delete
         {
-            readonly IExpressChainManagerFactory chainManagerFactory;
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-            public Delete(IExpressChainManagerFactory chainManagerFactory)
+            public Delete(ExpressChainManagerFactory chainManagerFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
             }

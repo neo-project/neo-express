@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -8,12 +9,14 @@ using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
 using Newtonsoft.Json.Linq;
 using OneOf;
+using OneOf.Types;
 
 namespace NeoExpress
 {
@@ -308,6 +311,74 @@ namespace NeoExpress
 
                 throw new Exception($"Invalid quantity value {quantity}");
             }
+        }
+
+        public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
+        {
+            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase)) 
+            {
+                uri = new Uri("http://seed1.neo.org:10332");
+                return true;
+            }
+            
+            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase)) 
+            {
+                uri = new Uri("http://seed1t4.neo.org:20332");
+                return true;
+            }
+
+            return (Uri.TryCreate(value, UriKind.Absolute, out uri)
+                && uri != null
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
+        }
+
+        public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
+        {
+            if (TryParseRpcUri(rpcUri, out var uri))
+            {
+                using var rpcClient = new RpcClient(uri);
+                return await rpcClient.GetPolicyAsync().ConfigureAwait(false);
+            }
+
+            return new None();
+        }
+
+        public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string path)
+        {
+            if (fileSystem.File.Exists(path))
+            {
+                using var stream = fileSystem.File.OpenRead(path);
+                using var reader = new StreamReader(stream);
+                var text = await reader.ReadToEndAsync().ConfigureAwait(false);
+                var json = Neo.IO.Json.JObject.Parse(text);
+                try
+                {
+                    return PolicyValues.FromJson(json);
+                }
+                catch {}
+            }
+
+            return new None();
+        }
+
+        public async Task SetPolicyAsync(PolicyValues policyValues, string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "setGasPerBlock", policyValues.GasPerBlock.Value);
+            builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "setMinimumDeploymentFee", policyValues.MinimumDeploymentFee.Value);
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "setRegisterPrice", policyValues.CandidateRegistrationFee.Value);
+            builder.EmitDynamicCall(NativeContract.Oracle.Hash, "setPrice", policyValues.OracleRequestFee.Value);
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setFeePerByte", policyValues.NetworkFeePerByte.Value);
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setStoragePrice", policyValues.StorageFeeFactor);
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.ExecutionFeeFactor);
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
         }
 
         public async Task SetPolicyAsync(PolicySettings policy, decimal value, string account, string password)

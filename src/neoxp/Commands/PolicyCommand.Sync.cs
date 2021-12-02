@@ -2,31 +2,26 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
     partial class PolicyCommand
     {
-        [Command(Name = "set", Description = "Set single policy value")]
-        internal class Set
+        [Command(Name = "sync", Description = "Synchronize local policy values with public Neo network")]
+        internal class Sync 
         {
             readonly ExpressChainManagerFactory chainManagerFactory;
             readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Set(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Sync(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;
             }
 
-            [Argument(0, Description = "Policy to set")]
+            [Argument(1, Description = "Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC Node\nFor Node URL,\"MainNet\" or \"TestNet\" can be specified in addition to a standard HTTP URL")]
             [Required]
-            internal PolicySettings Policy { get; init; }
-
-            [Argument(1, Description = "New Policy Value")]
-            [Required]
-            internal decimal Value { get; set; }
+            internal string Source { get; } = string.Empty;
 
             [Argument(2, Description = "Account to pay contract invocation GAS fee")]
             [Required]
@@ -51,12 +46,26 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
 
-                    await txExec.SetPolicyAsync(Policy, Value, Account, Password).ConfigureAwait(false);
+                    var values = await txExec.TryGetRemoteNetworkPolicyAsync(Source).ConfigureAwait(false);
+                    if (values.IsT1)
+                    {
+                        values = await txExec.TryLoadPolicyFromFileSystemAsync(Source).ConfigureAwait(false);
+                    }
+
+                    if (values.TryPickT0(out var policyValues, out var _))
+                    {
+                        await txExec.SetPolicyAsync(policyValues, Account, Password).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        throw new Exception($"Could not load policy values from \"{Source}\"");
+                    }
+
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex);
+                    app.WriteException(ex, true);
                     return 1;
                 }
             }

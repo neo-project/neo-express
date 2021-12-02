@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.RPC;
@@ -36,34 +35,17 @@ namespace NeoExpress.Commands
 
                     if (Json)
                     {
-                        using var writer = new Newtonsoft.Json.JsonTextWriter(Console.Out);
-                        writer.Formatting = Newtonsoft.Json.Formatting.Indented;
-                        writer.WriteStartObject();
-                        writer.WritePropertyName(nameof(PolicyValues.GasPerBlock));
-                        writer.WriteValue($"{values.GasPerBlock}");
-                        writer.WritePropertyName(nameof(PolicyValues.MinimumDeploymentFee));
-                        writer.WriteValue($"{values.MinimumDeploymentFee}");
-                        writer.WritePropertyName(nameof(PolicyValues.CandidateRegistrationFee));
-                        writer.WriteValue($"{values.CandidateRegistrationFee}");
-                        writer.WritePropertyName(nameof(PolicyValues.OracleRequestFee));
-                        writer.WriteValue($"{values.OracleRequestFee}");
-                        writer.WritePropertyName(nameof(PolicyValues.NetworkFeePerByte));
-                        writer.WriteValue($"{values.NetworkFeePerByte}");
-                        writer.WritePropertyName(nameof(PolicyValues.StorageFeeFactor));
-                        writer.WriteValue(values.StorageFeeFactor);
-                        writer.WritePropertyName(nameof(PolicyValues.ExecutionFeeFactor));
-                        writer.WriteValue(values.ExecutionFeeFactor);
-                        writer.WriteEndObject();
+                        await console.Out.WriteLineAsync(values.ToJson().ToString(true));
                     }
                     else
                     {
-                        await console.Out.WriteLineAsync($"             {nameof(PolicyValues.GasPerBlock)}: {values.GasPerBlock} GAS");
-                        await console.Out.WriteLineAsync($"    {nameof(PolicyValues.MinimumDeploymentFee)}: {values.MinimumDeploymentFee} GAS");
-                        await console.Out.WriteLineAsync($"{nameof(PolicyValues.CandidateRegistrationFee)}: {values.CandidateRegistrationFee} GAS");
-                        await console.Out.WriteLineAsync($"        {nameof(PolicyValues.OracleRequestFee)}: {values.OracleRequestFee} GAS");
-                        await console.Out.WriteLineAsync($"       {nameof(PolicyValues.NetworkFeePerByte)}: {values.NetworkFeePerByte} GAS");
-                        await console.Out.WriteLineAsync($"        {nameof(PolicyValues.StorageFeeFactor)}: {values.StorageFeeFactor}");
-                        await console.Out.WriteLineAsync($"      {nameof(PolicyValues.ExecutionFeeFactor)}: {values.ExecutionFeeFactor}");
+                        await WritePolicyValueAsync(console, $"             {nameof(PolicyValues.GasPerBlock)}", values.GasPerBlock);
+                        await WritePolicyValueAsync(console, $"    {nameof(PolicyValues.MinimumDeploymentFee)}", values.MinimumDeploymentFee);
+                        await WritePolicyValueAsync(console, $"{nameof(PolicyValues.CandidateRegistrationFee)}", values.CandidateRegistrationFee);
+                        await WritePolicyValueAsync(console, $"        {nameof(PolicyValues.OracleRequestFee)}", values.OracleRequestFee);
+                        await WritePolicyValueAsync(console, $"       {nameof(PolicyValues.NetworkFeePerByte)}", values.NetworkFeePerByte);
+                        await WritePolicyValueAsync(console, $"        {nameof(PolicyValues.StorageFeeFactor)}", values.StorageFeeFactor);
+                        await WritePolicyValueAsync(console, $"      {nameof(PolicyValues.ExecutionFeeFactor)}", values.ExecutionFeeFactor);
                     }
                     return 0;
                 }
@@ -73,6 +55,12 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
+
+            static Task WritePolicyValueAsync(IConsole console, string name, Neo.BigDecimal value)
+                => console.Out.WriteLineAsync($"{name}: {value.Value} ({value} GAS)");
+
+            static Task WritePolicyValueAsync(IConsole console, string name, uint value)
+                => console.Out.WriteLineAsync($"{name}: {value}");
 
             async Task<PolicyValues> GetPolicyValuesAsync()
             {
@@ -84,23 +72,11 @@ namespace NeoExpress.Commands
                 }
                 else 
                 {
-                    var uri = ParseRpcUri(RpcUri);
+                    if (!TransactionExecutor.TryParseRpcUri(RpcUri, out var uri))
+                        throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
                     using var rpcClient = new RpcClient(uri);
                     return await rpcClient.GetPolicyAsync().ConfigureAwait(false);
                 }
-            }
-
-            internal static Uri ParseRpcUri(string value)
-            {
-                if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase)) return new Uri("http://seed1.neo.org:10332");
-                if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase)) return new Uri("http://seed1t4.neo.org:20332");
-                if (Uri.TryCreate(value, UriKind.Absolute, out var uri)
-                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
-                {
-                    return uri;
-                }
-
-                throw new ArgumentException($"Invalid Neo RPC Uri {value}");
             }
         }
     }

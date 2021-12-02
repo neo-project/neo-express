@@ -21,18 +21,17 @@ namespace NeoExpress
     {
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)
         {
-            var stackTraceOption = (CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace");
+            var showStackTrace = ((CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace")).ParsedValue;
 
-            var exceptionName = stackTraceOption.ParsedValue || showInnerExceptions 
-                ? $" [{exception.GetType()}]" : string.Empty;
-            app.Error.WriteLine($"\x1b[1m\x1b[31m\x1b[40m{exception.Message}{exceptionName}\x1b[0m");
-            if (stackTraceOption.ParsedValue) app.Error.WriteLine(exception.StackTrace);
+            app.Error.WriteLine($"\x1b[1m\x1b[31m\x1b[40m{exception.GetType()}: {exception.Message}\x1b[0m");
 
-            if (showInnerExceptions)
+            if (showStackTrace) app.Error.WriteLine($"\x1b[1m\x1b[37m\x1b[40m{exception.StackTrace}\x1b[0m");
+
+            if (showInnerExceptions || showStackTrace)
             {
                 while (exception.InnerException != null)
                 {
-                    app.Error.WriteLine($"  Inner Exception: {exception.InnerException.Message} [{exception.InnerException.GetType().Name}]");
+                    app.Error.WriteLine($"\x1b[1m\x1b[33m\x1b[40m\tInner {exception.InnerException.GetType().Name}: {exception.InnerException.Message}\x1b[0m");
                     exception = exception.InnerException;
                 }
             }

@@ -19,11 +19,11 @@ namespace NeoExpress.Commands
                 this.txExecutorFactory = txExecutorFactory;
             }
 
-            [Argument(1, Description = "Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC Node\nFor Node URL,\"MainNet\" or \"TestNet\" can be specified in addition to a standard HTTP URL")]
+            [Argument(0, Description = "Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC Node\nFor Node URL,\"MainNet\" or \"TestNet\" can be specified in addition to a standard HTTP URL")]
             [Required]
             internal string Source { get; } = string.Empty;
 
-            [Argument(2, Description = "Account to pay contract invocation GAS fee")]
+            [Argument(1, Description = "Account to pay contract invocation GAS fee")]
             [Required]
             internal string Account { get; init; } = string.Empty;
 
@@ -65,7 +65,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex, true);
+                    app.WriteException(ex);
                     return 1;
                 }
             }

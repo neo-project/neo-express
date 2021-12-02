@@ -76,7 +76,7 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex, true);
+                    app.WriteException(ex, showInnerExceptions: true);
                     return 1;
                 }
             }

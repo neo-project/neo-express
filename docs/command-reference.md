@@ -560,10 +560,12 @@ The commands supported in a batch file include:
 * `contract deploy`
 * `contract invoke`
 * `contract run`
+* `fastfwd`
 * `oracle enable`
 * `oracle response`
 * `policy block`
 * `policy set`
+* `policy sync`
 * `policy unblock`
 * `transfer`
 
@@ -669,13 +671,23 @@ Typically, these are the Neo-express consensus nodes when oracles have been enab
 
 The `policy` command has a series of subcommands for configuring Neo-express' policy subsystem.
 
-> Note, changing Neo N3 blockchain policy (`set`, `block` and `unblock`) can only be performed by
+> Note, changing Neo N3 blockchain policy (`set`, `sync`, `block` and `unblock`) can only be performed by
 > the governing committee. In a Neo-Express blockchain, this is typically the `genesis` account. 
 
 ### neoxp policy get
 
 ```
-Usage: neoxp policy get [options] <Policy>
+Retrieve current value of a blockchain policy
+
+Usage: neoxp policy get [options]
+
+Options:
+  -r|--rpc-uri <RPC_URI>  URL of Neo JSON-RPC Node
+                          Specify MainNet (default), TestNet or JSON-RPC URL
+  -i|--input <INPUT>      Path to neo-express data file
+  -j|--json               Output as JSON
+  
+  Usage: neoxp policy get [options] <Policy>
 
 Arguments:
   Policy              Policy to set
@@ -685,7 +697,17 @@ Options:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
-The `policy get` command retrieves the current value of the specified Neo-Express network policy.
+> Note, older versions of neoxp supported a `Policy` argument.
+> This argument has been removed as of the 3.1 version of neoxp.
+
+The `policy get` command retrieves the current values of Neo blockchain network policy. By default, the
+`policy get` command retrieves the policy values of the local Neo-Express blockchain. However, this command
+can retrieve the network policy settings from a remote public Neo blockchain network - including MainNet and 
+TestNet - by specifying the `--rpc-uri` argument. This can be used to synchronize the local Neo-Express policy
+with a well known public Neo network like Neo MainNet. 
+
+The `--json` option specifies the policy values should be emitted as JSON. This JSON content, if saved to a
+local file, can be used as the input for the `policy sync` command described below.
 
 ### neoxp policy set
 
@@ -694,7 +716,8 @@ Usage: neoxp policy set [options] <Policy> <Value> <Account>
 
 Arguments:
   Policy                    Policy to set
-                            Allowed values are: FeePerByte, ExecFeeFactor, StoragePrice.
+                            Allowed values are: GasPerBlock, MinimumDeploymentFee, CandidateRegistrationFee,
+                            OracleRequestFee, NetworkFeePerByte, StorageFeeFactor, ExecutionFeeFactor.
   Value                     New Policy Value
   Account                   Account to pay contract invocation GAS fee
 
@@ -706,6 +729,33 @@ Options:
 ```
 
 The `policy set` command updates the current value of the specified Neo-Express network policy.
+
+### neoxp policy sync
+```
+Synchronize local policy values with public Neo network
+
+Usage: neoxp policy sync [options] <Source> <Account>
+
+Arguments:
+  Source                    Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC
+                            Node
+                            For Node URL,"MainNet" or "TestNet" can be specified in addition to a standard HTTP URL
+  Account                   Account to pay contract invocation GAS fee
+
+Options:
+  -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
+  -i|--input <INPUT>        Path to neo-express data file
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+```
+
+The `policy sync` command updates the all the network policy values of the specified Neo-Express blockchain instance.
+The policy values source can be a well known public Neo blockchain network (aka MainNet or TestNet), the URL for a 
+JSON-RPC node of another public Neo network or the path to a local JSON file. The JSON file format must match the format
+emitted by the `policy get --json` command described above.
+
+> Note: when using `policy sync` in a `batch` command file, the policy settings must be retrieved from a local JSON 
+> file. Reading policy settings from a remote Neo network during a `batch` operation is not supported.
 
 ### neoxp policy block
 

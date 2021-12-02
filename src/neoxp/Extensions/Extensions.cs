@@ -101,18 +101,9 @@ namespace NeoExpress
             return result;
         }
 
-        public static async Task<Neo.IO.Json.JObject> RpcSendAsync(this RpcClient @this, string method, params Neo.IO.Json.JObject[] paraArgs)
+        public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
         {
-            var request = new Neo.Network.RPC.Models.RpcRequest
-            {
-                Id = 1,
-                JsonRpc = "2.0",
-                Method = method,
-                Params = paraArgs
-            };
-
-            var response = await @this.SendAsync(request).ConfigureAwait(false);
-            return response.Result;
+            return ExpressNodeExtensions.GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
         }
 
         public static bool TryGetSigningAccount(this ExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)

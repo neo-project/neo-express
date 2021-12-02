@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.SmartContract.Native;
 using NeoExpress.Models;
 
 namespace NeoExpress.Commands
@@ -23,11 +25,11 @@ namespace NeoExpress.Commands
 
             [Argument(0, Description = "Policy to set")]
             [Required]
-            internal PolicyName Policy { get; init; }
+            internal PolicySettings Policy { get; init; }
 
             [Argument(1, Description = "New Policy Value")]
             [Required]
-            internal long Value { get; set; }
+            internal decimal Value { get; set; }
 
             [Argument(2, Description = "Account to pay contract invocation GAS fee")]
             [Required]
@@ -51,6 +53,7 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+
                     await txExec.SetPolicyAsync(Policy, Value, Account, Password).ConfigureAwait(false);
                     return 0;
                 }

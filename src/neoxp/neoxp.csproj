@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Nito.Disposables" Version="2.2.1" />
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
     <PackageReference Include="System.Linq.Async" Version="5.0.0" />
   </ItemGroup>
 
@@ -18,7 +18,7 @@
     <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
       <ItemGroup>
         <ProjectReference Include="$(NeoModuleLocalPath)\src\DBFTPlugin\DBFTPlugin.csproj" />
-        <ProjectReference Include="$(NeoModuleLocalPath)\src\RpcClient\RpcClient.csproj" />
+        <!-- <ProjectReference Include="$(NeoModuleLocalPath)\src\RpcClient\RpcClient.csproj" /> -->
         <ProjectReference Include="$(NeoModuleLocalPath)\src\RpcServer\RpcServer.csproj" />
       </ItemGroup>
     </When>

@@ -14,7 +14,7 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -22,7 +22,7 @@
     <BlockchainToolkitLibraryLocalPath>..\..\..\lib-bctk</BlockchainToolkitLibraryLocalPath>
     <NeoModulesVersion>3.0.3</NeoModulesVersion>
     <NeoModuleLocalPath>..\..\..\..\official\3neo-monorepo\modules\</NeoModuleLocalPath>
-    <!-- <BlockchainToolkitLibraryVersion>local</BlockchainToolkitLibraryVersion> -->
+    <BlockchainToolkitLibraryVersion>local</BlockchainToolkitLibraryVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,7 +32,6 @@
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-    <PackageReference Include="Nerdbank.Streams" Version="2.8.46" />
   </ItemGroup>
 
   <Choose>

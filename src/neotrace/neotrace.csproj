@@ -8,13 +8,10 @@
     <PackAsTool>true</PackAsTool>
     <RootNamespace>NeoTrace</RootNamespace>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0"/>
-    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.0.10" />
-    <PackageReference Include="Nerdbank.Streams" Version="2.8.46" />
   </ItemGroup>
 
 </Project>

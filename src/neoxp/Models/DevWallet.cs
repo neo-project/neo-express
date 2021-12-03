@@ -103,5 +103,9 @@ namespace NeoExpress.Models
 
         public override bool ChangePassword(string oldPassword, string newPassword)
             => throw new NotImplementedException();
+
+        public override void Delete()
+        {
+        }
     }
 }

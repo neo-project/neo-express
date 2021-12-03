@@ -11,6 +11,7 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.BlockchainToolkit.SmartContract;
 using Neo.Ledger;
 using Neo.Plugins;
 using NeoExpress.Models;
@@ -303,30 +304,17 @@ namespace NeoExpress
             }
         }
 
-        public IDisposableStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
+        public IStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
-            if (discard)
-            {
-                try
-                {
-                    var rocksDbStore = RocksDbStorageProvider.OpenReadOnly(nodePath);
-                    return new CheckpointStorageProvider(rocksDbStore);
-                }
-                catch
-                {
-                    return new CheckpointStorageProvider(null);
-                }
-            }
-            else
-            {
-                return RocksDbStorageProvider.Open(nodePath);
-            }
+            return discard
+                ? RocksDbStorageProvider.OpenForDiscard(nodePath)
+                : RocksDbStorageProvider.Open(nodePath);
         }
 
-        public IDisposableStorageProvider GetCheckpointStorageProvider(string checkPointPath)
+        public IStorageProvider GetCheckpointStorageProvider(string checkPointPath)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -342,20 +330,10 @@ namespace NeoExpress
                 throw new Exception($"Checkpoint {checkPointPath} couldn't be found");
             }
 
-            var checkpointTempPath = fileSystem.GetTempFolder();
-            var folderCleanup = AnonymousDisposable.Create(() =>
-            {
-                if (fileSystem.Directory.Exists(checkpointTempPath))
-                {
-                    fileSystem.Directory.Delete(checkpointTempPath, true);
-                }
-            });
-
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointPath, checkpointTempPath, chain.Network, chain.AddressVersion, multiSigAccount.ScriptHash);
-            var rocksDbStorageProvider = RocksDbStorageProvider.OpenReadOnly(checkpointTempPath);
-            return new CheckpointStorageProvider(rocksDbStorageProvider, checkpointCleanup: folderCleanup);
+
+            return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
         OfflineNode GetOfflineNode(bool offlineTrace = false)

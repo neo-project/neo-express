@@ -41,7 +41,8 @@ namespace NeoExpress.Commands
                     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
                 }
 
-                using var storageProvider = chainManager.GetCheckpointStorageProvider(Name);
+                var storageProvider = chainManager.GetCheckpointStorageProvider(Name);
+                using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
                 await chainManager.RunAsync(storageProvider, chain.ConsensusNodes[0], Trace, console.Out, token);
             }
 

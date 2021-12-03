@@ -38,7 +38,8 @@ namespace NeoExpress.Commands
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 
             var node = chain.ConsensusNodes[NodeIndex];
-            using var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
+            var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
+            using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
             await chainManager.RunAsync(storageProvider, node, Trace, console.Out, token);
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Neo;
@@ -17,6 +18,7 @@ using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
+using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 using static Neo.Ledger.Blockchain;
@@ -367,30 +369,18 @@ namespace NeoExpress.Node
             }
         }
 
-        public Task<IReadOnlyList<(RpcNep17Balance balance, Nep17Contract contract)>> ListBalancesAsync(UInt160 address)
+        public Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
         {
             try
             {
-                if (disposedValue) return Task.FromException<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(new ObjectDisposedException(nameof(OfflineNode)));
+                if (disposedValue) return Task.FromException<IReadOnlyList<(TokenContract, BigInteger)>>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                var contractMap = TokenContract.GetTokenContracts(neoSystem).ToDictionary(c => c.ScriptHash);
-                var results = ExpressRpcMethods.GetNep17Balances(neoSystem, rocksDbStorageProvider, address)
-                    .Select(b => (
-                        balance: new RpcNep17Balance
-                        {
-                            Amount = b.balance,
-                            AssetHash = b.contract.ScriptHash,
-                            LastUpdatedBlock = b.lastUpdatedBlock
-                        },
-                        contract: contractMap.TryGetValue(b.contract.ScriptHash, out var value)
-                            ? new Nep17Contract(value.Symbol, value.Decimals, value.ScriptHash)
-                            : Nep17Contract.Unknown(b.contract.ScriptHash)));
-
-                return Task.FromResult<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(results.ToArray());
+                var result = neoSystem.ListNep17Balances(address).ToList();
+                return Task.FromResult<IReadOnlyList<(TokenContract contract, BigInteger balance)>>(result);
             }
             catch (Exception ex)
             {
-                return Task.FromException<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(ex);
+                return Task.FromException<IReadOnlyList<(TokenContract, BigInteger)>>(ex);
             }
         }
 
@@ -418,8 +408,8 @@ namespace NeoExpress.Node
             {
                 if (disposedValue) return Task.FromException<IReadOnlyList<TokenContract>>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                var contracts = TokenContract.GetTokenContracts(neoSystem);
-                return Task.FromResult<IReadOnlyList<TokenContract>>(contracts.ToList());
+                var contracts = neoSystem.EnumerateTokenContracts().ToList();
+                return Task.FromResult<IReadOnlyList<TokenContract>>(contracts);
             }
             catch (Exception ex)
             {

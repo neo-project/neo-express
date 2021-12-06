@@ -97,7 +97,7 @@ namespace NeoExpress.Node
         void IPersistencePlugin.OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
         {
             appLogsSnapshot?.Dispose();
-            notificationsStore?.Dispose();
+            notificationsSnapshot?.Dispose();
             appLogsSnapshot = appLogsStore.GetSnapshot();
             notificationsSnapshot = notificationsStore!.GetSnapshot(); // TODO: why is there a deref warning here?
 

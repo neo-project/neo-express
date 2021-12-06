@@ -47,7 +47,7 @@ namespace NeoExpress.Models
             return new TokenContract(symbol, decimals, scriptHash, standard);
         }
 
-        static IEnumerable<(UInt160 contractHash, TokenStandard standard)> GetTokenContracts(DataCache snapshot)
+        public static IEnumerable<(UInt160 scriptHash, TokenStandard standard)> Enumerate(DataCache snapshot)
         {
             foreach (var contract in NativeContract.ContractManagement.ListContracts(snapshot))
             {
@@ -70,52 +70,6 @@ namespace NeoExpress.Models
                         ? TokenStandard.Nep17
                         : TokenStandard.Nep11);
                 }
-            }
-        }
-        
-        public static IEnumerable<TokenContract> GetTokenContracts(NeoSystem neoSystem) => GetTokenContracts(neoSystem.StoreView, neoSystem.Settings);
-
-        public static IEnumerable<TokenContract> GetTokenContracts(DataCache snapshot, ProtocolSettings settings)
-        {
-            foreach (var (contractHash, standard) in GetTokenContracts(snapshot))
-            {
-                if (TryLoadTokenInfo(contractHash, snapshot, settings, out var info))
-                {
-                    yield return new TokenContract(info.symbol, info.decimals, contractHash, standard);
-                }
-            }
-
-            static bool TryLoadTokenInfo(UInt160 scriptHash, DataCache snapshot, ProtocolSettings settings, out (string symbol, byte decimals) info)
-            {
-                if (scriptHash == NativeContract.NEO.Hash)
-                {
-                    info = (NativeContract.NEO.Symbol, NativeContract.NEO.Decimals);
-                    return true;
-                }
-
-                if (scriptHash == NativeContract.GAS.Hash)
-                {
-                    info = (NativeContract.GAS.Symbol, NativeContract.GAS.Decimals);
-                    return true;
-                }
-
-                using var builder = new ScriptBuilder();
-                builder.EmitDynamicCall(scriptHash, "symbol");
-                builder.EmitDynamicCall(scriptHash, "decimals");
-                using var engine = builder.Invoke(settings, snapshot);
-                if (engine.State != VMState.FAULT && engine.ResultStack.Count == 2)
-                {
-                    var decimals = (byte)engine.ResultStack.Pop().GetInteger();
-                    var symbol = engine.ResultStack.Pop().GetString();
-                    if (symbol != null)
-                    {
-                        info = (symbol, decimals);
-                        return true;
-                    }
-                }
-
-                info = default;
-                return false;
             }
         }
     }

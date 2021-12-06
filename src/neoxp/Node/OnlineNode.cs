@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit.Models;
@@ -238,19 +239,14 @@ namespace NeoExpress.Node
             return rpcClient.GetTransactionHeightAsync(txHash.ToString());
         }
 
-        public async Task<IReadOnlyList<(Neo.Network.RPC.Models.RpcNep17Balance balance, Nep17Contract contract)>> ListBalancesAsync(UInt160 address)
+        public async Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
         {
-            var contracts = ((JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
-                .Select(json => Nep17Contract.FromJson(json))
+            var contracts = (await ListTokenContractsAsync().ConfigureAwait(false))
                 .ToDictionary(c => c.ScriptHash);
-            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion)).ConfigureAwait(false);
-            return balances.Balances
-                .Select(b => (
-                    balance: b,
-                    contract: contracts.TryGetValue(b.AssetHash, out var value)
-                        ? value
-                        : Nep17Contract.Unknown(b.AssetHash)))
-                .ToArray();
+            var rpcBalances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion))
+                .ConfigureAwait(false);
+
+            return rpcBalances.Balances.Select(b => (contracts[b.AssetHash], b.Amount)).ToList();
         }
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
@@ -271,7 +267,7 @@ namespace NeoExpress.Node
 
         public async Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
         {
-            var json = await rpcClient.RpcSendAsync("expressgettokencontracts").ConfigureAwait(false);
+            var json = await rpcClient.RpcSendAsync("expresslisttokencontracts").ConfigureAwait(false);
 
             if (json != null && json is JArray array)
             {

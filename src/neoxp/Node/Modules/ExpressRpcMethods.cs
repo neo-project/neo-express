@@ -187,13 +187,13 @@ namespace NeoExpress.Node
         // ExpressGetNep17Contracts has been renamed ExpressGetTokenContracts,
         // but we keep the old method around for compat purposes
         [RpcMethod]
-        public JObject ExpressGetNep17Contracts(JArray _) => ExpressGetTokenContracts(_);
+        public JObject ExpressGetNep17Contracts(JArray _) => ExpressListTokenContracts(_);
 
         [RpcMethod]
-        public JObject ExpressGetTokenContracts(JArray _)
+        public JObject ExpressListTokenContracts(JArray _)
         {
             var jsonContracts = new JArray();
-            foreach (var contract in TokenContract.GetTokenContracts(neoSystem))
+            foreach (var contract in neoSystem.EnumerateTokenContracts())
             {
                 var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());

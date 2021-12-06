@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 
 namespace NeoExpress.Commands
 {
@@ -45,7 +46,7 @@ namespace NeoExpress.Commands
                     for (int i = 0; i < balances.Count; i++)
                     {
                         console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
-                        console.WriteLine($"  balance: {balances[i].balance.ToBigDecimal(balances[i].contract.Decimals)}");
+                        console.WriteLine($"  balance: {new BigDecimal(balances[i].balance, balances[i].contract.Decimals)}");
                     }
 
                     return 0;

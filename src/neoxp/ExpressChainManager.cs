@@ -218,7 +218,7 @@ namespace NeoExpress
                     var storageProviderPlugin = new Node.StorageProviderPlugin(store);
                     var appEngineProvider = enableTrace ? new Node.ApplicationEngineProvider() : null;
                     var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
-                    var appLogsPlugin = new Node.PersistencePlugin(store);
+                    var persistencePlugin = new Node.PersistencePlugin(store);
 
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
                     _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));
@@ -226,7 +226,7 @@ namespace NeoExpress
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
                     var expressRpcMethods = new ExpressRpcMethods(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
                     rpcServer.RegisterMethods(expressRpcMethods);
-                    rpcServer.RegisterMethods(appLogsPlugin);
+                    rpcServer.RegisterMethods(persistencePlugin);
                     rpcServer.StartRpcServer();
 
                     neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig

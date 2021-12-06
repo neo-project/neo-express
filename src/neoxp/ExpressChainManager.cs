@@ -216,7 +216,7 @@ namespace NeoExpress
 
                     var logPlugin = new Node.LogPlugin(writer);
                     var storageProviderPlugin = new Node.StorageProviderPlugin(store);
-                    var appEngineProvider = enableTrace ? new Node.ExpressApplicationEngineProvider() : null;
+                    var appEngineProvider = enableTrace ? new Node.ApplicationEngineProvider() : null;
                     var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
                     var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
 

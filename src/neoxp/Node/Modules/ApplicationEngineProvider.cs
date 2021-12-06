@@ -15,7 +15,7 @@ namespace NeoExpress.Node
     // Note: namespace alias needed to avoid conflict with Plugin.System property
     using SysIO = System.IO;
 
-    class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
+    class ApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
         public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, Diagnostic? diagnostic)
         {

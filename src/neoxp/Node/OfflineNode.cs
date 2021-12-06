@@ -26,7 +26,7 @@ namespace NeoExpress.Node
     internal sealed class OfflineNode : IDisposable, IExpressNode
     {
         private readonly NeoSystem neoSystem;
-        private readonly ExpressApplicationEngineProvider? applicationEngineProvider;
+        private readonly ApplicationEngineProvider? applicationEngineProvider;
         private readonly Wallet nodeWallet;
         private readonly ExpressChain chain;
         private readonly RocksDbStorageProvider rocksDbStorageProvider;
@@ -45,7 +45,7 @@ namespace NeoExpress.Node
             this.nodeWallet = nodeWallet;
             this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
-            applicationEngineProvider = enableTrace ? new ExpressApplicationEngineProvider() : null;
+            applicationEngineProvider = enableTrace ? new ApplicationEngineProvider() : null;
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
                 .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
                 .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))

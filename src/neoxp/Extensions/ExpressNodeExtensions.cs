@@ -320,30 +320,6 @@ namespace NeoExpress
             throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
         }
 
-        public static async Task<BigInteger> GetPolicyAsync(this IExpressNode expressNode, PolicyName policy)
-        {
-            var methodName = policy switch
-            {
-                PolicyName.ExecFeeFactor => "getExecFeeFactor",
-                PolicyName.FeePerByte => "getFeePerByte",
-                PolicyName.StoragePrice => "getStoragePrice", 
-                _ => throw new ArgumentException($"Invalid Policy {policy}", nameof(policy))
-            };
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, methodName);
-
-            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-            var stack = result.Stack;
-            if (stack.Length >= 1)
-            {
-                var value = stack[0].GetInteger();
-                return value;
-            }
-
-            throw new Exception("invalid script results");
-        }
-
         internal static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
         {
             using var builder = new ScriptBuilder();

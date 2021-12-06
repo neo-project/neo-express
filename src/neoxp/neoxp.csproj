@@ -19,14 +19,12 @@
       <ItemGroup>
         <ProjectReference Include="$(NeoModuleLocalPath)\src\DBFTPlugin\DBFTPlugin.csproj" />
         <ProjectReference Include="$(NeoModuleLocalPath)\src\RpcServer\RpcServer.csproj" />
-        <ProjectReference Include="$(NeoModuleLocalPath)\src\TokensTracker\TokensTracker.csproj" />
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
         <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoModulesVersion)" />
         <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoModulesVersion)" />
-        <PackageReference Include="Neo.Plugins.TokensTracker" Version="$(NeoModulesVersion)" />
       </ItemGroup>
     </Otherwise>
   </Choose>

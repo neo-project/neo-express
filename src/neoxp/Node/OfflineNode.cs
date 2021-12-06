@@ -373,7 +373,7 @@ namespace NeoExpress.Node
             {
                 if (disposedValue) return Task.FromException<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                var contractMap = ExpressRpcMethods.GetNep17Contracts(neoSystem, rocksDbStorageProvider).ToDictionary(c => c.ScriptHash);
+                var contractMap = TokenContract.GetTokenContracts(neoSystem).ToDictionary(c => c.ScriptHash);
                 var results = ExpressRpcMethods.GetNep17Balances(neoSystem, rocksDbStorageProvider, address)
                     .Select(b => (
                         balance: new RpcNep17Balance
@@ -383,7 +383,7 @@ namespace NeoExpress.Node
                             LastUpdatedBlock = b.lastUpdatedBlock
                         },
                         contract: contractMap.TryGetValue(b.contract.ScriptHash, out var value)
-                            ? value
+                            ? new Nep17Contract(value.Symbol, value.Decimals, value.ScriptHash)
                             : Nep17Contract.Unknown(b.contract.ScriptHash)));
 
                 return Task.FromResult<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(results.ToArray());
@@ -412,19 +412,18 @@ namespace NeoExpress.Node
             }
         }
 
-        public Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
+        public Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
         {
             try
             {
-                if (disposedValue) return Task.FromException<IReadOnlyList<Nep17Contract>>(new ObjectDisposedException(nameof(OfflineNode)));
+                if (disposedValue) return Task.FromException<IReadOnlyList<TokenContract>>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                var contracts = ExpressRpcMethods.GetNep17Contracts(neoSystem, rocksDbStorageProvider);
-
-                return Task.FromResult<IReadOnlyList<Nep17Contract>>(contracts.ToArray());
+                var contracts = TokenContract.GetTokenContracts(neoSystem);
+                return Task.FromResult<IReadOnlyList<TokenContract>>(contracts.ToArray());
             }
             catch (Exception ex)
             {
-                return Task.FromException<IReadOnlyList<Nep17Contract>>(ex);
+                return Task.FromException<IReadOnlyList<TokenContract>>(ex);
             }
         }
 

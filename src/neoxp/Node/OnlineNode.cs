@@ -269,16 +269,16 @@ namespace NeoExpress.Node
             return Array.Empty<(UInt160 hash, ContractManifest manifest)>();
         }
 
-        public async Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
+        public async Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
         {
-            var json = await rpcClient.RpcSendAsync("expressgetnep17contracts").ConfigureAwait(false);
+            var json = await rpcClient.RpcSendAsync("epressgettokencontracts").ConfigureAwait(false);
 
             if (json != null && json is Neo.IO.Json.JArray array)
             {
-                return array.Select(Nep17Contract.FromJson).ToList();
+                return array.Select(TokenContract.FromJson).ToList();
             }
 
-            return Array.Empty<Nep17Contract>();
+            return Array.Empty<TokenContract>();
         }
 
         public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()

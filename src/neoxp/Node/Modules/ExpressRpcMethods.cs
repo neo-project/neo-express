@@ -108,27 +108,6 @@ namespace NeoExpress.Node
                 .GetNotifications(storageProvider)
                 .Where(t => IsNep17Transfer(t.notification));
 
-        public static IEnumerable<Nep17Contract> GetNep17Contracts(NeoSystem neoSystem, IStorageProvider storageProvider)
-        {
-            var scriptHashes = new HashSet<UInt160>();
-            foreach (var (_, _, notification) in GetNep17Transfers(storageProvider))
-            {
-                scriptHashes.Add(notification.ScriptHash);
-            }
-
-            scriptHashes.Add(NativeContract.NEO.Hash);
-            scriptHashes.Add(NativeContract.GAS.Hash);
-
-            using var snapshot = neoSystem.GetSnapshot();
-            foreach (var scriptHash in scriptHashes)
-            {
-                if (Nep17Contract.TryLoad(neoSystem.Settings, snapshot, scriptHash, out var contract))
-                {
-                    yield return contract;
-                }
-            }
-        }
-
         UInt160 GetScriptHashFromParam(string addressOrScriptHash)
            => addressOrScriptHash.Length < 40
                ? addressOrScriptHash.ToScriptHash(neoSystem.Settings.AddressVersion)
@@ -205,11 +184,16 @@ namespace NeoExpress.Node
             }
         }
 
+        // ExpressGetNep17Contracts has been renamed ExpressGetTokenContracts,
+        // but we keep the old method around for compat purposes
         [RpcMethod]
-        public JObject ExpressGetNep17Contracts(JArray _)
+        public JObject ExpressGetNep17Contracts(JArray _) => ExpressGetTokenContracts(_);
+
+        [RpcMethod]
+        public JObject ExpressGetTokenContracts(JArray _)
         {
             var jsonContracts = new JArray();
-            foreach (var contract in GetNep17Contracts(neoSystem, storageProvider))
+            foreach (var contract in TokenContract.GetTokenContracts(neoSystem))
             {
                 var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());

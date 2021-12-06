@@ -110,7 +110,7 @@ namespace NeoExpress
                 return uint160;
             }
 
-            var contracts = await expressNode.ListNep17ContractsAsync().ConfigureAwait(false);
+            var contracts = await expressNode.ListTokenContractsAsync().ConfigureAwait(false);
             for (int i = 0; i < contracts.Count; i++)
             {
                 if (contracts[i].Symbol.Equals(asset, StringComparison.OrdinalIgnoreCase))

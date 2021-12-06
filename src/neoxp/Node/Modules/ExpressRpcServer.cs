@@ -93,7 +93,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0].AsString());
-            return ExpressAppLogsPlugin.GetAppLog(storageProvider, hash) ?? throw new RpcException(-100, "Unknown transaction");
+            return PersistencePlugin.GetAppLog(storageProvider, hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
         // TODO: should the event name comparison be case insensitive?
@@ -104,7 +104,7 @@ namespace NeoExpress.Node
                 && (notification.EventName == "Transfer" || notification.EventName == "transfer");
 
         static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IStorageProvider storageProvider)
-            => ExpressAppLogsPlugin
+            => PersistencePlugin
                 .GetNotifications(storageProvider)
                 .Where(t => IsNep17Transfer(t.notification));
 

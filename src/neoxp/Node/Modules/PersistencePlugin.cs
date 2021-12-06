@@ -15,18 +15,20 @@ using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
 
 namespace NeoExpress.Node
 {
-    internal partial class ExpressAppLogsPlugin : Plugin, IPersistencePlugin
+        class PersistencePlugin : Plugin, IPersistencePlugin
     {
-        private const string APP_LOGS_STORE_PATH = "app-logs-store";
-        private const string NOTIFICATIONS_STORE_PATH = "notifications-store";
+        const string APP_LOGS_STORE_PATH = "app-logs-store";
+        const string NOTIFICATIONS_STORE_PATH = "notifications-store";
 
         static IStore GetAppLogStore(IStorageProvider storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
         static IStore GetNotificationsStore(IStorageProvider storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
 
-        private readonly IStore appLogsStore;
-        private readonly IStore notificationsStore;
+        readonly IStore appLogsStore;
+        readonly IStore notificationsStore;
+        ISnapshot? appLogsSnapshot;
+        ISnapshot? notificationsSnapshot;
 
-        public ExpressAppLogsPlugin(IStorageProvider storageProvider)
+        public PersistencePlugin(IStorageProvider storageProvider)
         {
             appLogsStore = GetAppLogStore(storageProvider);
             notificationsStore = GetNotificationsStore(storageProvider);
@@ -48,20 +50,57 @@ namespace NeoExpress.Node
             return store.Seek(Array.Empty<byte>(), SeekDirection.Forward)
                 .Select(t =>
                 {
-                    var (blockIndex, txIndex) = ParseNotificationKey(t.Key);
+                    var blockIndex = BinaryPrimitives.ReadUInt32BigEndian(t.Key.AsSpan(0, sizeof(uint)));
+                    var txIndex = BinaryPrimitives.ReadUInt16BigEndian(t.Key.AsSpan(sizeof(uint), sizeof(ushort)));
                     return (blockIndex, txIndex, t.Value.AsSerializable<NotificationRecord>());
                 });
-
-            static (uint, ushort) ParseNotificationKey(byte[] key)
-            {
-                var blockIndex = BinaryPrimitives.ReadUInt32BigEndian(key.AsSpan(0, sizeof(uint)));
-                var txIndex = BinaryPrimitives.ReadUInt16BigEndian(key.AsSpan(sizeof(uint), sizeof(ushort)));
-                return (blockIndex, txIndex);
-            }
         }
 
-        public void OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
+        // public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification, TransferRecord transfer)> GetTransferNotifications(
+        //     DataCache snapshot,
+        //     IStorageProvider storageProvider,
+        //     TokenStandard standard,
+        //     UInt160 address)
+        // {
+        //     // valid number of state arguments depends on the token standard
+        //     var stateCount = standard switch 
+        //     {
+        //         TokenStandard.Nep17 => 3,
+        //         TokenStandard.Nep11 => 4,
+        //         _ => throw new ArgumentException("Unexpected standard value", nameof(standard))
+        //     };
+
+        //     // collect a set of hashes for contracts that implement the specified standard
+        //     HashSet<UInt160> tokenContracts = new();
+        //     foreach (var (contractHash, tokenStandard) in TokenContract.GetTokenContracts(snapshot))
+        //     {
+        //         if (tokenStandard == standard) tokenContracts.Add(contractHash);
+        //     }
+
+        //     // collect latest block index of transfer records involving provided address
+        //     foreach (var (blockIndex, txIndex, notification) in PersistencePlugin.GetNotifications(storageProvider))
+        //     {
+        //        if (notification.EventName == "Transfer"
+        //             && notification.State.Count == stateCount
+        //             && tokenContracts.Contains(notification.ScriptHash))
+        //         {
+        //             var transfer = TransferRecord.Create(notification);
+        //             if (transfer != null
+        //                 && (transfer.From == address || transfer.To == address))
+        //             {
+        //                 yield return (blockIndex, txIndex, notification, transfer);
+        //             }
+        //         }
+        //     }
+        // }
+
+        void IPersistencePlugin.OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
         {
+            appLogsSnapshot?.Dispose();
+            notificationsStore?.Dispose();
+            appLogsSnapshot = appLogsStore.GetSnapshot();
+            notificationsSnapshot = notificationsStore!.GetSnapshot(); // TODO: why is there a deref warning here?
+
             if (applicationExecutedList.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
 
             var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
@@ -75,7 +114,7 @@ namespace NeoExpress.Node
                 if (appExec.Transaction == null) continue;
 
                 var txJson = TxLogToJson(appExec);
-                appLogsStore.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
+                appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
                 if (appExec.VMState != VMState.FAULT)
                 {
@@ -89,7 +128,7 @@ namespace NeoExpress.Node
                             notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
                             (ushort)j);
                         var record = new NotificationRecord(appExec.Notifications[j]);
-                        notificationsStore.Put(notificationIndex.ToArray(), record.ToArray());
+                        notificationsSnapshot.Put(notificationIndex.ToArray(), record.ToArray());
                     }
                 }
             }
@@ -97,8 +136,14 @@ namespace NeoExpress.Node
             var blockJson = BlockLogToJson(block, applicationExecutedList);
             if (blockJson != null)
             {
-                appLogsStore.Put(block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
+                appLogsSnapshot.Put(block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
             }
+        }
+
+        void IPersistencePlugin.OnCommit(NeoSystem system, Block block, DataCache snapshot)
+        {
+            appLogsSnapshot?.Commit();
+            notificationsSnapshot?.Commit();
         }
 
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin

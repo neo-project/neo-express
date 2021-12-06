@@ -52,7 +52,7 @@ namespace NeoExpress.Node
                 .ToArray());
 
             var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
-            _ = new ExpressAppLogsPlugin(rocksDbStorageProvider);
+            _ = new PersistencePlugin(rocksDbStorageProvider);
             neoSystem = new NeoSystem(settings, storageProviderPlugin.Name);
 
             ApplicationEngine.Log += OnLog!;
@@ -337,7 +337,7 @@ namespace NeoExpress.Node
                 var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
                 if (tx == null) return Task.FromException<(Transaction, RpcApplicationLog?)>(new Exception("Unknown Transaction"));
 
-                var jsonLog = ExpressAppLogsPlugin.GetAppLog(rocksDbStorageProvider, txHash);
+                var jsonLog = PersistencePlugin.GetAppLog(rocksDbStorageProvider, txHash);
                 var result = jsonLog != null
                     ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
                     : (tx, null);

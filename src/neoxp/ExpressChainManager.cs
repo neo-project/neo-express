@@ -218,7 +218,7 @@ namespace NeoExpress
                     var storageProviderPlugin = new Node.StorageProviderPlugin(store);
                     var appEngineProvider = enableTrace ? new Node.ApplicationEngineProvider() : null;
                     var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
-                    var appLogsPlugin = new Node.ExpressAppLogsPlugin(store);
+                    var appLogsPlugin = new Node.PersistencePlugin(store);
 
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
                     _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));

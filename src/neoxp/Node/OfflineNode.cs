@@ -419,7 +419,7 @@ namespace NeoExpress.Node
                 if (disposedValue) return Task.FromException<IReadOnlyList<TokenContract>>(new ObjectDisposedException(nameof(OfflineNode)));
 
                 var contracts = TokenContract.GetTokenContracts(neoSystem);
-                return Task.FromResult<IReadOnlyList<TokenContract>>(contracts.ToArray());
+                return Task.FromResult<IReadOnlyList<TokenContract>>(contracts.ToList());
             }
             catch (Exception ex)
             {

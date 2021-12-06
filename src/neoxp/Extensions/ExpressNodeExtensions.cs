@@ -113,7 +113,8 @@ namespace NeoExpress
             var contracts = await expressNode.ListTokenContractsAsync().ConfigureAwait(false);
             for (int i = 0; i < contracts.Count; i++)
             {
-                if (contracts[i].Symbol.Equals(asset, StringComparison.OrdinalIgnoreCase))
+                if (contracts[i].Standard == TokenStandard.Nep17
+                    && contracts[i].Symbol.Equals(asset, StringComparison.OrdinalIgnoreCase))
                 {
                     return contracts[i].ScriptHash;
                 }

@@ -62,6 +62,18 @@ namespace NeoExpress
                 {
                     throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
                 }
+
+                var nep11 = false; var nep17 = false;
+                var standards = manifest.SupportedStandards;
+                for (var i = 0; i < standards.Length; i++)
+                {
+                    if (standards[i] == "NEP-11") nep11 = true;
+                    if (standards[i] == "NEP-17") nep17 = true;
+                }
+                if (nep11 && nep17)
+                {
+                    throw new Exception($"{manifest.Name} Contract declares support for both NEP-11 and NEP-17 standards. Use --force to deploy contract with invalid supported standards declarations.");
+                }
             }
 
             var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope).ConfigureAwait(false);

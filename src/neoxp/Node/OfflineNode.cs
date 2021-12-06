@@ -373,8 +373,8 @@ namespace NeoExpress.Node
             {
                 if (disposedValue) return Task.FromException<IReadOnlyList<(RpcNep17Balance, Nep17Contract)>>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                var contractMap = ExpressRpcServer.GetNep17Contracts(neoSystem, rocksDbStorageProvider).ToDictionary(c => c.ScriptHash);
-                var results = ExpressRpcServer.GetNep17Balances(neoSystem, rocksDbStorageProvider, address)
+                var contractMap = ExpressRpcMethods.GetNep17Contracts(neoSystem, rocksDbStorageProvider).ToDictionary(c => c.ScriptHash);
+                var results = ExpressRpcMethods.GetNep17Balances(neoSystem, rocksDbStorageProvider, address)
                     .Select(b => (
                         balance: new RpcNep17Balance
                         {
@@ -418,7 +418,7 @@ namespace NeoExpress.Node
             {
                 if (disposedValue) return Task.FromException<IReadOnlyList<Nep17Contract>>(new ObjectDisposedException(nameof(OfflineNode)));
 
-                var contracts = ExpressRpcServer.GetNep17Contracts(neoSystem, rocksDbStorageProvider);
+                var contracts = ExpressRpcMethods.GetNep17Contracts(neoSystem, rocksDbStorageProvider);
 
                 return Task.FromResult<IReadOnlyList<Nep17Contract>>(contracts.ToArray());
             }

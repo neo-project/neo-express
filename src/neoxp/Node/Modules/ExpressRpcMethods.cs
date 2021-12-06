@@ -20,7 +20,7 @@ using NeoExpress.Models;
 
 namespace NeoExpress.Node
 {
-    class ExpressRpcServer
+    class ExpressRpcMethods
     {
         readonly NeoSystem neoSystem;
         readonly IStorageProvider storageProvider;
@@ -28,7 +28,7 @@ namespace NeoExpress.Node
         readonly CancellationTokenSource cancellationToken;
         readonly string cacheId;
 
-        public ExpressRpcServer(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 nodeAccountAddress, CancellationTokenSource cancellationToken)
+        public ExpressRpcMethods(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 nodeAccountAddress, CancellationTokenSource cancellationToken)
         {
             this.neoSystem = neoSystem;
             this.storageProvider = storageProvider;
@@ -46,7 +46,7 @@ namespace NeoExpress.Node
             var response = new JObject();
             response["process-id"] = proc.Id;
 
-            Utility.Log(nameof(ExpressRpcServer), LogLevel.Info, $"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds");
+            Utility.Log(nameof(ExpressRpcMethods), LogLevel.Info, $"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds");
             cancellationToken.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
             return response;
         }

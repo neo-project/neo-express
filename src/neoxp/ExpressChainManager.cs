@@ -224,8 +224,8 @@ namespace NeoExpress
                     _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));
                     var rpcSettings = GetRpcServerSettings(chain, node);
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
-                    var expressRpcServer = new ExpressRpcServer(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
-                    rpcServer.RegisterMethods(expressRpcServer);
+                    var expressRpcMethods = new ExpressRpcMethods(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
+                    rpcServer.RegisterMethods(expressRpcMethods);
                     rpcServer.RegisterMethods(appLogsPlugin);
                     rpcServer.StartRpcServer();
 

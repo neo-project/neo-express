@@ -97,8 +97,8 @@ namespace NeoTrace
 
         static void TraceBlock(Uri uri, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
         {
-            IReadOnlyStore roStore = block.Index > 0 
-                ? new StateServiceStore(uri, block.Index - 1) 
+            IReadOnlyStore roStore = block.Index > 0
+                ? new StateServiceStore(uri, block.Index - 1)
                 : NullStore.Instance;
 
             using var store = new MemoryTrackingStore(roStore);

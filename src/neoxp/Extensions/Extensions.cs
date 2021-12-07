@@ -3,19 +3,15 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
-using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
-using Neo.SmartContract.Native;
-using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 
@@ -23,6 +19,17 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
+        {
+            if (!dictionary.TryGetValue(key, out var value))
+            {
+                value = valueFactory(key);
+                dictionary[key] = value;
+            }
+
+            return value;
+        }
+
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)
         {
             var showStackTrace = ((CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace")).ParsedValue;
@@ -203,95 +210,6 @@ namespace NeoExpress
                     wallet = null;
                     accountHash = null;
                     return false;
-                }
-            }
-        }
-
-        public static IEnumerable<TokenContract> EnumerateTokenContracts(this NeoSystem neoSystem)
-        {
-            using var snapshot = neoSystem.GetSnapshot();
-            return snapshot.EnumerateTokenContracts(neoSystem.Settings);
-        }
-
-        public static IEnumerable<TokenContract> EnumerateTokenContracts(this DataCache snapshot, ProtocolSettings settings)
-        {
-            foreach (var (contractHash, standard) in TokenContract.Enumerate(snapshot))
-            {
-                if (TryLoadTokenInfo(contractHash, snapshot, settings, out var info))
-                {
-                    yield return new TokenContract(info.symbol, info.decimals, contractHash, standard);
-                }
-            }
-
-            static bool TryLoadTokenInfo(UInt160 scriptHash, DataCache snapshot, ProtocolSettings settings, out (string symbol, byte decimals) info)
-            {
-                if (scriptHash == NativeContract.NEO.Hash)
-                {
-                    info = (NativeContract.NEO.Symbol, NativeContract.NEO.Decimals);
-                    return true;
-                }
-
-                if (scriptHash == NativeContract.GAS.Hash)
-                {
-                    info = (NativeContract.GAS.Symbol, NativeContract.GAS.Decimals);
-                    return true;
-                }
-
-                using var builder = new ScriptBuilder();
-                builder.EmitDynamicCall(scriptHash, "symbol");
-                builder.EmitDynamicCall(scriptHash, "decimals");
-                using var engine = builder.Invoke(settings, snapshot);
-                if (engine.State != VMState.FAULT && engine.ResultStack.Count == 2)
-                {
-                    var decimals = (byte)engine.ResultStack.Pop().GetInteger();
-                    var symbol = engine.ResultStack.Pop().GetString();
-                    if (symbol != null)
-                    {
-                        info = (symbol, decimals);
-                        return true;
-                    }
-                }
-
-                info = default;
-                return false;
-            }
-        }
-
-        public static IEnumerable<(TokenContract contract, BigInteger balance)> ListNep17Balances(this NeoSystem neoSystem, UInt160 address)
-        {
-            using var snapshot = neoSystem.GetSnapshot();
-            return snapshot.ListNep17Balances(address, neoSystem.Settings);
-        }
-
-        public static IEnumerable<(TokenContract contract, BigInteger balance)> ListNep17Balances(this DataCache snapshot, UInt160 address, ProtocolSettings settings)
-        {
-            var contracts = TokenContract.Enumerate(snapshot)
-                .Where(c => c.standard == TokenStandard.Nep17);
-
-            var addressArray = address.ToArray();
-            var contractCount = 0;
-            using var builder = new ScriptBuilder();
-            foreach (var c in contracts.Reverse())
-            {
-                builder.EmitDynamicCall(c.scriptHash, "symbol");
-                builder.EmitDynamicCall(c.scriptHash, "decimals");
-                builder.EmitDynamicCall(c.scriptHash, "balanceOf", addressArray);
-                contractCount++;
-            }
-
-            var engine = builder.Invoke(settings, snapshot);
-            if (engine.State != VMState.FAULT && engine.ResultStack.Count == contractCount * 3)
-            {
-                var resultStack = engine.ResultStack;
-                for (var i = 0; i < contractCount; i++)
-                {
-                    var index = i * 3;
-                    var symbol = resultStack.Peek(index + 2).GetString();
-                    if (symbol == null) continue;
-                    var decimals = (byte)resultStack.Peek(index + 1).GetInteger();
-                    var balance = resultStack.Peek(index).GetInteger();
-                    var (scriptHash, standard) = contracts.ElementAt(i);
-                    yield return (new TokenContract(symbol, decimals, scriptHash, standard), balance);
                 }
             }
         }

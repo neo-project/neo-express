@@ -60,10 +60,13 @@ namespace NeoExpress.Models
                     if (standards[i] == "NEP-17") nep17 = true;
                 }
 
-                // return contracts that declare either NEP-11 or NEP-17 but not both.
-                // The standard transfer operation has a different number of parameters
-                // for NEP-17, divisible NEP-11 and non-divisible NEP-11, so ignore any
-                // contract that claims to implement NEP-11 and NEP-17
+                // Return contracts that declare either NEP-11 or NEP-17 but not both. Obviously, if
+                // the contract doesn't specify that either standard is supported, skip it. However,
+                // we also skip contracts that specify they support both NEP-11 and NEP-17. The transfer
+                // operation has a different number of parameters for NEP-17, divisible NEP-11 and
+                // non-divisible NEP-11 tokens, so it is impossible to implement NEP-11 and NEP-17
+                // in the same contract
+                
                 if (nep11 != nep17)
                 {
                     yield return (contract.Hash, standard: nep17

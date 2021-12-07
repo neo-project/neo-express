@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
-using System.Threading.Tasks;
 using Neo;
-using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;
-using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Plugins;
 using Neo.SmartContract;
@@ -17,6 +14,7 @@ using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
+using ByteString = Neo.VM.Types.ByteString;
 
 namespace NeoExpress.Node
 {
@@ -89,101 +87,6 @@ namespace NeoExpress.Node
             return response;
         }
 
-        [RpcMethod]
-        public JObject GetApplicationLog(JArray _params)
-        {
-            UInt256 hash = UInt256.Parse(_params[0].AsString());
-            return PersistencePlugin.GetAppLog(storageProvider, hash) ?? throw new RpcException(-100, "Unknown transaction");
-        }
-
-        // TODO: should the event name comparison be case insensitive?
-        // Native contracts use "Transfer" while neon preview 3 compiled contracts use "transfer"
-        static bool IsNep17Transfer(NotificationRecord notification)
-            => notification.InventoryType == InventoryType.TX
-                && notification.State.Count == 3
-                && (notification.EventName == "Transfer" || notification.EventName == "transfer");
-
-        static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNep17Transfers(IStorageProvider storageProvider)
-            => PersistencePlugin
-                .GetNotifications(storageProvider)
-                .Where(t => IsNep17Transfer(t.notification));
-
-        UInt160 GetScriptHashFromParam(string addressOrScriptHash)
-           => addressOrScriptHash.Length < 40
-               ? addressOrScriptHash.ToScriptHash(neoSystem.Settings.AddressVersion)
-               : UInt160.Parse(addressOrScriptHash);
-
-        static UInt160 ToUInt160(Neo.VM.Types.StackItem item)
-        {
-            if (item.IsNull) return UInt160.Zero;
-
-            var bytes = item.GetSpan();
-            return bytes.Length == 0
-                ? UInt160.Zero
-                : bytes.Length == 20
-                    ? new UInt160(bytes)
-                    : throw new ArgumentException("invalid UInt160", nameof(item));
-        }
-
-        public static IEnumerable<(Nep17Contract contract, BigInteger balance, uint lastUpdatedBlock)> GetNep17Balances(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 address)
-        {
-            // assets key is the script hash of the asset contract
-            // assets value is the last updated block of the associated asset for address
-            var assets = new Dictionary<UInt160, uint>();
-
-            foreach (var (blockIndex, _, notification) in GetNep17Transfers(storageProvider))
-            {
-                var from = ToUInt160(notification.State[0]);
-                var to = ToUInt160(notification.State[1]);
-
-                var fromAddress = notification.State[0].IsNull ? "<null>" : from.ToAddress(neoSystem.Settings.AddressVersion);
-                var toAddress = notification.State[1].IsNull ? "<null>" : to.ToAddress(neoSystem.Settings.AddressVersion);
-
-                if (from == address || to == address)
-                {
-                    assets[notification.ScriptHash] = blockIndex;
-                }
-            }
-
-            if (!assets.ContainsKey(NativeContract.NEO.Hash))
-            {
-                assets[NativeContract.NEO.Hash] = 0;
-            }
-
-            if (!assets.ContainsKey(NativeContract.GAS.Hash))
-            {
-                assets[NativeContract.GAS.Hash] = 0;
-            }
-
-            using var snapshot = neoSystem.GetSnapshot();
-            foreach (var kvp in assets)
-            {
-                if (TryGetBalance(kvp.Key, out var balance)
-                    && balance > BigInteger.Zero)
-                {
-                    var contract = Nep17Contract.TryLoad(neoSystem.Settings, snapshot, kvp.Key, out var _contract)
-                        ? _contract : Nep17Contract.Unknown(kvp.Key);
-                    yield return (contract, balance, kvp.Value);
-                }
-            }
-
-            bool TryGetBalance(UInt160 asset, out BigInteger balance)
-            {
-                using var sb = new ScriptBuilder();
-                sb.EmitDynamicCall(asset, "balanceOf", address.ToArray());
-
-                using var engine = sb.Invoke(neoSystem.Settings, snapshot);
-                if (!engine.State.HasFlag(VMState.FAULT) && engine.ResultStack.Count >= 1)
-                {
-                    balance = engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();
-                    return true;
-                }
-
-                balance = default;
-                return false;
-            }
-        }
-
         // ExpressGetNep17Contracts has been renamed ExpressGetTokenContracts,
         // but we keep the old method around for compat purposes
         [RpcMethod]
@@ -193,92 +96,13 @@ namespace NeoExpress.Node
         public JObject ExpressListTokenContracts(JArray _)
         {
             var jsonContracts = new JArray();
-            foreach (var contract in neoSystem.EnumerateTokenContracts())
+            using var snapshot = neoSystem.GetSnapshot();
+            foreach (var contract in snapshot.EnumerateTokenContracts(neoSystem.Settings))
             {
                 var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());
             }
             return jsonContracts;
-        }
-
-        [RpcMethod]
-        public JObject GetNep17Balances(JArray @params)
-        {
-            var address = GetScriptHashFromParam(@params[0].AsString());
-            var balances = new JArray();
-            foreach (var (contract, balance, lastUpdatedBlock) in GetNep17Balances(neoSystem, storageProvider, address))
-            {
-                balances.Add(new JObject()
-                {
-                    ["assethash"] = contract.ScriptHash.ToString(),
-                    ["amount"] = balance.ToString(),
-                    ["lastupdatedblock"] = lastUpdatedBlock,
-                });
-            }
-            return new JObject
-            {
-                ["address"] = address.ToAddress(neoSystem.Settings.AddressVersion),
-                ["balance"] = balances,
-            };
-        }
-
-        [RpcMethod]
-        public JObject GetNep17Transfers(JArray @params)
-        {
-            var address = GetScriptHashFromParam(@params[0].AsString());
-
-            // If start time not present, default to 1 week of history.
-            uint startTime = @params.Count > 1 ? (uint)@params[1].AsNumber() :
-                (DateTime.UtcNow - TimeSpan.FromDays(7)).ToTimestamp();
-            uint endTime = @params.Count > 2 ? (uint)@params[2].AsNumber() : DateTime.UtcNow.ToTimestamp();
-
-            if (endTime < startTime) throw new RpcException(-32602, "Invalid params");
-
-            var sent = new JArray();
-            var received = new JArray();
-
-            {
-                var addressVersion = neoSystem.Settings.AddressVersion;
-                using var snapshot = neoSystem.GetSnapshot();
-                foreach (var (blockIndex, txIndex, notification) in GetNep17Transfers(storageProvider))
-                {
-                    var header = NativeContract.Ledger.GetHeader(snapshot, blockIndex);
-                    if (startTime <= header.Timestamp && header.Timestamp <= endTime)
-                    {
-                        var from = ToUInt160(notification.State[0]);
-                        var to = ToUInt160(notification.State[1]);
-
-                        if (address == from)
-                        {
-                            sent.Add(MakeTransferJson(addressVersion, blockIndex, txIndex, notification, header.Timestamp, to));
-                        }
-
-                        if (address == to)
-                        {
-                            received.Add(MakeTransferJson(addressVersion, blockIndex, txIndex, notification, header.Timestamp, from));
-                        }
-                    }
-                }
-            }
-
-            return new JObject
-            {
-                ["address"] = address.ToAddress(neoSystem.Settings.AddressVersion),
-                ["sent"] = sent,
-                ["received"] = received,
-            };
-
-            static JObject MakeTransferJson(byte addressVersion, uint blockIndex, ushort txIndex, NotificationRecord notification, ulong timestamp, UInt160 transferAddress)
-                => new JObject
-                {
-                    ["timestamp"] = timestamp,
-                    ["asset_hash"] = notification.ScriptHash.ToString(),
-                    ["transfer_address"] = transferAddress.ToAddress(addressVersion),
-                    ["amount"] = notification.State[2].GetInteger().ToString(),
-                    ["block_index"] = blockIndex,
-                    ["transfer_notify_index"] = txIndex,
-                    ["tx_hash"] = notification.InventoryHash.ToString(),
-                };
         }
 
         [RpcMethod]
@@ -411,6 +235,252 @@ namespace NeoExpress.Node
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
             return tx == null ? null : Convert.ToBase64String(tx.ToArray());
+        }
+
+        // Neo-express uses a custom implementation of GetApplicationLog due to
+        // https://github.com/neo-project/neo-modules/issues/614
+        [RpcMethod]
+        public JObject GetApplicationLog(JArray _params)
+        {
+            UInt256 hash = UInt256.Parse(_params[0].AsString());
+            return PersistencePlugin.GetAppLog(storageProvider, hash) ?? throw new RpcException(-100, "Unknown transaction");
+        }
+
+        // Neo-Express uses a custom implementation of TokenTracker RPC methods. Originally, this was
+        // because of https://github.com/neo-project/neo-modules/issues/614, but the custom implementation
+        // has been maintained after TokenTracker was introduced (TokenTracker does not have the same
+        // issue #614 that the older RpcNep17Tracker had) for compatibility w/ 3.0.x versions of neo-express.
+        // Additionally, this implementation allows neo-express to introduce new RPC methods that depend
+        // on notification processing (such as GetNep11Balances and GetNep11Transfers) on existing
+        // neo-express blockchain instances.
+
+        [RpcMethod]
+        public JObject GetNep17Balances(JArray @params)
+        {
+            var address = AsScriptHash(@params[0]);
+
+            // collect a list of assets the address has either sent or received
+            // and the last block index a transfer occurred
+            var assets = new Dictionary<UInt160, uint>();
+            using var snapshot = neoSystem.GetSnapshot();
+            foreach (var (blockIndex, _, transfer) in PersistencePlugin.GetTransferNotifications(snapshot, storageProvider, TokenStandard.Nep17, address))
+            {
+                assets[transfer.Asset] = blockIndex;
+            }
+
+            // get current balance for each asset with at least one transfer record
+            var balances = new JArray();
+            foreach (var (asset, lastUpdatedBlock) in assets)
+            {
+                if (snapshot.TryGetNep17Balance(asset, address, neoSystem.Settings, out var balance))
+                {
+                    balances.Add(new JObject
+                    {
+                        ["assethash"] = asset.ToString(),
+                        ["amount"] = balance.ToString(),
+                        ["lastupdatedblock"] = lastUpdatedBlock,
+                    });
+                }
+            }
+
+            return new JObject
+            {
+                ["address"] = address.ToAddress(neoSystem.Settings.AddressVersion),
+                ["balance"] = balances,
+            };
+        }
+
+        [RpcMethod]
+        public JObject GetNep17Transfers(JArray @params) => GetTransfers(@params, TokenStandard.Nep17);
+
+        [RpcMethod]
+        public JObject GetNep11Balances(JArray @params)
+        {
+            var address = AsScriptHash(@params[0]);
+
+            // collect a list of assets + tokens that address has sent or received
+            // and the last block index a transfer occurred
+
+            var assets = new Dictionary<UInt160, Dictionary<ByteString, uint>>();
+            using var snapshot = neoSystem.GetSnapshot();
+            foreach (var (blockIndex, _, transfer) in PersistencePlugin.GetTransferNotifications(snapshot, storageProvider, TokenStandard.Nep11, address))
+            {
+                if (transfer.TokenId == null) continue;
+                var tokens = assets.GetOrAdd(transfer.Asset, _ => new Dictionary<ByteString, uint>());
+                tokens[transfer.TokenId] = blockIndex;
+            }
+
+            JArray balances = new();
+            foreach (var (asset, tokens) in assets)
+            {
+                // Balance logic is different for divisible and non-divisible NFTs
+                if (snapshot.TryGetDecimals(asset, neoSystem.Settings, out var decimals))
+                {
+                    JArray jsonTokens = new();
+                    foreach (var (token, lastUpdatedBlock) in tokens)
+                    {
+                        if (decimals == 0)
+                        {
+                            // for non divisible tokens, check to see if the token owner 
+                            // matches the current address
+                            if (snapshot.TryGetIndivisibleNep11Owner(asset, token, neoSystem.Settings, out var owner)
+                                && owner == address)
+                            {
+                                jsonTokens.Add(new JObject
+                                {
+                                    ["tokenid"] = token.GetSpan().ToHexString(),
+                                    ["amount"] = BigInteger.One.ToString(),
+                                    ["lastupdatedblock"] = lastUpdatedBlock
+                                });
+                            }
+                        }
+                        else
+                        {
+                            // for divisible NFTs, get the asset/token balance for this address 
+                            if (snapshot.TryGetDivisibleNep11Balance(asset, token, address, neoSystem.Settings, out var balance)
+                                && balance > BigInteger.Zero)
+                            {
+                                jsonTokens.Add(new JObject
+                                {
+                                    ["tokenid"] = token.GetSpan().ToHexString(),
+                                    ["amount"] = balance.ToString(),
+                                    ["lastupdatedblock"] = lastUpdatedBlock
+                                });
+                            }
+                        }
+                    }
+
+                    if (jsonTokens.Count > 0)
+                    {
+                        balances.Add(new JObject
+                        {
+                            ["assethash"] = asset.ToString(),
+                            ["tokens"] = jsonTokens,
+                        });
+                    }
+                }
+            }
+
+            return new JObject
+            {
+                ["address"] = address.ToAddress(neoSystem.Settings.AddressVersion),
+                ["balance"] = balances,
+            };
+        }
+
+        [RpcMethod]
+        public JObject GetNep11Transfers(JArray @params) => GetTransfers(@params, TokenStandard.Nep11);
+
+        [RpcMethod]
+        public JObject GetNep11Properties(JArray @params)
+        {
+            var nep11Hash = AsScriptHash(@params[0]);
+            var tokenId = @params[1].AsString().HexToBytes();
+
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(nep11Hash, "properties", CallFlags.ReadOnly, tokenId);
+
+            using var snapshot = neoSystem.GetSnapshot();
+            using var engine = ApplicationEngine.Run(builder.ToArray(), snapshot, settings: neoSystem.Settings);
+
+            JObject json = new();
+            if (engine.State == VMState.HALT)
+            {
+                var map = engine.ResultStack.Pop<Neo.VM.Types.Map>();
+                foreach (var keyValue in map)
+                {
+                    if (keyValue.Value is Neo.VM.Types.CompoundType) continue;
+                    var key = keyValue.Key.GetString() ?? string.Empty;
+                    if (nep11PropertyNames.Contains(key))
+                    {
+                        json[key] = keyValue.Value.GetString();
+                    }
+                    else
+                    {
+                        json[key] = keyValue.Value.IsNull ? null : Convert.ToBase64String(keyValue.Value.GetSpan());
+                    }
+                }
+            }
+            return json;
+        }
+
+        static readonly IReadOnlySet<string> nep11PropertyNames = new HashSet<string>
+        {
+            "name",
+            "description",
+            "image",
+            "tokenURI"
+        };
+
+        JObject GetTransfers(JArray @params, TokenStandard standard)
+        {
+            // parse parameters
+            var address = AsScriptHash(@params[0]);
+            ulong startTime = @params.Count > 1
+                ? (ulong)@params[1].AsNumber()
+                : (DateTime.UtcNow - TimeSpan.FromDays(7)).ToTimestampMS();
+            ulong endTime = @params.Count > 2
+                ? (ulong)@params[2].AsNumber()
+                : DateTime.UtcNow.ToTimestampMS();
+
+            if (endTime < startTime) throw new RpcException(-32602, "Invalid params");
+
+            // iterate over the notifications to populate the send and receive arrays
+            var sent = new JArray();
+            var received = new JArray();
+
+            using var snapshot = neoSystem.GetSnapshot();
+            foreach (var (blockIndex, txIndex, transfer) in PersistencePlugin.GetTransferNotifications(snapshot, storageProvider, standard, address))
+            {
+                var header = NativeContract.Ledger.GetHeader(snapshot, blockIndex);
+                if (startTime <= header.Timestamp || header.Timestamp <= endTime)
+                {
+                    // create a JSON object to represent the transfer
+                    var json = new JObject()
+                    {
+                        ["timestamp"] = header.Timestamp,
+                        ["assethash"] = transfer.Asset.ToString(),
+                        ["amount"] = transfer.Amount.ToString(),
+                        ["blockindex"] = header.Index,
+                        ["transfernotifyindex"] = txIndex,
+                        ["txhash"] = transfer.Notification.InventoryHash.ToString(),
+                    };
+
+                    // NEP-11 transfer records include an extra field for the token ID (if present)
+                    if (standard == TokenStandard.Nep11
+                        && transfer.TokenId != null)
+                    {
+                        json["tokenid"] = transfer.TokenId.GetSpan().ToHexString();
+                    }
+
+                    // add the json transfer object to send and/or receive collections as appropriate
+                    if (address == transfer.From)
+                    {
+                        json["transferaddress"] = transfer.To.ToString();
+                        sent.Add(json);
+                    }
+                    if (address == transfer.To)
+                    {
+                        json["transferaddress"] = transfer.From.ToString();
+                        received.Add(json);
+                    }
+                }
+            }
+
+            return new JObject
+            {
+                ["address"] = address.ToAddress(neoSystem.Settings.AddressVersion),
+                ["sent"] = sent,
+                ["received"] = received,
+            };
+        }
+
+        UInt160 AsScriptHash(JObject json)
+        {
+            var text = json.AsString();
+            return text.Length < 40
+               ? text.ToScriptHash(neoSystem.Settings.AddressVersion)
+               : UInt160.Parse(text);
         }
     }
 }

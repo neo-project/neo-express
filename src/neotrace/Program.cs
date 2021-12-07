@@ -19,7 +19,7 @@ using SysIO = System.IO;
 
 namespace NeoTrace
 {
-    [Command("neotrace", Description = "TBD", UsePagerForHelpText = false)]
+    [Command("neotrace", Description = "Generates .neo-trace files for transactions on a public Neo N3 blockchains", UsePagerForHelpText = false)]
     [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
     class Program
     {
@@ -78,6 +78,9 @@ namespace NeoTrace
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var block = await GetBlockAsync(rpcClient, blockId).ConfigureAwait(false);
+            if (block.Transactions.Length == 0) throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
+
+            await console.Out.WriteLineAsync($"Tracing all the transactions in block {block.Index} ({block.Hash})");
             TraceBlock(uri, block, settings, console);
         }
 
@@ -88,6 +91,7 @@ namespace NeoTrace
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var rpcTx = await rpcClient.GetRawTransactionAsync($"{txHash}").ConfigureAwait(false);
             var block = await GetBlockAsync(rpcClient, rpcTx.BlockHash).ConfigureAwait(false);
+            await console.Out.WriteLineAsync($"Tracing transaction {txHash} in block {block.Index} ({block.Hash})");
             TraceBlock(uri, block, settings, console, rpcTx.Transaction.Hash);
         }
 
@@ -114,6 +118,15 @@ namespace NeoTrace
                 Transaction tx = block.Transactions[i];
 
                 using var engine = GetEngine(tx, clonedSnapshot);
+                if (engine is TraceApplicationEngine)
+                {
+                    console.Out.WriteLine($"Tracing Transaction #{i} ({tx.Hash})");
+                }
+                else
+                {
+                    console.Out.WriteLine($"Executing Transaction #{i} ({tx.Hash})");
+                }
+
                 engine.LoadScript(tx.Script);
                 if (engine.Execute() == VMState.HALT)
                 {

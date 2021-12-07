@@ -7,7 +7,6 @@
     <PackageId>Neo.Trace</PackageId>
     <PackAsTool>true</PackAsTool>
     <RootNamespace>NeoTrace</RootNamespace>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>

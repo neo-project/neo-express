@@ -8,7 +8,7 @@ using OneOf;
 
 namespace NeoTrace.Commands
 {
-    [Command("block", Description = "")]
+    [Command("block", Description = "Trace all transactions in a specified block")]
     class BlockCommand
     {
         [Argument(0, Description = "Block index or hash")]
@@ -24,6 +24,7 @@ namespace NeoTrace.Commands
             {
                 var uri = Program.ParseRpcUri(RpcUri);
                 var blockId = ParseBlockIdentifier();
+
                 await Program.TraceBlockAsync(uri, blockId, console).ConfigureAwait(false);
                 return 0;
             }

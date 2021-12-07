@@ -6,7 +6,7 @@ using Neo;
 
 namespace NeoTrace.Commands
 {
-    [Command("transaction", "tx", Description = "")]
+    [Command("transaction", "tx", Description = "Trace the specified transaction")]
     class TransactionCommand
     {
         [Argument(0, Description = "Block index or hash")]

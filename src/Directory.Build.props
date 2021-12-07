@@ -5,7 +5,7 @@
     <Authors>ngd enterprise</Authors>
     <Company>The Neo Project</Company>
     <Copyright>2015-2021 The Neo Project</Copyright>
-    <LangVersion>9</LangVersion>
+    <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
     <PackageIcon>neo-logo-72.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

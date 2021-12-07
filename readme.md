@@ -35,6 +35,7 @@ Different versions of Neo-Express require different versions of .NET Core.
 
 |Neo-Express Version|.NET Core Version|
 |-------------------|-----------------|
+| v3.1 | [v6.0](https://dotnet.microsoft.com/download/dotnet/6.0) |
 | v3.0 | [v5.0](https://dotnet.microsoft.com/download/dotnet/5.0) |
 | v1.1 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
 | v1.0 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
@@ -72,7 +73,9 @@ Installing on MacOS requires installing rocksdb via [Homebrew](https://brew.sh/)
 #### Apple Silicon support
 
 .NET 5 supports Macs with Apple Silicon via [Rosetta 2](https://support.apple.com/guide/security/rosetta-2-on-a-mac-with-apple-silicon-secebb113be1/1/web/1).
-To run Neo-Express on an Mac with Apple Silicon, you need to [install homebrew under Rosetta](https://stackoverflow.com/questions/64882584/how-to-run-the-homebrew-installer-under-rosetta-2-on-m1-macbook/64883440#64883440) by using the `arch` command.
+To run Neo-Express on a Mac with Apple Silicon, you need to [install homebrew under Rosetta](https://stackoverflow.com/questions/64882584/how-to-run-the-homebrew-installer-under-rosetta-2-on-m1-macbook/64883440#64883440) by using the `arch` command.
+
+> Note, while NeoExpress has been upgraded to .NET 6, it has not been enabled for native execution on Apple Silicon yet.
 
 ``` shell
 > arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
@@ -121,10 +124,6 @@ running with `FullState` enabled. The official JSON-RPC nodes for MainNet and Te
 (such as `http://seed1.neo.org:10332` and `http://seed1t4.neo.org:20332`) are configured to
 run the StateService plugin with `FullState` enabled.
 
-> Note, As of this writing (2021-10-12) Neo 3.0.3 has not yet been deployed to MainNet.
-> MainNet is [scheduled for upgrade](https://neo-blockchain.medium.com/neo-cli-v-3-0-3-release-announcement-d5bbd1b41c62)
-> on 2021-10-14.
-
 Like NeoExpress, NeoTrace is distributed as a [.NET Core Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
 It can be installed via the `dotnet tool` command.
 
@@ -132,7 +131,7 @@ It can be installed via the `dotnet tool` command.
 > dotnet tool install Neo.Trace -g
 ```
 
-> Note, NeoTrace has no additional dependencies beyond .NET 5.
+> Note, NeoTrace has no additional dependencies beyond .NET 6.
 
 ## A Message from the Engineer
 

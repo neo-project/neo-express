@@ -17,22 +17,35 @@ may not exactly match a publicly released version.
 
 ### Added 
 
-* Added NeoExpress `fastfwd` command (#182)
-* Added NeoExpress `policy sync` command and batch file operation (#192)
+#### NeoExpress
+* Added `fastfwd` command (#182)
+* Added `policy sync` command and batch file operation (#192)
 * Added `--rpc-uri` option to `policy get` command (#192)
 * Added `--json` option to `policy get` command (#192)
 * Added additional policy settings to `policy set` command (#192)
 * Added `--trace` option to `oracle response` command (#190)
+* Added [TokensTracker](https://github.com/neo-project/neo-modules/tree/master/src/TokensTracker) compatible NEP-11 JSON RPC methods
+
+#### NeoTrace
+* Added console status output (#195)
 
 ### Changed
 
+* Update dependencies for Neo 3.0.2 release (#195)
+
+#### NeoExpress
 * Enable transactions costing greater than 20 GAS in offline mode (#190)
 * Print internal exception (if any) when `contract deploy` command fails (#190)
 * Print internal exception (if any) when any command involving a user contract fails (#192)
+* Check contract doesn't declare NEP-11 and NEP-17 support in `contract deploy` (#195)
+
+#### NeoTrace
+* Updated command line help (#195)
 
 ### Removed
 
 * Removed `Policy` argument from NeoExpress `policy get` command. Command now retrieves all policy settings (#192)
+
 ## [3.0.19] 2021-10-12
 
 ### Added

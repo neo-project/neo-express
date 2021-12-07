@@ -10,8 +10,6 @@
 
   <ItemGroup>
     <PackageReference Include="Nito.Disposables" Version="2.2.1" />
-    <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
-    <PackageReference Include="System.Linq.Async" Version="5.1.0" />
   </ItemGroup>
 
   <Choose>

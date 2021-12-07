@@ -15,7 +15,7 @@ using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
 
 namespace NeoExpress.Node
 {
-        class PersistencePlugin : Plugin, IPersistencePlugin
+    class PersistencePlugin : Plugin, IPersistencePlugin
     {
         const string APP_LOGS_STORE_PATH = "app-logs-store";
         const string NOTIFICATIONS_STORE_PATH = "notifications-store";
@@ -63,7 +63,7 @@ namespace NeoExpress.Node
             UInt160 address)
         {
             // valid number of state arguments depends on the token standard
-            var stateCount = standard switch 
+            var stateCount = standard switch
             {
                 TokenStandard.Nep17 => 3,
                 TokenStandard.Nep11 => 4,
@@ -80,9 +80,9 @@ namespace NeoExpress.Node
             // collect latest block index of transfer records involving provided address
             foreach (var (blockIndex, txIndex, notification) in PersistencePlugin.GetNotifications(storageProvider))
             {
-               if (notification.EventName == "Transfer"
-                    && notification.State.Count == stateCount
-                    && tokenContracts.Contains(notification.ScriptHash))
+                if (notification.EventName == "Transfer"
+                     && notification.State.Count == stateCount
+                     && tokenContracts.Contains(notification.ScriptHash))
                 {
                     var transfer = TransferNotificationRecord.Create(notification);
                     if (transfer != null

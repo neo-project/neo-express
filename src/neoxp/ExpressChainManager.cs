@@ -34,10 +34,10 @@ namespace NeoExpress
             this.fileSystem = fileSystem;
             this.chain = chain;
 
-            uint secondsPerBlockResult = secondsPerBlock.HasValue 
+            uint secondsPerBlockResult = secondsPerBlock.HasValue
                 ? secondsPerBlock.Value
                 : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
-                    ? secondsPerBlockSetting 
+                    ? secondsPerBlockSetting
                     : 0;
 
             this.ProtocolSettings = chain.GetProtocolSettings(secondsPerBlockResult);
@@ -153,7 +153,7 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, 
+            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
                 ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }

@@ -69,8 +69,8 @@ namespace NeoExpress.Node
 
             public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
 
-            Witness[] IVerifiable.Witnesses 
-            { 
+            Witness[] IVerifiable.Witnesses
+            {
                 get => throw new NotImplementedException();
                 set => throw new NotImplementedException();
             }
@@ -101,9 +101,9 @@ namespace NeoExpress.Node
         public async Task FastForwardAsync(uint blockCount)
         {
             var keyPairs = chain.ConsensusNodes
-                .Select(n => 
+                .Select(n =>
                 {
-                    var account = n.Wallet.DefaultAccount 
+                    var account = n.Wallet.DefaultAccount
                         ?? throw new InvalidOperationException($"Invalid default account for {n.Wallet.Name}");
                     return new KeyPair(account.PrivateKey.HexToBytes());
                 })

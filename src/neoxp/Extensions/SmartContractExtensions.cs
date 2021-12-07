@@ -64,8 +64,8 @@ namespace NeoExpress
             builder.EmitDynamicCall(asset, "decimals");
 
             using var engine = builder.Invoke(settings, snapshot);
-            if (engine.State != VMState.FAULT 
-                && engine.ResultStack.Count >= 1 
+            if (engine.State != VMState.FAULT
+                && engine.ResultStack.Count >= 1
                 && engine.ResultStack.Pop() is Integer integer)
             {
                 decimals = (byte)integer.GetInteger();
@@ -83,7 +83,7 @@ namespace NeoExpress
             return TryGetBalance(snapshot, builder, settings, out balance);
         }
 
-        public static bool TryGetDivisibleNep11Balance(this DataCache snapshot, UInt160 asset, ByteString tokenId, UInt160 address, ProtocolSettings settings,out BigInteger balance)
+        public static bool TryGetDivisibleNep11Balance(this DataCache snapshot, UInt160 asset, ByteString tokenId, UInt160 address, ProtocolSettings settings, out BigInteger balance)
         {
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(asset, "balanceOf", address.ToArray(), tokenId);
@@ -93,8 +93,8 @@ namespace NeoExpress
         static bool TryGetBalance(DataCache snapshot, ScriptBuilder builder, ProtocolSettings settings, out BigInteger balance)
         {
             using var engine = builder.Invoke(settings, snapshot);
-            if (engine.State != VMState.FAULT 
-                && engine.ResultStack.Count >= 1 
+            if (engine.State != VMState.FAULT
+                && engine.ResultStack.Count >= 1
                 && engine.ResultStack.Pop() is Integer integer)
             {
                 balance = integer.GetInteger();
@@ -111,8 +111,8 @@ namespace NeoExpress
             builder.EmitDynamicCall(asset, "ownerOf", tokenId);
 
             using var engine = builder.Invoke(settings, snapshot);
-            if (engine.State != VMState.FAULT 
-                && engine.ResultStack.Count >= 1 
+            if (engine.State != VMState.FAULT
+                && engine.ResultStack.Count >= 1
                 && engine.ResultStack.Pop() is ByteString byteString
                 && byteString.Size == UInt160.Length)
             {

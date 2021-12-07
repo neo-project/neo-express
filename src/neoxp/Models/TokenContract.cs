@@ -66,7 +66,7 @@ namespace NeoExpress.Models
                 // operation has a different number of parameters for NEP-17, divisible NEP-11 and
                 // non-divisible NEP-11 tokens, so it is impossible to implement NEP-11 and NEP-17
                 // in the same contract
-                
+
                 if (nep11 != nep17)
                 {
                     yield return (contract.Hash, standard: nep17

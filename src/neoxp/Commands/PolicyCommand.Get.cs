@@ -70,7 +70,7 @@ namespace NeoExpress.Commands
                     using var expressNode = chainManager.GetExpressNode();
                     return await expressNode.GetPolicyAsync().ConfigureAwait(false);
                 }
-                else 
+                else
                 {
                     if (!TransactionExecutor.TryParseRpcUri(RpcUri, out var uri))
                         throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");

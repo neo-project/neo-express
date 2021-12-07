@@ -327,13 +327,13 @@ namespace NeoExpress
 
         public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
         {
-            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase)) 
+            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase))
             {
                 uri = new Uri("http://seed1.neo.org:10332");
                 return true;
             }
-            
-            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase)) 
+
+            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase))
             {
                 uri = new Uri("http://seed1t4.neo.org:20332");
                 return true;
@@ -367,7 +367,7 @@ namespace NeoExpress
                 {
                     return PolicyValues.FromJson(json);
                 }
-                catch {}
+                catch { }
             }
 
             return new None();
@@ -419,7 +419,7 @@ namespace NeoExpress
             using var builder = new ScriptBuilder();
             if (GasPolicySetting(policy))
             {
-                if (decimalValue.Decimals > NativeContract.GAS.Decimals) 
+                if (decimalValue.Decimals > NativeContract.GAS.Decimals)
                     throw new InvalidOperationException($"{policy} policy requires a value with no more than eight decimal places");
                 decimalValue = decimalValue.ChangeDecimals(NativeContract.GAS.Decimals);
                 builder.EmitDynamicCall(hash, operation, decimalValue.Value);

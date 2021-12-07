@@ -91,45 +91,47 @@ namespace NeoExpress.Node
             Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
-        public Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
+        Task<T> MakeAsync<T>(Func<T> func)
         {
             try
             {
-                if (disposedValue) return Task.FromException<IExpressNode.CheckpointMode>(new ObjectDisposedException(nameof(OfflineNode)));
-
-                var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-                rocksDbStorageProvider.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash);
-                return Task.FromResult(IExpressNode.CheckpointMode.Offline);
+                if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+                return Task.FromResult(func());
             }
             catch (Exception ex)
             {
-                return Task.FromException<IExpressNode.CheckpointMode>(ex);
+                return Task.FromException<T>(ex);
             }
+        }
+
+        IExpressNode.CheckpointMode CreateCheckpoint(string checkPointPath)
+        {
+            var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
+            rocksDbStorageProvider.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash);
+            return IExpressNode.CheckpointMode.Offline;
+        }
+
+        public Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
+            => MakeAsync(() => CreateCheckpoint(checkPointPath));
+
+        RpcInvokeResult Invoke(Neo.VM.Script script, Signer? signer = null)
+        {
+            var tx = TestApplicationEngine.CreateTestTransaction(signer);
+            using var engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView, tx);
+
+            return new RpcInvokeResult()
+            {
+                State = engine.State,
+                Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
+                GasConsumed = engine.GasConsumed,
+                Stack = engine.ResultStack.ToArray(),
+                Script = string.Empty,
+                Tx = string.Empty
+            };
         }
 
         public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script, Signer? signer = null)
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<RpcInvokeResult>(new ObjectDisposedException(nameof(OfflineNode)));
-
-                Transaction tx = TestApplicationEngine.CreateTestTransaction(signer);
-                using ApplicationEngine engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView, tx);
-                return Task.FromResult(new RpcInvokeResult()
-                {
-                    State = engine.State,
-                    Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
-                    GasConsumed = engine.GasConsumed,
-                    Stack = engine.ResultStack.ToArray(),
-                    Script = string.Empty,
-                    Tx = string.Empty
-                });
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<RpcInvokeResult>(ex);
-            }
-        }
+            => MakeAsync(() => Invoke(script, signer));
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
         {
@@ -190,7 +192,7 @@ namespace NeoExpress.Node
 
             for (int i = 0; i < blockCount; i++)
             {
-                await SubmitTransactionAsync(null);
+                await SubmitTransactionAsync(null).ConfigureAwait(false);
             }
         }
 
@@ -200,7 +202,7 @@ namespace NeoExpress.Node
 
             var transactions = tx == null ? Array.Empty<Transaction>() : new[] { tx };
             var block = CreateSignedBlock(neoSystem, consensusNodesKeys.Value, transactions);
-            var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block);
+            var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block).ConfigureAwait(false);
             if (blockRelay.Result != VerifyResult.Succeed)
             {
                 throw new Exception($"Block relay failed {blockRelay.Result}");
@@ -270,194 +272,139 @@ namespace NeoExpress.Node
         }
 
         public Task<Block> GetBlockAsync(UInt256 blockHash)
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<Block>(new ObjectDisposedException(nameof(OfflineNode)));
-
-                return Task.FromResult(NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockHash));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<Block>(ex);
-            }
-        }
+            => MakeAsync(() => NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockHash));
 
         public Task<Block> GetBlockAsync(uint blockIndex)
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<Block>(new ObjectDisposedException(nameof(OfflineNode)));
+            => MakeAsync(() => NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockIndex));
 
-                return Task.FromResult(NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockIndex));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<Block>(ex);
-            }
+        ContractManifest GetContract(UInt160 scriptHash)
+        {
+            var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
+            if (contractState == null) throw new Exception("Unknown contract");
+            return contractState.Manifest;
         }
 
         public Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<ContractManifest>(new ObjectDisposedException(nameof(OfflineNode)));
+            => MakeAsync(() => GetContract(scriptHash));
 
-                var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-                return contractState != null
-                    ? Task.FromResult(contractState.Manifest)
-                    : Task.FromException<ContractManifest>(new Exception("Unknown contract"));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<ContractManifest>(ex);
-            }
+        Block GetLatestBlock()
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            var hash = NativeContract.Ledger.CurrentHash(snapshot);
+            return NativeContract.Ledger.GetBlock(snapshot, hash);
         }
 
-        public Task<Block> GetLatestBlockAsync()
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<Block>(new ObjectDisposedException(nameof(OfflineNode)));
+        public Task<Block> GetLatestBlockAsync() => MakeAsync(GetLatestBlock);
 
-                using var snapshot = neoSystem.GetSnapshot();
-                var hash = NativeContract.Ledger.CurrentHash(snapshot);
-                return Task.FromResult(NativeContract.Ledger.GetBlock(snapshot, hash));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<Block>(ex);
-            }
+        (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
+        {
+            var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
+            if (tx == null) throw new Exception("Unknown Transaction");
+
+            var jsonLog = PersistencePlugin.GetAppLog(rocksDbStorageProvider, txHash);
+            return jsonLog != null
+                ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
+                : (tx, null);
         }
 
         public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+            => MakeAsync(() => GetTransaction(txHash));
+
+        uint GetTransactionHeight(UInt256 txHash)
         {
-            try
-            {
-                if (disposedValue) return Task.FromException<(Transaction, RpcApplicationLog?)>(new ObjectDisposedException(nameof(OfflineNode)));
-
-                var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
-                if (tx == null) return Task.FromException<(Transaction, RpcApplicationLog?)>(new Exception("Unknown Transaction"));
-
-                var jsonLog = PersistencePlugin.GetAppLog(rocksDbStorageProvider, txHash);
-                var result = jsonLog != null
-                    ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
-                    : (tx, null);
-
-                return Task.FromResult(result);
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<(Transaction, RpcApplicationLog?)>(ex);
-            }
+            var height = NativeContract.Ledger.GetTransactionState(neoSystem.StoreView, txHash)?.BlockIndex;
+            return height.HasValue
+                ? height.Value
+                : throw new Exception("Unknown Transaction");
         }
 
         public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
-        {
-            try
-            {
-                if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+            => MakeAsync(() => GetTransactionHeight(txHash));
 
-                var height = NativeContract.Ledger.GetTransactionState(neoSystem.StoreView, txHash)?.BlockIndex;
-                return height.HasValue
-                    ? Task.FromResult(height.Value)
-                    : Task.FromException<uint>(new Exception("Unknown Transaction"));
-            }
-            catch (Exception ex)
+        IReadOnlyList<(TokenContract contract, BigInteger balance)> ListBalances(UInt160 address)
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            var contracts = TokenContract.Enumerate(snapshot)
+                .Where(c => c.standard == TokenStandard.Nep17);
+
+            var addressArray = address.ToArray();
+            var contractCount = 0;
+            using var builder = new ScriptBuilder();
+            foreach (var c in contracts.Reverse())
             {
-                return Task.FromException<uint>(ex);
+                builder.EmitDynamicCall(c.scriptHash, "symbol");
+                builder.EmitDynamicCall(c.scriptHash, "decimals");
+                builder.EmitDynamicCall(c.scriptHash, "balanceOf", addressArray);
+                contractCount++;
             }
+
+            List<(TokenContract contract, BigInteger balance)> balances = new();
+            using var engine = builder.Invoke(neoSystem.Settings, snapshot);
+            if (engine.State != VMState.FAULT && engine.ResultStack.Count == contractCount * 3)
+            {
+                var resultStack = engine.ResultStack;
+                for (var i = 0; i < contractCount; i++)
+                {
+                    var index = i * 3;
+                    var symbol = resultStack.Peek(index + 2).GetString();
+                    if (symbol == null) continue;
+                    var decimals = (byte)resultStack.Peek(index + 1).GetInteger();
+                    var balance = resultStack.Peek(index).GetInteger();
+                    var (scriptHash, standard) = contracts.ElementAt(i);
+                    balances.Add((new TokenContract(symbol, decimals, scriptHash, standard), balance));
+                }
+            }
+
+            return balances;
         }
 
         public Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<IReadOnlyList<(TokenContract, BigInteger)>>(new ObjectDisposedException(nameof(OfflineNode)));
+            => MakeAsync(() => ListBalances(address));
 
-                var result = neoSystem.ListNep17Balances(address).ToList();
-                return Task.FromResult<IReadOnlyList<(TokenContract contract, BigInteger balance)>>(result);
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<IReadOnlyList<(TokenContract, BigInteger)>>(ex);
-            }
+        IReadOnlyList<(UInt160 hash, ContractManifest manifest)> ListContracts()
+        {
+            return NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
+                .OrderBy(c => c.Id)
+                .Select(c => (c.Hash, c.Manifest))
+                .ToList();
         }
 
         public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
+            => MakeAsync(ListContracts);
+
+        IReadOnlyList<(ulong requestId, OracleRequest request)> ListOracleRequests()
+            => NativeContract.Oracle.GetRequests(neoSystem.StoreView).ToList();
+
+        public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+            => MakeAsync(ListOracleRequests);
+
+        IReadOnlyList<TokenContract> ListTokenContracts()
         {
-            try
-            {
-                if (disposedValue) return Task.FromException<IReadOnlyList<(UInt160, ContractManifest)>>(new ObjectDisposedException(nameof(OfflineNode)));
-
-                var contracts = NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
-                    .OrderBy(c => c.Id)
-                    .Select(c => (c.Hash, c.Manifest));
-
-                return Task.FromResult<IReadOnlyList<(UInt160, ContractManifest)>>(contracts.ToArray());
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<IReadOnlyList<(UInt160, ContractManifest)>>(ex);
-            }
+            using var snapshot = neoSystem.GetSnapshot();
+            return snapshot.EnumerateTokenContracts(neoSystem.Settings).ToList();
         }
 
         public Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
+            => MakeAsync(ListTokenContracts);
+
+        IReadOnlyList<ExpressStorage> ListStorages(UInt160 scriptHash)
         {
-            try
-            {
-                if (disposedValue) return Task.FromException<IReadOnlyList<TokenContract>>(new ObjectDisposedException(nameof(OfflineNode)));
+            using var snapshot = neoSystem.GetSnapshot();
+            var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
 
-                var contracts = neoSystem.EnumerateTokenContracts().ToList();
-                return Task.FromResult<IReadOnlyList<TokenContract>>(contracts);
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<IReadOnlyList<TokenContract>>(ex);
-            }
-        }
+            if (contract == null) return Array.Empty<ExpressStorage>();
 
-        public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<IReadOnlyList<(ulong, OracleRequest)>>(new ObjectDisposedException(nameof(OfflineNode)));
-
-                var requests = NativeContract.Oracle.GetRequests(neoSystem.StoreView);
-
-                return Task.FromResult<IReadOnlyList<(ulong, OracleRequest)>>(requests.ToArray());
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<IReadOnlyList<(ulong, OracleRequest)>>(ex);
-            }
+            byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
+            return snapshot.Find(prefix)
+                .Select(t => new ExpressStorage()
+                {
+                    Key = t.Key.Key.ToHexString(),
+                    Value = t.Value.Value.ToHexString(),
+                })
+                .ToList();
         }
 
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
-        {
-            try
-            {
-                if (disposedValue) return Task.FromException<IReadOnlyList<ExpressStorage>>(new ObjectDisposedException(nameof(OfflineNode)));
-
-                using var snapshot = neoSystem.GetSnapshot();
-                var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
-
-                if (contract == null) return Task.FromResult<IReadOnlyList<ExpressStorage>>(Array.Empty<ExpressStorage>());
-
-                byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
-                var results = snapshot.Find(prefix)
-                    .Select(t => new ExpressStorage()
-                    {
-                        Key = t.Key.Key.ToHexString(),
-                        Value = t.Value.Value.ToHexString(),
-                    });
-
-                return Task.FromResult<IReadOnlyList<ExpressStorage>>(results.ToArray());
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<IReadOnlyList<ExpressStorage>>(ex);
-            }
-        }
+            => MakeAsync(() => ListStorages(scriptHash));
     }
 }

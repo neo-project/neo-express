@@ -8,7 +8,7 @@ namespace NeoExpress.Commands
     partial class PolicyCommand
     {
         [Command(Name = "sync", Description = "Synchronize local policy values with public Neo network")]
-        internal class Sync 
+        internal class Sync
         {
             readonly ExpressChainManagerFactory chainManagerFactory;
             readonly TransactionExecutorFactory txExecutorFactory;

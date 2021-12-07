@@ -62,6 +62,18 @@ namespace NeoExpress
                 {
                     throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
                 }
+
+                var nep11 = false; var nep17 = false;
+                var standards = manifest.SupportedStandards;
+                for (var i = 0; i < standards.Length; i++)
+                {
+                    if (standards[i] == "NEP-11") nep11 = true;
+                    if (standards[i] == "NEP-17") nep17 = true;
+                }
+                if (nep11 && nep17)
+                {
+                    throw new Exception($"{manifest.Name} Contract declares support for both NEP-11 and NEP-17 standards. Use --force to deploy contract with invalid supported standards declarations.");
+                }
             }
 
             var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope).ConfigureAwait(false);
@@ -315,13 +327,13 @@ namespace NeoExpress
 
         public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
         {
-            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase)) 
+            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase))
             {
                 uri = new Uri("http://seed1.neo.org:10332");
                 return true;
             }
-            
-            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase)) 
+
+            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase))
             {
                 uri = new Uri("http://seed1t4.neo.org:20332");
                 return true;
@@ -355,7 +367,7 @@ namespace NeoExpress
                 {
                     return PolicyValues.FromJson(json);
                 }
-                catch {}
+                catch { }
             }
 
             return new None();
@@ -407,7 +419,7 @@ namespace NeoExpress
             using var builder = new ScriptBuilder();
             if (GasPolicySetting(policy))
             {
-                if (decimalValue.Decimals > NativeContract.GAS.Decimals) 
+                if (decimalValue.Decimals > NativeContract.GAS.Decimals)
                     throw new InvalidOperationException($"{policy} policy requires a value with no more than eight decimal places");
                 decimalValue = decimalValue.ChangeDecimals(NativeContract.GAS.Decimals);
                 builder.EmitDynamicCall(hash, operation, decimalValue.Value);

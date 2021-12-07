@@ -6,7 +6,7 @@ using Neo;
 
 namespace NeoTrace.Commands
 {
-    [Command("transaction", "tx", Description = "")]
+    [Command("transaction", "tx", Description = "Trace the specified transaction")]
     class TransactionCommand
     {
         [Argument(0, Description = "Block index or hash")]
@@ -22,7 +22,7 @@ namespace NeoTrace.Commands
             {
                 var uri = Program.ParseRpcUri(RpcUri);
                 var txHash = UInt256.TryParse(TransactionHash, out var _txHash)
-                    ? _txHash 
+                    ? _txHash
                     : throw new ArgumentException($"Invalid transaction hash {TransactionHash}");
                 await Program.TraceTransactionAsync(uri, txHash, console);
                 return 0;

@@ -5,25 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "neotrace",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/neotrace/bin/Debug/net5.0/neotrace.dll",
-            "cwd": "${workspaceFolder}/src/neotrace",
-            "stopAtEntry": false,
-            "console": "internalConsole"
-        },        
-        {
             "name": "neoxp",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/neoxp/bin/Debug/net5.0/neoxp.dll",
+            "program": "${workspaceFolder}/src/neoxp/bin/Debug/net6.0/neoxp.dll",
             "cwd": "${workspaceFolder}/src/neoxp",
             "console": "internalConsole",
             "stopAtEntry": false
         },
+        {
+            "name": "neotrace",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/neotrace/bin/Debug/net6.0/neotrace.dll",
+            "cwd": "${workspaceFolder}/src/neotrace",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },        
         {
             "name": ".NET Core Attach",
             "type": "coreclr",

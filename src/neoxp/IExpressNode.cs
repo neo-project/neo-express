@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
 using Neo.Cryptography.ECC;
@@ -33,10 +34,10 @@ namespace NeoExpress
         Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
         Task<uint> GetTransactionHeightAsync(UInt256 txHash);
 
-        Task<IReadOnlyList<(RpcNep17Balance balance, Nep17Contract contract)>> ListBalancesAsync(UInt160 address);
+        Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);
         Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
-        Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync();
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
         Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash);
+        Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
     }
 }

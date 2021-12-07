@@ -19,6 +19,17 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
+        {
+            if (!dictionary.TryGetValue(key, out var value))
+            {
+                value = valueFactory(key);
+                dictionary[key] = value;
+            }
+
+            return value;
+        }
+
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)
         {
             var showStackTrace = ((CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace")).ParsedValue;

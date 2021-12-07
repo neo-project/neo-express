@@ -15,9 +15,9 @@ namespace NeoExpress.Node
     // Note: namespace alias needed to avoid conflict with Plugin.System property
     using SysIO = System.IO;
 
-    class ExpressApplicationEngineProvider : Plugin, IApplicationEngineProvider
+    class ApplicationEngineProvider : Plugin, IApplicationEngineProvider
     {
-        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block? persistingBlock, ProtocolSettings settings, long gas)
+        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, Diagnostic? diagnostic)
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx
@@ -27,7 +27,7 @@ namespace NeoExpress.Node
             {
                 var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
                 var sink = new TraceDebugStream(SysIO.File.OpenWrite(path));
-                return new TraceApplicationEngine(sink, trigger, container, snapshot, persistingBlock, settings, gas);
+                return new TraceApplicationEngine(sink, trigger, container, snapshot, persistingBlock, settings, gas, diagnostic);
             }
 
             return null;

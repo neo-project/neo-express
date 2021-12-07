@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit.Models;
@@ -68,8 +69,8 @@ namespace NeoExpress.Node
 
             public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
 
-            Witness[] IVerifiable.Witnesses 
-            { 
+            Witness[] IVerifiable.Witnesses
+            {
                 get => throw new NotImplementedException();
                 set => throw new NotImplementedException();
             }
@@ -100,9 +101,9 @@ namespace NeoExpress.Node
         public async Task FastForwardAsync(uint blockCount)
         {
             var keyPairs = chain.ConsensusNodes
-                .Select(n => 
+                .Select(n =>
                 {
-                    var account = n.Wallet.DefaultAccount 
+                    var account = n.Wallet.DefaultAccount
                         ?? throw new InvalidOperationException($"Invalid default account for {n.Wallet.Name}");
                     return new KeyPair(account.PrivateKey.HexToBytes());
                 })
@@ -238,26 +239,21 @@ namespace NeoExpress.Node
             return rpcClient.GetTransactionHeightAsync(txHash.ToString());
         }
 
-        public async Task<IReadOnlyList<(Neo.Network.RPC.Models.RpcNep17Balance balance, Nep17Contract contract)>> ListBalancesAsync(UInt160 address)
+        public async Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
         {
-            var contracts = ((Neo.IO.Json.JArray)await rpcClient.RpcSendAsync("expressgetnep17contracts"))
-                .Select(json => Nep17Contract.FromJson(json))
+            var contracts = (await ListTokenContractsAsync().ConfigureAwait(false))
                 .ToDictionary(c => c.ScriptHash);
-            var balances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion)).ConfigureAwait(false);
-            return balances.Balances
-                .Select(b => (
-                    balance: b,
-                    contract: contracts.TryGetValue(b.AssetHash, out var value)
-                        ? value
-                        : Nep17Contract.Unknown(b.AssetHash)))
-                .ToArray();
+            var rpcBalances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion))
+                .ConfigureAwait(false);
+
+            return rpcBalances.Balances.Select(b => (contracts[b.AssetHash], b.Amount)).ToList();
         }
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
         {
             var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
 
-            if (json != null && json is Neo.IO.Json.JArray array)
+            if (json != null && json is JArray array)
             {
                 return array
                     .Select(j => (
@@ -269,29 +265,29 @@ namespace NeoExpress.Node
             return Array.Empty<(UInt160 hash, ContractManifest manifest)>();
         }
 
-        public async Task<IReadOnlyList<Nep17Contract>> ListNep17ContractsAsync()
+        public async Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
         {
-            var json = await rpcClient.RpcSendAsync("expressgetnep17contracts").ConfigureAwait(false);
+            var json = await rpcClient.RpcSendAsync("expresslisttokencontracts").ConfigureAwait(false);
 
-            if (json != null && json is Neo.IO.Json.JArray array)
+            if (json != null && json is JArray array)
             {
-                return array.Select(Nep17Contract.FromJson).ToList();
+                return array.Select(TokenContract.FromJson).ToList();
             }
 
-            return Array.Empty<Nep17Contract>();
+            return Array.Empty<TokenContract>();
         }
 
         public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
         {
             var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
 
-            if (json != null && json is Neo.IO.Json.JArray array)
+            if (json != null && json is JArray array)
             {
                 return array.Select(FromJson).ToList();
             }
             return Array.Empty<(ulong, OracleRequest)>();
 
-            (ulong, OracleRequest) FromJson(Neo.IO.Json.JObject json)
+            (ulong, OracleRequest) FromJson(JObject json)
             {
                 var id = ulong.Parse(json["requestid"].AsString());
                 var originalTxId = UInt256.Parse(json["originaltxid"].AsString());
@@ -320,7 +316,7 @@ namespace NeoExpress.Node
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
 
-            if (json != null && json is Neo.IO.Json.JArray array)
+            if (json != null && json is JArray array)
             {
                 return array.Select(s => new ExpressStorage()
                 {

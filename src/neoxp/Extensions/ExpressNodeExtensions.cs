@@ -81,7 +81,7 @@ namespace NeoExpress
         public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, ExpressChain chain, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            ContractParameterParser.TryGetUInt160 tryGetContract = 
+            ContractParameterParser.TryGetUInt160 tryGetContract =
                 (string name, out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
 
             return new ContractParameterParser(expressNode.ProtocolSettings, chain.TryGetAccountHash, tryGetContract);
@@ -110,10 +110,11 @@ namespace NeoExpress
                 return uint160;
             }
 
-            var contracts = await expressNode.ListNep17ContractsAsync().ConfigureAwait(false);
+            var contracts = await expressNode.ListTokenContractsAsync().ConfigureAwait(false);
             for (int i = 0; i < contracts.Count; i++)
             {
-                if (contracts[i].Symbol.Equals(asset, StringComparison.OrdinalIgnoreCase))
+                if (contracts[i].Standard == TokenStandard.Nep17
+                    && contracts[i].Symbol.Equals(asset, StringComparison.OrdinalIgnoreCase))
                 {
                     return contracts[i].ScriptHash;
                 }
@@ -318,30 +319,6 @@ namespace NeoExpress
             }
 
             throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
-        }
-
-        public static async Task<BigInteger> GetPolicyAsync(this IExpressNode expressNode, PolicyName policy)
-        {
-            var methodName = policy switch
-            {
-                PolicyName.ExecFeeFactor => "getExecFeeFactor",
-                PolicyName.FeePerByte => "getFeePerByte",
-                PolicyName.StoragePrice => "getStoragePrice", 
-                _ => throw new ArgumentException($"Invalid Policy {policy}", nameof(policy))
-            };
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, methodName);
-
-            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-            var stack = result.Stack;
-            if (stack.Length >= 1)
-            {
-                var value = stack[0].GetInteger();
-                return value;
-            }
-
-            throw new Exception("invalid script results");
         }
 
         internal static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)

@@ -156,7 +156,7 @@ namespace NeoExpress.Commands
                 }
 
                 [Command("set")]
-                internal class Set 
+                internal class Set
                 {
                     [Argument(0, Description = "Policy to set")]
                     [Required]

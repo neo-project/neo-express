@@ -1,4 +1,4 @@
-name: Release NeoTrace
+name: Release NeoExpress & NeoTrace
 
 on:
   workflow_dispatch:

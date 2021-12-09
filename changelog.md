@@ -31,7 +31,7 @@ may not exactly match a publicly released version.
 
 ### Changed
 
-* Update dependencies for Neo 3.0.2 release (#195)
+* Update dependencies for Neo 3.1.0 release (#195)
 
 #### NeoExpress
 * Enable transactions costing greater than 20 GAS in offline mode (#190)

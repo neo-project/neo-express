@@ -686,15 +686,6 @@ Options:
                           Specify MainNet (default), TestNet or JSON-RPC URL
   -i|--input <INPUT>      Path to neo-express data file
   -j|--json               Output as JSON
-  
-  Usage: neoxp policy get [options] <Policy>
-
-Arguments:
-  Policy              Policy to set
-                      Allowed values are: FeePerByte, ExecFeeFactor, StoragePrice.
-
-Options:
-  -i|--input <INPUT>  Path to neo-express data file
 ```
 
 > Note, older versions of neoxp supported a `Policy` argument.

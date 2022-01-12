@@ -11,13 +11,18 @@ namespace NeoExpress.Models
     {
         private readonly KeyPair? key;
 
-        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash, settings)
+        public DevWalletAccount(ProtocolSettings settings, KeyPair keyPair)
+            : this(settings, keyPair, Contract.CreateSignatureContract(keyPair.PublicKey))
+        {
+        }
+
+        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract contract) : base(contract.ScriptHash, settings)
         {
             this.key = key;
             Contract = contract;
         }
 
-        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract contract) : base(contract.ScriptHash, settings)
+        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash, settings)
         {
             this.key = key;
             Contract = contract;
@@ -45,17 +50,7 @@ namespace NeoExpress.Models
         public static DevWalletAccount FromExpressWalletAccount(ProtocolSettings settings, ExpressWalletAccount account)
         {
             var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
-            var contract = new Contract()
-            {
-                Script = account.Contract?.Script.HexToBytes(),
-                ParameterList = account.Contract?.Parameters
-                    .Select(Enum.Parse<ContractParameterType>)
-                    .ToArray()
-            };
-
-            var scriptHash = account.ScriptHash.ToScriptHash(settings.AddressVersion);
-
-            return new DevWalletAccount(settings, keyPair, contract, scriptHash)
+            return new DevWalletAccount(settings, keyPair)
             {
                 Label = account.Label,
                 IsDefault = account.IsDefault

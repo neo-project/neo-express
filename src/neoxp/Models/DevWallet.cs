@@ -75,9 +75,7 @@ namespace NeoExpress.Models
         public override WalletAccount CreateAccount(byte[] privateKey)
         {
             var key = new KeyPair(privateKey);
-            var contract = Contract.CreateSignatureContract(key.PublicKey);
-
-            var account = new DevWalletAccount(ProtocolSettings, key, contract);
+            var account = new DevWalletAccount(ProtocolSettings, key);
             return AddAccount(account);
         }
 

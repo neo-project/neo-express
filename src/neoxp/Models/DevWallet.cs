@@ -87,7 +87,7 @@ namespace NeoExpress.Models
 
         public override WalletAccount CreateAccount(UInt160 scriptHash)
         {
-            var account = new DevWalletAccount(ProtocolSettings, null, null, scriptHash);
+            var account = new DevWalletAccount(ProtocolSettings, scriptHash);
             return AddAccount(account);
         }
 

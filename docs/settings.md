@@ -5,12 +5,12 @@ This document details the values that Neo-Express reads from the `settings` obje
 
 ## `chain.SecondsPerBlock`
 
-The `chain.SecondsPerBlock` Neo-Express setting coresponds to the `MillisecondsPerBlock`
+The `chain.SecondsPerBlock` Neo-Express setting corresponds to the `MillisecondsPerBlock`
 [config.json property](https://github.com/neo-project/neo-node/blob/master/neo-cli/config.json#L25)
 and the `--secondsPerBlock` option for the Neo-Express `run` command. 
 
 By default, Neo-Express mints a new block every 15 seconds. The `chain.SecondsPerBlock` setting can
-be used to overide the default behavior. If the `run` command `--secondsPerBlock` option is specified,
+be used to override the default behavior. If the `run` command `--secondsPerBlock` option is specified,
 the `chain.SecondsPerBlock` setting is ignored.
 
 `chain.SecondsPerBlock` is specified as an unsigned integer. If you specify an invalid unsigned integer
@@ -18,14 +18,14 @@ value for this setting, Neo-Express reverts to the default.
 
 ## `rpc.BindAddress`
 
-The `rpc.BindAddress` Neo-Express setting coresponds to the `BindAddress`
+The `rpc.BindAddress` Neo-Express setting corresponds to the `BindAddress`
 [RpcServer config property](https://github.com/neo-project/neo-modules/blob/master/src/RpcServer/RpcServer/config.json#L6).
 
 By default, Neo-Express only listens for JSON-RPC requests on the loopback address. This means that
 JSON-RPC requests must originate on the same machine as Neo-Express is running in order to be serviced.
 While this is the most secure approach, it limits the ability of the developer to test cross machine
 scenarios, especially ones that involve mobile devices. The `rpc.BindAddress` setting can be used to
-overide the default behavior.
+override the default behavior.
 
 The `rpc.BindAddress` field accepts an IP address in dotted quad notation. It specifies the IP Address
 that the JSON-RPC server will listen on for client requests. Typically, to enable remote access to
@@ -44,7 +44,7 @@ Example usage:
 
 ## `rpc.MaxFee`
 
-The `rpc.MaxFee` Neo-Express setting coresponds to the `MaxFee`
+The `rpc.MaxFee` Neo-Express setting corresponds to the `MaxFee`
 [RpcServer config property](https://github.com/neo-project/neo-modules/blob/master/src/RpcServer/RpcServer/config.json#L14).
 This setting specifies a maximum Network Fee for the
 [`sendfrom`](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/sendfrom.html),
@@ -64,7 +64,7 @@ Example usage:
 
 ## `rpc.MaxGasInvoke`
 
-The `rpc.MaxGasInvoke` Neo-Express setting coresponds to the `MaxGasInvoke`
+The `rpc.MaxGasInvoke` Neo-Express setting corresponds to the `MaxGasInvoke`
 [RpcServer config property](https://github.com/neo-project/neo-modules/blob/master/src/RpcServer/RpcServer/config.json#L13).
 This setting specifies maximum limit in GAS for the
 [invokefunction](https://docs.neo.org/docs/en-us/reference/rpc/latest-version/api/invokefunction.html)
@@ -81,4 +81,20 @@ Example usage:
   }
 ```
 
+## `rpc.MaxIteratorResultItems`
 
+The `rpc.MaxIteratorResultItems` Neo-Express setting corresponds to the `MaxIteratorResultItems`
+[RpcServer config property](https://github.com/neo-project/neo-modules/blob/master/src/RpcServer/RpcServer/config.json#L16).
+This setting specifies maximum number of items returned to the RPC caller when there is an iterator
+on the result stack.
+
+This setting defaults to 100 items. If you specify an invalid or negative integer value for this setting,
+Neo-Express reverts to the default.
+
+Example usage:
+
+``` json
+  "settings": {
+    "rpc.MaxIteratorResultItems": "150" // support higher item limit for iterator results
+  }
+```

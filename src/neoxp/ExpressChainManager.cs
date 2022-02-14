@@ -286,6 +286,12 @@ namespace NeoExpress
                     settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
                 }
 
+                if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
+                    && maxIteratorResultItems > 0)
+                {
+                    settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
+                }
+
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
                 return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
             }

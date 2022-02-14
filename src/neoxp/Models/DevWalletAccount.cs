@@ -9,32 +9,32 @@ namespace NeoExpress.Models
 {
     class DevWalletAccount : WalletAccount
     {
-        private readonly KeyPair? key;
+        private readonly KeyPair? keyPair;
 
         public DevWalletAccount(ProtocolSettings settings, KeyPair keyPair)
-            : this(settings, keyPair, Contract.CreateSignatureContract(keyPair.PublicKey))
+            : this(settings, Contract.CreateSignatureContract(keyPair.PublicKey), keyPair)
         {
         }
 
-        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract contract) : base(contract.ScriptHash, settings)
+        public DevWalletAccount(ProtocolSettings settings, Contract contract, KeyPair? keyPair) : base(contract.ScriptHash, settings)
         {
-            this.key = key;
+            this.keyPair = keyPair;
             Contract = contract;
         }
 
         public DevWalletAccount(ProtocolSettings settings, UInt160 scriptHash) : base(scriptHash, settings)
         {
-            this.key = null;
+            this.keyPair = null;
             Contract = null;
         }
 
-        public override bool HasKey => key != null;
+        public override bool HasKey => keyPair != null;
 
-        public override KeyPair? GetKey() => key;
+        public override KeyPair? GetKey() => keyPair;
 
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {
-            PrivateKey = key?.PrivateKey.ToHexString() ?? string.Empty,
+            PrivateKey = keyPair?.PrivateKey.ToHexString() ?? string.Empty,
             ScriptHash = ScriptHash.ToAddress(ProtocolSettings.AddressVersion),
             Label = Label,
             IsDefault = IsDefault,

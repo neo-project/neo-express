@@ -31,8 +31,8 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
                     var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
-                    console.WriteLine(tx.ToJson(chainManager.ProtocolSettings).ToString(true));
-                    if (log != null) console.WriteLine(log.ToJson().ToString(true));
+                    console.WriteJson(tx.ToJson(chainManager.ProtocolSettings));
+                    if (log != null) console.WriteJson(log.ToJson());
                     return 0;
                 }
                 catch (Exception ex)

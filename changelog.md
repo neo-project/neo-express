@@ -13,15 +13,20 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## Unreleased
+## [3.1.46] 2022-03-22
 
-### Added
+### NeoExpress
 
-#### NeoExpress
+#### Added
 
-* Added `rpc.MaxIteratorResultItems` setting
+* Added `rpc.MaxIteratorResultItems` setting (#202)
 
-## [3.1.38] 2021-14
+#### Fixed
+
+* Write block/tx/applog JSON to console using newtonsoft to avoid breaking base64 encoded values (#205)
+* Update lib-bctk dependency to support Apple Silicon ([#204](https://github.com/neo-project/neo-express/issues/204))
+
+## [3.1.38] 2021-12-14
 
 ### Added 
 

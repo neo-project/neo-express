@@ -30,6 +30,54 @@ namespace NeoExpress
             return value;
         }
 
+        public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)
+        {
+            using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out)
+            {
+                Formatting = Newtonsoft.Json.Formatting.Indented
+            };
+
+            WriteJson(writer, json);
+            console.Out.WriteLine();
+
+            static void WriteJson(Newtonsoft.Json.JsonTextWriter writer, Neo.IO.Json.JObject json)
+            {
+                switch (json)
+                {
+                    case null:
+                        writer.WriteNull();
+                        break;
+                    case Neo.IO.Json.JBoolean boolean:
+                        writer.WriteValue(boolean.Value);
+                        break;
+                    case Neo.IO.Json.JNumber number:
+                        writer.WriteValue(number.Value);
+                        break;
+                    case Neo.IO.Json.JString @string:
+                        writer.WriteValue(@string.Value);
+                        break;
+                    case Neo.IO.Json.JArray @array:
+                        writer.WriteStartArray();
+                        foreach (var value in @array)
+                        {
+                            WriteJson(writer, value);
+                        }
+                        writer.WriteEndArray();
+                        break;
+                    case Neo.IO.Json.JObject @object:
+                        writer.WriteStartObject();
+                        foreach (var (key, value) in @object.Properties)
+                        {
+                            writer.WritePropertyName(key);
+                            WriteJson(writer, value);
+                        }
+                        writer.WriteEndObject();
+                        break;
+                }
+            }
+        }
+
+
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)
         {
             var showStackTrace = ((CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace")).ParsedValue;

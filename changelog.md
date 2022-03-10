@@ -15,11 +15,16 @@ may not exactly match a publicly released version.
 
 ## Unreleased
 
-### Added
+### NeoExpress
 
-#### NeoExpress
+#### Added
 
-* Added `rpc.MaxIteratorResultItems` setting
+* Added `rpc.MaxIteratorResultItems` setting (#202)
+
+#### Fixed
+
+* Write block/tx/applog JSON to console using newtonsoft to avoid breaking base64 encoded values (#205)
+* Update lib-bctk dependency to support Apple Silicon ([#204](https://github.com/neo-project/neo-express/issues/204))
 
 ## [3.1.38] 2021-14
 

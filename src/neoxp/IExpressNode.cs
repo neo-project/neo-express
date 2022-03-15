@@ -4,8 +4,10 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
 using Neo.Cryptography.ECC;
+using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
+using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -39,5 +41,7 @@ namespace NeoExpress
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
         Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash);
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
+
+        Task<bool> PersistContractAsync(ContractState state, JArray storagePairs);
     }
 }

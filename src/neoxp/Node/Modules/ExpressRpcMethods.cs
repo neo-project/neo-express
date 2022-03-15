@@ -8,8 +8,10 @@ using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
+using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
@@ -402,6 +404,90 @@ namespace NeoExpress.Node
                 }
             }
             return json;
+        }
+        
+        private const byte Prefix_Contract = 8;
+        private const byte Prefix_NextAvailableId = 15;
+
+        private int LastUsedContractId(DataCache snapshot)
+        {
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
+            StorageItem item = snapshot.TryGet(key);
+            return (int)(BigInteger)item;
+        }
+
+        private void SetLastUsedContractId(DataCache snapshot, int newId)
+        {
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
+            StorageItem item = snapshot.GetAndChange(key);
+            item.Set(newId);
+        }
+        
+        private int GetNextAvailableId(DataCache snapshot)
+        {
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
+            StorageItem item = snapshot.GetAndChange(key);
+            int value = (int)(BigInteger)item;
+            item.Add(1);
+            return value;
+        }
+        
+        [RpcMethod]
+        public JObject? ExpressPersistContract(JObject @params)
+        {
+            var state = @params[0]["state"];
+            var storagePairs = (JArray) @params[0]["storage"];
+            var snapshot = neoSystem.GetSnapshot();
+
+            var nef = new NefFile
+            {
+                CheckSum = (uint)state["nef"]["checksum"].AsNumber(),
+                Compiler = state["nef"]["compiler"].AsString(),
+                Source = state["nef"]["source"].AsString(),
+                Tokens = new MethodToken[0], // TODO: support parsing MethodTokens or use fix of https://github.com/neo-project/neo/issues/2674
+                Script = Convert.FromBase64String(state["nef"]["script"].AsString())
+            };
+            
+            ContractManifest m = ContractManifest.FromJson(state["manifest"]);
+            
+            // Our local chain might already be using the contract id of the pulled contract, we need to check for this
+            // to avoid having contracts with duplicate id's. This is important because the contract id is part of the
+            // StorageContext used with Storage syscalls and else we'll potentially override storage keys or iterate
+            // over keys that shouldn't exist for one of the contracts.
+            int contractId = (int)state["id"].AsNumber(); 
+            if (contractId <= LastUsedContractId(snapshot))
+            {
+                contractId = GetNextAvailableId(snapshot);
+            }
+            else
+            {
+                // Update available id such that a regular contract deploy will use the right next id;
+                SetLastUsedContractId(snapshot, contractId);
+            }
+            
+            var c = new ContractState
+            {
+                Id = contractId,
+                Hash = UInt160.Parse(state["hash"].AsString()),
+                UpdateCounter = (ushort)state["updatecounter"].AsNumber(),
+                Nef = nef,
+                Manifest = m
+            };
+            
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(c.Hash);
+            snapshot.Add(key, new StorageItem(c));
+            
+            foreach (var pair in storagePairs)
+            {
+                snapshot.Add(
+                    new StorageKey { Id = c.Id, Key = Convert.FromBase64String(pair["k"].AsString())}, 
+                    new StorageItem(Convert.FromBase64String(pair["v"].AsString()))
+                );
+            }
+
+            snapshot.Commit();
+
+            return true;
         }
 
         static readonly IReadOnlySet<string> nep11PropertyNames = new HashSet<string>

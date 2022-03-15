@@ -328,5 +328,14 @@ namespace NeoExpress.Node
 
             return Array.Empty<ExpressStorage>();
         }
+
+        public async Task<bool> PersistContractAsync(ContractState state, JArray storagePairs)
+        {
+            JObject o = new JObject();
+            o["state"] = state.ToJson();
+            o["storage"] = storagePairs;
+            var json = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
+            return true;
+        }
     }
 }

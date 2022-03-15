@@ -11,6 +11,7 @@ using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
+using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
@@ -406,5 +407,30 @@ namespace NeoExpress.Node
 
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
+        
+        private const byte Prefix_Contract = 8;
+        
+        bool PersistContract(ContractState state, JArray storagePairs)
+        {
+            var snapshot = neoSystem.StoreView.CreateSnapshot();
+            
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
+            snapshot.Add(key, new StorageItem(state));
+            
+            foreach (var pair in storagePairs)
+            {
+                snapshot.Add(
+                    new StorageKey { Id = state.Id, Key = Convert.FromBase64String(pair["k"].AsString())}, 
+                    new StorageItem(Convert.FromBase64String(pair["v"].AsString()))
+                );
+            }
+
+            snapshot.Commit();
+            return true;
+        }
+
+        public Task<bool> PersistContractAsync(ContractState state, JArray storagePairs) 
+            => MakeAsync(() => PersistContract(state, storagePairs));
+
     }
 }

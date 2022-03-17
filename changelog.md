@@ -19,7 +19,7 @@ may not exactly match a publicly released version.
 
 #### Changed
 
-* In `batch` command, resolve non-absolute paths relative to the batch file location
+* In `batch` command, resolve non-absolute paths relative to the batch file location (#210)
 
 ## [3.1.46] 2022-03-22
 

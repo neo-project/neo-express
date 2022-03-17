@@ -13,6 +13,14 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
+## [Unreleased]
+
+### NeoExpress
+
+#### Changed
+
+* In `batch` command, resolve non-absolute paths relative to the batch file location (#210)
+
 ## [3.1.46] 2022-03-22
 
 ### NeoExpress

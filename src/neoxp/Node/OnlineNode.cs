@@ -329,13 +329,23 @@ namespace NeoExpress.Node
             return Array.Empty<ExpressStorage>();
         }
 
-        public async Task<bool> PersistContractAsync(ContractState state, JArray storagePairs)
+        public async Task<bool> PersistContractAsync(ContractState state, (byte[] key, byte[] value)[] storagePairs)
         {
             JObject o = new JObject();
             o["state"] = state.ToJson();
-            o["storage"] = storagePairs;
-            var json = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
-            return true;
+
+            JArray storage = new JArray();
+            foreach (var pair in storagePairs)
+            {
+                JObject kv = new JObject();
+                kv["key"] = Convert.ToBase64String(pair.key);
+                kv["value"] = Convert.ToBase64String(pair.value);
+                storage.Add(kv);
+            } 
+            o["storage"] = storage;
+            
+            var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
+            return response.AsBoolean();
         }
     }
 }

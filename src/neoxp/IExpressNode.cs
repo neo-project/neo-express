@@ -4,7 +4,6 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
 using Neo.Cryptography.ECC;
-using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract;
@@ -42,6 +41,6 @@ namespace NeoExpress
         Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash);
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
 
-        Task<bool> PersistContractAsync(ContractState state, JArray storagePairs);
+        Task<bool> PersistContractAsync(ContractState state, (byte[] key, byte[] value)[] storagePairs);
     }
 }

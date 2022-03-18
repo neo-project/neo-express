@@ -104,7 +104,7 @@ namespace NeoExpress.Node
                 return Task.FromException<T>(ex);
             }
         }
-
+        
         IExpressNode.CheckpointMode CreateCheckpoint(string checkPointPath)
         {
             var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
@@ -408,28 +408,12 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
         
-        private const byte Prefix_Contract = 8;
-        
-        bool PersistContract(ContractState state, JArray storagePairs)
+        bool PersistContract(ContractState state, (byte[] key, byte[] value)[] storagePairs)
         {
-            var snapshot = neoSystem.StoreView.CreateSnapshot();
-            
-            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
-            snapshot.Add(key, new StorageItem(state));
-            
-            foreach (var pair in storagePairs)
-            {
-                snapshot.Add(
-                    new StorageKey { Id = state.Id, Key = Convert.FromBase64String(pair["k"].AsString())}, 
-                    new StorageItem(Convert.FromBase64String(pair["v"].AsString()))
-                );
-            }
-
-            snapshot.Commit();
-            return true;
+            return ExpressOracle.PersistContract(neoSystem.GetSnapshot(), state, storagePairs);
         }
 
-        public Task<bool> PersistContractAsync(ContractState state, JArray storagePairs) 
+        public Task<bool> PersistContractAsync(ContractState state, (byte[] key, byte[] value)[] storagePairs) 
             => MakeAsync(() => PersistContract(state, storagePairs));
 
     }

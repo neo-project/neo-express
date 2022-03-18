@@ -16,7 +16,6 @@ namespace NeoExpress.Commands
         internal class Download
         {
             readonly ExpressChainManagerFactory chainManagerFactory;
-            private RpcClient rpcClient = null!;
             
             public Download(ExpressChainManagerFactory chainManagerFactory)
             {
@@ -27,8 +26,8 @@ namespace NeoExpress.Commands
             [Required]
             internal string Contract { get; init; } = string.Empty;
             
-            [Argument(1, Description = "Source network RPC address")]
-            internal string Source { get; init; } = string.Empty;
+            [Argument(1, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
+            internal string RpcUri { get; } = string.Empty;
             
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
@@ -38,23 +37,25 @@ namespace NeoExpress.Commands
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();
 
-                this.rpcClient = new RpcClient(new Uri(Source));
+                if (!UInt160.TryParse(Contract, out var contractHash))
+                    throw new ArgumentException($"Invalid contract hash: \"{Contract}\"");
+
+                if (!TransactionExecutor.TryParseRpcUri(RpcUri, out var uri))
+                    throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
+
+                using var rpcClient = new RpcClient(uri);
+                var stateAPI = new StateAPI(rpcClient);
+
+                var stateHeight = await stateAPI.GetStateHeightAsync();
+                if (stateHeight.localRootIndex is null)
+                    throw new Exception("Null \"localRootIndex\" in state height response");
+                var stateRoot = await stateAPI.GetStateRootAsync(stateHeight.localRootIndex.Value);
+                var states = await stateAPI.FindStatesAsync(stateRoot.RootHash, contractHash, new byte[0]);
+
+                var contractState = await rpcClient.GetContractStateAsync(Contract).ConfigureAwait(false);
+
+                await expressNode.PersistContractAsync(contractState, states.Results);
                 
-                if (!UInt160.TryParse(Contract, out _))
-                {
-                    await writer.WriteLineAsync($"Invalid contract hash: {Contract} ").ConfigureAwait(false);
-                }
-                else
-                {
-                    // 1. Get ContractState
-                    var state = await this.rpcClient.GetContractStateAsync(Contract).ConfigureAwait(false);
-                    
-                    // 2. Get Full storage of the contract
-                    var storage_pairs = (JArray)await this.rpcClient.RpcSendAsync("getfullstorage", Contract).ConfigureAwait(false);
-                    
-                    await writer.WriteLineAsync(storage_pairs.ToString(true)).ConfigureAwait(false);
-                    await expressNode.PersistContractAsync(state, storage_pairs);
-                }
             }
             
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

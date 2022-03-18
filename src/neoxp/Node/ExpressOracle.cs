@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
@@ -137,6 +138,62 @@ namespace NeoExpress.Node
             tx.SystemFee = request.GasForResponse - tx.NetworkFee;
 
             return tx;
+        }
+
+        public const byte Prefix_Contract = 8;
+        private const byte Prefix_NextAvailableId = 15;
+
+        private static int LastUsedContractId(DataCache snapshot)
+        {
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
+            StorageItem item = snapshot.TryGet(key);
+            return (int)(BigInteger)item;
+        }
+
+        private static void SetLastUsedContractId(DataCache snapshot, int newId)
+        {
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
+            StorageItem item = snapshot.GetAndChange(key);
+            item.Set(newId);
+        }
+        
+        private static int GetNextAvailableId(DataCache snapshot)
+        {
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
+            StorageItem item = snapshot.GetAndChange(key);
+            int value = (int)(BigInteger)item;
+            item.Add(1);
+            return value;
+        }
+        
+        public static bool PersistContract(SnapshotCache snapshot, ContractState state, (byte[] key, byte[] value)[] storagePairs)
+        {
+            // Our local chain might already be using the contract id of the pulled contract, we need to check for this
+            // to avoid having contracts with duplicate id's. This is important because the contract id is part of the
+            // StorageContext used with Storage syscalls and else we'll potentially override storage keys or iterate
+            // over keys that shouldn't exist for one of the contracts.
+            if (state.Id <= LastUsedContractId(snapshot))
+            {
+                state.Id = GetNextAvailableId(snapshot);
+            }
+            else
+            {
+                // Update available id such that a regular contract deploy will use the right next id;
+                SetLastUsedContractId(snapshot, state.Id);
+            }
+            
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
+            snapshot.Add(key, new StorageItem(state));
+            
+            foreach (var pair in storagePairs)
+            {
+                snapshot.Add(
+                    new StorageKey { Id = state.Id, Key = pair.key}, 
+                    new StorageItem(pair.value)
+                );
+            }
+            snapshot.Commit();
+            return true;
         }
     }
 }

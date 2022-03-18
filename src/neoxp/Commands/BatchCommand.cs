@@ -81,8 +81,9 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    await writer.WriteLineAsync($"Restoring checkpoint {Reset.value}");
-                    chainManager.RestoreCheckpoint(Reset.value, true);
+                    var checkpoint = root.Resolve(Reset.value);
+                    await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
+                    chainManager.RestoreCheckpoint(checkpoint, true);
                 }
             }
 

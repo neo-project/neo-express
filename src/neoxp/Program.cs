@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -26,7 +27,7 @@ namespace NeoExpress
         typeof(WalletCommand))]
     class Program
     {
-        public static Task<int> Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             EnableAnsiEscapeSequences();
 
@@ -43,7 +44,28 @@ namespace NeoExpress
                 .UseDefaultConventions()
                 .UseConstructorInjection(services);
 
-            return app.ExecuteAsync(args);
+            try
+            {
+                return await app.ExecuteAsync(args);
+            }
+            catch (CommandParsingException ex)
+            {
+                await Console.Error.WriteLineAsync($"\x1b[1m\x1b[31m\x1b[40m{ex.Message}");
+
+                if (ex is UnrecognizedCommandParsingException uex && uex.NearestMatches.Any())
+                {
+                    await Console.Error.WriteLineAsync();
+                    await Console.Error.WriteLineAsync("Did you mean this?");
+                    await Console.Error.WriteLineAsync("    " + uex.NearestMatches.First());
+                }
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                app.WriteException(ex);
+                return -1;
+            }
         }
 
         [Option]

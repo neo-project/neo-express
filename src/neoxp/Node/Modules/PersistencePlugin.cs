@@ -43,17 +43,32 @@ namespace NeoExpress.Node
                 : null;
         }
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IStorageProvider storageProvider)
+        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IStorageProvider storageProvider,
+            SeekDirection direction = SeekDirection.Forward,
+            IReadOnlySet<UInt160>? contracts = null,
+            IReadOnlySet<string>? eventNames = null)
         {
             var store = GetNotificationsStore(storageProvider);
 
-            return store.Seek(Array.Empty<byte>(), SeekDirection.Forward)
-                .Select(t =>
-                {
-                    var blockIndex = BinaryPrimitives.ReadUInt32BigEndian(t.Key.AsSpan(0, sizeof(uint)));
-                    var txIndex = BinaryPrimitives.ReadUInt16BigEndian(t.Key.AsSpan(sizeof(uint), sizeof(ushort)));
-                    return (blockIndex, txIndex, t.Value.AsSerializable<NotificationRecord>());
-                });
+            var prefix = Array.Empty<byte>();
+            if (direction == SeekDirection.Backward)
+            {
+                prefix = new byte[sizeof(uint) * 2];
+                BinaryPrimitives.WriteUInt32BigEndian(prefix, uint.MaxValue);
+                BinaryPrimitives.WriteUInt32BigEndian(prefix.AsSpan(sizeof(uint)), uint.MaxValue);
+            }
+
+            return store.Seek(prefix, direction)
+                .Select(t => ParseNotification(t.Key, t.Value))
+                .Where(t => contracts is null || contracts.Contains(t.notification.ScriptHash))
+                .Where(t => eventNames is null || eventNames.Contains(t.notification.EventName));
+
+            static (uint blockIndex, ushort txIndex, NotificationRecord notification) ParseNotification(byte[] key, byte[] value)
+            {
+                var blockIndex = BinaryPrimitives.ReadUInt32BigEndian(key.AsSpan(0, sizeof(uint)));
+                var txIndex = BinaryPrimitives.ReadUInt16BigEndian(key.AsSpan(sizeof(uint), sizeof(ushort)));
+                return (blockIndex, txIndex, notification: value.AsSerializable<NotificationRecord>());
+            }
         }
 
         public static IEnumerable<(uint blockIndex, ushort txIndex, TransferNotificationRecord transfer)> GetTransferNotifications(

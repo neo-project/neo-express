@@ -27,13 +27,13 @@ namespace NeoExpress.Node
 {
     internal sealed class OfflineNode : IDisposable, IExpressNode
     {
-        private readonly NeoSystem neoSystem;
-        private readonly ApplicationEngineProvider? applicationEngineProvider;
-        private readonly Wallet nodeWallet;
-        private readonly ExpressChain chain;
-        private readonly RocksDbStorageProvider rocksDbStorageProvider;
-        private readonly Lazy<KeyPair[]> consensusNodesKeys;
-        private bool disposedValue;
+        readonly NeoSystem neoSystem;
+        readonly ApplicationEngineProvider? applicationEngineProvider;
+        readonly Wallet nodeWallet;
+        readonly ExpressChain chain;
+        readonly RocksDbStorageProvider rocksDbStorageProvider;
+        readonly Lazy<KeyPair[]> consensusNodesKeys;
+        bool disposedValue;
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
@@ -406,5 +406,18 @@ namespace NeoExpress.Node
 
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
+
+// warning CS1998: This async method lacks 'await' operators and will run synchronously.
+// EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
+#pragma warning disable 1998 
+        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
+        {
+            var notifications = PersistencePlugin.GetNotifications(this.rocksDbStorageProvider, Neo.Persistence.SeekDirection.Backward, contractFilter, eventFilter);
+            foreach (var (block, _, notification) in notifications)
+            {
+                yield return (block, notification);
+            }
+        }
+#pragma warning restore 1998
     }
 }

@@ -37,7 +37,7 @@ namespace NeoExpress.Commands
                     if (Json)
                     {
                         using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                        writer.WriteStartArray();
+                        writer.WriteStartObject();
 
                         foreach (var node in chain.ConsensusNodes)
                         {
@@ -49,14 +49,12 @@ namespace NeoExpress.Commands
                             PrintWalletInfo(wallet);
                         }
 
-                        writer.WriteEndArray();
+                        writer.WriteEndObject();
 
                         void PrintWalletInfo(ExpressWallet wallet)
                         {
-                            writer.WriteStartObject();
-                            writer.WritePropertyName("name");
-                            writer.WriteValue(wallet.Name);
-                            writer.WritePropertyName("accounts");
+                            writer.WritePropertyName(wallet.Name);
+
                             writer.WriteStartArray();
                             foreach (var account in wallet.Accounts)
                             {
@@ -77,7 +75,6 @@ namespace NeoExpress.Commands
                                 writer.WriteEndObject();
                             }
                             writer.WriteEndArray();
-                            writer.WriteEndObject();
                         }
                     }
                     else

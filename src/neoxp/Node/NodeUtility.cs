@@ -17,7 +17,7 @@ using NeoExpress.Models;
 
 namespace NeoExpress.Node
 {
-    class ExpressOracle
+    class NodeUtility
     {
         public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, IReadOnlyList<ECPoint> oracleNodes)
         {
@@ -166,7 +166,7 @@ namespace NeoExpress.Node
             return value;
         }
         
-        public static bool PersistContract(SnapshotCache snapshot, ContractState state, (byte[] key, byte[] value)[] storagePairs)
+        public static int PersistContract(SnapshotCache snapshot, ContractState state, (string key, string value)[] storagePairs)
         {
             // Our local chain might already be using the contract id of the pulled contract, we need to check for this
             // to avoid having contracts with duplicate id's. This is important because the contract id is part of the
@@ -188,12 +188,12 @@ namespace NeoExpress.Node
             foreach (var pair in storagePairs)
             {
                 snapshot.Add(
-                    new StorageKey { Id = state.Id, Key = pair.key}, 
-                    new StorageItem(pair.value)
+                    new StorageKey { Id = state.Id, Key = Convert.FromBase64String(pair.key)}, 
+                    new StorageItem(Convert.FromBase64String(pair.value))
                 );
             }
             snapshot.Commit();
-            return true;
+            return state.Id;
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
@@ -259,6 +260,49 @@ namespace NeoExpress
                     accountHash = null;
                     return false;
                 }
+            }
+        }
+        
+        
+        private static JObject[] MakeFindStatesParams(
+            UInt256 rootHash,
+            UInt160 scriptHash,
+            ReadOnlySpan<byte> prefix,
+            ReadOnlySpan<byte> from = default (ReadOnlySpan<byte>),
+            int? count = null)
+        {
+            JObject[] jobjectArray = new JObject[count.HasValue ? 5 : 4];
+            jobjectArray[0] = (JObject) rootHash.ToString();
+            jobjectArray[1] = (JObject) scriptHash.ToString();
+            jobjectArray[2] = (JObject) Convert.ToBase64String(prefix);
+            jobjectArray[3] = (JObject) Convert.ToBase64String(from);
+            if (count.HasValue)
+                jobjectArray[4] = (JObject) (double) count.Value;
+            return jobjectArray;
+        }
+        public static async Task<ExpressRpcFoundStates> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
+        {
+            ExpressRpcFoundStates? states = null;
+            var start = from.ToArray();
+            while (true)
+            {
+                var @params = MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start, pageSize);
+                var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
+                var foundStates = ExpressRpcFoundStates.FromJson(response);
+                
+                if (states is null)
+                {
+                    states = foundStates;
+                } else
+                {
+                    states.Results = states.Results.Concat(foundStates.Results).ToArray();
+                }
+                
+                if (!foundStates.Truncated || foundStates.Results.Length == 0)
+                {
+                    return states;
+                }
+                start = Convert.FromBase64String(foundStates.Results[foundStates.Results.Length - 1].key);
             }
         }
     }

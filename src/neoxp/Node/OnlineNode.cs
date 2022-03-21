@@ -196,7 +196,7 @@ namespace NeoExpress.Node
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
@@ -329,7 +329,7 @@ namespace NeoExpress.Node
             return Array.Empty<ExpressStorage>();
         }
 
-        public async Task<bool> PersistContractAsync(ContractState state, (byte[] key, byte[] value)[] storagePairs)
+        public async Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs)
         {
             JObject o = new JObject();
             o["state"] = state.ToJson();
@@ -338,14 +338,14 @@ namespace NeoExpress.Node
             foreach (var pair in storagePairs)
             {
                 JObject kv = new JObject();
-                kv["key"] = Convert.ToBase64String(pair.key);
-                kv["value"] = Convert.ToBase64String(pair.value);
+                kv["key"] = pair.key;
+                kv["value"] = pair.value;
                 storage.Add(kv);
             } 
             o["storage"] = storage;
-            
+
             var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
-            return response.AsBoolean();
+            return (int)response.AsNumber();
         }
     }
 }

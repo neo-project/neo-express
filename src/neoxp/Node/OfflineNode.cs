@@ -179,9 +179,9 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
             return tx.Hash;
@@ -408,12 +408,12 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
         
-        bool PersistContract(ContractState state, (byte[] key, byte[] value)[] storagePairs)
+        int PersistContract(ContractState state, (string key, string value)[] storagePairs)
         {
-            return ExpressOracle.PersistContract(neoSystem.GetSnapshot(), state, storagePairs);
+            return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs);
         }
 
-        public Task<bool> PersistContractAsync(ContractState state, (byte[] key, byte[] value)[] storagePairs) 
+        public Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs) 
             => MakeAsync(() => PersistContract(state, storagePairs));
 
     }

@@ -41,6 +41,6 @@ namespace NeoExpress
         Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash);
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
 
-        Task<bool> PersistContractAsync(ContractState state, (byte[] key, byte[] value)[] storagePairs);
+        Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs);
     }
 }

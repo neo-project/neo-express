@@ -3,17 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
-using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
-using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
@@ -239,7 +236,7 @@ namespace NeoExpress.Node
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
+            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
             return tx == null ? null : Convert.ToBase64String(tx.ToArray());
         }
 
@@ -413,19 +410,14 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject? ExpressPersistContract(JObject @params)
         {
-            
             var state = RpcClient.ContractStateFromJson(@params[0]["state"]);
-            var storagePairs = new (byte[] Key, byte[] value)[0];
-
-            foreach (var pair in (JArray)@params[0]["storage"])
-            {
-                storagePairs.Append((
-                    Convert.FromBase64String(pair["key"].AsString()),
-                    Convert.FromBase64String(pair["value"].AsString())
-                    ));
-            }
+            var storagePairs = ((JArray)@params[0]["storage"])
+                .Select(s => (
+                    s["key"].AsString(), 
+                    s["value"].AsString())
+                ).ToArray();
             
-            return ExpressOracle.PersistContract(neoSystem.GetSnapshot(), state, storagePairs);
+            return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs);
         }
 
         static readonly IReadOnlySet<string> nep11PropertyNames = new HashSet<string>

@@ -38,24 +38,29 @@ namespace NeoExpress.Commands
                 var expressNode = chainManager.GetExpressNode();
 
                 if (!UInt160.TryParse(Contract, out var contractHash))
-                    throw new ArgumentException($"Invalid contract hash: \"{Contract}\"");
+                {
+                    throw new ArgumentException($"Invalid contract hash: \"{Contract}\"");    
+                }
 
                 if (!TransactionExecutor.TryParseRpcUri(RpcUri, out var uri))
+                {
                     throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
+                }
 
                 using var rpcClient = new RpcClient(uri);
                 var stateAPI = new StateAPI(rpcClient);
 
                 var stateHeight = await stateAPI.GetStateHeightAsync();
                 if (stateHeight.localRootIndex is null)
+                {
                     throw new Exception("Null \"localRootIndex\" in state height response");
-                var stateRoot = await stateAPI.GetStateRootAsync(stateHeight.localRootIndex.Value);
-                var states = await stateAPI.FindStatesAsync(stateRoot.RootHash, contractHash, new byte[0]);
+                }
 
+                var stateRoot = await stateAPI.GetStateRootAsync(stateHeight.localRootIndex.Value);
+                var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, contractHash, new byte[0]);
                 var contractState = await rpcClient.GetContractStateAsync(Contract).ConfigureAwait(false);
 
                 await expressNode.PersistContractAsync(contractState, states.Results);
-                
             }
             
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

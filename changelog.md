@@ -21,6 +21,10 @@ may not exactly match a publicly released version.
 
 * In `batch` command, resolve non-absolute paths relative to the batch file location (#210)
 
+#### Fixed
+
+* unknown command has no exception handler ([#211](https://github.com/neo-project/neo-express/issues/211))
+
 ## [3.1.46] 2022-03-22
 
 ### NeoExpress

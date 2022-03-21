@@ -164,8 +164,16 @@ namespace NeoExpress
             }
         }
 
-        public static async Task<UInt256> DeployAsync(this IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, Wallet wallet, UInt160 accountHash, WitnessScope witnessScope)
+        public static async Task<UInt256> DeployAsync(this IExpressNode expressNode,
+                                                      NefFile nefFile,
+                                                      ContractManifest manifest,
+                                                      Wallet wallet,
+                                                      UInt160 accountHash,
+                                                      WitnessScope witnessScope,
+                                                      ContractParameter? data)
         {
+            data ??= new ContractParameter(ContractParameterType.Any);
+
             // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
             Neo.VM.Script script = nefFile.Script;
             for (var i = 0; i < script.Length;)
@@ -181,13 +189,16 @@ namespace NeoExpress
                     {
                         throw new FormatException($"Invalid opcode found at {i}-{((byte)instruction.OpCode).ToString("x2")}");
                     }
-
                     i += instruction.Size;
                 }
             }
 
             using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.ContractManagement.Hash, "deploy", nefFile.ToArray(), manifest.ToJson().ToString());
+            sb.EmitDynamicCall(NativeContract.ContractManagement.Hash,
+                "deploy",
+                nefFile.ToArray(),
+                manifest.ToJson().ToString(),
+                data);
             return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
         }
 

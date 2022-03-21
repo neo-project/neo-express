@@ -20,6 +20,11 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static string Resolve(this System.IO.Abstractions.IDirectoryInfo @this, string path)
+            => @this.FileSystem.Path.IsPathFullyQualified(path)
+                ? path
+                : @this.FileSystem.Path.Combine(@this.FullName, path);
+
         public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
         {
             if (!dictionary.TryGetValue(key, out var value))

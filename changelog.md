@@ -13,15 +13,37 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## Unreleased
+## [Unreleased]
 
-### Added
+### NeoExpress
 
-#### NeoExpress
+#### Added
 
-* Added `rpc.MaxIteratorResultItems` setting
+* `--json` option to `wallet list` command (3ea29881d8be352cedaeebd8b8b16e49aee3aed6)
+* `--data` option to `contract deploy` command (#214)
 
-## [3.1.38] 2021-14
+#### Changed
+
+* In `batch` command, resolve non-absolute paths relative to the batch file location (#210)
+
+#### Fixed
+
+* unknown command has no exception handler ([#211](https://github.com/neo-project/neo-express/issues/211))
+
+## [3.1.46] 2022-03-22
+
+### NeoExpress
+
+#### Added
+
+* Added `rpc.MaxIteratorResultItems` setting (#202)
+
+#### Fixed
+
+* Write block/tx/applog JSON to console using newtonsoft to avoid breaking base64 encoded values (#205)
+* Update lib-bctk dependency to support Apple Silicon ([#204](https://github.com/neo-project/neo-express/issues/204))
+
+## [3.1.38] 2021-12-14
 
 ### Added 
 

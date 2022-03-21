@@ -46,7 +46,7 @@ namespace NeoExpress
 
         public IExpressNode ExpressNode => expressNode;
 
-        public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, bool force)
+        public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, string data, bool force)
         {
             if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
@@ -76,8 +76,23 @@ namespace NeoExpress
                 }
             }
 
-            var txHash = await expressNode.DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, "Deployment", json).ConfigureAwait(false);
+            ContractParameter dataParam;
+            if (string.IsNullOrEmpty(data))
+            {
+                dataParam = new ContractParameter(ContractParameterType.Any);
+            }
+            else
+            {
+                var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+                dataParam = parser.ParseParameter(data);
+            }
+
+            var txHash = await expressNode
+                .DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope, dataParam)
+                .ConfigureAwait(false);
+            await writer
+                .WriteTxHashAsync(txHash, "Deployment", json)
+                .ConfigureAwait(false);
         }
 
         public async Task<Script> LoadInvocationScriptAsync(string invocationFile)

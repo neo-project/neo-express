@@ -118,6 +118,7 @@ namespace NeoExpress.Commands
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope,
+                                cmd.Model.Data,
                                 cmd.Model.Force).ConfigureAwait(false);
                             break;
                         }

@@ -32,7 +32,10 @@ namespace NeoExpress.Commands
             [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
             internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
-            [Option(Description = "password to use for NEP-2/NEP-6 account")]
+            [Option(Description = "Optional data parameter to pass to _deploy operation")]
+            internal string Data { get; init; } = string.Empty;
+
+            [Option(Description = "Password to use for NEP-2/NEP-6 account")]
             internal string Password { get; init; } = string.Empty;
 
             [Option(Description = "Path to neo-express data file")]
@@ -54,7 +57,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Force).ConfigureAwait(false);
+                    await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -63,7 +66,6 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
-
         }
     }
 }

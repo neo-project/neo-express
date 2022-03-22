@@ -341,11 +341,49 @@ namespace NeoExpress.Node
                 kv["key"] = pair.key;
                 kv["value"] = pair.value;
                 storage.Add(kv);
-            } 
+            }
+
             o["storage"] = storage;
 
             var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
             return (int)response.AsNumber();
+        }
+
+        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
+        {
+            JObject contractsArg = (contractFilter ?? Enumerable.Empty<UInt160>())
+                .Select(c => (JString)c.ToString())
+                .ToArray();
+            JObject eventsArg = (eventFilter ?? Enumerable.Empty<string>())
+                .Select(e => (JString)e)
+                .ToArray();
+
+            var count = 0;
+
+            while (true)
+            {
+                var json = await rpcClient.RpcSendAsync("expressenumnotifications", contractsArg, eventsArg, count, 3)
+                    .ConfigureAwait(false);
+
+                var truncated = json["truncated"].AsBoolean();
+                var values = (JArray)json["notifications"];
+
+                foreach (var v in values)
+                {
+                    var blockIndex = (uint)v["block-index"].AsNumber();
+                    var scriptHash = UInt160.Parse(v["script-hash"].AsString());
+                    var eventName = v["event-name"].AsString();
+                    var invType = (InventoryType)(byte)v["inventory-type"].AsNumber();
+                    var invHash = UInt256.Parse(v["inventory-hash"].AsString());
+                    var state = (Neo.VM.Types.Array)Neo.Network.RPC.Utility.StackItemFromJson(v["state"]);
+                    var notification = new NotificationRecord(scriptHash, eventName, state, invType, invHash);
+                    yield return (blockIndex, notification);
+                }
+
+                if (!truncated) break;
+
+                count += values.Count;
+            }
         }
     }
 }

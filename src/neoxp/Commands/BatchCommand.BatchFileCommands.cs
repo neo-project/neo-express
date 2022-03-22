@@ -50,6 +50,9 @@ namespace NeoExpress.Commands
                     [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
+                    [Option(Description = "Optional data parameter to pass to _deploy operation")]
+                    internal string Data { get; init; } = string.Empty;
+
                     [Option(Description = "Deploy contract regardless of name conflict")]
                     internal bool Force { get; }
                 }

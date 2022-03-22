@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 using NeoExpress.Node;
 
 namespace NeoExpress.Commands
@@ -43,8 +44,10 @@ namespace NeoExpress.Commands
             try
             {
                 if (!fileSystem.File.Exists(BatchFile)) throw new Exception($"Batch file {BatchFile} couldn't be found");
+                var batchFileInfo = fileSystem.FileInfo.FromFileName(BatchFile);
+
                 var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
-                await ExecuteAsync(commands, console.Out).ConfigureAwait(false);
+                await ExecuteAsync(batchFileInfo.Directory, commands, console.Out).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)
@@ -54,9 +57,13 @@ namespace NeoExpress.Commands
             }
         }
 
-        internal async Task ExecuteAsync(ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
+        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
         {
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var input = root.Resolve(string.IsNullOrEmpty(Input)
+                ? Constants.DEFAULT_EXPRESS_FILENAME
+                : Input);
+
+            var (chainManager, _) = chainManagerFactory.LoadChain(input);
             if (chainManager.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");
@@ -75,8 +82,9 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    await writer.WriteLineAsync($"Restoring checkpoint {Reset.value}");
-                    chainManager.RestoreCheckpoint(Reset.value, true);
+                    var checkpoint = root.Resolve(Reset.value);
+                    await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
+                    chainManager.RestoreCheckpoint(checkpoint, true);
                 }
             }
 
@@ -99,7 +107,7 @@ namespace NeoExpress.Commands
                         {
                             _ = await chainManager.CreateCheckpointAsync(
                                 txExec.ExpressNode,
-                                cmd.Model.Name,
+                                root.Resolve(cmd.Model.Name),
                                 cmd.Model.Force,
                                 writer).ConfigureAwait(false);
                             break;
@@ -107,10 +115,11 @@ namespace NeoExpress.Commands
                     case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
                         {
                             await txExec.ContractDeployAsync(
-                                cmd.Model.Contract,
+                                root.Resolve(cmd.Model.Contract),
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope,
+                                cmd.Model.Data,
                                 cmd.Model.Force).ConfigureAwait(false);
                             break;
                         }
@@ -128,7 +137,7 @@ namespace NeoExpress.Commands
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                         {
                             var script = await txExec.LoadInvocationScriptAsync(
-                                cmd.Model.InvocationFile).ConfigureAwait(false);
+                                root.Resolve(cmd.Model.InvocationFile)).ConfigureAwait(false);
                             await txExec.ContractInvokeAsync(
                                 script,
                                 cmd.Model.Account,
@@ -166,7 +175,7 @@ namespace NeoExpress.Commands
                         {
                             await txExec.OracleResponseAsync(
                                 cmd.Model.Url,
-                                cmd.Model.ResponsePath).ConfigureAwait(false);
+                                root.Resolve(cmd.Model.ResponsePath)).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
@@ -188,7 +197,9 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
                         {
-                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source).ConfigureAwait(false);
+                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(
+                                root.Resolve(cmd.Model.Source))
+                                .ConfigureAwait(false);
                             if (values.TryPickT0(out var policyValues, out _))
                             {
                                 await txExec.SetPolicyAsync(policyValues, cmd.Model.Account, cmd.Model.Password);

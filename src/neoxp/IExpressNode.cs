@@ -42,5 +42,6 @@ namespace NeoExpress
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
 
         Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs);
+        IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter);
     }
 }

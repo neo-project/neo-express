@@ -20,6 +20,11 @@ namespace NeoExpress
 {
     static class Extensions
     {
+        public static string Resolve(this System.IO.Abstractions.IDirectoryInfo @this, string path)
+            => @this.FileSystem.Path.IsPathFullyQualified(path)
+                ? path
+                : @this.FileSystem.Path.Combine(@this.FullName, path);
+
         public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
         {
             if (!dictionary.TryGetValue(key, out var value))
@@ -40,41 +45,41 @@ namespace NeoExpress
 
             WriteJson(writer, json);
             console.Out.WriteLine();
+        }
 
-            static void WriteJson(Newtonsoft.Json.JsonTextWriter writer, Neo.IO.Json.JObject json)
+        public static void WriteJson(this Newtonsoft.Json.JsonTextWriter writer, Neo.IO.Json.JObject json)
+        {
+            switch (json)
             {
-                switch (json)
-                {
-                    case null:
-                        writer.WriteNull();
-                        break;
-                    case Neo.IO.Json.JBoolean boolean:
-                        writer.WriteValue(boolean.Value);
-                        break;
-                    case Neo.IO.Json.JNumber number:
-                        writer.WriteValue(number.Value);
-                        break;
-                    case Neo.IO.Json.JString @string:
-                        writer.WriteValue(@string.Value);
-                        break;
-                    case Neo.IO.Json.JArray @array:
-                        writer.WriteStartArray();
-                        foreach (var value in @array)
-                        {
-                            WriteJson(writer, value);
-                        }
-                        writer.WriteEndArray();
-                        break;
-                    case Neo.IO.Json.JObject @object:
-                        writer.WriteStartObject();
-                        foreach (var (key, value) in @object.Properties)
-                        {
-                            writer.WritePropertyName(key);
-                            WriteJson(writer, value);
-                        }
-                        writer.WriteEndObject();
-                        break;
-                }
+                case null:
+                    writer.WriteNull();
+                    break;
+                case Neo.IO.Json.JBoolean boolean:
+                    writer.WriteValue(boolean.Value);
+                    break;
+                case Neo.IO.Json.JNumber number:
+                    writer.WriteValue(number.Value);
+                    break;
+                case Neo.IO.Json.JString @string:
+                    writer.WriteValue(@string.Value);
+                    break;
+                case Neo.IO.Json.JArray @array:
+                    writer.WriteStartArray();
+                    foreach (var value in @array)
+                    {
+                        WriteJson(writer, value);
+                    }
+                    writer.WriteEndArray();
+                    break;
+                case Neo.IO.Json.JObject @object:
+                    writer.WriteStartObject();
+                    foreach (var (key, value) in @object.Properties)
+                    {
+                        writer.WritePropertyName(key);
+                        WriteJson(writer, value);
+                    }
+                    writer.WriteEndObject();
+                    break;
             }
         }
 

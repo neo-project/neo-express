@@ -46,7 +46,7 @@ namespace NeoExpress
             console.Out.WriteLine();
         }
 
-        public static void WriteJson(this Newtonsoft.Json.JsonTextWriter writer, Neo.IO.Json.JObject json)
+        public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.IO.Json.JObject json)
         {
             switch (json)
             {

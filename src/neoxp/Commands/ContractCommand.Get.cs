@@ -4,6 +4,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.SmartContract.Manifest;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -45,42 +47,29 @@ namespace NeoExpress.Commands
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();
 
-                if (UInt160.TryParse(Contract, out var hash))
+                using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+                jsonWriter.WriteStartArray();
+
+                if (UInt160.TryParse(Contract, out var contractHash))
                 {
-                    var manifest = await expressNode.GetContractAsync(hash).ConfigureAwait(false);
-                    await writer.WriteLineAsync(manifest.ToJson().ToString(true)).ConfigureAwait(false);
+                    var manifest = await expressNode.GetContractAsync(contractHash).ConfigureAwait(false);
+                    WriteContract(jsonWriter, contractHash, manifest);
                 }
                 else
                 {
                     var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
-                    if (contracts.Count == 0)
-                    {
-                        await writer.WriteLineAsync($"No contracts named {Contract} found").ConfigureAwait(false);
-                    }
-                    else if (contracts.Count == 1)
-                    {
-                        await writer.WriteLineAsync(contracts[0].manifest.ToJson().ToString(true)).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        await writer.WriteLineAsync("[").ConfigureAwait(false);
-                        var first = true;
-                        for (int i = 0; i < contracts.Count; i++)
-                        {
-                            if (!contracts[i].manifest.Name.Equals(Contract)) continue;
 
-                            await writer.WriteLineAsync(contracts[i].manifest.ToJson().ToString(true)).ConfigureAwait(false);
-                            if (first)
-                            {
-                                first = false;
-                            }
-                            else
-                            {
-                                await writer.WriteLineAsync(",").ConfigureAwait(false);
-                            }
-                        }
-                        await writer.WriteLineAsync("]").ConfigureAwait(false);
+                    foreach (var (hash, manifest) in contracts)
+                    {
+                        WriteContract(jsonWriter, hash, manifest);
                     }
+                }
+
+                static void WriteContract(JsonWriter writer, UInt160 hash, ContractManifest manifest)
+                {
+                    var json = manifest.ToJson();
+                    json["hash"] = hash.ToString();
+                    writer.WriteJson(json);
                 }
             }
         }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -113,6 +114,17 @@ namespace NeoExpress.Commands
                                 cmd.Model.Force).ConfigureAwait(false);
                             break;
                         }
+                    case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
+                       {
+                        var expressNode = chainManager.GetExpressNode();
+                        var result = await NodeUtility.ProcessDownloadParamsAsync(
+                            cmd.Model.Contract, 
+                            cmd.Model.RpcUri, 
+                            cmd.Model.Height, 
+                            true).ConfigureAwait(false);
+                        await expressNode.PersistContractAsync(result.contractState, result.storagePairs).ConfigureAwait(false);
+                        break;
+                       }
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                         {
                             var script = await txExec.LoadInvocationScriptAsync(

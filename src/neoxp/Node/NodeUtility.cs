@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
@@ -165,6 +167,49 @@ namespace NeoExpress.Node
             item.Add(1);
             return value;
         }
+
+        public static async Task<(ContractState contractState, (string key, string value)[] storagePairs)> ProcessDownloadParamsAsync(
+            string contractHash,
+            string rpcUri,
+            uint stateHeight,
+            bool isBatchCommand)
+        {
+            if (!UInt160.TryParse(contractHash, out var contractHash_))
+            {
+                throw new ArgumentException($"Invalid contract hash: \"{contractHash}\"");    
+            }
+
+            if (!TransactionExecutor.TryParseRpcUri(rpcUri, out var uri))
+            {
+                throw new ArgumentException($"Invalid RpcUri value \"{rpcUri}\"");
+            }
+
+            if (isBatchCommand && stateHeight == 0)
+            {
+                throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
+            }
+            
+            using var rpcClient = new RpcClient(uri);
+            var stateAPI = new StateAPI(rpcClient);
+                
+            uint height = stateHeight;
+            if (height == 0)
+            {
+                var stateHeight_ = await stateAPI.GetStateHeightAsync();
+                if (stateHeight_.localRootIndex is null)
+                {
+                    throw new Exception("Null \"localRootIndex\" in state height response");
+                }
+                height = stateHeight_.localRootIndex.Value;
+            }
+
+            var stateRoot = await stateAPI.GetStateRootAsync(height);
+            var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, contractHash_, new byte[0]);
+            var contractState = await rpcClient.GetContractStateAsync(contractHash).ConfigureAwait(false);
+
+            return (contractState, states.Results);
+        }
+            
         
         public static int PersistContract(SnapshotCache snapshot, ContractState state, (string key, string value)[] storagePairs)
         {

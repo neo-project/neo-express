@@ -29,7 +29,7 @@ namespace NeoExpress.Commands
             }
 
             [Command("contract")]
-            [Subcommand(typeof(Deploy), typeof(Invoke), typeof(Run))]
+            [Subcommand(typeof(Deploy), typeof(Download), typeof(Invoke), typeof(Run))]
             internal class Contract
             {
                 [Command("deploy")]
@@ -52,6 +52,20 @@ namespace NeoExpress.Commands
 
                     [Option(Description = "Deploy contract regardless of name conflict")]
                     internal bool Force { get; }
+                }
+                
+                [Command("download")]
+                internal class Download
+                {
+                    [Argument(0, Description = "Contract invocation hash")]
+                    [Required]
+                    internal string Contract { get; init; } = string.Empty;
+            
+                    [Argument(1, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
+                    internal string RpcUri { get; } = string.Empty;
+            
+                    [Argument(2, Description = "Block height to get contract state for")]
+                    internal uint Height { get; } = 0;
                 }
 
                 [Command("invoke")]

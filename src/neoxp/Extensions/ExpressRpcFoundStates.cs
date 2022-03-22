@@ -8,9 +8,9 @@ namespace NeoExpress
     public class ExpressRpcFoundStates
     {
         public bool Truncated;
-        public (string key, string value)[] Results;
-        public byte[]? FirstProof;
-        public byte[]? LastProof;
+        public (string key, string value)[] Results = new (string key, string value)[0];
+        public (bool hasValue, byte[]? value) FirstProof;
+        public (bool hasValue, byte[]? value) LastProof;
 
         public static ExpressRpcFoundStates FromJson(JObject json)
         {
@@ -28,7 +28,7 @@ namespace NeoExpress
             };
         }
 
-        static byte[] ProofFromJson(JObject json)
-            => json == null ? null : Convert.FromBase64String(json.AsString());
+        private static (bool hasValue, byte[]? value) ProofFromJson(JObject json)
+            => json == null ? (false, null) : (true, Convert.FromBase64String(json.AsString()));
     }
 }

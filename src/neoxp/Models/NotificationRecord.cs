@@ -16,8 +16,8 @@ namespace NeoExpress.Models
         public UInt160 ScriptHash { get; private set; } = null!;
         public string EventName { get; private set; } = null!;
         public Neo.VM.Types.Array State { get; private set; } = null!;
-        public UInt256 InventoryHash { get; private set; } = UInt256.Zero;
         public InventoryType InventoryType { get; private set; }
+        public UInt256 InventoryHash { get; private set; } = UInt256.Zero;
 
         public NotificationRecord()
         {
@@ -30,9 +30,18 @@ namespace NeoExpress.Models
             EventName = notification.EventName;
             if (notification.ScriptContainer is IInventory inventory)
             {
-                InventoryHash = inventory.Hash;
                 InventoryType = inventory.InventoryType;
+                InventoryHash = inventory.Hash;
             }
+        }
+
+        public NotificationRecord(UInt160 scriptHash, string eventName, Neo.VM.Types.Array state, InventoryType inventoryType, UInt256 inventoryHash)
+        {
+            ScriptHash = scriptHash;
+            EventName = eventName;
+            State = state;
+            InventoryType = inventoryType;
+            InventoryHash = inventoryHash;
         }
 
         public int Size => ScriptHash.Size

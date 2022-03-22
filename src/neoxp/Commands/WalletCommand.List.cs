@@ -34,79 +34,99 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var chain = chainManager.Chain;
 
+                    var genesis = chain.GetGenesisAccount(chainManager.ProtocolSettings);
+                    var genesisAccount = genesis.wallet.GetAccount(genesis.accountHash)
+                        ?? throw new Exception("Failed to retrieve genesis account");
+
                     if (Json)
                     {
                         using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                        writer.WriteStartArray();
+                        writer.WriteStartObject();
+
+                        writer.WritePropertyName(ExpressChainExtensions.GENESIS);
+                        PrintAccountInfo(writer, ExpressChainExtensions.GENESIS, genesisAccount);
 
                         foreach (var node in chain.ConsensusNodes)
                         {
-                            PrintWalletInfo(node.Wallet);
+                            PrintWalletInfo(writer, node.Wallet, chainManager.ProtocolSettings);
                         }
 
                         foreach (var wallet in chain.Wallets)
                         {
-                            PrintWalletInfo(wallet);
+                            PrintWalletInfo(writer, wallet, chainManager.ProtocolSettings);
                         }
 
-                        writer.WriteEndArray();
+                        writer.WriteEndObject();
 
-                        void PrintWalletInfo(ExpressWallet wallet)
+                        static void PrintWalletInfo(JsonTextWriter writer, ExpressWallet wallet, Neo.ProtocolSettings protocolSettings)
                         {
-                            writer.WriteStartObject();
-                            writer.WritePropertyName("name");
-                            writer.WriteValue(wallet.Name);
-                            writer.WritePropertyName("accounts");
+                            writer.WritePropertyName(wallet.Name);
+
                             writer.WriteStartArray();
                             foreach (var account in wallet.Accounts)
                             {
-                                var devAccount = DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, account);
-                                var keyPair = devAccount.GetKey() ?? throw new Exception();
-
-                                writer.WriteStartObject();
-                                writer.WritePropertyName("name");
-                                writer.WriteValue(account.IsDefault ? "Default" : account.Label);
-                                writer.WritePropertyName("address");
-                                writer.WriteValue(devAccount.Address);
-                                writer.WritePropertyName("script-hash");
-                                writer.WriteValue(devAccount.ScriptHash.ToString());
-                                writer.WritePropertyName("private-key");
-                                writer.WriteValue(keyPair.PrivateKey.ToHexString());
-                                writer.WritePropertyName("public-key");
-                                writer.WriteValue(keyPair.PublicKey.EncodePoint(true).ToHexString());
-                                writer.WriteEndObject();
+                                var devAccount = DevWalletAccount.FromExpressWalletAccount(protocolSettings, account);
+                                PrintAccountInfo(writer, wallet.Name, devAccount);
                             }
                             writer.WriteEndArray();
+                        }
+
+                        static void PrintAccountInfo(JsonTextWriter writer, string walletName, Neo.Wallets.WalletAccount account)
+                        {
+                            var keyPair = account.GetKey() ?? throw new Exception();
+
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("account-name");
+                            writer.WriteValue(walletName);
+                            writer.WritePropertyName("account-label");
+                            writer.WriteValue(account.IsDefault ? "Default" : account.Label);
+                            writer.WritePropertyName("address");
+                            writer.WriteValue(account.Address);
+                            writer.WritePropertyName("script-hash");
+                            writer.WriteValue(account.ScriptHash.ToString());
+                            writer.WritePropertyName("private-key");
+                            writer.WriteValue(keyPair.PrivateKey.ToHexString());
+                            writer.WritePropertyName("public-key");
+                            writer.WriteValue(keyPair.PublicKey.EncodePoint(true).ToHexString());
                             writer.WriteEndObject();
                         }
                     }
                     else
                     {
                         var writer = console.Out;
+
+                        writer.WriteLine(ExpressChainExtensions.GENESIS);
+                        PrintAccountInfo(writer, genesisAccount);
+
                         foreach (var node in chain.ConsensusNodes)
                         {
-                            PrintWalletInfo(node.Wallet);
+                            PrintWalletInfo(writer, node.Wallet, chainManager.ProtocolSettings);
                         }
 
                         foreach (var wallet in chain.Wallets)
                         {
-                            PrintWalletInfo(wallet);
+                            PrintWalletInfo(writer, wallet, chainManager.ProtocolSettings);
                         }
 
-                        void PrintWalletInfo(ExpressWallet wallet)
+                        static void PrintWalletInfo(TextWriter writer, ExpressWallet wallet, Neo.ProtocolSettings protocolSettings)
                         {
                             writer.WriteLine(wallet.Name);
 
                             foreach (var account in wallet.Accounts)
                             {
-                                var devAccount = DevWalletAccount.FromExpressWalletAccount(chainManager.ProtocolSettings, account);
-                                var keyPair = devAccount.GetKey() ?? throw new Exception();
-
-                                writer.WriteLine($"  {devAccount.Address} ({(account.IsDefault ? "Default" : account.Label)})");
-                                writer.WriteLine($"    script hash: {BitConverter.ToString(devAccount.ScriptHash.ToArray())}");
-                                writer.WriteLine($"    public key:    {keyPair.PublicKey.EncodePoint(true).ToHexString()}");
-                                writer.WriteLine($"    private key:   {keyPair.PrivateKey.ToHexString()}");
+                                var devAccount = DevWalletAccount.FromExpressWalletAccount(protocolSettings, account);
+                                PrintAccountInfo(writer, devAccount);
                             }
+                        }
+
+                        static void PrintAccountInfo(TextWriter writer, Neo.Wallets.WalletAccount account)
+                        {
+                            var keyPair = account.GetKey() ?? throw new Exception();
+
+                            writer.WriteLine($"  {account.Address} ({(account.IsDefault ? "Default" : account.Label)})");
+                            writer.WriteLine($"    script hash: {BitConverter.ToString(account.ScriptHash.ToArray())}");
+                            writer.WriteLine($"    public key:    {keyPair.PublicKey.EncodePoint(true).ToHexString()}");
+                            writer.WriteLine($"    private key:   {keyPair.PrivateKey.ToHexString()}");
                         }
                     }
 

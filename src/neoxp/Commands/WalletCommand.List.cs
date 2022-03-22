@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
                         writer.WriteStartObject();
 
                         writer.WritePropertyName(ExpressChainExtensions.GENESIS);
-                        PrintAccountInfo(writer, genesisAccount);
+                        PrintAccountInfo(writer, ExpressChainExtensions.GENESIS, genesisAccount);
 
                         foreach (var node in chain.ConsensusNodes)
                         {
@@ -66,17 +66,19 @@ namespace NeoExpress.Commands
                             foreach (var account in wallet.Accounts)
                             {
                                 var devAccount = DevWalletAccount.FromExpressWalletAccount(protocolSettings, account);
-                                PrintAccountInfo(writer, devAccount);
+                                PrintAccountInfo(writer, wallet.Name, devAccount);
                             }
                             writer.WriteEndArray();
                         }
 
-                        static void PrintAccountInfo(JsonTextWriter writer, Neo.Wallets.WalletAccount account)
+                        static void PrintAccountInfo(JsonTextWriter writer, string walletName, Neo.Wallets.WalletAccount account)
                         {
                             var keyPair = account.GetKey() ?? throw new Exception();
 
                             writer.WriteStartObject();
-                            writer.WritePropertyName("name");
+                            writer.WritePropertyName("account-name");
+                            writer.WriteValue(walletName);
+                            writer.WritePropertyName("account-label");
                             writer.WriteValue(account.IsDefault ? "Default" : account.Label);
                             writer.WritePropertyName("address");
                             writer.WriteValue(account.Address);

@@ -342,13 +342,13 @@ namespace NeoExpress
 
         public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
         {
-            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase))
+            if (value.Equals("mainnet", StringComparison.OrdinalIgnoreCase))
             {
                 uri = new Uri("http://seed1.neo.org:10332");
                 return true;
             }
 
-            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase))
+            if (value.Equals("testnet", StringComparison.OrdinalIgnoreCase))
             {
                 uri = new Uri("http://seed1t4.neo.org:20332");
                 return true;

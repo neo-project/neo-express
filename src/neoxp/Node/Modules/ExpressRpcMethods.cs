@@ -237,6 +237,53 @@ namespace NeoExpress.Node
             return tx == null ? null : Convert.ToBase64String(tx.ToArray());
         }
 
+        const int MAX_NOTIFICATIONS = 100;
+
+        [RpcMethod]
+        public JObject ExpressEnumNotifications(JArray @params)
+        {
+            var contracts = ((JArray)@params[0]).Select(j => UInt160.Parse(j.AsString())).ToHashSet();
+            var events = ((JArray)@params[1]).Select(j => j.AsString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            int skip = @params.Count >= 3 ? (int)@params[2].AsNumber() : 0;
+            int take = @params.Count >= 4 ? (int)@params[3].AsNumber() : MAX_NOTIFICATIONS;
+            if (take > MAX_NOTIFICATIONS) take = MAX_NOTIFICATIONS;
+
+            var notifications = PersistencePlugin.GetNotifications(storageProvider,
+                Neo.Persistence.SeekDirection.Backward,
+                contracts.Count > 0 ? contracts : null, 
+                events.Count > 0 ? events : null)
+                .Skip(skip);
+
+            var count = 0;
+            var jNotifications = new JArray();
+            var truncated = false;
+            foreach (var (blockIndex, _, notification) in notifications)
+            {
+                if (count++ > take)
+                {
+                    truncated = true;
+                    break;
+                }
+
+                var jNotification = new JObject
+                {
+                    ["block-index"] = blockIndex,
+                    ["script-hash"] = notification.ScriptHash.ToString(),
+                    ["event-name"] = notification.EventName,
+                    ["inventory-type"] = (byte)notification.InventoryType,
+                    ["inventory-hash"] = notification.InventoryHash.ToString(),
+                    ["state"] = Neo.VM.Helper.ToJson(notification.State),
+                };
+                jNotifications.Add(jNotification);
+            }
+
+            return new JObject
+            {
+                ["truncated"] = truncated,
+                ["notifications"] = jNotifications,
+            };
+        }
+
         // Neo-express uses a custom implementation of GetApplicationLog due to
         // https://github.com/neo-project/neo-modules/issues/614
         [RpcMethod]

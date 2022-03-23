@@ -20,17 +20,19 @@ may not exactly match a publicly released version.
 #### Added
 
 * `show notifications` command
-* `--json` option to `wallet list` command (3ea29881d8be352cedaeebd8b8b16e49aee3aed6)
+* `--json` option to `wallet list` command (3ea29881d8be352cedaeebd8b8b16e49aee3aed6 and #216)
 * `--data` option to `contract deploy` command (#214)
+* include genesis account in `wallet list` command (#216)
 
 #### Changed
 
 * In `batch` command, resolve non-absolute paths relative to the batch file location (#210)
-* In `show tx` command, modified output to be valid JSON that an be piped into JSON parsing scripts
+* In `show tx` command, modified output to be valid JSON that an be piped into JSON parsing scripts (#215)
 
 #### Fixed
 
 * unknown command has no exception handler ([#211](https://github.com/neo-project/neo-express/issues/211))
+* fixed JSON output of `contract get` command (#217)
 
 ## [3.1.46] 2022-03-22
 

@@ -9,6 +9,13 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
+        internal enum ContractForce
+        {
+            All,
+            ContractOnly,
+            StorageOnly
+        }
+        
         [Command(Name = "download", Description = "Download contract with storage from remote chain into local chain")]
         internal class Download
         {
@@ -32,13 +39,17 @@ namespace NeoExpress.Commands
             [Option(Description = "Block height to get contract state for")]
             internal uint Height { get; } = 0;
 
+            [Option(CommandOptionType.SingleOrNoValue, Description = "Replace contract and storage if it already exists (Default: All)")]
+            [AllowedValues(StringComparison.OrdinalIgnoreCase, "All", "ContractOnly", "StorageOnly")]
+            internal (bool hasValue, ContractForce value) Force { get; init; }
+
             internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();
 
                 var result = await NodeUtility.ProcessDownloadParamsAsync(Contract, RpcUri, Height, false);
-                await expressNode.PersistContractAsync(result.contractState, result.storagePairs);
+                await expressNode.PersistContractAsync(result.contractState, result.storagePairs, Force.hasValue ? Force.value : null);
             }
             
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

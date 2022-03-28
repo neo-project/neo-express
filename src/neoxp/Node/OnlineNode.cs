@@ -18,6 +18,7 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 
 namespace NeoExpress.Node
@@ -329,7 +330,7 @@ namespace NeoExpress.Node
             return Array.Empty<ExpressStorage>();
         }
 
-        public async Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs)
+        public async Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs, ContractCommand.ContractForce? force)
         {
             JObject o = new JObject();
             o["state"] = state.ToJson();
@@ -344,7 +345,8 @@ namespace NeoExpress.Node
             }
 
             o["storage"] = storage;
-
+            o["force"] = force is null ? JObject.Null : force;
+            
             var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
             return (int)response.AsNumber();
         }

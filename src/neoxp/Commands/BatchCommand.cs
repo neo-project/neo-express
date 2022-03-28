@@ -131,7 +131,10 @@ namespace NeoExpress.Commands
                             cmd.Model.RpcUri, 
                             cmd.Model.Height, 
                             true).ConfigureAwait(false);
-                        await expressNode.PersistContractAsync(result.contractState, result.storagePairs).ConfigureAwait(false);
+                        await expressNode.PersistContractAsync(
+                            result.contractState, 
+                            result.storagePairs, 
+                            cmd.Model.Force.hasValue ? cmd.Model.Force.value : null).ConfigureAwait(false);
                         break;
                        }
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:

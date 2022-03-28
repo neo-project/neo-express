@@ -14,6 +14,7 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 using ByteString = Neo.VM.Types.ByteString;
 using RpcException = Neo.Plugins.RpcException;
@@ -455,7 +456,7 @@ namespace NeoExpress.Node
         }
         
         [RpcMethod]
-        public JObject? ExpressPersistContract(JObject @params)
+        public JObject ExpressPersistContract(JObject @params)
         {
             var state = RpcClient.ContractStateFromJson(@params[0]["state"]);
             var storagePairs = ((JArray)@params[0]["storage"])
@@ -463,8 +464,11 @@ namespace NeoExpress.Node
                     s["key"].AsString(), 
                     s["value"].AsString())
                 ).ToArray();
+            ContractCommand.ContractForce? force = @params[0]["force"] is null ? 
+                null : 
+                Enum.Parse<ContractCommand.ContractForce>(@params[0]["force"].AsString());                
             
-            return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs);
+            return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force);
         }
 
         static readonly IReadOnlySet<string> nep11PropertyNames = new HashSet<string>

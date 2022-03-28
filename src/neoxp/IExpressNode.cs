@@ -11,6 +11,7 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 
 namespace NeoExpress
@@ -41,7 +42,7 @@ namespace NeoExpress
         Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash);
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
 
-        Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs);
+        Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs, ContractCommand.ContractForce? force);
         IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter);
     }
 }

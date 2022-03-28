@@ -15,6 +15,7 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 
 namespace NeoExpress.Node
@@ -211,31 +212,54 @@ namespace NeoExpress.Node
         }
             
         
-        public static int PersistContract(SnapshotCache snapshot, ContractState state, (string key, string value)[] storagePairs)
+        public static int PersistContract(SnapshotCache snapshot, ContractState state, (string key, string value)[] storagePairs, ContractCommand.ContractForce? force)
         {
-            // Our local chain might already be using the contract id of the pulled contract, we need to check for this
-            // to avoid having contracts with duplicate id's. This is important because the contract id is part of the
-            // StorageContext used with Storage syscalls and else we'll potentially override storage keys or iterate
-            // over keys that shouldn't exist for one of the contracts.
-            if (state.Id <= LastUsedContractId(snapshot))
-            {
-                state.Id = GetNextAvailableId(snapshot);
-            }
-            else
-            {
-                // Update available id such that a regular contract deploy will use the right next id;
-                SetLastUsedContractId(snapshot, state.Id);
-            }
+            var localContract = NativeContract.ContractManagement.GetContract(snapshot, state.Hash);
             
-            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
-            snapshot.Add(key, new StorageItem(state));
-            
-            foreach (var pair in storagePairs)
+            if (localContract is null)
             {
-                snapshot.Add(
-                    new StorageKey { Id = state.Id, Key = Convert.FromBase64String(pair.key)}, 
-                    new StorageItem(Convert.FromBase64String(pair.value))
-                );
+                // Our local chain might already be using the contract id of the pulled contract, we need to check for this
+                // to avoid having contracts with duplicate id's. This is important because the contract id is part of the
+                // StorageContext used with Storage syscalls and else we'll potentially override storage keys or iterate
+                // over keys that shouldn't exist for one of the contracts.
+                if (state.Id < LastUsedContractId(snapshot))
+                {
+                    state.Id = GetNextAvailableId(snapshot);
+                }
+                else
+                {
+                    // Update available id such that a regular contract deploy will use the right next id;
+                    SetLastUsedContractId(snapshot, state.Id);
+                }
+
+                StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
+                snapshot.Add(key, new StorageItem(state));
+            }
+            else 
+            {
+                if (force is null)
+                {
+                    throw new Exception("Contract already exists locally. Use --force:<option> to overwrite");
+                }
+                if (force == ContractCommand.ContractForce.All ||
+                    force == ContractCommand.ContractForce.ContractOnly)
+                {
+                    // Note: a ManagementContract.Update() will not change the contract hash. Not even if the NEF changed.
+                    localContract.Nef = state.Nef;
+                    localContract.Manifest = state.Manifest;
+                    localContract.UpdateCounter = state.UpdateCounter;
+                }
+            }
+
+            if (force == ContractCommand.ContractForce.All || force == ContractCommand.ContractForce.StorageOnly)
+            {
+                foreach (var pair in storagePairs)
+                {
+                    snapshot.Add(
+                        new StorageKey { Id = state.Id, Key = Convert.FromBase64String(pair.key) },
+                        new StorageItem(Convert.FromBase64String(pair.value))
+                    );
+                }
             }
             snapshot.Commit();
             return state.Id;

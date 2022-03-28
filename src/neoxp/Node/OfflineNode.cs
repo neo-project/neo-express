@@ -21,6 +21,7 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 using static Neo.Ledger.Blockchain;
 
@@ -408,13 +409,13 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
         
-        int PersistContract(ContractState state, (string key, string value)[] storagePairs)
+        int PersistContract(ContractState state, (string key, string value)[] storagePairs, ContractCommand.ContractForce? force)
         {
-            return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs);
+            return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force);
         }
 
-        public Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs) 
-            => MakeAsync(() => PersistContract(state, storagePairs));
+        public Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs, ContractCommand.ContractForce? force) 
+            => MakeAsync(() => PersistContract(state, storagePairs, force));
 
 // warning CS1998: This async method lacks 'await' operators and will run synchronously.
 // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation

@@ -15,6 +15,7 @@ using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
+using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
@@ -412,7 +413,7 @@ namespace NeoExpress.Node
 #pragma warning disable 1998 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
-            var notifications = PersistencePlugin.GetNotifications(this.rocksDbStorageProvider, Neo.Persistence.SeekDirection.Backward, contractFilter, eventFilter);
+            var notifications = PersistencePlugin.GetNotifications(this.rocksDbStorageProvider, SeekDirection.Backward, contractFilter, eventFilter);
             foreach (var (block, _, notification) in notifications)
             {
                 yield return (block, notification);

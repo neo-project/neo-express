@@ -464,9 +464,7 @@ namespace NeoExpress.Node
                     s["key"].AsString(), 
                     s["value"].AsString())
                 ).ToArray();
-            ContractCommand.ContractForce? force = @params[0]["force"] is null ? 
-                null : 
-                Enum.Parse<ContractCommand.ContractForce>(@params[0]["force"].AsString());                
+            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]["force"].AsString());                
             
             return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force);
         }

@@ -9,8 +9,9 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
-        internal enum ContractForce
+        internal enum OverwriteForce
         {
+            None,
             All,
             ContractOnly,
             StorageOnly
@@ -39,17 +40,18 @@ namespace NeoExpress.Commands
             [Option(Description = "Block height to get contract state for")]
             internal uint Height { get; } = 0;
 
-            [Option(CommandOptionType.SingleOrNoValue, Description = "Replace contract and storage if it already exists (Default: All)")]
+            [Option(CommandOptionType.SingleOrNoValue,
+                Description = "Replace contract and storage if it already exists (Default: All)")]
             [AllowedValues(StringComparison.OrdinalIgnoreCase, "All", "ContractOnly", "StorageOnly")]
-            internal (bool hasValue, ContractForce value) Force { get; init; }
+            internal OverwriteForce Force { get; init; } = OverwriteForce.None;
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var expressNode = chainManager.GetExpressNode();
 
-                var result = await NodeUtility.ProcessDownloadParamsAsync(Contract, RpcUri, Height, false);
-                await expressNode.PersistContractAsync(result.contractState, result.storagePairs, Force.hasValue ? Force.value : null);
+                var result = await NodeUtility.DownloadParamsAsync(Contract, RpcUri, Height);
+                await expressNode.PersistContractAsync(result.contractState, result.storagePairs, Force);
             }
             
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

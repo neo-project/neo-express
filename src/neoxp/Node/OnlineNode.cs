@@ -330,7 +330,7 @@ namespace NeoExpress.Node
             return Array.Empty<ExpressStorage>();
         }
 
-        public async Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs, ContractCommand.ContractForce? force)
+        public async Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs, ContractCommand.OverwriteForce force)
         {
             JObject o = new JObject();
             o["state"] = state.ToJson();
@@ -345,7 +345,7 @@ namespace NeoExpress.Node
             }
 
             o["storage"] = storage;
-            o["force"] = force is null ? JObject.Null : force;
+            o["force"] = force;
             
             var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
             return (int)response.AsNumber();

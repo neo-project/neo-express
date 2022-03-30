@@ -169,13 +169,12 @@ namespace NeoExpress.Node
             return value;
         }
 
-        public static async Task<(ContractState contractState, (string key, string value)[] storagePairs)> ProcessDownloadParamsAsync(
+        public static async Task<(ContractState contractState, (string key, string value)[] storagePairs)> DownloadParamsAsync(
             string contractHash,
             string rpcUri,
-            uint stateHeight,
-            bool isBatchCommand)
+            uint stateHeight)
         {
-            if (!UInt160.TryParse(contractHash, out var contractHash_))
+            if (!UInt160.TryParse(contractHash, out var _contractHash))
             {
                 throw new ArgumentException($"Invalid contract hash: \"{contractHash}\"");    
             }
@@ -185,11 +184,6 @@ namespace NeoExpress.Node
                 throw new ArgumentException($"Invalid RpcUri value \"{rpcUri}\"");
             }
 
-            if (isBatchCommand && stateHeight == 0)
-            {
-                throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
-            }
-            
             using var rpcClient = new RpcClient(uri);
             var stateAPI = new StateAPI(rpcClient);
                 
@@ -205,16 +199,17 @@ namespace NeoExpress.Node
             }
 
             var stateRoot = await stateAPI.GetStateRootAsync(height);
-            var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, contractHash_, new byte[0]);
+            var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, _contractHash, new byte[0]);
             var contractState = await rpcClient.GetContractStateAsync(contractHash).ConfigureAwait(false);
 
             return (contractState, states.Results);
         }
             
         
-        public static int PersistContract(SnapshotCache snapshot, ContractState state, (string key, string value)[] storagePairs, ContractCommand.ContractForce? force)
+        public static int PersistContract(SnapshotCache snapshot, ContractState state, (string key, string value)[] storagePairs, ContractCommand.OverwriteForce force)
         {
-            var localContract = NativeContract.ContractManagement.GetContract(snapshot, state.Hash);
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
+            var localContract = snapshot.GetAndChange(key)?.GetInteroperable<ContractState>();
             
             if (localContract is null)
             {
@@ -231,18 +226,16 @@ namespace NeoExpress.Node
                     // Update available id such that a regular contract deploy will use the right next id;
                     SetLastUsedContractId(snapshot, state.Id);
                 }
-
-                StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
                 snapshot.Add(key, new StorageItem(state));
             }
             else 
             {
-                if (force is null)
+                if (force == ContractCommand.OverwriteForce.None)
                 {
                     throw new Exception("Contract already exists locally. Use --force:<option> to overwrite");
                 }
-                if (force == ContractCommand.ContractForce.All ||
-                    force == ContractCommand.ContractForce.ContractOnly)
+                if (force == ContractCommand.OverwriteForce.All ||
+                    force == ContractCommand.OverwriteForce.ContractOnly)
                 {
                     // Note: a ManagementContract.Update() will not change the contract hash. Not even if the NEF changed.
                     localContract.Nef = state.Nef;
@@ -251,12 +244,21 @@ namespace NeoExpress.Node
                 }
             }
 
-            if (force == ContractCommand.ContractForce.All || force == ContractCommand.ContractForce.StorageOnly)
+            if (force == ContractCommand.OverwriteForce.All || force == ContractCommand.OverwriteForce.StorageOnly)
             {
+                var contractId = localContract is null ? state.Id : localContract.Id;
+
+                // the storage schema might have changed therefore we first clear all storage
+                byte[] prefix_key = StorageKey.CreateSearchPrefix(contractId, new byte[]{});
+                foreach (var (k, v) in snapshot.Find(prefix_key))
+                {
+                    snapshot.Delete(k);
+                }
+
                 foreach (var pair in storagePairs)
                 {
                     snapshot.Add(
-                        new StorageKey { Id = state.Id, Key = Convert.FromBase64String(pair.key) },
+                        new StorageKey { Id = contractId, Key = Convert.FromBase64String(pair.key) },
                         new StorageItem(Convert.FromBase64String(pair.value))
                     );
                 }

@@ -124,19 +124,23 @@ namespace NeoExpress.Commands
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
-                       {
-                        var expressNode = chainManager.GetExpressNode();
-                        var result = await NodeUtility.ProcessDownloadParamsAsync(
-                            cmd.Model.Contract, 
-                            cmd.Model.RpcUri, 
-                            cmd.Model.Height, 
-                            true).ConfigureAwait(false);
-                        await expressNode.PersistContractAsync(
-                            result.contractState, 
-                            result.storagePairs, 
-                            cmd.Model.Force.hasValue ? cmd.Model.Force.value : null).ConfigureAwait(false);
-                        break;
-                       }
+                        {
+                            if (cmd.Model.Height == 0)
+                            {
+                                throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
+                            }
+                            
+                            var expressNode = chainManager.GetExpressNode();
+                            var result = await NodeUtility.DownloadParamsAsync(
+                                cmd.Model.Contract, 
+                                cmd.Model.RpcUri, 
+                                cmd.Model.Height).ConfigureAwait(false);
+                            await expressNode.PersistContractAsync(
+                                result.contractState, 
+                                result.storagePairs, 
+                                cmd.Model.Force).ConfigureAwait(false);
+                                break;
+                        }
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                         {
                             var script = await txExec.LoadInvocationScriptAsync(

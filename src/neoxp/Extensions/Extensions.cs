@@ -285,15 +285,17 @@ namespace NeoExpress
                 jobjectArray[4] = (JObject) (double) count.Value;
             return jobjectArray;
         }
-        public static async Task<ExpressRpcFoundStates> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
+        
+        public static async Task<EncodedFoundStates> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
         {
-            ExpressRpcFoundStates? states = null;
+            EncodedFoundStates? states = null;
             var start = from.ToArray();
             while (true)
             {
                 var @params = MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start, pageSize);
                 var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
-                var foundStates = ExpressRpcFoundStates.FromJson(response);
+                var foundStates = EncodedFoundStates.FromJson(response);
+                                
                 
                 if (states is null)
                 {

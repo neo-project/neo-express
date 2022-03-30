@@ -72,9 +72,10 @@ namespace NeoExpress.Commands
                     [Required]
                     internal uint Height { get; } = 0;
 
-                    [Option(CommandOptionType.SingleOrNoValue, Description = "Replace contract and storage if it already exists (Default: All)")]
+                    [Option(CommandOptionType.SingleOrNoValue,
+                        Description = "Replace contract and storage if it already exists (Default: All)")]
                     [AllowedValues(StringComparison.OrdinalIgnoreCase, "All", "ContractOnly", "StorageOnly")]
-                    internal (bool hasValue, ContractCommand.ContractForce value) Force { get; init; }
+                    internal ContractCommand.OverwriteForce Force { get; init; } = ContractCommand.OverwriteForce.None;
                 }
 
                 [Command("invoke")]

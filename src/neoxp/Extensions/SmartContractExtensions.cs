@@ -76,11 +76,11 @@ namespace NeoExpress
             return false;
         }
 
-        public static bool TryGetNep17Balance(this DataCache snapshot, UInt160 asset, UInt160 address, ProtocolSettings settings, out BigInteger balance)
+        public static BigInteger GetNep17Balance(this DataCache snapshot, UInt160 asset, UInt160 address, ProtocolSettings settings)
         {
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(asset, "balanceOf", address.ToArray());
-            return TryGetBalance(snapshot, builder, settings, out balance);
+            return TryGetBalance(snapshot, builder, settings, out var balance) ? balance : BigInteger.Zero;
         }
 
         public static bool TryGetDivisibleNep11Balance(this DataCache snapshot, UInt160 asset, ByteString tokenId, UInt160 address, ProtocolSettings settings, out BigInteger balance)

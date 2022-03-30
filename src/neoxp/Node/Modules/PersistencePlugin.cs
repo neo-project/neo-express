@@ -43,7 +43,8 @@ namespace NeoExpress.Node
                 : null;
         }
 
-        static Lazy<byte[]> backwardsNotificationsPrefix = new Lazy<byte[]>(() => {
+        static Lazy<byte[]> backwardsNotificationsPrefix = new Lazy<byte[]>(() =>
+        {
             var buffer = new byte[sizeof(uint) + sizeof(ushort)];
             BinaryPrimitives.WriteUInt32BigEndian(buffer, uint.MaxValue);
             BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(sizeof(uint)), ushort.MaxValue);
@@ -58,7 +59,7 @@ namespace NeoExpress.Node
         {
             var store = GetNotificationsStore(storageProvider);
 
-            var prefix = direction == SeekDirection.Forward 
+            var prefix = direction == SeekDirection.Forward
                 ? Array.Empty<byte>()
                 : backwardsNotificationsPrefix.Value;
 

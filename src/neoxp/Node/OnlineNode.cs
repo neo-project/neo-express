@@ -330,7 +330,7 @@ namespace NeoExpress.Node
             return Array.Empty<ExpressStorage>();
         }
 
-        public async Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs, ContractCommand.OverwriteForce force)
+        public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
             JObject o = new JObject();
             o["state"] = state.ToJson();

@@ -169,7 +169,7 @@ namespace NeoExpress.Node
             return value;
         }
 
-        public static async Task<(ContractState contractState, (string key, string value)[] storagePairs)> DownloadParamsAsync(
+        public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)> DownloadParamsAsync(
             string contractHash,
             string rpcUri,
             uint stateHeight)
@@ -204,9 +204,8 @@ namespace NeoExpress.Node
 
             return (contractState, states);
         }
-            
-        
-        public static int PersistContract(SnapshotCache snapshot, ContractState state, (string key, string value)[] storagePairs, ContractCommand.OverwriteForce force)
+
+        public static int PersistContract(SnapshotCache snapshot, ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
             var localContract = snapshot.GetAndChange(key)?.GetInteroperable<ContractState>();
@@ -255,12 +254,11 @@ namespace NeoExpress.Node
                     snapshot.Delete(k);
                 }
 
-                foreach (var pair in storagePairs)
+                for (int i = 0; i < storagePairs.Count; i++)
                 {
                     snapshot.Add(
-                        new StorageKey { Id = contractId, Key = Convert.FromBase64String(pair.key) },
-                        new StorageItem(Convert.FromBase64String(pair.value))
-                    );
+                        new StorageKey { Id = contractId, Key = Convert.FromBase64String(storagePairs[i].key) },
+                        new StorageItem(Convert.FromBase64String(storagePairs[i].value)));
                 }
             }
             snapshot.Commit();

@@ -409,7 +409,7 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
 
-        public Task<int> PersistContractAsync(ContractState state, (string key, string value)[] storagePairs, ContractCommand.OverwriteForce force) 
+        public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force) 
             => MakeAsync(() => NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force));
 
 // warning CS1998: This async method lacks 'await' operators and will run synchronously.

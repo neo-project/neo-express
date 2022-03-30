@@ -286,7 +286,7 @@ namespace NeoExpress
             return jobjectArray;
         }
         
-        public static async Task<(string key, string value)[]> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
+        public static async Task<IReadOnlyList<(string key, string value)>> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
         {
             IEnumerable<(string key, string value)> states = Enumerable.Empty<(string key, string value)>();
             var start = from;
@@ -311,7 +311,7 @@ namespace NeoExpress
                 start = Convert.FromBase64String(jsonResults[jsonResults.Count - 1]["key"].AsString());
             }
 
-            return states.ToArray();
+            return states.ToList();
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Neo;
 using Neo.VM.Types;
@@ -11,10 +12,10 @@ namespace NeoExpress.Models
         public readonly UInt160 From;
         public readonly UInt160 To;
         public readonly BigInteger Amount;
-        public readonly Neo.VM.Types.ByteString? TokenId;
+        public readonly ReadOnlyMemory<byte> TokenId;
         public readonly NotificationRecord Notification;
 
-        public TransferNotificationRecord(UInt160 asset, UInt160 from, UInt160 to, BigInteger amount, ByteString? tokenId, NotificationRecord notification)
+        public TransferNotificationRecord(UInt160 asset, UInt160 from, UInt160 to, BigInteger amount, ReadOnlyMemory<byte> tokenId, NotificationRecord notification)
         {
             Asset = asset;
             From = from;
@@ -41,7 +42,7 @@ namespace NeoExpress.Models
             var asset = notification.ScriptHash;
             return notification.State.Count switch
             {
-                3 => new TransferNotificationRecord(asset, from, to, amount, null, notification),
+                3 => new TransferNotificationRecord(asset, from, to, amount, default, notification),
                 4 when (notification.State[3] is Neo.VM.Types.ByteString tokenId)
                     => new TransferNotificationRecord(asset, from, to, amount, tokenId, notification),
                 _ => null

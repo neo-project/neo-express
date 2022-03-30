@@ -286,31 +286,32 @@ namespace NeoExpress
             return jobjectArray;
         }
         
-        public static async Task<EncodedFoundStates> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
+        public static async Task<(string key, string value)[]> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
         {
-            EncodedFoundStates? states = null;
-            var start = from.ToArray();
+            IEnumerable<(string key, string value)> states = Enumerable.Empty<(string key, string value)>();
+            var start = from;
+
             while (true)
             {
-                var @params = MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start, pageSize);
+                var @params = MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start.Span, pageSize);
                 var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
-                var foundStates = EncodedFoundStates.FromJson(response);
-                                
-                
-                if (states is null)
-                {
-                    states = foundStates;
-                } else
-                {
-                    states.Results = states.Results.Concat(foundStates.Results).ToArray();
-                }
-                
-                if (!foundStates.Truncated || foundStates.Results.Length == 0)
-                {
-                    return states;
-                }
-                start = Convert.FromBase64String(foundStates.Results[foundStates.Results.Length - 1].key);
+
+                var jsonResults = (JArray)response["results"];
+                if (jsonResults.Count == 0) break;
+
+                var results = jsonResults
+                    .Select(j => (
+                        j["key"].AsString(),
+                        j["value"].AsString()
+                    ));
+                states = states.Concat(results);
+
+                var truncated = response["truncated"].AsBoolean();
+                if (truncated) break;
+                start = Convert.FromBase64String(jsonResults[jsonResults.Count - 1]["key"].AsString());
             }
+
+            return states.ToArray();
         }
     }
 }

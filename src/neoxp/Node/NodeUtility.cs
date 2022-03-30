@@ -202,7 +202,7 @@ namespace NeoExpress.Node
             var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, _contractHash, new byte[0]);
             var contractState = await rpcClient.GetContractStateAsync(contractHash).ConfigureAwait(false);
 
-            return (contractState, states.Results);
+            return (contractState, states);
         }
             
         

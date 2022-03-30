@@ -241,6 +241,7 @@ namespace NeoExpress.Node
         }
 
         const int MAX_NOTIFICATIONS = 100;
+        const string TRANSFER = "Transfer";
 
         [RpcMethod]
         public JObject ExpressEnumNotifications(JArray @params)
@@ -330,7 +331,7 @@ namespace NeoExpress.Node
                     storageProvider,
                     SeekDirection.Backward,
                     addressBalances.Select(b => b.scriptHash).ToHashSet(),
-                    new HashSet<string> { "Transfer " });
+                    TRANSFER);
 
                 foreach (var (blockIndex, _, notification) in notifications)
                 {
@@ -436,7 +437,7 @@ namespace NeoExpress.Node
                     storageProvider,
                     SeekDirection.Backward,
                     tokens.Select(b => b.scriptHash).ToHashSet(),
-                    new HashSet<string> { "Transfer " });
+                    TRANSFER);
 
                 foreach (var (blockIndex, _, notification) in notifications)
                 {
@@ -553,8 +554,7 @@ namespace NeoExpress.Node
                 .Select(c => c.scriptHash)
                 .ToHashSet();
             var notifications = PersistencePlugin.GetNotifications(storageProvider,
-                contracts: contracts,
-                eventNames: new HashSet<string> { "Transfer" });
+                SeekDirection.Forward, contracts, TRANSFER);
 
             foreach (var (blockIndex, txIndex, notification) in notifications)
             {

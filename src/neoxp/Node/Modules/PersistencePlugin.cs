@@ -53,6 +53,15 @@ namespace NeoExpress.Node
 
         public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
             IStorageProvider storageProvider,
+            SeekDirection direction,
+            IReadOnlySet<UInt160>? contracts,
+            string eventName) => string.IsNullOrEmpty(eventName)
+                ? GetNotifications(storageProvider, direction, contracts)
+                : GetNotifications(storageProvider, direction, contracts, 
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase) { eventName });
+
+        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
+            IStorageProvider storageProvider,
             SeekDirection direction = SeekDirection.Forward,
             IReadOnlySet<UInt160>? contracts = null,
             IReadOnlySet<string>? eventNames = null)

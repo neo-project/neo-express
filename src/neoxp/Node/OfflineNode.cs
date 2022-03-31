@@ -15,6 +15,7 @@ using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
+using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
@@ -325,33 +326,31 @@ namespace NeoExpress.Node
         {
             using var snapshot = neoSystem.GetSnapshot();
             var contracts = TokenContract.Enumerate(snapshot)
-                .Where(c => c.standard == TokenStandard.Nep17);
+                .Where(c => c.standard == TokenStandard.Nep17)
+                .ToList();
 
             var addressArray = address.ToArray();
-            var contractCount = 0;
             using var builder = new ScriptBuilder();
-            foreach (var c in contracts.Reverse())
+            for (var i = contracts.Count; i-- > 0;)
             {
-                builder.EmitDynamicCall(c.scriptHash, "symbol");
-                builder.EmitDynamicCall(c.scriptHash, "decimals");
-                builder.EmitDynamicCall(c.scriptHash, "balanceOf", addressArray);
-                contractCount++;
+                builder.EmitDynamicCall(contracts[i].scriptHash, "symbol");
+                builder.EmitDynamicCall(contracts[i].scriptHash, "decimals");
+                builder.EmitDynamicCall(contracts[i].scriptHash, "balanceOf", addressArray);
             }
 
             List<(TokenContract contract, BigInteger balance)> balances = new();
             using var engine = builder.Invoke(neoSystem.Settings, snapshot);
-            if (engine.State != VMState.FAULT && engine.ResultStack.Count == contractCount * 3)
+            if (engine.State != VMState.FAULT && engine.ResultStack.Count == contracts.Count * 3)
             {
                 var resultStack = engine.ResultStack;
-                for (var i = 0; i < contractCount; i++)
+                for (var i = 0; i < contracts.Count; i++)
                 {
                     var index = i * 3;
                     var symbol = resultStack.Peek(index + 2).GetString();
                     if (symbol == null) continue;
                     var decimals = (byte)resultStack.Peek(index + 1).GetInteger();
                     var balance = resultStack.Peek(index).GetInteger();
-                    var (scriptHash, standard) = contracts.ElementAt(i);
-                    balances.Add((new TokenContract(symbol, decimals, scriptHash, standard), balance));
+                    balances.Add((new TokenContract(symbol, decimals, contracts[i].scriptHash, contracts[i].standard), balance));
                 }
             }
 
@@ -407,12 +406,12 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
 
-// warning CS1998: This async method lacks 'await' operators and will run synchronously.
-// EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
-#pragma warning disable 1998 
+        // warning CS1998: This async method lacks 'await' operators and will run synchronously.
+        // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
+#pragma warning disable 1998
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
-            var notifications = PersistencePlugin.GetNotifications(this.rocksDbStorageProvider, Neo.Persistence.SeekDirection.Backward, contractFilter, eventFilter);
+            var notifications = PersistencePlugin.GetNotifications(this.rocksDbStorageProvider, SeekDirection.Backward, contractFilter, eventFilter);
             foreach (var (block, _, notification) in notifications)
             {
                 yield return (block, notification);

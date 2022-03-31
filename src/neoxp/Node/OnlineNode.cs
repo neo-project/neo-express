@@ -242,12 +242,11 @@ namespace NeoExpress.Node
 
         public async Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
         {
-            var contracts = (await ListTokenContractsAsync().ConfigureAwait(false))
-                .ToDictionary(c => c.ScriptHash);
             var rpcBalances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion))
                 .ConfigureAwait(false);
-
-            return rpcBalances.Balances.Select(b => (contracts[b.AssetHash], b.Amount)).ToList();
+            var balanceMap = rpcBalances.Balances.ToDictionary(b => b.AssetHash, b => b.Amount);
+            var contracts = await ListTokenContractsAsync().ConfigureAwait(false);
+            return contracts.Select(c => (c, balanceMap.TryGetValue(c.ScriptHash, out var value) ? value : 0)).ToList();
         }
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()

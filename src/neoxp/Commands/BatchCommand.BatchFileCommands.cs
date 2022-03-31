@@ -136,6 +136,9 @@ namespace NeoExpress.Commands
                     [Argument(1, Description = "Path to JSON file with oracle response content")]
                     [Required]
                     internal string ResponsePath { get; init; } = string.Empty;
+
+                    [Option(Description = "Oracle request ID")]
+                    internal ulong? RequestId { get; }
                 }
             }
 

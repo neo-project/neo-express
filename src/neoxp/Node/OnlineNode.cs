@@ -98,8 +98,10 @@ namespace NeoExpress.Node
             }
         }
 
-        public async Task FastForwardAsync(uint blockCount)
+        public async Task FastForwardAsync(uint blockCount, string timestampDelta)
         {
+            if (blockCount == 0) return;
+
             var keyPairs = chain.ConsensusNodes
                 .Select(n =>
                 {

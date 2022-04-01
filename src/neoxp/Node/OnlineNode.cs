@@ -25,8 +25,9 @@ namespace NeoExpress.Node
 
     internal class OnlineNode : IExpressNode
     {
-        private readonly ExpressChain chain;
-        private readonly RpcClient rpcClient;
+        readonly ExpressChain chain;
+        readonly RpcClient rpcClient;
+        readonly Lazy<KeyPair[]> consensusNodesKeys;
 
         public ProtocolSettings ProtocolSettings { get; }
 
@@ -35,6 +36,10 @@ namespace NeoExpress.Node
             this.ProtocolSettings = settings;
             this.chain = chain;
             rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
+                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
+                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
+                .ToArray());
         }
 
         public void Dispose()
@@ -56,52 +61,16 @@ namespace NeoExpress.Node
 
         public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
-            if (timestampDelta.TotalSeconds < 0) throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
-            if (blockCount == 0) return;
-
-            var keyPairs = chain.ConsensusNodes
-                .Select(n =>
-                {
-                    var account = n.Wallet.DefaultAccount
-                        ?? throw new InvalidOperationException($"Invalid default account for {n.Wallet.Name}");
-                    return new KeyPair(account.PrivateKey.HexToBytes());
-                })
-                .ToArray();
-
             var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
             var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
-            var validators = (await rpcClient.GetNextBlockValidatorsAsync().ConfigureAwait(false))
-                .Select(v => ECPoint.Parse(v.PublicKey, ECCurve.Secp256r1)).ToArray();
-
             var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
-            var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
-            var delta = (ulong)timestampDelta.TotalMilliseconds;
-
-            if (blockCount == 1)
-            {
-                var block = NodeUtility.CreateSignedBlock(
-                                prevHeader,
-                                keyPairs,
-                                ProtocolSettings.Network,
-                                timestamp: timestamp + delta);
-                await rpcClient.SubmitBlockAsync(block.ToArray()).ConfigureAwait(false);
-            }
-            else
-            {
-                var period = delta / (blockCount - 1);
-                for (int i = 0; i < blockCount; i++)
-                {
-                    var block = NodeUtility.CreateSignedBlock(
-                                    prevHeader,
-                                    keyPairs,
-                                    ProtocolSettings.Network,
-                                    timestamp: timestamp);
-                    await rpcClient.SubmitBlockAsync(block.ToArray()).ConfigureAwait(false);
-                    prevHeader = block.Header;
-                    timestamp += period;
-                }
-            }
+            await NodeUtility.FastForwardAsync(prevHeader,
+                                               blockCount,
+                                               timestampDelta,
+                                               consensusNodesKeys.Value,
+                                               ProtocolSettings.Network,
+                                               block => rpcClient.SubmitBlockAsync(block.ToArray()));
         }
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)

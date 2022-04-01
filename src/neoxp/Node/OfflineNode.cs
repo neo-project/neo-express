@@ -190,40 +190,17 @@ namespace NeoExpress.Node
         public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-            if (timestampDelta.TotalSeconds < 0) throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
 
-            if (blockCount == 0) return;
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
 
-            var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
-            var delta = (ulong)timestampDelta.TotalMilliseconds;
-
-            if (blockCount == 1)
-            {
-                var block = NodeUtility.CreateSignedBlock(
-                                prevHeader,
-                                consensusNodesKeys.Value,
-                                neoSystem.Settings.Network,
-                                timestamp: timestamp + delta);
-                await RelayBlockAsync(block).ConfigureAwait(false);
-            }
-            else
-            {
-                var period = delta / (blockCount - 1);
-                for (int i = 0; i < blockCount; i++)
-                {
-                    var block = NodeUtility.CreateSignedBlock(
-                                    prevHeader,
-                                    consensusNodesKeys.Value,
-                                    neoSystem.Settings.Network,
-                                    timestamp: timestamp);
-                    await RelayBlockAsync(block).ConfigureAwait(false);
-                    prevHeader = block.Header;
-                    timestamp += period;
-                }
-            }
+            await NodeUtility.FastForwardAsync(prevHeader,
+                                               blockCount,
+                                               timestampDelta,
+                                               consensusNodesKeys.Value,
+                                               ProtocolSettings.Network,
+                                               block => RelayBlockAsync(block));
         }
 
         async Task<UInt256> SubmitTransactionAsync(Transaction? tx = null)

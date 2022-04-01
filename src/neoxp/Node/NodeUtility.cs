@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography;
@@ -85,6 +86,41 @@ namespace NeoExpress.Node
 
             return block;
         }
+
+        public static async Task FastForwardAsync(Header prevHeader, uint blockCount, TimeSpan timestampDelta, KeyPair[] keyPairs, uint network, Func<Block, Task> submitBlockAsync)
+        {
+            if (timestampDelta.TotalSeconds < 0) throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
+            if (blockCount == 0) return;
+
+            var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
+            var delta = (ulong)timestampDelta.TotalMilliseconds;
+
+            if (blockCount == 1)
+            {
+                var block = NodeUtility.CreateSignedBlock(
+                                prevHeader,
+                                keyPairs,
+                                network,
+                                timestamp: timestamp + delta);
+                await submitBlockAsync(block).ConfigureAwait(false);
+            }
+            else
+            {
+                var period = delta / (blockCount - 1);
+                for (int i = 0; i < blockCount; i++)
+                {
+                    var block = NodeUtility.CreateSignedBlock(
+                                    prevHeader,
+                                    keyPairs,
+                                    network,
+                                    timestamp: timestamp);
+                    await submitBlockAsync(block).ConfigureAwait(false);
+                    prevHeader = block.Header;
+                    timestamp += period;
+                }
+            }
+        }
+
 
         public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, IReadOnlyList<ECPoint> oracleNodes)
         {

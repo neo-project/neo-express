@@ -54,52 +54,9 @@ namespace NeoExpress.Node
                 : rpcClient.InvokeScriptAsync(script, signer);
         }
 
-        // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
-        // depend on the DataCache snapshot parameter since the ContractParametersContext
-        // we are creating here does not have direct access to node data.
-
-        class BlockScriptHashes : IVerifiable
+        public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
-            readonly UInt160[] hashes;
-
-            public BlockScriptHashes(UInt160 scriptHash)
-            {
-                hashes = new[] { scriptHash };
-            }
-
-            public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
-
-            Witness[] IVerifiable.Witnesses
-            {
-                get => throw new NotImplementedException();
-                set => throw new NotImplementedException();
-            }
-
-            int ISerializable.Size => throw new NotImplementedException();
-
-            void ISerializable.Deserialize(BinaryReader reader)
-            {
-                throw new NotImplementedException();
-            }
-
-            void IVerifiable.DeserializeUnsigned(BinaryReader reader)
-            {
-                throw new NotImplementedException();
-            }
-
-            void ISerializable.Serialize(BinaryWriter writer)
-            {
-                throw new NotImplementedException();
-            }
-
-            void IVerifiable.SerializeUnsigned(BinaryWriter writer)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public async Task FastForwardAsync(uint blockCount, string timestampDelta)
-        {
+            if (timestampDelta.TotalSeconds < 0) throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
             if (blockCount == 0) return;
 
             var keyPairs = chain.ConsensusNodes
@@ -111,48 +68,39 @@ namespace NeoExpress.Node
                 })
                 .ToArray();
 
-            for (var i = 0u; i < blockCount; i++)
+            var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
+            var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
+            var validators = (await rpcClient.GetNextBlockValidatorsAsync().ConfigureAwait(false))
+                .Select(v => ECPoint.Parse(v.PublicKey, ECCurve.Secp256r1)).ToArray();
+
+            var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
+
+            var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
+            var delta = (ulong)timestampDelta.TotalMilliseconds;
+
+            if (blockCount == 1)
             {
-                await SubmitEmptyBlockAsync(rpcClient, keyPairs, ProtocolSettings.Network).ConfigureAwait(false);
-            }
-
-            static async Task SubmitEmptyBlockAsync(RpcClient rpcClient, IReadOnlyList<KeyPair> keyPairs, uint network)
-            {
-                var hash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
-                var header = Convert.FromBase64String(await rpcClient.GetBlockHeaderHexAsync($"{hash}"))
-                    .AsSerializable<Header>();
-
-                var block = new Block
-                {
-                    Header = new Header
-                    {
-                        Version = 0,
-                        PrevHash = header.Hash,
-                        MerkleRoot = UInt256.Zero,
-                        Timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), header.Timestamp + 1),
-                        Index = header.Index + 1,
-                        PrimaryIndex = 0,
-                        NextConsensus = header.NextConsensus,
-                    },
-                    Transactions = Array.Empty<Transaction>()
-                };
-
-                var validators = (await rpcClient.GetNextBlockValidatorsAsync().ConfigureAwait(false))
-                        .Select(v => ECPoint.Parse(v.PublicKey, ECCurve.Secp256r1)).ToArray();
-                var signatureCount = validators.Length - (validators.Length - 1) / 3;
-                var contract = Contract.CreateMultiSigContract(signatureCount, validators);
-
-                var context = new ContractParametersContext(null, new BlockScriptHashes(header.NextConsensus), network);
-                for (int i = 0; i < keyPairs.Count; i++)
-                {
-                    var signature = block.Sign(keyPairs[i], network);
-                    context.AddSignature(contract, keyPairs[i].PublicKey, signature);
-                    if (context.Completed) break;
-                }
-                if (!context.Completed) throw new InvalidOperationException("Invalid block signature");
-                block.Header.Witness = context.GetWitnesses().Single();
-
+                var block = NodeUtility.CreateSignedBlock(
+                                prevHeader,
+                                keyPairs,
+                                ProtocolSettings.Network,
+                                timestamp: timestamp + delta);
                 await rpcClient.SubmitBlockAsync(block.ToArray()).ConfigureAwait(false);
+            }
+            else
+            {
+                var period = delta / (blockCount - 1);
+                for (int i = 0; i < blockCount; i++)
+                {
+                    var block = NodeUtility.CreateSignedBlock(
+                                    prevHeader,
+                                    keyPairs,
+                                    ProtocolSettings.Network,
+                                    timestamp: timestamp);
+                    await rpcClient.SubmitBlockAsync(block.ToArray()).ConfigureAwait(false);
+                    prevHeader = block.Header;
+                    timestamp += period;
+                }
             }
         }
 
@@ -198,7 +146,7 @@ namespace NeoExpress.Node
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }

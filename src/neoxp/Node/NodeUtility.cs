@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
@@ -16,8 +18,74 @@ using NeoExpress.Models;
 
 namespace NeoExpress.Node
 {
-    class ExpressOracle
+    class NodeUtility
     {
+        // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
+        // depend on the DataCache snapshot parameter in order to create a 
+        // ContractParametersContext without direct access to node data.
+
+        class BlockScriptHashes : IVerifiable
+        {
+            readonly UInt160[] hashes;
+
+            public BlockScriptHashes(UInt160 scriptHash)
+            {
+                hashes = new[] { scriptHash };
+            }
+
+            public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
+
+            Witness[] IVerifiable.Witnesses
+            {
+                get => throw new NotImplementedException();
+                set => throw new NotImplementedException();
+            }
+
+            int ISerializable.Size => throw new NotImplementedException();
+            void ISerializable.Deserialize(BinaryReader reader) => throw new NotImplementedException();
+            void IVerifiable.DeserializeUnsigned(BinaryReader reader) => throw new NotImplementedException();
+            void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
+            void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
+        }
+
+        public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
+        {
+            transactions ??= Array.Empty<Transaction>();
+
+            var blockHeight = prevHeader.Index + 1;
+            var block = new Block
+            {
+                Header = new Header
+                {
+                    Version = 0,
+                    PrevHash = prevHeader.Hash,
+                    MerkleRoot = MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
+                    Timestamp = timestamp > prevHeader.Timestamp
+                        ? timestamp
+                        : Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1),
+                    Index = blockHeight,
+                    PrimaryIndex = 0,
+                    NextConsensus = prevHeader.NextConsensus
+                },
+                Transactions = transactions
+            };
+
+            // generate the block header witness. Logic lifted from ConsensusContext.CreateBlock
+            var m = keyPairs.Count - (keyPairs.Count - 1) / 3;
+            var contract = Contract.CreateMultiSigContract(m, keyPairs.Select(k => k.PublicKey).ToList());
+            var signingContext = new ContractParametersContext(null, new BlockScriptHashes(prevHeader.NextConsensus), network);
+            for (int i = 0; i < keyPairs.Count; i++)
+            {
+                var signature = block.Header.Sign(keyPairs[i], network);
+                signingContext.AddSignature(contract, keyPairs[i].PublicKey, signature);
+                if (signingContext.Completed) break;
+            }
+            if (!signingContext.Completed) throw new Exception("block signing incomplete");
+            block.Header.Witness = signingContext.GetWitnesses()[0];
+
+            return block;
+        }
+
         public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, IReadOnlyList<ECPoint> oracleNodes)
         {
             var signatures = new Dictionary<ECPoint, byte[]>();

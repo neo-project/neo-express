@@ -179,41 +179,60 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
             return tx.Hash;
         }
 
-        public async Task FastForwardAsync(uint blockCount, string timestampDelta)
+        public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-            if (blockCount == 0) return;
+            if (timestampDelta.TotalSeconds < 0) throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
 
-            var delta = ulong.TryParse(timestampDelta, out var value) ? value : 0;
+            if (blockCount == 0) return;
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
 
-            for (int i = 0; i < blockCount; i++)
+            var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
+            var delta = (ulong)timestampDelta.TotalMilliseconds;
+
+            if (blockCount == 1)
             {
-                var block = CreateSignedBlock(prevHeader);
+                var block = NodeUtility.CreateSignedBlock(
+                                prevHeader,
+                                consensusNodesKeys.Value,
+                                neoSystem.Settings.Network,
+                                timestamp: timestamp + delta);
                 await RelayBlockAsync(block).ConfigureAwait(false);
-                prevHeader = block.Header;
+            }
+            else
+            {
+                var period = delta / (blockCount - 1);
+                for (int i = 0; i < blockCount; i++)
+                {
+                    var block = NodeUtility.CreateSignedBlock(
+                                    prevHeader,
+                                    consensusNodesKeys.Value,
+                                    neoSystem.Settings.Network,
+                                    timestamp: timestamp);
+                    await RelayBlockAsync(block).ConfigureAwait(false);
+                    prevHeader = block.Header;
+                    timestamp += period;
+                }
             }
         }
 
-         async Task<UInt256> SubmitTransactionAsync(Transaction? tx = null)
+        async Task<UInt256> SubmitTransactionAsync(Transaction? tx = null)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
             var transactions = tx == null
                 ? Array.Empty<Transaction>()
                 : new[] { tx };
-
-            // The logic in this method is distilled from ConsensusService/ConsensusContext + MemPool tx verification logic
 
             // Verify the provided transactions. When running, Blockchain class does verification in two steps: VerifyStateIndependent and VerifyStateDependent.
             // However, Verify does both parts and there's no point in verifying dependent/independent in separate steps here
@@ -226,59 +245,15 @@ namespace NeoExpress.Node
                 }
             }
 
-            // create the block instance
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
-            var block = CreateSignedBlock(prevHeader, transactions);
+            var block = NodeUtility.CreateSignedBlock(
+                            prevHeader,
+                            consensusNodesKeys.Value,
+                            neoSystem.Settings.Network,
+                            transactions);
             await RelayBlockAsync(block).ConfigureAwait(false);
             return block.Hash;
-        }
-
-        Block CreateSignedBlock(Header prevHeader, Transaction[]? transactions = null, ulong timestamp = 0)
-        {
-            transactions ??= Array.Empty<Transaction>();
-
-            // retrieve the validators for the next block. Logic lifted from ConsensusContext.Reset
-            var validators = NativeContract.NEO.GetNextBlockValidators(neoSystem.StoreView, neoSystem.Settings.ValidatorsCount);
-            var m = validators.Length - (validators.Length - 1) / 3;
-
-            var blockHeight = prevHeader.Index + 1;
-            var block = new Block
-            {
-                Header = new Header
-                {
-                    Version = 0,
-                    PrevHash = prevHeader.Hash,
-                    MerkleRoot = MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
-                    Timestamp = timestamp > prevHeader.Timestamp
-                        ? timestamp
-                        : Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1),
-                    Index = blockHeight,
-                    PrimaryIndex = 0,
-                    NextConsensus = Contract.GetBFTAddress(
-                        NeoToken.ShouldRefreshCommittee(blockHeight, neoSystem.Settings.CommitteeMembersCount)
-                            ? NativeContract.NEO.ComputeNextBlockValidators(neoSystem.StoreView, neoSystem.Settings)
-                            : validators),
-                },
-                Transactions = transactions
-            };
-
-            // generate the block header witness. Logic lifted from ConsensusContext.CreateBlock
-            var contract = Contract.CreateMultiSigContract(m, validators);
-            var signingContext = new ContractParametersContext(neoSystem.StoreView, block.Header, neoSystem.Settings.Network);
-            for (int i = 0; i < validators.Length; i++)
-            {
-                var key = consensusNodesKeys.Value.SingleOrDefault(k => k.PublicKey.Equals(validators[i]));
-                if (key == null) continue;
-
-                var signature = block.Header.Sign(key, neoSystem.Settings.Network);
-                signingContext.AddSignature(contract, validators[i], signature);
-                if (signingContext.Completed) break;
-            }
-            if (!signingContext.Completed) throw new Exception("block signing incomplete");
-            block.Header.Witness = signingContext.GetWitnesses()[0];
-
-            return block;
         }
 
         async Task RelayBlockAsync(Block block)

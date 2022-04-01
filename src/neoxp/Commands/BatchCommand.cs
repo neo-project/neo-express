@@ -148,9 +148,10 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.FastForward> cmd:
                         {
+                            var timestampDelta = FastForwardCommand.ParseTimestampDelta(cmd.Model.TimestampDelta);
                             await txExec.ExpressNode.FastForwardAsync(
                                 cmd.Model.Count,
-                                cmd.Model.TimestampDelta).ConfigureAwait(false);
+                                timestampDelta).ConfigureAwait(false);
                             await writer.WriteLineAsync($"{cmd.Model.Count} empty blocks minted").ConfigureAwait(false);
                             break;
                         }

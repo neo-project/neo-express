@@ -150,10 +150,10 @@ namespace NeoExpress.Node
         {
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
             StorageItem item = snapshot.TryGet(key);
-            return (int)(BigInteger)item;
+            return (int)(BigInteger)item - 1;
         }
 
-        private static void SetLastUsedContractId(DataCache snapshot, int newId)
+        private static void SetNextAvailableContractId(DataCache snapshot, int newId)
         {
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
             StorageItem item = snapshot.GetAndChange(key);
@@ -217,14 +217,14 @@ namespace NeoExpress.Node
                 // to avoid having contracts with duplicate id's. This is important because the contract id is part of the
                 // StorageContext used with Storage syscalls and else we'll potentially override storage keys or iterate
                 // over keys that shouldn't exist for one of the contracts.
-                if (state.Id < LastUsedContractId(snapshot))
+                if (state.Id <= LastUsedContractId(snapshot))
                 {
                     state.Id = GetNextAvailableId(snapshot);
                 }
                 else
                 {
                     // Update available id such that a regular contract deploy will use the right next id;
-                    SetLastUsedContractId(snapshot, state.Id);
+                    SetNextAvailableContractId(snapshot, state.Id + 1);
                 }
                 snapshot.Add(key, new StorageItem(state));
             }

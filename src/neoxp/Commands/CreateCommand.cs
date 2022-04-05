@@ -17,11 +17,11 @@ namespace NeoExpress.Commands
         [Argument(0, Description = "name of " + EXPRESS_EXTENSION + " file to create (Default: ./" + DEFAULT_EXPRESS_FILENAME + ")")]
         internal string Output { get; set; } = string.Empty;
 
-        [Option(Description = "Number of consensus nodes to create\nDefault: 1")]
+        [Option(Description = "Number of consensus nodes to create (Default: 1)")]
         [AllowedValues("1", "4", "7")]
         internal int Count { get; set; } = 1;
 
-        [Option(Description = "Version to use for addresses in this blockchain instance\nDefault: 53")]
+        [Option(Description = "Version to use for addresses in this blockchain instance (Default: 53)")]
         internal byte? AddressVersion { get; set; }
 
         [Option(Description = "Overwrite existing data")]

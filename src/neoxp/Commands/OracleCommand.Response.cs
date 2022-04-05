@@ -28,7 +28,7 @@ namespace NeoExpress.Commands
             internal string ResponsePath { get; init; } = string.Empty;
 
             [Option(Description = "Oracle request ID")]
-            internal (bool hasValue, ulong value) RequestId { get; }
+            internal ulong? RequestId { get; }
 
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.OracleResponseAsync(Url, ResponsePath, RequestId.hasValue ? RequestId.value : null).ConfigureAwait(false);
+                    await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

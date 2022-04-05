@@ -1,14 +1,18 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Neo;
 using Neo.IO;
 using Neo.Persistence;
+using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
 using ByteString = Neo.VM.Types.ByteString;
 using Integer = Neo.VM.Types.Integer;
+using InteropInterface = Neo.VM.Types.InteropInterface;
+using StackItemType = Neo.VM.Types.StackItemType;
 
 namespace NeoExpress
 {
@@ -76,18 +80,42 @@ namespace NeoExpress
             return false;
         }
 
-        public static bool TryGetNep17Balance(this DataCache snapshot, UInt160 asset, UInt160 address, ProtocolSettings settings, out BigInteger balance)
+        public static BigInteger GetNep17Balance(this DataCache snapshot, UInt160 asset, UInt160 address, ProtocolSettings settings)
         {
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(asset, "balanceOf", address.ToArray());
-            return TryGetBalance(snapshot, builder, settings, out balance);
+            return TryGetBalance(snapshot, builder, settings, out var balance) ? balance : BigInteger.Zero;
         }
 
-        public static bool TryGetDivisibleNep11Balance(this DataCache snapshot, UInt160 asset, ByteString tokenId, UInt160 address, ProtocolSettings settings, out BigInteger balance)
+        public static IEnumerable<ReadOnlyMemory<byte>> GetNep11Tokens(this DataCache snapshot, UInt160 asset, UInt160 address, ProtocolSettings settings)
         {
             using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "balanceOf", address.ToArray(), tokenId);
-            return TryGetBalance(snapshot, builder, settings, out balance);
+            builder.EmitDynamicCall(asset, "tokensOf", address.ToArray());
+            using var engine = builder.Invoke(settings, snapshot);
+            if (engine.State != VMState.FAULT
+                && engine.ResultStack.Count >= 1
+                && engine.ResultStack.Pop() is InteropInterface interop
+                && interop.GetInterface<object>() is IIterator iterator)
+            {
+                while (iterator.Next())
+                {
+                    var value = iterator.Value();
+                    var byteString = value.Type == StackItemType.ByteString
+                        ? (ByteString)value
+                        : (ByteString)(value.ConvertTo(StackItemType.ByteString));
+
+                    yield return (ReadOnlyMemory<byte>)byteString;
+                }
+            }
+        }
+
+        public static BigInteger GetDivisibleNep11Balance(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, UInt160 address, ProtocolSettings settings)
+        {
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(asset, "balanceOf", address.ToArray(), (ByteString)tokenId);
+            return TryGetBalance(snapshot, builder, settings, out var balance)
+                ? balance
+                : BigInteger.Zero;
         }
 
         static bool TryGetBalance(DataCache snapshot, ScriptBuilder builder, ProtocolSettings settings, out BigInteger balance)
@@ -105,10 +133,14 @@ namespace NeoExpress
             return false;
         }
 
-        public static bool TryGetIndivisibleNep11Owner(this DataCache snapshot, UInt160 asset, ByteString tokenId, ProtocolSettings settings, out UInt160 owner)
+
+        public static UInt160 GetIndivisibleNep11Owner(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, ProtocolSettings settings)
+            => TryGetIndivisibleNep11Owner(snapshot, asset, tokenId, settings, out var owner) ? owner : UInt160.Zero;
+
+        public static bool TryGetIndivisibleNep11Owner(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, ProtocolSettings settings, out UInt160 owner)
         {
             using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "ownerOf", tokenId);
+            builder.EmitDynamicCall(asset, "ownerOf", (ByteString)tokenId);
 
             using var engine = builder.Invoke(settings, snapshot);
             if (engine.State != VMState.FAULT

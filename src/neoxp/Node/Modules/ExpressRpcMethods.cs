@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -9,6 +11,7 @@ using Neo.IO;
 using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
@@ -242,6 +245,7 @@ namespace NeoExpress.Node
         }
 
         const int MAX_NOTIFICATIONS = 100;
+        const string TRANSFER = "Transfer";
 
         [RpcMethod]
         public JObject ExpressEnumNotifications(JArray @params)
@@ -252,14 +256,16 @@ namespace NeoExpress.Node
             int take = @params.Count >= 4 ? (int)@params[3].AsNumber() : MAX_NOTIFICATIONS;
             if (take > MAX_NOTIFICATIONS) take = MAX_NOTIFICATIONS;
 
-            var notifications = PersistencePlugin.GetNotifications(storageProvider,
-                Neo.Persistence.SeekDirection.Backward,
-                contracts.Count > 0 ? contracts : null, 
-                events.Count > 0 ? events : null)
+            var notifications = PersistencePlugin
+                .GetNotifications(
+                    storageProvider,
+                    SeekDirection.Backward,
+                    contracts.Count > 0 ? contracts : null,
+                    events.Count > 0 ? events : null)
                 .Skip(skip);
 
             var count = 0;
-            var jNotifications = new JArray();
+            var jsonNotifications = new JArray();
             var truncated = false;
             foreach (var (blockIndex, _, notification) in notifications)
             {
@@ -278,13 +284,13 @@ namespace NeoExpress.Node
                     ["inventory-hash"] = notification.InventoryHash.ToString(),
                     ["state"] = Neo.VM.Helper.ToJson(notification.State),
                 };
-                jNotifications.Add(jNotification);
+                jsonNotifications.Add(jNotification);
             }
 
             return new JObject
             {
                 ["truncated"] = truncated,
-                ["notifications"] = jNotifications,
+                ["notifications"] = jsonNotifications,
             };
         }
 
@@ -310,28 +316,59 @@ namespace NeoExpress.Node
         {
             var address = AsScriptHash(@params[0]);
 
-            // collect a list of assets the address has either sent or received
-            // and the last block index a transfer occurred
-            var assets = new Dictionary<UInt160, uint>();
             using var snapshot = neoSystem.GetSnapshot();
-            foreach (var (blockIndex, _, transfer) in PersistencePlugin.GetTransferNotifications(snapshot, storageProvider, TokenStandard.Nep17, address))
+
+            // collect the non-zero balances of all the deployed Nep17 contracts for the specified account
+            var addressBalances = TokenContract.Enumerate(snapshot)
+                .Where(c => c.standard == TokenStandard.Nep17)
+                .Select(c => (
+                    scriptHash: c.scriptHash,
+                    balance: snapshot.GetNep17Balance(c.scriptHash, address, neoSystem.Settings)))
+                .Where(t => !t.balance.IsZero)
+                .ToList();
+
+            // collect the last block index a transfer occurred for all account balances
+            var updateIndexes = new Dictionary<UInt160, uint>();
+            if (addressBalances.Count > 0)
             {
-                assets[transfer.Asset] = blockIndex;
+                var notifications = PersistencePlugin.GetNotifications(
+                    storageProvider,
+                    SeekDirection.Backward,
+                    addressBalances.Select(b => b.scriptHash).ToHashSet(),
+                    TRANSFER);
+
+                foreach (var (blockIndex, _, notification) in notifications)
+                {
+                    // iterate backwards thru the notifications looking for all the Transfer events from a contract
+                    // in assets where a Transfer event hasn't already been recorded
+                    if (!updateIndexes.ContainsKey(notification.ScriptHash))
+                    {
+                        var transfer = TransferNotificationRecord.Create(notification);
+                        if (transfer is not null
+                            && (transfer.From == address || transfer.To == address))
+                        {
+                            // if the specified account was the sender or receiver of the current transfer,
+                            // record the update index. Stop the iteration if indexes for all the assets are 
+                            // have been recorded
+                            updateIndexes.Add(notification.ScriptHash, blockIndex);
+                            if (updateIndexes.Count == addressBalances.Count) break;
+                        }
+                    }
+                }
             }
 
-            // get current balance for each asset with at least one transfer record
             var balances = new JArray();
-            foreach (var (asset, lastUpdatedBlock) in assets)
+            for (int i = 0; i < addressBalances.Count; i++)
             {
-                if (snapshot.TryGetNep17Balance(asset, address, neoSystem.Settings, out var balance))
+                var (scriptHash, balance) = addressBalances[i];
+                var lastUpdatedBlock = updateIndexes.TryGetValue(scriptHash, out var _index) ? _index : 0;
+
+                balances.Add(new JObject
                 {
-                    balances.Add(new JObject
-                    {
-                        ["assethash"] = asset.ToString(),
-                        ["amount"] = balance.ToString(),
-                        ["lastupdatedblock"] = lastUpdatedBlock,
-                    });
-                }
+                    ["assethash"] = scriptHash.ToString(),
+                    ["amount"] = balance.ToString(),
+                    ["lastupdatedblock"] = lastUpdatedBlock,
+                });
             }
 
             return new JObject
@@ -344,72 +381,105 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject GetNep17Transfers(JArray @params) => GetTransfers(@params, TokenStandard.Nep17);
 
+        class TokenEqualityComparer : IEqualityComparer<(UInt160 scriptHash, ReadOnlyMemory<byte> tokenId)>
+        {
+            public static TokenEqualityComparer Instance = new();
+
+            private TokenEqualityComparer() { }
+
+            public bool Equals((UInt160 scriptHash, ReadOnlyMemory<byte> tokenId) x, (UInt160 scriptHash, ReadOnlyMemory<byte> tokenId) y)
+                => x.scriptHash.Equals(y.scriptHash)
+                    && x.tokenId.Span.SequenceEqual(y.tokenId.Span);
+
+            public int GetHashCode((UInt160 scriptHash, ReadOnlyMemory<byte> tokenId) obj)
+            {
+                HashCode code = new();
+                code.Add(obj.scriptHash);
+                for (int i = 0; i < obj.tokenId.Length; i++)
+                {
+                    code.Add(obj.tokenId.Span[i]);
+                }
+                return code.ToHashCode();
+            }
+        }
+
+
         [RpcMethod]
         public JObject GetNep11Balances(JArray @params)
         {
             var address = AsScriptHash(@params[0]);
 
-            // collect a list of assets + tokens that address has sent or received
-            // and the last block index a transfer occurred
-
-            var assets = new Dictionary<UInt160, Dictionary<ByteString, uint>>();
             using var snapshot = neoSystem.GetSnapshot();
-            foreach (var (blockIndex, _, transfer) in PersistencePlugin.GetTransferNotifications(snapshot, storageProvider, TokenStandard.Nep11, address))
+
+            List<(UInt160 scriptHash, ReadOnlyMemory<byte> tokenId, BigInteger balance)> tokens = new();
+            foreach (var contract in NativeContract.ContractManagement.ListContracts(snapshot))
             {
-                if (transfer.TokenId == null) continue;
-                var tokens = assets.GetOrAdd(transfer.Asset, _ => new Dictionary<ByteString, uint>());
-                tokens[transfer.TokenId] = blockIndex;
+                if (!contract.Manifest.SupportedStandards.Contains("NEP-11")) continue;
+                var balanceOf = contract.Manifest.Abi.GetMethod("balanceOf", -1);
+                if (balanceOf is null) continue;
+                var divisible = balanceOf.Parameters.Length == 2;
+
+                foreach (var tokenId in snapshot.GetNep11Tokens(contract.Hash, address, neoSystem.Settings))
+                {
+                    var balance = divisible
+                        ? snapshot.GetDivisibleNep11Balance(contract.Hash, tokenId, address, neoSystem.Settings)
+                        : snapshot.GetIndivisibleNep11Owner(contract.Hash, tokenId, neoSystem.Settings) == address
+                            ? BigInteger.One
+                            : BigInteger.Zero;
+
+                    if (balance.IsZero) continue;
+
+                    tokens.Add((contract.Hash, tokenId, balance));
+                }
             }
 
-            JArray balances = new();
-            foreach (var (asset, tokens) in assets)
+            // collect the last block index a transfer occurred for all tokens
+            var updateIndexes = new Dictionary<(UInt160 scriptHash, ReadOnlyMemory<byte> tokenId), uint>(TokenEqualityComparer.Instance);
+            if (tokens.Count > 0)
             {
-                // Balance logic is different for divisible and non-divisible NFTs
-                if (snapshot.TryGetDecimals(asset, neoSystem.Settings, out var decimals))
-                {
-                    JArray jsonTokens = new();
-                    foreach (var (token, lastUpdatedBlock) in tokens)
-                    {
-                        if (decimals == 0)
-                        {
-                            // for non divisible tokens, check to see if the token owner 
-                            // matches the current address
-                            if (snapshot.TryGetIndivisibleNep11Owner(asset, token, neoSystem.Settings, out var owner)
-                                && owner == address)
-                            {
-                                jsonTokens.Add(new JObject
-                                {
-                                    ["tokenid"] = token.GetSpan().ToHexString(),
-                                    ["amount"] = BigInteger.One.ToString(),
-                                    ["lastupdatedblock"] = lastUpdatedBlock
-                                });
-                            }
-                        }
-                        else
-                        {
-                            // for divisible NFTs, get the asset/token balance for this address 
-                            if (snapshot.TryGetDivisibleNep11Balance(asset, token, address, neoSystem.Settings, out var balance)
-                                && balance > BigInteger.Zero)
-                            {
-                                jsonTokens.Add(new JObject
-                                {
-                                    ["tokenid"] = token.GetSpan().ToHexString(),
-                                    ["amount"] = balance.ToString(),
-                                    ["lastupdatedblock"] = lastUpdatedBlock
-                                });
-                            }
-                        }
-                    }
+                var notifications = PersistencePlugin.GetNotifications(
+                    storageProvider,
+                    SeekDirection.Backward,
+                    tokens.Select(b => b.scriptHash).ToHashSet(),
+                    TRANSFER);
 
-                    if (jsonTokens.Count > 0)
-                    {
-                        balances.Add(new JObject
-                        {
-                            ["assethash"] = asset.ToString(),
-                            ["tokens"] = jsonTokens,
-                        });
-                    }
+                foreach (var (blockIndex, _, notification) in notifications)
+                {
+                    var transfer = TransferNotificationRecord.Create(notification);
+                    if (transfer is null) continue;
+                    if (transfer.From != address && transfer.To != address) continue;
+                    if (transfer.TokenId.Length == 0) continue;
+                    var key = (notification.ScriptHash, transfer.TokenId);
+                    if (updateIndexes.ContainsKey(key)) continue;
+                    updateIndexes.Add(key, blockIndex);
+                    if (updateIndexes.Count == tokens.Count) break;
                 }
+            }
+
+            var balances = new JArray();
+
+            foreach (var asset in tokens.GroupBy(t => t.scriptHash))
+            {
+                var jsonTokens = new JArray();
+                foreach (var (_, tokenId, balance) in asset)
+                {
+                    if (balance.IsZero) continue;
+
+                    var lastUpdatedBlock = updateIndexes.TryGetValue((asset.Key, tokenId), out var value)
+                        ? value : 0;
+                    jsonTokens.Add(new JObject
+                    {
+                        ["tokenid"] = tokenId.Span.ToHexString(),
+                        ["amount"] = balance.ToString(),
+                        ["lastupdatedblock"] = lastUpdatedBlock
+                    });
+                }
+
+                balances.Add(new JObject
+                {
+                    ["assethash"] = asset.ToString(),
+                    ["tokens"] = jsonTokens,
+                });
             }
 
             return new JObject
@@ -425,6 +495,7 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject GetNep11Properties(JArray @params)
         {
+            // logic replicated from TokenTracker.GetNep11Properties. 
             var nep11Hash = AsScriptHash(@params[0]);
             var tokenId = @params[1].AsString().HexToBytes();
 
@@ -495,40 +566,50 @@ namespace NeoExpress.Node
             var received = new JArray();
 
             using var snapshot = neoSystem.GetSnapshot();
-            foreach (var (blockIndex, txIndex, transfer) in PersistencePlugin.GetTransferNotifications(snapshot, storageProvider, standard, address))
+
+            var contracts = TokenContract.Enumerate(snapshot)
+                .Where(c => c.standard == standard)
+                .Select(c => c.scriptHash)
+                .ToHashSet();
+            var notifications = PersistencePlugin.GetNotifications(storageProvider,
+                SeekDirection.Forward, contracts, TRANSFER);
+
+            foreach (var (blockIndex, txIndex, notification) in notifications)
             {
                 var header = NativeContract.Ledger.GetHeader(snapshot, blockIndex);
-                if (startTime <= header.Timestamp || header.Timestamp <= endTime)
+                if (startTime > header.Timestamp || header.Timestamp > endTime) continue;
+
+                var transfer = TransferNotificationRecord.Create(notification);
+                if (transfer is null) continue;
+                if (transfer.From != address && transfer.To != address) continue;
+
+                // create a JSON object to represent the transfer
+                var jsonTransfer = new JObject()
                 {
-                    // create a JSON object to represent the transfer
-                    var json = new JObject()
-                    {
-                        ["timestamp"] = header.Timestamp,
-                        ["assethash"] = transfer.Asset.ToString(),
-                        ["amount"] = transfer.Amount.ToString(),
-                        ["blockindex"] = header.Index,
-                        ["transfernotifyindex"] = txIndex,
-                        ["txhash"] = transfer.Notification.InventoryHash.ToString(),
-                    };
+                    ["timestamp"] = header.Timestamp,
+                    ["assethash"] = transfer.Asset.ToString(),
+                    ["amount"] = transfer.Amount.ToString(),
+                    ["blockindex"] = header.Index,
+                    ["transfernotifyindex"] = txIndex,
+                    ["txhash"] = transfer.Notification.InventoryHash.ToString(),
+                };
 
-                    // NEP-11 transfer records include an extra field for the token ID (if present)
-                    if (standard == TokenStandard.Nep11
-                        && transfer.TokenId != null)
-                    {
-                        json["tokenid"] = transfer.TokenId.GetSpan().ToHexString();
-                    }
+                // NEP-11 transfer records include an extra field for the token ID (if present)
+                if (standard == TokenStandard.Nep11 && transfer.TokenId.Length > 0)
+                {
+                    jsonTransfer["tokenid"] = transfer.TokenId.Span.ToHexString();
+                }
 
-                    // add the json transfer object to send and/or receive collections as appropriate
-                    if (address == transfer.From)
-                    {
-                        json["transferaddress"] = transfer.To.ToString();
-                        sent.Add(json);
-                    }
-                    if (address == transfer.To)
-                    {
-                        json["transferaddress"] = transfer.From.ToString();
-                        received.Add(json);
-                    }
+                // add the json transfer object to send and/or receive collections as appropriate
+                if (address == transfer.From)
+                {
+                    jsonTransfer["transferaddress"] = transfer.To.ToString();
+                    sent.Add(jsonTransfer);
+                }
+                if (address == transfer.To)
+                {
+                    jsonTransfer["transferaddress"] = transfer.From.ToString();
+                    received.Add(jsonTransfer);
                 }
             }
 

@@ -182,7 +182,8 @@ namespace NeoExpress.Commands
                         {
                             await txExec.OracleResponseAsync(
                                 cmd.Model.Url,
-                                root.Resolve(cmd.Model.ResponsePath)).ConfigureAwait(false);
+                                root.Resolve(cmd.Model.ResponsePath),
+                                cmd.Model.RequestId).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:

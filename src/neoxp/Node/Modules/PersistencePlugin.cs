@@ -43,20 +43,34 @@ namespace NeoExpress.Node
                 : null;
         }
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(IStorageProvider storageProvider,
+        static Lazy<byte[]> backwardsNotificationsPrefix = new Lazy<byte[]>(() =>
+        {
+            var buffer = new byte[sizeof(uint) + sizeof(ushort)];
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, uint.MaxValue);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(sizeof(uint)), ushort.MaxValue);
+            return buffer;
+        });
+
+        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
+            IStorageProvider storageProvider,
+            SeekDirection direction,
+            IReadOnlySet<UInt160>? contracts,
+            string eventName) => string.IsNullOrEmpty(eventName)
+                ? GetNotifications(storageProvider, direction, contracts)
+                : GetNotifications(storageProvider, direction, contracts, 
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase) { eventName });
+
+        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
+            IStorageProvider storageProvider,
             SeekDirection direction = SeekDirection.Forward,
             IReadOnlySet<UInt160>? contracts = null,
             IReadOnlySet<string>? eventNames = null)
         {
             var store = GetNotificationsStore(storageProvider);
 
-            var prefix = Array.Empty<byte>();
-            if (direction == SeekDirection.Backward)
-            {
-                prefix = new byte[sizeof(uint) * 2];
-                BinaryPrimitives.WriteUInt32BigEndian(prefix, uint.MaxValue);
-                BinaryPrimitives.WriteUInt32BigEndian(prefix.AsSpan(sizeof(uint)), uint.MaxValue);
-            }
+            var prefix = direction == SeekDirection.Forward
+                ? Array.Empty<byte>()
+                : backwardsNotificationsPrefix.Value;
 
             return store.Seek(prefix, direction)
                 .Select(t => ParseNotification(t.Key, t.Value))
@@ -68,44 +82,6 @@ namespace NeoExpress.Node
                 var blockIndex = BinaryPrimitives.ReadUInt32BigEndian(key.AsSpan(0, sizeof(uint)));
                 var txIndex = BinaryPrimitives.ReadUInt16BigEndian(key.AsSpan(sizeof(uint), sizeof(ushort)));
                 return (blockIndex, txIndex, notification: value.AsSerializable<NotificationRecord>());
-            }
-        }
-
-        public static IEnumerable<(uint blockIndex, ushort txIndex, TransferNotificationRecord transfer)> GetTransferNotifications(
-            DataCache snapshot,
-            IStorageProvider storageProvider,
-            TokenStandard standard,
-            UInt160 address)
-        {
-            // valid number of state arguments depends on the token standard
-            var stateCount = standard switch
-            {
-                TokenStandard.Nep17 => 3,
-                TokenStandard.Nep11 => 4,
-                _ => throw new ArgumentException("Unexpected standard value", nameof(standard))
-            };
-
-            // collect a set of hashes for contracts that implement the specified standard
-            HashSet<UInt160> tokenContracts = new();
-            foreach (var (contractHash, tokenStandard) in TokenContract.Enumerate(snapshot))
-            {
-                if (tokenStandard == standard) tokenContracts.Add(contractHash);
-            }
-
-            // collect latest block index of transfer records involving provided address
-            foreach (var (blockIndex, txIndex, notification) in PersistencePlugin.GetNotifications(storageProvider))
-            {
-                if (notification.EventName == "Transfer"
-                     && notification.State.Count == stateCount
-                     && tokenContracts.Contains(notification.ScriptHash))
-                {
-                    var transfer = TransferNotificationRecord.Create(notification);
-                    if (transfer != null
-                        && (transfer.From == address || transfer.To == address))
-                    {
-                        yield return (blockIndex, txIndex, transfer);
-                    }
-                }
             }
         }
 

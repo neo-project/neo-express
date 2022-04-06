@@ -21,34 +21,6 @@ namespace NeoExpress.Node
 {
     class ExpressOracle
     {
-        // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
-        // depend on the DataCache snapshot parameter in order to create a 
-        // ContractParametersContext without direct access to node data.
-
-        class BlockScriptHashes : IVerifiable
-        {
-            readonly UInt160[] hashes;
-
-            public BlockScriptHashes(UInt160 scriptHash)
-            {
-                hashes = new[] { scriptHash };
-            }
-
-            public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
-
-            Witness[] IVerifiable.Witnesses
-            {
-                get => throw new NotImplementedException();
-                set => throw new NotImplementedException();
-            }
-
-            int ISerializable.Size => throw new NotImplementedException();
-            void ISerializable.Deserialize(BinaryReader reader) => throw new NotImplementedException();
-            void IVerifiable.DeserializeUnsigned(BinaryReader reader) => throw new NotImplementedException();
-            void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
-            void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
-        }
-
         public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
         {
             transactions ??= Array.Empty<Transaction>();
@@ -120,7 +92,6 @@ namespace NeoExpress.Node
                 }
             }
         }
-
 
         public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, IReadOnlyList<ECPoint> oracleNodes)
         {
@@ -241,6 +212,34 @@ namespace NeoExpress.Node
             tx.SystemFee = request.GasForResponse - tx.NetworkFee;
 
             return tx;
+        }
+
+        // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
+        // depend on the DataCache snapshot parameter in order to create a 
+        // ContractParametersContext without direct access to node data.
+
+        class BlockScriptHashes : IVerifiable
+        {
+            readonly UInt160[] hashes;
+
+            public BlockScriptHashes(UInt160 scriptHash)
+            {
+                hashes = new[] { scriptHash };
+            }
+
+            public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
+
+            Witness[] IVerifiable.Witnesses
+            {
+                get => throw new NotImplementedException();
+                set => throw new NotImplementedException();
+            }
+
+            int ISerializable.Size => throw new NotImplementedException();
+            void ISerializable.Deserialize(BinaryReader reader) => throw new NotImplementedException();
+            void IVerifiable.DeserializeUnsigned(BinaryReader reader) => throw new NotImplementedException();
+            void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
+            void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
         }
     }
 }

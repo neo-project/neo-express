@@ -70,10 +70,7 @@ namespace NeoExpress.Node
             if (blockCount == 1)
             {
                 var block = ExpressOracle.CreateSignedBlock(
-                                prevHeader,
-                                keyPairs,
-                                network,
-                                timestamp: timestamp + delta);
+                    prevHeader, keyPairs, network, timestamp: timestamp + delta);
                 await submitBlockAsync(block).ConfigureAwait(false);
             }
             else
@@ -82,10 +79,7 @@ namespace NeoExpress.Node
                 for (int i = 0; i < blockCount; i++)
                 {
                     var block = ExpressOracle.CreateSignedBlock(
-                                    prevHeader,
-                                    keyPairs,
-                                    network,
-                                    timestamp: timestamp);
+                        prevHeader, keyPairs, network, timestamp: timestamp);
                     await submitBlockAsync(block).ConfigureAwait(false);
                     prevHeader = block.Header;
                     timestamp += period;

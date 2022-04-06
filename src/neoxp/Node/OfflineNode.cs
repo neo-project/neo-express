@@ -188,25 +188,22 @@ namespace NeoExpress.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
 
             await ExpressOracle.FastForwardAsync(prevHeader,
-                                               blockCount,
-                                               timestampDelta,
-                                               consensusNodesKeys.Value,
-                                               ProtocolSettings.Network,
-                                               block => RelayBlockAsync(block));
+                blockCount,
+                timestampDelta,
+                consensusNodesKeys.Value,
+                ProtocolSettings.Network,
+                block => RelayBlockAsync(block));
         }
 
-        async Task<UInt256> SubmitTransactionAsync(Transaction? tx = null)
+        async Task<UInt256> SubmitTransactionAsync(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var transactions = tx == null
-                ? Array.Empty<Transaction>()
-                : new[] { tx };
+            var transactions = new[] { tx };
 
             // Verify the provided transactions. When running, Blockchain class does verification in two steps: VerifyStateIndependent and VerifyStateDependent.
             // However, Verify does both parts and there's no point in verifying dependent/independent in separate steps here
@@ -221,11 +218,10 @@ namespace NeoExpress.Node
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
-            var block = ExpressOracle.CreateSignedBlock(
-                            prevHeader,
-                            consensusNodesKeys.Value,
-                            neoSystem.Settings.Network,
-                            transactions);
+            var block = ExpressOracle.CreateSignedBlock(prevHeader,
+                consensusNodesKeys.Value,
+                neoSystem.Settings.Network,
+                transactions);
             await RelayBlockAsync(block).ConfigureAwait(false);
             return block.Hash;
         }

@@ -61,11 +61,11 @@ namespace NeoExpress.Node
             var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
             await ExpressOracle.FastForwardAsync(prevHeader,
-                                               blockCount,
-                                               timestampDelta,
-                                               consensusNodesKeys.Value,
-                                               ProtocolSettings.Network,
-                                               block => rpcClient.SubmitBlockAsync(block.ToArray()));
+                blockCount,
+                timestampDelta,
+                consensusNodesKeys.Value,
+                ProtocolSettings.Network,
+                block => rpcClient.SubmitBlockAsync(block.ToArray()));
         }
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)

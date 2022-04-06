@@ -19,7 +19,7 @@ using NeoExpress.Models;
 
 namespace NeoExpress.Node
 {
-    class NodeUtility
+    class ExpressOracle
     {
         // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
         // depend on the DataCache snapshot parameter in order to create a 
@@ -97,7 +97,7 @@ namespace NeoExpress.Node
 
             if (blockCount == 1)
             {
-                var block = NodeUtility.CreateSignedBlock(
+                var block = ExpressOracle.CreateSignedBlock(
                                 prevHeader,
                                 keyPairs,
                                 network,
@@ -109,7 +109,7 @@ namespace NeoExpress.Node
                 var period = delta / (blockCount - 1);
                 for (int i = 0; i < blockCount; i++)
                 {
-                    var block = NodeUtility.CreateSignedBlock(
+                    var block = ExpressOracle.CreateSignedBlock(
                                     prevHeader,
                                     keyPairs,
                                     network,

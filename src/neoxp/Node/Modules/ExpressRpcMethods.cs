@@ -236,7 +236,7 @@ namespace NeoExpress.Node
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
+            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
             return tx == null ? null : Convert.ToBase64String(tx.ToArray());
         }
 

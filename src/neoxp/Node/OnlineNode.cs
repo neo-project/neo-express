@@ -65,7 +65,7 @@ namespace NeoExpress.Node
             var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
             var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
-            await NodeUtility.FastForwardAsync(prevHeader,
+            await ExpressOracle.FastForwardAsync(prevHeader,
                                                blockCount,
                                                timestampDelta,
                                                consensusNodesKeys.Value,
@@ -115,7 +115,7 @@ namespace NeoExpress.Node
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }

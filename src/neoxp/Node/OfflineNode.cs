@@ -179,9 +179,9 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
             return tx.Hash;
@@ -195,7 +195,7 @@ namespace NeoExpress.Node
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
 
-            await NodeUtility.FastForwardAsync(prevHeader,
+            await ExpressOracle.FastForwardAsync(prevHeader,
                                                blockCount,
                                                timestampDelta,
                                                consensusNodesKeys.Value,
@@ -224,7 +224,7 @@ namespace NeoExpress.Node
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
-            var block = NodeUtility.CreateSignedBlock(
+            var block = ExpressOracle.CreateSignedBlock(
                             prevHeader,
                             consensusNodesKeys.Value,
                             neoSystem.Settings.Network,

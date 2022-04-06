@@ -49,10 +49,7 @@ namespace NeoExpress.Node
             this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
             applicationEngineProvider = enableTrace ? new ApplicationEngineProvider() : null;
-            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
-                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
-                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
-                .ToArray());
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
 
             var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
             _ = new PersistencePlugin(rocksDbStorageProvider);
@@ -187,88 +184,54 @@ namespace NeoExpress.Node
             return tx.Hash;
         }
 
-        public async Task FastForwardAsync(uint blockCount)
+        public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            for (int i = 0; i < blockCount; i++)
-            {
-                await SubmitTransactionAsync(null).ConfigureAwait(false);
-            }
+            var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
+            var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
+
+            await ExpressOracle.FastForwardAsync(prevHeader,
+                blockCount,
+                timestampDelta,
+                consensusNodesKeys.Value,
+                ProtocolSettings.Network,
+                block => RelayBlockAsync(block));
         }
 
-        async Task<UInt256> SubmitTransactionAsync(Transaction? tx = null)
+        async Task<UInt256> SubmitTransactionAsync(Transaction tx)
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var transactions = tx == null ? Array.Empty<Transaction>() : new[] { tx };
-            var block = CreateSignedBlock(neoSystem, consensusNodesKeys.Value, transactions);
+            var transactions = new[] { tx };
+
+            // Verify the provided transactions. When running, Blockchain class does verification in two steps: VerifyStateIndependent and VerifyStateDependent.
+            // However, Verify does both parts and there's no point in verifying dependent/independent in separate steps here
+            var verificationContext = new TransactionVerificationContext();
+            for (int i = 0; i < transactions.Length; i++)
+            {
+                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext) != VerifyResult.Succeed)
+                {
+                    throw new Exception("Verification failed");
+                }
+            }
+
+            var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
+            var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
+            var block = ExpressOracle.CreateSignedBlock(prevHeader,
+                consensusNodesKeys.Value,
+                neoSystem.Settings.Network,
+                transactions);
+            await RelayBlockAsync(block).ConfigureAwait(false);
+            return block.Hash;
+        }
+
+        async Task RelayBlockAsync(Block block)
+        {
             var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block).ConfigureAwait(false);
             if (blockRelay.Result != VerifyResult.Succeed)
             {
                 throw new Exception($"Block relay failed {blockRelay.Result}");
-            }
-            return block.Hash;
-
-            static Block CreateSignedBlock(NeoSystem neoSystem, KeyPair[] consensusNodesKeys, Transaction[] transactions)
-            {
-                // The logic in this method is distilled from ConsensusService/ConsensusContext + MemPool tx verification logic
-
-                var snapshot = neoSystem.StoreView;
-
-                // Verify the provided transactions. When running, Blockchain class does verification in two steps: VerifyStateIndependent and VerifyStateDependent.
-                // However, Verify does both parts and there's no point in verifying dependent/independent in separate steps here
-                var verificationContext = new TransactionVerificationContext();
-                for (int i = 0; i < transactions.Length; i++)
-                {
-                    if (transactions[i].Verify(neoSystem.Settings, snapshot, verificationContext) != VerifyResult.Succeed)
-                    {
-                        throw new Exception("Verification failed");
-                    }
-                }
-
-                // create the block instance
-                var prevHash = NativeContract.Ledger.CurrentHash(snapshot);
-                var prevBlock = NativeContract.Ledger.GetHeader(snapshot, prevHash);
-                var blockHeight = prevBlock.Index + 1;
-                var block = new Block
-                {
-                    Header = new Header
-                    {
-                        Version = 0,
-                        PrevHash = prevHash,
-                        MerkleRoot = MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
-                        Timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevBlock.Timestamp + 1),
-                        Index = blockHeight,
-                        PrimaryIndex = 0,
-                        NextConsensus = Contract.GetBFTAddress(
-                            NeoToken.ShouldRefreshCommittee(blockHeight, neoSystem.Settings.CommitteeMembersCount)
-                                ? NativeContract.NEO.ComputeNextBlockValidators(snapshot, neoSystem.Settings)
-                                : NativeContract.NEO.GetNextBlockValidators(snapshot, neoSystem.Settings.ValidatorsCount)),
-                    },
-                    Transactions = transactions
-                };
-
-                // retrieve the validators for the next block. Logic lifted from ConsensusContext.Reset
-                var validators = NativeContract.NEO.GetNextBlockValidators(snapshot, neoSystem.Settings.ValidatorsCount);
-                var m = validators.Length - (validators.Length - 1) / 3;
-
-                // generate the block header witness. Logic lifted from ConsensusContext.CreateBlock
-                var contract = Contract.CreateMultiSigContract(m, validators);
-                var signingContext = new ContractParametersContext(snapshot, block.Header, neoSystem.Settings.Network);
-                for (int i = 0, j = 0; i < validators.Length && j < m; i++)
-                {
-                    var key = consensusNodesKeys.SingleOrDefault(k => k.PublicKey.Equals(validators[i]));
-                    if (key == null) continue;
-
-                    var signature = block.Header.Sign(key, neoSystem.Settings.Network);
-                    signingContext.AddSignature(contract, validators[i], signature);
-                    j++;
-                }
-                if (!signingContext.Completed) throw new Exception("block signing incomplete");
-                block.Header.Witness = signingContext.GetWitnesses()[0];
-
-                return block;
             }
         }
 

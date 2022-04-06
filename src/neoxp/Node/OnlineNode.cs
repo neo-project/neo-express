@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
-using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
@@ -25,8 +23,9 @@ namespace NeoExpress.Node
 
     internal class OnlineNode : IExpressNode
     {
-        private readonly ExpressChain chain;
-        private readonly RpcClient rpcClient;
+        readonly ExpressChain chain;
+        readonly RpcClient rpcClient;
+        readonly Lazy<KeyPair[]> consensusNodesKeys;
 
         public ProtocolSettings ProtocolSettings { get; }
 
@@ -35,6 +34,7 @@ namespace NeoExpress.Node
             this.ProtocolSettings = settings;
             this.chain = chain;
             rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
         }
 
         public void Dispose()
@@ -54,104 +54,18 @@ namespace NeoExpress.Node
                 : rpcClient.InvokeScriptAsync(script, signer);
         }
 
-        // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
-        // depend on the DataCache snapshot parameter since the ContractParametersContext
-        // we are creating here does not have direct access to node data.
-
-        class BlockScriptHashes : IVerifiable
+        public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
-            readonly UInt160[] hashes;
+            var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
+            var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
+            var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
-            public BlockScriptHashes(UInt160 scriptHash)
-            {
-                hashes = new[] { scriptHash };
-            }
-
-            public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
-
-            Witness[] IVerifiable.Witnesses
-            {
-                get => throw new NotImplementedException();
-                set => throw new NotImplementedException();
-            }
-
-            int ISerializable.Size => throw new NotImplementedException();
-
-            void ISerializable.Deserialize(BinaryReader reader)
-            {
-                throw new NotImplementedException();
-            }
-
-            void IVerifiable.DeserializeUnsigned(BinaryReader reader)
-            {
-                throw new NotImplementedException();
-            }
-
-            void ISerializable.Serialize(BinaryWriter writer)
-            {
-                throw new NotImplementedException();
-            }
-
-            void IVerifiable.SerializeUnsigned(BinaryWriter writer)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public async Task FastForwardAsync(uint blockCount)
-        {
-            var keyPairs = chain.ConsensusNodes
-                .Select(n =>
-                {
-                    var account = n.Wallet.DefaultAccount
-                        ?? throw new InvalidOperationException($"Invalid default account for {n.Wallet.Name}");
-                    return new KeyPair(account.PrivateKey.HexToBytes());
-                })
-                .ToArray();
-
-            for (var i = 0u; i < blockCount; i++)
-            {
-                await SubmitEmptyBlockAsync(rpcClient, keyPairs, ProtocolSettings.Network).ConfigureAwait(false);
-            }
-
-            static async Task SubmitEmptyBlockAsync(RpcClient rpcClient, IReadOnlyList<KeyPair> keyPairs, uint network)
-            {
-                var hash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
-                var header = Convert.FromBase64String(await rpcClient.GetBlockHeaderHexAsync($"{hash}"))
-                    .AsSerializable<Header>();
-
-                var block = new Block
-                {
-                    Header = new Header
-                    {
-                        Version = 0,
-                        PrevHash = header.Hash,
-                        MerkleRoot = UInt256.Zero,
-                        Timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), header.Timestamp + 1),
-                        Index = header.Index + 1,
-                        PrimaryIndex = 0,
-                        NextConsensus = header.NextConsensus,
-                    },
-                    Transactions = Array.Empty<Transaction>()
-                };
-
-                var validators = (await rpcClient.GetNextBlockValidatorsAsync().ConfigureAwait(false))
-                        .Select(v => ECPoint.Parse(v.PublicKey, ECCurve.Secp256r1)).ToArray();
-                var signatureCount = validators.Length - (validators.Length - 1) / 3;
-                var contract = Contract.CreateMultiSigContract(signatureCount, validators);
-
-                var context = new ContractParametersContext(null, new BlockScriptHashes(header.NextConsensus), network);
-                for (int i = 0; i < keyPairs.Count; i++)
-                {
-                    var signature = block.Sign(keyPairs[i], network);
-                    context.AddSignature(contract, keyPairs[i].PublicKey, signature);
-                    if (context.Completed) break;
-                }
-                if (!context.Completed) throw new InvalidOperationException("Invalid block signature");
-                block.Header.Witness = context.GetWitnesses().Single();
-
-                await rpcClient.SubmitBlockAsync(block.ToArray()).ConfigureAwait(false);
-            }
+            await ExpressOracle.FastForwardAsync(prevHeader,
+                blockCount,
+                timestampDelta,
+                consensusNodesKeys.Value,
+                ProtocolSettings.Network,
+                block => rpcClient.SubmitBlockAsync(block.ToArray()));
         }
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)

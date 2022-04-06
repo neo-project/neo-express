@@ -33,6 +33,12 @@ namespace NeoExpress
             return builder.ToImmutable();
         }
 
+        public static KeyPair[] GetConsensusNodeKeys(this ExpressChain chain)
+            => chain.ConsensusNodes
+                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
+                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
+                .ToArray();
+
         internal const string GENESIS = "genesis";
 
         public static bool IsReservedName(this ExpressChain chain, string name)

@@ -49,10 +49,7 @@ namespace NeoExpress.Node
             this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
             applicationEngineProvider = enableTrace ? new ApplicationEngineProvider() : null;
-            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
-                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
-                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
-                .ToArray());
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
 
             var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
             _ = new PersistencePlugin(rocksDbStorageProvider);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
-using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
@@ -36,10 +34,7 @@ namespace NeoExpress.Node
             this.ProtocolSettings = settings;
             this.chain = chain;
             rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
-            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
-                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
-                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
-                .ToArray());
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
         }
 
         public void Dispose()

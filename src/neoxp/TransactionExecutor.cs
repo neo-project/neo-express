@@ -98,6 +98,8 @@ namespace NeoExpress
             {
                 using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
                 await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
+                await jsonWriter.WritePropertyNameAsync("contract-name").ConfigureAwait(false);
+                await jsonWriter.WriteValueAsync(manifest.Name).ConfigureAwait(false);
                 await jsonWriter.WritePropertyNameAsync("contract-hash").ConfigureAwait(false);
                 await jsonWriter.WriteValueAsync($"{contractHash}").ConfigureAwait(false);
                 await jsonWriter.WritePropertyNameAsync("tx-hash").ConfigureAwait(false);
@@ -106,7 +108,7 @@ namespace NeoExpress
             }
             else
             {
-                await writer.WriteLineAsync($"{contractHash} Deployment Transaction {txHash} submitted").ConfigureAwait(false);
+                await writer.WriteLineAsync($"Deployment of {manifest.Name} ({contractHash}) Transaction {txHash} submitted").ConfigureAwait(false);
             }
         }
 

@@ -409,7 +409,15 @@ namespace NeoExpress.Node
             => MakeAsync(() => ListStorages(scriptHash));
 
         public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force) 
-            => MakeAsync(() => NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force));
+            => MakeAsync(() =>
+            {
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Contract download is only supported for single-node consensus");
+                }
+
+                return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force);
+            });
 
         // warning CS1998: This async method lacks 'await' operators and will run synchronously.
         // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation

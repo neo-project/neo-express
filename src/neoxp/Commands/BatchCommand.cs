@@ -130,8 +130,13 @@ namespace NeoExpress.Commands
                                 throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
                             }
                             
-                            var expressNode = chainManager.GetExpressNode();
-                            var result = await NodeUtility.DownloadParamsAsync(
+                            if (chainManager.Chain.ConsensusNodes.Count != 1)
+                            {
+                                throw new ArgumentException("Contract download is only supported for single-node consensus");
+                            }
+
+                            var expressNode = txExec.ExpressNode;
+                            var result = await NodeUtility.DownloadContractStateAsync(
                                 cmd.Model.Contract, 
                                 cmd.Model.RpcUri, 
                                 cmd.Model.Height).ConfigureAwait(false);

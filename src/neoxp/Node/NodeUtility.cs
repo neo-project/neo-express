@@ -169,7 +169,7 @@ namespace NeoExpress.Node
             return value;
         }
 
-        public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)> DownloadParamsAsync(
+        public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)> DownloadContractStateAsync(
             string contractHash,
             string rpcUri,
             uint stateHeight)

@@ -331,6 +331,11 @@ namespace NeoExpress.Node
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Contract download is only supported for single-node consensus");
+            }
+            
             JObject o = new JObject();
             o["state"] = state.ToJson();
 

@@ -27,7 +27,7 @@ namespace NeoExpress
         Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null);
         Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0);
         Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes);
-        Task FastForwardAsync(uint blockCount);
+        Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta);
 
         Task<Block> GetBlockAsync(UInt256 blockHash);
         Task<Block> GetBlockAsync(uint blockIndex);

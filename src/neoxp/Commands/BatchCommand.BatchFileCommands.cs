@@ -129,7 +129,10 @@ namespace NeoExpress.Commands
             {
                 [Argument(0, Description = "Number of blocks to mint")]
                 [Required]
-                internal uint Count { get; init; } = 1;
+                internal uint Count { get; init; }
+
+                [Option(Description = "Timestamp delta for last generated block")]
+                internal string TimestampDelta { get; init; } = string.Empty;
             }
 
             [Command("oracle")]

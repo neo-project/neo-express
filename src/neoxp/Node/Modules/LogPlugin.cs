@@ -40,7 +40,10 @@ namespace NeoExpress.Node
 
         void OnLog(object sender, LogEventArgs args)
         {
-            writer.WriteLine($"\x1b[35m{GetContractName(args.ScriptHash)}\x1b[0m Log: \x1b[96m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
+            var container = args.ScriptContainer is null
+                ? string.Empty
+                : $" [{args.ScriptContainer.GetType().Name}]";
+            writer.WriteLine($"\x1b[35m{GetContractName(args.ScriptHash)}\x1b[0m Log: \x1b[96m\"{args.Message}\"\x1b[0m{container}");
         }
 
         void ILogPlugin.Log(string source, LogLevel level, object message)

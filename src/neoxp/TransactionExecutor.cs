@@ -14,6 +14,7 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OneOf;
 using OneOf.Types;
@@ -90,9 +91,25 @@ namespace NeoExpress
             var txHash = await expressNode
                 .DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope, dataParam)
                 .ConfigureAwait(false);
-            await writer
-                .WriteTxHashAsync(txHash, "Deployment", json)
-                .ConfigureAwait(false);
+
+
+            var contractHash = Neo.SmartContract.Helper.GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
+            if (json)
+            {
+                using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+                await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
+                await jsonWriter.WritePropertyNameAsync("contract-name").ConfigureAwait(false);
+                await jsonWriter.WriteValueAsync(manifest.Name).ConfigureAwait(false);
+                await jsonWriter.WritePropertyNameAsync("contract-hash").ConfigureAwait(false);
+                await jsonWriter.WriteValueAsync($"{contractHash}").ConfigureAwait(false);
+                await jsonWriter.WritePropertyNameAsync("tx-hash").ConfigureAwait(false);
+                await jsonWriter.WriteValueAsync($"{txHash}").ConfigureAwait(false);
+                await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                await writer.WriteLineAsync($"Deployment of {manifest.Name} ({contractHash}) Transaction {txHash} submitted").ConfigureAwait(false);
+            }
         }
 
         public async Task<Script> LoadInvocationScriptAsync(string invocationFile)

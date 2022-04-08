@@ -314,7 +314,8 @@ namespace NeoExpress.Node
                 }
             }
 
-            if (force == ContractCommand.OverwriteForce.All || force == ContractCommand.OverwriteForce.StorageOnly)
+            if ((force == ContractCommand.OverwriteForce.All || force == ContractCommand.OverwriteForce.StorageOnly) ||
+                (localContract is null && force == ContractCommand.OverwriteForce.None))
             {
                 var contractId = localContract is null ? state.Id : localContract.Id;
 

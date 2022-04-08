@@ -48,7 +48,6 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                var expressNode = chainManager.GetExpressNode();
                 
                 if (chainManager.Chain.ConsensusNodes.Count != 1)
                 {
@@ -56,6 +55,7 @@ namespace NeoExpress.Commands
                 }
 
                 var result = await NodeUtility.DownloadContractStateAsync(Contract, RpcUri, Height);
+                using var expressNode = chainManager.GetExpressNode();
                 await expressNode.PersistContractAsync(result.contractState, result.storagePairs, Force);
             }
             

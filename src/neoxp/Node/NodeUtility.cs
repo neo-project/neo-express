@@ -267,8 +267,21 @@ namespace NeoExpress.Node
             }
 
             var stateRoot = await stateAPI.GetStateRootAsync(height);
+
+            // rpcClient.GetContractStateAsync returns the current ContractState, but this method needs
+            // the ContractState as it was at stateHeight. ContractManagement stores ContractState by
+            // contractHash with the prefix 8. The following code uses stateAPI.GetStateAsync to retrieve
+            // the value with that key at the height state root and then deserializes it into a ContractState
+            // instance via GetInteroperable.
+
+            var key = new byte[21];
+            key[0] = 8; // ContractManagement.Prefix_Contract
+            _contractHash.ToArray().CopyTo(key, 1);
+
+            var contractStateBuffer = await stateAPI.GetStateAsync(
+                stateRoot.RootHash, NativeContract.ContractManagement.Hash, key);
+            var contractState = new StorageItem(contractStateBuffer).GetInteroperable<ContractState>();
             var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, _contractHash, new byte[0]);
-            var contractState = await rpcClient.GetContractStateAsync(contractHash).ConfigureAwait(false);
 
             return (contractState, states);
         }
@@ -337,6 +350,7 @@ namespace NeoExpress.Node
             snapshot.Commit();
             return state.Id;
         }
+
         // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
         // depend on the DataCache snapshot parameter in order to create a 
         // ContractParametersContext without direct access to node data.

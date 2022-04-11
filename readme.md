@@ -56,7 +56,12 @@ To upgrade Neo-Express, enter the following command in a terminal window:
 
 ### Ubuntu Installation
 
-Installing on Ubuntu 18.04 requires installing libsnappy-dev, libc6-dev and librocksdb-dev via apt-get
+> Note, while .NET 6 can be [installed with Snap](https://docs.microsoft.com/en-us/dotnet/core/install/linux-snap), there
+> appears to be an issue leading to a [segmentation fault](https://github.com/dotnet/runtime/issues/67465) when .NET is 
+> installed this way. At this time, we recommend [using APT](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu)
+> to install .NET 6 on Ubuntu. 
+
+Installing on Ubuntu requires installing libsnappy-dev, libc6-dev and librocksdb-dev via apt-get
 
 ``` shell
 > sudo apt install libsnappy-dev libc6-dev librocksdb-dev -y

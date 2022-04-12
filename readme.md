@@ -56,10 +56,11 @@ To upgrade Neo-Express, enter the following command in a terminal window:
 
 ### Ubuntu Installation
 
-> Note, while .NET 6 can be [installed with Snap](https://docs.microsoft.com/en-us/dotnet/core/install/linux-snap), there
-> appears to be an issue leading to a [segmentation fault](https://github.com/dotnet/runtime/issues/67465) when .NET is 
-> installed this way. At this time, we recommend [using APT](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu)
-> to install .NET 6 on Ubuntu. 
+> Note, while Microsoft has instructions for [installing .NET via Snap](https://docs.microsoft.com/en-us/dotnet/core/install/linux-snap),
+> there is a [known issue](https://github.com/dotnet/runtime/issues/3775#issuecomment-534263315) with this approach that leads to a
+> segmentation fault in Neo Express. Unfortunately, this issue with the .NET snap installer
+> [has been closed and will not be fixed](https://github.com/dotnet/runtime/issues/3775#issuecomment-888676286).
+> As such, we recommend [using APT](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu) to install .NET 6 on Ubuntu instead.
 
 Installing on Ubuntu requires installing libsnappy-dev, libc6-dev and librocksdb-dev via apt-get
 

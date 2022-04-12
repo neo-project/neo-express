@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -258,7 +259,21 @@ namespace NeoExpress.Node
             uint height = stateHeight;
             if (height == 0)
             {
-                var stateHeight_ = await stateAPI.GetStateHeightAsync();
+                (uint? localRootIndex, uint? validatedRootIndex) stateHeight_; 
+                try
+                {
+                    stateHeight_ = await stateAPI.GetStateHeightAsync();
+                }
+                catch (RpcException e)
+                {
+                    if (e.Message.Contains("Method not found"))
+                    {
+                        throw new Exception(
+                            "Could not get state information. Make sure the remote RPC server has state service support");
+                    }
+                    throw;
+                }
+                
                 if (stateHeight_.localRootIndex is null)
                 {
                     throw new Exception("Null \"localRootIndex\" in state height response");

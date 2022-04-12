@@ -329,7 +329,33 @@ namespace NeoExpress.Node
             {
                 if (force == ContractCommand.OverwriteForce.None)
                 {
-                    throw new Exception("Contract already exists locally. Use --force:<option> to overwrite");
+                    IList<(string key, string value)> states = new Collection<(string key, string value)>();
+                    byte[] prefixKey = StorageKey.CreateSearchPrefix(localContract.Id, new byte[]{});
+                    foreach (var (k, v) in snapshot.Find(prefixKey))
+                    {
+                        states.Add((Convert.ToBase64String(k.Key.ToArray()), Convert.ToBase64String(v.ToArray())));
+                    }
+                    
+                    var stateEquals = localContract.ToJson().ToByteArray(false)
+                        .SequenceEqual(state.ToJson().ToByteArray(false));
+                    var storageEquals = storagePairs.SequenceEqual(states);
+                    
+                    if (stateEquals && storageEquals)
+                    {
+                        throw new Exception("Contract already exists - aborting");
+                    } 
+                    if (stateEquals && !storageEquals)
+                    {
+                        throw new Exception("Contract already exists - storage differs.\nUse --force:StorageOnly to overwrite");    
+                    }
+                    if (!stateEquals && storageEquals)
+                    {
+                        throw new Exception("Contract already exists - contract state differs.\nUse --force:ContractOnly to overwrite");    
+                    }
+                    if (!stateEquals && !storageEquals)
+                    {
+                        throw new Exception("Contract already exists - contract state and storage differs.\nUse --force:All to overwrite");
+                    }
                 }
 
                 if (force == ContractCommand.OverwriteForce.All ||

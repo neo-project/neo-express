@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -329,7 +328,7 @@ namespace NeoExpress.Node
             {
                 if (force == ContractCommand.OverwriteForce.None)
                 {
-                    IList<(string key, string value)> states = new Collection<(string key, string value)>();
+                    List<(string key, string value)> states = new();
                     byte[] prefixKey = StorageKey.CreateSearchPrefix(localContract.Id, new byte[]{});
                     foreach (var (k, v) in snapshot.Find(prefixKey))
                     {

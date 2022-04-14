@@ -356,7 +356,7 @@ namespace NeoExpress.Node
             if (overwriteStorage)
             {
                 // the storage schema might have changed therefore we first clear all storage
-                byte[] prefix_key = StorageKey.CreateSearchPrefix(contractId, new byte[] { });
+                byte[] prefix_key = StorageKey.CreateSearchPrefix(contractId, default);
                 foreach (var (k, v) in snapshot.Find(prefix_key))
                 {
                     snapshot.Delete(k);

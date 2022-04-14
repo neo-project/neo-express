@@ -537,7 +537,7 @@ namespace NeoExpress.Node
                 ).ToArray();
             var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]["force"].AsString());                
             
-            return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force);
+            return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
         }
 
         static readonly IReadOnlySet<string> nep11PropertyNames = new HashSet<string>

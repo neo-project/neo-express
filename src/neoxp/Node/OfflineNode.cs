@@ -379,7 +379,7 @@ namespace NeoExpress.Node
                     throw new ArgumentException("Contract download is only supported for single-node consensus");
                 }
 
-                return NodeUtility.PersistContract(neoSystem.GetSnapshot(), state, storagePairs, force);
+                return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
             });
 
         // warning CS1998: This async method lacks 'await' operators and will run synchronously.

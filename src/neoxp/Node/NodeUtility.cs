@@ -227,7 +227,7 @@ namespace NeoExpress.Node
             StorageItem item = snapshot.GetAndChange(key);
             item.Set(newId);
         }
-        
+
         private static int GetNextAvailableId(DataCache snapshot)
         {
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
@@ -238,13 +238,11 @@ namespace NeoExpress.Node
         }
 
         public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)> DownloadContractStateAsync(
-            string contractHash,
-            string rpcUri,
-            uint stateHeight)
+                string contractHash, string rpcUri, uint stateHeight)
         {
             if (!UInt160.TryParse(contractHash, out var _contractHash))
             {
-                throw new ArgumentException($"Invalid contract hash: \"{contractHash}\"");    
+                throw new ArgumentException($"Invalid contract hash: \"{contractHash}\"");
             }
 
             if (!TransactionExecutor.TryParseRpcUri(rpcUri, out var uri))
@@ -254,7 +252,7 @@ namespace NeoExpress.Node
 
             using var rpcClient = new RpcClient(uri);
             var stateAPI = new StateAPI(rpcClient);
-                
+
             uint height = stateHeight;
             if (height == 0)
             {
@@ -292,7 +290,7 @@ namespace NeoExpress.Node
             var contractStateBuffer = await stateAPI.GetStateAsync(
                 stateRoot.RootHash, NativeContract.ContractManagement.Hash, key);
             var contractState = new StorageItem(contractStateBuffer).GetInteroperable<ContractState>();
-            var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, _contractHash, new byte[0]);
+            var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, _contractHash, default);
 
             return (contractState, states);
         }
@@ -326,27 +324,27 @@ namespace NeoExpress.Node
                 if (force == ContractCommand.OverwriteForce.None)
                 {
                     List<(string key, string value)> states = new();
-                    byte[] prefixKey = StorageKey.CreateSearchPrefix(localContract.Id, new byte[]{});
+                    byte[] prefixKey = StorageKey.CreateSearchPrefix(localContract.Id, new byte[] { });
                     foreach (var (k, v) in snapshot.Find(prefixKey))
                     {
                         states.Add((Convert.ToBase64String(k.Key.ToArray()), Convert.ToBase64String(v.ToArray())));
                     }
-                    
+
                     var stateEquals = localContract.ToJson().ToByteArray(false)
                         .SequenceEqual(state.ToJson().ToByteArray(false));
                     var storageEquals = storagePairs.SequenceEqual(states);
-                    
+
                     if (stateEquals && storageEquals)
                     {
                         throw new Exception("Contract already exists - aborting");
-                    } 
+                    }
                     if (stateEquals && !storageEquals)
                     {
-                        throw new Exception("Contract already exists - storage differs.\nUse --force:StorageOnly to overwrite");    
+                        throw new Exception("Contract already exists - storage differs.\nUse --force:StorageOnly to overwrite");
                     }
                     if (!stateEquals && storageEquals)
                     {
-                        throw new Exception("Contract already exists - contract state differs.\nUse --force:ContractOnly to overwrite");    
+                        throw new Exception("Contract already exists - contract state differs.\nUse --force:ContractOnly to overwrite");
                     }
                     if (!stateEquals && !storageEquals)
                     {

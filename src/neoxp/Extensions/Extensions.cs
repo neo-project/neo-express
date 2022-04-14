@@ -267,28 +267,25 @@ namespace NeoExpress
                 }
             }
         }
-        
-        
-        private static JObject[] MakeFindStatesParams(
-            UInt256 rootHash,
-            UInt160 scriptHash,
-            ReadOnlySpan<byte> prefix,
-            ReadOnlySpan<byte> from = default (ReadOnlySpan<byte>),
-            int? count = null)
+
+        // TODO: remove this copy of MakeFindStateParam https://github.com/neo-project/neo-express/issues/219
+        private static JObject[] MakeFindStatesParams(UInt256 rootHash, UInt160 scriptHash, ReadOnlySpan<byte> prefix,
+            ReadOnlySpan<byte> from = default, int? count = null)
         {
-            JObject[] jobjectArray = new JObject[count.HasValue ? 5 : 4];
-            jobjectArray[0] = (JObject) rootHash.ToString();
-            jobjectArray[1] = (JObject) scriptHash.ToString();
-            jobjectArray[2] = (JObject) Convert.ToBase64String(prefix);
-            jobjectArray[3] = (JObject) Convert.ToBase64String(from);
+            var @params = new JObject[count.HasValue ? 5 : 4];
+            @params[0] = (JObject)rootHash.ToString();
+            @params[1] = (JObject)scriptHash.ToString();
+            @params[2] = (JObject)Convert.ToBase64String(prefix);
+            @params[3] = (JObject)Convert.ToBase64String(from);
             if (count.HasValue)
-                jobjectArray[4] = (JObject) (double) count.Value;
-            return jobjectArray;
+                @params[4] = (JObject)(double)count.Value;
+            return @params;
         }
-        
-        public static async Task<IReadOnlyList<(string key, string value)>> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash, UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
+
+        public static async Task<IReadOnlyList<(string key, string value)>> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash,
+            UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
         {
-            IEnumerable<(string key, string value)> states = Enumerable.Empty<(string key, string value)>();
+            var states = Enumerable.Empty<(string key, string value)>();
             var start = from;
 
             while (true)

@@ -295,12 +295,22 @@ namespace NeoExpress.Node
             return (contractState, states);
         }
 
-        public static int PersistContract(SnapshotCache snapshot, ContractState state,
+        public static int PersistContract(NeoSystem neoSystem, ContractState state,
             IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
+            var (overwriteContract, overwriteStorage) = force switch 
+            {
+                ContractCommand.OverwriteForce.All => (true, true),
+                ContractCommand.OverwriteForce.ContractOnly => (true, false),
+                ContractCommand.OverwriteForce.None => (false, false),
+                ContractCommand.OverwriteForce.StorageOnly => (false, false),
+                _ => throw new NotSupportedException($"Invalid OverwriteForce value {force}"),
+            };
+
+            using var snapshot = neoSystem.GetSnapshot();
+
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
             var localContract = snapshot.GetAndChange(key)?.GetInteroperable<ContractState>();
-
             if (localContract is null)
             {
                 // Our local chain might already be using the contract id of the pulled contract, we need to check for this
@@ -321,52 +331,30 @@ namespace NeoExpress.Node
             }
             else
             {
-                if (force == ContractCommand.OverwriteForce.None)
-                {
-                    List<(string key, string value)> states = new();
-                    byte[] prefixKey = StorageKey.CreateSearchPrefix(localContract.Id, new byte[] { });
-                    foreach (var (k, v) in snapshot.Find(prefixKey))
-                    {
-                        states.Add((Convert.ToBase64String(k.Key.ToArray()), Convert.ToBase64String(v.ToArray())));
-                    }
-
-                    var stateEquals = localContract.ToJson().ToByteArray(false)
-                        .SequenceEqual(state.ToJson().ToByteArray(false));
-                    var storageEquals = storagePairs.SequenceEqual(states);
-
-                    if (stateEquals && storageEquals)
-                    {
-                        throw new Exception("Contract already exists - aborting");
-                    }
-                    if (stateEquals && !storageEquals)
-                    {
-                        throw new Exception("Contract already exists - storage differs.\nUse --force:StorageOnly to overwrite");
-                    }
-                    if (!stateEquals && storageEquals)
-                    {
-                        throw new Exception("Contract already exists - contract state differs.\nUse --force:ContractOnly to overwrite");
-                    }
-                    if (!stateEquals && !storageEquals)
-                    {
-                        throw new Exception("Contract already exists - contract state and storage differs.\nUse --force:All to overwrite");
-                    }
-                }
-
-                if (force == ContractCommand.OverwriteForce.All ||
-                    force == ContractCommand.OverwriteForce.ContractOnly)
+                if (overwriteContract)
                 {
                     // Note: a ManagementContract.Update() will not change the contract hash. Not even if the NEF changed.
                     localContract.Nef = state.Nef;
                     localContract.Manifest = state.Manifest;
                     localContract.UpdateCounter = state.UpdateCounter;
                 }
+                else
+                {
+                    // check to make sure the existing contract matches the downloaded contract
+                    // except for id, which is allowed to be different from downloaded contract
+                    if (!localContract.Hash.Equals(state.Hash)
+                        || localContract.UpdateCounter != state.UpdateCounter
+                        || !localContract.Nef.ToArray().SequenceEqual(state.Nef.ToArray())
+                        || !localContract.Manifest.ToJson().ToByteArray(false).SequenceEqual(state.Manifest.ToJson().ToByteArray(false)))
+                    {
+                        throw new Exception("Downloaded contract already exists. Use --force to overwrite");
+                    }
+                }
             }
 
-            if ((force == ContractCommand.OverwriteForce.All || force == ContractCommand.OverwriteForce.StorageOnly) ||
-                (localContract is null && force == ContractCommand.OverwriteForce.None))
+            var contractId = localContract is null ? state.Id : localContract.Id;
+            if (overwriteStorage)
             {
-                var contractId = localContract is null ? state.Id : localContract.Id;
-
                 // the storage schema might have changed therefore we first clear all storage
                 byte[] prefix_key = StorageKey.CreateSearchPrefix(contractId, new byte[] { });
                 foreach (var (k, v) in snapshot.Find(prefix_key))
@@ -381,9 +369,37 @@ namespace NeoExpress.Node
                         new StorageItem(Convert.FromBase64String(storagePairs[i].value)));
                 }
             }
+            else
+            {
+                // check to make sure existing storage records match downloaded storage pairs
+                var storagePairMap = storagePairs.ToDictionary(p => p.key, p => p.value);
+                var storageCount = 0;
+                var storageEquals = true;
+
+                byte[] prefixKey = StorageKey.CreateSearchPrefix(contractId, default);
+                foreach (var (k, v) in snapshot.Find(prefixKey))
+                {
+                    var storageKey = Convert.ToBase64String(k.Key);
+                    if (storagePairMap.TryGetValue(storageKey, out var storageValue)
+                        && storageValue.Equals(Convert.ToBase64String(v.Value)))
+                    {
+                        storageCount++;
+                    }
+                    else
+                    {
+                        storageEquals = false;
+                        break;
+                    }
+                }
+
+                if (!storageEquals || storageCount != storagePairs.Count)
+                {
+                    throw new Exception("Downloaded contract storage already exists. Use --force to overwrite");
+                }
+            }
 
             snapshot.Commit();
-            return state.Id;
+            return contractId;
         }
 
         // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't

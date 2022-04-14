@@ -258,10 +258,10 @@ namespace NeoExpress.Node
             uint height = stateHeight;
             if (height == 0)
             {
-                (uint? localRootIndex, uint? validatedRootIndex) stateHeight_; 
+                uint? localRootIndex;
                 try
                 {
-                    stateHeight_ = await stateAPI.GetStateHeightAsync();
+                    (localRootIndex, _) = await stateAPI.GetStateHeightAsync();
                 }
                 catch (RpcException e)
                 {
@@ -272,12 +272,9 @@ namespace NeoExpress.Node
                     }
                     throw;
                 }
-                
-                if (stateHeight_.localRootIndex is null)
-                {
-                    throw new Exception("Null \"localRootIndex\" in state height response");
-                }
-                height = stateHeight_.localRootIndex.Value;
+
+                height = localRootIndex.HasValue ? localRootIndex.Value
+                    : throw new Exception($"Null \"{nameof(localRootIndex)}\" in state height response");
             }
 
             var stateRoot = await stateAPI.GetStateRootAsync(height);

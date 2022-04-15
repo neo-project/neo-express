@@ -253,8 +253,7 @@ namespace NeoExpress.Node
             using var rpcClient = new RpcClient(uri);
             var stateAPI = new StateAPI(rpcClient);
 
-            uint height = stateHeight;
-            if (height == 0)
+            if (stateHeight == 0)
             {
                 uint? localRootIndex;
                 try
@@ -271,11 +270,11 @@ namespace NeoExpress.Node
                     throw;
                 }
 
-                height = localRootIndex.HasValue ? localRootIndex.Value
+                stateHeight = localRootIndex.HasValue ? localRootIndex.Value
                     : throw new Exception($"Null \"{nameof(localRootIndex)}\" in state height response");
             }
 
-            var stateRoot = await stateAPI.GetStateRootAsync(height);
+            var stateRoot = await stateAPI.GetStateRootAsync(stateHeight);
 
             // rpcClient.GetContractStateAsync returns the current ContractState, but this method needs
             // the ContractState as it was at stateHeight. ContractManagement stores ContractState by
@@ -287,9 +286,22 @@ namespace NeoExpress.Node
             key[0] = 8; // ContractManagement.Prefix_Contract
             _contractHash.ToArray().CopyTo(key, 1);
 
-            var contractStateBuffer = await stateAPI.GetStateAsync(
-                stateRoot.RootHash, NativeContract.ContractManagement.Hash, key);
-            var contractState = new StorageItem(contractStateBuffer).GetInteroperable<ContractState>();
+            ContractState contractState;
+            try
+            {
+                var contractStateBuffer = await stateAPI.GetStateAsync(
+                    stateRoot.RootHash, NativeContract.ContractManagement.Hash, key);
+                contractState = new StorageItem(contractStateBuffer).GetInteroperable<ContractState>();
+            }
+            catch (RpcException ex)
+            {
+                const int COR_E_KEYNOTFOUND = unchecked((int)0x80131577);
+                if (ex.HResult == COR_E_KEYNOTFOUND) throw new Exception($"Contract {contractHash} not found at height {stateHeight}");
+                throw;
+            }
+
+            if (contractState.Id < 0) throw new NotSupportedException("Contract download not supported for native contracts");
+
             var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, _contractHash, default);
 
             return (contractState, states);
@@ -298,6 +310,8 @@ namespace NeoExpress.Node
         public static int PersistContract(NeoSystem neoSystem, ContractState state,
             IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
+            if (state.Id < 0) throw new ArgumentException("PersistContract not supported for native contracts", nameof(state));
+
             using var snapshot = neoSystem.GetSnapshot();
 
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);

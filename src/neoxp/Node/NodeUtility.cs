@@ -214,20 +214,6 @@ namespace NeoExpress.Node
         public const byte Prefix_Contract = 8;
         private const byte Prefix_NextAvailableId = 15;
 
-        private static int LastUsedContractId(DataCache snapshot)
-        {
-            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
-            StorageItem item = snapshot.TryGet(key);
-            return (int)(BigInteger)item - 1;
-        }
-
-        private static void SetNextAvailableContractId(DataCache snapshot, int newId)
-        {
-            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
-            StorageItem item = snapshot.GetAndChange(key);
-            item.Set(newId);
-        }
-
         private static int GetNextAvailableId(DataCache snapshot)
         {
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
@@ -283,7 +269,7 @@ namespace NeoExpress.Node
             // instance via GetInteroperable.
 
             var key = new byte[21];
-            key[0] = 8; // ContractManagement.Prefix_Contract
+            key[0] = Prefix_Contract;
             _contractHash.ToArray().CopyTo(key, 1);
 
             ContractState contractState;

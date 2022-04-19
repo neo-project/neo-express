@@ -144,7 +144,7 @@ namespace NeoExpress.Commands
                                 result.contractState, 
                                 result.storagePairs, 
                                 cmd.Model.Force).ConfigureAwait(false);
-                                break;
+                            break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                         {

@@ -277,8 +277,7 @@ namespace NeoExpress
             @params[1] = (JObject)scriptHash.ToString();
             @params[2] = (JObject)Convert.ToBase64String(prefix);
             @params[3] = (JObject)Convert.ToBase64String(from);
-            if (count.HasValue)
-                @params[4] = (JObject)(double)count.Value;
+            if (count.HasValue) @params[4] = (JObject)(double)count.Value;
             return @params;
         }
 

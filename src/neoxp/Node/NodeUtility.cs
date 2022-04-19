@@ -211,17 +211,9 @@ namespace NeoExpress.Node
             return tx;
         }
 
-        public const byte Prefix_Contract = 8;
-        private const byte Prefix_NextAvailableId = 15;
-
-        private static int GetNextAvailableId(DataCache snapshot)
-        {
-            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
-            StorageItem item = snapshot.GetAndChange(key);
-            int value = (int)(BigInteger)item;
-            item.Add(1);
-            return value;
-        }
+        // constants from ContractManagement native contracts
+        const byte Prefix_Contract = 8;
+        const byte Prefix_NextAvailableId = 15;
 
         public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)> DownloadContractStateAsync(
                 string contractHash, string rpcUri, uint stateHeight)
@@ -318,7 +310,7 @@ namespace NeoExpress.Node
             // if localContract is not null, compare the current state + storage to the downloaded state + storage
             // and overwrite changes if specified by user option
 
-            var (overwriteContract, overwriteStorage) = force switch 
+            var (overwriteContract, overwriteStorage) = force switch
             {
                 ContractCommand.OverwriteForce.All => (true, true),
                 ContractCommand.OverwriteForce.ContractOnly => (true, false),
@@ -360,11 +352,20 @@ namespace NeoExpress.Node
                 else
                 {
                     throw new Exception("Downloaded contract storage already exists. Use --force to overwrite");
-                }            
+                }
             }
 
             if (dirty) snapshot.Commit();
             return localContract.Id;
+
+            static int GetNextAvailableId(DataCache snapshot)
+            {
+                StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
+                StorageItem item = snapshot.GetAndChange(key);
+                int value = (int)(BigInteger)item;
+                item.Add(1);
+                return value;
+            }
 
             static void PersistStoragePairs(DataCache snapshot, int contractId, IReadOnlyList<(string key, string value)> storagePairs)
             {

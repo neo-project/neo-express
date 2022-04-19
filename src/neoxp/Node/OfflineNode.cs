@@ -103,7 +103,7 @@ namespace NeoExpress.Node
                 return Task.FromException<T>(ex);
             }
         }
-        
+
         IExpressNode.CheckpointMode CreateCheckpoint(string checkPointPath)
         {
             var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
@@ -371,7 +371,7 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
 
-        public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force) 
+        public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
             => MakeAsync(() =>
             {
                 if (chain.ConsensusNodes.Count != 1)

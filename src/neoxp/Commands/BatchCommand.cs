@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
+using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -119,6 +120,29 @@ namespace NeoExpress.Commands
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope,
                                 cmd.Model.Data,
+                                cmd.Model.Force).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
+                        {
+                            if (cmd.Model.Height == 0)
+                            {
+                                throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
+                            }
+                            
+                            if (chainManager.Chain.ConsensusNodes.Count != 1)
+                            {
+                                throw new ArgumentException("Contract download is only supported for single-node consensus");
+                            }
+
+                            var expressNode = txExec.ExpressNode;
+                            var result = await NodeUtility.DownloadContractStateAsync(
+                                cmd.Model.Contract, 
+                                cmd.Model.RpcUri, 
+                                cmd.Model.Height).ConfigureAwait(false);
+                            await expressNode.PersistContractAsync(
+                                result.contractState, 
+                                result.storagePairs, 
                                 cmd.Model.Force).ConfigureAwait(false);
                             break;
                         }

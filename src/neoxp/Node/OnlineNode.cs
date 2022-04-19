@@ -16,6 +16,7 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 
 namespace NeoExpress.Node
@@ -60,7 +61,7 @@ namespace NeoExpress.Node
             var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
             var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
-            await ExpressOracle.FastForwardAsync(prevHeader,
+            await NodeUtility.FastForwardAsync(prevHeader,
                 blockCount,
                 timestampDelta,
                 consensusNodesKeys.Value,
@@ -110,7 +111,7 @@ namespace NeoExpress.Node
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
@@ -240,6 +241,32 @@ namespace NeoExpress.Node
             }
 
             return Array.Empty<ExpressStorage>();
+        }
+
+        public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Contract download is only supported for single-node consensus");
+            }
+            
+            JObject o = new JObject();
+            o["state"] = state.ToJson();
+
+            JArray storage = new JArray();
+            foreach (var pair in storagePairs)
+            {
+                JObject kv = new JObject();
+                kv["key"] = pair.key;
+                kv["value"] = pair.value;
+                storage.Add(kv);
+            }
+
+            o["storage"] = storage;
+            o["force"] = force;
+            
+            var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
+            return (int)response.AsNumber();
         }
 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)

@@ -11,6 +11,7 @@ using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
+using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
@@ -21,6 +22,7 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 using static Neo.Ledger.Blockchain;
 
@@ -176,9 +178,9 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-            ExpressOracle.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
             return tx.Hash;
@@ -191,7 +193,7 @@ namespace NeoExpress.Node
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
 
-            await ExpressOracle.FastForwardAsync(prevHeader,
+            await NodeUtility.FastForwardAsync(prevHeader,
                 blockCount,
                 timestampDelta,
                 consensusNodesKeys.Value,
@@ -218,7 +220,7 @@ namespace NeoExpress.Node
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
-            var block = ExpressOracle.CreateSignedBlock(prevHeader,
+            var block = NodeUtility.CreateSignedBlock(prevHeader,
                 consensusNodesKeys.Value,
                 neoSystem.Settings.Network,
                 transactions);
@@ -369,9 +371,20 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
 
+        public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
+            => MakeAsync(() =>
+            {
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Contract download is only supported for single-node consensus");
+                }
+
+                return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
+            });
+
         // warning CS1998: This async method lacks 'await' operators and will run synchronously.
         // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
-#pragma warning disable 1998
+#pragma warning disable 1998 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
             var notifications = PersistencePlugin.GetNotifications(this.rocksDbStorageProvider, SeekDirection.Backward, contractFilter, eventFilter);

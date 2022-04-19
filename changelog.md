@@ -20,6 +20,7 @@ may not exactly match a publicly released version.
 #### Added
 
 * `show notifications` command
+* `contract download` command (#209). Thank you to @ixje for contributing this code!
 * `--json` option to `wallet list` command (3ea29881d8be352cedaeebd8b8b16e49aee3aed6 and #216)
 * `--data` option to `contract deploy` command (#214)
 * `--timestamp-delta` option to `fastfwd` command (#224)

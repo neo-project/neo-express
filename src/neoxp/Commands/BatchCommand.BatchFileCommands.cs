@@ -29,7 +29,7 @@ namespace NeoExpress.Commands
             }
 
             [Command("contract")]
-            [Subcommand(typeof(Deploy), typeof(Invoke), typeof(Run))]
+            [Subcommand(typeof(Deploy), typeof(Download), typeof(Invoke), typeof(Run))]
             internal class Contract
             {
                 [Command("deploy")]
@@ -55,6 +55,27 @@ namespace NeoExpress.Commands
 
                     [Option(Description = "Deploy contract regardless of name conflict")]
                     internal bool Force { get; }
+                }
+                
+                [Command("download")]
+                internal class Download
+                {
+                    [Argument(0, Description = "Contract invocation hash")]
+                    [Required]
+                    internal string Contract { get; init; } = string.Empty;
+            
+                    [Argument(1, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
+                    [Required]
+                    internal string RpcUri { get; } = string.Empty;
+            
+                    [Argument(2, Description = "Block height to get contract state for")]
+                    [Required]
+                    internal uint Height { get; } = 0;
+
+                    [Option(CommandOptionType.SingleOrNoValue,
+                        Description = "Replace contract and storage if it already exists (Default: All)")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "All", "ContractOnly", "StorageOnly")]
+                    internal ContractCommand.OverwriteForce Force { get; init; } = ContractCommand.OverwriteForce.None;
                 }
 
                 [Command("invoke")]

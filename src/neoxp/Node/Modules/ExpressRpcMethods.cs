@@ -10,14 +10,18 @@ using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using NeoExpress.Commands;
 using NeoExpress.Models;
 using ByteString = Neo.VM.Types.ByteString;
+using RpcException = Neo.Plugins.RpcException;
+using Utility = Neo.Utility;
 
 namespace NeoExpress.Node
 {
@@ -236,7 +240,7 @@ namespace NeoExpress.Node
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
-            var tx = ExpressOracle.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
+            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
             return tx == null ? null : Convert.ToBase64String(tx.ToArray());
         }
 
@@ -520,6 +524,20 @@ namespace NeoExpress.Node
                 }
             }
             return json;
+        }
+        
+        [RpcMethod]
+        public JObject ExpressPersistContract(JObject @params)
+        {
+            var state = RpcClient.ContractStateFromJson(@params[0]["state"]);
+            var storagePairs = ((JArray)@params[0]["storage"])
+                .Select(s => (
+                    s["key"].AsString(), 
+                    s["value"].AsString())
+                ).ToArray();
+            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]["force"].AsString());                
+            
+            return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
         }
 
         static readonly IReadOnlySet<string> nep11PropertyNames = new HashSet<string>

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -20,7 +19,6 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
-using ByteString = Neo.VM.Types.ByteString;
 using RpcException = Neo.Plugins.RpcException;
 using Utility = Neo.Utility;
 

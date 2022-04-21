@@ -8,7 +8,6 @@ using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
-using Neo.Cryptography.MPTTrie;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;

@@ -45,25 +45,28 @@ namespace NeoExpress.Commands
             [AllowedValues(StringComparison.OrdinalIgnoreCase, "All", "ContractOnly", "StorageOnly")]
             internal OverwriteForce Force { get; init; } = OverwriteForce.None;
 
-            internal async Task ExecuteAsync(TextWriter writer)
+            internal static async Task ExecuteAsync(IExpressNode expressNode, string contract, string rpcUri, uint height, OverwriteForce force, TextWriter writer)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-
-                if (chainManager.Chain.ConsensusNodes.Count != 1)
-                {
-                    throw new ArgumentException("Contract download is only supported for single-node consensus");
-                }
-
-                var result = await NodeUtility.DownloadContractStateAsync(Contract, RpcUri, Height);
-                using var expressNode = chainManager.GetExpressNode();
-                await expressNode.PersistContractAsync(result.contractState, result.storagePairs, Force);
+                var (state, storage) = await NodeUtility.DownloadContractStateAsync(contract, rpcUri, height)
+                    .ConfigureAwait(false);
+                var storageCount = storage.Count == 1 ? "1 storage record" : $"{storage.Count} storage records";
+                await expressNode.PersistContractAsync(state, storage, force).ConfigureAwait(false);
+                await writer.WriteLineAsync($"{state.Manifest.Name} contract state and {storageCount} from {rpcUri} persisted successfully");
             }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    await ExecuteAsync(console.Out).ConfigureAwait(false);
+                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+
+                    if (chainManager.Chain.ConsensusNodes.Count != 1)
+                    {
+                        throw new ArgumentException("Contract download is only supported for single-node consensus");
+                    }
+
+                    using var expressNode = chainManager.GetExpressNode();
+                    await ExecuteAsync(expressNode, Contract, RpcUri, Height, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

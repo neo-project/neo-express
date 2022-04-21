@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;

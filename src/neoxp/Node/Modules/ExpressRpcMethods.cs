@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;

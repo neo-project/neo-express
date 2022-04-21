@@ -155,9 +155,9 @@ namespace NeoTrace
 
         static async Task<Block> GetBlockAsync(RpcClient rpcClient, OneOf<uint, UInt256> id)
         {
-            var task = id.Match(
-                index => rpcClient.GetBlockHexAsync($"{index}"),
-                hash => rpcClient.GetBlockHexAsync($"{hash}"));
+            var task = id.TryPickT0(out var index, out var hash)
+                ? rpcClient.GetBlockHexAsync($"{index}")
+                : rpcClient.GetBlockHexAsync($"{hash}");
             var hex = await task.ConfigureAwait(false);
             return Convert.FromBase64String(hex).AsSerializable<Block>();
         }

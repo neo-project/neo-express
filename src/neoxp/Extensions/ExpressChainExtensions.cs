@@ -72,7 +72,7 @@ namespace NeoExpress
 
         public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
         {
-            if (@this == null) throw new ArgumentNullException(nameof(@this));
+            ArgumentNullException.ThrowIfNull(@this);
 
             var keyPair = new KeyPair(@this.PrivateKey.HexToBytes());
             var contract = Neo.SmartContract.Contract.CreateSignatureContract(keyPair.PublicKey);

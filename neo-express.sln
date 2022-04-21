@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{35A16713-AEB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neoxp", "src\neoxp\neoxp.csproj", "{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neotrace", "src\neotrace\neotrace.csproj", "{53B6FEE3-7E88-4832-8AEB-BB834904D943}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neotrace", "src\trace\neotrace.csproj", "{61B2D072-CF9E-49DE-BF2D-1922C5722471}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,10 +19,10 @@ Global
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{53B6FEE3-7E88-4832-8AEB-BB834904D943}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{53B6FEE3-7E88-4832-8AEB-BB834904D943}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{53B6FEE3-7E88-4832-8AEB-BB834904D943}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{53B6FEE3-7E88-4832-8AEB-BB834904D943}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61B2D072-CF9E-49DE-BF2D-1922C5722471}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61B2D072-CF9E-49DE-BF2D-1922C5722471}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61B2D072-CF9E-49DE-BF2D-1922C5722471}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61B2D072-CF9E-49DE-BF2D-1922C5722471}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +32,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C} = {35A16713-AEB8-45CE-B393-EA9263B665F9}
-		{53B6FEE3-7E88-4832-8AEB-BB834904D943} = {35A16713-AEB8-45CE-B393-EA9263B665F9}
+		{61B2D072-CF9E-49DE-BF2D-1922C5722471} = {35A16713-AEB8-45CE-B393-EA9263B665F9}
 	EndGlobalSection
 EndGlobal

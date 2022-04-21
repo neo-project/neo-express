@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: dotnet restore
     - name: Pack NeoTrace 
-      run: dotnet pack src/neotrace --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/trace --output ./out --configuration Release --no-restore --verbosity normal
     - name: Pack NeoExpress
       run: dotnet pack src/neoxp --output ./out --configuration Release --no-restore --verbosity normal
     - name: Upload artifacts

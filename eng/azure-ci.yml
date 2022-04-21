@@ -43,7 +43,7 @@ steps:
   displayName: 'dotnet pack'
   inputs:
     command: 'pack'
-    packagesToPack: './src/neotrace/neotrace.csproj'
+    packagesToPack: './src/trace/neotrace.csproj'
     includesymbols: true
     versioningScheme: 'off'
 

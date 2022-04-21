@@ -309,7 +309,7 @@ namespace NeoExpress.Node
                     )));
 
                 var truncated = response["truncated"].AsBoolean();
-                if (truncated) break;
+                if (!truncated) break;
                 start = Convert.FromBase64String(results[^1]["key"].AsString());
             }
 

@@ -268,19 +268,6 @@ namespace NeoExpress
             }
         }
 
-        // TODO: remove this copy of MakeFindStateParam https://github.com/neo-project/neo-express/issues/219
-        private static JObject[] MakeFindStatesParams(UInt256 rootHash, UInt160 scriptHash, ReadOnlySpan<byte> prefix,
-            ReadOnlySpan<byte> from = default, int? count = null)
-        {
-            var @params = new JObject[count.HasValue ? 5 : 4];
-            @params[0] = (JObject)rootHash.ToString();
-            @params[1] = (JObject)scriptHash.ToString();
-            @params[2] = (JObject)Convert.ToBase64String(prefix);
-            @params[3] = (JObject)Convert.ToBase64String(from);
-            if (count.HasValue) @params[4] = (JObject)(double)count.Value;
-            return @params;
-        }
-
         public static async Task<IReadOnlyList<(string key, string value)>> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash,
             UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
         {
@@ -289,7 +276,7 @@ namespace NeoExpress
 
             while (true)
             {
-                var @params = MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start.Span, pageSize);
+                var @params = StateAPI.MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start.Span, pageSize);
                 var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
 
                 var jsonResults = (JArray)response["results"];

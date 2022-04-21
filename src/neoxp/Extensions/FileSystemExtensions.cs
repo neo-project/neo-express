@@ -42,8 +42,9 @@ namespace NeoExpress
 
         public static string GetNodePath(this IFileSystem fileSystem, ExpressConsensusNode node)
         {
-            if (node == null) throw new ArgumentNullException(nameof(node));
-            if (node.Wallet == null) throw new ArgumentNullException(nameof(node.Wallet));
+            ArgumentNullException.ThrowIfNull(node);
+            ArgumentNullException.ThrowIfNull(node.Wallet);
+
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
 
             var rootPath = fileSystem.Path.Combine(

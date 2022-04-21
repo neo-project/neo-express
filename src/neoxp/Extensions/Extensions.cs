@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.Cryptography.MPTTrie;
+using Neo.IO;
 using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
@@ -266,35 +268,6 @@ namespace NeoExpress
                     return false;
                 }
             }
-        }
-
-        public static async Task<IReadOnlyList<(string key, string value)>> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash,
-            UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
-        {
-            var states = Enumerable.Empty<(string key, string value)>();
-            var start = from;
-
-            while (true)
-            {
-                var @params = StateAPI.MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start.Span, pageSize);
-                var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
-
-                var jsonResults = (JArray)response["results"];
-                if (jsonResults.Count == 0) break;
-
-                var results = jsonResults
-                    .Select(j => (
-                        j["key"].AsString(),
-                        j["value"].AsString()
-                    ));
-                states = states.Concat(results);
-
-                var truncated = response["truncated"].AsBoolean();
-                if (truncated) break;
-                start = Convert.FromBase64String(jsonResults[jsonResults.Count - 1]["key"].AsString());
-            }
-
-            return states.ToList();
         }
     }
 }

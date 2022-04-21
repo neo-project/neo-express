@@ -8,7 +8,9 @@ using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
+using Neo.Cryptography.MPTTrie;
 using Neo.IO;
+using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
@@ -19,6 +21,7 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using NeoBctkUtility = Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Node
 {
@@ -252,7 +255,7 @@ namespace NeoExpress.Node
                     : throw new Exception($"Null \"{nameof(localRootIndex)}\" in state height response");
             }
 
-            var stateRoot = await stateAPI.GetStateRootAsync(stateHeight);
+            var stateRoot = await stateAPI.GetStateRootAsync(stateHeight).ConfigureAwait(false);
 
             // rpcClient.GetContractStateAsync returns the current ContractState, but this method needs
             // the ContractState as it was at stateHeight. ContractManagement stores ContractState by
@@ -264,25 +267,69 @@ namespace NeoExpress.Node
             key[0] = Prefix_Contract;
             _contractHash.ToArray().CopyTo(key, 1);
 
+            const int COR_E_KEYNOTFOUND = unchecked((int)0x80131577);
             ContractState contractState;
             try
             {
-                var contractStateBuffer = await stateAPI.GetStateAsync(
-                    stateRoot.RootHash, NativeContract.ContractManagement.Hash, key);
-                contractState = new StorageItem(contractStateBuffer).GetInteroperable<ContractState>();
+                var proof = await stateAPI.GetProofAsync(stateRoot.RootHash, NativeContract.ContractManagement.Hash, key)
+                    .ConfigureAwait(false);
+                var (_, item) = NeoBctkUtility.VerifyProof(proof, stateRoot.RootHash);
+                contractState = item.GetInteroperable<ContractState>();
             }
-            catch (RpcException ex)
+            catch (RpcException ex) when (ex.HResult == COR_E_KEYNOTFOUND)
             {
-                const int COR_E_KEYNOTFOUND = unchecked((int)0x80131577);
-                if (ex.HResult == COR_E_KEYNOTFOUND) throw new Exception($"Contract {contractHash} not found at height {stateHeight}");
-                throw;
+                throw new Exception($"Contract {contractHash} not found at height {stateHeight}");
+            }
+            catch (RpcException ex) when (ex.HResult == -100 && ex.Message == "Unknown value")
+            {
+                // https://github.com/neo-project/neo-modules/pull/706
+                throw new Exception($"Contract {contractHash} not found at height {stateHeight}");
             }
 
             if (contractState.Id < 0) throw new NotSupportedException("Contract download not supported for native contracts");
 
-            var states = await rpcClient.ExpressFindStatesAsync(stateRoot.RootHash, _contractHash, default);
+            var states = Enumerable.Empty<(string key, string value)>();
+            ReadOnlyMemory<byte> start = default;
 
-            return (contractState, states);
+            while (true)
+            {
+                var @params = StateAPI.MakeFindStatesParams(stateRoot.RootHash, _contractHash, default, start.Span);
+                var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
+
+                var results = (JArray)response["results"];
+                if (results.Count == 0) break;
+
+                ValidateProof(stateRoot.RootHash, response["firstProof"], results[0]);
+
+                if (results.Count > 1)
+                {
+                    ValidateProof(stateRoot.RootHash, response["lastProof"], results[^1]);
+                }
+
+                states = states.Concat(results
+                    .Select(j => (
+                        j["key"].AsString(),
+                        j["value"].AsString()
+                    )));
+
+                var truncated = response["truncated"].AsBoolean();
+                if (truncated) break;
+                start = Convert.FromBase64String(results[^1]["key"].AsString());
+            }
+
+            return (contractState, states.ToList());
+
+            static void ValidateProof(UInt256 rootHash, JObject proof, JObject result)
+            {
+                var proofBytes = Convert.FromBase64String(proof.AsString());
+                var (provenKey, provenItem) = NeoBctkUtility.VerifyProof(proofBytes, rootHash);
+
+                var key = Convert.FromBase64String(result["key"].AsString());
+                if (!provenKey.Key.AsSpan().SequenceEqual(key)) throw new Exception("Incorrect StorageKey");
+
+                var value = Convert.FromBase64String(result["value"].AsString());
+                if (!provenItem.Value.AsSpan().SequenceEqual(value)) throw new Exception("Incorrect StorageItem");
+            }
         }
 
         public static int PersistContract(NeoSystem neoSystem, ContractState state,

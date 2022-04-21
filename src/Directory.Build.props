@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BlockchainToolkitLibraryVersion>3.2.46-preview</BlockchainToolkitLibraryVersion>
+    <BlockchainToolkitLibraryVersion>3.2.47-preview</BlockchainToolkitLibraryVersion>
     <BlockchainToolkitLibraryLocalPath>..\..\..\lib-bctk</BlockchainToolkitLibraryLocalPath>
     <NeoModulesVersion>3.2.1</NeoModulesVersion>
     <NeoModuleLocalPath>..\..\..\..\official\3neo-monorepo\modules\</NeoModuleLocalPath>

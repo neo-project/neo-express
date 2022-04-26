@@ -19,8 +19,8 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/neotrace/bin/Debug/net6.0/neotrace.dll",
-            "cwd": "${workspaceFolder}/src/neotrace",
+            "program": "${workspaceFolder}/src/trace/bin/Debug/net6.0/neotrace.dll",
+            "cwd": "${workspaceFolder}/src/trace",
             "stopAtEntry": false,
             "console": "internalConsole"
         },        

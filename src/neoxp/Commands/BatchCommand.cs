@@ -129,21 +129,19 @@ namespace NeoExpress.Commands
                             {
                                 throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
                             }
-                            
+
                             if (chainManager.Chain.ConsensusNodes.Count != 1)
                             {
                                 throw new ArgumentException("Contract download is only supported for single-node consensus");
                             }
 
-                            var expressNode = txExec.ExpressNode;
-                            var result = await NodeUtility.DownloadContractStateAsync(
-                                cmd.Model.Contract, 
-                                cmd.Model.RpcUri, 
-                                cmd.Model.Height).ConfigureAwait(false);
-                            await expressNode.PersistContractAsync(
-                                result.contractState, 
-                                result.storagePairs, 
-                                cmd.Model.Force).ConfigureAwait(false);
+                            await ContractCommand.Download.ExecuteAsync(
+                                txExec.ExpressNode,
+                                cmd.Model.Contract,
+                                cmd.Model.RpcUri,
+                                cmd.Model.Height,
+                                cmd.Model.Force,
+                                writer).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:

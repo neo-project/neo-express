@@ -249,7 +249,7 @@ namespace NeoExpress.Node
             {
                 throw new ArgumentException("Contract download is only supported for single-node consensus");
             }
-            
+
             JObject o = new JObject();
             o["state"] = state.ToJson();
 
@@ -264,7 +264,7 @@ namespace NeoExpress.Node
 
             o["storage"] = storage;
             o["force"] = force;
-            
+
             var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
             return (int)response.AsNumber();
         }

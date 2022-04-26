@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.IO.Json;
@@ -19,7 +19,6 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
-using ByteString = Neo.VM.Types.ByteString;
 using RpcException = Neo.Plugins.RpcException;
 using Utility = Neo.Utility;
 
@@ -525,18 +524,18 @@ namespace NeoExpress.Node
             }
             return json;
         }
-        
+
         [RpcMethod]
         public JObject ExpressPersistContract(JObject @params)
         {
             var state = RpcClient.ContractStateFromJson(@params[0]["state"]);
             var storagePairs = ((JArray)@params[0]["storage"])
                 .Select(s => (
-                    s["key"].AsString(), 
+                    s["key"].AsString(),
                     s["value"].AsString())
                 ).ToArray();
-            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]["force"].AsString());                
-            
+            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]["force"].AsString());
+
             return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
         }
 

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
-using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
@@ -266,48 +265,6 @@ namespace NeoExpress
                     return false;
                 }
             }
-        }
-
-        // TODO: remove this copy of MakeFindStateParam https://github.com/neo-project/neo-express/issues/219
-        private static JObject[] MakeFindStatesParams(UInt256 rootHash, UInt160 scriptHash, ReadOnlySpan<byte> prefix,
-            ReadOnlySpan<byte> from = default, int? count = null)
-        {
-            var @params = new JObject[count.HasValue ? 5 : 4];
-            @params[0] = (JObject)rootHash.ToString();
-            @params[1] = (JObject)scriptHash.ToString();
-            @params[2] = (JObject)Convert.ToBase64String(prefix);
-            @params[3] = (JObject)Convert.ToBase64String(from);
-            if (count.HasValue) @params[4] = (JObject)(double)count.Value;
-            return @params;
-        }
-
-        public static async Task<IReadOnlyList<(string key, string value)>> ExpressFindStatesAsync(this RpcClient rpcClient, UInt256 rootHash,
-            UInt160 contractScriptHash, ReadOnlyMemory<byte> prefix, ReadOnlyMemory<byte> from = default, int? pageSize = null)
-        {
-            var states = Enumerable.Empty<(string key, string value)>();
-            var start = from;
-
-            while (true)
-            {
-                var @params = MakeFindStatesParams(rootHash, contractScriptHash, prefix.Span, start.Span, pageSize);
-                var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
-
-                var jsonResults = (JArray)response["results"];
-                if (jsonResults.Count == 0) break;
-
-                var results = jsonResults
-                    .Select(j => (
-                        j["key"].AsString(),
-                        j["value"].AsString()
-                    ));
-                states = states.Concat(results);
-
-                var truncated = response["truncated"].AsBoolean();
-                if (truncated) break;
-                start = Convert.FromBase64String(jsonResults[jsonResults.Count - 1]["key"].AsString());
-            }
-
-            return states.ToList();
         }
     }
 }

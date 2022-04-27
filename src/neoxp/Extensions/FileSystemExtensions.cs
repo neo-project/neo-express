@@ -1,13 +1,18 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
+using Neo.Wallets;
+using NeoExpress.Models;
+using Nito.Disposables;
 using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress
@@ -111,8 +116,8 @@ namespace NeoExpress
             return (await nefTask, await manifestTask);
         }
 
-        public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> 
-            CreateCheckpointAsync(this IFileSystem fileSystem, IExpressNode expressNode, string checkpointPath, bool force)        
+        public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)>
+            CreateCheckpointAsync(this IFileSystem fileSystem, IExpressNode expressNode, string checkpointPath, bool force)
         {
             if (expressNode.Chain.ConsensusNodes.Count != 1)
             {
@@ -200,6 +205,112 @@ namespace NeoExpress
             return checkPointArchive;
         }
 
+        public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, Neo.ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
+        {
+            if (fileSystem.File.Exists(path))
+            {
+                var json = Neo.IO.Json.JObject.Parse(fileSystem.File.ReadAllBytes(path));
+                var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(string.Empty, settings, json);
+                using var unlock = nep6wallet.Unlock(password);
 
+                wallet = new DevWallet(settings, nep6wallet.Name);
+                foreach (var account in nep6wallet.GetAccounts())
+                {
+                    var devAccount = wallet.CreateAccount(account.Contract, account.GetKey());
+                    devAccount.Label = account.Label;
+                    devAccount.IsDefault = account.IsDefault;
+                }
+
+                return true;
+            }
+
+            wallet = null;
+            return false;
+        }
+
+        public static void ExportNEP6(this IFileSystem fileSystem, ExpressWallet wallet, string path, string password, byte addressVersion)
+        {
+            if (fileSystem.File.Exists(path)) throw new System.IO.IOException();
+
+            using var stream = fileSystem.File.OpenWrite(path);
+            using var textWriter = new System.IO.StreamWriter(stream);
+            using var writer = new Newtonsoft.Json.JsonTextWriter(textWriter);
+            var scrypt = Neo.Wallets.NEP6.ScryptParameters.Default;
+
+            writer.WriteStartObject();
+            using var l1 = new AnonymousDisposable(() => writer.WriteEndObject());
+
+            writer.WritePropertyName("name");
+            writer.WriteValue(wallet.Name);
+            writer.WritePropertyName("version");
+            writer.WriteValue("1.0");
+            writer.WritePropertyName("extra");
+            writer.WriteNull();
+            writer.WritePropertyName("scrypt");
+            {
+                writer.WriteStartObject();
+                using var l2 = new AnonymousDisposable(() => writer.WriteEndObject());
+                writer.WritePropertyName("n");
+                writer.WriteValue(scrypt.N);
+                writer.WritePropertyName("r");
+                writer.WriteValue(scrypt.R);
+                writer.WritePropertyName("p");
+                writer.WriteValue(scrypt.P);
+            }
+            writer.WritePropertyName("accounts");
+            {
+                writer.WriteStartArray();
+                using var l2 = new AnonymousDisposable(() => writer.WriteEndArray());
+
+                foreach (var account in wallet.Accounts)
+                {
+                    var privateKey = Convert.FromHexString(account.PrivateKey);
+                    var keyPair = new KeyPair(privateKey);
+                    var exportedKey = keyPair.Export(password, addressVersion, scrypt.N, scrypt.R, scrypt.P);
+                    var script = account.Contract.Script.HexToBytes();
+
+                    writer.WriteStartObject();
+                    using var l3 = new AnonymousDisposable(() => writer.WriteEndObject());
+
+                    writer.WritePropertyName("address");
+                    writer.WriteValue(account.ScriptHash);
+                    writer.WritePropertyName("label");
+                    writer.WriteValue(account.Label);
+                    writer.WritePropertyName("isDefault");
+                    writer.WriteValue(account.IsDefault);
+                    writer.WritePropertyName("lock");
+                    writer.WriteValue(false);
+                    writer.WritePropertyName("key");
+                    writer.WriteValue(exportedKey);
+                    writer.WritePropertyName("extra");
+                    writer.WriteNull();
+
+                    writer.WritePropertyName("contract");
+                    writer.WriteStartObject();
+                    using var l4 = new AnonymousDisposable(() => writer.WriteEndObject());
+
+                    writer.WritePropertyName("script");
+                    writer.WriteValue(Convert.ToBase64String(script));
+                    writer.WritePropertyName("deployed");
+                    writer.WriteValue(false);
+                    writer.WritePropertyName("parameters");
+
+                    writer.WriteStartArray();
+                    using var l5 = new AnonymousDisposable(() => writer.WriteEndArray());
+                    for (int i = 0; i < account.Contract.Parameters.Count; i++)
+                    {
+                        var paramType = account.Contract.Parameters[i];
+
+                        writer.WriteStartObject();
+                        using var l6 = new AnonymousDisposable(() => writer.WriteEndObject());
+
+                        writer.WritePropertyName("name");
+                        writer.WriteValue($"{paramType}{i}");
+                        writer.WritePropertyName("type");
+                        writer.WriteValue(paramType);
+                    }
+                }
+            }
+        }
     }
 }

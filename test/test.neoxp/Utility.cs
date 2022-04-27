@@ -49,5 +49,9 @@ static class Utility
         return JsonConvert.DeserializeObject<ExpressChain>(file.TextContents);
     }
 
-
+    public static void AddResource(this MockFileSystem fileSystem, string path, string resource)
+    {
+        var data = GetResource(resource);
+        fileSystem.AddFile(path, new MockFileData(data));
+    }
 }

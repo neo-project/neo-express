@@ -6,11 +6,15 @@ using Neo.BlockchainToolkit.Models;
 using Neo.IO;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
+using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress
 {
     static class FileSystemExtensions
     {
+        public static string ResolveExpressFileName(this IFileSystem fileSystem, string path)
+            => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
+
         public static string ResolveFileName(this IFileSystem fileSystem, string fileName, string extension, Func<string> getDefaultFileName)
         {
             if (string.IsNullOrEmpty(fileName))

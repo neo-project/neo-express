@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="test.neoxp" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Nito.Disposables" Version="2.3.0" />
   </ItemGroup>
 

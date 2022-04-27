@@ -60,7 +60,7 @@ namespace NeoExpress.Commands
                 : Input);
 
             var (chainManager, _) = fileSystem.LoadChainManager(input);
-            if (chainManager.IsRunning())
+            if (chainManager.Chain.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");
             }

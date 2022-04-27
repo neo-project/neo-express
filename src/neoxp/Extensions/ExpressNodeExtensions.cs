@@ -28,6 +28,17 @@ namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
+        public static bool IsRunning(this ExpressConsensusNode node)
+        {
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return System.Threading.Mutex.TryOpenExisting(
+                ExpressChainManager.GLOBAL_PREFIX + account.ScriptHash, 
+                out var _);
+        }
+
         static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             UInt160? _scriptHash = null;

@@ -14,6 +14,18 @@ namespace NeoExpress
 {
     static class ExpressChainExtensions
     {
+        public static bool IsRunning(this ExpressChain chain)
+        {
+            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                if (chain.ConsensusNodes[i].IsRunning())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // this method only used in Online/OfflineNode ExecuteAsync
         public static IReadOnlyList<Wallet> GetMultiSigWallets(this ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
         {

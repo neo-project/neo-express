@@ -22,7 +22,7 @@ namespace NeoExpress
 {
     internal class ExpressChainManager
     {
-        const string GLOBAL_PREFIX = "Global\\";
+        internal const string GLOBAL_PREFIX = "Global\\";
         const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";
 
         readonly IFileSystem fileSystem;
@@ -46,34 +46,6 @@ namespace NeoExpress
         public ExpressChain Chain => chain;
 
         string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
-
-        static bool IsNodeRunning(ExpressConsensusNode node)
-        {
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
-
-            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
-        }
-
-        public bool IsRunning(ExpressConsensusNode? node = null)
-        {
-            if (node == null)
-            {
-                for (var i = 0; i < chain.ConsensusNodes.Count; i++)
-                {
-                    if (IsNodeRunning(chain.ConsensusNodes[i]))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                return IsNodeRunning(node);
-            }
-        }
 
         public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkpointPath, bool force, System.IO.TextWriter? writer = null)
         {
@@ -125,7 +97,7 @@ namespace NeoExpress
             }
 
             var node = chain.ConsensusNodes[0];
-            if (IsNodeRunning(node))
+            if (node.IsRunning())
             {
                 var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
                 throw new InvalidOperationException($"node {scriptHash} currently running");
@@ -160,7 +132,7 @@ namespace NeoExpress
 
         public void ResetNode(ExpressConsensusNode node, bool force)
         {
-            if (IsNodeRunning(node))
+            if (node.IsRunning())
             {
                 var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
                 throw new InvalidOperationException($"node {scriptHash} currently running");
@@ -180,7 +152,7 @@ namespace NeoExpress
 
         public async Task<bool> StopNodeAsync(ExpressConsensusNode node)
         {
-            if (!IsNodeRunning(node)) return false;
+            if (!node.IsRunning()) return false;
 
             var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
             var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
@@ -191,7 +163,7 @@ namespace NeoExpress
         }
         public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
-            if (IsNodeRunning(node))
+            if (node.IsRunning())
             {
                 throw new Exception("Node already running");
             }
@@ -323,7 +295,7 @@ namespace NeoExpress
             }
 
             var node = chain.ConsensusNodes[0];
-            if (IsNodeRunning(node)) throw new Exception($"node already running");
+            if (node.IsRunning()) throw new Exception($"node already running");
 
             checkPointPath = ResolveCheckpointFileName(checkPointPath);
             if (!fileSystem.File.Exists(checkPointPath))
@@ -358,7 +330,7 @@ namespace NeoExpress
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var consensusNode = chain.ConsensusNodes[i];
-                if (IsNodeRunning(consensusNode))
+                if (consensusNode.IsRunning())
                 {
                     return new Node.OnlineNode(ProtocolSettings, chain, consensusNode);
                 }

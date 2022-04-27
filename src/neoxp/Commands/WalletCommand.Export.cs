@@ -38,7 +38,7 @@ namespace NeoExpress.Commands
                    ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
                    : Output;
 
-                var (chain, chainPath) = fileSystem.LoadExpressChain(Input);
+                var (chain, _) = fileSystem.LoadExpressChain(Input);
                 var wallet = chain.GetWallet(Name);
 
                 if (wallet == null)

@@ -13,7 +13,7 @@ namespace NeoExpress
 {
     static class FileSystemExtensions
     {
-        public static (ExpressChain chain, string path) LoadExpressChain(this IFileSystem fileSystem, string path, uint? secondsPerBlock = null)
+        public static (ExpressChain chain, string path) LoadExpressChain(this IFileSystem fileSystem, string path)
         {
             path = fileSystem.ResolveExpressFileName(path);
             if (!fileSystem.File.Exists(path))

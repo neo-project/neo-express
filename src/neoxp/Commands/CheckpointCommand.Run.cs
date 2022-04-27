@@ -38,7 +38,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console, CancellationToken token)
             {
-                var (chain, _) = fileSystem.LoadExpressChain(Input, SecondsPerBlock);
+                var (chain, _) = fileSystem.LoadExpressChain(Input);
                 if (chain.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
@@ -46,7 +46,7 @@ namespace NeoExpress.Commands
 
                 var storageProvider = GetCheckpointStorageProvider(chain, Name);
                 using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-                await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console.Out, SecondsPerBlock, token);
+                await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
             }
 
             internal Neo.Plugins.IStorageProvider GetCheckpointStorageProvider(ExpressChain chain, string checkPointPath)
@@ -70,7 +70,6 @@ namespace NeoExpress.Commands
 
                 return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
             }
-
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
             {

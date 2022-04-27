@@ -35,7 +35,7 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {
-            var (chain, _) = fileSystem.LoadExpressChain(Input, SecondsPerBlock);
+            var (chain, _) = fileSystem.LoadExpressChain(Input);
 
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 
@@ -48,7 +48,7 @@ namespace NeoExpress.Commands
                 : RocksDbStorageProvider.Open(nodePath);
 
             using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-            await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console.Out, SecondsPerBlock, token);
+            await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
         }
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)

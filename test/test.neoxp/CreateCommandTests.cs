@@ -7,7 +7,6 @@ using Neo.Wallets;
 using Neo.SmartContract;
 using Neo.Cryptography.ECC;
 using Neo.BlockchainToolkit.Models;
-using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpressTest;
 
@@ -75,13 +74,18 @@ public class CreateCommandTests
     {
         var fileSystem = new MockFileSystem();
         var cmd = new CreateCommand(fileSystem);
+        var path = @"c:\test.express";
 
-        var chain = new ExpressChain();
-        var outputPath = cmd.SaveChain(chain);
+        var chain = Utility.GetResourceChain("1.neo-express");
+        cmd.SaveChain(chain, path);
 
-        var cwd = fileSystem.Directory.GetCurrentDirectory();
-        var path = fileSystem.Path.Combine(cwd, DEFAULT_EXPRESS_FILENAME);
-        outputPath.Should().Be(path);
+        var file = fileSystem.GetFile(path);
+        file.Contents.Should().NotBeEmpty();
+        var json = Newtonsoft.Json.Linq.JObject.Parse(file.TextContents);
+        json.Value<uint>("magic").Should().Be(chain.Network);
+        var key = json["consensus-nodes"]?[0]?["wallet"]?["accounts"]?[0]?.Value<string>("private-key");
+        key.Should().NotBeNull();
+        key.Should().Be(chain.ConsensusNodes[0].Wallet.DefaultAccount!.PrivateKey);
     }
 
     [Fact]
@@ -89,13 +93,13 @@ public class CreateCommandTests
     {
         var fileSystem = new MockFileSystem();
         var cwd = fileSystem.Directory.GetCurrentDirectory();
-        var path = fileSystem.Path.Combine(cwd, DEFAULT_EXPRESS_FILENAME);
+        var path = @"c:\test.express";
         fileSystem.AddFile(path, new MockFileData(string.Empty));
 
         var cmd = new CreateCommand(fileSystem);
 
         var chain = new ExpressChain();
-        Assert.Throws<Exception>(() => cmd.SaveChain(chain));
+        Assert.Throws<Exception>(() => cmd.SaveChain(chain, path));
     }
 
     [Fact]
@@ -103,36 +107,20 @@ public class CreateCommandTests
     {
         var fileSystem = new MockFileSystem();
         var cwd = fileSystem.Directory.GetCurrentDirectory();
-        var path = fileSystem.Path.Combine(cwd, DEFAULT_EXPRESS_FILENAME);
+        var path = @"c:\test.express";
         fileSystem.AddFile(path, new MockFileData(string.Empty));
 
         fileSystem.GetFile(path).Contents.Should().BeEmpty();
 
         var cmd = new CreateCommand(fileSystem) { Force = true };
 
-        var chain = new ExpressChain();
-        var outputPath = cmd.SaveChain(chain);
+        var chain = Utility.GetResourceChain("1.neo-express");
+        var expectedNetwork = 3800502614u;
+        cmd.SaveChain(chain, path);
 
-        outputPath.Should().Be(path);
-        fileSystem.GetFile(path).Contents.Should().NotBeEmpty();
-    }
-
-    [Theory]
-    [InlineData("foo", @"C:\foo.neo-express")]
-    [InlineData("foo.bar", @"C:\foo.bar.neo-express")]
-    [InlineData("foo.neo-express", @"C:\foo.neo-express")]
-    [InlineData(@"c:\foo.neo-express", @"c:\foo.neo-express")]
-    [InlineData(@"c:\bar\foo", @"c:\bar\foo.neo-express")]
-    [InlineData(@"c:\bar\foo.baz", @"c:\bar\foo.baz.neo-express")]
-    [InlineData(@"c:\bar\foo.neo-express", @"c:\bar\foo.neo-express")]
-    public void test_save_chain_output(string option, string expected)
-    {
-        var fileSystem = new MockFileSystem();
-        fileSystem.AddDirectory(@"c:\bar");
-        var cmd = new CreateCommand(fileSystem) { Output = option };
-        var chain = new ExpressChain();
-        var outputPath = cmd.SaveChain(chain);
-
-        outputPath.Should().Be(expected);
+        var file = fileSystem.GetFile(path);
+        file.Contents.Should().NotBeEmpty();
+        var json = Newtonsoft.Json.Linq.JObject.Parse(file.TextContents);
+        json.Value<uint>("magic").Should().Be(expectedNetwork);
     }
 }

@@ -87,9 +87,8 @@ namespace NeoExpress.Commands
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        internal string SaveChain(ExpressChain chain)
+        internal void SaveChain(ExpressChain chain, string outputPath)
         {
-            var outputPath = fileSystem.ResolveExpressFileName(Output);
             if (fileSystem.File.Exists(outputPath))
             {
                 if (Force)
@@ -108,15 +107,18 @@ namespace NeoExpress.Commands
             }
 
             fileSystem.SaveChain(chain, outputPath);
-            return outputPath;
         }
 
         internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
+                var outputPath = fileSystem.ResolveExpressFileName(Output);
+                if (fileSystem.File.Exists(outputPath) && !Force)
+                    throw new Exception("You must specify --force to overwrite an existing file");
+
                 var chain = CreateChain();
-                var outputPath = SaveChain(chain);
+                SaveChain(chain, outputPath);
 
                 console.Out.WriteLine($"Created {chain.ConsensusNodes.Count} node privatenet at {outputPath}");
                 console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
@@ -130,7 +132,5 @@ namespace NeoExpress.Commands
                 return 1;
             }
         }
-
-
     }
 }

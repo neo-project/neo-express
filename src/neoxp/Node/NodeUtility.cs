@@ -26,6 +26,8 @@ using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
 using NeoBctkUtility = Neo.BlockchainToolkit.Utility;
+using IStorageProvider = Neo.Plugins.IStorageProvider;
+using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Node
 {
@@ -33,7 +35,7 @@ namespace NeoExpress.Node
     {
         internal const string GLOBAL_PREFIX = "Global\\";
 
-        public static async Task RunAsync(this ExpressChain chain, Neo.Plugins.IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, uint? secondsPerBlock, CancellationToken token)
+        public static async Task RunAsync(this ExpressChain chain, IStorageProvider store, ExpressConsensusNode node, bool enableTrace, IConsole console, uint? secondsPerBlock, CancellationToken token)
         {
             if (node.IsRunning())
             {
@@ -61,14 +63,15 @@ namespace NeoExpress.Node
                     var wallet = DevWallet.FromExpressWallet(protocolSettings, node.Wallet);
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-                    var logPlugin = new Node.LogPlugin(writer);
+                    var logPlugin = new Node.LogPlugin(console.Out);
                     var storageProviderPlugin = new Node.StorageProviderPlugin(store);
                     var appEngineProvider = enableTrace ? new Node.ApplicationEngineProvider() : null;
                     var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
                     var persistencePlugin = new Node.PersistencePlugin(store);
 
                     using var neoSystem = new Neo.NeoSystem(protocolSettings, storageProviderPlugin.Name);
-                    _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));
+                    _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(
+                        applicationExecuted => OnApplicationExecuted(applicationExecuted, console)));
                     var rpcSettings = GetRpcServerSettings(chain, node);
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
                     var expressRpcMethods = new ExpressRpcMethods(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
@@ -85,7 +88,7 @@ namespace NeoExpress.Node
 
                     // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
                     // Do not remove or re-word this console output:
-                    writer.WriteLine($"Neo express is running ({store.GetType().Name})");
+                    console.WriteLine($"Neo express is running ({store.GetType().Name})");
 
                     linkedToken.Token.WaitHandle.WaitOne();
                 }
@@ -144,7 +147,7 @@ namespace NeoExpress.Node
             }
         }
 
-        static void OnApplicationExecuted(Blockchain.ApplicationExecuted applicationExecuted)
+        static void OnApplicationExecuted(Blockchain.ApplicationExecuted applicationExecuted, IConsole console)
         {
             if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
             {
@@ -153,7 +156,7 @@ namespace NeoExpress.Node
                 {
                     logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
                 }
-                Console.Error.WriteLine($"\x1b[31m{logMessage}\x1b[0m");
+                console.Error.WriteLine($"\x1b[31m{logMessage}\x1b[0m");
             }
         }
 

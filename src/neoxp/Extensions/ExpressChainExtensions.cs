@@ -3,12 +3,18 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Abstractions;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.Persistence;
+using Neo.Plugins;
 using Neo.Wallets;
 using NeoExpress.Models;
+using Nito.Disposables;
 
 namespace NeoExpress
 {
@@ -24,6 +30,94 @@ namespace NeoExpress
                 }
             }
             return false;
+        }
+
+        public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> 
+            CreateCheckpointAsync(this ExpressChain chain, IFileSystem fileSystem, 
+                IExpressNode expressNode, string checkpointPath, bool force, 
+                System.IO.TextWriter? writer = null)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+            }
+
+            checkpointPath = fileSystem.ResolveCheckpointFileName(checkpointPath);
+            if (fileSystem.File.Exists(checkpointPath))
+            {
+                if (force)
+                {
+                    fileSystem.File.Delete(checkpointPath);
+                }
+                else
+                {
+                    throw new Exception("You must specify --force to overwrite an existing file");
+                }
+            }
+
+            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath);
+            if (!fileSystem.Directory.Exists(parentPath))
+            {
+                fileSystem.Directory.CreateDirectory(parentPath);
+            }
+
+            var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+
+            if (writer != null)
+            {
+                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
+            }
+
+            return (checkpointPath, mode);
+        }
+
+        internal static void RestoreCheckpoint(this ExpressChain chain, IFileSystem fileSystem,
+            string checkPointArchive, bool force)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+            }
+
+            checkPointArchive = fileSystem.ResolveCheckpointFileName(checkPointArchive);
+            if (!fileSystem.File.Exists(checkPointArchive))
+            {
+                throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
+            }
+
+            var node = chain.ConsensusNodes[0];
+            if (node.IsRunning())
+            {
+                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
+                throw new InvalidOperationException($"node {scriptHash} currently running");
+            }
+
+            var checkpointTempPath = fileSystem.GetTempFolder();
+            using var folderCleanup = AnonymousDisposable.Create(() =>
+            {
+                if (fileSystem.Directory.Exists(checkpointTempPath))
+                {
+                    fileSystem.Directory.Delete(checkpointTempPath, true);
+                }
+            });
+
+            var nodePath = fileSystem.GetNodePath(node);
+            if (fileSystem.Directory.Exists(nodePath))
+            {
+                if (!force)
+                {
+                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+                }
+
+                fileSystem.Directory.Delete(nodePath, true);
+            }
+
+            var settings = chain.GetProtocolSettings();
+            var wallet = DevWallet.FromExpressWallet(settings, node.Wallet);
+            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
+                settings.Network, settings.AddressVersion, multiSigAccount.ScriptHash);
+            fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
         // this method only used in Online/OfflineNode ExecuteAsync

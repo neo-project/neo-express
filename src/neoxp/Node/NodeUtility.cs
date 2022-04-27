@@ -2,14 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.IO.Json;
+using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
@@ -24,8 +29,132 @@ using NeoBctkUtility = Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Node
 {
-    class NodeUtility
+    static class NodeUtility
     {
+        public static async Task RunAsync(this ExpressChain chain, Neo.Plugins.IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, uint? secondsPerBlock, CancellationToken token)
+        {
+            if (node.IsRunning())
+            {
+                throw new Exception("Node already running");
+            }
+
+            uint secondsPerBlockResult = secondsPerBlock.HasValue
+                ? secondsPerBlock.Value
+                : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
+                    ? secondsPerBlockSetting
+                    : 0;
+
+            var protocolSettings = chain.GetProtocolSettings(secondsPerBlockResult);
+
+            var tcs = new TaskCompletionSource<bool>();
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token);
+
+                    var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
+                    using var mutex = new Mutex(true, ExpressChainManager.GLOBAL_PREFIX + defaultAccount.ScriptHash);
+
+                    var wallet = DevWallet.FromExpressWallet(protocolSettings, node.Wallet);
+                    var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+
+                    var logPlugin = new Node.LogPlugin(writer);
+                    var storageProviderPlugin = new Node.StorageProviderPlugin(store);
+                    var appEngineProvider = enableTrace ? new Node.ApplicationEngineProvider() : null;
+                    var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
+                    var persistencePlugin = new Node.PersistencePlugin(store);
+
+                    using var neoSystem = new Neo.NeoSystem(protocolSettings, storageProviderPlugin.Name);
+                    _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));
+                    var rpcSettings = GetRpcServerSettings(chain, node);
+                    var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
+                    var expressRpcMethods = new ExpressRpcMethods(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
+                    rpcServer.RegisterMethods(expressRpcMethods);
+                    rpcServer.RegisterMethods(persistencePlugin);
+                    rpcServer.StartRpcServer();
+
+                    neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    {
+                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
+                        WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
+                    });
+                    dbftPlugin.Start(wallet);
+
+                    // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
+                    // Do not remove or re-word this console output:
+                    writer.WriteLine($"Neo express is running ({store.GetType().Name})");
+
+                    linkedToken.Token.WaitHandle.WaitOne();
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+                finally
+                {
+                    tcs.TrySetResult(true);
+                }
+            });
+            await tcs.Task.ConfigureAwait(false);
+
+            static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
+            {
+                var settings = new Dictionary<string, string>()
+                {
+                    { "PluginConfiguration:Network", $"{chain.Network}" }
+                };
+
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
+            }
+
+            static Neo.Plugins.RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+            {
+                var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+                    ? bindAddress : IPAddress.Loopback;
+
+                var settings = new Dictionary<string, string>()
+                {
+                    { "PluginConfiguration:Network", $"{chain.Network}" },
+                    { "PluginConfiguration:BindAddress", $"{ipAddress}" },
+                    { "PluginConfiguration:Port", $"{node.RpcPort}" }
+                };
+
+                if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
+                {
+                    settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
+                }
+
+                if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
+                {
+                    settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
+                }
+
+                if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
+                    && maxIteratorResultItems > 0)
+                {
+                    settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
+                }
+
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                return Neo.Plugins.RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+            }
+        }
+
+        static void OnApplicationExecuted(Blockchain.ApplicationExecuted applicationExecuted)
+        {
+            if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
+            {
+                var logMessage = $"Tx FAULT: hash={applicationExecuted.Transaction.Hash}";
+                if (!string.IsNullOrEmpty(applicationExecuted.Exception.Message))
+                {
+                    logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
+                }
+                Console.Error.WriteLine($"\x1b[31m{logMessage}\x1b[0m");
+            }
+        }
+
         public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
         {
             transactions ??= Array.Empty<Transaction>();

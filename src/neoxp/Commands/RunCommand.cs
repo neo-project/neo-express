@@ -3,6 +3,8 @@ using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.Persistence;
 
 namespace NeoExpress.Commands
 {
@@ -39,9 +41,15 @@ namespace NeoExpress.Commands
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 
             var node = chain.ConsensusNodes[NodeIndex];
-            var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
+            var nodePath = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+
+            var storageProvider = Discard
+                ? RocksDbStorageProvider.OpenForDiscard(nodePath)
+                : RocksDbStorageProvider.Open(nodePath);
+
             using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-            await chainManager.RunAsync(storageProvider, node, Trace, console.Out, token);
+            await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console.Out, SecondsPerBlock, token);
         }
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)

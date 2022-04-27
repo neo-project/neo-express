@@ -80,7 +80,7 @@ namespace NeoExpress.Commands
                 {
                     var checkpoint = root.Resolve(Reset.value);
                     await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
-                    chainManager.RestoreCheckpoint(checkpoint, true);
+                    chainManager.Chain.RestoreCheckpoint(fileSystem, checkpoint, true);
                 }
             }
 
@@ -100,7 +100,8 @@ namespace NeoExpress.Commands
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
-                            _ = await chainManager.CreateCheckpointAsync(
+                            _ = await chainManager.Chain.CreateCheckpointAsync(
+                                fileSystem,
                                 txExec.ExpressNode,
                                 root.Resolve(cmd.Model.Name),
                                 cmd.Model.Force,

@@ -45,29 +45,5 @@ namespace NeoExpress
 
 
 
-        public IExpressNode GetExpressNode(bool offlineTrace = false)
-        {
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
-
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var consensusNode = chain.ConsensusNodes[i];
-                if (consensusNode.IsRunning())
-                {
-                    return new Node.OnlineNode(ProtocolSettings, chain, consensusNode);
-                }
-            }
-
-            var node = chain.ConsensusNodes[0];
-            var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
-            return new Node.OfflineNode(ProtocolSettings,
-                RocksDbStorageProvider.Open(nodePath),
-                node.Wallet,
-                chain,
-                offlineTrace);
-        }
     }
 }

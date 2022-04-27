@@ -39,7 +39,7 @@ namespace NeoExpress.Commands
                         throw new Exception($"{Account} account not found.");
                     }
 
-                    using var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
                     var (balance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
                     await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
                     return 0;

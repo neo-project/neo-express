@@ -26,7 +26,7 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(System.IO.TextWriter writer)
             {
                 var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                using var expressNode = chainManager.GetExpressNode();
+                using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
 
                 var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
 

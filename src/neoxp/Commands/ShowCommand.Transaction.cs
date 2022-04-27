@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
                     var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
 
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };

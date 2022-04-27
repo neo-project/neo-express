@@ -66,7 +66,7 @@ namespace NeoExpress.Commands
                         throw new ArgumentException("Contract download is only supported for single-node consensus");
                     }
 
-                    using var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
                     await ExecuteAsync(expressNode, Contract, RpcUri, Height, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }

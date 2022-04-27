@@ -34,7 +34,7 @@ namespace NeoExpress
         public TransactionExecutor(IFileSystem fileSystem, ExpressChainManager chainManager, bool trace, bool json, TextWriter writer)
         {
             this.chainManager = chainManager;
-            expressNode = chainManager.GetExpressNode(trace);
+            expressNode = chainManager.Chain.GetExpressNode(fileSystem, trace);
             this.fileSystem = fileSystem;
             this.json = json;
             this.writer = writer;

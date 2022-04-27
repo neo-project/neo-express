@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.Persistence;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
@@ -38,6 +40,34 @@ namespace NeoExpress
                 Node.NodeUtility.GLOBAL_PREFIX + account.ScriptHash, 
                 out var _);
         }
+
+        public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
+        {
+            var settings = chain.GetProtocolSettings();
+
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var consensusNode = chain.ConsensusNodes[i];
+                if (consensusNode.IsRunning())
+                {
+                    return new Node.OnlineNode(settings, chain, consensusNode);
+                }
+            }
+
+            var node = chain.ConsensusNodes[0];
+            var nodePath = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+
+            return new Node.OfflineNode(settings,
+                RocksDbStorageProvider.Open(nodePath),
+                node.Wallet,
+                chain,
+                offlineTrace);
+        }
+
 
         static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {

@@ -46,7 +46,7 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                var expressNode = chainManager.GetExpressNode();
+                var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
 
                 using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
                 jsonWriter.WriteStartArray();

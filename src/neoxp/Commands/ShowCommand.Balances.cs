@@ -36,7 +36,7 @@ namespace NeoExpress.Commands
                         throw new Exception($"{Account} account not found.");
                     }
 
-                    using var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
                     var balances = await expressNode.ListBalancesAsync(accountHash).ConfigureAwait(false);
 
                     if (balances.Count == 0)

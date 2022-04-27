@@ -67,8 +67,8 @@ namespace NeoExpress.Commands
             {
                 if (string.IsNullOrEmpty(RpcUri))
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.GetExpressNode(fileSystem);
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    using var expressNode = chain.GetExpressNode(fileSystem);
                     return await expressNode.GetPolicyAsync().ConfigureAwait(false);
                 }
                 else

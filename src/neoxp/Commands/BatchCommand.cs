@@ -59,8 +59,8 @@ namespace NeoExpress.Commands
                 ? Constants.DEFAULT_EXPRESS_FILENAME
                 : Input);
 
-            var (chainManager, _) = fileSystem.LoadChainManager(input);
-            if (chainManager.IsRunning())
+            var (chain, _) = fileSystem.LoadExpressChain(input);
+            if (chain.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");
             }
@@ -69,9 +69,9 @@ namespace NeoExpress.Commands
             {
                 if (string.IsNullOrEmpty(Reset.value))
                 {
-                    for (int i = 0; i < chainManager.ConsensusNodes.Count; i++)
+                    for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                     {
-                        var node = chainManager.ConsensusNodes[i];
+                        var node = chain.ConsensusNodes[i];
                         await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
                         fileSystem.ResetNode(node, true);
                     }
@@ -80,11 +80,11 @@ namespace NeoExpress.Commands
                 {
                     var checkpoint = root.Resolve(Reset.value);
                     await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
-                    chainManager.RestoreCheckpoint(fileSystem, checkpoint, true);
+                    chain.RestoreCheckpoint(fileSystem, checkpoint, true);
                 }
             }
 
-            using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, false, writer); 
+            using var txExec = new TransactionExecutor(fileSystem, chain, Trace, false, writer); 
             var batchApp = new CommandLineApplication<BatchFileCommands>();
             batchApp.Conventions.UseDefaultConventions();
 
@@ -100,7 +100,7 @@ namespace NeoExpress.Commands
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
-                            _ = await chainManager.CreateCheckpointAsync(
+                            _ = await chain.CreateCheckpointAsync(
                                 fileSystem,
                                 txExec.ExpressNode,
                                 root.Resolve(cmd.Model.Name),
@@ -126,7 +126,7 @@ namespace NeoExpress.Commands
                                 throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
                             }
 
-                            if (chainManager.ConsensusNodes.Count != 1)
+                            if (chain.ConsensusNodes.Count != 1)
                             {
                                 throw new ArgumentException("Contract download is only supported for single-node consensus");
                             }

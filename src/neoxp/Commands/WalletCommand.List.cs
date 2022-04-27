@@ -33,7 +33,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = fileSystem.LoadChainManager(Input);
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
                     var settings = chain.GetProtocolSettings();
 
                     var genesis = chain.GetGenesisAccount(settings);

@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
+                    var (chainManager, _) = fileSystem.LoadExpressChain(Input);
                     using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
 
                     var values = await txExec.TryGetRemoteNetworkPolicyAsync(Source).ConfigureAwait(false);

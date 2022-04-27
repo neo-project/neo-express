@@ -34,8 +34,8 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    if (!chainManager.TryGetAccountHash(Account, out var accountHash))
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    if (!chain.TryGetAccountHash(Account, out var accountHash))
                     {
                         throw new Exception($"{Account} account not found.");
                     }

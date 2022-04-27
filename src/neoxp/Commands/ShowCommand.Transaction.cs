@@ -31,14 +31,14 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.GetExpressNode(fileSystem);
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    using var expressNode = chain.GetExpressNode(fileSystem);
                     var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
 
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
                     await writer.WriteStartObjectAsync();
                     await writer.WritePropertyNameAsync("transaction");
-                    writer.WriteJson(tx.ToJson(chainManager.GetProtocolSettings()));
+                    writer.WriteJson(tx.ToJson(chain.GetProtocolSettings()));
                     if (log is not null)
                     {
                         await writer.WritePropertyNameAsync("application-log");

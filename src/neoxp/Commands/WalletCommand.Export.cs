@@ -38,8 +38,8 @@ namespace NeoExpress.Commands
                    ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
                    : Output;
 
-                var (chainManager, chainPath) = fileSystem.LoadChainManager(Input);
-                var wallet = chainManager.GetWallet(Name);
+                var (chain, chainPath) = fileSystem.LoadExpressChain(Input);
+                var wallet = chain.GetWallet(Name);
 
                 if (wallet == null)
                 {
@@ -59,7 +59,7 @@ namespace NeoExpress.Commands
                 }
 
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
-                var devWallet = DevWallet.FromExpressWallet(chainManager.GetProtocolSettings(), wallet);
+                var devWallet = DevWallet.FromExpressWallet(chain.GetProtocolSettings(), wallet);
                 devWallet.Export(output, password);
                 return output;
             }

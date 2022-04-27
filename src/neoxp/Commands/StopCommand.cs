@@ -32,8 +32,7 @@ namespace NeoExpress.Commands
                 throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
             }
 
-            var (chainManager, _) = fileSystem.LoadChainManager(Input);
-            var chain = chainManager;
+            var (chain, _) = fileSystem.LoadExpressChain(Input);
 
             if (All)
             {

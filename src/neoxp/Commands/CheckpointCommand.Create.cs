@@ -32,9 +32,9 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.GetExpressNode(fileSystem);
-                    _ = await chainManager.CreateCheckpointAsync(
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    using var expressNode = chain.GetExpressNode(fileSystem);
+                    _ = await chain.CreateCheckpointAsync(
                         fileSystem, expressNode, Name, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }

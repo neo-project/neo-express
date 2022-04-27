@@ -30,8 +30,8 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                using var expressNode = chainManager.GetExpressNode(fileSystem);
+                var (chain, _) = fileSystem.LoadExpressChain(Input);
+                using var expressNode = chain.GetExpressNode(fileSystem);
 
                 TimeSpan delta = ParseTimestampDelta(TimestampDelta);
                 await expressNode.FastForwardAsync(Count, delta).ConfigureAwait(false);

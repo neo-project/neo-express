@@ -48,9 +48,9 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                var password = chainManager.ResolvePassword(Sender, Password);
-                using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
+                var (chain, _) = fileSystem.LoadExpressChain(Input);
+                var password = chain.ResolvePassword(Sender, Password);
+                using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out); 
                 await txExec.TransferAsync(Quantity, Asset, Sender, password, Receiver).ConfigureAwait(false);
                 return 0;
             }

@@ -37,8 +37,8 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.GetExpressNode(fileSystem);
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    using var expressNode = chain.GetExpressNode(fileSystem);
 
                     var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
                     var contractMap = contracts.ToDictionary(c => c.hash, c => c.manifest.Name);

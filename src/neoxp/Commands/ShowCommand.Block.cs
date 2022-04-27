@@ -28,10 +28,10 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.GetExpressNode(fileSystem);
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    using var expressNode = chain.GetExpressNode(fileSystem);
                     var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
-                    console.WriteJson(block.ToJson(chainManager.GetProtocolSettings()));
+                    console.WriteJson(block.ToJson(chain.GetProtocolSettings()));
                     return 0;
                 }
                 catch (Exception ex)

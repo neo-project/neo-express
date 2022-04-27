@@ -33,8 +33,7 @@ namespace NeoExpress.Commands
 
             internal ExpressWallet Execute()
             {
-                var (chainManager, chainPath) = fileSystem.LoadChainManager(Input);
-                var chain = chainManager;
+                var (chain, chainPath) = fileSystem.LoadExpressChain(Input);
 
                 if (chain.IsReservedName(Name))
                 {
@@ -52,7 +51,7 @@ namespace NeoExpress.Commands
                     chain.Wallets.Remove(existingWallet);
                 }
 
-                var wallet = new DevWallet(chainManager.GetProtocolSettings(), Name);
+                var wallet = new DevWallet(chain.GetProtocolSettings(), Name);
                 var account = wallet.CreateAccount();
                 account.IsDefault = true;
 

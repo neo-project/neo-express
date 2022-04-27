@@ -57,8 +57,8 @@ namespace NeoExpress.Commands
                         throw new Exception("Either Account or --results must be specified");
                     }
 
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out);
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out);
                     var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 
                     if (Results)
@@ -67,7 +67,7 @@ namespace NeoExpress.Commands
                     }
                     else
                     {
-                        var password = chainManager.ResolvePassword(Account, Password);
+                        var password = chain.ResolvePassword(Account, Password);
                         await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
                     }
 

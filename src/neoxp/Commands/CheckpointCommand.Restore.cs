@@ -32,7 +32,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    chainManager.Chain.RestoreCheckpoint(fileSystem, Name, Force);
+                    chainManager.RestoreCheckpoint(fileSystem, Name, Force);
                     console.WriteLine($"Checkpoint {Name} successfully restored");
                     return 0;
                 }

@@ -61,12 +61,12 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
 
-                    if (chainManager.Chain.ConsensusNodes.Count != 1)
+                    if (chainManager.ConsensusNodes.Count != 1)
                     {
                         throw new ArgumentException("Contract download is only supported for single-node consensus");
                     }
 
-                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
+                    using var expressNode = chainManager.GetExpressNode(fileSystem);
                     await ExecuteAsync(expressNode, Contract, RpcUri, Height, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }

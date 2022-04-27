@@ -60,7 +60,7 @@ namespace NeoExpress.Commands
                 : Input);
 
             var (chainManager, _) = fileSystem.LoadChainManager(input);
-            if (chainManager.Chain.IsRunning())
+            if (chainManager.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");
             }
@@ -69,9 +69,9 @@ namespace NeoExpress.Commands
             {
                 if (string.IsNullOrEmpty(Reset.value))
                 {
-                    for (int i = 0; i < chainManager.Chain.ConsensusNodes.Count; i++)
+                    for (int i = 0; i < chainManager.ConsensusNodes.Count; i++)
                     {
-                        var node = chainManager.Chain.ConsensusNodes[i];
+                        var node = chainManager.ConsensusNodes[i];
                         await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
                         fileSystem.ResetNode(node, true);
                     }
@@ -80,7 +80,7 @@ namespace NeoExpress.Commands
                 {
                     var checkpoint = root.Resolve(Reset.value);
                     await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
-                    chainManager.Chain.RestoreCheckpoint(fileSystem, checkpoint, true);
+                    chainManager.RestoreCheckpoint(fileSystem, checkpoint, true);
                 }
             }
 
@@ -100,7 +100,7 @@ namespace NeoExpress.Commands
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
-                            _ = await chainManager.Chain.CreateCheckpointAsync(
+                            _ = await chainManager.CreateCheckpointAsync(
                                 fileSystem,
                                 txExec.ExpressNode,
                                 root.Resolve(cmd.Model.Name),
@@ -126,7 +126,7 @@ namespace NeoExpress.Commands
                                 throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
                             }
 
-                            if (chainManager.Chain.ConsensusNodes.Count != 1)
+                            if (chainManager.ConsensusNodes.Count != 1)
                             {
                                 throw new ArgumentException("Contract download is only supported for single-node consensus");
                             }

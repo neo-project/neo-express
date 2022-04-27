@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
@@ -31,13 +32,13 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
+                    using var expressNode = chainManager.GetExpressNode(fileSystem);
                     var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
 
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
                     await writer.WriteStartObjectAsync();
                     await writer.WritePropertyNameAsync("transaction");
-                    writer.WriteJson(tx.ToJson(chainManager.ProtocolSettings));
+                    writer.WriteJson(tx.ToJson(chainManager.GetProtocolSettings()));
                     if (log is not null)
                     {
                         await writer.WritePropertyNameAsync("application-log");

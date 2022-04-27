@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 using NeoExpress.Models;
 
 namespace NeoExpress.Commands
@@ -38,7 +39,7 @@ namespace NeoExpress.Commands
                    : Output;
 
                 var (chainManager, chainPath) = fileSystem.LoadChainManager(Input);
-                var wallet = chainManager.Chain.GetWallet(Name);
+                var wallet = chainManager.GetWallet(Name);
 
                 if (wallet == null)
                 {
@@ -58,7 +59,7 @@ namespace NeoExpress.Commands
                 }
 
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
-                var devWallet = DevWallet.FromExpressWallet(chainManager.ProtocolSettings, wallet);
+                var devWallet = DevWallet.FromExpressWallet(chainManager.GetProtocolSettings(), wallet);
                 devWallet.Export(output, password);
                 return output;
             }

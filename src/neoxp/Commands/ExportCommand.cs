@@ -2,6 +2,7 @@ using System;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
@@ -24,18 +25,18 @@ namespace NeoExpress.Commands
         internal void Execute(System.IO.TextWriter writer)
         {
             var password = Prompt.GetPassword("Input password to use for exported wallets");
-            var (chainManager, _) = fileSystem.LoadChainManager(Input);
-            var chain = chainManager.Chain;
+            var (chain, _) = fileSystem.LoadChainManager(Input);
             var folder = fileSystem.Directory.GetCurrentDirectory();
 
+            var settings = chain.GetProtocolSettings();
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var node = chain.ConsensusNodes[i];
                 writer.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
-                ExportNodeWallet(chainManager.ProtocolSettings, node, walletPath, password);
+                ExportNodeWallet(settings, node, walletPath, password);
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
-                ExportNodeConfig(chainManager.ProtocolSettings, chain, node, nodeConfigPath, password, walletPath);
+                ExportNodeConfig(settings, chain, node, nodeConfigPath, password, walletPath);
             }
         }
 

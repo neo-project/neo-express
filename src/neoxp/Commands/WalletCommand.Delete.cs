@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
             internal void Execute()
             {
                 var (chainManager, chainPath) = fileSystem.LoadChainManager(Input);
-                var chain = chainManager.Chain;
+                var chain = chainManager;
                 var wallet = chain.GetWallet(Name);
 
                 if (wallet == null)

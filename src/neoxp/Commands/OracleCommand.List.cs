@@ -24,7 +24,7 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
+                var expressNode = chainManager.GetExpressNode(fileSystem);
                 var oracleNodes = await expressNode.ListOracleNodesAsync();
 
                 await writer.WriteLineAsync($"Oracle Nodes ({oracleNodes.Count}): ").ConfigureAwait(false);

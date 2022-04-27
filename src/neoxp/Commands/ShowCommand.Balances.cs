@@ -31,12 +31,12 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
+                    if (!chainManager.TryGetAccountHash(Account, out var accountHash))
                     {
                         throw new Exception($"{Account} account not found.");
                     }
 
-                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
+                    using var expressNode = chainManager.GetExpressNode(fileSystem);
                     var balances = await expressNode.ListBalancesAsync(accountHash).ConfigureAwait(false);
 
                     if (balances.Count == 0)

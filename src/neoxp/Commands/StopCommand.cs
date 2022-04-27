@@ -33,7 +33,7 @@ namespace NeoExpress.Commands
             }
 
             var (chainManager, _) = fileSystem.LoadChainManager(Input);
-            var chain = chainManager.Chain;
+            var chain = chainManager;
 
             if (All)
             {

@@ -39,7 +39,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    var password = chainManager.Chain.ResolvePassword(Account, Password);
+                    var password = chainManager.ResolvePassword(Account, Password);
                     using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
                     await txExec.OracleEnableAsync(Account, password).ConfigureAwait(false);
                     return 0;

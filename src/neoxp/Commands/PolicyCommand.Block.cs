@@ -43,7 +43,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    var password = chainManager.Chain.ResolvePassword(Account, Password);
+                    var password = chainManager.ResolvePassword(Account, Password);
                     using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
                     await txExec.BlockAsync(ScriptHash, Account, Password).ConfigureAwait(false);
                     return 0;

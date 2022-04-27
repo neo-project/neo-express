@@ -13,7 +13,7 @@ namespace NeoExpress
 {
     static class FileSystemExtensions
     {
-        public static (ExpressChainManager manager, string path) LoadChainManager(this IFileSystem fileSystem, string path, uint? secondsPerBlock = null)
+        public static (ExpressChain chain, string path) LoadChainManager(this IFileSystem fileSystem, string path, uint? secondsPerBlock = null)
         {
             path = fileSystem.ResolveExpressFileName(path);
             if (!fileSystem.File.Exists(path))
@@ -33,7 +33,7 @@ namespace NeoExpress
                 throw new Exception("Invalid Signature Redeem Script. Was this neo-express file created before RC1?");
             }
 
-            return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), path);
+            return (chain, path);
         }
 
         public static void ResetNode(this IFileSystem fileSystem, ExpressConsensusNode node, bool force)

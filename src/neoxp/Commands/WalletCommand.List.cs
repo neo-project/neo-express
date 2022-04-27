@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.IO;
 using NeoExpress.Models;
@@ -32,10 +33,10 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    var chain = chainManager.Chain;
+                    var (chain, _) = fileSystem.LoadChainManager(Input);
+                    var settings = chain.GetProtocolSettings();
 
-                    var genesis = chain.GetGenesisAccount(chainManager.ProtocolSettings);
+                    var genesis = chain.GetGenesisAccount(settings);
                     var genesisAccount = genesis.wallet.GetAccount(genesis.accountHash)
                         ?? throw new Exception("Failed to retrieve genesis account");
 
@@ -49,12 +50,12 @@ namespace NeoExpress.Commands
 
                         foreach (var node in chain.ConsensusNodes)
                         {
-                            PrintWalletInfo(writer, node.Wallet, chainManager.ProtocolSettings);
+                            PrintWalletInfo(writer, node.Wallet, settings);
                         }
 
                         foreach (var wallet in chain.Wallets)
                         {
-                            PrintWalletInfo(writer, wallet, chainManager.ProtocolSettings);
+                            PrintWalletInfo(writer, wallet, settings);
                         }
 
                         writer.WriteEndObject();
@@ -101,12 +102,12 @@ namespace NeoExpress.Commands
 
                         foreach (var node in chain.ConsensusNodes)
                         {
-                            PrintWalletInfo(writer, node.Wallet, chainManager.ProtocolSettings);
+                            PrintWalletInfo(writer, node.Wallet, settings);
                         }
 
                         foreach (var wallet in chain.Wallets)
                         {
-                            PrintWalletInfo(writer, wallet, chainManager.ProtocolSettings);
+                            PrintWalletInfo(writer, wallet, settings);
                         }
 
                         static void PrintWalletInfo(TextWriter writer, ExpressWallet wallet, Neo.ProtocolSettings protocolSettings)

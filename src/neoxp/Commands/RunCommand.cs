@@ -36,7 +36,7 @@ namespace NeoExpress.Commands
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {
             var (chainManager, _) = fileSystem.LoadChainManager(Input, SecondsPerBlock);
-            var chain = chainManager.Chain;
+            var chain = chainManager;
 
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 

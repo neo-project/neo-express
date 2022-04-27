@@ -12,6 +12,7 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Plugins;
+using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
 using Nito.Disposables;
@@ -266,5 +267,104 @@ namespace NeoExpress
             value = default;
             return false;
         }
+
+        public static bool TryGetSigningAccount(this ExpressChain chain, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                var settings = chain.GetProtocolSettings();
+
+                if (name.Equals(ExpressChainExtensions.GENESIS, StringComparison.OrdinalIgnoreCase))
+                {
+                    (wallet, accountHash) = chain.GetGenesisAccount(settings);
+                    return true;
+                }
+
+                if (chain.Wallets != null && chain.Wallets.Count > 0)
+                {
+                    for (int i = 0; i < chain.Wallets.Count; i++)
+                    {
+                        var expWallet = chain.Wallets[i];
+                        if (name.Equals(expWallet.Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            wallet = DevWallet.FromExpressWallet(settings, expWallet);
+                            accountHash = wallet.GetAccounts().Single(a => a.IsDefault).ScriptHash;
+                            return true;
+                        }
+                    }
+                }
+
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                {
+                    var expWallet = chain.ConsensusNodes[i].Wallet;
+                    if (name.Equals(expWallet.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        wallet = DevWallet.FromExpressWallet(settings, expWallet);
+                        accountHash = wallet.GetAccounts().Single(a => !a.Contract.Script.IsMultiSigContract()).ScriptHash;
+                        return true;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(password))
+                {
+                    if (TryGetNEP2Wallet(name, password, settings, out wallet, out accountHash))
+                    {
+                        return true;
+                    }
+
+                    if (TryGetNEP6Wallet(name, password, settings, out wallet, out accountHash))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            wallet = null;
+            accountHash = null;
+            return false;
+
+            static bool TryGetNEP2Wallet(string nep2, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+            {
+                try
+                {
+                    var privateKey = Wallet.GetPrivateKeyFromNEP2(nep2, password, settings.AddressVersion);
+                    wallet = new DevWallet(settings, string.Empty);
+                    var account = wallet.CreateAccount(privateKey);
+                    accountHash = account.ScriptHash;
+                    return true;
+                }
+                catch
+                {
+                    wallet = null;
+                    accountHash = null;
+                    return false;
+                }
+            }
+
+            static bool TryGetNEP6Wallet(string path, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+            {
+                try
+                {
+                    var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(path, settings);
+                    using var unlock = nep6wallet.Unlock(password);
+                    var nep6account = nep6wallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
+                        ?? nep6wallet.GetAccounts().SingleOrDefault()
+                        ?? throw new InvalidOperationException("Neo-express only supports NEP-6 wallets with a single default account or a single account");
+                    if (nep6account.IsMultiSigContract()) throw new Exception("Neo-express doesn't supports multi-sig NEP-6 accounts");
+                    var keyPair = nep6account.GetKey() ?? throw new Exception("account.GetKey() returned null");
+                    wallet = new DevWallet(settings, string.Empty);
+                    var account = wallet.CreateAccount(keyPair.PrivateKey);
+                    accountHash = account.ScriptHash;
+                    return true;
+                }
+                catch
+                {
+                    wallet = null;
+                    accountHash = null;
+                    return false;
+                }
+            }
+        }
+
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 
 namespace NeoExpress.Commands
 {
@@ -28,9 +29,9 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var expressNode = chainManager.Chain.GetExpressNode(fileSystem);
+                    using var expressNode = chainManager.GetExpressNode(fileSystem);
                     var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
-                    console.WriteJson(block.ToJson(chainManager.ProtocolSettings));
+                    console.WriteJson(block.ToJson(chainManager.GetProtocolSettings()));
                     return 0;
                 }
                 catch (Exception ex)

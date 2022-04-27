@@ -1,4 +1,5 @@
 using System;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -9,11 +10,11 @@ namespace NeoExpress.Commands
         [Command(Name = "list", Description = "List deployed contracts")]
         internal class List
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public List(ExpressChainManagerFactory chainManagerFactory)
+            public List(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Option(Description = "Path to neo-express data file")]
@@ -24,7 +25,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(System.IO.TextWriter writer)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, _) = fileSystem.LoadChainManager(Input);
                 using var expressNode = chainManager.GetExpressNode();
 
                 var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);

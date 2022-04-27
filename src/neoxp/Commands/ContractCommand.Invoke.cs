@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
@@ -11,12 +12,12 @@ namespace NeoExpress.Commands
         [Command(Name = "invoke", Description = "Invoke a contract using parameters from .neo-invoke.json file")]
         internal class Invoke
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
             readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Invoke(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Invoke(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
                 this.txExecutorFactory = txExecutorFactory;
             }
 
@@ -58,7 +59,7 @@ namespace NeoExpress.Commands
                         throw new Exception("Either Account or --results must be specified");
                     }
 
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
                     var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 

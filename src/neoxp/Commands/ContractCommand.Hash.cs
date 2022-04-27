@@ -12,12 +12,10 @@ namespace NeoExpress.Commands
         [Command(Name = "hash", Description = "Get contract hash for contract path and deployment account")]
         internal class Hash
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
             readonly IFileSystem fileSystem;
 
-            public Hash(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Hash(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
                 this.fileSystem = fileSystem;
             }
 
@@ -36,7 +34,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
                     {
                         throw new Exception($"{Account} account not found.");

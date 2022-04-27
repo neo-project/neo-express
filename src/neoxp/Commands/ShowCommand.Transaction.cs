@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
@@ -11,11 +12,11 @@ namespace NeoExpress.Commands
         [Command("transaction", "tx", Description = "Show transaction")]
         internal class Transaction
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Transaction(ExpressChainManagerFactory chainManagerFactory)
+            public Transaction(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Transaction hash")]
@@ -29,7 +30,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     using var expressNode = chainManager.GetExpressNode();
                     var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
 

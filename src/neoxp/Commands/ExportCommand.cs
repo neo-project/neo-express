@@ -11,12 +11,10 @@ namespace NeoExpress.Commands
     [Command("export", Description = "Export neo-express protocol, config and wallet files")]
     class ExportCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
         readonly IFileSystem fileSystem;
 
-        public ExportCommand(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+        public ExportCommand(IFileSystem fileSystem)
         {
-            this.chainManagerFactory = chainManagerFactory;
             this.fileSystem = fileSystem;
         }
 
@@ -26,7 +24,7 @@ namespace NeoExpress.Commands
         internal void Execute(System.IO.TextWriter writer)
         {
             var password = Prompt.GetPassword("Input password to use for exported wallets");
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var (chainManager, _) = fileSystem.LoadChainManager(Input);
             var chain = chainManager.Chain;
             var folder = fileSystem.Directory.GetCurrentDirectory();
 

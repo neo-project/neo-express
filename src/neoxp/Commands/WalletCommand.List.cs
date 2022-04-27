@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Models;
@@ -14,11 +15,11 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List neo-express wallets")]
         internal class List
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public List(ExpressChainManagerFactory chainManagerFactory)
+            public List(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Option(Description = "Path to neo-express data file")]
@@ -31,7 +32,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     var chain = chainManager.Chain;
 
                     var genesis = chain.GetGenesisAccount(chainManager.ProtocolSettings);

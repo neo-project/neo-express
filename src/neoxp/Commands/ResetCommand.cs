@@ -1,4 +1,5 @@
 using System;
+using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
@@ -6,11 +7,11 @@ namespace NeoExpress.Commands
     [Command("reset", Description = "Reset neo-express instance node")]
     class ResetCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly IFileSystem fileSystem;
 
-        public ResetCommand(ExpressChainManagerFactory chainManagerFactory)
+        public ResetCommand(IFileSystem fileSystem)
         {
-            this.chainManagerFactory = chainManagerFactory;
+            this.fileSystem = fileSystem;
         }
 
         [Argument(0, Description = "Index of node to reset")]
@@ -32,7 +33,7 @@ namespace NeoExpress.Commands
                 throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
             }
 
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var (chainManager, _) = fileSystem.LoadChainManager(Input);
             var chain = chainManager.Chain;
 
             if (All)

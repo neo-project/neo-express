@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
@@ -9,11 +10,11 @@ namespace NeoExpress.Commands
         [Command("delete", Description = "Delete neo-express wallet")]
         internal class Delete
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Delete(ExpressChainManagerFactory chainManagerFactory)
+            public Delete(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Wallet name")]
@@ -28,7 +29,7 @@ namespace NeoExpress.Commands
 
             internal void Execute()
             {
-                var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, chainPath) = fileSystem.LoadChainManager(Input);
                 var chain = chainManager.Chain;
                 var wallet = chain.GetWallet(Name);
 

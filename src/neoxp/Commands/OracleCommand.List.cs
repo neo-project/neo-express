@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -10,11 +11,11 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List oracle nodes")]
         internal class List
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public List(ExpressChainManagerFactory chainManagerFactory)
+            public List(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Option(Description = "Path to neo-express data file")]
@@ -22,7 +23,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, _) = fileSystem.LoadChainManager(Input);
                 var expressNode = chainManager.GetExpressNode();
                 var oracleNodes = await expressNode.ListOracleNodesAsync();
 

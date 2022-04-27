@@ -11,13 +11,11 @@ namespace NeoExpress.Commands
         [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
         internal class Export
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
             readonly IFileSystem fileSystem;
 
-            public Export(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Export(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.chainManagerFactory = chainManagerFactory;
             }
 
             [Argument(0, Description = "Wallet name")]
@@ -39,7 +37,7 @@ namespace NeoExpress.Commands
                    ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
                    : Output;
 
-                var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, chainPath) = fileSystem.LoadChainManager(Input);
                 var wallet = chainManager.Chain.GetWallet(Name);
 
                 if (wallet == null)

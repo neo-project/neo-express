@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -10,12 +11,12 @@ namespace NeoExpress.Commands
         [Command("response", Description = "Submit oracle response")]
         internal class Response
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
             readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Response(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Response(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
                 this.txExecutorFactory = txExecutorFactory;
             }
 
@@ -43,7 +44,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
                     await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
                     return 0;

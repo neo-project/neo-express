@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
@@ -11,12 +12,12 @@ namespace NeoExpress.Commands
         [Command("deploy", Description = "Deploy contract to a neo-express instance")]
         internal class Deploy
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
             readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Deploy(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Deploy(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
                 this.txExecutorFactory = txExecutorFactory;
             }
 
@@ -54,7 +55,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
                     await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force).ConfigureAwait(false);

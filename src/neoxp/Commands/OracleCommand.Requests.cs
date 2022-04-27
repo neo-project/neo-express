@@ -2,6 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 using System.Threading.Tasks;
 using System;
 using System.IO;
+using System.IO.Abstractions;
 
 namespace NeoExpress.Commands
 {
@@ -10,11 +11,11 @@ namespace NeoExpress.Commands
         [Command("requests", Description = "List outstanding oracle requests")]
         internal class Requests
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Requests(ExpressChainManagerFactory chainManagerFactory)
+            public Requests(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Option(Description = "Path to neo-express data file")]
@@ -22,7 +23,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, _) = fileSystem.LoadChainManager(Input);
                 using var expressNode = chainManager.GetExpressNode();
                 var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
 

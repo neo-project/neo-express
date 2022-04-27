@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -8,11 +9,11 @@ namespace NeoExpress.Commands
     [Command("fastfwd", Description = "Mint empty blocks to fast forward the block chain")]
     class FastForwardCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly IFileSystem fileSystem;
 
-        public FastForwardCommand(ExpressChainManagerFactory chainManagerFactory)
+        public FastForwardCommand(IFileSystem fileSystem)
         {
-            this.chainManagerFactory = chainManagerFactory;
+            this.fileSystem = fileSystem;
         }
 
         [Argument(0, Description = "Number of blocks to mint")]
@@ -29,7 +30,7 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, _) = fileSystem.LoadChainManager(Input);
                 using var expressNode = chainManager.GetExpressNode();
 
                 TimeSpan delta = ParseTimestampDelta(TimestampDelta);

@@ -6,6 +6,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.SmartContract.Manifest;
 using Newtonsoft.Json;
+using System.IO.Abstractions;
 
 namespace NeoExpress.Commands
 {
@@ -14,11 +15,11 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Get information for a deployed contract")]
         internal class Get
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Get(ExpressChainManagerFactory chainManagerFactory)
+            public Get(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Contract name or invocation hash")]
@@ -44,7 +45,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, _) = fileSystem.LoadChainManager(Input);
                 var expressNode = chainManager.GetExpressNode();
 
                 using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };

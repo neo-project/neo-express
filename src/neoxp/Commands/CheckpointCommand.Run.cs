@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -12,11 +13,11 @@ namespace NeoExpress.Commands
         [Command("run", Description = "Run a neo-express checkpoint (discarding changes on shutdown)")]
         internal class Run
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Run(ExpressChainManagerFactory chainManagerFactory)
+            public Run(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, "Checkpoint file name")]
@@ -34,7 +35,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console, CancellationToken token)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
+                var (chainManager, _) = fileSystem.LoadChainManager(Input, SecondsPerBlock);
                 var chain = chainManager.Chain;
                 if (chain.ConsensusNodes.Count != 1)
                 {

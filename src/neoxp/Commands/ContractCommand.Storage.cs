@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
-using System.Linq;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -16,11 +16,11 @@ namespace NeoExpress.Commands
         [Command(Name = "storage", Description = "Display storage for specified contract")]
         internal class Storage
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Storage(ExpressChainManagerFactory chainManagerFactory)
+            public Storage(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Contract name or invocation hash")]
@@ -91,7 +91,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, _) = fileSystem.LoadChainManager(Input);
                 var expressNode = chainManager.GetExpressNode();
 
                 if (UInt160.TryParse(Contract, out var hash))

@@ -2,6 +2,7 @@ using System;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.IO;
 using Neo.SmartContract;
@@ -12,6 +13,29 @@ namespace NeoExpress
 {
     static class FileSystemExtensions
     {
+        public static (ExpressChainManager manager, string path) LoadChainManager(this IFileSystem fileSystem, string path, uint? secondsPerBlock = null)
+        {
+            path = fileSystem.ResolveExpressFileName(path);
+            if (!fileSystem.File.Exists(path))
+            {
+                throw new Exception($"{path} file doesn't exist");
+            }
+
+            var chain = fileSystem.LoadChain(path);
+
+            // validate neo-express file by ensuring stored node zero default account SignatureRedeemScript matches a generated script
+            var account = chain.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("consensus node 0 missing default account");
+            var keyPair = new Neo.Wallets.KeyPair(Convert.FromHexString(account.PrivateKey));
+            var contractScript = Convert.FromHexString(account.Contract.Script);
+
+            if (!Contract.CreateSignatureRedeemScript(keyPair.PublicKey).AsSpan().SequenceEqual(contractScript))
+            {
+                throw new Exception("Invalid Signature Redeem Script. Was this neo-express file created before RC1?");
+            }
+
+            return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), path);
+        }
+
         public static string ResolveExpressFileName(this IFileSystem fileSystem, string path)
             => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
 

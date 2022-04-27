@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
@@ -12,11 +13,11 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         internal class Create
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Create(ExpressChainManagerFactory chainManagerFactory)
+            public Create(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Wallet name")]
@@ -31,7 +32,7 @@ namespace NeoExpress.Commands
 
             internal ExpressWallet Execute()
             {
-                var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+                var (chainManager, chainPath) = fileSystem.LoadChainManager(Input);
                 var chain = chainManager.Chain;
 
                 if (chain.IsReservedName(Name))

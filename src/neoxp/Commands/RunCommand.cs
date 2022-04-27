@@ -1,4 +1,5 @@
 using System;
+using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -8,11 +9,11 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly IFileSystem fileSystem;
 
-        public RunCommand(ExpressChainManagerFactory chainManagerFactory)
+        public RunCommand(IFileSystem fileSystem)
         {
-            this.chainManagerFactory = chainManagerFactory;
+            this.fileSystem = fileSystem;
         }
 
         [Argument(0, Description = "Index of node to run")]
@@ -32,7 +33,7 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IConsole console, CancellationToken token)
         {
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
+            var (chainManager, _) = fileSystem.LoadChainManager(Input, SecondsPerBlock);
             var chain = chainManager.Chain;
 
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");

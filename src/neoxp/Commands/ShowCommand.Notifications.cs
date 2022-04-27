@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -13,11 +14,11 @@ namespace NeoExpress.Commands
         [Command("notifications", Description = "Shows contract notifications in JSON format")]
         internal class Notifications
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Notifications(ExpressChainManagerFactory chainManagerFactory)
+            public Notifications(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Option(Description = "Limit shown notifications to the specified contract")]
@@ -36,7 +37,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     using var expressNode = chainManager.GetExpressNode();
 
                     var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);

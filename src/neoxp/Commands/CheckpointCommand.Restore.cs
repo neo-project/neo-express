@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
@@ -9,11 +10,11 @@ namespace NeoExpress.Commands
         [Command("restore", Description = "Restore a neo-express checkpoint")]
         internal class Restore
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Restore(ExpressChainManagerFactory chainManagerFactory)
+            public Restore(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, "Checkpoint file name")]
@@ -30,7 +31,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     chainManager.RestoreCheckpoint(Name, Force);
                     console.WriteLine($"Checkpoint {Name} successfully restored");
                     return 0;

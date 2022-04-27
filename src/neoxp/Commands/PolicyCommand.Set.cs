@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Models;
@@ -11,12 +12,12 @@ namespace NeoExpress.Commands
         [Command(Name = "set", Description = "Set single policy value")]
         internal class Set
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
             readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Set(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Set(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
                 this.txExecutorFactory = txExecutorFactory;
             }
 
@@ -48,7 +49,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
 
                     await txExec.SetPolicyAsync(Policy, Value, Account, Password).ConfigureAwait(false);

@@ -1,4 +1,5 @@
 using System;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -7,11 +8,11 @@ namespace NeoExpress.Commands
     [Command("stop", Description = "Stop Neo-Express instance node")]
     class StopCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly IFileSystem fileSystem;
 
-        public StopCommand(ExpressChainManagerFactory chainManagerFactory)
+        public StopCommand(IFileSystem fileSystem)
         {
-            this.chainManagerFactory = chainManagerFactory;
+            this.fileSystem = fileSystem;
         }
 
         [Argument(0, Description = "Index of node to stop")]
@@ -30,7 +31,7 @@ namespace NeoExpress.Commands
                 throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
             }
 
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            var (chainManager, _) = fileSystem.LoadChainManager(Input);
             var chain = chainManager.Chain;
 
             if (All)

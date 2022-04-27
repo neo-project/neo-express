@@ -1,4 +1,5 @@
 using System;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.RPC;
@@ -11,11 +12,11 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Retrieve current value of a blockchain policy")]
         internal class Get
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Get(ExpressChainManagerFactory chainManagerFactory)
+            public Get(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Option(Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
@@ -66,7 +67,7 @@ namespace NeoExpress.Commands
             {
                 if (string.IsNullOrEmpty(RpcUri))
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     using var expressNode = chainManager.GetExpressNode();
                     return await expressNode.GetPolicyAsync().ConfigureAwait(false);
                 }

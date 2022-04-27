@@ -14,13 +14,11 @@ namespace NeoExpress.Commands
     [Command("batch", Description = "Execute a series of offline Neo-Express operations")]
     partial class BatchCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
         readonly TransactionExecutorFactory txExecutorFactory;
         readonly IFileSystem fileSystem;
 
-        public BatchCommand(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+        public BatchCommand(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
         {
-            this.chainManagerFactory = chainManagerFactory;
             this.fileSystem = fileSystem;
             this.txExecutorFactory = txExecutorFactory;
         }
@@ -63,7 +61,7 @@ namespace NeoExpress.Commands
                 ? Constants.DEFAULT_EXPRESS_FILENAME
                 : Input);
 
-            var (chainManager, _) = chainManagerFactory.LoadChain(input);
+            var (chainManager, _) = fileSystem.LoadChainManager(input);
             if (chainManager.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");

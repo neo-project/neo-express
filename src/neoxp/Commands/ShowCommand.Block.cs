@@ -1,4 +1,5 @@
 using System;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 
@@ -9,11 +10,11 @@ namespace NeoExpress.Commands
         [Command("block", Description = "Show block")]
         internal class Block
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Block(ExpressChainManagerFactory chainManagerFactory)
+            public Block(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Optional block hash or index. Show most recent block if unspecified")]
@@ -26,7 +27,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     using var expressNode = chainManager.GetExpressNode();
                     var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
                     console.WriteJson(block.ToJson(chainManager.ProtocolSettings));

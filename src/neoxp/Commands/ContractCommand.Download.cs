@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Node;
@@ -20,11 +21,11 @@ namespace NeoExpress.Commands
         [Command(Name = "download", Description = "Download contract with storage from remote chain into local chain")]
         internal class Download
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IFileSystem fileSystem;
 
-            public Download(ExpressChainManagerFactory chainManagerFactory)
+            public Download(IFileSystem fileSystem)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.fileSystem = fileSystem;
             }
 
             [Argument(0, Description = "Contract invocation hash")]
@@ -58,7 +59,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var (chainManager, _) = fileSystem.LoadChainManager(Input);
 
                     if (chainManager.Chain.ConsensusNodes.Count != 1)
                     {

@@ -115,7 +115,9 @@ namespace NeoExpress.Commands
             {
                 var outputPath = fileSystem.ResolveExpressFileName(Output);
                 if (fileSystem.File.Exists(outputPath) && !Force)
+                {
                     throw new Exception("You must specify --force to overwrite an existing file");
+                }
 
                 var chain = CreateChain();
                 SaveChain(chain, outputPath);

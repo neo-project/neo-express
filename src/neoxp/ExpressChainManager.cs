@@ -158,11 +158,6 @@ namespace NeoExpress
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
-        public void SaveChain(string path)
-        {
-            fileSystem.SaveChain(chain, path);
-        }
-
         public void ResetNode(ExpressConsensusNode node, bool force)
         {
             if (IsNodeRunning(node))

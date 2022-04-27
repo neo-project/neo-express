@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 
 namespace NeoExpress.Commands
 {
@@ -45,7 +46,7 @@ namespace NeoExpress.Commands
                     }
 
                     chain.Wallets.Remove(wallet);
-                    chainManager.SaveChain(chainPath);
+                    fileSystem.SaveChain(chain, chainPath);
                 }
             }
 

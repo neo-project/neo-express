@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 
@@ -58,7 +59,7 @@ namespace NeoExpress.Commands
                 var expressWallet = wallet.ToExpressWallet();
                 chain.Wallets ??= new List<ExpressWallet>(1);
                 chain.Wallets.Add(expressWallet);
-                chainManager.SaveChain(chainPath);
+                fileSystem.SaveChain(chain, chainPath);
                 return expressWallet;
             }
 

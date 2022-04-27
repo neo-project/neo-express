@@ -6,6 +6,7 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
+using Nito.Disposables;
 
 namespace NeoExpress.Commands
 {
@@ -67,39 +68,41 @@ namespace NeoExpress.Commands
 
             // use neo-cli defaults for Logger & Storage
 
-            writer.WriteStartObject();
+            using var _ = writer.WriteStartObjectAuto();
+
             writer.WritePropertyName("ApplicationConfiguration");
-            writer.WriteStartObject();
+            {
+                using var __ = writer.WriteStartObjectAuto();
 
-            writer.WritePropertyName("Storage");
-            writer.WriteStartObject();
-            writer.WritePropertyName("Engine");
-            writer.WriteValue("MemoryStore");
-            writer.WriteEndObject();
+                writer.WritePropertyName("Storage");
+                {
+                    using var ___ = writer.WriteStartObjectAuto();
+                    writer.WritePropertyName("Engine");
+                    writer.WriteValue("MemoryStore");
+                }
 
-            writer.WritePropertyName("P2P");
-            writer.WriteStartObject();
-            writer.WritePropertyName("Port");
-            writer.WriteValue(node.TcpPort);
-            writer.WritePropertyName("WsPort");
-            writer.WriteValue(node.WebSocketPort);
-            writer.WriteEndObject();
+                writer.WritePropertyName("P2P");
+                {
+                    using var ___ = writer.WriteStartObjectAuto();
+                    writer.WritePropertyName("Port");
+                    writer.WriteValue(node.TcpPort);
+                    writer.WritePropertyName("WsPort");
+                    writer.WriteValue(node.WebSocketPort);
+                }
 
-            writer.WritePropertyName("UnlockWallet");
-            writer.WriteStartObject();
-            writer.WritePropertyName("Path");
-            writer.WriteValue(walletPath);
-            writer.WritePropertyName("Password");
-            writer.WriteValue(password);
-            writer.WritePropertyName("IsActive");
-            writer.WriteValue(true);
-            writer.WriteEndObject();
-
-            writer.WriteEndObject();
+                writer.WritePropertyName("UnlockWallet");
+                {
+                    using var ___ = writer.WriteStartObjectAuto();
+                    writer.WritePropertyName("Path");
+                    writer.WriteValue(walletPath);
+                    writer.WritePropertyName("Password");
+                    writer.WriteValue(password);
+                    writer.WritePropertyName("IsActive");
+                    writer.WriteValue(true);
+                }
+            }
 
             WriteProtocolConfiguration(writer, settings, chain);
-
-            writer.WriteEndObject();
         }
 
         void WriteProtocolConfiguration(JsonTextWriter writer, ProtocolSettings settings, ExpressChain chain)
@@ -107,7 +110,7 @@ namespace NeoExpress.Commands
             // use neo defaults for MillisecondsPerBlock
 
             writer.WritePropertyName("ProtocolConfiguration");
-            writer.WriteStartObject();
+            using var _ = writer.WriteStartObjectAuto();
 
             writer.WritePropertyName("Magic");
             writer.WriteValue(chain.Network);
@@ -117,28 +120,28 @@ namespace NeoExpress.Commands
             writer.WriteValue(chain.ConsensusNodes.Count);
 
             writer.WritePropertyName("StandbyCommittee");
-            writer.WriteStartArray();
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
-                var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
-                var key = devAccount.GetKey();
-                if (key != null)
+                using var __ = writer.WriteStartArrayAuto();
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
+                    var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
+                    var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
+                    var key = devAccount.GetKey();
+                    if (key != null)
+                    {
+                        writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
+                    }
                 }
             }
-            writer.WriteEndArray();
 
             writer.WritePropertyName("SeedList");
-            writer.WriteStartArray();
-            foreach (var node in chain.ConsensusNodes)
             {
-                writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
+                using var __ = writer.WriteStartArrayAuto();
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
+                }
             }
-            writer.WriteEndArray();
-
-            writer.WriteEndObject();
         }
     }
 }

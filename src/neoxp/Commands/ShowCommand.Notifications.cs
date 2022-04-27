@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Newtonsoft.Json;
+using Nito.Disposables;
 
 namespace NeoExpress.Commands
 {
@@ -67,13 +68,15 @@ namespace NeoExpress.Commands
                     }
 
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                    writer.WriteStartArray();
+                    using var _ = writer.WriteStartArrayAuto();
+
                     var count = 0;
                     await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
                     {
                         if (Count.HasValue && count++ >= Count.Value) break;
 
-                        writer.WriteStartObject();
+                        using var __ = writer.WriteStartObjectAuto();
+
                         writer.WritePropertyName("block-index");
                         writer.WriteValue(blockIndex);
                         writer.WritePropertyName("script-hash");
@@ -87,9 +90,7 @@ namespace NeoExpress.Commands
                         writer.WriteValue(notification.EventName);
                         writer.WritePropertyName("state");
                         writer.WriteJson(Neo.VM.Helper.ToJson(notification.State)["value"]);
-                        writer.WriteEndObject();
                     }
-                    writer.WriteEndArray();
 
                     return 0;
                 }

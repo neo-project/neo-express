@@ -6,11 +6,24 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Newtonsoft.Json;
+using Nito.Disposables;
 
 namespace NeoExpress
 {
     static class ConsoleExtensions
     {
+        public static IDisposable WriteStartArrayAuto(this JsonWriter writer)
+        {
+            writer.WriteStartArray();
+            return AnonymousDisposable.Create(() => writer.WriteEndArray());
+        }
+
+        public static IDisposable WriteStartObjectAuto(this JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            return AnonymousDisposable.Create(() => writer.WriteEndObject());
+        }
+
         public static void WriteWallet(this TextWriter writer, ExpressWallet wallet)
         {
             writer.WriteLine(wallet.Name);
@@ -37,12 +50,11 @@ namespace NeoExpress
         {
             writer.WritePropertyName(wallet.Name);
 
-            writer.WriteStartArray();
+            using var _ = writer.WriteStartArrayAuto();
             foreach (var account in wallet.Accounts)
             {
                 writer.WriteAccount(account, wallet.Name);
             }
-            writer.WriteEndArray();
         }
 
         public static void WriteAccount(this JsonTextWriter writer, ExpressWalletAccount account, string walletName)
@@ -51,7 +63,7 @@ namespace NeoExpress
             var address = account.ScriptHash;
             var scriptHash = account.GetScriptHash();
 
-            writer.WriteStartObject();
+            using var _ = writer.WriteStartObjectAuto();
             writer.WritePropertyName("wallet-name");
             writer.WriteValue(walletName);
             writer.WritePropertyName("account-label");
@@ -64,11 +76,7 @@ namespace NeoExpress
             writer.WriteValue(Convert.ToHexString(keyPair.PrivateKey));
             writer.WritePropertyName("public-key");
             writer.WriteValue(Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
-            writer.WriteEndObject();
         }
-
-        
-
 
         public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)
         {
@@ -98,22 +106,24 @@ namespace NeoExpress
                     writer.WriteValue(@string.Value);
                     break;
                 case Neo.IO.Json.JArray @array:
-                    writer.WriteStartArray();
+                {
+                    using var _ = writer.WriteStartArrayAuto();
                     foreach (var value in @array)
                     {
                         WriteJson(writer, value);
                     }
-                    writer.WriteEndArray();
                     break;
+                }
                 case Neo.IO.Json.JObject @object:
-                    writer.WriteStartObject();
+                {
+                    using var _ = writer.WriteStartObjectAuto();
                     foreach (var (key, value) in @object.Properties)
                     {
                         writer.WritePropertyName(key);
                         WriteJson(writer, value);
                     }
-                    writer.WriteEndObject();
                     break;
+                }
             }
         }
 

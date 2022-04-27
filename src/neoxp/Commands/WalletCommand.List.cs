@@ -8,6 +8,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.IO;
 using NeoExpress.Models;
 using Newtonsoft.Json;
+using Nito.Disposables;
 
 namespace NeoExpress.Commands
 {
@@ -42,7 +43,7 @@ namespace NeoExpress.Commands
                     if (Json)
                     {
                         using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                        writer.WriteStartObject();
+                        using var _ = writer.WriteStartObjectAuto();
 
                         writer.WritePropertyName(ExpressChainExtensions.GENESIS);
                         writer.WriteAccount(genesisAccount, ExpressChainExtensions.GENESIS);
@@ -56,8 +57,6 @@ namespace NeoExpress.Commands
                         {
                             writer.WriteWallet(wallet);
                         }
-
-                        writer.WriteEndObject();
                     }
                     else
                     {

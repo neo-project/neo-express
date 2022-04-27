@@ -237,8 +237,7 @@ namespace NeoExpress
             using var writer = new Newtonsoft.Json.JsonTextWriter(textWriter);
             var scrypt = Neo.Wallets.NEP6.ScryptParameters.Default;
 
-            writer.WriteStartObject();
-            using var l1 = new AnonymousDisposable(() => writer.WriteEndObject());
+            using var _ = writer.WriteStartObjectAuto();
 
             writer.WritePropertyName("name");
             writer.WriteValue(wallet.Name);
@@ -248,8 +247,7 @@ namespace NeoExpress
             writer.WriteNull();
             writer.WritePropertyName("scrypt");
             {
-                writer.WriteStartObject();
-                using var l2 = new AnonymousDisposable(() => writer.WriteEndObject());
+                using var __ = writer.WriteStartObjectAuto();
                 writer.WritePropertyName("n");
                 writer.WriteValue(scrypt.N);
                 writer.WritePropertyName("r");
@@ -259,8 +257,7 @@ namespace NeoExpress
             }
             writer.WritePropertyName("accounts");
             {
-                writer.WriteStartArray();
-                using var l2 = new AnonymousDisposable(() => writer.WriteEndArray());
+                using var __ = writer.WriteStartArrayAuto();
 
                 foreach (var account in wallet.Accounts)
                 {
@@ -269,8 +266,7 @@ namespace NeoExpress
                     var exportedKey = keyPair.Export(password, addressVersion, scrypt.N, scrypt.R, scrypt.P);
                     var script = account.Contract.Script.HexToBytes();
 
-                    writer.WriteStartObject();
-                    using var l3 = new AnonymousDisposable(() => writer.WriteEndObject());
+                    using var ___ = writer.WriteStartObjectAuto();
 
                     writer.WritePropertyName("address");
                     writer.WriteValue(account.ScriptHash);
@@ -286,8 +282,7 @@ namespace NeoExpress
                     writer.WriteNull();
 
                     writer.WritePropertyName("contract");
-                    writer.WriteStartObject();
-                    using var l4 = new AnonymousDisposable(() => writer.WriteEndObject());
+                    using var ____ = writer.WriteStartObjectAuto();
 
                     writer.WritePropertyName("script");
                     writer.WriteValue(Convert.ToBase64String(script));
@@ -295,14 +290,12 @@ namespace NeoExpress
                     writer.WriteValue(false);
                     writer.WritePropertyName("parameters");
 
-                    writer.WriteStartArray();
-                    using var l5 = new AnonymousDisposable(() => writer.WriteEndArray());
+                    using var _____ = writer.WriteStartArrayAuto();
                     for (int i = 0; i < account.Contract.Parameters.Count; i++)
                     {
                         var paramType = account.Contract.Parameters[i];
 
-                        writer.WriteStartObject();
-                        using var l6 = new AnonymousDisposable(() => writer.WriteEndObject());
+                        using var ______ = writer.WriteStartObjectAuto();
 
                         writer.WritePropertyName("name");
                         writer.WriteValue($"{paramType}{i}");

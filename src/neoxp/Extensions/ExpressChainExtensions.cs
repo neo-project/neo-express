@@ -19,6 +19,11 @@ namespace NeoExpress
 {
     static class ExpressChainExtensions
     {
+        public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
+
+        public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
+
+
         public static bool IsRunning(this ExpressChain chain)
         {
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)

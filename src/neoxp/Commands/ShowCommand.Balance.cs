@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 
 namespace NeoExpress.Commands
 {
@@ -40,8 +41,9 @@ namespace NeoExpress.Commands
                     }
 
                     using var expressNode = chain.GetExpressNode(fileSystem);
-                    var (balance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
+                    var (rpcBalance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
+                    var balance = new BigDecimal(rpcBalance.Amount, contract.Decimals);
+                    await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance}");
                     return 0;
                 }
                 catch (Exception ex)

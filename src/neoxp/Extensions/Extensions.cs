@@ -1,35 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
-using Neo.BlockchainToolkit;
-using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
-using Neo.Network.RPC.Models;
-using Neo.Persistence;
-using Neo.SmartContract;
-using Neo.Wallets;
 using NeoExpress.Models;
 
 namespace NeoExpress
 {
     static class Extensions
     {
-        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
-        {
-            if (!dictionary.TryGetValue(key, out var value))
-            {
-                value = valueFactory(key);
-                dictionary[key] = value;
-            }
-
-            return value;
-        }
-
         public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)
         {
             using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out)
@@ -95,20 +76,6 @@ namespace NeoExpress
             }
         }
 
-        public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
-
-        public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
-
-        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
-            => Invoke(builder.ToArray(), settings, snapshot, container);
-
-        public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
-            => ApplicationEngine.Run(
-                script: script,
-                snapshot: snapshot,
-                settings: settings,
-                container: container);
-
         public static async Task WriteTxHashAsync(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false)
         {
             if (json)
@@ -120,14 +87,6 @@ namespace NeoExpress
                 if (!string.IsNullOrEmpty(txType)) await writer.WriteAsync($"{txType} ").ConfigureAwait(false);
                 await writer.WriteLineAsync($"Transaction {txHash} submitted").ConfigureAwait(false);
             }
-        }
-
-        public static BigDecimal ToBigDecimal(this RpcNep17Balance balance, byte decimals)
-            => new BigDecimal(balance.Amount, decimals);
-
-        public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
-        {
-            return ExpressNodeExtensions.GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
         }
     }
 }

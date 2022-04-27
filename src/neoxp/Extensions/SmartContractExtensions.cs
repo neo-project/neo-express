@@ -4,7 +4,9 @@ using System.Linq;
 using System.Numerics;
 using Neo;
 using Neo.IO;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.SmartContract;
 using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -16,8 +18,14 @@ using StackItemType = Neo.VM.Types.StackItemType;
 
 namespace NeoExpress
 {
-    static class DataCacheExtensions
+    static class SmartContractExtensions
     {
+        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+            => Invoke(builder.ToArray(), settings, snapshot, container);
+
+        public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+            => ApplicationEngine.Run(script, snapshot, container, settings: settings);
+
         public static IEnumerable<TokenContract> EnumerateTokenContracts(this DataCache snapshot, ProtocolSettings settings)
         {
             foreach (var (contractHash, standard) in TokenContract.Enumerate(snapshot))

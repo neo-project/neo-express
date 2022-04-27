@@ -374,7 +374,12 @@ namespace NeoExpress
             throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
         }
 
-        internal static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
+        public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
+        {
+            return ExpressNodeExtensions.GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
+        }
+
+        static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
         {
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(NativeContract.NEO.Hash, "getGasPerBlock");

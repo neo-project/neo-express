@@ -76,6 +76,7 @@ namespace NeoExpress.Commands
                     if (!TransactionExecutor.TryParseRpcUri(RpcUri, out var uri))
                         throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
                     using var rpcClient = new RpcClient(uri);
+
                     return await rpcClient.GetPolicyAsync().ConfigureAwait(false);
                 }
             }

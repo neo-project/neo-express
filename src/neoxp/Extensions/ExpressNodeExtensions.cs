@@ -35,7 +35,7 @@ namespace NeoExpress
 
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
             return System.Threading.Mutex.TryOpenExisting(
-                ExpressChainManager.GLOBAL_PREFIX + account.ScriptHash, 
+                Node.NodeUtility.GLOBAL_PREFIX + account.ScriptHash, 
                 out var _);
         }
 

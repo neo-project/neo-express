@@ -31,6 +31,8 @@ namespace NeoExpress.Node
 {
     static class NodeUtility
     {
+        internal const string GLOBAL_PREFIX = "Global\\";
+
         public static async Task RunAsync(this ExpressChain chain, Neo.Plugins.IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, uint? secondsPerBlock, CancellationToken token)
         {
             if (node.IsRunning())
@@ -54,7 +56,7 @@ namespace NeoExpress.Node
                     var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token);
 
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
-                    using var mutex = new Mutex(true, ExpressChainManager.GLOBAL_PREFIX + defaultAccount.ScriptHash);
+                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
                     var wallet = DevWallet.FromExpressWallet(protocolSettings, node.Wallet);
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();

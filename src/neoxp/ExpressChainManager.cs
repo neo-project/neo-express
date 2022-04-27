@@ -22,7 +22,6 @@ namespace NeoExpress
 {
     internal class ExpressChainManager
     {
-        internal const string GLOBAL_PREFIX = "Global\\";
 
         readonly IFileSystem fileSystem;
         readonly ExpressChain chain;

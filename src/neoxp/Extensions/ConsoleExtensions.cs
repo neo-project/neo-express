@@ -4,12 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
-using Neo.Network.RPC;
-using NeoExpress.Models;
 
 namespace NeoExpress
 {
-    static class Extensions
+    static class ConsoleExtensions
     {
         public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)
         {

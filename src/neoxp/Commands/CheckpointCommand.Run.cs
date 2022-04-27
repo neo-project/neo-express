@@ -36,19 +36,6 @@ namespace NeoExpress.Commands
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
-            internal async Task ExecuteAsync(IConsole console, CancellationToken token)
-            {
-                var (chain, _) = fileSystem.LoadExpressChain(Input);
-                if (chain.ConsensusNodes.Count != 1)
-                {
-                    throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
-                }
-
-                var storageProvider = GetCheckpointStorageProvider(chain, Name);
-                using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-                await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
-            }
-
             internal Neo.Plugins.IStorageProvider GetCheckpointStorageProvider(ExpressChain chain, string checkPointPath)
             {
                 if (chain.ConsensusNodes.Count != 1)
@@ -75,7 +62,17 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    await ExecuteAsync(console, token).ConfigureAwait(false);
+                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    if (chain.ConsensusNodes.Count != 1)
+                    {
+                        throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+                    }
+
+                    var storageProvider = GetCheckpointStorageProvider(chain, Name);
+                    using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
+
+                    await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
+
                     return 0;
                 }
                 catch (Exception ex)

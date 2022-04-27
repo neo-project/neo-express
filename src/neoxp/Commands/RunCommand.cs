@@ -33,29 +33,27 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
-        internal async Task ExecuteAsync(IConsole console, CancellationToken token)
-        {
-            var (chain, _) = fileSystem.LoadExpressChain(Input);
-
-            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
-
-            var node = chain.ConsensusNodes[NodeIndex];
-            var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
-            var storageProvider = Discard
-                ? RocksDbStorageProvider.OpenForDiscard(nodePath)
-                : RocksDbStorageProvider.Open(nodePath);
-
-            using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-            await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
-        }
-
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
         {
             try
             {
-                await ExecuteAsync(console, token);
+                var (chain, _) = fileSystem.LoadExpressChain(Input);
+                if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
+                {
+                    throw new Exception("Invalid node index");
+                }
+
+                var node = chain.ConsensusNodes[NodeIndex];
+                var nodePath = fileSystem.GetNodePath(node);
+                if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+
+                var storageProvider = Discard
+                    ? RocksDbStorageProvider.OpenForDiscard(nodePath)
+                    : RocksDbStorageProvider.Open(nodePath);
+
+                using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
+                await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
+
                 return 0;
             }
             catch (Exception ex)

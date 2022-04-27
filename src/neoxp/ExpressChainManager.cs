@@ -130,26 +130,6 @@ namespace NeoExpress
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
-        public void ResetNode(ExpressConsensusNode node, bool force)
-        {
-            if (node.IsRunning())
-            {
-                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
-                throw new InvalidOperationException($"node {scriptHash} currently running");
-            }
-
-            var nodePath = fileSystem.GetNodePath(node);
-            if (fileSystem.Directory.Exists(nodePath))
-            {
-                if (!force)
-                {
-                    throw new InvalidOperationException("--force must be specified when resetting a node");
-                }
-
-                fileSystem.Directory.Delete(nodePath, true);
-            }
-        }
-
         public async Task<bool> StopNodeAsync(ExpressConsensusNode node)
         {
             if (!node.IsRunning()) return false;

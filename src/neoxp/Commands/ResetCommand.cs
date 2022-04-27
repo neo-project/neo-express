@@ -40,7 +40,7 @@ namespace NeoExpress.Commands
             {
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    chainManager.ResetNode(chain.ConsensusNodes[i], Force);
+                    fileSystem.ResetNode(chain.ConsensusNodes[i], Force);
                     console.Out.WriteLine($"node {i} reset");
                 }
             }
@@ -52,7 +52,7 @@ namespace NeoExpress.Commands
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                chainManager.ResetNode(chain.ConsensusNodes[nodeIndex], Force);
+                fileSystem.ResetNode(chain.ConsensusNodes[nodeIndex], Force);
                 console.Out.WriteLine($"node {nodeIndex} reset");
             }
         }

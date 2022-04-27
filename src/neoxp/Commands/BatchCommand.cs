@@ -73,7 +73,7 @@ namespace NeoExpress.Commands
                     {
                         var node = chainManager.Chain.ConsensusNodes[i];
                         await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
-                        chainManager.ResetNode(node, true);
+                        fileSystem.ResetNode(node, true);
                     }
                 }
                 else

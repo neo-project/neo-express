@@ -16,7 +16,7 @@ using StackItemType = Neo.VM.Types.StackItemType;
 
 namespace NeoExpress
 {
-    static class SmartContractExtensions
+    static class DataCacheExtensions
     {
         public static IEnumerable<TokenContract> EnumerateTokenContracts(this DataCache snapshot, ProtocolSettings settings)
         {
@@ -132,7 +132,6 @@ namespace NeoExpress
             balance = default;
             return false;
         }
-
 
         public static UInt160 GetIndivisibleNep11Owner(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, ProtocolSettings settings)
             => TryGetIndivisibleNep11Owner(snapshot, asset, tokenId, settings, out var owner) ? owner : UInt160.Zero;

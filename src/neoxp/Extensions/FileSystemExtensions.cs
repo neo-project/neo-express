@@ -80,6 +80,11 @@ namespace NeoExpress
                 ? fileName : fileName + extension;
         }
 
+        public static string Resolve(this System.IO.Abstractions.IDirectoryInfo @this, string path)
+            => @this.FileSystem.Path.IsPathFullyQualified(path)
+                ? path
+                : @this.FileSystem.Path.Combine(@this.FullName, path);
+
         public static string GetTempFolder(this IFileSystem fileSystem)
         {
             string path;

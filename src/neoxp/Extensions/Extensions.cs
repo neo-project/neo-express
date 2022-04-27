@@ -19,11 +19,6 @@ namespace NeoExpress
 {
     static class Extensions
     {
-        public static string Resolve(this System.IO.Abstractions.IDirectoryInfo @this, string path)
-            => @this.FileSystem.Path.IsPathFullyQualified(path)
-                ? path
-                : @this.FileSystem.Path.Combine(@this.FullName, path);
-
         public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
         {
             if (!dictionary.TryGetValue(key, out var value))
@@ -82,7 +77,6 @@ namespace NeoExpress
             }
         }
 
-
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)
         {
             var showStackTrace = ((CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace")).ParsedValue;
@@ -131,43 +125,9 @@ namespace NeoExpress
         public static BigDecimal ToBigDecimal(this RpcNep17Balance balance, byte decimals)
             => new BigDecimal(balance.Amount, decimals);
 
-        public static string ToHexString(this byte[] value, bool reverse = false)
-        {
-            var sb = new System.Text.StringBuilder();
-
-            if (reverse)
-            {
-                for (int i = value.Length - 1; i >= 0; i--)
-                {
-                    sb.AppendFormat("{0:x2}", value[i]);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < value.Length; i++)
-                {
-                    sb.AppendFormat("{0:x2}", value[i]);
-                }
-            }
-            return sb.ToString();
-        }
-
-        public static byte[] ToByteArray(this string value)
-        {
-            if (value == null || value.Length == 0)
-                return new byte[0];
-            if (value.Length % 2 == 1)
-                throw new FormatException();
-            byte[] result = new byte[value.Length / 2];
-            for (int i = 0; i < result.Length; i++)
-                result[i] = byte.Parse(value.Substring(i * 2, 2), System.Globalization.NumberStyles.AllowHexSpecifier);
-            return result;
-        }
-
         public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
         {
             return ExpressNodeExtensions.GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
         }
-
     }
 }

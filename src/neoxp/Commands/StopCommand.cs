@@ -2,6 +2,7 @@ using System;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit.Models;
 
 namespace NeoExpress.Commands
 {
@@ -39,7 +40,7 @@ namespace NeoExpress.Commands
                 var tasks = new Task[chain.ConsensusNodes.Count];
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    tasks[i] = chainManager.StopNodeAsync(chain.ConsensusNodes[i]);
+                    tasks[i] = StopNodeAsync(chain.ConsensusNodes[i]);
                 }
                 await Task.WhenAll(tasks).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"all nodes stopped").ConfigureAwait(false);
@@ -52,8 +53,20 @@ namespace NeoExpress.Commands
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                var wasRunning = await chainManager.StopNodeAsync(chain.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
+                var wasRunning = await StopNodeAsync(chain.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"node {nodeIndex} {(wasRunning ? "stopped" : "was not running")}").ConfigureAwait(false);
+            }
+
+            static async Task<bool> StopNodeAsync(ExpressConsensusNode node)
+            {
+                if (!node.IsRunning()) return false;
+
+                var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"));
+                var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+                var processId = int.Parse(json["process-id"].AsString());
+                var process = System.Diagnostics.Process.GetProcessById(processId);
+                await process.WaitForExitAsync().ConfigureAwait(false);
+                return true;
             }
         }
 

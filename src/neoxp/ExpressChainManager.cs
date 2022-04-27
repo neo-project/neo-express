@@ -130,17 +130,6 @@ namespace NeoExpress
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
-        public async Task<bool> StopNodeAsync(ExpressConsensusNode node)
-        {
-            if (!node.IsRunning()) return false;
-
-            var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
-            var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
-            var processId = int.Parse(json["process-id"].AsString());
-            var process = System.Diagnostics.Process.GetProcessById(processId);
-            await process.WaitForExitAsync().ConfigureAwait(false);
-            return true;
-        }
         public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (node.IsRunning())

@@ -13,12 +13,10 @@ namespace NeoExpress.Commands
         internal class Set
         {
             readonly IFileSystem fileSystem;
-            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Set(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+            public Set(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Policy to set")]
@@ -50,7 +48,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
 
                     await txExec.SetPolicyAsync(Policy, Value, Account, Password).ConfigureAwait(false);
                     return 0;

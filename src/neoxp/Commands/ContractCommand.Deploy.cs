@@ -13,12 +13,10 @@ namespace NeoExpress.Commands
         internal class Deploy
         {
             readonly IFileSystem fileSystem;
-            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Deploy(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+            public Deploy(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Path to contract .nef file")]
@@ -57,7 +55,7 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
                     await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force).ConfigureAwait(false);
                     return 0;
                 }

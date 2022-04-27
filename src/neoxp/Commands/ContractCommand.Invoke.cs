@@ -13,12 +13,10 @@ namespace NeoExpress.Commands
         internal class Invoke
         {
             readonly IFileSystem fileSystem;
-            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Invoke(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+            public Invoke(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Path to contract invocation JSON file")]
@@ -60,7 +58,7 @@ namespace NeoExpress.Commands
                     }
 
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out);
                     var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 
                     if (Results)

@@ -12,12 +12,10 @@ namespace NeoExpress.Commands
         internal class Sync
         {
             readonly IFileSystem fileSystem;
-            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Sync(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+            public Sync(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC Node\nFor Node URL,\"MainNet\" or \"TestNet\" can be specified in addition to a standard HTTP URL")]
@@ -45,7 +43,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
 
                     var values = await txExec.TryGetRemoteNetworkPolicyAsync(Source).ConfigureAwait(false);
                     if (values.IsT1)

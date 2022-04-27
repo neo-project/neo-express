@@ -10,12 +10,10 @@ namespace NeoExpress.Commands
     class TransferCommand
     {
         readonly IFileSystem fileSystem;
-        readonly TransactionExecutorFactory txExecutorFactory;
 
-        public TransferCommand(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+        public TransferCommand(IFileSystem fileSystem)
         {
             this.fileSystem = fileSystem;
-            this.txExecutorFactory = txExecutorFactory;
         }
 
         [Argument(0, Description = "Amount to transfer")]
@@ -52,7 +50,7 @@ namespace NeoExpress.Commands
             {
                 var (chainManager, _) = fileSystem.LoadChainManager(Input);
                 var password = chainManager.Chain.ResolvePassword(Sender, Password);
-                using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
                 await txExec.TransferAsync(Quantity, Asset, Sender, password, Receiver).ConfigureAwait(false);
                 return 0;
             }

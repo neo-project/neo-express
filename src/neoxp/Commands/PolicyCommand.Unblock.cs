@@ -12,12 +12,10 @@ namespace NeoExpress.Commands
         internal class Unblock
         {
             readonly IFileSystem fileSystem;
-            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Unblock(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+            public Unblock(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Account to unblock")]
@@ -46,7 +44,7 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
                     await txExec.UnblockAsync(ScriptHash, Account, Password).ConfigureAwait(false);
                     return 0;
                 }

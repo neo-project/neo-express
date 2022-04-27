@@ -32,7 +32,6 @@ namespace NeoExpress
             EnableAnsiEscapeSequences();
 
             var services = new ServiceCollection()
-                .AddSingleton<TransactionExecutorFactory>()
                 .AddSingleton<IFileSystem, FileSystem>()
                 .AddSingleton<IConsole>(PhysicalConsole.Singleton)
                 .BuildServiceProvider();

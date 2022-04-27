@@ -14,13 +14,11 @@ namespace NeoExpress.Commands
     [Command("batch", Description = "Execute a series of offline Neo-Express operations")]
     partial class BatchCommand
     {
-        readonly TransactionExecutorFactory txExecutorFactory;
         readonly IFileSystem fileSystem;
 
-        public BatchCommand(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+        public BatchCommand(IFileSystem fileSystem)
         {
             this.fileSystem = fileSystem;
-            this.txExecutorFactory = txExecutorFactory;
         }
 
         [Argument(0, Description = "Path to batch file to run")]
@@ -86,8 +84,7 @@ namespace NeoExpress.Commands
                 }
             }
 
-            using var txExec = txExecutorFactory.Create(chainManager, Trace, false);
-
+            using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, false, writer); 
             var batchApp = new CommandLineApplication<BatchFileCommands>();
             batchApp.Conventions.UseDefaultConventions();
 

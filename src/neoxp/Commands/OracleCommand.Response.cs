@@ -12,12 +12,10 @@ namespace NeoExpress.Commands
         internal class Response
         {
             readonly IFileSystem fileSystem;
-            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Response(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+            public Response(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "URL of oracle request")]
@@ -45,7 +43,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
                     await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
                     return 0;
                 }

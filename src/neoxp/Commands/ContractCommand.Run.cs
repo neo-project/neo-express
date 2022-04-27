@@ -13,12 +13,10 @@ namespace NeoExpress.Commands
         internal class Run
         {
             readonly IFileSystem fileSystem;
-            readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Run(IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
+            public Run(IFileSystem fileSystem)
             {
                 this.fileSystem = fileSystem;
-                this.txExecutorFactory = txExecutorFactory;
             }
 
             [Argument(0, Description = "Contract name or invocation hash")]
@@ -67,7 +65,7 @@ namespace NeoExpress.Commands
                     }
 
                     var (chainManager, _) = fileSystem.LoadChainManager(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    using var txExec = new TransactionExecutor(fileSystem, chainManager, Trace, Json, console.Out); 
                     var script = await txExec.BuildInvocationScriptAsync(Contract, Method, Arguments).ConfigureAwait(false);
 
                     if (Results)

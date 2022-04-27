@@ -32,8 +32,8 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chain, _) = fileSystem.LoadExpressChain(Input);
-                    chain.RestoreCheckpoint(fileSystem, Name, Force);
-                    console.WriteLine($"Checkpoint {Name} successfully restored");
+                    var checkpointPath = fileSystem.RestoreCheckpoint(chain, Name, Force);
+                    console.WriteLine($"Checkpoint {fileSystem.Path.GetFileName(checkpointPath)} successfully restored");
                     return 0;
                 }
                 catch (Exception ex)

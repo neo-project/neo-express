@@ -2,15 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Abstractions;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
-using Neo.BlockchainToolkit.Persistence;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
@@ -30,45 +27,6 @@ namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
-        public static bool IsRunning(this ExpressConsensusNode node)
-        {
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
-
-            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return System.Threading.Mutex.TryOpenExisting(
-                Node.NodeUtility.GLOBAL_PREFIX + account.ScriptHash, 
-                out var _);
-        }
-
-        public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
-        {
-            var settings = chain.GetProtocolSettings();
-
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
-
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var consensusNode = chain.ConsensusNodes[i];
-                if (consensusNode.IsRunning())
-                {
-                    return new Node.OnlineNode(settings, chain, consensusNode);
-                }
-            }
-
-            var node = chain.ConsensusNodes[0];
-            var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
-            return new Node.OfflineNode(settings,
-                RocksDbStorageProvider.Open(nodePath),
-                node.Wallet,
-                chain,
-                offlineTrace);
-        }
-
-
         static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             UInt160? _scriptHash = null;
@@ -91,8 +49,10 @@ namespace NeoExpress
             return _scriptHash != null;
         }
 
-        public static async Task<OneOf<UInt160, None>> ParseScriptHashToBlockAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<OneOf<UInt160, None>> ParseScriptHashToBlockAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
+            var chain = expressNode.Chain;
+
             // only check express chain wallets to block, not consensus nodes or genesis account
             if (chain.Wallets != null && chain.Wallets.Count > 0)
             {
@@ -120,13 +80,13 @@ namespace NeoExpress
             return new None();
         }
 
-        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, ExpressChain chain, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
             ContractParameterParser.TryGetUInt160 tryGetContract =
                 (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
 
-            return new ContractParameterParser(expressNode.ProtocolSettings, chain.TryGetAccountHash, tryGetContract);
+            return new ContractParameterParser(expressNode.ProtocolSettings, expressNode.Chain.TryGetAccountHash, tryGetContract);
         }
 
         public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)

@@ -28,6 +28,7 @@ namespace NeoExpress.Node
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
 
+        public ExpressChain Chain => chain;
         public ProtocolSettings ProtocolSettings { get; }
 
         public OnlineNode(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node)

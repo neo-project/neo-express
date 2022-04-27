@@ -55,7 +55,7 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
         {
-            var input = root.Resolve(string.IsNullOrEmpty(Input)
+            var input = Resolve(root, string.IsNullOrEmpty(Input)
                 ? Constants.DEFAULT_EXPRESS_FILENAME
                 : Input);
 
@@ -78,13 +78,13 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    var checkpoint = root.Resolve(Reset.value);
+                    var checkpoint = Resolve(root, Reset.value);
                     await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
-                    chain.RestoreCheckpoint(fileSystem, checkpoint, true);
+                    fileSystem.RestoreCheckpoint(chain, checkpoint, true);
                 }
             }
 
-            using var txExec = new TransactionExecutor(fileSystem, chain, Trace, false, writer); 
+            using var txExec = new TransactionExecutor(fileSystem, chain, Trace, false, writer);
             var batchApp = new CommandLineApplication<BatchFileCommands>();
             batchApp.Conventions.UseDefaultConventions();
 
@@ -100,18 +100,17 @@ namespace NeoExpress.Commands
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
-                            _ = await chain.CreateCheckpointAsync(
-                                fileSystem,
+                            var (checkpointPath, mode) = await fileSystem.CreateCheckpointAsync(
                                 txExec.ExpressNode,
-                                root.Resolve(cmd.Model.Name),
-                                cmd.Model.Force,
-                                writer).ConfigureAwait(false);
+                                Resolve(root, cmd.Model.Name),
+                                cmd.Model.Force).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
                         {
                             await txExec.ContractDeployAsync(
-                                root.Resolve(cmd.Model.Contract),
+                                Resolve(root, cmd.Model.Contract),
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope,
@@ -143,7 +142,7 @@ namespace NeoExpress.Commands
                     case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                         {
                             var script = await txExec.LoadInvocationScriptAsync(
-                                root.Resolve(cmd.Model.InvocationFile)).ConfigureAwait(false);
+                                Resolve(root, cmd.Model.InvocationFile)).ConfigureAwait(false);
                             await txExec.ContractInvokeAsync(
                                 script,
                                 cmd.Model.Account,
@@ -184,7 +183,7 @@ namespace NeoExpress.Commands
                         {
                             await txExec.OracleResponseAsync(
                                 cmd.Model.Url,
-                                root.Resolve(cmd.Model.ResponsePath),
+                                Resolve(root, cmd.Model.ResponsePath),
                                 cmd.Model.RequestId).ConfigureAwait(false);
                             break;
                         }
@@ -208,7 +207,7 @@ namespace NeoExpress.Commands
                     case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
                         {
                             var values = await txExec.TryLoadPolicyFromFileSystemAsync(
-                                root.Resolve(cmd.Model.Source))
+                                Resolve(root, cmd.Model.Source))
                                 .ConfigureAwait(false);
                             if (values.TryPickT0(out var policyValues, out _))
                             {
@@ -242,6 +241,11 @@ namespace NeoExpress.Commands
                         throw new Exception($"Unknown batch command {pr.SelectedCommand.GetType()}");
                 }
             }
+
+            static string Resolve(System.IO.Abstractions.IDirectoryInfo @this, string path)
+                => @this.FileSystem.Path.IsPathFullyQualified(path)
+                    ? path
+                    : @this.FileSystem.Path.Combine(@this.FullName, path);
         }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api

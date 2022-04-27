@@ -34,8 +34,8 @@ namespace NeoExpress.Commands
                 {
                     var (chain, _) = fileSystem.LoadExpressChain(Input);
                     using var expressNode = chain.GetExpressNode(fileSystem);
-                    _ = await chain.CreateCheckpointAsync(
-                        fileSystem, expressNode, Name, Force, console.Out).ConfigureAwait(false);
+                    var (checkpointPath, mode) = await fileSystem.CreateCheckpointAsync(expressNode, Name, Force).ConfigureAwait(false);
+                    await console.Out.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

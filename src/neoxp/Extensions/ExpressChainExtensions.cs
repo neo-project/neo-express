@@ -19,11 +19,6 @@ namespace NeoExpress
 {
     static class ExpressChainExtensions
     {
-        public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
-
-        public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
-
-
         public static bool IsRunning(this ExpressChain chain)
         {
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)
@@ -36,95 +31,48 @@ namespace NeoExpress
             return false;
         }
 
-        public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> 
-            CreateCheckpointAsync(this ExpressChain chain, IFileSystem fileSystem, 
-                IExpressNode expressNode, string checkpointPath, bool force, 
-                System.IO.TextWriter? writer = null)
+        public static bool IsRunning(this ExpressConsensusNode node)
         {
-            if (chain.ConsensusNodes.Count != 1)
-            {
-                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
-            }
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
 
-            checkpointPath = fileSystem.ResolveCheckpointFileName(checkpointPath);
-            if (fileSystem.File.Exists(checkpointPath))
-            {
-                if (force)
-                {
-                    fileSystem.File.Delete(checkpointPath);
-                }
-                else
-                {
-                    throw new Exception("You must specify --force to overwrite an existing file");
-                }
-            }
-
-            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath);
-            if (!fileSystem.Directory.Exists(parentPath))
-            {
-                fileSystem.Directory.CreateDirectory(parentPath);
-            }
-
-            var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
-
-            if (writer != null)
-            {
-                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
-            }
-
-            return (checkpointPath, mode);
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return System.Threading.Mutex.TryOpenExisting(
+                Node.NodeUtility.GLOBAL_PREFIX + account.ScriptHash, 
+                out var _);
         }
 
-        internal static void RestoreCheckpoint(this ExpressChain chain, IFileSystem fileSystem,
-            string checkPointArchive, bool force)
+        public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
         {
-            if (chain.ConsensusNodes.Count != 1)
-            {
-                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-            }
+            var settings = chain.GetProtocolSettings();
 
-            checkPointArchive = fileSystem.ResolveCheckpointFileName(checkPointArchive);
-            if (!fileSystem.File.Exists(checkPointArchive))
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
+
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
+                var consensusNode = chain.ConsensusNodes[i];
+                if (consensusNode.IsRunning())
+                {
+                    return new Node.OnlineNode(settings, chain, consensusNode);
+                }
             }
 
             var node = chain.ConsensusNodes[0];
-            if (node.IsRunning())
-            {
-                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
-                throw new InvalidOperationException($"node {scriptHash} currently running");
-            }
-
-            var checkpointTempPath = fileSystem.GetTempFolder();
-            using var folderCleanup = AnonymousDisposable.Create(() =>
-            {
-                if (fileSystem.Directory.Exists(checkpointTempPath))
-                {
-                    fileSystem.Directory.Delete(checkpointTempPath, true);
-                }
-            });
-
             var nodePath = fileSystem.GetNodePath(node);
-            if (fileSystem.Directory.Exists(nodePath))
-            {
-                if (!force)
-                {
-                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
-                }
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
-                fileSystem.Directory.Delete(nodePath, true);
-            }
-
-            var settings = chain.GetProtocolSettings();
-            var wallet = DevWallet.FromExpressWallet(settings, node.Wallet);
-            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                settings.Network, settings.AddressVersion, multiSigAccount.ScriptHash);
-            fileSystem.Directory.Move(checkpointTempPath, nodePath);
+            return new Node.OfflineNode(settings,
+                RocksDbStorageProvider.Open(nodePath),
+                node.Wallet,
+                chain,
+                offlineTrace);
         }
 
-        // this method only used in Online/OfflineNode ExecuteAsync
+        public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
+
+        public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
+
         public static IReadOnlyList<Wallet> GetMultiSigWallets(this ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
         {
             var builder = ImmutableList.CreateBuilder<Wallet>();

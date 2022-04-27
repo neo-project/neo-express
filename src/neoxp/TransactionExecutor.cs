@@ -26,7 +26,6 @@ namespace NeoExpress
 
     class TransactionExecutor : IDisposable
     {
-        readonly ExpressChain chain;
         readonly IExpressNode expressNode;
         readonly IFileSystem fileSystem;
         readonly bool json;
@@ -34,7 +33,6 @@ namespace NeoExpress
 
         public TransactionExecutor(IFileSystem fileSystem, ExpressChain chain, bool trace, bool json, TextWriter writer)
         {
-            this.chain = chain;
             expressNode = chain.GetExpressNode(fileSystem, trace);
             this.fileSystem = fileSystem;
             this.json = json;
@@ -50,7 +48,7 @@ namespace NeoExpress
 
         public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, string data, bool force)
         {
-            if (!chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -85,7 +83,7 @@ namespace NeoExpress
             }
             else
             {
-                var parser = await expressNode.GetContractParameterParserAsync(chain).ConfigureAwait(false);
+                var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
                 dataParam = parser.ParseParameter(data);
             }
 
@@ -120,7 +118,7 @@ namespace NeoExpress
                 throw new Exception($"Invocation file {invocationFile} couldn't be found");
             }
 
-            var parser = await expressNode.GetContractParameterParserAsync(chain).ConfigureAwait(false);
+            var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
             return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
         }
 
@@ -129,7 +127,7 @@ namespace NeoExpress
             if (string.IsNullOrEmpty(operation))
                 throw new InvalidOperationException($"invalid contract operation \"{operation}\"");
 
-            var parser = await expressNode.GetContractParameterParserAsync(chain).ConfigureAwait(false);
+            var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
             var scriptHash = parser.TryLoadScriptHash(contract, out var value)
                 ? value
                 : UInt160.TryParse(contract, out var uint160)
@@ -173,7 +171,7 @@ namespace NeoExpress
 
         public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope, decimal additionalGas = 0m)
         {
-            if (!chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -184,7 +182,7 @@ namespace NeoExpress
 
         public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)
         {
-            Signer? signer = chain.TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
+            Signer? signer = expressNode.Chain.TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
                 ? signer = new Signer
                 {
                     Account = accountHash,
@@ -273,13 +271,13 @@ namespace NeoExpress
 
         public async Task OracleEnableAsync(string accountName, string password)
         {
-            if (!chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
 
-            var oracles = chain.ConsensusNodes
-                .Select(n => DevWalletAccount.FromExpressWalletAccount(chain.GetProtocolSettings(), n.Wallet.DefaultAccount ?? throw new Exception()))
+            var oracles = expressNode.Chain.ConsensusNodes
+                .Select(n => DevWalletAccount.FromExpressWalletAccount(expressNode.Chain.GetProtocolSettings(), n.Wallet.DefaultAccount ?? throw new Exception()))
                 .Select(a => a.GetKey()?.PublicKey ?? throw new Exception());
             var txHash = await expressNode.DesignateOracleRolesAsync(wallet, accountHash, oracles).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
@@ -328,12 +326,12 @@ namespace NeoExpress
 
         public async Task TransferAsync(string quantity, string asset, string sender, string password, string receiver)
         {
-            if (!chain.TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
             {
                 throw new Exception($"{sender} sender not found.");
             }
 
-            if (!chain.TryGetAccountHash(receiver, out var receiverHash))
+            if (!expressNode.Chain.TryGetAccountHash(receiver, out var receiverHash))
             {
                 throw new Exception($"{receiver} account not found.");
             }
@@ -408,7 +406,7 @@ namespace NeoExpress
 
         public async Task SetPolicyAsync(PolicyValues policyValues, string account, string password)
         {
-            if (!chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
@@ -428,7 +426,7 @@ namespace NeoExpress
 
         public async Task SetPolicyAsync(PolicySettings policy, decimal value, string account, string password)
         {
-            if (!chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
@@ -487,12 +485,12 @@ namespace NeoExpress
 
         public async Task BlockAsync(string scriptHash, string account, string password)
         {
-            if (!chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(chain, scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
                 throw new Exception($"{scriptHash} script hash not found or not supported");
@@ -504,12 +502,12 @@ namespace NeoExpress
 
         public async Task UnblockAsync(string scriptHash, string account, string password)
         {
-            if (!chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(chain, scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.ParseScriptHashToBlockAsync(scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
                 throw new Exception($"{scriptHash} script hash not found or not supported");

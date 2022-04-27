@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
+using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
@@ -18,6 +19,7 @@ namespace NeoExpress
 {
     interface IExpressNode : IDisposable
     {
+        ExpressChain Chain { get; }
         ProtocolSettings ProtocolSettings { get; }
 
         enum CheckpointMode { Online, Offline }

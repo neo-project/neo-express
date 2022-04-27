@@ -37,6 +37,7 @@ namespace NeoExpress.Node
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         bool disposedValue;
 
+        public ExpressChain Chain => chain;
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
         public OfflineNode(ProtocolSettings settings, RocksDbStorageProvider rocksDbStorageProvider, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)

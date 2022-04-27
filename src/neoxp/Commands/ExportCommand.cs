@@ -57,8 +57,7 @@ namespace NeoExpress.Commands
         void ExportNodeWallet(ProtocolSettings settings, ExpressConsensusNode node, string path, string password)
         {
             if (fileSystem.File.Exists(path)) fileSystem.File.Delete(path);
-            var devWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
-            devWallet.Export(path, password);
+            fileSystem.ExportNEP6(node.Wallet, path, password, settings.AddressVersion);
         }
 
         void ExportNodeConfig(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node, string path, string password, string walletPath)

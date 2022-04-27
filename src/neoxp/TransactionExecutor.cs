@@ -48,7 +48,7 @@ namespace NeoExpress
 
         public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, string data, bool force)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, fileSystem, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -171,7 +171,7 @@ namespace NeoExpress
 
         public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope, decimal additionalGas = 0m)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, fileSystem, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -182,7 +182,7 @@ namespace NeoExpress
 
         public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)
         {
-            Signer? signer = expressNode.Chain.TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
+            Signer? signer = expressNode.Chain.TryGetSigningAccount(accountName, string.Empty, fileSystem, out _, out var accountHash)
                 ? signer = new Signer
                 {
                     Account = accountHash,
@@ -271,7 +271,7 @@ namespace NeoExpress
 
         public async Task OracleEnableAsync(string accountName, string password)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, fileSystem, out var wallet, out var accountHash))
             {
                 throw new Exception($"{accountName} account not found.");
             }
@@ -326,7 +326,7 @@ namespace NeoExpress
 
         public async Task TransferAsync(string quantity, string asset, string sender, string password, string receiver)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(sender, password, fileSystem, out var senderWallet, out var senderAccountHash))
             {
                 throw new Exception($"{sender} sender not found.");
             }
@@ -406,7 +406,7 @@ namespace NeoExpress
 
         public async Task SetPolicyAsync(PolicyValues policyValues, string account, string password)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
@@ -426,7 +426,7 @@ namespace NeoExpress
 
         public async Task SetPolicyAsync(PolicySettings policy, decimal value, string account, string password)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
@@ -485,7 +485,7 @@ namespace NeoExpress
 
         public async Task BlockAsync(string scriptHash, string account, string password)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
@@ -502,7 +502,7 @@ namespace NeoExpress
 
         public async Task UnblockAsync(string scriptHash, string account, string password)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }

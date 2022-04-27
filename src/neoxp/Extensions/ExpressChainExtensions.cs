@@ -69,7 +69,11 @@ namespace NeoExpress
                 offlineTrace);
         }
 
-        public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
+        public static bool IsMultiSigContract(this ExpressWalletAccount @this)
+            => Neo.SmartContract.Helper.IsMultiSigContract(Convert.FromHexString(@this.Contract.Script));
+
+        public static bool IsMultiSigContract(this WalletAccount @this) 
+            => Neo.SmartContract.Helper.IsMultiSigContract(@this.Contract.Script);
 
         public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
 

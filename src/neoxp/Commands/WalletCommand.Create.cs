@@ -6,6 +6,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -27,6 +28,9 @@ namespace NeoExpress.Commands
 
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
+
+            [Option(Description = "Output as JSON")]
+            internal bool Json { get; init; } = false;
 
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
@@ -67,13 +71,19 @@ namespace NeoExpress.Commands
                 try
                 {
                     var wallet = Execute();
-                    console.WriteLine(Name);
-                    for (int i = 0; i < wallet.Accounts.Count; i++)
+                    if (Json)
                     {
-                        console.WriteLine($"    {wallet.Accounts[i].ScriptHash}");
+                        using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                        writer.WriteStartObject();
+                        writer.WriteWallet(wallet);
+                        writer.WriteEndObject();
                     }
-                    console.WriteLine("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
-                    console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                    else
+                    {
+                        console.Out.WriteWallet(wallet);
+                        console.WriteLine("Note: The private keys for the accounts in this wallet are *not* encrypted.");
+                        console.WriteLine("      Do not use these accounts on MainNet or in any other system where security is a concern.");
+                    }
                     return 0;
                 }
                 catch (Exception ex)

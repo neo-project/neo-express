@@ -490,16 +490,9 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var parseResult = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            if (parseResult.TryPickT0(out var hash, out var error))
-            {
-                var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, hash).ConfigureAwait(false);
-                await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
-            }
-            else
-            {
-                throw new Exception(error.Value);
-            }
+            var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
+            var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
         }
 
         public async Task UnblockAsync(string scriptHash, string account, string password)
@@ -509,16 +502,9 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var parseResult = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            if (parseResult.TryPickT0(out var hash, out var error))
-            {
-                var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, hash).ConfigureAwait(false);
-                await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
-            }
-            else
-            {
-                throw new Exception(error.Value);
-            }
+            var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
+            var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
         }
     }
 }

@@ -48,7 +48,7 @@ namespace NeoExpress
             return _scriptHash != null;
         }
 
-        public static async Task<OneOf<UInt160, Error<string>>> ParseBlockableScriptHashAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<UInt160> ParseBlockableScriptHashAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var chain = expressNode.Chain;
 
@@ -70,7 +70,7 @@ namespace NeoExpress
                 // don't even try to block native contracts
                 if (NativeContract.Contracts.Any(c => c.Hash == contractHash))
                 {
-                    return new Error<string>($"Can't block native contract {name}");
+                    throw new Exception($"Can't block native contract {name}");
                 }
                 else
                 {
@@ -78,9 +78,12 @@ namespace NeoExpress
                 }
             }
 
-            if (name.TryParseScriptHash(chain.AddressVersion, out var scriptHash)) return scriptHash;
+            if (name.TryParseScriptHash(chain.AddressVersion, out var scriptHash))
+            {
+                return scriptHash;
+            }
 
-            return new Error<string>($"{name} script hash not found");
+            throw new Exception($"{name} script hash not found");
         }
 
         public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)

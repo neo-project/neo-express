@@ -9,7 +9,8 @@ using NeoExpress.Commands;
 
 namespace NeoExpress
 {
-    [Command("neoxp", Description = "Neo N3 blockchain private net for developers", UsePagerForHelpText = false)]
+    [Command("neoxp", FullName = "Neo Express", Description = "Neo N3 blockchain private net for developers", UsePagerForHelpText = false)]
+    [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
     [Subcommand(
         typeof(BatchCommand),
         typeof(CheckpointCommand),
@@ -66,17 +67,8 @@ namespace NeoExpress
             }
         }
 
-        [Option]
-        private bool Version { get; }
-
         private int OnExecute(CommandLineApplication app, IConsole console)
         {
-            if (Version)
-            {
-                console.WriteLine(ThisAssembly.AssemblyInformationalVersion);
-                return 0;
-            }
-
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp(false);
             return 1;

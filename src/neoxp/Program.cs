@@ -38,9 +38,9 @@ namespace NeoExpress
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();
-            app.Option<bool>("--stack-trace", "", CommandOptionType.NoValue, o => o.ShowInHelpText = false, inherited: true);
             app.Conventions
                 .UseDefaultConventions()
+                .AddConvention(new StackTraceConvention())
                 .UseConstructorInjection(services);
 
             try

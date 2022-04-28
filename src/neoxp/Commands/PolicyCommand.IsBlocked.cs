@@ -32,15 +32,17 @@ namespace NeoExpress.Commands
                     var (chain, _) = fileSystem.LoadExpressChain(Input);
                     using var expressNode = chain.GetExpressNode(fileSystem);
 
-                    var scriptHash = await expressNode.ParseBlockableScriptHashAsync(ScriptHash).ConfigureAwait(false);
-                    if (scriptHash.IsT1)
+                    var parseResult = await expressNode.ParseBlockableScriptHashAsync(ScriptHash).ConfigureAwait(false);
+                    if (parseResult.TryPickT0(out var scriptHash, out var error))
                     {
-                        throw new Exception($"{ScriptHash} script hash not found or not supported");
+                        var isBlocked = await expressNode.GetIsBlockedAsync(scriptHash).ConfigureAwait(false);
+                        await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
+                        return 0;
                     }
-
-                    var isBlocked = await expressNode.GetIsBlockedAsync(scriptHash.AsT0).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
-                    return 0;
+                    else
+                    {
+                        throw new Exception(error.Value);
+                    }
                 }
                 catch (Exception ex)
                 {

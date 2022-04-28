@@ -20,8 +20,7 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
-using All = OneOf.Types.All;
-using None = OneOf.Types.None;
+using OneOf.Types;
 
 namespace NeoExpress
 {
@@ -49,7 +48,7 @@ namespace NeoExpress
             return _scriptHash != null;
         }
 
-        public static async Task<OneOf<UInt160, None>> ParseBlockableScriptHashAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<OneOf<UInt160, Error<string>>> ParseBlockableScriptHashAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var chain = expressNode.Chain;
 
@@ -69,7 +68,11 @@ namespace NeoExpress
             if (TryGetContractHash(contracts, name, out var contractHash, comparison))
             {
                 // don't even try to block native contracts
-                if (!NativeContract.Contracts.Any(c => c.Hash == contractHash))
+                if (NativeContract.Contracts.Any(c => c.Hash == contractHash))
+                {
+                    return new Error<string>($"Can't block native contract {name}");
+                }
+                else
                 {
                     return contractHash;
                 }
@@ -77,7 +80,7 @@ namespace NeoExpress
 
             if (name.TryParseScriptHash(chain.AddressVersion, out var scriptHash)) return scriptHash;
 
-            return new None();
+            return new Error<string>($"{name} script hash not found");
         }
 
         public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)

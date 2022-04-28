@@ -490,14 +490,16 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            if (_scriptHash.IsT1)
+            var parseResult = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
+            if (parseResult.TryPickT0(out var hash, out var error))
             {
-                throw new Exception($"{scriptHash} script hash not found or not supported");
+                var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, hash).ConfigureAwait(false);
+                await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
             }
-
-            var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
+            else
+            {
+                throw new Exception(error.Value);
+            }
         }
 
         public async Task UnblockAsync(string scriptHash, string account, string password)
@@ -507,14 +509,16 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            if (_scriptHash.IsT1)
+            var parseResult = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
+            if (parseResult.TryPickT0(out var hash, out var error))
             {
-                throw new Exception($"{scriptHash} script hash not found or not supported");
+                var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, hash).ConfigureAwait(false);
+                await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
             }
-
-            var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, _scriptHash.AsT0).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"{scriptHash} unblocked", json).ConfigureAwait(false);
+            else
+            {
+                throw new Exception(error.Value);
+            }
         }
     }
 }

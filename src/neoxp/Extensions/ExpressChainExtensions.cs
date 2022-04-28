@@ -178,14 +178,14 @@ namespace NeoExpress
                 return true;
             }
 
-            return chain.TryParseScriptHash(name, out accountHash);
+            return name.TryParseScriptHash(chain.AddressVersion, out accountHash);
         }
 
-        public static bool TryParseScriptHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 hash)
+        public static bool TryParseScriptHash(this string name, byte addressVersion, [MaybeNullWhen(false)] out UInt160 hash)
         {
             try
             {
-                hash = name.ToScriptHash(chain.AddressVersion);
+                hash = name.ToScriptHash(addressVersion);
                 return true;
             }
             catch

@@ -75,7 +75,7 @@ namespace NeoExpress
                 }
             }
 
-            if (chain.TryParseScriptHash(name, out var scriptHash)) return scriptHash;
+            if (name.TryParseScriptHash(chain.AddressVersion, out var scriptHash)) return scriptHash;
 
             return new None();
         }

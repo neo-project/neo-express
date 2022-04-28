@@ -230,6 +230,8 @@ namespace NeoExpress
 
         public static void ExportNEP6(this IFileSystem fileSystem, ExpressWallet wallet, string path, string password, byte addressVersion)
         {
+            // TODO: use NEP6Wallet.ToJson once https://github.com/neo-project/neo/pull/2714 is merged + released
+
             if (fileSystem.File.Exists(path)) throw new System.IO.IOException();
 
             using var stream = fileSystem.File.OpenWrite(path);
@@ -266,7 +268,7 @@ namespace NeoExpress
                     var exportedKey = keyPair.Export(password, addressVersion, scrypt.N, scrypt.R, scrypt.P);
                     var script = account.Contract.Script.HexToBytes();
 
-                    using var ___ = writer.WriteStartObjectAuto();
+                    using var _3 = writer.WriteStartObjectAuto();
 
                     writer.WritePropertyName("address");
                     writer.WriteValue(account.ScriptHash);
@@ -282,7 +284,7 @@ namespace NeoExpress
                     writer.WriteNull();
 
                     writer.WritePropertyName("contract");
-                    using var ____ = writer.WriteStartObjectAuto();
+                    using var _4 = writer.WriteStartObjectAuto();
 
                     writer.WritePropertyName("script");
                     writer.WriteValue(Convert.ToBase64String(script));
@@ -290,12 +292,12 @@ namespace NeoExpress
                     writer.WriteValue(false);
                     writer.WritePropertyName("parameters");
 
-                    using var _____ = writer.WriteStartArrayAuto();
+                    using var _5 = writer.WriteStartArrayAuto();
                     for (int i = 0; i < account.Contract.Parameters.Count; i++)
                     {
                         var paramType = account.Contract.Parameters[i];
 
-                        using var ______ = writer.WriteStartObjectAuto();
+                        using var _6 = writer.WriteStartObjectAuto();
 
                         writer.WritePropertyName("name");
                         writer.WriteValue($"{paramType}{i}");

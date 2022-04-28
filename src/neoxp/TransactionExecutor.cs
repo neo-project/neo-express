@@ -490,7 +490,7 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.ParseScriptHashAsync(scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
                 throw new Exception($"{scriptHash} script hash not found or not supported");
@@ -507,7 +507,7 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
-            var _scriptHash = await expressNode.ParseScriptHashAsync(scriptHash).ConfigureAwait(false);
+            var _scriptHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
             if (_scriptHash.IsT1)
             {
                 throw new Exception($"{scriptHash} script hash not found or not supported");

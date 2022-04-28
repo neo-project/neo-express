@@ -49,7 +49,7 @@ namespace NeoExpress
             return _scriptHash != null;
         }
 
-        public static async Task<OneOf<UInt160, None>> ParseScriptHashAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<OneOf<UInt160, None>> ParseBlockableScriptHashAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var chain = expressNode.Chain;
 

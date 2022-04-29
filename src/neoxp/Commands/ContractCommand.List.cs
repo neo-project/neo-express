@@ -17,7 +17,7 @@ namespace NeoExpress.Commands
                 this.fileSystem = fileSystem;
             }
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]

@@ -12,19 +12,20 @@ namespace NeoExpress.Commands
         [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
         internal class Export
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressFile expressFile;
 
-            public Export(IFileSystem fileSystem)
+            public Export(IExpressFile expressFile)
             {
-                this.fileSystem = fileSystem;
+                this.expressFile = expressFile;
+            }
+
+            public Export(CommandLineApplication app) : this(app.GetExpressFile())
+            {
             }
 
             [Argument(0, Description = "Wallet name")]
             [Required]
             internal string Name { get; init; } = string.Empty;
-
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "NEP-6 wallet name (Defaults to Neo-Express name if unspecified)")]
             internal string Output { get; init; } = string.Empty;
@@ -32,43 +33,32 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            internal string Execute()
+            internal void Execute(IFileSystem fileSystem, IConsole console)
             {
                 var output = string.IsNullOrEmpty(Output)
                    ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
                    : Output;
 
-                var (chain, _) = fileSystem.LoadExpressChain(Input);
-                var wallet = chain.GetWallet(Name);
-
-                if (wallet == null)
+                if (fileSystem.File.Exists(output) && !Force)
                 {
-                    throw new Exception($"{Name} express wallet not found.");
+                    throw new Exception("You must specify force to overwrite an exported wallet.");
                 }
 
-                if (fileSystem.File.Exists(output))
-                {
-                    if (Force)
-                    {
-                        fileSystem.File.Delete(output);
-                    }
-                    else
-                    {
-                        throw new Exception("You must specify force to overwrite an exported wallet.");
-                    }
-                }
+                var wallet = expressFile.Chain.GetWallet(Name) 
+                    ?? throw new Exception($"{Name} express wallet not found.");
 
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
-                fileSystem.ExportNEP6(wallet, output, password, chain.AddressVersion);
-                return output;
+
+                if (fileSystem.File.Exists(output)) fileSystem.File.Delete(output);
+                fileSystem.ExportNEP6(wallet, output, password, expressFile.Chain.AddressVersion);
+                console.WriteLine($"{Name} privatenet wallet exported to {output}");
             }
 
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            private int OnExecute(CommandLineApplication app, IFileSystem fileSystem, IConsole console)
             {
                 try
                 {
-                    var output = Execute();
-                    console.WriteLine($"{Name} privatenet wallet exported to {output}");
+                    Execute(fileSystem, console);
                     return 0;
                 }
                 catch (Exception ex)

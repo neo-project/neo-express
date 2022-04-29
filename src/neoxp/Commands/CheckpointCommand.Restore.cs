@@ -21,7 +21,7 @@ namespace NeoExpress.Commands
             [Required]
             internal string Name { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]

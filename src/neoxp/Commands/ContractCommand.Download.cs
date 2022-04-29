@@ -35,7 +35,7 @@ namespace NeoExpress.Commands
             [Argument(1, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
             internal string RpcUri { get; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Block height to get contract state for")]

@@ -29,7 +29,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Oracle request ID")]
             internal ulong? RequestId { get; }
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Enable contract execution tracing")]

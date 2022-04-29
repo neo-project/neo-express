@@ -17,7 +17,7 @@ namespace NeoExpress.Commands
         [Argument(0, Description = "Index of node to reset")]
         internal int? NodeIndex { get; }
 
-        [Option(Description = "Path to neo-express data file")]
+        
         internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Overwrite existing data")]

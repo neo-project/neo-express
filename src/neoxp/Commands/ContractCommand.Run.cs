@@ -52,7 +52,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

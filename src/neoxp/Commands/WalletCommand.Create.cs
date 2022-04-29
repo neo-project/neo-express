@@ -16,11 +16,15 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         internal class Create
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressFile expressFile;
 
-            public Create(IFileSystem fileSystem)
+            public Create(IExpressFile expressFile)
             {
-                this.fileSystem = fileSystem;
+                this.expressFile = expressFile;
+            }
+
+            public Create(CommandLineApplication app) : this(app.GetExpressFile())
+            {
             }
 
             [Argument(0, Description = "Wallet name")]
@@ -33,12 +37,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
-            internal ExpressWallet Execute()
+            internal void Execute(IConsole console)
             {
-                var (chain, chainPath) = fileSystem.LoadExpressChain(Input);
+                var chain = expressFile.Chain;
 
                 if (chain.IsReservedName(Name))
                 {
@@ -56,34 +57,35 @@ namespace NeoExpress.Commands
                     chain.Wallets.Remove(existingWallet);
                 }
 
-                var wallet = new DevWallet(chain.GetProtocolSettings(), Name);
-                var account = wallet.CreateAccount();
-                account.IsDefault = true;
+                var devWallet = new DevWallet(chain.GetProtocolSettings(), Name);
+                var devAccount = devWallet.CreateAccount();
+                devAccount.IsDefault = true;
 
-                var expressWallet = wallet.ToExpressWallet();
+                var wallet = devWallet.ToExpressWallet();
                 chain.Wallets ??= new List<ExpressWallet>(1);
-                chain.Wallets.Add(expressWallet);
-                fileSystem.SaveChain(chain, chainPath);
-                return expressWallet;
+                chain.Wallets.Add(wallet);
+
+                expressFile.Save();
+
+                if (Json)
+                {
+                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                    using var _ = writer.WriteStartObjectAuto();
+                    writer.WriteWallet(wallet);
+                }
+                else
+                {
+                    console.Out.WriteWallet(wallet);
+                    console.Out.WriteLine("Note: The private keys for the accounts in this wallet are *not* encrypted.");
+                    console.Out.WriteLine("      Do not use these accounts on MainNet or in any other system where security is a concern.");
+                }
             }
 
             internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var wallet = Execute();
-                    if (Json)
-                    {
-                        using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                        using var _ = writer.WriteStartObjectAuto();
-                        writer.WriteWallet(wallet);
-                    }
-                    else
-                    {
-                        console.Out.WriteWallet(wallet);
-                        console.WriteLine("Note: The private keys for the accounts in this wallet are *not* encrypted.");
-                        console.WriteLine("      Do not use these accounts on MainNet or in any other system where security is a concern.");
-                    }
+                    Execute(console);
                     return 0;
                 }
                 catch (Exception ex)
@@ -92,8 +94,6 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
-
-
         }
     }
 }

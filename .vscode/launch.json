@@ -11,8 +11,10 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/neoxp/bin/Debug/net6.0/neoxp.dll",
             "cwd": "${workspaceFolder}/src/neoxp",
+            "args": "wallet list",
             "console": "internalConsole",
-            "stopAtEntry": false
+            "stopAtEntry": false,
+            "justMyCode": false,
         },
         {
             "name": "neotrace",

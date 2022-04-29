@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.DependencyInjection;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Newtonsoft.Json;
@@ -10,6 +12,22 @@ using Nito.Disposables;
 
 namespace NeoExpress
 {
+    static class CommandLineAppExtensions
+    {
+        public static IFileSystem GetFileSystem(this CommandLineApplication app)
+        {
+            return ((IServiceProvider)app).GetRequiredService<IFileSystem>();
+        }
+
+        public static IExpressFile GetExpressFile(this CommandLineApplication app)
+        {
+            var option = app.GetOptions().Single(o => o.LongName == "input");
+            var input = option.Value() ?? string.Empty;
+            var fileSystem = app.GetFileSystem();
+            return new ExpressFile(input, fileSystem);
+        }
+    }
+
     static class ConsoleExtensions
     {
         public static IDisposable WriteStartArrayAuto(this JsonWriter writer)
@@ -106,24 +124,24 @@ namespace NeoExpress
                     writer.WriteValue(@string.Value);
                     break;
                 case Neo.IO.Json.JArray @array:
-                {
-                    using var _ = writer.WriteStartArrayAuto();
-                    foreach (var value in @array)
                     {
-                        WriteJson(writer, value);
+                        using var _ = writer.WriteStartArrayAuto();
+                        foreach (var value in @array)
+                        {
+                            WriteJson(writer, value);
+                        }
+                        break;
                     }
-                    break;
-                }
                 case Neo.IO.Json.JObject @object:
-                {
-                    using var _ = writer.WriteStartObjectAuto();
-                    foreach (var (key, value) in @object.Properties)
                     {
-                        writer.WritePropertyName(key);
-                        WriteJson(writer, value);
+                        using var _ = writer.WriteStartObjectAuto();
+                        foreach (var (key, value) in @object.Properties)
+                        {
+                            writer.WritePropertyName(key);
+                            WriteJson(writer, value);
+                        }
+                        break;
                     }
-                    break;
-                }
             }
         }
 

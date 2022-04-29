@@ -21,7 +21,7 @@ namespace NeoExpress.Commands
             [Argument(0, Description = "Optional block hash or index. Show most recent block if unspecified")]
             internal string BlockHash { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

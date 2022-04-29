@@ -11,12 +11,17 @@ namespace NeoExpress.Commands
         [Command("delete", Description = "Delete neo-express wallet")]
         internal class Delete
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressFile expressFile;
 
-            public Delete(IFileSystem fileSystem)
+            public Delete(IExpressFile expressFile)
             {
-                this.fileSystem = fileSystem;
+                this.expressFile = expressFile;
             }
+
+            public Delete(CommandLineApplication app) : this(app.GetExpressFile())
+            {
+            }
+
 
             [Argument(0, Description = "Wallet name")]
             [Required]
@@ -25,36 +30,23 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
-            internal void Execute()
+            internal void Execute(IConsole console)
             {
-                var (chain, chainPath) = fileSystem.LoadExpressChain(Input);
-                var wallet = chain.GetWallet(Name);
+                var wallet = expressFile.Chain.GetWallet(Name);
 
-                if (wallet == null)
-                {
-                    throw new Exception($"{Name} privatenet wallet not found.");
-                }
-                else
-                {
-                    if (!Force)
-                    {
-                        throw new Exception("You must specify force to delete a privatenet wallet.");
-                    }
+                if (wallet == null) throw new Exception($"{Name} privatenet wallet not found.");
+                if (!Force) throw new Exception("You must specify force to delete a privatenet wallet.");
 
-                    chain.Wallets.Remove(wallet);
-                    fileSystem.SaveChain(chain, chainPath);
-                }
+                expressFile.Chain.Wallets.Remove(wallet);
+                expressFile.Save();
+                console.WriteLine($"{Name} privatenet wallet deleted.");
             }
 
             internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    Execute();
-                    console.WriteLine($"{Name} privatenet wallet deleted.");
+                    Execute(console);
                     return 0;
                 }
                 catch (Exception ex)

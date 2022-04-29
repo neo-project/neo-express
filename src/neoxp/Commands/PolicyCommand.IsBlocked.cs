@@ -22,7 +22,7 @@ namespace NeoExpress.Commands
             [Required]
             internal string ScriptHash { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

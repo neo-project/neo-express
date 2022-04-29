@@ -29,7 +29,7 @@ namespace NeoExpress.Commands
             [Option(Description = "password to use for NEP-2/NEP-6 sender")]
             internal string Password { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Enable contract execution tracing")]

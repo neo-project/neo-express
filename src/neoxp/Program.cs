@@ -34,13 +34,13 @@ namespace NeoExpress
 
             var services = new ServiceCollection()
                 .AddSingleton<IFileSystem, FileSystem>()
-                .AddSingleton<IConsole>(PhysicalConsole.Singleton)
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();
             app.Conventions
                 .UseDefaultConventions()
                 .AddConvention(new StackTraceConvention())
+                .AddConvention(new InputFileConvention())
                 .UseConstructorInjection(services);
 
             try

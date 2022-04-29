@@ -27,7 +27,7 @@ namespace NeoExpress.Commands
             [Required]
             internal string Contract { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
+            
             internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]

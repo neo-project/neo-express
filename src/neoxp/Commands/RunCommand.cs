@@ -21,7 +21,7 @@ namespace NeoExpress.Commands
         [Argument(0, Description = "Index of node to run")]
         internal int NodeIndex { get; init; } = 0;
 
-        [Option(Description = "Path to neo-express data file")]
+        
         internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Time between blocks")]

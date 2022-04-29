@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -13,59 +14,44 @@ namespace NeoExpress.Commands
     [Command("export", Description = "Export neo-express protocol, config and wallet files")]
     class ExportCommand
     {
-        readonly IFileSystem fileSystem;
+        readonly IExpressFile expressFile;
 
-        public ExportCommand(IFileSystem fileSystem)
+        public ExportCommand(IExpressFile expressFile)
         {
-            this.fileSystem = fileSystem;
+            this.expressFile = expressFile;
         }
 
-        
-        internal string Input { get; init; } = string.Empty;
+        public ExportCommand(CommandLineApplication app) : this(app.GetExpressFile())
+        {
+        }
 
-        internal void Execute(System.IO.TextWriter writer)
+        internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
+
+        internal void Execute(IFileSystem fileSystem, IConsole console)
         {
             var password = Prompt.GetPassword("Input password to use for exported wallets");
-            var (chain, _) = fileSystem.LoadExpressChain(Input);
+            var chain = expressFile.Chain;
             var folder = fileSystem.Directory.GetCurrentDirectory();
 
-            var settings = chain.GetProtocolSettings();
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var node = chain.ConsensusNodes[i];
-                writer.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
+                console.Out.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
+
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
-                ExportNodeWallet(settings, node, walletPath, password);
+                if (fileSystem.File.Exists(walletPath)) fileSystem.File.Delete(walletPath);
+                fileSystem.ExportNEP6(node.Wallet, walletPath, password, chain.AddressVersion);
+
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
-                ExportNodeConfig(settings, chain, node, nodeConfigPath, password, walletPath);
+                if (fileSystem.File.Exists(nodeConfigPath)) fileSystem.File.Delete(nodeConfigPath);
+                using var stream = fileSystem.File.Open(nodeConfigPath, FileMode.Create, FileAccess.Write);
+                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+                ExportNodeConfig(writer, chain.GetProtocolSettings(), chain, node, password, walletPath);
             }
         }
 
-        internal int OnExecute(CommandLineApplication app, IConsole console)
+        internal static void ExportNodeConfig(JsonWriter writer, ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node, string password, string walletPath)
         {
-            try
-            {
-                Execute(console.Out);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                app.WriteException(ex);
-                return 1;
-            }
-        }
-
-        void ExportNodeWallet(ProtocolSettings settings, ExpressConsensusNode node, string path, string password)
-        {
-            if (fileSystem.File.Exists(path)) fileSystem.File.Delete(path);
-            fileSystem.ExportNEP6(node.Wallet, path, password, settings.AddressVersion);
-        }
-
-        void ExportNodeConfig(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node, string path, string password, string walletPath)
-        {
-            using var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-            using var writer = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented };
-
             // use neo-cli defaults for Logger & Storage
 
             using var _ = writer.WriteStartObjectAuto();
@@ -105,7 +91,7 @@ namespace NeoExpress.Commands
             WriteProtocolConfiguration(writer, settings, chain);
         }
 
-        void WriteProtocolConfiguration(JsonTextWriter writer, ProtocolSettings settings, ExpressChain chain)
+        internal static void WriteProtocolConfiguration(JsonWriter writer, ProtocolSettings settings, ExpressChain chain)
         {
             // use neo defaults for MillisecondsPerBlock
 

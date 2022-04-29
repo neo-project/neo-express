@@ -31,6 +31,8 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
+
             internal void Execute(IConsole console)
             {
                 var chain = expressFile.Chain;
@@ -73,8 +75,6 @@ namespace NeoExpress.Commands
                     }
                 }
             }
-
-            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
         }
     }
 }

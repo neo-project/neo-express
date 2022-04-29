@@ -30,6 +30,8 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
+
             internal void Execute(IConsole console)
             {
                 var wallet = expressFile.Chain.GetWallet(Name);
@@ -41,8 +43,6 @@ namespace NeoExpress.Commands
                 expressFile.Save();
                 console.WriteLine($"{Name} privatenet wallet deleted.");
             }
-
-            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
         }
     }
 }

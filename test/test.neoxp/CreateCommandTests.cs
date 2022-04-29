@@ -18,8 +18,7 @@ public class CreateCommandTests
     [InlineData(7)]
     public void test_create_chain(int count)
     {
-        var fileSystem = new MockFileSystem();
-        var cmd = new CreateCommand(fileSystem) { Count = count };
+        var cmd = new CreateCommand() { Count = count };
         var chain = cmd.CreateChain();
         chain.ConsensusNodes.Count.Should().Be(count);
         chain.AddressVersion.Should().Be(Neo.ProtocolSettings.Default.AddressVersion);
@@ -50,11 +49,7 @@ public class CreateCommandTests
     [Fact]
     public void test_create_chain_invalid_count()
     {
-        var fileSystem = new MockFileSystem();
-        var cmd = new CreateCommand(fileSystem)
-        {
-            Count = 2
-        };
+        var cmd = new CreateCommand() { Count = 2 };
         Assert.Throws<ArgumentException>(() => cmd.CreateChain());
     }
 
@@ -62,8 +57,7 @@ public class CreateCommandTests
     public void test_create_chain_custom_address_version()
     {
         byte addressVersion = 42;
-        var fileSystem = new MockFileSystem();
-        var cmd = new CreateCommand(fileSystem) { AddressVersion = addressVersion };
+        var cmd = new CreateCommand() { AddressVersion = addressVersion };
         var chain = cmd.CreateChain();
 
         chain.AddressVersion.Should().Be(addressVersion);
@@ -72,12 +66,13 @@ public class CreateCommandTests
     [Fact]
     public void test_save_chain()
     {
-        var fileSystem = new MockFileSystem();
-        var cmd = new CreateCommand(fileSystem);
+        var cmd = new CreateCommand();
         var path = @"c:\test.express";
 
         var chain = Utility.GetResourceChain("1.neo-express");
-        cmd.SaveChain(chain, path);
+        var fileSystem = new MockFileSystem();
+
+        cmd.SaveChain(chain, path, fileSystem);
 
         var file = fileSystem.GetFile(path);
         file.Contents.Should().NotBeEmpty();
@@ -96,10 +91,10 @@ public class CreateCommandTests
         var path = @"c:\test.express";
         fileSystem.AddFile(path, new MockFileData(string.Empty));
 
-        var cmd = new CreateCommand(fileSystem);
+        var cmd = new CreateCommand();
 
         var chain = new ExpressChain();
-        Assert.Throws<Exception>(() => cmd.SaveChain(chain, path));
+        Assert.Throws<Exception>(() => cmd.SaveChain(chain, path, fileSystem));
     }
 
     [Fact]
@@ -112,11 +107,11 @@ public class CreateCommandTests
 
         fileSystem.GetFile(path).Contents.Should().BeEmpty();
 
-        var cmd = new CreateCommand(fileSystem) { Force = true };
+        var cmd = new CreateCommand() { Force = true };
 
         var chain = Utility.GetResourceChain("1.neo-express");
         var expectedNetwork = 3800502614u;
-        cmd.SaveChain(chain, path);
+        cmd.SaveChain(chain, path, fileSystem);
 
         var file = fileSystem.GetFile(path);
         file.Contents.Should().NotBeEmpty();

@@ -33,6 +33,8 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
+
             internal void Execute(IFileSystem fileSystem, IConsole console)
             {
                 var output = string.IsNullOrEmpty(Output)
@@ -53,8 +55,6 @@ namespace NeoExpress.Commands
                 fileSystem.ExportNEP6(wallet, output, password, expressFile.Chain.AddressVersion);
                 console.WriteLine($"{Name} privatenet wallet exported to {output}");
             }
-
-            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
         }
     }
 }

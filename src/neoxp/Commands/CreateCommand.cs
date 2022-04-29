@@ -16,13 +16,6 @@ namespace NeoExpress.Commands
     [Command("create", Description = "Create new neo-express instance")]
     internal class CreateCommand
     {
-        readonly IFileSystem fileSystem;
-
-        public CreateCommand(IFileSystem fileSystem)
-        {
-            this.fileSystem = fileSystem;
-        }
-
         [Argument(0, Description = "name of " + EXPRESS_EXTENSION + " file to create (Default: ./" + DEFAULT_EXPRESS_FILENAME + ")")]
         internal string Output { get; set; } = string.Empty;
 
@@ -35,6 +28,24 @@ namespace NeoExpress.Commands
 
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
+
+        internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
+
+        internal void Execute(IFileSystem fileSystem, IConsole console)
+        {
+            var outputPath = fileSystem.ResolveExpressFileName(Output);
+            if (fileSystem.File.Exists(outputPath) && !Force)
+            {
+                throw new Exception("You must specify --force to overwrite an existing file");
+            }
+
+            var chain = CreateChain();
+            SaveChain(chain, outputPath, fileSystem);
+
+            console.Out.WriteLine($"Created {chain.ConsensusNodes.Count} node privatenet at {outputPath}");
+            console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
+            console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+        }
 
         internal ExpressChain CreateChain()
         {
@@ -87,7 +98,7 @@ namespace NeoExpress.Commands
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        internal void SaveChain(ExpressChain chain, string outputPath)
+        internal void SaveChain(ExpressChain chain, string outputPath, IFileSystem fileSystem)
         {
             if (fileSystem.File.Exists(outputPath))
             {
@@ -108,23 +119,5 @@ namespace NeoExpress.Commands
 
             fileSystem.SaveChain(chain, outputPath);
         }
-
-        internal void Execute(IConsole console)
-        {
-            var outputPath = fileSystem.ResolveExpressFileName(Output);
-            if (fileSystem.File.Exists(outputPath) && !Force)
-            {
-                throw new Exception("You must specify --force to overwrite an existing file");
-            }
-
-            var chain = CreateChain();
-            SaveChain(chain, outputPath);
-
-            console.Out.WriteLine($"Created {chain.ConsensusNodes.Count} node privatenet at {outputPath}");
-            console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-            console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
-        }
-
-        internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
     }
 }

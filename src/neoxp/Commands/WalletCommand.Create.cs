@@ -37,6 +37,8 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
+
             internal void Execute(IConsole console)
             {
                 var chain = expressFile.Chain;
@@ -80,8 +82,6 @@ namespace NeoExpress.Commands
                     console.Out.WriteLine("      Do not use these accounts on MainNet or in any other system where security is a concern.");
                 }
             }
-
-            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
         }
     }
 }

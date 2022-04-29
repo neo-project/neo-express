@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -7,7 +6,9 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
-using Nito.Disposables;
+using FileMode = System.IO.FileMode;
+using FileAccess = System.IO.FileAccess;
+using StreamWriter = System.IO.StreamWriter;
 
 namespace NeoExpress.Commands
 {
@@ -39,11 +40,9 @@ namespace NeoExpress.Commands
                 console.Out.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
 
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
-                if (fileSystem.File.Exists(walletPath)) fileSystem.File.Delete(walletPath);
                 fileSystem.ExportNEP6(node.Wallet, walletPath, password, chain.AddressVersion);
 
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
-                if (fileSystem.File.Exists(nodeConfigPath)) fileSystem.File.Delete(nodeConfigPath);
                 using var stream = fileSystem.File.Open(nodeConfigPath, FileMode.Create, FileAccess.Write);
                 using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
                 ExportNodeConfig(writer, chain.GetProtocolSettings(), chain, node, password, walletPath);

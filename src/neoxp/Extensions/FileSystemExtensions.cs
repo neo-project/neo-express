@@ -6,14 +6,18 @@ using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
-using Neo.BlockchainToolkit.Persistence;
 using Neo.IO;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.Wallets;
 using NeoExpress.Models;
-using Nito.Disposables;
+using Newtonsoft.Json;
+
 using static Neo.BlockchainToolkit.Constants;
+using FileMode = System.IO.FileMode;
+using FileAccess = System.IO.FileAccess;
+using StreamWriter = System.IO.StreamWriter;
+
 
 namespace NeoExpress
 {
@@ -156,11 +160,9 @@ namespace NeoExpress
         {
             // TODO: use NEP6Wallet.ToJson once https://github.com/neo-project/neo/pull/2714 is merged + released
 
-            if (fileSystem.File.Exists(path)) throw new System.IO.IOException();
-
-            using var stream = fileSystem.File.OpenWrite(path);
-            using var textWriter = new System.IO.StreamWriter(stream);
-            using var writer = new Newtonsoft.Json.JsonTextWriter(textWriter);
+            using var stream = fileSystem.File.Open(path, FileMode.Create, FileAccess.Write);
+            using var textWriter = new StreamWriter(stream);
+            using var writer = new JsonTextWriter(textWriter);
             var scrypt = Neo.Wallets.NEP6.ScryptParameters.Default;
 
             using var _ = writer.WriteStartObjectAuto();

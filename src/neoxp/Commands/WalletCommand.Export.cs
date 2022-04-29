@@ -48,10 +48,8 @@ namespace NeoExpress.Commands
 
                 var wallet = expressFile.Chain.GetWallet(Name) 
                     ?? throw new Exception($"{Name} express wallet not found.");
-
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
 
-                if (fileSystem.File.Exists(output)) fileSystem.File.Delete(output);
                 fileSystem.ExportNEP6(wallet, output, password, expressFile.Chain.AddressVersion);
                 console.WriteLine($"{Name} privatenet wallet exported to {output}");
             }

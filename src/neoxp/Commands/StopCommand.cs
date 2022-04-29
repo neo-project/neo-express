@@ -9,21 +9,25 @@ namespace NeoExpress.Commands
     [Command("stop", Description = "Stop Neo-Express instance node")]
     class StopCommand
     {
-        readonly IFileSystem fileSystem;
+        readonly IExpressFile expressFile;
 
-        public StopCommand(IFileSystem fileSystem)
+        public StopCommand(IExpressFile expressFile)
         {
-            this.fileSystem = fileSystem;
+            this.expressFile = expressFile;
+        }
+
+        public StopCommand(CommandLineApplication app) : this(app.GetExpressFile())
+        {
         }
 
         [Argument(0, Description = "Index of node to stop")]
         internal int? NodeIndex { get; }
 
-        
-        internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Stop all nodes")]
         internal bool All { get; }
+
+        internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
 
         internal async Task ExecuteAsync(IConsole console)
         {
@@ -32,7 +36,7 @@ namespace NeoExpress.Commands
                 throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
             }
 
-            var (chain, _) = fileSystem.LoadExpressChain(Input);
+            var chain = expressFile.Chain;
 
             if (All)
             {
@@ -68,20 +72,5 @@ namespace NeoExpress.Commands
                 return true;
             }
         }
-
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
-        {
-            try
-            {
-                await ExecuteAsync(console).ConfigureAwait(false);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                app.WriteException(ex);
-                return 1;
-            }
-        }
-
     }
 }

@@ -63,28 +63,22 @@ namespace NeoExpress.Commands
                 writer.WritePropertyName("Storage");
                 {
                     using var ___ = writer.WriteStartObjectAuto();
-                    writer.WritePropertyName("Engine");
-                    writer.WriteValue("MemoryStore");
+                    writer.WriteProperty("Engine", "MemoryStore");
                 }
 
                 writer.WritePropertyName("P2P");
                 {
                     using var ___ = writer.WriteStartObjectAuto();
-                    writer.WritePropertyName("Port");
-                    writer.WriteValue(node.TcpPort);
-                    writer.WritePropertyName("WsPort");
-                    writer.WriteValue(node.WebSocketPort);
+                    writer.WriteProperty("Port", node.TcpPort);
+                    writer.WriteProperty("WsPort", node.WebSocketPort);
                 }
 
                 writer.WritePropertyName("UnlockWallet");
                 {
                     using var ___ = writer.WriteStartObjectAuto();
-                    writer.WritePropertyName("Path");
-                    writer.WriteValue(walletPath);
-                    writer.WritePropertyName("Password");
-                    writer.WriteValue(password);
-                    writer.WritePropertyName("IsActive");
-                    writer.WriteValue(true);
+                    writer.WriteProperty("Path", walletPath);
+                    writer.WriteProperty("Password", password);
+                    writer.WriteProperty("IsActive", true);
                 }
             }
 
@@ -98,12 +92,9 @@ namespace NeoExpress.Commands
             writer.WritePropertyName("ProtocolConfiguration");
             using var _ = writer.WriteStartObjectAuto();
 
-            writer.WritePropertyName("Magic");
-            writer.WriteValue(chain.Network);
-            writer.WritePropertyName("AddressVersion");
-            writer.WriteValue(settings.AddressVersion);
-            writer.WritePropertyName("ValidatorsCount");
-            writer.WriteValue(chain.ConsensusNodes.Count);
+            writer.WriteProperty("Magic", chain.Network);
+            writer.WriteProperty("AddressVersion", settings.AddressVersion);
+            writer.WriteProperty("ValidatorsCount", chain.ConsensusNodes.Count);
 
             writer.WritePropertyName("StandbyCommittee");
             {

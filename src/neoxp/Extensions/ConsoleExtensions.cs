@@ -6,34 +6,11 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Newtonsoft.Json;
-using Nito.Disposables;
 
 namespace NeoExpress
 {
     static class ConsoleExtensions
     {
-        public static IDisposable WriteStartArrayAuto(this JsonWriter writer)
-        {
-            writer.WriteStartArray();
-            return AnonymousDisposable.Create(() => writer.WriteEndArray());
-        }
-
-        public static IDisposable WriteStartObjectAuto(this JsonWriter writer)
-        {
-            writer.WriteStartObject();
-            return AnonymousDisposable.Create(() => writer.WriteEndObject());
-        }
-
-        public static void WriteWallet(this TextWriter writer, ExpressWallet wallet)
-        {
-            writer.WriteLine(wallet.Name);
-
-            foreach (var account in wallet.Accounts)
-            {
-                writer.WriteAccount(account);
-            }
-        }
-
         public static void WriteAccount(this TextWriter writer, ExpressWalletAccount account)
         {
             var keyPair = new Neo.Wallets.KeyPair(Convert.FromHexString(account.PrivateKey));
@@ -80,51 +57,13 @@ namespace NeoExpress
 
         public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)
         {
-            using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out)
+            using var writer = new JsonTextWriter(console.Out)
             {
-                Formatting = Newtonsoft.Json.Formatting.Indented
+                Formatting = Formatting.Indented
             };
 
-            WriteJson(writer, json);
+            writer.WriteJson(json);
             console.Out.WriteLine();
-        }
-
-        public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.IO.Json.JObject json)
-        {
-            switch (json)
-            {
-                case null:
-                    writer.WriteNull();
-                    break;
-                case Neo.IO.Json.JBoolean boolean:
-                    writer.WriteValue(boolean.Value);
-                    break;
-                case Neo.IO.Json.JNumber number:
-                    writer.WriteValue(number.Value);
-                    break;
-                case Neo.IO.Json.JString @string:
-                    writer.WriteValue(@string.Value);
-                    break;
-                case Neo.IO.Json.JArray @array:
-                    {
-                        using var _ = writer.WriteStartArrayAuto();
-                        foreach (var value in @array)
-                        {
-                            WriteJson(writer, value);
-                        }
-                        break;
-                    }
-                case Neo.IO.Json.JObject @object:
-                    {
-                        using var _ = writer.WriteStartObjectAuto();
-                        foreach (var (key, value) in @object.Properties)
-                        {
-                            writer.WritePropertyName(key);
-                            WriteJson(writer, value);
-                        }
-                        break;
-                    }
-            }
         }
 
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)

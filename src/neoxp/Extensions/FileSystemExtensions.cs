@@ -241,21 +241,15 @@ namespace NeoExpress
 
             using var _ = writer.WriteStartObjectAuto();
 
-            writer.WritePropertyName("name");
-            writer.WriteValue(wallet.Name);
-            writer.WritePropertyName("version");
-            writer.WriteValue("1.0");
-            writer.WritePropertyName("extra");
-            writer.WriteNull();
+            writer.WriteProperty("name", wallet.Name);
+            writer.WriteProperty("version", "1.0");
+            writer.WritePropertyNull("extra");
             writer.WritePropertyName("scrypt");
             {
                 using var __ = writer.WriteStartObjectAuto();
-                writer.WritePropertyName("n");
-                writer.WriteValue(scrypt.N);
-                writer.WritePropertyName("r");
-                writer.WriteValue(scrypt.R);
-                writer.WritePropertyName("p");
-                writer.WriteValue(scrypt.P);
+                writer.WriteProperty("n", scrypt.N);
+                writer.WriteProperty("r", scrypt.R);
+                writer.WriteProperty("p", scrypt.P);
             }
             writer.WritePropertyName("accounts");
             {
@@ -270,28 +264,20 @@ namespace NeoExpress
 
                     using var _3 = writer.WriteStartObjectAuto();
 
-                    writer.WritePropertyName("address");
-                    writer.WriteValue(account.ScriptHash);
-                    writer.WritePropertyName("label");
-                    writer.WriteValue(account.Label);
-                    writer.WritePropertyName("isDefault");
-                    writer.WriteValue(account.IsDefault);
-                    writer.WritePropertyName("lock");
-                    writer.WriteValue(false);
-                    writer.WritePropertyName("key");
-                    writer.WriteValue(exportedKey);
-                    writer.WritePropertyName("extra");
-                    writer.WriteNull();
+                    writer.WriteProperty("address", account.ScriptHash);
+                    writer.WriteProperty("label", account.Label);
+                    writer.WriteProperty("isDefault", account.IsDefault);
+                    writer.WriteProperty("lock", false);
+                    writer.WriteProperty("key", exportedKey);
+                    writer.WritePropertyNull("extra");
 
                     writer.WritePropertyName("contract");
                     using var _4 = writer.WriteStartObjectAuto();
 
-                    writer.WritePropertyName("script");
-                    writer.WriteValue(Convert.ToBase64String(script));
-                    writer.WritePropertyName("deployed");
-                    writer.WriteValue(false);
-                    writer.WritePropertyName("parameters");
+                    writer.WriteProperty("script", Convert.ToBase64String(script));
+                    writer.WriteProperty("deployed", false);
 
+                    writer.WritePropertyName("parameters");
                     using var _5 = writer.WriteStartArrayAuto();
                     for (int i = 0; i < account.Contract.Parameters.Count; i++)
                     {
@@ -299,10 +285,8 @@ namespace NeoExpress
 
                         using var _6 = writer.WriteStartObjectAuto();
 
-                        writer.WritePropertyName("name");
-                        writer.WriteValue($"{paramType}{i}");
-                        writer.WritePropertyName("type");
-                        writer.WriteValue(paramType);
+                        writer.WriteProperty("name", $"{paramType}{i}");
+                        writer.WriteProperty("type", paramType);
                     }
                 }
             }

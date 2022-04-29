@@ -67,7 +67,7 @@ namespace NeoExpress.Commands
                 chain.Wallets ??= new List<ExpressWallet>(1);
                 chain.Wallets.Add(wallet);
 
-                expressFile.Save();
+                expressFile.SaveChain();
 
                 if (Json)
                 {

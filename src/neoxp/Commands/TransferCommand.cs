@@ -56,13 +56,13 @@ namespace NeoExpress.Commands
         {
             using var expressNode = expressFile.GetExpressNode(Trace);
             var password = expressFile.ResolvePassword(Sender, Password);
-            var txHash = await TransferAsync(expressNode, Quantity, Asset, Sender, password, Receiver)
+            var txHash = await ExecuteAsync(expressNode, Quantity, Asset, Sender, password, Receiver)
                 .ConfigureAwait(false);
             await console.Out.WriteTxHashAsync(txHash, "Transfer", Json)
                 .ConfigureAwait(false);
         }
 
-        public static async Task<Neo.UInt256> TransferAsync(IExpressNode expressNode,
+        public static async Task<Neo.UInt256> ExecuteAsync(IExpressNode expressNode,
             
             string quantity, string asset, string sender, string password, string receiver)
         {

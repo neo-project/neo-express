@@ -100,23 +100,27 @@ namespace NeoExpress.Commands
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
-                            var (checkpointPath, mode) = await CheckpointCommand.Create.CreateCheckpointAsync(
+                            var result = await CheckpointCommand.Create.ExecuteAsync(
                                 txExec.ExpressNode,
                                 Resolve(root, cmd.Model.Name),
                                 fileSystem,
                                 cmd.Model.Force).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
+                            var checkpointFile = fileSystem.Path.GetFileName(result.path);
+                            await writer.WriteLineAsync($"Created {checkpointFile} checkpoint {result.checkpointMode}").ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
                         {
-                            await txExec.ContractDeployAsync(
-                                Resolve(root, cmd.Model.Contract),
+                            var result = await ContractCommand.Deploy.ExecuteAsync(
+                                txExec.ExpressNode,
+                                cmd.Model.Contract,
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope,
                                 cmd.Model.Data,
                                 cmd.Model.Force).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Submitted {result.txHash} deployment transaction")
+                                .ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
@@ -230,7 +234,7 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Transfer> cmd:
                         {
-                            var txHash = await TransferCommand.TransferAsync(
+                            var txHash = await TransferCommand.ExecuteAsync(
                                 txExec.ExpressNode,
                                 cmd.Model.Quantity,
                                 cmd.Model.Asset,

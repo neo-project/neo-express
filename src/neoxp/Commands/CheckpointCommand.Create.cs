@@ -35,16 +35,14 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
                 using var expressNode = expressFile.GetExpressNode();
-                var (checkpointPath, mode) = await CreateCheckpointAsync(expressNode, Name, fileSystem, Force)
+                var (checkpointPath, mode) = await ExecuteAsync(expressNode, Name, fileSystem, Force)
                     .ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
             }
 
             public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)>
-                CreateCheckpointAsync(IExpressNode expressNode,
-                                      string checkpointPath,
-                                      IFileSystem fileSystem,
-                                      bool force)
+                ExecuteAsync(IExpressNode expressNode, string checkpointPath,
+                                      IFileSystem fileSystem, bool force)
             {
                 if (expressNode.Chain.ConsensusNodes.Count != 1)
                 {

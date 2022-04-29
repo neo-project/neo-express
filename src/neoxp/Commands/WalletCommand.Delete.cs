@@ -40,7 +40,7 @@ namespace NeoExpress.Commands
                 if (!Force) throw new Exception("You must specify force to delete a privatenet wallet.");
 
                 expressFile.Chain.Wallets.Remove(wallet);
-                expressFile.Save();
+                expressFile.SaveChain();
                 console.WriteLine($"{Name} privatenet wallet deleted.");
             }
         }

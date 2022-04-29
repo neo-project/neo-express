@@ -54,19 +54,7 @@ namespace NeoExpress.Commands
                 console.WriteLine($"{Name} privatenet wallet exported to {output}");
             }
 
-            private int OnExecute(CommandLineApplication app, IFileSystem fileSystem, IConsole console)
-            {
-                try
-                {
-                    Execute(fileSystem, console);
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
-            }
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
         }
     }
 }

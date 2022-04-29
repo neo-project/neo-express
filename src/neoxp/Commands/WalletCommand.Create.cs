@@ -81,19 +81,7 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal int OnExecute(CommandLineApplication app, IConsole console)
-            {
-                try
-                {
-                    Execute(console);
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
-            }
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
         }
     }
 }

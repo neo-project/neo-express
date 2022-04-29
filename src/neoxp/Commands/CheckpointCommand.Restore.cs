@@ -5,6 +5,9 @@ using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.Persistence;
+using NeoExpress.Models;
+using Nito.Disposables;
 
 namespace NeoExpress.Commands
 {
@@ -67,7 +70,7 @@ namespace NeoExpress.Commands
                         fileSystem.Path.GetRandomFileName());
                 }
                 while (fileSystem.Directory.Exists(checkpointTempPath));
-                using var folderCleanup = Nito.Disposables.AnonymousDisposable.Create(() =>
+                using var folderCleanup = AnonymousDisposable.Create(() =>
                 {
                     if (fileSystem.Directory.Exists(checkpointTempPath))
                     {
@@ -87,15 +90,14 @@ namespace NeoExpress.Commands
                 }
 
                 var settings = chain.GetProtocolSettings();
-                var wallet = Models.DevWallet.FromExpressWallet(settings, node.Wallet);
+                var wallet = DevWallet.FromExpressWallet(settings, node.Wallet);
                 var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-                Neo.BlockchainToolkit.Persistence.RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
+                RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
                     settings.Network, settings.AddressVersion, multiSigAccount.ScriptHash);
                 fileSystem.Directory.Move(checkpointTempPath, nodePath);
 
                 return checkPointArchive;
             }
-
         }
     }
 }

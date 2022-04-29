@@ -100,7 +100,7 @@ namespace NeoExpress
             return (await nefTask, await manifestTask);
         }
 
-        public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, Neo.ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
+        public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
         {
             if (fileSystem.File.Exists(path))
             {

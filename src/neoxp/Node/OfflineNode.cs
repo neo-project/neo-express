@@ -32,30 +32,29 @@ namespace NeoExpress.Node
         readonly NeoSystem neoSystem;
         readonly ApplicationEngineProvider? applicationEngineProvider;
         readonly Wallet nodeWallet;
-        readonly ExpressChain chain;
         readonly RocksDbStorageProvider rocksDbStorageProvider;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         bool disposedValue;
 
-        public ExpressChain Chain => chain;
+        public IExpressFile ExpressFile { get; }
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
         public OfflineNode(
-            ExpressChain chain,
+            IExpressFile expressFile,
             ExpressConsensusNode node,
             RocksDbStorageProvider rocksDbStorageProvider, 
             bool enableTrace)
         {
-            var settings = chain.GetProtocolSettings();
+            this.ExpressFile = expressFile;
+            var settings = expressFile.Chain.GetProtocolSettings();
             this.nodeWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
-            this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
             applicationEngineProvider = enableTrace ? new ApplicationEngineProvider() : null;
-            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => expressFile.Chain.GetConsensusNodeKeys());
 
             var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
             _ = new PersistencePlugin(rocksDbStorageProvider);
-            neoSystem = new NeoSystem(chain.GetProtocolSettings(), storageProviderPlugin.Name);
+            neoSystem = new NeoSystem(settings, storageProviderPlugin.Name);
 
             ApplicationEngine.Log += OnLog!;
         }
@@ -149,7 +148,7 @@ namespace NeoExpress.Node
             var account = wallet.GetAccount(accountHash) ?? throw new Exception();
             if (account.IsMultiSigContract())
             {
-                var multiSigWallets = chain.GetMultiSigWallets(neoSystem.Settings, accountHash);
+                var multiSigWallets = ExpressFile.Chain.GetMultiSigWallets(neoSystem.Settings, accountHash);
                 for (int i = 0; i < multiSigWallets.Count; i++)
                 {
                     multiSigWallets[i].Sign(context);
@@ -180,7 +179,7 @@ namespace NeoExpress.Node
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
             if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
-            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, ExpressFile.Chain, tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
             return tx.Hash;
@@ -374,7 +373,7 @@ namespace NeoExpress.Node
         public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
             => MakeAsync(() =>
             {
-                if (chain.ConsensusNodes.Count != 1)
+                if (ExpressFile.Chain.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Contract download is only supported for single-node consensus");
                 }

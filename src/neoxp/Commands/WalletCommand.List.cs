@@ -38,7 +38,6 @@ namespace NeoExpress.Commands
                 var chain = expressFile.Chain;
                 var settings = chain.GetProtocolSettings();
 
-                var genesisAccount = chain.ConsensusNodes[0].Wallet.Accounts.Single(a => a.IsMultiSigContract());
                 var genesisContract = chain.CreateGenesisContract();
                 var genesisAddress = Neo.Wallets.Helper.ToAddress(genesisContract.ScriptHash, chain.AddressVersion);
 

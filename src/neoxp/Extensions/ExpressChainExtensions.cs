@@ -17,8 +17,14 @@ using Nito.Disposables;
 
 namespace NeoExpress
 {
+
     static class ExpressChainExtensions
     {
+        public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
+        {
+            throw new NotImplementedException();
+        }
+
         public static bool IsRunning(this ExpressChain chain)
         {
             for (var i = 0; i < chain.ConsensusNodes.Count; i++)
@@ -56,6 +62,61 @@ namespace NeoExpress
             var m = publicKeys.Count * 2 / 3 + 1;
             return Contract.CreateMultiSigContract(m, publicKeys);
         }
+
+        public static UInt160 ResolveAccountHash(this ExpressChain chain, string name)
+            => chain.TryResolveAccountHash(name, out var hash) 
+                ? hash 
+                : throw new Exception("ResolveAccountHash failed");
+
+        public static bool TryResolveAccountHash(this ExpressChain chain, string name, out UInt160 accountHash)
+        {
+            if (chain.Wallets != null && chain.Wallets.Count > 0)
+            {
+                for (int i = 0; i < chain.Wallets.Count; i++)
+                {
+                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash();
+                        return true;
+                    }
+                }
+            }
+
+            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var nodeWallet = chain.ConsensusNodes[i].Wallet;
+                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    accountHash = nodeWallet.DefaultAccount.GetScriptHash();
+                    return true;
+                }
+            }
+
+            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                var contract = chain.CreateGenesisContract();
+                accountHash = contract.ScriptHash;
+                return true;
+            }
+
+            if (UInt160.TryParse(name, out accountHash))
+            {
+                return true;
+            }
+
+            try
+            {
+                accountHash = name.ToScriptHash(chain.AddressVersion);
+                return true;
+            }
+            catch {}
+
+            accountHash = UInt160.Zero;
+            return false;
+        }
+
+
         public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
         {
             ArgumentNullException.ThrowIfNull(@this);
@@ -68,33 +129,9 @@ namespace NeoExpress
 
 
 
-        public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
-        {
-            throw new NotImplementedException();
-            // var settings = chain.GetProtocolSettings();
 
-            // // Check to see if there's a neo-express blockchain currently running by
-            // // attempting to open a mutex with the multisig account address for a name
 
-            // for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            // {
-            //     var consensusNode = chain.ConsensusNodes[i];
-            //     if (consensusNode.IsRunning())
-            //     {
-            //         return new Node.OnlineNode(settings, chain, consensusNode);
-            //     }
-            // }
 
-            // var node = chain.ConsensusNodes[0];
-            // var nodePath = fileSystem.GetNodePath(node);
-            // if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
-            // return new Node.OfflineNode(settings,
-            //     RocksDbStorageProvider.Open(nodePath),
-            //     node.Wallet,
-            //     chain,
-            //     offlineTrace);
-        }
 
         public static bool IsMultiSigContract(this ExpressWalletAccount @this)
             => Neo.SmartContract.Helper.IsMultiSigContract(Convert.FromHexString(@this.Contract.Script));
@@ -144,6 +181,11 @@ namespace NeoExpress
             return false;
         }
 
+        public static string ResolvePassword(this IExpressFile expressFile, string name, string password)
+        {
+            return expressFile.Chain.ResolvePassword(name, password);
+        }
+
         public static string ResolvePassword(this ExpressChain chain, string name, string password)
         {
             if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
@@ -152,8 +194,8 @@ namespace NeoExpress
             if (!string.IsNullOrEmpty(password)) return password;
 
             // if the name is a valid Neo Express account name, no password is needed
-            if (chain.IsReservedName(name)) return password;
-            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return password;
+            if (chain.IsReservedName(name)) return string.Empty;
+            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return string.Empty;
 
             // if a password is needed but not provided, prompt the user
             return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
@@ -161,45 +203,6 @@ namespace NeoExpress
 
 
 
-        public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash)
-        {
-            if (chain.Wallets != null && chain.Wallets.Count > 0)
-            {
-                for (int i = 0; i < chain.Wallets.Count; i++)
-                {
-                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash();
-                        return true;
-                    }
-                }
-            }
-
-            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
-
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var nodeWallet = chain.ConsensusNodes[i].Wallet;
-                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    accountHash = nodeWallet.DefaultAccount.GetScriptHash();
-                    return true;
-                }
-            }
-
-            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                var keys = chain.ConsensusNodes
-                    .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
-                    .Select(a => new KeyPair(a.PrivateKey.HexToBytes()).PublicKey)
-                    .ToArray();
-                var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
-                accountHash = contract.ScriptHash;
-                return true;
-            }
-
-            return name.TryParseScriptHash(chain.AddressVersion, out accountHash);
-        }
 
         public static bool TryParseScriptHash(this string name, byte addressVersion, [MaybeNullWhen(false)] out UInt160 hash)
         {

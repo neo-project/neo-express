@@ -230,12 +230,15 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Transfer> cmd:
                         {
-                            await txExec.TransferAsync(
+                            var txHash = await TransferCommand.TransferAsync(
+                                txExec.ExpressNode,
                                 cmd.Model.Quantity,
                                 cmd.Model.Asset,
                                 cmd.Model.Sender,
                                 cmd.Model.Password,
                                 cmd.Model.Receiver).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Submitted {txHash} transfer transaction")
+                                .ConfigureAwait(false);
                             break;
                         }
                     default:

@@ -92,7 +92,7 @@ namespace NeoExpress
             ContractParameterParser.TryGetUInt160 tryGetContract =
                 (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
 
-            return new ContractParameterParser(expressNode.ProtocolSettings, expressNode.Chain.TryGetAccountHash, tryGetContract);
+            return new ContractParameterParser(expressNode.ProtocolSettings, expressNode.Chain.TryResolveAccountHash, tryGetContract);
         }
 
         public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
@@ -131,45 +131,6 @@ namespace NeoExpress
             throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
         }
 
-        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, Wallet sender, UInt160 senderHash, UInt160 receiverHash)
-        {
-            if (quantity.IsT0)
-            {
-                var results = await expressNode.InvokeAsync(asset.MakeScript("decimals")).ConfigureAwait(false);
-                if (results.Stack.Length > 0 && results.Stack[0].Type == Neo.VM.Types.StackItemType.Integer)
-                {
-                    var decimals = (byte)(results.Stack[0].GetInteger());
-                    var value = quantity.AsT0.ToBigInteger(decimals);
-                    var script = asset.MakeScript("transfer", senderHash, receiverHash, value, null);
-                    return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
-                }
-                else
-                {
-                    throw new Exception("Invalid response from decimals operation");
-                }
-            }
-            else
-            {
-                Debug.Assert(quantity.IsT1);
-
-                using var sb = new ScriptBuilder();
-                // balanceOf operation places current balance on eval stack
-                sb.EmitDynamicCall(asset, "balanceOf", senderHash);
-                // transfer operation takes 4 arguments, amount is 3rd parameter
-                // push null onto the stack and then switch positions of the top
-                // two items on eval stack so null is 4th arg and balance is 3rd
-                sb.Emit(OpCode.PUSHNULL);
-                sb.Emit(OpCode.SWAP);
-                sb.EmitPush(receiverHash);
-                sb.EmitPush(senderHash);
-                sb.EmitPush(4);
-                sb.Emit(OpCode.PACK);
-                sb.EmitPush("transfer");
-                sb.EmitPush(asset);
-                sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
-            }
-        }
 
         public static async Task<UInt256> DeployAsync(this IExpressNode expressNode,
                                                       NefFile nefFile,

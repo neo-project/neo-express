@@ -324,38 +324,6 @@ namespace NeoExpress
             }
         }
 
-        public async Task TransferAsync(string quantity, string asset, string sender, string password, string receiver)
-        {
-            if (!expressNode.Chain.TryGetSigningAccount(sender, password, fileSystem, out var senderWallet, out var senderAccountHash))
-            {
-                throw new Exception($"{sender} sender not found.");
-            }
-
-            if (!expressNode.Chain.TryGetAccountHash(receiver, out var receiverHash))
-            {
-                throw new Exception($"{receiver} account not found.");
-            }
-
-            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccountHash, receiverHash);
-            await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
-
-            static OneOf<decimal, All> ParseQuantity(string quantity)
-            {
-                if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
-                {
-                    return new All();
-                }
-
-                if (decimal.TryParse(quantity, out var amount))
-                {
-                    return amount;
-                }
-
-                throw new Exception($"Invalid quantity value {quantity}");
-            }
-        }
-
         public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
         {
             if (value.Equals("mainnet", StringComparison.OrdinalIgnoreCase))

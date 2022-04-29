@@ -165,22 +165,18 @@ namespace NeoExpress
             using var writer = new JsonTextWriter(textWriter);
             var scrypt = Neo.Wallets.NEP6.ScryptParameters.Default;
 
-            using var _ = writer.WriteStartObjectAuto();
-
+            using var _ = writer.WriteObject();
             writer.WriteProperty("name", wallet.Name);
             writer.WriteProperty("version", "1.0");
             writer.WritePropertyNull("extra");
-            writer.WritePropertyName("scrypt");
+            using (var __ = writer.WritePropertyObject("scrypt"))
             {
-                using var __ = writer.WriteStartObjectAuto();
                 writer.WriteProperty("n", scrypt.N);
                 writer.WriteProperty("r", scrypt.R);
                 writer.WriteProperty("p", scrypt.P);
             }
-            writer.WritePropertyName("accounts");
+            using (var __ = writer.WritePropertyArray("accounts"))
             {
-                using var __ = writer.WriteStartArrayAuto();
-
                 foreach (var account in wallet.Accounts)
                 {
                     var privateKey = Convert.FromHexString(account.PrivateKey);
@@ -188,8 +184,7 @@ namespace NeoExpress
                     var exportedKey = keyPair.Export(password, addressVersion, scrypt.N, scrypt.R, scrypt.P);
                     var script = account.Contract.Script.HexToBytes();
 
-                    using var _3 = writer.WriteStartObjectAuto();
-
+                    using var __a = writer.WriteObject();
                     writer.WriteProperty("address", account.ScriptHash);
                     writer.WriteProperty("label", account.Label);
                     writer.WriteProperty("isDefault", account.IsDefault);
@@ -197,20 +192,16 @@ namespace NeoExpress
                     writer.WriteProperty("key", exportedKey);
                     writer.WritePropertyNull("extra");
 
-                    writer.WritePropertyName("contract");
-                    using var _4 = writer.WriteStartObjectAuto();
-
+                    using var __c = writer.WritePropertyObject("contract");
                     writer.WriteProperty("script", Convert.ToBase64String(script));
                     writer.WriteProperty("deployed", false);
 
-                    writer.WritePropertyName("parameters");
-                    using var _5 = writer.WriteStartArrayAuto();
+                    using var __pa = writer.WritePropertyArray("parameters");
                     for (int i = 0; i < account.Contract.Parameters.Count; i++)
                     {
                         var paramType = account.Contract.Parameters[i];
 
-                        using var _6 = writer.WriteStartObjectAuto();
-
+                        using var __p = writer.WriteObject();
                         writer.WriteProperty("name", $"{paramType}{i}");
                         writer.WriteProperty("type", paramType);
                     }

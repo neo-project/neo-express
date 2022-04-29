@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
                 if (Json)
                 {
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                    using var _ = writer.WriteStartObjectAuto();
+                    using var _ = writer.WriteObject();
 
                     writer.WritePropertyName(ExpressChainExtensions.GENESIS);
                     writer.WriteAccount(genesisAccount, ExpressChainExtensions.GENESIS);

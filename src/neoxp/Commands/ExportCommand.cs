@@ -45,59 +45,50 @@ namespace NeoExpress.Commands
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
                 using var stream = fileSystem.File.Open(nodeConfigPath, FileMode.Create, FileAccess.Write);
                 using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
-                ExportNodeConfig(writer, chain.GetProtocolSettings(), chain, node, password, walletPath);
+                using var _ = writer.WriteObject();
+                WriteAppConfig(writer, node, password, walletPath);
+                WriteProtocolConfig(writer, chain);
             }
         }
 
-        internal static void ExportNodeConfig(JsonWriter writer, ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node, string password, string walletPath)
+        internal static void WriteAppConfig(JsonWriter writer, ExpressConsensusNode node, string password, string walletPath)
         {
             // use neo-cli defaults for Logger & Storage
 
-            using var _ = writer.WriteStartObjectAuto();
+            using var _ = writer.WritePropertyObject("ApplicationConfiguration");
 
-            writer.WritePropertyName("ApplicationConfiguration");
+            using (var __ = writer.WritePropertyObject("Storage"))
             {
-                using var __ = writer.WriteStartObjectAuto();
-
-                writer.WritePropertyName("Storage");
-                {
-                    using var ___ = writer.WriteStartObjectAuto();
-                    writer.WriteProperty("Engine", "MemoryStore");
-                }
-
-                writer.WritePropertyName("P2P");
-                {
-                    using var ___ = writer.WriteStartObjectAuto();
-                    writer.WriteProperty("Port", node.TcpPort);
-                    writer.WriteProperty("WsPort", node.WebSocketPort);
-                }
-
-                writer.WritePropertyName("UnlockWallet");
-                {
-                    using var ___ = writer.WriteStartObjectAuto();
-                    writer.WriteProperty("Path", walletPath);
-                    writer.WriteProperty("Password", password);
-                    writer.WriteProperty("IsActive", true);
-                }
+                writer.WriteProperty("Engine", "MemoryStore");
             }
 
-            WriteProtocolConfiguration(writer, settings, chain);
+            using (var __ = writer.WritePropertyObject("P2P"))
+            {
+                writer.WriteProperty("Port", node.TcpPort);
+                writer.WriteProperty("WsPort", node.WebSocketPort);
+            }
+
+            using (var __ = writer.WritePropertyObject("UnlockWallet"))
+            {
+                writer.WriteProperty("Path", walletPath);
+                writer.WriteProperty("Password", password);
+                writer.WriteProperty("IsActive", true);
+            }
         }
 
-        internal static void WriteProtocolConfiguration(JsonWriter writer, ProtocolSettings settings, ExpressChain chain)
+        internal static void WriteProtocolConfig(JsonWriter writer, ExpressChain chain)
         {
             // use neo defaults for MillisecondsPerBlock
 
-            writer.WritePropertyName("ProtocolConfiguration");
-            using var _ = writer.WriteStartObjectAuto();
+            using var _ = writer.WritePropertyObject("ProtocolConfiguration");
 
             writer.WriteProperty("Magic", chain.Network);
-            writer.WriteProperty("AddressVersion", settings.AddressVersion);
+            writer.WriteProperty("AddressVersion", chain.AddressVersion);
             writer.WriteProperty("ValidatorsCount", chain.ConsensusNodes.Count);
 
-            writer.WritePropertyName("StandbyCommittee");
+            using (var __ = writer.WritePropertyArray("StandbyCommittee"))
             {
-                using var __ = writer.WriteStartArrayAuto();
+                var settings = chain.GetProtocolSettings();
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
                     var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
@@ -110,9 +101,8 @@ namespace NeoExpress.Commands
                 }
             }
 
-            writer.WritePropertyName("SeedList");
+            using (var __ = writer.WritePropertyArray("SeedList"))
             {
-                using var __ = writer.WriteStartArrayAuto();
                 foreach (var node in chain.ConsensusNodes)
                 {
                     writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");

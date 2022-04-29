@@ -8,16 +8,30 @@ namespace NeoExpress
 {
     static class JsonWriterExtensions
     {
-        public static IDisposable WriteStartArrayAuto(this JsonWriter writer)
+        public static IDisposable WriteArray(this JsonWriter writer)
         {
             writer.WriteStartArray();
             return AnonymousDisposable.Create(() => writer.WriteEndArray());
         }
 
-        public static IDisposable WriteStartObjectAuto(this JsonWriter writer)
+        public static IDisposable WriteObject(this JsonWriter writer)
         {
             writer.WriteStartObject();
             return AnonymousDisposable.Create(() => writer.WriteEndObject());
+        }
+
+        public static IDisposable WritePropertyObject(this JsonWriter writer, string property)
+        {
+            writer.WritePropertyName(property);
+            writer.WriteStartObject();
+            return AnonymousDisposable.Create(() => writer.WriteEndObject());
+        }
+
+        public static IDisposable WritePropertyArray(this JsonWriter writer, string property)
+        {
+            writer.WritePropertyName(property);
+            writer.WriteStartArray();
+            return AnonymousDisposable.Create(() => writer.WriteEndArray());
         }
 
         public static void WritePropertyNull(this JsonWriter writer, string property)
@@ -88,24 +102,26 @@ namespace NeoExpress
                     writer.WriteValue(@string.Value);
                     break;
                 case Neo.IO.Json.JArray @array:
+                    writer.WriteStartArray();
+                    using (var _ = AnonymousDisposable.Create(() => writer.WriteEndArray()))
                     {
-                        using var _ = writer.WriteStartArrayAuto();
                         foreach (var value in @array)
                         {
                             WriteJson(writer, value);
                         }
-                        break;
                     }
+                    break;
                 case Neo.IO.Json.JObject @object:
+                    writer.WriteStartObject();
+                    using (var _ = AnonymousDisposable.Create(() => writer.WriteEndObject()))
                     {
-                        using var _ = writer.WriteStartObjectAuto();
                         foreach (var (key, value) in @object.Properties)
                         {
                             writer.WritePropertyName(key);
                             WriteJson(writer, value);
                         }
-                        break;
                     }
+                    break;
             }
         }
     }

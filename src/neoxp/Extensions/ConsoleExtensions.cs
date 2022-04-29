@@ -25,9 +25,7 @@ namespace NeoExpress
 
         public static void WriteWallet(this JsonTextWriter writer, ExpressWallet wallet)
         {
-            writer.WritePropertyName(wallet.Name);
-
-            using var _ = writer.WriteStartArrayAuto();
+            using var _ = writer.WritePropertyArray(wallet.Name);
             foreach (var account in wallet.Accounts)
             {
                 writer.WriteAccount(account, wallet.Name);
@@ -40,7 +38,7 @@ namespace NeoExpress
             var address = account.ScriptHash;
             var scriptHash = account.GetScriptHash();
 
-            using var _ = writer.WriteStartObjectAuto();
+            using var _ = writer.WriteObject();
             writer.WritePropertyName("wallet-name");
             writer.WriteValue(walletName);
             writer.WritePropertyName("account-label");

@@ -68,14 +68,14 @@ namespace NeoExpress.Commands
                     }
 
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                    using var _ = writer.WriteStartArrayAuto();
+                    using var _ = writer.WriteArray();
 
                     var count = 0;
                     await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
                     {
                         if (Count.HasValue && count++ >= Count.Value) break;
 
-                        using var __ = writer.WriteStartObjectAuto();
+                        using var __ = writer.WriteObject();
 
                         writer.WritePropertyName("block-index");
                         writer.WriteValue(blockIndex);

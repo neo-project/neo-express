@@ -100,9 +100,10 @@ namespace NeoExpress.Commands
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                         {
-                            var (checkpointPath, mode) = await fileSystem.CreateCheckpointAsync(
+                            var (checkpointPath, mode) = await CheckpointCommand.Create.CreateCheckpointAsync(
                                 txExec.ExpressNode,
                                 Resolve(root, cmd.Model.Name),
+                                fileSystem,
                                 cmd.Model.Force).ConfigureAwait(false);
                             await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
                             break;

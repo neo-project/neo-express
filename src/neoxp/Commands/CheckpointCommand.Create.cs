@@ -11,40 +11,69 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create a new neo-express checkpoint")]
         internal class Create
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressFile expressFile;
 
-            public Create(IFileSystem fileSystem)
+            public Create(IExpressFile expressFile)
             {
-                this.fileSystem = fileSystem;
+                this.expressFile = expressFile;
+            }
+
+            public Create(CommandLineApplication app) : this(app.GetExpressFile())
+            {
             }
 
             [Argument(0, "Checkpoint file name")]
             [Required]
             internal string Name { get; init; } = string.Empty;
 
-            
-            internal string Input { get; init; } = string.Empty;
-
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
-                try
-                {
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
-                    using var expressNode = chain.GetExpressNode(fileSystem);
-                    var (checkpointPath, mode) = await fileSystem.CreateCheckpointAsync(expressNode, Name, Force).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                using var expressNode = expressFile.GetExpressNode();
+                var (checkpointPath, mode) = await CreateCheckpointAsync(expressNode, Name, fileSystem, Force)
+                    .ConfigureAwait(false);
+                await console.Out.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
             }
 
+            public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)>
+                CreateCheckpointAsync(IExpressNode expressNode,
+                                      string checkpointPath,
+                                      IFileSystem fileSystem,
+                                      bool force)
+            {
+                if (expressNode.Chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(expressNode));
+                }
+
+                checkpointPath = fileSystem.ResolveCheckpointFileName(checkpointPath);
+                if (fileSystem.File.Exists(checkpointPath))
+                {
+                    if (force)
+                    {
+                        fileSystem.File.Delete(checkpointPath);
+                    }
+                    else
+                    {
+                        throw new Exception("You must specify --force to overwrite an existing file");
+                    }
+                }
+
+                var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath);
+                if (!fileSystem.Directory.Exists(parentPath))
+                {
+                    fileSystem.Directory.CreateDirectory(parentPath);
+                }
+
+                var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+
+                return (checkpointPath, mode);
+            }
         }
     }
 }

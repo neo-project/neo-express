@@ -100,39 +100,6 @@ namespace NeoExpress
             return (await nefTask, await manifestTask);
         }
 
-        public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)>
-            CreateCheckpointAsync(this IFileSystem fileSystem, IExpressNode expressNode, string checkpointPath, bool force)
-        {
-            if (expressNode.Chain.ConsensusNodes.Count != 1)
-            {
-                throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(expressNode));
-            }
-
-            checkpointPath = fileSystem.ResolveCheckpointFileName(checkpointPath);
-            if (fileSystem.File.Exists(checkpointPath))
-            {
-                if (force)
-                {
-                    fileSystem.File.Delete(checkpointPath);
-                }
-                else
-                {
-                    throw new Exception("You must specify --force to overwrite an existing file");
-                }
-            }
-
-            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath);
-            if (!fileSystem.Directory.Exists(parentPath))
-            {
-                fileSystem.Directory.CreateDirectory(parentPath);
-            }
-
-            var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
-
-            return (checkpointPath, mode);
-        }
-
-
         public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, Neo.ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
         {
             if (fileSystem.File.Exists(path))

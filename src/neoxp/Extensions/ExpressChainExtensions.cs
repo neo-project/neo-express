@@ -70,29 +70,30 @@ namespace NeoExpress
 
         public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
         {
-            var settings = chain.GetProtocolSettings();
+            throw new NotImplementedException();
+            // var settings = chain.GetProtocolSettings();
 
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
+            // // Check to see if there's a neo-express blockchain currently running by
+            // // attempting to open a mutex with the multisig account address for a name
 
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var consensusNode = chain.ConsensusNodes[i];
-                if (consensusNode.IsRunning())
-                {
-                    return new Node.OnlineNode(settings, chain, consensusNode);
-                }
-            }
+            // for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            // {
+            //     var consensusNode = chain.ConsensusNodes[i];
+            //     if (consensusNode.IsRunning())
+            //     {
+            //         return new Node.OnlineNode(settings, chain, consensusNode);
+            //     }
+            // }
 
-            var node = chain.ConsensusNodes[0];
-            var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            // var node = chain.ConsensusNodes[0];
+            // var nodePath = fileSystem.GetNodePath(node);
+            // if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
-            return new Node.OfflineNode(settings,
-                RocksDbStorageProvider.Open(nodePath),
-                node.Wallet,
-                chain,
-                offlineTrace);
+            // return new Node.OfflineNode(settings,
+            //     RocksDbStorageProvider.Open(nodePath),
+            //     node.Wallet,
+            //     chain,
+            //     offlineTrace);
         }
 
         public static bool IsMultiSigContract(this ExpressWalletAccount @this)

@@ -40,14 +40,14 @@ namespace NeoExpress.Node
         public ExpressChain Chain => chain;
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
-        public OfflineNode(ProtocolSettings settings, RocksDbStorageProvider rocksDbStorageProvider, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
-            : this(settings, rocksDbStorageProvider, DevWallet.FromExpressWallet(settings, nodeWallet), chain, enableTrace)
+        public OfflineNode(
+            ExpressChain chain,
+            ExpressConsensusNode node,
+            RocksDbStorageProvider rocksDbStorageProvider, 
+            bool enableTrace)
         {
-        }
-
-        public OfflineNode(ProtocolSettings settings, RocksDbStorageProvider rocksDbStorageProvider, Wallet nodeWallet, ExpressChain chain, bool enableTrace)
-        {
-            this.nodeWallet = nodeWallet;
+            var settings = chain.GetProtocolSettings();
+            this.nodeWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
             this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
             applicationEngineProvider = enableTrace ? new ApplicationEngineProvider() : null;
@@ -55,7 +55,7 @@ namespace NeoExpress.Node
 
             var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
             _ = new PersistencePlugin(rocksDbStorageProvider);
-            neoSystem = new NeoSystem(settings, storageProviderPlugin.Name);
+            neoSystem = new NeoSystem(chain.GetProtocolSettings(), storageProviderPlugin.Name);
 
             ApplicationEngine.Log += OnLog!;
         }

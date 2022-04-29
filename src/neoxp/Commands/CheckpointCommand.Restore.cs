@@ -1,12 +1,10 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using NeoExpress.Models;
 using Nito.Disposables;
 
 namespace NeoExpress.Commands

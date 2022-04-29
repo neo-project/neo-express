@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.IO;
@@ -31,11 +32,11 @@ namespace NeoExpress.Node
         public ExpressChain Chain => chain;
         public ProtocolSettings ProtocolSettings { get; }
 
-        public OnlineNode(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node)
+        public OnlineNode(ExpressChain chain, ExpressConsensusNode node)
         {
-            this.ProtocolSettings = settings;
             this.chain = chain;
-            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
+            ProtocolSettings = chain.GetProtocolSettings();
+            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
         }
 

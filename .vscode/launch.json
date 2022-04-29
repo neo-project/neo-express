@@ -11,7 +11,6 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/neoxp/bin/Debug/net6.0/neoxp.dll",
             "cwd": "${workspaceFolder}/src/neoxp",
-            "args": "run",
             "console": "internalConsole",
             "stopAtEntry": false,
             "justMyCode": false,

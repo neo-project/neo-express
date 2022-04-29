@@ -42,6 +42,32 @@ namespace NeoExpress
                 out var _);
         }
 
+        public static Contract CreateGenesisContract(this ExpressChain chain)
+        {
+            List<Neo.Cryptography.ECC.ECPoint> publicKeys = new(chain.ConsensusNodes.Count);
+            foreach (var node in chain.ConsensusNodes)
+            {
+                var account = node.Wallet.DefaultAccount ?? throw new Exception("Missing Default Account");
+                var privateKey = Convert.FromHexString(account.PrivateKey);
+                var keyPair = new KeyPair(privateKey);
+                publicKeys.Add(keyPair.PublicKey);
+            }
+
+            var m = publicKeys.Count * 2 / 3 + 1;
+            return Contract.CreateMultiSigContract(m, publicKeys);
+        }
+        public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
+        {
+            ArgumentNullException.ThrowIfNull(@this);
+
+            var keyPair = new KeyPair(@this.PrivateKey.HexToBytes());
+            var contract = Neo.SmartContract.Contract.CreateSignatureContract(keyPair.PublicKey);
+            return contract.ScriptHash;
+        }
+
+
+
+
         public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
         {
             var settings = chain.GetProtocolSettings();
@@ -132,14 +158,7 @@ namespace NeoExpress
             return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
         }
 
-        public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
-        {
-            ArgumentNullException.ThrowIfNull(@this);
 
-            var keyPair = new KeyPair(@this.PrivateKey.HexToBytes());
-            var contract = Neo.SmartContract.Contract.CreateSignatureContract(keyPair.PublicKey);
-            return contract.ScriptHash;
-        }
 
         public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash)
         {

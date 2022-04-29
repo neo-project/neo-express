@@ -8,6 +8,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using Nito.Disposables;
 
 namespace NeoExpress.Commands
 {
@@ -16,19 +17,20 @@ namespace NeoExpress.Commands
         [Command("run", Description = "Run a neo-express checkpoint (discarding changes on shutdown)")]
         internal class Run
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressFile expressFile;
 
-            public Run(IFileSystem fileSystem)
+            public Run(IExpressFile expressFile)
             {
-                this.fileSystem = fileSystem;
+                this.expressFile = expressFile;
+            }
+
+            public Run(CommandLineApplication app) : this(app.GetExpressFile())
+            {
             }
 
             [Argument(0, "Checkpoint file name")]
             [Required]
             internal string Name { get; init; } = string.Empty;
-
-            
-            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Time between blocks")]
             internal uint SecondsPerBlock { get; }
@@ -36,7 +38,24 @@ namespace NeoExpress.Commands
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
-            internal Neo.Plugins.IStorageProvider GetCheckpointStorageProvider(ExpressChain chain, string checkPointPath)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app, CancellationToken token)
+                => app.ExecuteAsync(this.ExecuteAsync, token);
+
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
+            {
+                var chain = expressFile.Chain;
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+                }
+
+                var storageProvider = GetCheckpointStorageProvider(chain, fileSystem, Name);
+                using var disposable = storageProvider as IDisposable ?? NoopDisposable.Instance;
+
+                await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
+            }
+
+            internal static Neo.Plugins.IStorageProvider GetCheckpointStorageProvider(ExpressChain chain, IFileSystem fileSystem, string checkPointPath)
             {
                 if (chain.ConsensusNodes.Count != 1)
                 {
@@ -52,34 +71,8 @@ namespace NeoExpress.Commands
                     throw new Exception($"Checkpoint {checkPointPath} couldn't be found");
                 }
 
-                var wallet = Models.DevWallet.FromExpressWallet(chain.GetProtocolSettings(), node.Wallet);
-                var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-
-                return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
-            }
-
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
-            {
-                try
-                {
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
-                    if (chain.ConsensusNodes.Count != 1)
-                    {
-                        throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
-                    }
-
-                    var storageProvider = GetCheckpointStorageProvider(chain, Name);
-                    using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-
-                    await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
-
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                var contract = chain.CreateGenesisContract();
+                return CheckpointStorageProvider.Open(checkPointPath, chain.Network, chain.AddressVersion, contract.ScriptHash);
             }
         }
     }

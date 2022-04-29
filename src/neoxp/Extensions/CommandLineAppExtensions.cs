@@ -2,6 +2,7 @@ using System;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,13 +11,14 @@ namespace NeoExpress
 {
     static class CommandLineAppExtensions
     {
-        static object[] BindParameters(Delegate @delegate, IServiceProvider provider)
+        static object[] BindParameters(Delegate @delegate, IServiceProvider provider, CancellationToken token = default)
         {
             var paramInfos = @delegate.Method.GetParameters() ?? throw new Exception();
             var @params = new object[paramInfos.Length];
             for (int i = 0; i < paramInfos.Length; i++)
             {
-                @params[i] = provider.GetRequiredService(paramInfos[i].ParameterType);
+                @params[i] = paramInfos[i].ParameterType == typeof(CancellationToken)
+                    ? token : provider.GetRequiredService(paramInfos[i].ParameterType);
             }
             return @params;
         }
@@ -43,7 +45,7 @@ namespace NeoExpress
             }
         }
 
-        public static async Task<int> ExecuteAsync(this CommandLineApplication app, Delegate @delegate)
+        public static async Task<int> ExecuteAsync(this CommandLineApplication app, Delegate @delegate, CancellationToken token = default)
         {
             if (@delegate.Method.ReturnType != typeof(Task)) throw new Exception();
             if (@delegate.Method.ReturnType.GenericTypeArguments.Length > 0) throw new Exception();

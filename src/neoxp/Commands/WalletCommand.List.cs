@@ -38,8 +38,9 @@ namespace NeoExpress.Commands
                 var chain = expressFile.Chain;
                 var settings = chain.GetProtocolSettings();
 
-                var genesis = chain.GetGenesisAccount(settings);
                 var genesisAccount = chain.ConsensusNodes[0].Wallet.Accounts.Single(a => a.IsMultiSigContract());
+                var genesisContract = chain.CreateGenesisContract();
+                var genesisAddress = Neo.Wallets.Helper.ToAddress(genesisContract.ScriptHash, chain.AddressVersion);
 
                 if (Json)
                 {
@@ -47,7 +48,12 @@ namespace NeoExpress.Commands
                     using var _ = writer.WriteObject();
 
                     writer.WritePropertyName(ExpressChainExtensions.GENESIS);
-                    writer.WriteAccount(genesisAccount, ExpressChainExtensions.GENESIS);
+                    using (var __ = writer.WriteObject())
+                    {
+                        writer.WriteProperty("account-label", ExpressChainExtensions.GENESIS);
+                        writer.WriteProperty("address", genesisAddress);
+                        writer.WriteProperty("script-hash", genesisContract.ScriptHash.ToString());
+                    }
 
                     foreach (var node in chain.ConsensusNodes)
                     {
@@ -61,8 +67,11 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
+                    var genesisScriptHash = Neo.IO.Helper.ToArray(genesisContract.ScriptHash);
+
                     console.Out.WriteLine(ExpressChainExtensions.GENESIS);
-                    console.Out.WriteAccount(genesisAccount);
+                    console.Out.WriteLine($"  {genesisAddress}");
+                    console.Out.WriteLine($"    script hash: {BitConverter.ToString(genesisScriptHash)}");
 
                     foreach (var node in chain.ConsensusNodes)
                     {

@@ -90,10 +90,9 @@ namespace NeoExpress.Commands
                 }
 
                 var settings = chain.GetProtocolSettings();
-                var wallet = DevWallet.FromExpressWallet(settings, node.Wallet);
-                var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+                var contract = chain.CreateGenesisContract();
                 RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                    settings.Network, settings.AddressVersion, multiSigAccount.ScriptHash);
+                    settings.Network, settings.AddressVersion, contract.ScriptHash);
                 fileSystem.Directory.Move(checkpointTempPath, nodePath);
 
                 return checkPointArchive;

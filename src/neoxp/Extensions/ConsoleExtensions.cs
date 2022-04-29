@@ -11,6 +11,16 @@ namespace NeoExpress
 {
     static class ConsoleExtensions
     {
+        public static void WriteWallet(this TextWriter writer, ExpressWallet wallet)
+        {
+            writer.WriteLine(wallet.Name);
+
+            foreach (var account in wallet.Accounts)
+            {
+                writer.WriteAccount(account);
+            }
+        }
+
         public static void WriteAccount(this TextWriter writer, ExpressWalletAccount account)
         {
             var keyPair = new Neo.Wallets.KeyPair(Convert.FromHexString(account.PrivateKey));
@@ -39,18 +49,12 @@ namespace NeoExpress
             var scriptHash = account.GetScriptHash();
 
             using var _ = writer.WriteObject();
-            writer.WritePropertyName("wallet-name");
-            writer.WriteValue(walletName);
-            writer.WritePropertyName("account-label");
-            writer.WriteValue(account.IsDefault ? "Default" : account.Label);
-            writer.WritePropertyName("address");
-            writer.WriteValue(address);
-            writer.WritePropertyName("script-hash");
-            writer.WriteValue(scriptHash.ToString());
-            writer.WritePropertyName("private-key");
-            writer.WriteValue(Convert.ToHexString(keyPair.PrivateKey));
-            writer.WritePropertyName("public-key");
-            writer.WriteValue(Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
+            writer.WriteProperty("wallet-name", walletName);
+            writer.WriteProperty("account-label", account.Label ?? (account.IsDefault ? "Default" : string.Empty));
+            writer.WriteProperty("address", address);
+            writer.WriteProperty("script-hash", scriptHash.ToString());
+            writer.WriteProperty("private-key", Convert.ToHexString(keyPair.PrivateKey));
+            writer.WriteProperty("public-key", Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
         }
 
         public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)

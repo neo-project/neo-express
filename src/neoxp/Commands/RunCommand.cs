@@ -11,18 +11,19 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly IFileSystem fileSystem;
+        readonly IExpressFile expressFile;
 
-        public RunCommand(IFileSystem fileSystem)
+        public RunCommand(IExpressFile expressFile)
         {
-            this.fileSystem = fileSystem;
+            this.expressFile = expressFile;
+        }
+
+        public RunCommand(CommandLineApplication app) : this(app.GetExpressFile())
+        {
         }
 
         [Argument(0, Description = "Index of node to run")]
         internal int NodeIndex { get; init; } = 0;
-
-        
-        internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Time between blocks")]
         internal uint? SecondsPerBlock { get; }
@@ -33,34 +34,26 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
+        internal Task<int> OnExecuteAsync(CommandLineApplication app, CancellationToken token) => app.ExecuteAsync(this.ExecuteAsync, token);
+
+        internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
         {
-            try
+            var chain = expressFile.Chain;
+            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
             {
-                var (chain, _) = fileSystem.LoadExpressChain(Input);
-                if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
-                {
-                    throw new Exception("Invalid node index");
-                }
-
-                var node = chain.ConsensusNodes[NodeIndex];
-                var nodePath = fileSystem.GetNodePath(node);
-                if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
-                var storageProvider = Discard
-                    ? RocksDbStorageProvider.OpenForDiscard(nodePath)
-                    : RocksDbStorageProvider.Open(nodePath);
-
-                using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-                await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
-
-                return 0;
+                throw new Exception("Invalid node index");
             }
-            catch (Exception ex)
-            {
-                app.WriteException(ex);
-                return 1;
-            }
+
+            var node = chain.ConsensusNodes[NodeIndex];
+            var nodePath = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+
+            var storageProvider = Discard
+                ? RocksDbStorageProvider.OpenForDiscard(nodePath)
+                : RocksDbStorageProvider.Open(nodePath);
+
+            using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
+            await Node.NodeUtility.RunAsync(chain, storageProvider, node, Trace, console, SecondsPerBlock, token);
         }
     }
 }

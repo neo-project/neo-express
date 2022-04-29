@@ -75,15 +75,6 @@ namespace NeoExpress
             writer.WritePropertyName(property);
             writer.WriteValue(value);
         }
-        public static void WriteWallet(this TextWriter writer, ExpressWallet wallet)
-        {
-            writer.WriteLine(wallet.Name);
-
-            foreach (var account in wallet.Accounts)
-            {
-                writer.WriteAccount(account);
-            }
-        }
 
         public static void WriteJson(this JsonWriter writer, Neo.IO.Json.JObject json)
         {

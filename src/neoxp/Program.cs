@@ -26,7 +26,7 @@ namespace NeoExpress
         typeof(StopCommand),
         typeof(TransferCommand),
         typeof(WalletCommand))]
-    class Program
+    partial class Program
     {
         public static async Task<int> Main(string[] args)
         {
@@ -39,8 +39,8 @@ namespace NeoExpress
             var app = new CommandLineApplication<Program>();
             app.Conventions
                 .UseDefaultConventions()
-                .AddConvention(new StackTraceConvention())
                 .AddConvention(new InputFileConvention())
+                .AddConvention(new StackTraceConvention())
                 .UseConstructorInjection(services);
 
             try

@@ -1,6 +1,7 @@
 using System;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit.Models;
 
 namespace NeoExpress.Commands
 {
@@ -18,12 +19,8 @@ namespace NeoExpress.Commands
         {
         }
 
-
         [Argument(0, Description = "Index of node to reset")]
         internal int? NodeIndex { get; }
-
-        
-        internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; }
@@ -46,7 +43,7 @@ namespace NeoExpress.Commands
             {
                 for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    fileSystem.ResetNode(chain.ConsensusNodes[i], Force);
+                    ResetNode(fileSystem, chain.ConsensusNodes[i], Force);
                     console.Out.WriteLine($"node {i} reset");
                 }
             }
@@ -58,9 +55,30 @@ namespace NeoExpress.Commands
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                fileSystem.ResetNode(chain.ConsensusNodes[nodeIndex], Force);
+                ResetNode(fileSystem, chain.ConsensusNodes[nodeIndex], Force);
                 console.Out.WriteLine($"node {nodeIndex} reset");
             }
         }
+
+        internal static void ResetNode(IFileSystem fileSystem, ExpressConsensusNode node, bool force)
+        {
+            if (node.IsRunning())
+            {
+                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
+                throw new InvalidOperationException($"node {scriptHash} currently running");
+            }
+
+            var nodePath = fileSystem.GetNodePath(node);
+            if (fileSystem.Directory.Exists(nodePath))
+            {
+                if (!force)
+                {
+                    throw new InvalidOperationException("--force must be specified when resetting a node");
+                }
+
+                fileSystem.Directory.Delete(nodePath, true);
+            }
+        }
+
     }
 }

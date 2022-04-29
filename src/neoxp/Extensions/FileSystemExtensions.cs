@@ -42,26 +42,6 @@ namespace NeoExpress
             return (chain, path);
         }
 
-        public static void ResetNode(this IFileSystem fileSystem, ExpressConsensusNode node, bool force)
-        {
-            if (node.IsRunning())
-            {
-                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
-                throw new InvalidOperationException($"node {scriptHash} currently running");
-            }
-
-            var nodePath = fileSystem.GetNodePath(node);
-            if (fileSystem.Directory.Exists(nodePath))
-            {
-                if (!force)
-                {
-                    throw new InvalidOperationException("--force must be specified when resetting a node");
-                }
-
-                fileSystem.Directory.Delete(nodePath, true);
-            }
-        }
-
         public static string ResolveExpressFileName(this IFileSystem fileSystem, string path)
             => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
 
@@ -148,62 +128,6 @@ namespace NeoExpress
             return (checkpointPath, mode);
         }
 
-        internal static string RestoreCheckpoint(this IFileSystem fileSystem, ExpressChain chain, string checkPointArchive, bool force)
-        {
-            if (chain.ConsensusNodes.Count != 1)
-            {
-                throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-            }
-
-            checkPointArchive = fileSystem.ResolveCheckpointFileName(checkPointArchive);
-            if (!fileSystem.File.Exists(checkPointArchive))
-            {
-                throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
-            }
-
-            var node = chain.ConsensusNodes[0];
-            if (node.IsRunning())
-            {
-                var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
-                throw new InvalidOperationException($"node {scriptHash} currently running");
-            }
-
-            string checkpointTempPath;
-            do
-            {
-                checkpointTempPath = fileSystem.Path.Combine(
-                    fileSystem.Path.GetTempPath(),
-                    fileSystem.Path.GetRandomFileName());
-            }
-            while (fileSystem.Directory.Exists(checkpointTempPath));
-            using var folderCleanup = Nito.Disposables.AnonymousDisposable.Create(() =>
-            {
-                if (fileSystem.Directory.Exists(checkpointTempPath))
-                {
-                    fileSystem.Directory.Delete(checkpointTempPath, true);
-                }
-            });
-
-            var nodePath = fileSystem.GetNodePath(node);
-            if (fileSystem.Directory.Exists(nodePath))
-            {
-                if (!force)
-                {
-                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
-                }
-
-                fileSystem.Directory.Delete(nodePath, true);
-            }
-
-            var settings = chain.GetProtocolSettings();
-            var wallet = Models.DevWallet.FromExpressWallet(settings, node.Wallet);
-            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                settings.Network, settings.AddressVersion, multiSigAccount.ScriptHash);
-            fileSystem.Directory.Move(checkpointTempPath, nodePath);
-
-            return checkPointArchive;
-        }
 
         public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, Neo.ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
         {

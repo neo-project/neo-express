@@ -73,14 +73,14 @@ namespace NeoExpress.Commands
                     {
                         var node = chain.ConsensusNodes[i];
                         await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
-                        fileSystem.ResetNode(node, true);
+                        ResetCommand.ResetNode(fileSystem, node, true);
                     }
                 }
                 else
                 {
                     var checkpoint = Resolve(root, Reset.value);
                     await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
-                    fileSystem.RestoreCheckpoint(chain, checkpoint, true);
+                    CheckpointCommand.Restore.RestoreCheckpoint(fileSystem, chain, checkpoint, true);
                 }
             }
 

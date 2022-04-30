@@ -170,11 +170,11 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.FastForward> cmd:
                         {
-                            var timestampDelta = FastForwardCommand.ParseTimestampDelta(cmd.Model.TimestampDelta);
-                            await txExec.ExpressNode.FastForwardAsync(
+                            await writer.WriteLineAsync($"Fast forwarding {cmd.Model.Count} blocks").ConfigureAwait(false);
+                            await FastForwardCommand.ExecuteAsync(
+                                txExec.ExpressNode, 
                                 cmd.Model.Count,
-                                timestampDelta).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"{cmd.Model.Count} empty blocks minted").ConfigureAwait(false);
+                                cmd.Model.TimestampDelta).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:

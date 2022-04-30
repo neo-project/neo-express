@@ -3,7 +3,6 @@ using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 
 namespace NeoExpress.Commands

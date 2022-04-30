@@ -116,7 +116,6 @@ namespace NeoExpress
             return false;
         }
 
-
         public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
         {
             ArgumentNullException.ThrowIfNull(@this);
@@ -204,19 +203,7 @@ namespace NeoExpress
 
 
 
-        public static bool TryParseScriptHash(this string name, byte addressVersion, [MaybeNullWhen(false)] out UInt160 hash)
-        {
-            try
-            {
-                hash = name.ToScriptHash(addressVersion);
-                return true;
-            }
-            catch
-            {
-                hash = null;
-                return false;
-            }
-        }
+
 
         public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
         {

@@ -29,12 +29,13 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
-                    using var expressNode = chain.GetExpressNode(fileSystem);
+                    await Task.CompletedTask;
+                    // var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    // using var expressNode = chain.GetExpressNode(fileSystem);
 
-                    var parsedHash = await expressNode.ParseBlockableScriptHashAsync(ScriptHash).ConfigureAwait(false);
-                    var isBlocked = await expressNode.GetIsBlockedAsync(parsedHash).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
+                    // var parsedHash = await expressNode.ParseBlockableScriptHashAsync(ScriptHash).ConfigureAwait(false);
+                    // var isBlocked = await expressNode.GetIsBlockedAsync(parsedHash).ConfigureAwait(false);
+                    // await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
                     return 0;
                 }
                 catch (Exception ex)

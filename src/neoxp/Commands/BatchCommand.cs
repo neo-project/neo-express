@@ -202,11 +202,14 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
                         {
-                            await txExec.SetPolicyAsync(
+                            var txHash = await PolicyCommand.Set.ExecuteAsync(
+                                txExec.ExpressNode,
                                 cmd.Model.Policy,
                                 cmd.Model.Value,
                                 cmd.Model.Account,
                                 cmd.Model.Password).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Submitted {txHash} policy set transaction")
+                                .ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:

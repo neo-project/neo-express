@@ -26,7 +26,7 @@ namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
-        static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, StringComparison comparison, out UInt160 scriptHash)
         {
             UInt160? _scriptHash = null;
             for (int i = 0; i < contracts.Count; i++)
@@ -48,49 +48,21 @@ namespace NeoExpress
             return _scriptHash != null;
         }
 
-        public static async Task<UInt160> ParseBlockableScriptHashAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<OneOf<UInt160,OneOf.Types.NotFound>> TryGetContractHashAsync(this IExpressNode expressNode, string name)
         {
-            var chain = expressNode.Chain;
-
-            // only check express chain wallets to block, not consensus nodes or genesis account
-            if (chain.Wallets != null && chain.Wallets.Count > 0)
-            {
-                for (int i = 0; i < chain.Wallets.Count; i++)
-                {
-                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return chain.Wallets[i].DefaultAccount.GetScriptHash();
-                    }
-                }
-            }
-
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            if (TryGetContractHash(contracts, name, out var contractHash, comparison))
+            if (TryGetContractHash(contracts, name, StringComparison.OrdinalIgnoreCase, out var contractHash))
             {
-                // don't even try to block native contracts
-                if (NativeContract.Contracts.Any(c => c.Hash == contractHash))
-                {
-                    throw new Exception($"Can't block native contract {name}");
-                }
-                else
-                {
-                    return contractHash;
-                }
+                return contractHash;
             }
-
-            if (name.TryParseScriptHash(chain.AddressVersion, out var scriptHash))
-            {
-                return scriptHash;
-            }
-
-            throw new Exception($"{name} script hash not found");
+            return default(OneOf.Types.NotFound);
         }
 
         public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
             ContractParameterParser.TryGetUInt160 tryGetContract =
-                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
+                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, comparison, out scriptHash);
 
             return new ContractParameterParser(expressNode.ProtocolSettings, expressNode.Chain.TryResolveAccountHash, tryGetContract);
         }

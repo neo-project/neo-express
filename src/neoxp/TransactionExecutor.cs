@@ -327,87 +327,31 @@ namespace NeoExpress
             await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
         }
 
-        public async Task SetPolicyAsync(PolicySettings policy, decimal value, string account, string password)
-        {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
-            {
-                throw new Exception($"{account} account not found.");
-            }
-
-            var (hash, operation) = policy switch
-            {
-                PolicySettings.GasPerBlock => (NativeContract.NEO.Hash, "setGasPerBlock"),
-                PolicySettings.MinimumDeploymentFee => (NativeContract.ContractManagement.Hash, "setMinimumDeploymentFee"),
-                PolicySettings.CandidateRegistrationFee => (NativeContract.NEO.Hash, "setRegisterPrice"),
-                PolicySettings.OracleRequestFee => (NativeContract.Oracle.Hash, "setPrice"),
-                PolicySettings.NetworkFeePerByte => (NativeContract.Policy.Hash, "setFeePerByte"),
-                PolicySettings.StorageFeeFactor => (NativeContract.Policy.Hash, "setStoragePrice"),
-                PolicySettings.ExecutionFeeFactor => (NativeContract.Policy.Hash, "setExecFeeFactor"),
-                _ => throw new InvalidOperationException($"Unknown policy {policy}"),
-            };
-
-
-            // Calculate decimal count : https://stackoverflow.com/a/13493771/1179731
-            int decimalCount = BitConverter.GetBytes(decimal.GetBits(value)[3])[2];
-            var decimalValue = new BigDecimal(value, (byte)decimalCount);
-            using var builder = new ScriptBuilder();
-            if (GasPolicySetting(policy))
-            {
-                if (decimalValue.Decimals > NativeContract.GAS.Decimals)
-                    throw new InvalidOperationException($"{policy} policy requires a value with no more than eight decimal places");
-                decimalValue = decimalValue.ChangeDecimals(NativeContract.GAS.Decimals);
-                builder.EmitDynamicCall(hash, operation, decimalValue.Value);
-            }
-            else
-            {
-                if (decimalCount != 0)
-                    throw new InvalidOperationException($"{policy} policy requires a whole number value");
-                if (decimalValue.Value > uint.MaxValue)
-                    throw new InvalidOperationException($"{policy} policy requires a value less than {uint.MaxValue}");
-                builder.EmitDynamicCall(hash, operation, (uint)decimalValue.Value);
-            }
-
-            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"{policy} Policy Set", json).ConfigureAwait(false);
-
-            static bool GasPolicySetting(PolicySettings policy)
-            {
-                switch (policy)
-                {
-                    case PolicySettings.GasPerBlock:
-                    case PolicySettings.MinimumDeploymentFee:
-                    case PolicySettings.CandidateRegistrationFee:
-                    case PolicySettings.OracleRequestFee:
-                    case PolicySettings.NetworkFeePerByte:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-        }
 
         public async Task BlockAsync(string scriptHash, string account, string password)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
-            {
-                throw new Exception($"{account} account not found.");
-            }
+            await Task.CompletedTask;
+            // if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
+            // {
+            //     throw new Exception($"{account} account not found.");
+            // }
 
-            var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
+            // var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
+            // var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
+            // await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
         }
 
         public async Task UnblockAsync(string scriptHash, string account, string password)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
-            {
-                throw new Exception($"{account} account not found.");
-            }
+            await Task.CompletedTask;
+            // if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
+            // {
+            //     throw new Exception($"{account} account not found.");
+            // }
 
-            var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
+            // var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
+            // var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
+            // await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
         }
     }
 }

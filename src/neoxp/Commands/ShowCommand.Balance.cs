@@ -1,9 +1,9 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.VM;
 
 namespace NeoExpress.Commands
 {
@@ -12,11 +12,15 @@ namespace NeoExpress.Commands
         [Command("balance", Description = "Show asset balance for account")]
         internal class Balance
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressFile expressFile;
 
-            public Balance(IFileSystem fileSystem)
+            public Balance(IExpressFile expressFile)
             {
-                this.fileSystem = fileSystem;
+                this.expressFile = expressFile;
+            }
+
+            public Balance(CommandLineApplication app) : this(app.GetExpressFile())
+            {
             }
 
             [Argument(0, Description = "Asset to show balance of (symbol or script hash)")]
@@ -27,30 +31,28 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
-            
-            internal string Input { get; init; } = string.Empty;
+            internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
-                {
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
-                    if (!chain.TryResolveAccountHash(Account, out var accountHash))
-                    {
-                        throw new Exception($"{Account} account not found.");
-                    }
+                using var expressNode = expressFile.GetExpressNode();
+                var accountHash = expressNode.Chain.ResolveAccountHash(Account);
+                var assetHash = await expressNode.ParseAssetAsync(Asset).ConfigureAwait(false);
 
-                    using var expressNode = chain.GetExpressNode(fileSystem);
-                    var (rpcBalance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
-                    var balance = new BigDecimal(rpcBalance.Amount, contract.Decimals);
-                    await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance}");
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(assetHash, "balanceOf", accountHash);
+                builder.EmitDynamicCall(assetHash, "symbol");
+                builder.EmitDynamicCall(assetHash, "decimals");
+
+                var result = await expressNode.InvokeAsync(builder.ToArray()).ConfigureAwait(false);
+                if (result.State != VMState.HALT) throw new Exception(result.Exception ?? "Unknown Invoke Failure");
+                var balanceOf = result.Stack[0].GetInteger();
+                var symbol = result.Stack[1].GetString();
+                var decimals = (byte)result.Stack[2].GetInteger();
+                
+                var balance = new BigDecimal(balanceOf, decimals);
+
+                await console.Out.WriteLineAsync($"{symbol} ({assetHash}) balance: {balance}");
             }
         }
     }

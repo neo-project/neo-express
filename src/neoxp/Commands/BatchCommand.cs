@@ -80,7 +80,7 @@ namespace NeoExpress.Commands
                 {
                     var checkpoint = Resolve(root, Reset.value);
                     await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
-                    CheckpointCommand.Restore.RestoreCheckpoint(fileSystem, chain, checkpoint, true);
+                    CheckpointCommand.Restore.Execute(chain, checkpoint, true, fileSystem);
                 }
             }
 

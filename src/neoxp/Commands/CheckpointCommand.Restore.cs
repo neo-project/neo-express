@@ -36,11 +36,11 @@ namespace NeoExpress.Commands
 
             internal void Execute(IFileSystem fileSystem, IConsole console)
             {
-                var checkpointPath = RestoreCheckpoint(fileSystem, expressFile.Chain, Name, Force);
+                var checkpointPath = Execute(expressFile.Chain, Name, Force, fileSystem);
                 console.WriteLine($"Checkpoint {fileSystem.Path.GetFileName(checkpointPath)} successfully restored");
             }
 
-            internal static string RestoreCheckpoint(IFileSystem fileSystem, ExpressChain chain, string checkPointArchive, bool force)
+            internal static string Execute(ExpressChain chain, string checkPointArchive, bool force, IFileSystem fileSystem)
             {
                 if (chain.ConsensusNodes.Count != 1)
                 {

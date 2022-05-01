@@ -41,8 +41,7 @@ namespace NeoExpress.Commands
             }
 
             public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)>
-                ExecuteAsync(IExpressNode expressNode, string checkpointPath,
-                                      IFileSystem fileSystem, bool force)
+                ExecuteAsync(IExpressNode expressNode, string checkpointPath, IFileSystem fileSystem, bool force)
             {
                 if (expressNode.Chain.ConsensusNodes.Count != 1)
                 {

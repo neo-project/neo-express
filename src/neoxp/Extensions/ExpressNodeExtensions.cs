@@ -26,6 +26,16 @@ namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
+        public static Task<RpcInvokeResult> GetResultAsync(this IExpressNode expressNode, ScriptBuilder builder)
+            => expressNode.GetResultAsync(builder.ToArray());
+
+        public static async Task<RpcInvokeResult> GetResultAsync(this IExpressNode expressNode, Script script)
+        {
+            var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
+            if (result.State != VMState.HALT) throw new Exception(result.Exception ?? string.Empty);
+            return result;
+        }
+
         static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, StringComparison comparison, out UInt160 scriptHash)
         {
             UInt160? _scriptHash = null;

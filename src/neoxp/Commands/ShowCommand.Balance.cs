@@ -44,8 +44,7 @@ namespace NeoExpress.Commands
                 builder.EmitDynamicCall(assetHash, "symbol");
                 builder.EmitDynamicCall(assetHash, "decimals");
 
-                var result = await expressNode.InvokeAsync(builder.ToArray()).ConfigureAwait(false);
-                if (result.State != VMState.HALT) throw new Exception(result.Exception ?? "Unknown Invoke Failure");
+                var result = await expressNode.GetResultAsync(builder).ConfigureAwait(false);
                 var balanceOf = result.Stack[0].GetInteger();
                 var symbol = result.Stack[1].GetString();
                 var decimals = (byte)result.Stack[2].GetInteger();

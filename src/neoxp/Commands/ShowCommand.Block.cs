@@ -105,7 +105,7 @@ namespace NeoExpress.Commands
                 builder.Emit(OpCode.LDLOC0, OpCode.LDLOC1);
 
                 using var expressNode = expressFile.GetExpressNode();
-                var result = await expressNode.InvokeAsync(builder.ToArray()).ConfigureAwait(false);
+                var result = await expressNode.GetResultAsync(builder).ConfigureAwait(false);
                 if (result.State != VMState.HALT) throw new Exception(result.Exception ?? string.Empty);
                 
                 var block = (Neo.VM.Types.Array)result.Stack[0];

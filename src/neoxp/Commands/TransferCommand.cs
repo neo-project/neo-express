@@ -78,8 +78,7 @@ namespace NeoExpress.Commands
                 // transfer operation takes 4 arguments, amount is 3rd parameter
                 // push null onto the stack and then switch positions of the top
                 // two items on eval stack so null is 4th arg and balance is 3rd
-                builder.Emit(OpCode.PUSHNULL);
-                builder.Emit(OpCode.SWAP);
+                builder.Emit(OpCode.PUSHNULL, OpCode.SWAP);
                 builder.EmitPush(receiverHash);
                 builder.EmitPush(senderHash);
                 builder.EmitPush(4);
@@ -90,13 +89,9 @@ namespace NeoExpress.Commands
             }
             else if (decimal.TryParse(quantity, out var amount))
             {
-                var results = await expressNode.InvokeAsync(assetHash.MakeScript("decimals"))
-                    .ConfigureAwait(false);
-                if (results.Stack.Length == 0 || results.Stack[0].Type != Neo.VM.Types.StackItemType.Integer)
-                {
-                    throw new Exception();
-                }
-                var decimals = (byte)(results.Stack[0].GetInteger());
+                var decimalsScript = assetHash.MakeScript("decimals");
+                var result = await expressNode.GetResultAsync(decimalsScript).ConfigureAwait(false);
+                var decimals = (byte)(result.Stack[0].GetInteger());
                 builder.EmitDynamicCall(assetHash, "transfer", senderHash, receiverHash, amount.ToBigInteger(decimals), null);
             }
             else

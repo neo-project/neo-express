@@ -194,10 +194,12 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
                         {
-                            await txExec.BlockAsync(
+                            var txHash = await PolicyCommand.Block.ExecuteAsync(txExec.ExpressNode,
                                 cmd.Model.ScriptHash,
                                 cmd.Model.Account,
                                 cmd.Model.Password).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Submitted {txHash} account block transaction")
+                                .ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
@@ -229,10 +231,12 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
                         {
-                            await txExec.UnblockAsync(
+                            var txHash = await PolicyCommand.Unblock.ExecuteAsync(txExec.ExpressNode,
                                 cmd.Model.ScriptHash,
                                 cmd.Model.Account,
                                 cmd.Model.Password).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Submitted {txHash} account unblock transaction")
+                                .ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Transfer> cmd:

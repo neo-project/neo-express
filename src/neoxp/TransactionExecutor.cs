@@ -15,15 +15,12 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OneOf;
 using OneOf.Types;
 
 namespace NeoExpress
 {
-    using All = OneOf.Types.All;
-
     class TransactionExecutor : IDisposable
     {
         readonly IExpressNode expressNode;
@@ -325,33 +322,6 @@ namespace NeoExpress
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
-        }
-
-
-        public async Task BlockAsync(string scriptHash, string account, string password)
-        {
-            await Task.CompletedTask;
-            // if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
-            // {
-            //     throw new Exception($"{account} account not found.");
-            // }
-
-            // var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            // var txHash = await expressNode.BlockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
-            // await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
-        }
-
-        public async Task UnblockAsync(string scriptHash, string account, string password)
-        {
-            await Task.CompletedTask;
-            // if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
-            // {
-            //     throw new Exception($"{account} account not found.");
-            // }
-
-            // var parsedHash = await expressNode.ParseBlockableScriptHashAsync(scriptHash).ConfigureAwait(false);
-            // var txHash = await expressNode.UnblockAccountAsync(wallet, accountHash, parsedHash).ConfigureAwait(false);
-            // await writer.WriteTxHashAsync(txHash, $"{scriptHash} blocked", json).ConfigureAwait(false);
         }
     }
 }

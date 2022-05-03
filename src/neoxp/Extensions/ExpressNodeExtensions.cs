@@ -228,9 +228,15 @@ namespace NeoExpress
             throw new Exception("invalid script results");
         }
 
+
+        public static Task<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)
+        {
+            return GetPolicyAsync(script => expressNode.InvokeAsync(script));
+        }
+        
         public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
         {
-            return ExpressNodeExtensions.GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
+            return GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
         }
 
         static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
@@ -259,11 +265,6 @@ namespace NeoExpress
                 StorageFeeFactor = (uint)result.Stack[5].GetInteger(),
                 ExecutionFeeFactor = (uint)result.Stack[6].GetInteger(),
             };
-        }
-
-        public static Task<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)
-        {
-            return GetPolicyAsync(script => expressNode.InvokeAsync(script));
         }
 
         public static async Task<bool> GetIsBlockedAsync(this IExpressNode expressNode, UInt160 scriptHash)

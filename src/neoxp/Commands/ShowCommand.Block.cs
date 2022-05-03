@@ -106,7 +106,6 @@ namespace NeoExpress.Commands
 
                 using var expressNode = expressFile.GetExpressNode();
                 var result = await expressNode.GetResultAsync(builder).ConfigureAwait(false);
-                if (result.State != VMState.HALT) throw new Exception(result.Exception ?? string.Empty);
                 
                 var block = (Neo.VM.Types.Array)result.Stack[0];
                 var txArray = (Neo.VM.Types.Array)result.Stack[1];

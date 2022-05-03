@@ -115,13 +115,13 @@ namespace NeoExpress.Commands
                 using var _ = writer.WriteObject();
                 writer.WriteProperty("hash", $"{new UInt256(block[0].GetSpan())}");
                 writer.WriteProperty("version", (uint)block[1].GetInteger());
-                writer.WriteProperty("previous-hash", $"{new UInt256(block[2].GetSpan())}");
-                writer.WriteProperty("merkle-root", $"{new UInt256(block[3].GetSpan())}");
-                writer.WriteProperty("timestamp", (ulong)block[4].GetInteger());
+                writer.WriteProperty("previousblockhash", $"{new UInt256(block[2].GetSpan())}");
+                writer.WriteProperty("merkleroot", $"{new UInt256(block[3].GetSpan())}");
+                writer.WriteProperty("time", (ulong)block[4].GetInteger());
                 writer.WriteProperty("nonce", (ulong)block[5].GetInteger());
                 writer.WriteProperty("index", (uint)block[6].GetInteger());
-                writer.WriteProperty("primary-index", (byte)block[7].GetInteger());
-                writer.WriteProperty("next-consensus", new UInt160(block[8].GetSpan()).ToAddress(expressFile.Chain.AddressVersion));
+                writer.WriteProperty("primary", (byte)block[7].GetInteger());
+                writer.WriteProperty("nextconsensus", new UInt160(block[8].GetSpan()).ToAddress(expressFile.Chain.AddressVersion));
                 
                 writer.WritePropertyName("transactions");
                 using var __ = writer.WriteArray();
@@ -132,9 +132,9 @@ namespace NeoExpress.Commands
                     writer.WriteProperty("version", (byte)tx[1].GetInteger());
                     writer.WriteProperty("nonce", (uint)tx[2].GetInteger());
                     writer.WriteProperty("sender", new UInt160(tx[3].GetSpan()).ToAddress(expressFile.Chain.AddressVersion));
-                    writer.WriteProperty("system-fee", (long)tx[4].GetInteger());
-                    writer.WriteProperty("network-fee", (long)tx[5].GetInteger());
-                    writer.WriteProperty("valid-until-block", (uint)tx[6].GetInteger());
+                    writer.WriteProperty("sysfee", (long)tx[4].GetInteger());
+                    writer.WriteProperty("netfee", (long)tx[5].GetInteger());
+                    writer.WriteProperty("validuntilblock", (uint)tx[6].GetInteger());
                     writer.WriteProperty("script", Convert.ToBase64String(tx[7].GetSpan()));
                 }
             }

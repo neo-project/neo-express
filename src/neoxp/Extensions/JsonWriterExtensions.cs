@@ -58,6 +58,12 @@ namespace NeoExpress
             writer.WriteValue(value);
         }
 
+        public static void WriteProperty(this JsonWriter writer, string property, long value)
+        {
+            writer.WritePropertyName(property);
+            writer.WriteValue(value);
+        }
+
         public static void WriteProperty(this JsonWriter writer, string property, uint value)
         {
             writer.WritePropertyName(property);
@@ -65,6 +71,12 @@ namespace NeoExpress
         }
 
         public static void WriteProperty(this JsonWriter writer, string property, ushort value)
+        {
+            writer.WritePropertyName(property);
+            writer.WriteValue(value);
+        }
+
+        public static void WriteProperty(this JsonWriter writer, string property, ulong value)
         {
             writer.WritePropertyName(property);
             writer.WriteValue(value);

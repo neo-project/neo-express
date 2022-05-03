@@ -117,29 +117,10 @@ namespace NeoExpress.Node
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
-        public async Task<Block> GetBlockAsync(UInt256 blockHash)
-        {
-            var rpcBlock = await rpcClient.GetBlockAsync(blockHash.ToString()).ConfigureAwait(false);
-            return rpcBlock.Block;
-        }
-
-        public async Task<Block> GetBlockAsync(uint blockIndex)
-        {
-            var rpcBlock = await rpcClient.GetBlockAsync(blockIndex.ToString()).ConfigureAwait(false);
-            return rpcBlock.Block;
-        }
-
         public async Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
         {
             var contractState = await rpcClient.GetContractStateAsync(scriptHash.ToString()).ConfigureAwait(false);
             return contractState.Manifest;
-        }
-
-        public async Task<Block> GetLatestBlockAsync()
-        {
-            var hash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
-            var rpcBlock = await rpcClient.GetBlockAsync(hash).ConfigureAwait(false);
-            return rpcBlock.Block;
         }
 
         public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
@@ -148,11 +129,6 @@ namespace NeoExpress.Node
             var response = await rpcClient.GetRawTransactionAsync(hash).ConfigureAwait(false);
             var log = await rpcClient.GetApplicationLogAsync(hash).ConfigureAwait(false);
             return (response.Transaction, log);
-        }
-
-        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
-        {
-            return rpcClient.GetTransactionHeightAsync(txHash.ToString());
         }
 
         public async Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)

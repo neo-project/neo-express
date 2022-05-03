@@ -236,12 +236,6 @@ namespace NeoExpress.Node
             }
         }
 
-        public Task<Block> GetBlockAsync(UInt256 blockHash)
-            => MakeAsync(() => NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockHash));
-
-        public Task<Block> GetBlockAsync(uint blockIndex)
-            => MakeAsync(() => NativeContract.Ledger.GetBlock(neoSystem.StoreView, blockIndex));
-
         ContractManifest GetContract(UInt160 scriptHash)
         {
             var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
@@ -251,15 +245,6 @@ namespace NeoExpress.Node
 
         public Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
             => MakeAsync(() => GetContract(scriptHash));
-
-        Block GetLatestBlock()
-        {
-            using var snapshot = neoSystem.GetSnapshot();
-            var hash = NativeContract.Ledger.CurrentHash(snapshot);
-            return NativeContract.Ledger.GetBlock(snapshot, hash);
-        }
-
-        public Task<Block> GetLatestBlockAsync() => MakeAsync(GetLatestBlock);
 
         (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
         {
@@ -274,17 +259,6 @@ namespace NeoExpress.Node
 
         public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
             => MakeAsync(() => GetTransaction(txHash));
-
-        uint GetTransactionHeight(UInt256 txHash)
-        {
-            var height = NativeContract.Ledger.GetTransactionState(neoSystem.StoreView, txHash)?.BlockIndex;
-            return height.HasValue
-                ? height.Value
-                : throw new Exception("Unknown Transaction");
-        }
-
-        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
-            => MakeAsync(() => GetTransactionHeight(txHash));
 
         IReadOnlyList<(TokenContract contract, BigInteger balance)> ListBalances(UInt160 address)
         {

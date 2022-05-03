@@ -120,10 +120,14 @@ namespace NeoExpress
 
         public static async Task<IReadOnlyList<ECPoint>> ListOracleNodesAsync(this IExpressNode expressNode)
         {
-            var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.Ledger.Hash, "currentIndex");
+            var indexResult = await expressNode.InvokeAsync(builder.ToArray()).ConfigureAwait(false);
+            if (indexResult.State != VMState.HALT) throw new Exception(indexResult.Exception ?? string.Empty);
+            var currentIndex = indexResult.Stack[0].GetInteger();
 
             var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
-            var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
+            var index = new ContractParameter(ContractParameterType.Integer) { Value = currentIndex + 1 };
 
             using var sb = new ScriptBuilder();
             sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "getDesignatedByRole", role, index);
@@ -212,26 +216,6 @@ namespace NeoExpress
             }
 
             throw new Exception("invalid script results");
-        }
-
-        public static async Task<Block> GetBlockAsync(this IExpressNode expressNode, string blockHash)
-        {
-            if (string.IsNullOrEmpty(blockHash))
-            {
-                return await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
-            }
-
-            if (UInt256.TryParse(blockHash, out var uint256))
-            {
-                return await expressNode.GetBlockAsync(uint256).ConfigureAwait(false);
-            }
-
-            if (uint.TryParse(blockHash, out var index))
-            {
-                return await expressNode.GetBlockAsync(index).ConfigureAwait(false);
-            }
-
-            throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
         }
 
         public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)

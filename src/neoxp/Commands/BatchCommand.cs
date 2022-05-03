@@ -179,9 +179,12 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
                         {
-                            await txExec.OracleEnableAsync(
+                            var txHash = await OracleCommand.Enable.ExecuteAsync(
+                                txExec.ExpressNode,
                                 cmd.Model.Account,
                                 cmd.Model.Password).ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Submitted {txHash} oracle enable transaction")
+                                .ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Oracle.Response> cmd:

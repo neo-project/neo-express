@@ -53,8 +53,8 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode(Trace);
                 var password = expressFile.ResolvePassword(Account, Password);
+                using var expressNode = expressFile.GetExpressNode(Trace);
                 var txHash = await ExecuteAsync(expressNode, Policy, Value, Account, password).ConfigureAwait(false);
                 await console.Out.WriteTxHashAsync(txHash, $"{Policy} Policy Set", Json).ConfigureAwait(false);
             }

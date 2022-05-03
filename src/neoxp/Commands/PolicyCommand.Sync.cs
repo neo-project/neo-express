@@ -66,8 +66,9 @@ namespace NeoExpress.Commands
                     }
                 }
 
+                var password = expressFile.ResolvePassword(Account, Password);
                 using var expressNode = expressFile.GetExpressNode(Trace);
-                var txHash = await ExecuteAsync(expressNode, policy, Account, Password).ConfigureAwait(false);
+                var txHash = await ExecuteAsync(expressNode, policy, Account, password).ConfigureAwait(false);
                 await console.Out.WriteTxHashAsync(txHash, "Policy Sync}", Json).ConfigureAwait(false);
             }
 

@@ -113,21 +113,6 @@ namespace NeoExpress
             throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
         }
 
-        public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, IEnumerable<ECPoint> oracles)
-        {
-            var roleParam = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
-            var oraclesParam = new ContractParameter(ContractParameterType.Array)
-            {
-                Value = oracles
-                    .Select(o => new ContractParameter(ContractParameterType.PublicKey) { Value = o })
-                    .ToList()
-            };
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "designateAsRole", roleParam, oraclesParam);
-            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
-        }
-
         public static async Task<IReadOnlyList<ECPoint>> ListOracleNodesAsync(this IExpressNode expressNode)
         {
             using var builder = new ScriptBuilder();

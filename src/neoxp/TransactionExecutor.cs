@@ -201,20 +201,6 @@ namespace NeoExpress
             }
         }
 
-        public async Task OracleEnableAsync(string accountName, string password)
-        {
-            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, fileSystem, out var wallet, out var accountHash))
-            {
-                throw new Exception($"{accountName} account not found.");
-            }
-
-            var oracles = expressNode.Chain.ConsensusNodes
-                .Select(n => DevWalletAccount.FromExpressWalletAccount(expressNode.Chain.GetProtocolSettings(), n.Wallet.DefaultAccount ?? throw new Exception()))
-                .Select(a => a.GetKey()?.PublicKey ?? throw new Exception());
-            var txHash = await expressNode.DesignateOracleRolesAsync(wallet, accountHash, oracles).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, "Oracle Enable", json).ConfigureAwait(false);
-        }
-
         public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null)
         {
             if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");

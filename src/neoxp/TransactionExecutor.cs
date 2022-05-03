@@ -274,54 +274,5 @@ namespace NeoExpress
                 && uri != null
                 && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
         }
-
-        public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
-        {
-            if (TryParseRpcUri(rpcUri, out var uri))
-            {
-                using var rpcClient = new RpcClient(uri);
-                return await rpcClient.GetPolicyAsync().ConfigureAwait(false);
-            }
-
-            return new None();
-        }
-
-        public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string path)
-        {
-            if (fileSystem.File.Exists(path))
-            {
-                using var stream = fileSystem.File.OpenRead(path);
-                using var reader = new StreamReader(stream);
-                var text = await reader.ReadToEndAsync().ConfigureAwait(false);
-                var json = Neo.IO.Json.JObject.Parse(text);
-                try
-                {
-                    return PolicyValues.FromJson(json);
-                }
-                catch { }
-            }
-
-            return new None();
-        }
-
-        public async Task SetPolicyAsync(PolicyValues policyValues, string account, string password)
-        {
-            if (!expressNode.Chain.TryGetSigningAccount(account, password, fileSystem, out var wallet, out var accountHash))
-            {
-                throw new Exception($"{account} account not found.");
-            }
-
-            using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "setGasPerBlock", policyValues.GasPerBlock.Value);
-            builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "setMinimumDeploymentFee", policyValues.MinimumDeploymentFee.Value);
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "setRegisterPrice", policyValues.CandidateRegistrationFee.Value);
-            builder.EmitDynamicCall(NativeContract.Oracle.Hash, "setPrice", policyValues.OracleRequestFee.Value);
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setFeePerByte", policyValues.NetworkFeePerByte.Value);
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setStoragePrice", policyValues.StorageFeeFactor);
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.ExecutionFeeFactor);
-
-            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
-        }
     }
 }

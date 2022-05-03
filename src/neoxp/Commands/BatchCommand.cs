@@ -216,12 +216,19 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
                         {
-                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(
-                                Resolve(root, cmd.Model.Source))
+                            var loadResult = await PolicyCommand.Sync.TryLoadPolicyFromFileSystemAsync(
+                                    fileSystem, 
+                                    Resolve(root, cmd.Model.Source))
                                 .ConfigureAwait(false);
-                            if (values.TryPickT0(out var policyValues, out _))
+                            if (loadResult.TryPickT0(out var policy, out _))
                             {
-                                await txExec.SetPolicyAsync(policyValues, cmd.Model.Account, cmd.Model.Password);
+                                var txHash = await PolicyCommand.Sync.ExecuteAsync(
+                                    txExec.ExpressNode,
+                                    policy,
+                                    cmd.Model.Account,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                await writer.WriteLineAsync($"Submitted {txHash} policy sync transaction")
+                                        .ConfigureAwait(false);
                             }
                             else
                             {

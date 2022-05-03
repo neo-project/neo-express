@@ -7,6 +7,8 @@ using Neo;
 using Neo.SmartContract.Manifest;
 using Newtonsoft.Json;
 using System.IO.Abstractions;
+using Neo.VM;
+using Neo.SmartContract.Native;
 
 namespace NeoExpress.Commands
 {
@@ -15,46 +17,38 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Get information for a deployed contract")]
         internal class Get
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressFile expressFile;
 
-            public Get(IFileSystem fileSystem)
+            public Get(IExpressFile expressFile)
             {
-                this.fileSystem = fileSystem;
+                this.expressFile = expressFile;
+            }
+
+            public Get(CommandLineApplication app) : this(app.GetExpressFile())
+            {
             }
 
             [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
             internal string Contract { get; init; } = string.Empty;
 
-            
-            internal string Input { get; init; } = string.Empty;
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
-                {
-                    await ExecuteAsync(console.Out).ConfigureAwait(false);
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
-            }
-
-            internal async Task ExecuteAsync(TextWriter writer)
-            {
-                var (chain, _) = fileSystem.LoadExpressChain(Input);
-                var expressNode = chain.GetExpressNode(fileSystem);
-
-                using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-                jsonWriter.WriteStartArray();
+                using var expressNode = expressFile.GetExpressNode();
+                using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                using var _ = writer.WriteArray();
 
                 if (UInt160.TryParse(Contract, out var contractHash))
                 {
-                    var manifest = await expressNode.GetContractAsync(contractHash).ConfigureAwait(false);
-                    WriteContract(jsonWriter, contractHash, manifest);
+                    using var builder = new ScriptBuilder();
+                    builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "getContract", contractHash);
+                    var result = await expressNode.GetResultAsync(builder).ConfigureAwait(false);
+                    var manifest = new ContractManifest();
+                    ((Neo.SmartContract.IInteroperable)manifest).FromStackItem(result.Stack[0]);
+                    WriteContract(writer, contractHash, manifest);
                 }
                 else
                 {
@@ -62,7 +56,7 @@ namespace NeoExpress.Commands
 
                     foreach (var (hash, manifest) in contracts)
                     {
-                        WriteContract(jsonWriter, hash, manifest);
+                        WriteContract(writer, hash, manifest);
                     }
                 }
 

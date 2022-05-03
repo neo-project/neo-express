@@ -32,7 +32,6 @@ namespace NeoExpress
         Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes);
         Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta);
 
-        Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
         Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
 
         Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);

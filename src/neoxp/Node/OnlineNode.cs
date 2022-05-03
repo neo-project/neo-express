@@ -117,12 +117,6 @@ namespace NeoExpress.Node
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
-        public async Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
-        {
-            var contractState = await rpcClient.GetContractStateAsync(scriptHash.ToString()).ConfigureAwait(false);
-            return contractState.Manifest;
-        }
-
         public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
         {
             var hash = txHash.ToString();

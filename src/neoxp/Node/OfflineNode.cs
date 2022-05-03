@@ -236,16 +236,6 @@ namespace NeoExpress.Node
             }
         }
 
-        ContractManifest GetContract(UInt160 scriptHash)
-        {
-            var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-            if (contractState == null) throw new Exception("Unknown contract");
-            return contractState.Manifest;
-        }
-
-        public Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
-            => MakeAsync(() => GetContract(scriptHash));
-
         (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
         {
             var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);

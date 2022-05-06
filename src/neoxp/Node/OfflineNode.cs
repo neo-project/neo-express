@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -227,7 +228,7 @@ namespace NeoExpress.Node
             return block.Hash;
         }
 
-        async Task RelayBlockAsync(Block block)
+        public async Task RelayBlockAsync(Block block)
         {
             var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block).ConfigureAwait(false);
             if (blockRelay.Result != VerifyResult.Succeed)

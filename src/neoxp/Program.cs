@@ -19,6 +19,7 @@ namespace NeoExpress
         typeof(FastForwardCommand),
         typeof(OracleCommand),
         typeof(PolicyCommand),
+        typeof(ResyncCommand),
         typeof(ResetCommand),
         typeof(RunCommand),
         typeof(ShowCommand),

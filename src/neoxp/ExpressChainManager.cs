@@ -342,14 +342,13 @@ namespace NeoExpress
             return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
-        OfflineNode GetOfflineNode(bool offlineTrace = false)
+        public OfflineNode GetOfflineNode(bool offlineTrace = false)
         {
-            var node = chain.ConsensusNodes[0];
-            var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
 
+            var node = chain.ConsensusNodes[0];
             return new Node.OfflineNode(ProtocolSettings,
-                RocksDbStorageProvider.Open(nodePath),
+                (RocksDbStorageProvider)GetNodeStorageProvider(node, false),
                 node.Wallet,
                 chain,
                 offlineTrace);

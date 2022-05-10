@@ -34,6 +34,11 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
+                if (expressFile.Chain.ConsensusNodes.Count != 1)
+                {
+                    throw new NotSupportedException("Checkpoint create is only supported on single node express instances");
+                }
+
                 using var expressNode = expressFile.GetExpressNode();
                 var (checkpointPath, mode) = await ExecuteAsync(expressNode, Name, fileSystem, Force)
                     .ConfigureAwait(false);
@@ -45,7 +50,7 @@ namespace NeoExpress.Commands
             {
                 if (expressNode.Chain.ConsensusNodes.Count != 1)
                 {
-                    throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(expressNode));
+                    throw new NotSupportedException("Checkpoint create is only supported on single node express instances");
                 }
 
                 checkpointPath = fileSystem.ResolveCheckpointFileName(checkpointPath);

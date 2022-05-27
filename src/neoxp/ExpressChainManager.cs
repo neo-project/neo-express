@@ -11,7 +11,6 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.BlockchainToolkit.SmartContract;
 using Neo.Ledger;
 using Neo.Plugins;
 using NeoExpress.Models;

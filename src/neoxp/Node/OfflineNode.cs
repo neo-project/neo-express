@@ -40,13 +40,8 @@ namespace NeoExpress.Node
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
         public OfflineNode(ProtocolSettings settings, RocksDbStorageProvider rocksDbStorageProvider, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
-            : this(settings, rocksDbStorageProvider, DevWallet.FromExpressWallet(settings, nodeWallet), chain, enableTrace)
         {
-        }
-
-        public OfflineNode(ProtocolSettings settings, RocksDbStorageProvider rocksDbStorageProvider, Wallet nodeWallet, ExpressChain chain, bool enableTrace)
-        {
-            this.nodeWallet = nodeWallet;
+            this.nodeWallet = DevWallet.FromExpressWallet(settings, nodeWallet);
             this.chain = chain;
             this.rocksDbStorageProvider = rocksDbStorageProvider;
             applicationEngineProvider = enableTrace ? new ApplicationEngineProvider() : null;
@@ -350,24 +345,20 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
             => MakeAsync(ListTokenContracts);
 
-        IReadOnlyList<ExpressStorage> ListStorages(UInt160 scriptHash)
+        IReadOnlyList<KeyValuePair<string, string>> ListStorages(UInt160 scriptHash)
         {
             using var snapshot = neoSystem.GetSnapshot();
             var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
 
-            if (contract == null) return Array.Empty<ExpressStorage>();
+            if (contract == null) return Array.Empty<KeyValuePair<string, string>>();
 
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
             return snapshot.Find(prefix)
-                .Select(t => new ExpressStorage()
-                {
-                    Key = t.Key.Key.ToHexString(),
-                    Value = t.Value.Value.ToHexString(),
-                })
+                .Select(t => KeyValuePair.Create(t.Key.Key.ToHexString(), t.Value.Value.ToHexString()))
                 .ToList();
         }
 
-        public Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
+        public Task<IReadOnlyList<KeyValuePair<string, string>>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
 
         public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)

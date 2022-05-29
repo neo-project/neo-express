@@ -16,8 +16,12 @@ namespace NeoExpress.Node
                 this.expressStorage = expressStorage;
             }
 
-            public IStore GetStore(string path) => string.IsNullOrEmpty(path)
-                ? expressStorage.Chain : throw new ArgumentException(nameof(path));
+            public IStore GetStore(string path)
+                => string.IsNullOrEmpty(path)
+                    ? expressStorage.Chain 
+                    : path.Equals("ConsensusState")
+                        ? expressStorage.ConsensusState 
+                        : throw new ArgumentException($"Unknown ExpressStorage {path}", nameof(path));
         }
     }
 }

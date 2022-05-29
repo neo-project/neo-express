@@ -7,6 +7,7 @@ namespace NeoExpress
     {
         string Name { get; }
         IStore Chain { get; }
+        IStore ConsensusState { get; }
         IStore AppLogs { get; }
         IStore Notifications { get; }
     }

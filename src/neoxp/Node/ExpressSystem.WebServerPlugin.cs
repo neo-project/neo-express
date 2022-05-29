@@ -34,16 +34,16 @@ namespace NeoExpress.Node
 
             public void Start()
             {
-                if (neoSystem is null) throw new Exception();
-                if (rpcServer is null) throw new Exception();
-                if (webHost is not null) throw new Exception();
+                if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+                if (rpcServer is null) throw new NullReferenceException(nameof(rpcServer));
+                if (webHost is not null) throw new InvalidOperationException($"{nameof(webHost)} already initialized");
 
                 webHost = BuildWebHost(rpcSettings.BindAddress, rpcSettings.Port, rpcServer.ProcessAsync);
             }
 
             protected override void OnSystemLoaded(NeoSystem system)
             {
-                if (neoSystem is not null)
+                if (neoSystem is null)
                 {
                     neoSystem = system;
                     rpcServer = new RpcServer(system, rpcSettings);

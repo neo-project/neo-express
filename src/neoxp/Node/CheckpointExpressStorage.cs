@@ -15,6 +15,7 @@ namespace NeoExpress.Node
         public string Name => nameof(CheckpointExpressStorage);
         public IStore Chain { get; }
         public IStore AppLogs { get; }
+        public IStore ConsensusState { get; }
         public IStore Notifications { get; }
 
         private CheckpointExpressStorage()
@@ -22,6 +23,7 @@ namespace NeoExpress.Node
             disposable = NoopDisposable.Instance;
             Chain = new MemoryTrackingStore(NullStore.Instance);
             AppLogs = new MemoryTrackingStore(NullStore.Instance);
+            ConsensusState = new MemoryTrackingStore(NullStore.Instance);
             Notifications = new MemoryTrackingStore(NullStore.Instance);
         }
 
@@ -40,6 +42,8 @@ namespace NeoExpress.Node
                 CreateReadOnlyStore(db, db.GetDefaultColumnFamily()));
             AppLogs = new MemoryTrackingStore(
                 GetReadOnlyStore(db, RocksDbExpressStorage.APP_LOGS_COLUMN_FAMILY_NAME));
+            ConsensusState = new MemoryTrackingStore(
+                GetReadOnlyStore(db, nameof(ConsensusState)));
             Notifications = new MemoryTrackingStore(
                 GetReadOnlyStore(db, RocksDbExpressStorage.NOTIFICATIONS_COLUMN_FAMILY_NAME));
 

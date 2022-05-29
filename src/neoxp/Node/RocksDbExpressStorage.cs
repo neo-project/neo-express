@@ -14,6 +14,7 @@ namespace NeoExpress.Node
 
         public string Name => nameof(RocksDbExpressStorage);
         public IStore Chain { get; }
+        public IStore ConsensusState { get; }
         public IStore AppLogs { get; }
         public IStore Notifications { get; }
 
@@ -25,6 +26,7 @@ namespace NeoExpress.Node
         {
             this.db = db;
             Chain = CreateStore(db, db.GetDefaultColumnFamily());
+            ConsensusState = CreateStore(db, GetOrCreateColumnFamily(db, nameof(ConsensusState)));
             AppLogs = CreateStore(db, GetOrCreateColumnFamily(db, APP_LOGS_COLUMN_FAMILY_NAME));
             Notifications = CreateStore(db, GetOrCreateColumnFamily(db, NOTIFICATIONS_COLUMN_FAMILY_NAME));
             

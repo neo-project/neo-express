@@ -345,20 +345,20 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
             => MakeAsync(ListTokenContracts);
 
-        IReadOnlyList<KeyValuePair<string, string>> ListStorages(UInt160 scriptHash)
+        IReadOnlyList<(string key, string value)> ListStorages(UInt160 scriptHash)
         {
             using var snapshot = neoSystem.GetSnapshot();
             var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
 
-            if (contract == null) return Array.Empty<KeyValuePair<string, string>>();
+            if (contract == null) return Array.Empty<(string, string)>();
 
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
             return snapshot.Find(prefix)
-                .Select(t => KeyValuePair.Create(t.Key.Key.ToHexString(), t.Value.Value.ToHexString()))
+                .Select(t => (t.Key.Key.ToHexString(), t.Value.Value.ToHexString()))
                 .ToList();
         }
 
-        public Task<IReadOnlyList<KeyValuePair<string, string>>> ListStoragesAsync(UInt160 scriptHash)
+        public Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
             => MakeAsync(() => ListStorages(scriptHash));
 
         public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)

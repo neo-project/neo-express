@@ -225,7 +225,7 @@ namespace NeoExpress.Node
             }
         }
 
-        public async Task<IReadOnlyList<KeyValuePair<string, string>>> ListStoragesAsync(UInt160 scriptHash)
+        public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
         {
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
@@ -233,11 +233,11 @@ namespace NeoExpress.Node
             if (json != null && json is JArray array)
             {
                 return array
-                    .Select(s => KeyValuePair.Create(s["key"].AsString(), s["value"].AsString()))
+                    .Select(s => (s["key"].AsString(), s["value"].AsString()))
                     .ToList();
             }
 
-            return Array.Empty<KeyValuePair<string, string>>();
+            return Array.Empty<(string, string)>();
         }
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)

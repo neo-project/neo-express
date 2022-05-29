@@ -56,9 +56,9 @@ namespace NeoExpress.Commands
                         {
                             await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
                             await jsonWriter.WritePropertyNameAsync("key").ConfigureAwait(false);
-                            await jsonWriter.WriteValueAsync($"0x{storages[j].Key}").ConfigureAwait(false);
+                            await jsonWriter.WriteValueAsync($"0x{storages[j].key}").ConfigureAwait(false);
                             await jsonWriter.WritePropertyNameAsync("value").ConfigureAwait(false);
-                            await jsonWriter.WriteValueAsync($"0x{storages[j].Value}").ConfigureAwait(false);
+                            await jsonWriter.WriteValueAsync($"0x{storages[j].value}").ConfigureAwait(false);
                             await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
                         }
                         await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
@@ -81,8 +81,8 @@ namespace NeoExpress.Commands
                             await writer.WriteLineAsync($"contract:  {contracts[i].hash}").ConfigureAwait(false);
                             for (int j = 0; j < storages.Count; j++)
                             {
-                                await writer.WriteLineAsync($"  key:     0x{storages[j].Key}").ConfigureAwait(false);
-                                await writer.WriteLineAsync($"    value: 0x{storages[j].Value}").ConfigureAwait(false);
+                                await writer.WriteLineAsync($"  key:     0x{storages[j].key}").ConfigureAwait(false);
+                                await writer.WriteLineAsync($"    value: 0x{storages[j].value}").ConfigureAwait(false);
                             }
                         }
                     }

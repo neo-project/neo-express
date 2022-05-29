@@ -22,8 +22,7 @@ using NeoExpress.Models;
 
 namespace NeoExpress.Node
 {
-
-    internal class OnlineNode : IExpressNode
+    class OnlineNode : IExpressNode
     {
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;

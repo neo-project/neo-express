@@ -10,7 +10,7 @@ using Neo.SmartContract.Native;
 
 namespace NeoExpress.Node
 {
-    public partial class ExpressSystem
+    partial class ExpressSystem
     {
         class ConsolePlugin : Plugin, ILogPlugin
         {

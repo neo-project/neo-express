@@ -15,8 +15,6 @@ using Neo.IO;
 using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
-using Neo.Persistence;
-using Neo.Plugins;
 using Neo.VM;
 using NeoExpress.Models;
 using static Neo.Ledger.Blockchain;
@@ -25,11 +23,9 @@ namespace NeoExpress.Node
 {
     public partial class ExpressSystem : IDisposable
     {
-        const string APP_LOGS_STORE_PATH = "app-logs-store";
-        const string NOTIFICATIONS_STORE_PATH = "notifications-store";
-
         readonly ExpressChain chain;
         readonly ExpressConsensusNode node;
+        readonly IExpressStorage expressStorage;
         readonly NeoSystem neoSystem;
         readonly ApplicationEngineProviderPlugin? appEngineProviderPlugin;
         readonly ConsolePlugin consolePlugin;
@@ -37,28 +33,28 @@ namespace NeoExpress.Node
         readonly PersistenceWrapper persistenceWrapper;
         readonly StorageProviderPlugin storageProviderPlugin;
         readonly WebServerPlugin webServerPlugin;
-        readonly IStore appLogsStore;
-        readonly IStore notificationsStore;
-
 
         public void Dispose()
         {
             neoSystem.Dispose();
         }
 
-        public ExpressSystem(ExpressChain chain, ExpressConsensusNode node, IStorageProvider storageProvider, IConsole console, bool trace, uint? secondsPerBlock)
+        ExpressSystem(ExpressChain chain, ExpressConsensusNode node, IExpressStorage expressStorage, IConsole console, bool trace, uint? secondsPerBlock)
         {
             this.chain = chain;
             this.node = node;
+            this.expressStorage = expressStorage;
 
-            appLogsStore = storageProvider.GetStore(APP_LOGS_STORE_PATH);
-            notificationsStore = storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
-
-            var settings = GetProtocolSettings(chain, secondsPerBlock);
+            var _secondsPerBlock = secondsPerBlock.HasValue
+                ? secondsPerBlock.Value
+                : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
+                    ? secondsPerBlockSetting
+                    : 0;
+            var settings = chain.GetProtocolSettings(_secondsPerBlock);
 
             consolePlugin = new ConsolePlugin(console);
             appEngineProviderPlugin = trace ? new ApplicationEngineProviderPlugin() : null;
-            storageProviderPlugin = new StorageProviderPlugin(storageProvider);
+            storageProviderPlugin = new StorageProviderPlugin(expressStorage);
             persistenceWrapper = new PersistenceWrapper(this.OnPersist);
             webServerPlugin = new WebServerPlugin(chain, node);
             dbftPlugin = new DBFTPlugin(GetConsensusSettings(chain));
@@ -89,7 +85,7 @@ namespace NeoExpress.Node
 
                     // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
                     // Do not remove or re-word this console output:
-                    consolePlugin.WriteLine($"Neo express is running ({storageProviderPlugin.Provider.GetType().Name})");
+                    consolePlugin.WriteLine($"Neo express is running ({expressStorage.Name})");
 
                     var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, webServerPlugin.CancellationToken);
                     linkedToken.Token.WaitHandle.WaitOne();
@@ -110,8 +106,8 @@ namespace NeoExpress.Node
         {
             if (appExecutions.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
 
-            using var appLogsSnapshot = appLogsStore.GetSnapshot();
-            using var notificationsSnapshot = notificationsStore.GetSnapshot();
+            using var appLogsSnapshot = expressStorage.AppLogs.GetSnapshot();
+            using var notificationsSnapshot = expressStorage.Notifications.GetSnapshot();
 
             var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
             BinaryPrimitives.WriteUInt32BigEndian(
@@ -138,7 +134,7 @@ namespace NeoExpress.Node
                             notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
                             (ushort)j);
                         var record = new NotificationRecord(appExec.Notifications[j]);
-                        notificationsSnapshot.Put(notificationIndex.ToArray(), record.ToArray());
+                        notificationsSnapshot.Put(notificationIndex, record.ToArray());
                     }
                 }
             }
@@ -151,16 +147,6 @@ namespace NeoExpress.Node
 
             appLogsSnapshot.Commit();
             notificationsSnapshot.Commit();
-        }
-
-        static Neo.ProtocolSettings GetProtocolSettings(ExpressChain chain, uint? secondsPerBlock)
-        {
-            var _secondsPerBlock = secondsPerBlock.HasValue
-                ? secondsPerBlock.Value
-                : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
-                    ? secondsPerBlockSetting
-                    : 0;
-            return chain.GetProtocolSettings(_secondsPerBlock);
         }
 
         static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)

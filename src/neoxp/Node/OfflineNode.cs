@@ -27,7 +27,7 @@ using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
 {
-    internal sealed class OfflineNode : IDisposable, IExpressNode
+    class OfflineNode : IDisposable, IExpressNode
     {
         readonly NeoSystem neoSystem;
         readonly ApplicationEngineProvider? applicationEngineProvider;

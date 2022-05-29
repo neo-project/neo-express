@@ -1,28 +1,23 @@
+using System;
 using System.Linq;
 using Neo.Persistence;
 using Neo.Plugins;
 
 namespace NeoExpress.Node
 {
-    public partial class ExpressSystem
+    partial class ExpressSystem
     {
         class StorageProviderPlugin : Plugin, IStorageProvider
         {
-            readonly IStorageProvider provider;
+            readonly IExpressStorage expressStorage;
 
-            public IStorageProvider Provider => provider;
-
-            public StorageProviderPlugin(IStorageProvider provider)
+            public StorageProviderPlugin(IExpressStorage expressStorage)
             {
-                this.provider = provider;
+                this.expressStorage = expressStorage;
             }
 
-            public IStore GetStore(string path) => provider.GetStore(path);
-
-            static IStorageProvider GetStorageProvider()
-            {
-                return (IStorageProvider)Plugin.Plugins.Single(p => p is IStorageProvider);
-            }
+            public IStore GetStore(string path) => string.IsNullOrEmpty(path)
+                ? expressStorage.Chain : throw new ArgumentException(nameof(path));
         }
     }
 }

@@ -16,7 +16,7 @@ using Neo.Plugins;
 namespace NeoExpress.Node
 {
 
-    public partial class ExpressSystem
+    partial class ExpressSystem
     {
         class WebServerPlugin : Neo.Plugins.Plugin
         {

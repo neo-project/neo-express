@@ -3,12 +3,12 @@ using System;
 namespace NeoExpress.Node
 {
 
-    public partial class ExpressSystem
+    partial class ExpressSystem
     {
         // EventWrapper class receives events from the Akka EventStream and invokes the provided callback.
         // Code taken from neo-gui project:
         //   https://github.com/neo-project/neo-node/blob/master/neo-gui/IO/Actors/EventWrapper.cs
-        internal class EventWrapper<T> : Akka.Actor.UntypedActor
+        class EventWrapper<T> : Akka.Actor.UntypedActor
         {
             readonly Action<T> callback;
 

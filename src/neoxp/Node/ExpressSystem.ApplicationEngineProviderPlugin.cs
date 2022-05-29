@@ -14,9 +14,9 @@ using Neo.VM;
 
 namespace NeoExpress.Node
 {
-    public partial class ExpressSystem
+    partial class ExpressSystem
     {
-        public class ApplicationEngineProviderPlugin : Plugin, IApplicationEngineProvider
+        class ApplicationEngineProviderPlugin : Plugin, IApplicationEngineProvider
         {
             public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, Diagnostic diagnostic)
             {

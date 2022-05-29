@@ -8,8 +8,7 @@ using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
 {
-
-    public partial class ExpressSystem
+    partial class ExpressSystem
     {
         class PersistenceWrapper : Plugin, IPersistencePlugin
         {
@@ -24,8 +23,8 @@ namespace NeoExpress.Node
 
             void OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
             {
-                if (block is null) throw new ArgumentNullException();
-                if (appExecutions is null) throw new ArgumentNullException();
+                if (block is null) throw new ArgumentNullException(nameof(block));
+                if (appExecutions is null) throw new ArgumentNullException(nameof(appExecutions));
 
                 this.block = block;
                 this.appExecutions = applicationExecutedList;
@@ -33,10 +32,10 @@ namespace NeoExpress.Node
 
             void OnCommit(NeoSystem system, Block block, DataCache snapshot)
             {
-                if (this.block is null) throw new Exception();
-                if (this.appExecutions is null) throw new Exception();
+                if (this.block is null) throw new InvalidOperationException(nameof(block));
+                if (this.appExecutions is null) throw new InvalidOperationException(nameof(appExecutions));
 
-                if (block.Hash != this.block.Hash) throw new Exception();
+                if (block.Hash != this.block.Hash) throw new ArgumentException(nameof(block));
                 onPersist(this.block, this.appExecutions);
             }
         }

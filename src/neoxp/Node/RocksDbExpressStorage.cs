@@ -7,14 +7,10 @@ namespace NeoExpress.Node
 {
     class RocksDbExpressStorage : IExpressStorage
     {
-        internal const string APP_LOGS_COLUMN_FAMILY_NAME = "app-logs-store";
-        internal const string NOTIFICATIONS_COLUMN_FAMILY_NAME = "notifications-store";
-
         readonly RocksDb db;
 
         public string Name => nameof(RocksDbExpressStorage);
         public IStore Chain { get; }
-        public IStore ConsensusState { get; }
         public IStore AppLogs { get; }
         public IStore Notifications { get; }
 
@@ -26,9 +22,8 @@ namespace NeoExpress.Node
         {
             this.db = db;
             Chain = CreateStore(db, db.GetDefaultColumnFamily());
-            ConsensusState = CreateStore(db, GetOrCreateColumnFamily(db, nameof(ConsensusState)));
-            AppLogs = CreateStore(db, GetOrCreateColumnFamily(db, APP_LOGS_COLUMN_FAMILY_NAME));
-            Notifications = CreateStore(db, GetOrCreateColumnFamily(db, NOTIFICATIONS_COLUMN_FAMILY_NAME));
+            AppLogs = CreateStore(db, GetOrCreateColumnFamily(db, ExpressSystem.APP_LOGS_STORE_NAME));
+            Notifications = CreateStore(db, GetOrCreateColumnFamily(db, ExpressSystem.NOTIFICATIONS_COLUMN_STORE_NAME));
             
             static IStore CreateStore(RocksDb db, ColumnFamilyHandle columnFamily)
                 => new RocksDbStore(db, columnFamily, readOnly: false, shared: true);

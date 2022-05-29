@@ -23,7 +23,11 @@ namespace NeoExpress.Node
 {
     partial class ExpressSystem : IDisposable
     {
-        internal const string GLOBAL_PREFIX = "Global\\";
+        public const string APP_LOGS_STORE_NAME = "app-logs-store";
+        public const string CONSENSUS_STATE_STORE_NAME = "ConsensusState";
+        public const string NOTIFICATIONS_COLUMN_STORE_NAME = "notifications-store";
+
+        public const string GLOBAL_PREFIX = "Global\\";
 
         readonly ExpressChain chain;
         readonly ExpressConsensusNode node;
@@ -155,7 +159,9 @@ namespace NeoExpress.Node
         {
             var settings = new Dictionary<string, string>()
                 {
-                    { "PluginConfiguration:Network", $"{chain.Network}" }
+                    { "PluginConfiguration:Network", $"{chain.Network}" },
+                    { "PluginConfiguration:RecoveryLogs", CONSENSUS_STATE_STORE_NAME },
+                    { "IgnoreRecoveryLogs", "true" }
                 };
 
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();

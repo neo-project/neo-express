@@ -21,8 +21,10 @@ using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
 {
-    public partial class ExpressSystem : IDisposable
+    partial class ExpressSystem : IDisposable
     {
+        internal const string GLOBAL_PREFIX = "Global\\";
+
         readonly ExpressChain chain;
         readonly ExpressConsensusNode node;
         readonly IExpressStorage expressStorage;
@@ -39,7 +41,7 @@ namespace NeoExpress.Node
             neoSystem.Dispose();
         }
 
-        ExpressSystem(ExpressChain chain, ExpressConsensusNode node, IExpressStorage expressStorage, IConsole console, bool trace, uint? secondsPerBlock)
+        public ExpressSystem(ExpressChain chain, ExpressConsensusNode node, IExpressStorage expressStorage, IConsole console, bool trace, uint? secondsPerBlock)
         {
             this.chain = chain;
             this.node = node;
@@ -73,7 +75,7 @@ namespace NeoExpress.Node
                     var wallet = DevWallet.FromExpressWallet(neoSystem.Settings, node.Wallet);
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
 
-                    using var mutex = new Mutex(true, NodeUtility.GLOBAL_PREFIX + defaultAccount.ScriptHash);
+                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
                     neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {

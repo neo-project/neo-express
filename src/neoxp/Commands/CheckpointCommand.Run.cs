@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using NeoExpress.Node;
 using Nito.Disposables;
 
 namespace NeoExpress.Commands
@@ -47,30 +48,17 @@ namespace NeoExpress.Commands
                     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
                 }
 
-                var storageProvider = GetCheckpointStorageProvider(chain, fileSystem, Name);
-                using var disposable = storageProvider as IDisposable ?? NoopDisposable.Instance;
-
-                await Node.NodeUtility.RunAsync(chain, storageProvider, chain.ConsensusNodes[0], Trace, console, SecondsPerBlock, token);
-            }
-
-            internal static Neo.Plugins.IStorageProvider GetCheckpointStorageProvider(ExpressChain chain, IFileSystem fileSystem, string checkPointPath)
-            {
-                if (chain.ConsensusNodes.Count != 1)
-                {
-                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
-                }
-
-                var node = chain.ConsensusNodes[0];
-                if (node.IsRunning()) throw new Exception($"node already running");
-
-                checkPointPath = fileSystem.ResolveCheckpointFileName(checkPointPath);
+                var checkPointPath = fileSystem.ResolveCheckpointFileName(Name);
                 if (!fileSystem.File.Exists(checkPointPath))
                 {
-                    throw new Exception($"Checkpoint {checkPointPath} couldn't be found");
+                    throw new Exception($"Checkpoint {Name} couldn't be found");
                 }
 
-                var contract = chain.CreateGenesisContract();
-                return CheckpointStorageProvider.Open(checkPointPath, chain.Network, chain.AddressVersion, contract.ScriptHash);
+                using var expressStorage = CheckpointExpressStorage.OpenCheckpoint(
+                    checkPointPath, chain.Network, chain.AddressVersion, chain.GetGenesisScriptHash());
+                var expressSystem = new Node.ExpressSystem(
+                    chain, chain.ConsensusNodes[0], expressStorage, console, Trace, SecondsPerBlock);
+                await expressSystem.RunAsync(token);
             }
         }
     }

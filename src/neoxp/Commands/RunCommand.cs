@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Persistence;
+using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -47,12 +48,11 @@ namespace NeoExpress.Commands
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
-            var storageProvider = Discard
-                ? RocksDbStorageProvider.OpenForDiscard(nodePath)
-                : RocksDbStorageProvider.Open(nodePath);
-
-            using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-            await Node.NodeUtility.RunAsync(chain, storageProvider, node, Trace, console, SecondsPerBlock, token);
+            using var expressStorage = Discard
+                ? CheckpointExpressStorage.OpenForDiscard(nodePath)
+                : new RocksDbExpressStorage(nodePath);
+            var expressSystem = new ExpressSystem(chain, node, expressStorage, console, Trace, SecondsPerBlock);
+            await expressSystem.RunAsync(token);
         }
     }
 }

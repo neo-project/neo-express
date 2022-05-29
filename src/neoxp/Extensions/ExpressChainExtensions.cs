@@ -63,6 +63,12 @@ namespace NeoExpress
             return Contract.CreateMultiSigContract(m, publicKeys);
         }
 
+        public static UInt160 GetGenesisScriptHash(this ExpressChain chain)
+        {
+            var contract = CreateGenesisContract(chain);
+            return contract.ScriptHash;
+        }
+
         public static UInt160 ResolveAccountHash(this ExpressChain chain, string name)
             => chain.TryResolveAccountHash(name, out var hash) 
                 ? hash 

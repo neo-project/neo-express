@@ -106,14 +106,18 @@ namespace NeoExpress.Commands
                                 fileSystem,
                                 cmd.Model.Force).ConfigureAwait(false);
                             var checkpointFile = fileSystem.Path.GetFileName(result.path);
-                            await writer.WriteLineAsync($"Created {checkpointFile} checkpoint {result.checkpointMode}").ConfigureAwait(false);
+                            await writer.WriteLineAsync($"Created {checkpointFile} checkpoint {result.checkpointMode}")
+                                .ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
                         {
+                            var (nefFile, manifest) = await fileSystem.LoadContractAsync(cmd.Model.Contract)
+                                .ConfigureAwait(false);
                             var result = await ContractCommand.Deploy.ExecuteAsync(
                                 txExec.ExpressNode,
-                                cmd.Model.Contract,
+                                nefFile,
+                                manifest,
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope,

@@ -52,28 +52,6 @@ namespace NeoExpress
             var provider = RocksDbStorageProvider.Open(nodePath);
             return new Node.OfflineNode(this, node, provider, offlineTrace);
         }
-        
-        public async Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(string contractPath)
-        {
-            var nefTask = Task.Run(() =>
-            {
-                using var stream = fileSystem.File.OpenRead(contractPath);
-                using var reader = new System.IO.BinaryReader(stream, System.Text.Encoding.UTF8, false);
-                return Neo.IO.Helper.ReadSerializable<Neo.SmartContract.NefFile>(reader);
-            });
-
-            var manifestPath = fileSystem.Path.ChangeExtension(contractPath, ".manifest.json");
-            var manifestTask = LoadManifestAsync(fileSystem, manifestPath);
-
-            await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
-            return (await nefTask, await manifestTask);
-
-            static async Task<ContractManifest> LoadManifestAsync(IFileSystem fileSystem, string path)
-            {
-                var bytes = await fileSystem.File.ReadAllBytesAsync(path).ConfigureAwait(false);
-                return ContractManifest.Parse(bytes);                
-            }
-        }
 
         public bool TryResolveSigner(string name, string password, [MaybeNullWhen(false)] out Neo.Wallets.Wallet wallet, out UInt160 accountHash)
         {

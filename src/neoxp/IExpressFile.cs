@@ -12,7 +12,6 @@ namespace NeoExpress
         ExpressChain Chain { get; }
 
         IExpressNode GetExpressNode(bool offlineTrace = false);
-        Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(string contractPath);
         void SaveChain();
         bool TryResolveSigner(string name, string password, [MaybeNullWhen(false)] out Neo.Wallets.Wallet wallet, out UInt160 accountHash);
     }

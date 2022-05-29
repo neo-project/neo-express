@@ -34,11 +34,11 @@ namespace NeoExpress.Commands
             internal Task<int> OnExecuteAsync(CommandLineApplication app)
                 => app.ExecuteAsync(this.ExecuteAsync);
 
-            internal async Task ExecuteAsync(IConsole console)
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
                 using var expressNode = expressFile.GetExpressNode();
                 var accountHash = expressNode.Chain.ResolveAccountHash(Account);
-                var (nefFile, manifest) = await expressNode.ExpressFile.LoadContractAsync(Contract).ConfigureAwait(false);
+                var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
 
                 var contractHash = GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
                 await console.Out.WriteLineAsync($"{contractHash}").ConfigureAwait(false);

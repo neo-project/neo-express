@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -58,11 +59,13 @@ namespace NeoExpress.Commands
             internal Task<int> OnExecuteAsync(CommandLineApplication app)
                 => app.ExecuteAsync(this.ExecuteAsync);
 
-            internal async Task ExecuteAsync(IConsole console)
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
                 using var expressNode = expressFile.GetExpressNode(Trace);
                 var password = expressFile.ResolvePassword(Account, Password);
-                var (txHash, contractHash, manifest) = await ExecuteAsync(expressNode, Contract, Account, password, WitnessScope, Data, Force)
+                var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
+
+                var (txHash, contractHash) = await ExecuteAsync(expressNode, nefFile, manifest, Account, password, WitnessScope, Data, Force)
                     .ConfigureAwait(false);
 
                 if (Json)
@@ -79,12 +82,10 @@ namespace NeoExpress.Commands
                 }
             }
 
-            public static async Task<(UInt256 txHash, UInt160 contractHash, ContractManifest manifest)>
-                ExecuteAsync(IExpressNode expressNode, string contract, string accountName, string password, WitnessScope witnessScope, string data, bool force)
+            public static async Task<(UInt256 txHash, UInt160 contractHash)>
+                ExecuteAsync(IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, string accountName, string password, WitnessScope witnessScope, string data, bool force)
             {
                 var (wallet, accountHash) = expressNode.ExpressFile.ResolveSigner(accountName, password);
-
-                var (nefFile, manifest) = await expressNode.ExpressFile.LoadContractAsync(contract).ConfigureAwait(false);
 
                 // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
                 Neo.VM.Script script = nefFile.Script;
@@ -144,7 +145,7 @@ namespace NeoExpress.Commands
                     .ConfigureAwait(false);
 
                 var contractHash = Neo.SmartContract.Helper.GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
-                return (txHash, contractHash, manifest);
+                return (txHash, contractHash);
             }
         }
     }

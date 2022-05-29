@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
                     using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out); 
                     await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
                     return 0;

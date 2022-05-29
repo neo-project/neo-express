@@ -10,9 +10,9 @@ namespace NeoExpress.Node
         readonly RocksDb db;
 
         public string Name => nameof(RocksDbExpressStorage);
-        public IStore Chain { get; }
-        public IStore AppLogs { get; }
-        public IStore Notifications { get; }
+        public IStore ChainStore { get; }
+        public IStore AppLogsStore { get; }
+        public IStore NotificationsStore { get; }
 
         public RocksDbExpressStorage(string path) : this(RocksDbUtility.OpenDb(path))
         {
@@ -21,9 +21,9 @@ namespace NeoExpress.Node
         public RocksDbExpressStorage(RocksDb db)
         {
             this.db = db;
-            Chain = CreateStore(db, db.GetDefaultColumnFamily());
-            AppLogs = CreateStore(db, GetOrCreateColumnFamily(db, ExpressSystem.APP_LOGS_STORE_NAME));
-            Notifications = CreateStore(db, GetOrCreateColumnFamily(db, ExpressSystem.NOTIFICATIONS_COLUMN_STORE_NAME));
+            ChainStore = CreateStore(db, db.GetDefaultColumnFamily());
+            AppLogsStore = CreateStore(db, GetOrCreateColumnFamily(db, ExpressSystem.APP_LOGS_STORE_NAME));
+            NotificationsStore = CreateStore(db, GetOrCreateColumnFamily(db, ExpressSystem.NOTIFICATIONS_COLUMN_STORE_NAME));
             
             static IStore CreateStore(RocksDb db, ColumnFamilyHandle columnFamily)
                 => new RocksDbStore(db, columnFamily, readOnly: false, shared: true);
@@ -36,9 +36,9 @@ namespace NeoExpress.Node
 
         public void Dispose()
         {
-            Notifications.Dispose();
-            AppLogs.Dispose();
-            Chain.Dispose();
+            NotificationsStore.Dispose();
+            AppLogsStore.Dispose();
+            ChainStore.Dispose();
             db.Dispose();
         }
     }

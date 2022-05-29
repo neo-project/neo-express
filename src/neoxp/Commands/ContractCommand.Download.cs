@@ -59,7 +59,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
 
                     if (chain.ConsensusNodes.Count != 1)
                     {

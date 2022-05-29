@@ -16,9 +16,9 @@ namespace NeoExpress.Commands
         [Command("run", Description = "Run a neo-express checkpoint (discarding changes on shutdown)")]
         internal class Run
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Run(IExpressFile expressFile)
+            public Run(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -42,8 +42,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
             {
-                var chain = expressFile.Chain;
-                if (chain.ConsensusNodes.Count != 1)
+                if (expressFile.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
                 }
@@ -54,10 +53,12 @@ namespace NeoExpress.Commands
                     throw new Exception($"Checkpoint {Name} couldn't be found");
                 }
 
+                // TODO: expressFile.Chain.GetGenesisScriptHash
+                // TODO: Node.ExpressSystem expressFile.Chain
                 using var expressStorage = CheckpointExpressStorage.OpenCheckpoint(
-                    checkPointPath, chain.Network, chain.AddressVersion, chain.GetGenesisScriptHash());
+                    checkPointPath, expressFile.Network, expressFile.AddressVersion, expressFile.Chain.GetGenesisScriptHash());
                 var expressSystem = new Node.ExpressSystem(
-                    chain, chain.ConsensusNodes[0], expressStorage, console, Trace, SecondsPerBlock);
+                    expressFile.Chain, expressFile.ConsensusNodes[0], expressStorage, console, Trace, SecondsPerBlock);
                 await expressSystem.RunAsync(token);
             }
         }

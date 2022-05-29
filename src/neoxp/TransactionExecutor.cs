@@ -23,14 +23,14 @@ namespace NeoExpress
 {
     class TransactionExecutor : IDisposable
     {
-        readonly IExpressNode expressNode;
+        readonly IExpressNode expressNode = null!;
         readonly IFileSystem fileSystem;
         readonly bool json;
         readonly System.IO.TextWriter writer;
 
         public TransactionExecutor(IFileSystem fileSystem, ExpressChain chain, bool trace, bool json, TextWriter writer)
         {
-            expressNode = chain.GetExpressNode(fileSystem, trace);
+            // expressNode = chain.GetExpressNode(fileSystem, trace);
             this.fileSystem = fileSystem;
             this.json = json;
             this.writer = writer;
@@ -103,102 +103,105 @@ namespace NeoExpress
 
         public async Task ContractInvokeAsync(Script script, string accountName, string password, WitnessScope witnessScope, decimal additionalGas = 0m)
         {
-            if (!expressNode.Chain.TryGetSigningAccount(accountName, password, fileSystem, out var wallet, out var accountHash))
-            {
-                throw new Exception($"{accountName} account not found.");
-            }
+            await Task.FromException(new NotImplementedException());
+            // if (!expressNode.Chain.TryGetSigningAccount(accountName, password, fileSystem, out var wallet, out var accountHash))
+            // {
+            //     throw new Exception($"{accountName} account not found.");
+            // }
 
-            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script, additionalGas).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, "Invocation", json).ConfigureAwait(false);
+            // var txHash = await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script, additionalGas).ConfigureAwait(false);
+            // await writer.WriteTxHashAsync(txHash, "Invocation", json).ConfigureAwait(false);
         }
 
         public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)
         {
-            Signer? signer = expressNode.Chain.TryGetSigningAccount(accountName, string.Empty, fileSystem, out _, out var accountHash)
-                ? signer = new Signer
-                {
-                    Account = accountHash,
-                    Scopes = witnessScope,
-                    AllowedContracts = Array.Empty<UInt160>(),
-                    AllowedGroups = Array.Empty<Neo.Cryptography.ECC.ECPoint>()
-                }
-                : null;
+            await Task.FromException(new NotImplementedException());
 
-            var result = await expressNode.InvokeAsync(script, signer).ConfigureAwait(false);
-            if (json)
-            {
-                await writer.WriteLineAsync(result.ToJson().ToString(true)).ConfigureAwait(false);
-            }
-            else
-            {
-                await writer.WriteLineAsync($"VM State:     {result.State}").ConfigureAwait(false);
-                await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
-                if (!string.IsNullOrEmpty(result.Exception))
-                {
-                    await writer.WriteLineAsync($"Exception:   {result.Exception}").ConfigureAwait(false);
-                }
-                if (result.Stack.Length > 0)
-                {
-                    var stack = result.Stack;
-                    await writer.WriteLineAsync("Result Stack:").ConfigureAwait(false);
-                    for (int i = 0; i < stack.Length; i++)
-                    {
-                        await WriteStackItemAsync(writer, stack[i]).ConfigureAwait(false);
-                    }
-                }
-            }
+            // Signer? signer = expressNode.Chain.TryGetSigningAccount(accountName, string.Empty, fileSystem, out _, out var accountHash)
+            //     ? signer = new Signer
+            //     {
+            //         Account = accountHash,
+            //         Scopes = witnessScope,
+            //         AllowedContracts = Array.Empty<UInt160>(),
+            //         AllowedGroups = Array.Empty<Neo.Cryptography.ECC.ECPoint>()
+            //     }
+            //     : null;
 
-            static async Task WriteStackItemAsync(System.IO.TextWriter writer, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
-            {
-                switch (item)
-                {
-                    case Neo.VM.Types.Boolean _:
-                        await WriteLineAsync(item.GetBoolean() ? "true" : "false").ConfigureAwait(false);
-                        break;
-                    case Neo.VM.Types.Integer @int:
-                        await WriteLineAsync(@int.GetInteger().ToString()).ConfigureAwait(false);
-                        break;
-                    case Neo.VM.Types.Buffer buffer:
-                        await WriteLineAsync(Neo.Helper.ToHexString(buffer.GetSpan())).ConfigureAwait(false);
-                        break;
-                    case Neo.VM.Types.ByteString byteString:
-                        await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
-                        break;
-                    case Neo.VM.Types.Null _:
-                        await WriteLineAsync("<null>").ConfigureAwait(false);
-                        break;
-                    case Neo.VM.Types.Array array:
-                        await WriteLineAsync($"Array: ({array.Count})").ConfigureAwait(false);
-                        for (int i = 0; i < array.Count; i++)
-                        {
-                            await WriteStackItemAsync(writer, array[i], indent + 1).ConfigureAwait(false);
-                        }
-                        break;
-                    case Neo.VM.Types.Map map:
-                        await WriteLineAsync($"Map: ({map.Count})").ConfigureAwait(false);
-                        foreach (var m in map)
-                        {
-                            await WriteStackItemAsync(writer, m.Key, indent + 1, "key:   ").ConfigureAwait(false);
-                            await WriteStackItemAsync(writer, m.Value, indent + 1, "value: ").ConfigureAwait(false);
-                        }
-                        break;
-                }
+            // var result = await expressNode.InvokeAsync(script, signer).ConfigureAwait(false);
+            // if (json)
+            // {
+            //     await writer.WriteLineAsync(result.ToJson().ToString(true)).ConfigureAwait(false);
+            // }
+            // else
+            // {
+            //     await writer.WriteLineAsync($"VM State:     {result.State}").ConfigureAwait(false);
+            //     await writer.WriteLineAsync($"Gas Consumed: {result.GasConsumed}").ConfigureAwait(false);
+            //     if (!string.IsNullOrEmpty(result.Exception))
+            //     {
+            //         await writer.WriteLineAsync($"Exception:   {result.Exception}").ConfigureAwait(false);
+            //     }
+            //     if (result.Stack.Length > 0)
+            //     {
+            //         var stack = result.Stack;
+            //         await writer.WriteLineAsync("Result Stack:").ConfigureAwait(false);
+            //         for (int i = 0; i < stack.Length; i++)
+            //         {
+            //             await WriteStackItemAsync(writer, stack[i]).ConfigureAwait(false);
+            //         }
+            //     }
+            // }
 
-                async Task WriteLineAsync(string value)
-                {
-                    for (var i = 0; i < indent; i++)
-                    {
-                        await writer.WriteAsync("  ").ConfigureAwait(false);
-                    }
+            // static async Task WriteStackItemAsync(System.IO.TextWriter writer, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
+            // {
+            //     switch (item)
+            //     {
+            //         case Neo.VM.Types.Boolean _:
+            //             await WriteLineAsync(item.GetBoolean() ? "true" : "false").ConfigureAwait(false);
+            //             break;
+            //         case Neo.VM.Types.Integer @int:
+            //             await WriteLineAsync(@int.GetInteger().ToString()).ConfigureAwait(false);
+            //             break;
+            //         case Neo.VM.Types.Buffer buffer:
+            //             await WriteLineAsync(Neo.Helper.ToHexString(buffer.GetSpan())).ConfigureAwait(false);
+            //             break;
+            //         case Neo.VM.Types.ByteString byteString:
+            //             await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
+            //             break;
+            //         case Neo.VM.Types.Null _:
+            //             await WriteLineAsync("<null>").ConfigureAwait(false);
+            //             break;
+            //         case Neo.VM.Types.Array array:
+            //             await WriteLineAsync($"Array: ({array.Count})").ConfigureAwait(false);
+            //             for (int i = 0; i < array.Count; i++)
+            //             {
+            //                 await WriteStackItemAsync(writer, array[i], indent + 1).ConfigureAwait(false);
+            //             }
+            //             break;
+            //         case Neo.VM.Types.Map map:
+            //             await WriteLineAsync($"Map: ({map.Count})").ConfigureAwait(false);
+            //             foreach (var m in map)
+            //             {
+            //                 await WriteStackItemAsync(writer, m.Key, indent + 1, "key:   ").ConfigureAwait(false);
+            //                 await WriteStackItemAsync(writer, m.Value, indent + 1, "value: ").ConfigureAwait(false);
+            //             }
+            //             break;
+            //     }
 
-                    if (!string.IsNullOrEmpty(prefix))
-                    {
-                        await writer.WriteAsync(prefix).ConfigureAwait(false);
-                    }
+            //     async Task WriteLineAsync(string value)
+            //     {
+            //         for (var i = 0; i < indent; i++)
+            //         {
+            //             await writer.WriteAsync("  ").ConfigureAwait(false);
+            //         }
 
-                    await writer.WriteLineAsync(value).ConfigureAwait(false);
-                }
-            }
+            //         if (!string.IsNullOrEmpty(prefix))
+            //         {
+            //             await writer.WriteAsync(prefix).ConfigureAwait(false);
+            //         }
+
+            //         await writer.WriteLineAsync(value).ConfigureAwait(false);
+            //     }
+            // }
         }
 
         public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null)

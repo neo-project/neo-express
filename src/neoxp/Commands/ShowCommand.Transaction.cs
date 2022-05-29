@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
                     using var expressNode = chain.GetExpressNode(fileSystem);
                     var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
 

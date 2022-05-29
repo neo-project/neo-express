@@ -91,7 +91,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chain, _) = fileSystem.LoadExpressChain(Input);
+                var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
                 var expressNode = chain.GetExpressNode(fileSystem);
 
                 if (UInt160.TryParse(Contract, out var hash))

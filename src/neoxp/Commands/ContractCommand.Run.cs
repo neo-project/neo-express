@@ -18,9 +18,9 @@ namespace NeoExpress.Commands
         [Command(Name = "run", Description = "Invoke a contract using parameters passed on command line")]
         internal class Run
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Run(IExpressFile expressFile)
+            public Run(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -81,7 +81,7 @@ namespace NeoExpress.Commands
                 else
                 {
                     var password = expressFile.ResolvePassword(Account, Password);
-                    var (wallet, accountHash) = expressNode.ExpressFile.ResolveSigner(Account, password);
+                    var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(Account, password);
 
                     var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope, script).ConfigureAwait(false);
                     await console.Out.WriteTxHashAsync(txHash, "Invocation", Json).ConfigureAwait(false);

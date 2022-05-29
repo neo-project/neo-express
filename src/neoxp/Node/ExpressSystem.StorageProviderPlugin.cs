@@ -23,7 +23,7 @@ namespace NeoExpress.Node
 
             public IStore GetStore(string path)
                 => string.IsNullOrEmpty(path)
-                    ? expressStorage.Chain 
+                    ? expressStorage.ChainStore 
                     : path.Equals(ExpressSystem.CONSENSUS_STATE_STORE_NAME)
                         ? consensusStateStore 
                         : throw new ArgumentException($"Unknown ExpressStorage {path}", nameof(path));

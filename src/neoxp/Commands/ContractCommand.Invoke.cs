@@ -57,7 +57,7 @@ namespace NeoExpress.Commands
                         throw new Exception("Either Account or --results must be specified");
                     }
 
-                    var (chain, _) = fileSystem.LoadExpressChain(Input);
+                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
                     using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out);
                     var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 

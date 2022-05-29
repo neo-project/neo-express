@@ -18,9 +18,9 @@ namespace NeoExpress.Commands
         [Command("block", Description = "Show block")]
         internal class Block
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Block(IExpressFile expressFile)
+            public Block(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -120,7 +120,7 @@ namespace NeoExpress.Commands
                 writer.WriteProperty("nonce", (ulong)block[5].GetInteger());
                 writer.WriteProperty("index", (uint)block[6].GetInteger());
                 writer.WriteProperty("primary", (byte)block[7].GetInteger());
-                writer.WriteProperty("nextconsensus", new UInt160(block[8].GetSpan()).ToAddress(expressFile.Chain.AddressVersion));
+                writer.WriteProperty("nextconsensus", new UInt160(block[8].GetSpan()).ToAddress(expressFile.AddressVersion));
                 
                 writer.WritePropertyName("transactions");
                 using var __ = writer.WriteArray();
@@ -130,7 +130,7 @@ namespace NeoExpress.Commands
                     writer.WriteProperty("hash", $"{new UInt256(tx[0].GetSpan())}");
                     writer.WriteProperty("version", (byte)tx[1].GetInteger());
                     writer.WriteProperty("nonce", (uint)tx[2].GetInteger());
-                    writer.WriteProperty("sender", new UInt160(tx[3].GetSpan()).ToAddress(expressFile.Chain.AddressVersion));
+                    writer.WriteProperty("sender", new UInt160(tx[3].GetSpan()).ToAddress(expressFile.AddressVersion));
                     writer.WriteProperty("sysfee", (long)tx[4].GetInteger());
                     writer.WriteProperty("netfee", (long)tx[5].GetInteger());
                     writer.WriteProperty("validuntilblock", (uint)tx[6].GetInteger());

@@ -12,9 +12,9 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Retrieve current value of a blockchain policy")]
         internal class Get
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Get(IExpressFile expressFile)
+            public Get(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }

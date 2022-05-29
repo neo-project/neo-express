@@ -12,9 +12,9 @@ namespace NeoExpress.Commands
         [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
         internal class Export
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Export(IExpressFile expressFile)
+            public Export(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -46,11 +46,12 @@ namespace NeoExpress.Commands
                     throw new Exception("You must specify force to overwrite an exported wallet.");
                 }
 
+                // TODO: expressFile.Chain.GetWallet
                 var wallet = expressFile.Chain.GetWallet(Name) 
                     ?? throw new Exception($"{Name} express wallet not found.");
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
 
-                fileSystem.ExportNEP6(wallet, output, password, expressFile.Chain.AddressVersion);
+                fileSystem.ExportNEP6(wallet, output, password, expressFile.AddressVersion);
                 console.WriteLine($"{Name} privatenet wallet exported to {output}");
             }
         }

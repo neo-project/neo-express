@@ -11,9 +11,9 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly IExpressFile expressFile;
+        readonly IExpressChain expressFile;
 
-        public RunCommand(IExpressFile expressFile)
+        public RunCommand(IExpressChain expressFile)
         {
             this.expressFile = expressFile;
         }
@@ -38,20 +38,20 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
         {
-            var chain = expressFile.Chain;
-            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
+            if (NodeIndex < 0 || NodeIndex >= expressFile.ConsensusNodes.Count)
             {
                 throw new Exception("Invalid node index");
             }
 
-            var node = chain.ConsensusNodes[NodeIndex];
+            var node = expressFile.ConsensusNodes[NodeIndex];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
             using var expressStorage = Discard
                 ? CheckpointExpressStorage.OpenForDiscard(nodePath)
                 : new RocksDbExpressStorage(nodePath);
-            var expressSystem = new ExpressSystem(chain, node, expressStorage, console, Trace, SecondsPerBlock);
+            //TODO new ExpressSystem(expressFile.Chain
+            var expressSystem = new ExpressSystem(expressFile.Chain, node, expressStorage, console, Trace, SecondsPerBlock);
             await expressSystem.RunAsync(token);
         }
     }

@@ -8,9 +8,9 @@ namespace NeoExpress.Commands
     [Command("fastfwd", Description = "Mint empty blocks to fast forward the block chain")]
     class FastForwardCommand
     {
-        readonly IExpressFile expressFile;
+        readonly IExpressChain expressFile;
 
-        public FastForwardCommand(IExpressFile expressFile)
+        public FastForwardCommand(IExpressChain expressFile)
         {
             this.expressFile = expressFile;
         }

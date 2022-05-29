@@ -74,12 +74,12 @@ namespace NeoExpress
             return ((IServiceProvider)app).GetRequiredService<IFileSystem>();
         }
 
-        public static IExpressFile GetExpressFile(this CommandLineApplication app)
+        public static IExpressChain GetExpressFile(this CommandLineApplication app)
         {
             var option = app.GetOptions().Single(o => o.LongName == "input");
             var input = option.Value() ?? string.Empty;
             var fileSystem = app.GetFileSystem();
-            return new ExpressFile(input, fileSystem);
+            return new ExpressChain(input, fileSystem);
         }
     }
 }

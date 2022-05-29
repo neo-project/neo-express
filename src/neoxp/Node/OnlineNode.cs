@@ -27,15 +27,15 @@ namespace NeoExpress.Node
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
 
-        public IExpressFile ExpressFile { get; }
+        public IExpressChain ExpressChain { get; }
         public ProtocolSettings ProtocolSettings { get; }
 
-        public OnlineNode(IExpressFile expressFile, ExpressConsensusNode node)
+        public OnlineNode(IExpressChain chain, ExpressConsensusNode node)
         {
-            this.ExpressFile = expressFile;
-            ProtocolSettings = expressFile.Chain.GetProtocolSettings();
+            this.ExpressChain = chain;
+            ProtocolSettings = chain.GetProtocolSettings();
             rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
-            consensusNodesKeys = new Lazy<KeyPair[]>(() => expressFile.Chain.GetConsensusNodeKeys());
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
         }
 
         public void Dispose()
@@ -84,7 +84,7 @@ namespace NeoExpress.Node
             if (account.Contract.Script.IsMultiSigContract())
             {
                 var signatureCount = account.Contract.ParameterList.Length;
-                var multiSigWallets = ExpressFile.Chain.GetMultiSigWallets(ProtocolSettings, accountHash);
+                var multiSigWallets = ExpressChain.GetMultiSigWallets(ProtocolSettings, accountHash);
                 if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
 
                 var publicKeys = multiSigWallets
@@ -111,7 +111,7 @@ namespace NeoExpress.Node
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, ExpressFile.Chain, tx, oracleNodes);
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, ExpressChain, tx, oracleNodes);
 
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
@@ -211,7 +211,7 @@ namespace NeoExpress.Node
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
-            if (ExpressFile.Chain.ConsensusNodes.Count != 1)
+            if (ExpressChain.ConsensusNodes.Count != 1)
             {
                 throw new ArgumentException("Contract download is only supported for single-node consensus");
             }

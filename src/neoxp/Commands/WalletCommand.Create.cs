@@ -16,9 +16,9 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         internal class Create
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Create(IExpressFile expressFile)
+            public Create(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -41,14 +41,13 @@ namespace NeoExpress.Commands
 
             internal void Execute(IConsole console)
             {
-                var chain = expressFile.Chain;
-
-                if (chain.IsReservedName(Name))
+                // TODO expressFile.Chain.IsReservedName
+                if (expressFile.Chain.IsReservedName(Name))
                 {
                     throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
                 }
 
-                var existingWallet = chain.GetWallet(Name);
+                var existingWallet = expressFile.Chain.GetWallet(Name);
                 if (existingWallet != null)
                 {
                     if (!Force)
@@ -56,7 +55,7 @@ namespace NeoExpress.Commands
                         throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
                     }
 
-                    chain.Wallets.Remove(existingWallet);
+                    expressFile.Wallets.Remove(existingWallet);
                 }
 
                 var devWallet = new DevWallet(chain.GetProtocolSettings(), Name);

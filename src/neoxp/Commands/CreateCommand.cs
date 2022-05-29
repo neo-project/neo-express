@@ -47,7 +47,7 @@ namespace NeoExpress.Commands
             console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
         }
 
-        internal ExpressChain CreateChain()
+        internal Neo.BlockchainToolkit.Models.ExpressChain CreateChain()
         {
             if (Count != 1 && Count != 4 && Count != 7)
             {
@@ -56,7 +56,7 @@ namespace NeoExpress.Commands
 
             var settings = ProtocolSettings.Default with
             {
-                Network = ExpressChain.GenerateNetworkValue(),
+                Network = Neo.BlockchainToolkit.Models.ExpressChain.GenerateNetworkValue(),
                 AddressVersion = AddressVersion ?? ProtocolSettings.Default.AddressVersion
             };
 
@@ -86,7 +86,7 @@ namespace NeoExpress.Commands
                 Wallet = w.wallet.ToExpressWallet()
             });
 
-            return new ExpressChain()
+            return new Neo.BlockchainToolkit.Models.ExpressChain()
             {
                 Network = settings.Network,
                 AddressVersion = settings.AddressVersion,
@@ -98,7 +98,7 @@ namespace NeoExpress.Commands
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        internal void SaveChain(ExpressChain chain, string outputPath, IFileSystem fileSystem)
+        internal void SaveChain(Neo.BlockchainToolkit.Models.ExpressChain chain, string outputPath, IFileSystem fileSystem)
         {
             if (fileSystem.File.Exists(outputPath))
             {

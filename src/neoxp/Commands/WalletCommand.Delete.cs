@@ -11,9 +11,9 @@ namespace NeoExpress.Commands
         [Command("delete", Description = "Delete neo-express wallet")]
         internal class Delete
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Delete(IExpressFile expressFile)
+            public Delete(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }

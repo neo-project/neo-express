@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Neo;
@@ -7,9 +8,13 @@ using Neo.SmartContract.Manifest;
 
 namespace NeoExpress
 {
-    interface IExpressFile
+    interface IExpressChain
     {
-        ExpressChain Chain { get; }
+        uint Network { get; }
+        byte AddressVersion { get; }
+        IReadOnlyList<ExpressConsensusNode> ConsensusNodes { get; }
+        IReadOnlyList<ExpressWallet> Wallets { get; }
+        IReadOnlyDictionary<string, string> Settings { get; }
 
         IExpressNode GetExpressNode(bool offlineTrace = false);
         void SaveChain();

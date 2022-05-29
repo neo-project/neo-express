@@ -18,9 +18,9 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List oracle nodes")]
         internal class List
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public List(IExpressFile expressFile)
+            public List(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }

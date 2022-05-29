@@ -13,9 +13,9 @@ namespace NeoExpress.Commands
     [Command("transfer", Description = "Transfer asset between accounts")]
     class TransferCommand
     {
-        readonly IExpressFile expressFile;
+        readonly IExpressChain expressFile;
 
-        public TransferCommand(IExpressFile expressFile)
+        public TransferCommand(IExpressChain expressFile)
         {
             this.expressFile = expressFile;
         }
@@ -66,7 +66,7 @@ namespace NeoExpress.Commands
             
             string quantity, string asset, string sender, string password, string receiver)
         {
-            var (senderWallet, senderHash) = expressNode.ExpressFile.ResolveSigner(sender, password);
+            var (senderWallet, senderHash) = expressNode.ExpressChain.ResolveSigner(sender, password);
             var receiverHash = expressNode.Chain.ResolveAccountHash(receiver);
 
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);

@@ -20,35 +20,13 @@ namespace NeoExpress
 
     static class ExpressChainExtensions
     {
-        public static IExpressNode GetExpressNode(this ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
+        public static IExpressNode GetExpressNode(this Neo.BlockchainToolkit.Models.ExpressChain chain, IFileSystem fileSystem, bool offlineTrace = false)
         {
             throw new NotImplementedException();
         }
 
-        public static bool IsRunning(this ExpressChain chain)
-        {
-            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                if (chain.ConsensusNodes[i].IsRunning())
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
 
-        public static bool IsRunning(this ExpressConsensusNode node)
-        {
-            // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
-
-            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return System.Threading.Mutex.TryOpenExisting(
-                Node.NodeUtility.GLOBAL_PREFIX + account.ScriptHash,
-                out var _);
-        }
-
-        public static Contract CreateGenesisContract(this ExpressChain chain)
+        public static Contract CreateGenesisContract(this Neo.BlockchainToolkit.Models.ExpressChain chain)
         {
             List<Neo.Cryptography.ECC.ECPoint> publicKeys = new(chain.ConsensusNodes.Count);
             foreach (var node in chain.ConsensusNodes)
@@ -63,18 +41,18 @@ namespace NeoExpress
             return Contract.CreateMultiSigContract(m, publicKeys);
         }
 
-        public static UInt160 GetGenesisScriptHash(this ExpressChain chain)
+        public static UInt160 GetGenesisScriptHash(this Neo.BlockchainToolkit.Models.ExpressChain chain)
         {
             var contract = CreateGenesisContract(chain);
             return contract.ScriptHash;
         }
 
-        public static UInt160 ResolveAccountHash(this ExpressChain chain, string name)
+        public static UInt160 ResolveAccountHash(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name)
             => chain.TryResolveAccountHash(name, out var hash) 
                 ? hash 
                 : throw new Exception("ResolveAccountHash failed");
 
-        public static bool TryResolveAccountHash(this ExpressChain chain, string name, out UInt160 accountHash)
+        public static bool TryResolveAccountHash(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name, out UInt160 accountHash)
         {
             if (chain.Wallets != null && chain.Wallets.Count > 0)
             {
@@ -146,7 +124,7 @@ namespace NeoExpress
 
         public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
 
-        public static IReadOnlyList<Wallet> GetMultiSigWallets(this ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
+        public static IReadOnlyList<Wallet> GetMultiSigWallets(this Neo.BlockchainToolkit.Models.ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
         {
             var builder = ImmutableList.CreateBuilder<Wallet>();
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
@@ -164,7 +142,7 @@ namespace NeoExpress
             return builder.ToImmutable();
         }
 
-        public static KeyPair[] GetConsensusNodeKeys(this ExpressChain chain)
+        public static KeyPair[] GetConsensusNodeKeys(this Neo.BlockchainToolkit.Models.ExpressChain chain)
             => chain.ConsensusNodes
                 .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
                 .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
@@ -172,7 +150,7 @@ namespace NeoExpress
 
         internal const string GENESIS = "genesis";
 
-        public static bool IsReservedName(this ExpressChain chain, string name)
+        public static bool IsReservedName(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name)
         {
             if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
                 return true;
@@ -186,12 +164,13 @@ namespace NeoExpress
             return false;
         }
 
-        public static string ResolvePassword(this IExpressFile expressFile, string name, string password)
-        {
-            return expressFile.Chain.ResolvePassword(name, password);
-        }
+        // public static string ResolvePassword(this IExpressFile expressFile, string name, string password)
+        // {
+        //     // TODO: expressFile.Chain.ResolvePassword
+        //     return expressFile.Chain.ResolvePassword(name, password);
+        // }
 
-        public static string ResolvePassword(this ExpressChain chain, string name, string password)
+        public static string ResolvePassword(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name, string password)
         {
             if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
 
@@ -211,7 +190,7 @@ namespace NeoExpress
 
 
 
-        public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
+        public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this Neo.BlockchainToolkit.Models.ExpressChain chain, ProtocolSettings settings)
         {
             Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
 
@@ -220,26 +199,13 @@ namespace NeoExpress
             return (wallet, account.ScriptHash);
         }
 
-        public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
+        public static ExpressWallet? GetWallet(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name)
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
 
-        public delegate bool TryParse<T>(string value, [MaybeNullWhen(false)] out T parsedValue);
 
-        public static bool TryReadSetting<T>(this ExpressChain chain, string setting, TryParse<T> tryParse, [MaybeNullWhen(false)] out T value)
-        {
-            if (chain.Settings.TryGetValue(setting, out var stringValue)
-                && tryParse(stringValue, out var result))
-            {
-                value = result;
-                return true;
-            }
 
-            value = default;
-            return false;
-        }
-
-        public static bool TryGetSigningAccount(this ExpressChain chain, string name, string password, IFileSystem fileSystem, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+        public static bool TryGetSigningAccount(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name, string password, IFileSystem fileSystem, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
         {
             if (!string.IsNullOrEmpty(name))
             {

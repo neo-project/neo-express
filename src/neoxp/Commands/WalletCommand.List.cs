@@ -17,9 +17,9 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List neo-express wallets")]
         internal class List
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public List(IExpressFile expressFile)
+            public List(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -35,11 +35,12 @@ namespace NeoExpress.Commands
 
             internal void Execute(IConsole console)
             {
-                var chain = expressFile.Chain;
-                var settings = chain.GetProtocolSettings();
+                // TODO: expressFile.Chain.GetProtocolSettings
+                var settings = expressFile.Chain.GetProtocolSettings();
 
-                var genesisContract = chain.CreateGenesisContract();
-                var genesisAddress = Neo.Wallets.Helper.ToAddress(genesisContract.ScriptHash, chain.AddressVersion);
+                // TODO: expressFile.Chain.CreateGenesisContract
+                var genesisContract = expressFile.Chain.CreateGenesisContract();
+                var genesisAddress = Neo.Wallets.Helper.ToAddress(genesisContract.ScriptHash, expressFile.AddressVersion);
 
                 if (Json)
                 {
@@ -54,12 +55,12 @@ namespace NeoExpress.Commands
                         writer.WriteProperty("script-hash", genesisContract.ScriptHash.ToString());
                     }
 
-                    foreach (var node in chain.ConsensusNodes)
+                    foreach (var node in expressFile.ConsensusNodes)
                     {
                         writer.WriteWallet(node.Wallet);
                     }
 
-                    foreach (var wallet in chain.Wallets)
+                    foreach (var wallet in expressFile.Wallets)
                     {
                         writer.WriteWallet(wallet);
                     }
@@ -72,12 +73,12 @@ namespace NeoExpress.Commands
                     console.Out.WriteLine($"  {genesisAddress}");
                     console.Out.WriteLine($"    script hash: {BitConverter.ToString(genesisScriptHash)}");
 
-                    foreach (var node in chain.ConsensusNodes)
+                    foreach (var node in expressFile.ConsensusNodes)
                     {
                         console.Out.WriteWallet(node.Wallet);
                     }
 
-                    foreach (var wallet in chain.Wallets)
+                    foreach (var wallet in expressFile.Wallets)
                     {
                         console.Out.WriteWallet(wallet);
                     }

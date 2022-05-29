@@ -13,9 +13,9 @@ namespace NeoExpress.Commands
         [Command("isBlocked", "blocked", Description = "Unblock account for usage")]
         internal class IsBlocked
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public IsBlocked(IExpressFile expressFile)
+            public IsBlocked(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }

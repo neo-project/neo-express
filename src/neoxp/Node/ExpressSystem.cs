@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Neo;
-using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Consensus;
 using Neo.IO;
@@ -29,7 +28,7 @@ namespace NeoExpress.Node
 
         public const string GLOBAL_PREFIX = "Global\\";
 
-        readonly ExpressChain chain;
+        readonly IExpressChain chain;
         readonly ExpressConsensusNode node;
         readonly IExpressStorage expressStorage;
         readonly NeoSystem neoSystem;
@@ -45,18 +44,11 @@ namespace NeoExpress.Node
             neoSystem.Dispose();
         }
 
-        public ExpressSystem(ExpressChain chain, ExpressConsensusNode node, IExpressStorage expressStorage, IConsole console, bool trace, uint? secondsPerBlock)
+        public ExpressSystem(IExpressChain chain, ExpressConsensusNode node, IExpressStorage expressStorage, IConsole console, bool trace, uint? secondsPerBlock)
         {
             this.chain = chain;
             this.node = node;
             this.expressStorage = expressStorage;
-
-            var _secondsPerBlock = secondsPerBlock.HasValue
-                ? secondsPerBlock.Value
-                : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
-                    ? secondsPerBlockSetting
-                    : 0;
-            var settings = chain.GetProtocolSettings(_secondsPerBlock);
 
             consolePlugin = new ConsolePlugin(console);
             appEngineProviderPlugin = trace ? new ApplicationEngineProviderPlugin() : null;
@@ -64,6 +56,13 @@ namespace NeoExpress.Node
             persistenceWrapper = new PersistenceWrapper(this.OnPersist);
             webServerPlugin = new WebServerPlugin(chain, node);
             dbftPlugin = new DBFTPlugin(GetConsensusSettings(chain));
+
+            var _secondsPerBlock = secondsPerBlock.HasValue
+                ? secondsPerBlock.Value
+                : this.chain.TryReadSetting("chain.SecondsPerBlock", uint.TryParse, out uint secondsPerBlockSetting)
+                    ? secondsPerBlockSetting
+                    : 0;
+            var settings = chain.GetProtocolSettings(_secondsPerBlock);
             neoSystem = new NeoSystem(settings, storageProviderPlugin.Name);
         }
 
@@ -112,8 +111,8 @@ namespace NeoExpress.Node
         {
             if (appExecutions.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
 
-            using var appLogsSnapshot = expressStorage.AppLogs.GetSnapshot();
-            using var notificationsSnapshot = expressStorage.Notifications.GetSnapshot();
+            using var appLogsSnapshot = expressStorage.AppLogsStore.GetSnapshot();
+            using var notificationsSnapshot = expressStorage.NotificationsStore.GetSnapshot();
 
             var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
             BinaryPrimitives.WriteUInt32BigEndian(
@@ -155,7 +154,7 @@ namespace NeoExpress.Node
             notificationsSnapshot.Commit();
         }
 
-        static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
+        static Neo.Consensus.Settings GetConsensusSettings(IExpressChain chain)
         {
             var settings = new Dictionary<string, string>()
                 {

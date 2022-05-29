@@ -15,9 +15,9 @@ namespace NeoExpress.Commands
         [Command(Name = "block", Description = "Block account from usage")]
         internal class Block
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Block(IExpressFile expressFile)
+            public Block(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -56,7 +56,7 @@ namespace NeoExpress.Commands
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password)
             {
-                var (wallet, accountHash) = expressNode.ExpressFile.ResolveSigner(account, password);
+                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(account, password);
 
                 var hash = await PolicyCommand.ResolveScriptHashAsync(expressNode, scriptHash);
                 using var builder = new ScriptBuilder();

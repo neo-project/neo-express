@@ -3,33 +3,37 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.SmartContract;
-using Neo.SmartContract.Manifest;
 using NeoExpress.Models;
 
 namespace NeoExpress
 {
-    class ExpressFile : IExpressFile
+    using ExpressChainInfo = Neo.BlockchainToolkit.Models.ExpressChain;
+
+    class ExpressChain : IExpressChain
     {
         readonly IFileSystem fileSystem;
-        readonly string ChainPath;
+        readonly string chainPath;
+        readonly ExpressChainInfo chainInfo;
 
-        public ExpressChain Chain { get; }
+        public uint Network => chainInfo.Network;
+        public byte AddressVersion => chainInfo.AddressVersion;
+        public IReadOnlyList<ExpressConsensusNode> ConsensusNodes => chainInfo.ConsensusNodes;
+        public IReadOnlyList<ExpressWallet> Wallets => chainInfo.Wallets;
+        public IReadOnlyDictionary<string, string> Settings => chainInfo.Settings;
 
-        public ExpressFile(string input, IFileSystem fileSystem)
+        public ExpressChain(string input, IFileSystem fileSystem)
         {
             this.fileSystem = fileSystem;
-            (Chain, ChainPath) = fileSystem.LoadExpressChain(input);
+            (chainInfo, chainPath) = fileSystem.LoadExpressChainInfo(input);
         }
 
         public void SaveChain()
         {
-            fileSystem.SaveChain(Chain, ChainPath);
+            fileSystem.SaveChain(chainInfo, chainPath);
         }
 
         public IExpressNode GetExpressNode(bool offlineTrace = false)
@@ -37,16 +41,16 @@ namespace NeoExpress
             // Check to see if there's a neo-express blockChain currently running by
             // attempting to open a mutex with the multisig account address for a name
 
-            for (int i = 0; i < Chain.ConsensusNodes.Count; i++)
+            for (int i = 0; i < chainInfo.ConsensusNodes.Count; i++)
             {
-                var consensusNode = Chain.ConsensusNodes[i];
+                var consensusNode = chainInfo.ConsensusNodes[i];
                 if (consensusNode.IsRunning())
                 {
                     return new Node.OnlineNode(this, consensusNode);
                 }
             }
 
-            var node = Chain.ConsensusNodes[0];
+            var node = chainInfo.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
             var provider = RocksDbStorageProvider.Open(nodePath);
@@ -57,17 +61,17 @@ namespace NeoExpress
         {
             if (!string.IsNullOrEmpty(name))
             {
-                var settings = Chain.GetProtocolSettings();
+                var settings = chainInfo.GetProtocolSettings();
 
                 if (name.Equals(ExpressChainExtensions.GENESIS, StringComparison.OrdinalIgnoreCase))
                 {
-                    var contract = Chain.CreateGenesisContract();
+                    var contract = chainInfo.CreateGenesisContract();
                     wallet = new DevWallet(settings, string.Empty);
                     accountHash = wallet.CreateAccount(contract).ScriptHash;
                     return true;
                 }
 
-                var wallets = (Chain.Wallets as IReadOnlyList<ExpressWallet>) ?? Array.Empty<ExpressWallet>();
+                var wallets = (chainInfo.Wallets as IReadOnlyList<ExpressWallet>) ?? Array.Empty<ExpressWallet>();
                 for (int i = 0; i < wallets.Count; i++)
                 {
                     if (name.Equals(wallets[i].Name, StringComparison.OrdinalIgnoreCase))
@@ -78,9 +82,9 @@ namespace NeoExpress
                     }
                 }
 
-                for (int i = 0; i < Chain.ConsensusNodes.Count; i++)
+                for (int i = 0; i < chainInfo.ConsensusNodes.Count; i++)
                 {
-                    var nodeWallet = Chain.ConsensusNodes[i].Wallet;
+                    var nodeWallet = chainInfo.ConsensusNodes[i].Wallet;
                     if (name.Equals(nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
                     {
                         wallet = DevWallet.FromExpressWallet(settings, nodeWallet);

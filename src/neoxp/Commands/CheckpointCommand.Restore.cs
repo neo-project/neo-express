@@ -14,9 +14,9 @@ namespace NeoExpress.Commands
         [Command("restore", Description = "Restore a neo-express checkpoint")]
         internal class Restore
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Restore(IExpressFile expressFile)
+            public Restore(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -36,13 +36,13 @@ namespace NeoExpress.Commands
 
             internal void Execute(IFileSystem fileSystem, IConsole console)
             {
-                var checkpointPath = Execute(expressFile.Chain, Name, Force, fileSystem);
+                var checkpointPath = Execute(expressFile, Name, Force, fileSystem);
                 console.WriteLine($"Checkpoint {fileSystem.Path.GetFileName(checkpointPath)} successfully restored");
             }
 
-            internal static string Execute(ExpressChain chain, string checkPointArchive, bool force, IFileSystem fileSystem)
+            internal static string Execute(IExpressChain expressFile, string checkPointArchive, bool force, IFileSystem fileSystem)
             {
-                if (chain.ConsensusNodes.Count != 1)
+                if (expressFile.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
                 }
@@ -53,7 +53,7 @@ namespace NeoExpress.Commands
                     throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
                 }
 
-                var node = chain.ConsensusNodes[0];
+                var node = expressFile.ConsensusNodes[0];
                 if (node.IsRunning())
                 {
                     var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
@@ -87,8 +87,9 @@ namespace NeoExpress.Commands
                     fileSystem.Directory.Delete(nodePath, true);
                 }
 
-                var settings = chain.GetProtocolSettings();
-                var contract = chain.CreateGenesisContract();
+                // TODO: expressFile.Chain
+                var settings = expressFile.Chain.GetProtocolSettings();
+                var contract = expressFile.Chain.CreateGenesisContract();
                 RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
                     settings.Network, settings.AddressVersion, contract.ScriptHash);
                 fileSystem.Directory.Move(checkpointTempPath, nodePath);

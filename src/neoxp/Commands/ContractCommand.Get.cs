@@ -17,9 +17,9 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Get information for a deployed contract")]
         internal class Get
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Get(IExpressFile expressFile)
+            public Get(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }

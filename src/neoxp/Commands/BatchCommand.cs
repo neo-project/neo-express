@@ -14,11 +14,15 @@ namespace NeoExpress.Commands
     [Command("batch", Description = "Execute a series of offline Neo-Express operations")]
     partial class BatchCommand
     {
-        readonly IFileSystem fileSystem;
+        readonly IExpressChain expressFile;
 
-        public BatchCommand(IFileSystem fileSystem)
+        public BatchCommand(IExpressChain expressFile)
         {
-            this.fileSystem = fileSystem;
+            this.expressFile = expressFile;
+        }
+
+        public BatchCommand(CommandLineApplication app) : this(app.GetExpressFile())
+        {
         }
 
         [Argument(0, Description = "Path to batch file to run")]
@@ -32,250 +36,255 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
-        
-        internal string Input { get; init; } = string.Empty;
+        internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
 
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
+        internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
         {
-            try
-            {
-                if (!fileSystem.File.Exists(BatchFile)) throw new Exception($"Batch file {BatchFile} couldn't be found");
-                var batchFileInfo = fileSystem.FileInfo.FromFileName(BatchFile);
-
-                var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
-                await ExecuteAsync(batchFileInfo.Directory, commands, console.Out).ConfigureAwait(false);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                app.WriteException(ex, showInnerExceptions: true);
-                return 1;
-            }
+            await Task.CompletedTask;
         }
 
-        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
-        {
-            var input = Resolve(root, string.IsNullOrEmpty(Input)
-                ? Constants.DEFAULT_EXPRESS_FILENAME
-                : Input);
 
-            var (chain, _) = fileSystem.LoadExpressChain(input);
-            if (chain.IsRunning())
-            {
-                throw new Exception("Cannot run batch command while blockchain is running");
-            }
+        // internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
+        // {
+        //     try
+        //     {
+        //         if (!fileSystem.File.Exists(BatchFile)) throw new Exception($"Batch file {BatchFile} couldn't be found");
+        //         var batchFileInfo = fileSystem.FileInfo.FromFileName(BatchFile);
 
-            if (Reset.hasValue)
-            {
-                if (string.IsNullOrEmpty(Reset.value))
-                {
-                    for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-                    {
-                        var node = chain.ConsensusNodes[i];
-                        await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
-                        ResetCommand.ResetNode(fileSystem, node, true);
-                    }
-                }
-                else
-                {
-                    var checkpoint = Resolve(root, Reset.value);
-                    await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
-                    CheckpointCommand.Restore.Execute(chain, checkpoint, true, fileSystem);
-                }
-            }
+        //         var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
+        //         await ExecuteAsync(batchFileInfo.Directory, commands, console.Out).ConfigureAwait(false);
+        //         return 0;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         app.WriteException(ex, showInnerExceptions: true);
+        //         return 1;
+        //     }
+        // }
 
-            using var txExec = new TransactionExecutor(fileSystem, chain, Trace, false, writer);
-            var batchApp = new CommandLineApplication<BatchFileCommands>();
-            batchApp.Conventions.UseDefaultConventions();
+        // internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
+        // {
+        //     var input = Resolve(root, string.IsNullOrEmpty(Input)
+        //         ? Constants.DEFAULT_EXPRESS_FILENAME
+        //         : Input);
 
-            for (var i = 0; i < commands.Length; i++)
-            {
-                var args = SplitCommandLine(commands.Span[i]).ToArray();
-                if (args.Length == 0
-                    || args[0].StartsWith('#')
-                    || args[0].StartsWith("//")) continue;
+        //     var (chain, _) = fileSystem.LoadExpressChain(input);
+        //     if (chain.IsRunning())
+        //     {
+        //         throw new Exception("Cannot run batch command while blockchain is running");
+        //     }
 
-                var pr = batchApp.Parse(args);
-                switch (pr.SelectedCommand)
-                {
-                    case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
-                        {
-                            var result = await CheckpointCommand.Create.ExecuteAsync(
-                                txExec.ExpressNode,
-                                Resolve(root, cmd.Model.Name),
-                                fileSystem,
-                                cmd.Model.Force).ConfigureAwait(false);
-                            var checkpointFile = fileSystem.Path.GetFileName(result.path);
-                            await writer.WriteLineAsync($"Created {checkpointFile} checkpoint {result.checkpointMode}")
-                                .ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
-                        {
-                            var (nefFile, manifest) = await fileSystem.LoadContractAsync(cmd.Model.Contract)
-                                .ConfigureAwait(false);
-                            var result = await ContractCommand.Deploy.ExecuteAsync(
-                                txExec.ExpressNode,
-                                nefFile,
-                                manifest,
-                                cmd.Model.Account,
-                                cmd.Model.Password,
-                                cmd.Model.WitnessScope,
-                                cmd.Model.Data,
-                                cmd.Model.Force).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"Submitted {result.txHash} deployment transaction")
-                                .ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
-                        {
-                            if (cmd.Model.Height == 0)
-                            {
-                                throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
-                            }
+        //     if (Reset.hasValue)
+        //     {
+        //         if (string.IsNullOrEmpty(Reset.value))
+        //         {
+        //             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+        //             {
+        //                 var node = chain.ConsensusNodes[i];
+        //                 await writer.WriteLineAsync($"Resetting Node {node.Wallet.Name}");
+        //                 ResetCommand.ResetNode(fileSystem, node, true);
+        //             }
+        //         }
+        //         else
+        //         {
+        //             var checkpoint = Resolve(root, Reset.value);
+        //             await writer.WriteLineAsync($"Restoring checkpoint {checkpoint}");
+        //             CheckpointCommand.Restore.Execute(chain, checkpoint, true, fileSystem);
+        //         }
+        //     }
 
-                            if (chain.ConsensusNodes.Count != 1)
-                            {
-                                throw new ArgumentException("Contract download is only supported for single-node consensus");
-                            }
+        //     using var txExec = new TransactionExecutor(fileSystem, chain, Trace, false, writer);
+        //     var batchApp = new CommandLineApplication<BatchFileCommands>();
+        //     batchApp.Conventions.UseDefaultConventions();
 
-                            await ContractCommand.Download.ExecuteAsync(
-                                txExec.ExpressNode,
-                                cmd.Model.Contract,
-                                cmd.Model.RpcUri,
-                                cmd.Model.Height,
-                                cmd.Model.Force,
-                                writer).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
-                        {
-                            var script = await txExec.LoadInvocationScriptAsync(
-                                Resolve(root, cmd.Model.InvocationFile)).ConfigureAwait(false);
-                            await txExec.ContractInvokeAsync(
-                                script,
-                                cmd.Model.Account,
-                                cmd.Model.Password,
-                                cmd.Model.WitnessScope).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Run> cmd:
-                        {
-                            var script = await txExec.BuildInvocationScriptAsync(
-                                cmd.Model.Contract,
-                                cmd.Model.Method,
-                                cmd.Model.Arguments).ConfigureAwait(false);
-                            await txExec.ContractInvokeAsync(
-                                script,
-                                cmd.Model.Account,
-                                cmd.Model.Password,
-                                cmd.Model.WitnessScope).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.FastForward> cmd:
-                        {
-                            await writer.WriteLineAsync($"Fast forwarding {cmd.Model.Count} blocks").ConfigureAwait(false);
-                            await FastForwardCommand.ExecuteAsync(
-                                txExec.ExpressNode, 
-                                cmd.Model.Count,
-                                cmd.Model.TimestampDelta).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
-                        {
-                            var txHash = await OracleCommand.Enable.ExecuteAsync(
-                                txExec.ExpressNode,
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"Submitted {txHash} oracle enable transaction")
-                                .ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Oracle.Response> cmd:
-                        {
-                            await txExec.OracleResponseAsync(
-                                cmd.Model.Url,
-                                Resolve(root, cmd.Model.ResponsePath),
-                                cmd.Model.RequestId).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
-                        {
-                            var txHash = await PolicyCommand.Block.ExecuteAsync(txExec.ExpressNode,
-                                cmd.Model.ScriptHash,
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"Submitted {txHash} account block transaction")
-                                .ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
-                        {
-                            var txHash = await PolicyCommand.Set.ExecuteAsync(
-                                txExec.ExpressNode,
-                                cmd.Model.Policy,
-                                cmd.Model.Value,
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"Submitted {txHash} policy set transaction")
-                                .ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
-                        {
-                            var loadResult = await PolicyCommand.Sync.TryLoadPolicyFromFileSystemAsync(
-                                    fileSystem, 
-                                    Resolve(root, cmd.Model.Source))
-                                .ConfigureAwait(false);
-                            if (loadResult.TryPickT0(out var policy, out _))
-                            {
-                                var txHash = await PolicyCommand.Sync.ExecuteAsync(
-                                    txExec.ExpressNode,
-                                    policy,
-                                    cmd.Model.Account,
-                                    cmd.Model.Password).ConfigureAwait(false);
-                                await writer.WriteLineAsync($"Submitted {txHash} policy sync transaction")
-                                        .ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                throw new ArgumentException($"Could not load policy values from \"{cmd.Model.Source}\"");
-                            }
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
-                        {
-                            var txHash = await PolicyCommand.Unblock.ExecuteAsync(txExec.ExpressNode,
-                                cmd.Model.ScriptHash,
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"Submitted {txHash} account unblock transaction")
-                                .ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Transfer> cmd:
-                        {
-                            var txHash = await TransferCommand.ExecuteAsync(
-                                txExec.ExpressNode,
-                                cmd.Model.Quantity,
-                                cmd.Model.Asset,
-                                cmd.Model.Sender,
-                                cmd.Model.Password,
-                                cmd.Model.Receiver).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"Submitted {txHash} transfer transaction")
-                                .ConfigureAwait(false);
-                            break;
-                        }
-                    default:
-                        throw new Exception($"Unknown batch command {pr.SelectedCommand.GetType()}");
-                }
-            }
+        //     for (var i = 0; i < commands.Length; i++)
+        //     {
+        //         var args = SplitCommandLine(commands.Span[i]).ToArray();
+        //         if (args.Length == 0
+        //             || args[0].StartsWith('#')
+        //             || args[0].StartsWith("//")) continue;
 
-            static string Resolve(System.IO.Abstractions.IDirectoryInfo @this, string path)
-                => @this.FileSystem.Path.IsPathFullyQualified(path)
-                    ? path
-                    : @this.FileSystem.Path.Combine(@this.FullName, path);
-        }
+        //         var pr = batchApp.Parse(args);
+        //         switch (pr.SelectedCommand)
+        //         {
+        //             case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
+        //                 {
+        //                     var result = await CheckpointCommand.Create.ExecuteAsync(
+        //                         txExec.ExpressNode,
+        //                         Resolve(root, cmd.Model.Name),
+        //                         fileSystem,
+        //                         cmd.Model.Force).ConfigureAwait(false);
+        //                     var checkpointFile = fileSystem.Path.GetFileName(result.path);
+        //                     await writer.WriteLineAsync($"Created {checkpointFile} checkpoint {result.checkpointMode}")
+        //                         .ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
+        //                 {
+        //                     var (nefFile, manifest) = await fileSystem.LoadContractAsync(cmd.Model.Contract)
+        //                         .ConfigureAwait(false);
+        //                     var result = await ContractCommand.Deploy.ExecuteAsync(
+        //                         txExec.ExpressNode,
+        //                         nefFile,
+        //                         manifest,
+        //                         cmd.Model.Account,
+        //                         cmd.Model.Password,
+        //                         cmd.Model.WitnessScope,
+        //                         cmd.Model.Data,
+        //                         cmd.Model.Force).ConfigureAwait(false);
+        //                     await writer.WriteLineAsync($"Submitted {result.txHash} deployment transaction")
+        //                         .ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
+        //                 {
+        //                     if (cmd.Model.Height == 0)
+        //                     {
+        //                         throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
+        //                     }
+
+        //                     if (chain.ConsensusNodes.Count != 1)
+        //                     {
+        //                         throw new ArgumentException("Contract download is only supported for single-node consensus");
+        //                     }
+
+        //                     await ContractCommand.Download.ExecuteAsync(
+        //                         txExec.ExpressNode,
+        //                         cmd.Model.Contract,
+        //                         cmd.Model.RpcUri,
+        //                         cmd.Model.Height,
+        //                         cmd.Model.Force,
+        //                         writer).ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
+        //                 {
+        //                     var script = await txExec.LoadInvocationScriptAsync(
+        //                         Resolve(root, cmd.Model.InvocationFile)).ConfigureAwait(false);
+        //                     await txExec.ContractInvokeAsync(
+        //                         script,
+        //                         cmd.Model.Account,
+        //                         cmd.Model.Password,
+        //                         cmd.Model.WitnessScope).ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Contract.Run> cmd:
+        //                 {
+        //                     var script = await txExec.BuildInvocationScriptAsync(
+        //                         cmd.Model.Contract,
+        //                         cmd.Model.Method,
+        //                         cmd.Model.Arguments).ConfigureAwait(false);
+        //                     await txExec.ContractInvokeAsync(
+        //                         script,
+        //                         cmd.Model.Account,
+        //                         cmd.Model.Password,
+        //                         cmd.Model.WitnessScope).ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.FastForward> cmd:
+        //                 {
+        //                     await writer.WriteLineAsync($"Fast forwarding {cmd.Model.Count} blocks").ConfigureAwait(false);
+        //                     await FastForwardCommand.ExecuteAsync(
+        //                         txExec.ExpressNode, 
+        //                         cmd.Model.Count,
+        //                         cmd.Model.TimestampDelta).ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
+        //                 {
+        //                     var txHash = await OracleCommand.Enable.ExecuteAsync(
+        //                         txExec.ExpressNode,
+        //                         cmd.Model.Account,
+        //                         cmd.Model.Password).ConfigureAwait(false);
+        //                     await writer.WriteLineAsync($"Submitted {txHash} oracle enable transaction")
+        //                         .ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Oracle.Response> cmd:
+        //                 {
+        //                     await txExec.OracleResponseAsync(
+        //                         cmd.Model.Url,
+        //                         Resolve(root, cmd.Model.ResponsePath),
+        //                         cmd.Model.RequestId).ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
+        //                 {
+        //                     var txHash = await PolicyCommand.Block.ExecuteAsync(txExec.ExpressNode,
+        //                         cmd.Model.ScriptHash,
+        //                         cmd.Model.Account,
+        //                         cmd.Model.Password).ConfigureAwait(false);
+        //                     await writer.WriteLineAsync($"Submitted {txHash} account block transaction")
+        //                         .ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
+        //                 {
+        //                     var txHash = await PolicyCommand.Set.ExecuteAsync(
+        //                         txExec.ExpressNode,
+        //                         cmd.Model.Policy,
+        //                         cmd.Model.Value,
+        //                         cmd.Model.Account,
+        //                         cmd.Model.Password).ConfigureAwait(false);
+        //                     await writer.WriteLineAsync($"Submitted {txHash} policy set transaction")
+        //                         .ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
+        //                 {
+        //                     var loadResult = await PolicyCommand.Sync.TryLoadPolicyFromFileSystemAsync(
+        //                             fileSystem, 
+        //                             Resolve(root, cmd.Model.Source))
+        //                         .ConfigureAwait(false);
+        //                     if (loadResult.TryPickT0(out var policy, out _))
+        //                     {
+        //                         var txHash = await PolicyCommand.Sync.ExecuteAsync(
+        //                             txExec.ExpressNode,
+        //                             policy,
+        //                             cmd.Model.Account,
+        //                             cmd.Model.Password).ConfigureAwait(false);
+        //                         await writer.WriteLineAsync($"Submitted {txHash} policy sync transaction")
+        //                                 .ConfigureAwait(false);
+        //                     }
+        //                     else
+        //                     {
+        //                         throw new ArgumentException($"Could not load policy values from \"{cmd.Model.Source}\"");
+        //                     }
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
+        //                 {
+        //                     var txHash = await PolicyCommand.Unblock.ExecuteAsync(txExec.ExpressNode,
+        //                         cmd.Model.ScriptHash,
+        //                         cmd.Model.Account,
+        //                         cmd.Model.Password).ConfigureAwait(false);
+        //                     await writer.WriteLineAsync($"Submitted {txHash} account unblock transaction")
+        //                         .ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             case CommandLineApplication<BatchFileCommands.Transfer> cmd:
+        //                 {
+        //                     var txHash = await TransferCommand.ExecuteAsync(
+        //                         txExec.ExpressNode,
+        //                         cmd.Model.Quantity,
+        //                         cmd.Model.Asset,
+        //                         cmd.Model.Sender,
+        //                         cmd.Model.Password,
+        //                         cmd.Model.Receiver).ConfigureAwait(false);
+        //                     await writer.WriteLineAsync($"Submitted {txHash} transfer transaction")
+        //                         .ConfigureAwait(false);
+        //                     break;
+        //                 }
+        //             default:
+        //                 throw new Exception($"Unknown batch command {pr.SelectedCommand.GetType()}");
+        //         }
+        //     }
+
+        //     static string Resolve(System.IO.Abstractions.IDirectoryInfo @this, string path)
+        //         => @this.FileSystem.Path.IsPathFullyQualified(path)
+        //             ? path
+        //             : @this.FileSystem.Path.Combine(@this.FullName, path);
+        // }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api
         static IEnumerable<string> SplitCommandLine(string commandLine)

@@ -19,8 +19,7 @@ namespace NeoExpress
 {
     interface IExpressNode : IDisposable
     {
-        IExpressFile ExpressFile { get; }
-        ExpressChain Chain => ExpressFile.Chain;
+        // IExpressChain ExpressChain { get; }
         ProtocolSettings ProtocolSettings { get; }
 
         enum CheckpointMode { Online, Offline }

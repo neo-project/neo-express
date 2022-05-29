@@ -27,7 +27,7 @@ namespace NeoExpress.Node
 
             public CancellationToken CancellationToken => cancellationToken.Token;
 
-            public WebServerPlugin(ExpressChain chain, ExpressConsensusNode node)
+            public WebServerPlugin(IExpressChain chain, ExpressConsensusNode node)
             {
                 this.rpcSettings = GetRpcServerSettings(chain, node);
             }
@@ -83,7 +83,7 @@ namespace NeoExpress.Node
                 return host;
             }
 
-            static Neo.Plugins.RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+            static Neo.Plugins.RpcServerSettings GetRpcServerSettings(IExpressChain chain, ExpressConsensusNode node)
             {
                 var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
                     ? bindAddress : IPAddress.Loopback;

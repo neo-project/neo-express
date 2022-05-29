@@ -19,9 +19,9 @@ namespace NeoExpress.Commands
         [Command("enable", Description = "Enable oracles for neo-express instance")]
         internal class Enable
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Enable(IExpressFile expressFile)
+            public Enable(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -56,7 +56,7 @@ namespace NeoExpress.Commands
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string account, string password)
             {
-                var (wallet, accountHash) = expressNode.ExpressFile.ResolveSigner(account, password);
+                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(account, password);
 
                 var oracles = expressNode.Chain.ConsensusNodes
                     .Select(n => n.Wallet.DefaultAccount ?? throw new Exception("missing default account"))

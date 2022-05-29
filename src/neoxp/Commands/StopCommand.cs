@@ -9,9 +9,9 @@ namespace NeoExpress.Commands
     [Command("stop", Description = "Stop Neo-Express instance node")]
     class StopCommand
     {
-        readonly IExpressFile expressFile;
+        readonly IExpressChain expressFile;
 
-        public StopCommand(IExpressFile expressFile)
+        public StopCommand(IExpressChain expressFile)
         {
             this.expressFile = expressFile;
         }
@@ -36,14 +36,12 @@ namespace NeoExpress.Commands
                 throw new InvalidOperationException("Only one of NodeIndex or --all can be specified");
             }
 
-            var chain = expressFile.Chain;
-
             if (All)
             {
-                var tasks = new Task[chain.ConsensusNodes.Count];
-                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                var tasks = new Task[expressFile.ConsensusNodes.Count];
+                for (int i = 0; i < expressFile.ConsensusNodes.Count; i++)
                 {
-                    tasks[i] = StopNodeAsync(chain.ConsensusNodes[i]);
+                    tasks[i] = StopNodeAsync(expressFile.ConsensusNodes[i]);
                 }
                 await Task.WhenAll(tasks).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"all nodes stopped").ConfigureAwait(false);
@@ -52,11 +50,11 @@ namespace NeoExpress.Commands
             {
                 var nodeIndex = NodeIndex.HasValue
                     ? NodeIndex.Value
-                    : chain.ConsensusNodes.Count == 1
+                    : expressFile.ConsensusNodes.Count == 1
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                var wasRunning = await StopNodeAsync(chain.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
+                var wasRunning = await StopNodeAsync(expressFile.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"node {nodeIndex} {(wasRunning ? "stopped" : "was not running")}").ConfigureAwait(false);
             }
 

@@ -16,9 +16,9 @@ namespace NeoExpress.Commands
         [Command(Name = "set", Description = "Set single policy value")]
         internal class Set
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Set(IExpressFile expressFile)
+            public Set(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }
@@ -61,7 +61,7 @@ namespace NeoExpress.Commands
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicySettings policy, decimal value, string account, string password)
             {
-                var (wallet, accountHash) = expressNode.ExpressFile.ResolveSigner(account, password);
+                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(account, password);
 
                 var (hash, operation) = policy switch
                 {

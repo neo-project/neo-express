@@ -23,7 +23,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chain, _) = fileSystem.LoadExpressChain(Input);
+                var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
                 using var expressNode = chain.GetExpressNode(fileSystem);
                 var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
 

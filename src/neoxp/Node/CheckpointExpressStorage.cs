@@ -13,16 +13,16 @@ namespace NeoExpress.Node
         readonly IDisposable disposable;
 
         public string Name => nameof(CheckpointExpressStorage);
-        public IStore Chain { get; }
-        public IStore AppLogs { get; }
-        public IStore Notifications { get; }
+        public IStore ChainStore { get; }
+        public IStore AppLogsStore { get; }
+        public IStore NotificationsStore { get; }
 
         private CheckpointExpressStorage()
         {
             disposable = NoopDisposable.Instance;
-            Chain = new MemoryTrackingStore(NullStore.Instance);
-            AppLogs = new MemoryTrackingStore(NullStore.Instance);
-            Notifications = new MemoryTrackingStore(NullStore.Instance);
+            ChainStore = new MemoryTrackingStore(NullStore.Instance);
+            AppLogsStore = new MemoryTrackingStore(NullStore.Instance);
+            NotificationsStore = new MemoryTrackingStore(NullStore.Instance);
         }
 
         private CheckpointExpressStorage(RocksDb db, string checkpointPath)
@@ -36,11 +36,11 @@ namespace NeoExpress.Node
                 }
             });
 
-            Chain = new MemoryTrackingStore(
+            ChainStore = new MemoryTrackingStore(
                 CreateReadOnlyStore(db, db.GetDefaultColumnFamily()));
-            AppLogs = new MemoryTrackingStore(
+            AppLogsStore = new MemoryTrackingStore(
                 GetReadOnlyStore(db, ExpressSystem.APP_LOGS_STORE_NAME));
-            Notifications = new MemoryTrackingStore(
+            NotificationsStore = new MemoryTrackingStore(
                 GetReadOnlyStore(db, ExpressSystem.NOTIFICATIONS_COLUMN_STORE_NAME));
 
             static IReadOnlyStore GetReadOnlyStore(RocksDb db, string name)

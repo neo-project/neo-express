@@ -6,8 +6,8 @@ namespace NeoExpress
     interface IExpressStorage : IDisposable
     {
         string Name { get; }
-        IStore Chain { get; }
-        IStore AppLogs { get; }
-        IStore Notifications { get; }
+        IStore ChainStore { get; }
+        IStore AppLogsStore { get; }
+        IStore NotificationsStore { get; }
     }
 }

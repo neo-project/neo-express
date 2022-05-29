@@ -12,9 +12,9 @@ namespace NeoExpress.Commands
         [Command("balance", Description = "Show asset balance for account")]
         internal class Balance
         {
-            readonly IExpressFile expressFile;
+            readonly IExpressChain expressFile;
 
-            public Balance(IExpressFile expressFile)
+            public Balance(IExpressChain expressFile)
             {
                 this.expressFile = expressFile;
             }

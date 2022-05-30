@@ -62,6 +62,7 @@ namespace NeoExpress.Node
             storageProviderPlugin = new StorageProviderPlugin(expressStorage);
             persistenceWrapper = new PersistenceWrapper(this.OnPersist);
             webServerPlugin = new WebServerPlugin(chain, node);
+            webServerPlugin.RegisterMethods(this);
             dbftPlugin = new DBFTPlugin(GetConsensusSettings(chain));
 
             var _secondsPerBlock = secondsPerBlock.HasValue
@@ -134,19 +135,19 @@ namespace NeoExpress.Node
                     using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
                     consolePlugin.Start(console);
+                    webServerPlugin.Start();
                     neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {
                         Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
                         WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
                     });
-                    webServerPlugin.Start();
                     dbftPlugin.Start(wallet);
 
                     // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
                     // Do not remove or re-word this console output:
                     consolePlugin.WriteLine($"Neo express is running ({expressStorage.Name})");
 
-                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, webServerPlugin.CancellationToken);
+                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, tokenSource.Token);
                     linkedToken.Token.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)

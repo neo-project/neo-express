@@ -20,16 +20,19 @@ namespace NeoExpress.Node
         class WebServerPlugin : Neo.Plugins.Plugin
         {
             readonly RpcServerSettings rpcSettings;
-            readonly CancellationTokenSource cancellationToken = new();
             NeoSystem? neoSystem = null;
             RpcServer? rpcServer = null;
             IWebHost? webHost = null;
 
-            public CancellationToken CancellationToken => cancellationToken.Token;
-
             public WebServerPlugin(IExpressChain chain, ExpressConsensusNode node)
             {
                 this.rpcSettings = GetRpcServerSettings(chain, node);
+            }
+
+            public void RegisterMethods(object handler)
+            {
+                if (rpcServer is null) throw new NullReferenceException(nameof(rpcServer));
+                else rpcServer.RegisterMethods(handler);
             }
 
             public void Start()

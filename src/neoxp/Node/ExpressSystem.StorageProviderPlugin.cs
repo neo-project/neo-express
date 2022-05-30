@@ -16,8 +16,8 @@ namespace NeoExpress.Node
             public StorageProviderPlugin(IExpressStorage expressStorage)
             {
                 this.expressStorage = expressStorage;
-                // Express DBFTPlugin configured to ignore recovery logs, so there's no need
-                // to save consensus state to disk
+                // Express DBFTPlugin configured to ignore recovery logs, 
+                // so there's no need to save consensus state to disk
                 this.consensusStateStore = new MemoryTrackingStore(NullStore.Instance);
             }
 

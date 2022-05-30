@@ -9,6 +9,7 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using NeoExpress.Models;
+using NeoExpress.Node;
 
 namespace NeoExpress
 {
@@ -61,27 +62,25 @@ namespace NeoExpress
                 var consensusNode = chainInfo.ConsensusNodes[i];
                 if (consensusNode.IsRunning())
                 {
-                    return new Node.OnlineNode(this, consensusNode);
+                    return new OnlineNode(this, consensusNode);
                 }
             }
 
             var node = chainInfo.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-            var provider = RocksDbStorageProvider.Open(nodePath);
-            return new Node.OfflineNode(this, node, provider, offlineTrace);
+            var expressStorage = new RocksDbExpressStorage(nodePath);
+            return new OfflineNode(this, node, expressStorage, offlineTrace);
         }
 
         public bool TryResolveSigner(string name, string password, [MaybeNullWhen(false)] out Neo.Wallets.Wallet wallet, out UInt160 accountHash)
         {
             if (!string.IsNullOrEmpty(name))
             {
-                var settings = chainInfo.GetProtocolSettings();
-
                 if (name.Equals(ExpressChainExtensions.GENESIS, StringComparison.OrdinalIgnoreCase))
                 {
                     var contract = chainInfo.CreateGenesisContract();
-                    wallet = new DevWallet(settings, string.Empty);
+                    wallet = new DevWallet(string.Empty, chainInfo.AddressVersion);
                     accountHash = wallet.CreateAccount(contract).ScriptHash;
                     return true;
                 }
@@ -91,7 +90,7 @@ namespace NeoExpress
                 {
                     if (name.Equals(wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        wallet = DevWallet.FromExpressWallet(settings, wallets[i]);
+                        wallet = DevWallet.FromExpressWallet(wallets[i], chainInfo.AddressVersion);
                         accountHash = wallet.GetAccounts().Single(a => a.IsDefault).ScriptHash;
                         return true;
                     }
@@ -102,7 +101,7 @@ namespace NeoExpress
                     var nodeWallet = chainInfo.ConsensusNodes[i].Wallet;
                     if (name.Equals(nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        wallet = DevWallet.FromExpressWallet(settings, nodeWallet);
+                        wallet = DevWallet.FromExpressWallet(nodeWallet, chainInfo.AddressVersion);
                         accountHash = wallet.GetAccounts().Single(a => a.IsDefault).ScriptHash;
                         return true;
                     }
@@ -110,21 +109,21 @@ namespace NeoExpress
 
                 if (TryGetWif(name, out var privateKey))
                 {
-                    wallet = new DevWallet(settings, string.Empty);
+                    wallet = new DevWallet(string.Empty, chainInfo.AddressVersion);
                     accountHash = wallet.CreateAccount(privateKey).ScriptHash;
                     return true;
                 }
 
                 if (!string.IsNullOrEmpty(password))
                 {
-                    if (TryGetNEP2(name, password, settings, out privateKey))
+                    if (TryGetNEP2(name, password, chainInfo.AddressVersion, out privateKey))
                     {
-                        wallet = new DevWallet(settings, string.Empty);
+                        wallet = new DevWallet(string.Empty, chainInfo.AddressVersion);
                         accountHash = wallet.CreateAccount(privateKey).ScriptHash;
                         return true;
                     }
 
-                    if (fileSystem.TryImportNEP6(name, password, settings, out var devWallet))
+                    if (fileSystem.TryImportNEP6(name, password, chainInfo.AddressVersion, out var devWallet))
                     {
                         var account = devWallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
                             ?? devWallet.GetAccounts().SingleOrDefault()
@@ -160,11 +159,11 @@ namespace NeoExpress
                 }
             }
 
-            static bool TryGetNEP2(string nep2, string password, ProtocolSettings settings, out byte[] privateKey)
+            static bool TryGetNEP2(string nep2, string password, byte addressVersion, out byte[] privateKey)
             {
                 try
                 {
-                    privateKey = Neo.Wallets.Wallet.GetPrivateKeyFromNEP2(nep2, password, settings.AddressVersion);
+                    privateKey = Neo.Wallets.Wallet.GetPrivateKeyFromNEP2(nep2, password, addressVersion);
                     return true;
                 }
                 catch

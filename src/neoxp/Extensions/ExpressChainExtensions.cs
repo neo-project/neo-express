@@ -41,11 +41,6 @@ namespace NeoExpress
             return Contract.CreateMultiSigContract(m, publicKeys);
         }
 
-        public static UInt160 GetGenesisScriptHash(this Neo.BlockchainToolkit.Models.ExpressChain chain)
-        {
-            var contract = CreateGenesisContract(chain);
-            return contract.ScriptHash;
-        }
 
 
         public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
@@ -64,173 +59,16 @@ namespace NeoExpress
 
 
 
-        public static bool IsMultiSigContract(this ExpressWalletAccount @this)
-            => Neo.SmartContract.Helper.IsMultiSigContract(Convert.FromHexString(@this.Contract.Script));
-
         public static bool IsMultiSigContract(this WalletAccount @this)
             => Neo.SmartContract.Helper.IsMultiSigContract(@this.Contract.Script);
 
         public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
 
-        public static IReadOnlyList<Wallet> GetMultiSigWallets(this Neo.BlockchainToolkit.Models.ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
-        {
-            var builder = ImmutableList.CreateBuilder<Wallet>();
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
-                if (wallet.GetAccount(accountHash) != null) builder.Add(wallet);
-            }
 
-            for (int i = 0; i < chain.Wallets.Count; i++)
-            {
-                var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                if (wallet.GetAccount(accountHash) != null) builder.Add(wallet);
-            }
-
-            return builder.ToImmutable();
-        }
-
-        public static KeyPair[] GetConsensusNodeKeys(this Neo.BlockchainToolkit.Models.ExpressChain chain)
-            => chain.ConsensusNodes
-                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
-                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
-                .ToArray();
 
         internal const string GENESIS = "genesis";
 
-        public static bool IsReservedName(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name)
-        {
-            if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                if (string.Equals(chain.ConsensusNodes[i].Wallet.Name, name, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
-        }
-
-        // public static string ResolvePassword(this IExpressFile expressFile, string name, string password)
-        // {
-        //     // TODO: expressFile.Chain.ResolvePassword
-        //     return expressFile.Chain.ResolvePassword(name, password);
-        // }
-
-        public static string ResolvePassword(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name, string password)
-        {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
-
-            // if the user specified a password, use it
-            if (!string.IsNullOrEmpty(password)) return password;
-
-            // if the name is a valid Neo Express account name, no password is needed
-            if (chain.IsReservedName(name)) return string.Empty;
-            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return string.Empty;
-
-            // if a password is needed but not provided, prompt the user
-            return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
-        }
 
 
-
-
-
-
-        public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this Neo.BlockchainToolkit.Models.ExpressChain chain, ProtocolSettings settings)
-        {
-            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
-
-            var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
-            var account = wallet.GetMultiSigAccounts().Single();
-            return (wallet, account.ScriptHash);
-        }
-
-        public static ExpressWallet? GetWallet(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name)
-            => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
-
-
-
-        public static bool TryGetSigningAccount(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name, string password, IFileSystem fileSystem, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
-        {
-            if (!string.IsNullOrEmpty(name))
-            {
-                var settings = chain.GetProtocolSettings();
-
-                if (name.Equals(ExpressChainExtensions.GENESIS, StringComparison.OrdinalIgnoreCase))
-                {
-                    (wallet, accountHash) = chain.GetGenesisAccount(settings);
-                    return true;
-                }
-
-                if (chain.Wallets != null && chain.Wallets.Count > 0)
-                {
-                    for (int i = 0; i < chain.Wallets.Count; i++)
-                    {
-                        var expWallet = chain.Wallets[i];
-                        if (name.Equals(expWallet.Name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            wallet = DevWallet.FromExpressWallet(settings, expWallet);
-                            accountHash = wallet.GetAccounts().Single(a => a.IsDefault).ScriptHash;
-                            return true;
-                        }
-                    }
-                }
-
-                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-                {
-                    var expWallet = chain.ConsensusNodes[i].Wallet;
-                    if (name.Equals(expWallet.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        wallet = DevWallet.FromExpressWallet(settings, expWallet);
-                        accountHash = wallet.GetAccounts().Single(a => !a.Contract.Script.IsMultiSigContract()).ScriptHash;
-                        return true;
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(password))
-                {
-                    if (TryGetNEP2Wallet(name, password, settings, out var devWallet)
-                        || fileSystem.TryImportNEP6(name, password, settings, out devWallet))
-                    {
-                        var account = devWallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
-                            ?? devWallet.GetAccounts().SingleOrDefault()
-                            ?? throw new InvalidOperationException("Neo-express only supports NEP-6 wallets with a single default account or a single account");
-                        if (account.IsMultiSigContract())
-                        {
-                            throw new Exception("Neo-express doesn't supports multi-sig NEP-6 accounts");
-                        }
-
-                        wallet = devWallet;
-                        accountHash = account.ScriptHash;
-
-                        return true;
-                    }
-                }
-            }
-
-            wallet = null;
-            accountHash = null;
-            return false;
-
-            static bool TryGetNEP2Wallet(string nep2, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
-            {
-                try
-                {
-                    var privateKey = Wallet.GetPrivateKeyFromNEP2(nep2, password, settings.AddressVersion);
-                    wallet = new DevWallet(settings, string.Empty);
-                    var account = wallet.CreateAccount(privateKey);
-                    account.IsDefault = true;
-                    return true;
-                }
-                catch
-                {
-                    wallet = null;
-                    return false;
-                }
-            }
-        }
     }
 }

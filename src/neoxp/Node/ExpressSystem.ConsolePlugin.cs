@@ -15,15 +15,15 @@ namespace NeoExpress.Node
         class ConsolePlugin : Plugin, ILogPlugin
         {
             NeoSystem? neoSystem = null;
-            readonly IConsole console;
+            IConsole? console = null;
 
-            public ConsolePlugin(IConsole console)
+            public void Start(IConsole console)
             {
                 this.console = console;
                 ApplicationEngine.Log += OnLog!;
             }
 
-            public void WriteLine(string text) => console.WriteLine(text);
+            public void WriteLine(string text) => console?.WriteLine(text);
 
             protected override void OnSystemLoaded(NeoSystem system)
             {
@@ -51,6 +51,7 @@ namespace NeoExpress.Node
 
             void OnApplicationExecuted(Blockchain.ApplicationExecuted applicationExecuted)
             {
+                if (console == null) return;
                 if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
                 {
                     var logMessage = $"Tx FAULT: hash={applicationExecuted.Transaction.Hash}";
@@ -64,6 +65,7 @@ namespace NeoExpress.Node
 
             void ILogPlugin.Log(string source, LogLevel level, object message)
             {
+                if (console == null) return;
                 console.Out.WriteLine($"{DateTimeOffset.Now:HH:mm:ss.ff} {source} {level} {message}");
             }
         }

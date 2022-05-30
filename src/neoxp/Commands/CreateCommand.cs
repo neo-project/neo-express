@@ -63,7 +63,7 @@ namespace NeoExpress.Commands
             var wallets = new List<(DevWallet wallet, WalletAccount account)>(Count);
             for (var i = 1; i <= Count; i++)
             {
-                var wallet = new DevWallet(settings, $"node{i}");
+                var wallet = new DevWallet($"node{i}", settings);
                 var account = wallet.CreateAccount();
                 account.IsDefault = true;
                 wallets.Add((wallet, account));

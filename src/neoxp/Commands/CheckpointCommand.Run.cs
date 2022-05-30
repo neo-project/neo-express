@@ -58,8 +58,8 @@ namespace NeoExpress.Commands
                 using var expressStorage = CheckpointExpressStorage.OpenCheckpoint(
                     checkPointPath, chain.Network, chain.AddressVersion, scriptHash);
                 var expressSystem = new Node.ExpressSystem(
-                    chain, chain.ConsensusNodes[0], expressStorage, console, Trace, SecondsPerBlock);
-                await expressSystem.RunAsync(token);
+                    chain, chain.ConsensusNodes[0], expressStorage, Trace, SecondsPerBlock);
+                await expressSystem.RunAsync(console, token);
             }
         }
     }

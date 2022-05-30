@@ -53,7 +53,7 @@ namespace NeoExpress.Commands
                     chain.RemoveWallet(existingWallet);
                 }
 
-                var devWallet = new DevWallet(chain.GetProtocolSettings(), Name);
+                var devWallet = new DevWallet(Name, chain.AddressVersion);
                 var devAccount = devWallet.CreateAccount();
                 devAccount.IsDefault = true;
 

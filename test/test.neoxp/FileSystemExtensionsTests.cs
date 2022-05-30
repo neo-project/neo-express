@@ -33,7 +33,7 @@ public class FileSystemExtensionsTests
         var fileSystem = new MockFileSystem();
         var path = @"c:\test-wallet.json";
         fileSystem.AddResource(path, "test-wallet.json");
-        if (fileSystem.TryImportNEP6(path, "password", Neo.ProtocolSettings.Default, out var wallet))
+        if (fileSystem.TryImportNEP6(path, "password", Neo.ProtocolSettings.Default.AddressVersion, out var wallet))
         {
             var account = wallet.GetAccounts().Single();
             account.Address.Should().Be("NLdwJoSk6rEJyahgLLjNiE3oKE15vCDeb9");

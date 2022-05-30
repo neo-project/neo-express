@@ -100,15 +100,16 @@ namespace NeoExpress
             return (await nefTask, await manifestTask);
         }
 
-        public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
+        public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, byte addressVersion, [MaybeNullWhen(false)] out DevWallet wallet)
         {
             if (fileSystem.File.Exists(path))
             {
+                var settings = DevWallet.GetProtocolSettings(addressVersion);
                 var json = Neo.IO.Json.JObject.Parse(fileSystem.File.ReadAllBytes(path));
                 var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(string.Empty, settings, json);
                 using var unlock = nep6wallet.Unlock(password);
 
-                wallet = new DevWallet(settings, nep6wallet.Name);
+                wallet = new DevWallet(nep6wallet.Name, settings);
                 foreach (var account in nep6wallet.GetAccounts())
                 {
                     var devAccount = wallet.CreateAccount(account.Contract, account.GetKey());

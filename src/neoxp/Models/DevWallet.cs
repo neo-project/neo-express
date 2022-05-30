@@ -17,7 +17,13 @@ namespace NeoExpress.Models
         public override string Name { get; }
         public override Version? Version => null;
 
-        public DevWallet(ProtocolSettings settings, string name, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty, settings)
+        public DevWallet(string name, byte addressVersion, IEnumerable<DevWalletAccount>? accounts = null)
+            : this(name, GetProtocolSettings(addressVersion), accounts)
+        {
+        }
+
+        public DevWallet(string name, ProtocolSettings settings, IEnumerable<DevWalletAccount>? accounts = null)
+            : base(string.Empty, settings)
         {
             this.Name = name;
 
@@ -30,11 +36,17 @@ namespace NeoExpress.Models
             }
         }
 
-        public DevWallet(ProtocolSettings settings, string name, DevWalletAccount account) : base(string.Empty, settings)
+        public DevWallet(string name, byte addressVersion, DevWalletAccount account) 
+            : base(string.Empty, GetProtocolSettings(addressVersion))
         {
             this.Name = name;
             accounts.Add(account.ScriptHash, account);
         }
+
+        public static ProtocolSettings GetProtocolSettings(byte addressVersion)
+            => addressVersion == ProtocolSettings.Default.AddressVersion
+                ? ProtocolSettings.Default
+                : ProtocolSettings.Default with { AddressVersion = addressVersion };
 
         public ExpressWallet ToExpressWallet() => new ExpressWallet()
         {
@@ -44,10 +56,16 @@ namespace NeoExpress.Models
                     .ToList(),
         };
 
-        public static DevWallet FromExpressWallet(ProtocolSettings settings, ExpressWallet wallet)
+        public static DevWallet FromExpressWallet(ExpressWallet wallet, byte addressVersion)
+        {
+            var settings = GetProtocolSettings(addressVersion);
+            return FromExpressWallet(wallet, settings);
+        }
+
+        public static DevWallet FromExpressWallet(ExpressWallet wallet, ProtocolSettings settings)
         {
             var accounts = wallet.Accounts.Select(a => DevWalletAccount.FromExpressWalletAccount(settings, a));
-            return new DevWallet(settings, wallet.Name, accounts);
+            return new DevWallet(wallet.Name, settings, accounts);
         }
 
         public override bool Contains(UInt160 scriptHash) => accounts.ContainsKey(scriptHash);

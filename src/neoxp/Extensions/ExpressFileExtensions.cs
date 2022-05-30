@@ -95,23 +95,23 @@ namespace NeoExpress
 
 
 
-        public static IReadOnlyList<Neo.Wallets.Wallet> GetMultiSigWallets(this IExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
-        {
-            var wallets = new List<DevWallet>();
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
-                if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
-            }
+        // public static IReadOnlyList<Neo.Wallets.Wallet> GetMultiSigWallets(this IExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
+        // {
+        //     var wallets = new List<DevWallet>();
+        //     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+        //     {
+        //         var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
+        //         if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
+        //     }
 
-            for (int i = 0; i < chain.Wallets.Count; i++)
-            {
-                var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
-            }
+        //     for (int i = 0; i < chain.Wallets.Count; i++)
+        //     {
+        //         var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
+        //         if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
+        //     }
 
-            return wallets;
-        }
+        //     return wallets;
+        // }
 
         public delegate bool TryParse<T>(string value, [MaybeNullWhen(false)] out T parsedValue);
 

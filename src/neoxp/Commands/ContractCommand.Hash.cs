@@ -12,11 +12,11 @@ namespace NeoExpress.Commands
         [Command(Name = "hash", Description = "Get contract hash for contract path and deployment account")]
         internal class Hash
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Hash(IExpressChain expressFile)
+            public Hash(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Hash(CommandLineApplication app) : this(app.GetExpressFile())
@@ -36,8 +36,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode();
-                var accountHash = expressNode.Chain.ResolveAccountHash(Account);
+                var accountHash = chain.ResolveAccountHash(Account);
                 var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
 
                 var contractHash = GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);

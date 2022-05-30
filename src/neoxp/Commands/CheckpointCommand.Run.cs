@@ -16,11 +16,11 @@ namespace NeoExpress.Commands
         [Command("run", Description = "Run a neo-express checkpoint (discarding changes on shutdown)")]
         internal class Run
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Run(IExpressChain expressFile)
+            public Run(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Run(CommandLineApplication app) : this(app.GetExpressFile())
@@ -42,23 +42,23 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
             {
-                if (expressFile.ConsensusNodes.Count != 1)
+                if (chain.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
                 }
 
+                var node = chain.ConsensusNodes[0];
                 var checkPointPath = fileSystem.ResolveCheckpointFileName(Name);
                 if (!fileSystem.File.Exists(checkPointPath))
                 {
                     throw new Exception($"Checkpoint {Name} couldn't be found");
                 }
 
-                // TODO: expressFile.Chain.GetGenesisScriptHash
-                // TODO: Node.ExpressSystem expressFile.Chain
+                var scriptHash = node.Wallet.DefaultAccount?.GetScriptHash() ?? throw new Exception("Consensus wallet is missing a default account");
                 using var expressStorage = CheckpointExpressStorage.OpenCheckpoint(
-                    checkPointPath, expressFile.Network, expressFile.AddressVersion, expressFile.Chain.GetGenesisScriptHash());
+                    checkPointPath, chain.Network, chain.AddressVersion, scriptHash);
                 var expressSystem = new Node.ExpressSystem(
-                    expressFile.Chain, expressFile.ConsensusNodes[0], expressStorage, console, Trace, SecondsPerBlock);
+                    chain, chain.ConsensusNodes[0], expressStorage, console, Trace, SecondsPerBlock);
                 await expressSystem.RunAsync(token);
             }
         }

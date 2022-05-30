@@ -15,11 +15,11 @@ namespace NeoExpress.Commands
     [Command("export", Description = "Export neo-express protocol, config and wallet files")]
     class ExportCommand
     {
-        readonly IExpressChain expressFile;
+        readonly IExpressChain chain;
 
         public ExportCommand(IExpressChain expressFile)
         {
-            this.expressFile = expressFile;
+            this.chain = expressFile;
         }
 
         public ExportCommand(CommandLineApplication app) : this(app.GetExpressFile())
@@ -33,20 +33,20 @@ namespace NeoExpress.Commands
             var password = Prompt.GetPassword("Input password to use for exported wallets");
             var folder = fileSystem.Directory.GetCurrentDirectory();
 
-            for (var i = 0; i < expressFile.ConsensusNodes.Count; i++)
+            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                var node = expressFile.ConsensusNodes[i];
+                var node = chain.ConsensusNodes[i];
                 console.Out.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
 
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
-                fileSystem.ExportNEP6(node.Wallet, walletPath, password, expressFile.AddressVersion);
+                fileSystem.ExportNEP6(node.Wallet, walletPath, password, chain.AddressVersion);
 
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
                 using var stream = fileSystem.File.Open(nodeConfigPath, FileMode.Create, FileAccess.Write);
                 using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
                 using var _ = writer.WriteObject();
                 WriteAppConfig(writer, node, password, walletPath);
-                WriteProtocolConfig(writer, expressFile);
+                WriteProtocolConfig(writer, chain);
             }
         }
 
@@ -75,23 +75,22 @@ namespace NeoExpress.Commands
             }
         }
 
-        internal static void WriteProtocolConfig(JsonWriter writer, IExpressChain expressFile)
+        internal static void WriteProtocolConfig(JsonWriter writer, IExpressChain chain)
         {
             // use neo defaults for MillisecondsPerBlock
 
             using var _ = writer.WritePropertyObject("ProtocolConfiguration");
 
-            writer.WriteProperty("Magic", expressFile.Network);
-            writer.WriteProperty("AddressVersion", expressFile.AddressVersion);
-            writer.WriteProperty("ValidatorsCount", expressFile.ConsensusNodes.Count);
+            writer.WriteProperty("Magic", chain.Network);
+            writer.WriteProperty("AddressVersion", chain.AddressVersion);
+            writer.WriteProperty("ValidatorsCount", chain.ConsensusNodes.Count);
 
             using (var __ = writer.WritePropertyArray("StandbyCommittee"))
             {
-                // TODO expressFile.Chain.GetProtocolSettings
-                var settings = expressFile.Chain.GetProtocolSettings();
-                for (int i = 0; i < expressFile.ConsensusNodes.Count; i++)
+                var settings = chain.GetProtocolSettings();
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    var expressAccount = expressFile.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
+                    var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
                     var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
                     var key = devAccount.GetKey();
                     if (key != null)
@@ -103,7 +102,7 @@ namespace NeoExpress.Commands
 
             using (var __ = writer.WritePropertyArray("SeedList"))
             {
-                foreach (var node in expressFile.ConsensusNodes)
+                foreach (var node in chain.ConsensusNodes)
                 {
                     writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
                 }

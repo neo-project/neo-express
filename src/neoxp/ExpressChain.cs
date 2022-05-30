@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Linq;
@@ -15,20 +16,34 @@ namespace NeoExpress
 
     class ExpressChain : IExpressChain
     {
-        readonly IFileSystem fileSystem;
-        readonly string chainPath;
         readonly ExpressChainInfo chainInfo;
+        readonly string chainPath;
+        readonly IFileSystem fileSystem;
 
         public uint Network => chainInfo.Network;
         public byte AddressVersion => chainInfo.AddressVersion;
         public IReadOnlyList<ExpressConsensusNode> ConsensusNodes => chainInfo.ConsensusNodes;
         public IReadOnlyList<ExpressWallet> Wallets => chainInfo.Wallets;
-        public IReadOnlyDictionary<string, string> Settings => chainInfo.Settings;
+        public IReadOnlyDictionary<string, string> Settings
+            => (chainInfo.Settings as IReadOnlyDictionary<string, string>) ?? ImmutableDictionary<string, string>.Empty;
 
         public ExpressChain(string input, IFileSystem fileSystem)
         {
-            this.fileSystem = fileSystem;
             (chainInfo, chainPath) = fileSystem.LoadExpressChainInfo(input);
+            chainInfo.Wallets ??= new List<ExpressWallet>();
+            this.fileSystem = fileSystem;
+        }
+
+
+        public void AddWallet(ExpressWallet wallet)
+        {
+            if (this.IsReservedName(wallet.Name)) throw new ArgumentException(nameof(wallet));
+            chainInfo.Wallets.Add(wallet);
+        }
+
+        public void RemoveWallet(ExpressWallet wallet)
+        {
+            chainInfo.Wallets.Remove(wallet);
         }
 
         public void SaveChain()
@@ -159,6 +174,5 @@ namespace NeoExpress
                 }
             }
         }
-
     }
 }

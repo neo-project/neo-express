@@ -11,11 +11,11 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create a new neo-express checkpoint")]
         internal class Create
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Create(IExpressChain expressFile)
+            public Create(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Create(CommandLineApplication app) : this(app.GetExpressFile())
@@ -34,12 +34,12 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
-                if (expressFile.ConsensusNodes.Count != 1)
+                if (chain.ConsensusNodes.Count != 1)
                 {
                     throw new NotSupportedException("Checkpoint create is only supported on single node express instances");
                 }
 
-                using var expressNode = expressFile.GetExpressNode();
+                using var expressNode = chain.GetExpressNode();
                 var (checkpointPath, mode) = await ExecuteAsync(expressNode, Name, fileSystem, Force)
                     .ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
@@ -48,7 +48,7 @@ namespace NeoExpress.Commands
             public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)>
                 ExecuteAsync(IExpressNode expressNode, string checkpointPath, IFileSystem fileSystem, bool force)
             {
-                if (expressNode.Chain.ConsensusNodes.Count != 1)
+                if (expressNode.ConsensusNodes.Count != 1)
                 {
                     throw new NotSupportedException("Checkpoint create is only supported on single node express instances");
                 }

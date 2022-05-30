@@ -1,8 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
 
 namespace NeoExpress.Commands
 {
@@ -11,11 +9,11 @@ namespace NeoExpress.Commands
         [Command("delete", Description = "Delete neo-express wallet")]
         internal class Delete
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Delete(IExpressChain expressFile)
+            public Delete(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Delete(CommandLineApplication app) : this(app.GetExpressFile())
@@ -34,13 +32,13 @@ namespace NeoExpress.Commands
 
             internal void Execute(IConsole console)
             {
-                var wallet = expressFile.Chain.GetWallet(Name);
+                var wallet = chain.GetWallet(Name);
 
-                if (wallet == null) throw new Exception($"{Name} privatenet wallet not found.");
+                if (wallet is null) throw new Exception($"{Name} privatenet wallet not found.");
                 if (!Force) throw new Exception("You must specify force to delete a privatenet wallet.");
 
-                expressFile.Chain.Wallets.Remove(wallet);
-                expressFile.SaveChain();
+                chain.RemoveWallet(wallet);
+                chain.SaveChain();
                 console.WriteLine($"{Name} privatenet wallet deleted.");
             }
         }

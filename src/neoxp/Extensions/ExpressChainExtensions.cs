@@ -47,58 +47,6 @@ namespace NeoExpress
             return contract.ScriptHash;
         }
 
-        public static UInt160 ResolveAccountHash(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name)
-            => chain.TryResolveAccountHash(name, out var hash) 
-                ? hash 
-                : throw new Exception("ResolveAccountHash failed");
-
-        public static bool TryResolveAccountHash(this Neo.BlockchainToolkit.Models.ExpressChain chain, string name, out UInt160 accountHash)
-        {
-            if (chain.Wallets != null && chain.Wallets.Count > 0)
-            {
-                for (int i = 0; i < chain.Wallets.Count; i++)
-                {
-                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash();
-                        return true;
-                    }
-                }
-            }
-
-            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var nodeWallet = chain.ConsensusNodes[i].Wallet;
-                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    accountHash = nodeWallet.DefaultAccount.GetScriptHash();
-                    return true;
-                }
-            }
-
-            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                var contract = chain.CreateGenesisContract();
-                accountHash = contract.ScriptHash;
-                return true;
-            }
-
-            if (UInt160.TryParse(name, out accountHash))
-            {
-                return true;
-            }
-
-            try
-            {
-                accountHash = name.ToScriptHash(chain.AddressVersion);
-                return true;
-            }
-            catch {}
-
-            accountHash = UInt160.Zero;
-            return false;
-        }
 
         public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
         {

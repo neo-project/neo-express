@@ -1,13 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
-using Nito.Disposables;
 
 namespace NeoExpress.Commands
 {
@@ -16,11 +11,11 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         internal class Create
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Create(IExpressChain expressFile)
+            public Create(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Create(CommandLineApplication app) : this(app.GetExpressFile())
@@ -42,12 +37,12 @@ namespace NeoExpress.Commands
             internal void Execute(IConsole console)
             {
                 // TODO expressFile.Chain.IsReservedName
-                if (expressFile.Chain.IsReservedName(Name))
+                if (chain.IsReservedName(Name))
                 {
                     throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
                 }
 
-                var existingWallet = expressFile.Chain.GetWallet(Name);
+                var existingWallet = chain.GetWallet(Name);
                 if (existingWallet != null)
                 {
                     if (!Force)
@@ -55,7 +50,7 @@ namespace NeoExpress.Commands
                         throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
                     }
 
-                    expressFile.Wallets.Remove(existingWallet);
+                    chain.RemoveWallet(existingWallet);
                 }
 
                 var devWallet = new DevWallet(chain.GetProtocolSettings(), Name);
@@ -63,10 +58,9 @@ namespace NeoExpress.Commands
                 devAccount.IsDefault = true;
 
                 var wallet = devWallet.ToExpressWallet();
-                chain.Wallets ??= new List<ExpressWallet>(1);
-                chain.Wallets.Add(wallet);
+                chain.AddWallet(wallet);
 
-                expressFile.SaveChain();
+                chain.SaveChain();
 
                 if (Json)
                 {

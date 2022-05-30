@@ -1,14 +1,6 @@
 using System;
-using System.IO;
-using System.IO.Abstractions;
-using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
-using Neo.IO;
-using NeoExpress.Models;
 using Newtonsoft.Json;
-using Nito.Disposables;
 
 namespace NeoExpress.Commands
 {
@@ -17,11 +9,11 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List neo-express wallets")]
         internal class List
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public List(IExpressChain expressFile)
+            public List(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public List(CommandLineApplication app) : this(app.GetExpressFile())
@@ -35,12 +27,8 @@ namespace NeoExpress.Commands
 
             internal void Execute(IConsole console)
             {
-                // TODO: expressFile.Chain.GetProtocolSettings
-                var settings = expressFile.Chain.GetProtocolSettings();
-
-                // TODO: expressFile.Chain.CreateGenesisContract
-                var genesisContract = expressFile.Chain.CreateGenesisContract();
-                var genesisAddress = Neo.Wallets.Helper.ToAddress(genesisContract.ScriptHash, expressFile.AddressVersion);
+                var consensusScriptHash = chain.GetConsensusScriptHash();
+                var consensusAddress = Neo.Wallets.Helper.ToAddress(consensusScriptHash, chain.AddressVersion);
 
                 if (Json)
                 {
@@ -51,34 +39,34 @@ namespace NeoExpress.Commands
                     using (var __ = writer.WriteObject())
                     {
                         writer.WriteProperty("account-label", ExpressChainExtensions.GENESIS);
-                        writer.WriteProperty("address", genesisAddress);
-                        writer.WriteProperty("script-hash", genesisContract.ScriptHash.ToString());
+                        writer.WriteProperty("address", consensusAddress);
+                        writer.WriteProperty("script-hash", consensusScriptHash.ToString());
                     }
 
-                    foreach (var node in expressFile.ConsensusNodes)
+                    foreach (var node in chain.ConsensusNodes)
                     {
                         writer.WriteWallet(node.Wallet);
                     }
 
-                    foreach (var wallet in expressFile.Wallets)
+                    foreach (var wallet in chain.Wallets)
                     {
                         writer.WriteWallet(wallet);
                     }
                 }
                 else
                 {
-                    var genesisScriptHash = Neo.IO.Helper.ToArray(genesisContract.ScriptHash);
+                    var genesisScriptHash = Neo.IO.Helper.ToArray(consensusScriptHash);
 
                     console.Out.WriteLine(ExpressChainExtensions.GENESIS);
-                    console.Out.WriteLine($"  {genesisAddress}");
+                    console.Out.WriteLine($"  {consensusAddress}");
                     console.Out.WriteLine($"    script hash: {BitConverter.ToString(genesisScriptHash)}");
 
-                    foreach (var node in expressFile.ConsensusNodes)
+                    foreach (var node in chain.ConsensusNodes)
                     {
                         console.Out.WriteWallet(node.Wallet);
                     }
 
-                    foreach (var wallet in expressFile.Wallets)
+                    foreach (var wallet in chain.Wallets)
                     {
                         console.Out.WriteWallet(wallet);
                     }

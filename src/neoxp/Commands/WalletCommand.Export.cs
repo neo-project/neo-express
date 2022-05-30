@@ -2,8 +2,6 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
-using NeoExpress.Models;
 
 namespace NeoExpress.Commands
 {
@@ -46,8 +44,7 @@ namespace NeoExpress.Commands
                     throw new Exception("You must specify force to overwrite an exported wallet.");
                 }
 
-                // TODO: expressFile.Chain.GetWallet
-                var wallet = expressFile.Chain.GetWallet(Name) 
+                var wallet = expressFile.GetWallet(Name) 
                     ?? throw new Exception($"{Name} express wallet not found.");
                 var password = Prompt.GetPassword("Input password to use for exported wallet");
 

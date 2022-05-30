@@ -14,11 +14,11 @@ namespace NeoExpress.Commands
         [Command("restore", Description = "Restore a neo-express checkpoint")]
         internal class Restore
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Restore(IExpressChain expressFile)
+            public Restore(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Restore(CommandLineApplication app) : this(app.GetExpressFile())
@@ -36,28 +36,22 @@ namespace NeoExpress.Commands
 
             internal void Execute(IFileSystem fileSystem, IConsole console)
             {
-                var checkpointPath = Execute(expressFile, Name, Force, fileSystem);
-                console.WriteLine($"Checkpoint {fileSystem.Path.GetFileName(checkpointPath)} successfully restored");
-            }
-
-            internal static string Execute(IExpressChain expressFile, string checkPointArchive, bool force, IFileSystem fileSystem)
-            {
-                if (expressFile.ConsensusNodes.Count != 1)
+                if (chain.ConsensusNodes.Count != 1)
                 {
-                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(chain));
+                    throw new ArgumentException("Checkpoint restore is only supported on single node express instances", nameof(Restore.chain));
                 }
 
-                checkPointArchive = fileSystem.ResolveCheckpointFileName(checkPointArchive);
+                var checkPointArchive = fileSystem.ResolveCheckpointFileName(Name);
                 if (!fileSystem.File.Exists(checkPointArchive))
                 {
                     throw new Exception($"Checkpoint {checkPointArchive} couldn't be found");
                 }
 
-                var node = expressFile.ConsensusNodes[0];
+                var node = chain.ConsensusNodes[0];
                 if (node.IsRunning())
                 {
-                    var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
-                    throw new InvalidOperationException($"node {scriptHash} currently running");
+                    var address = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
+                    throw new InvalidOperationException($"node {address} currently running");
                 }
 
                 string checkpointTempPath;
@@ -79,7 +73,7 @@ namespace NeoExpress.Commands
                 var nodePath = fileSystem.GetNodePath(node);
                 if (fileSystem.Directory.Exists(nodePath))
                 {
-                    if (!force)
+                    if (!Force)
                     {
                         throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
                     }
@@ -87,14 +81,14 @@ namespace NeoExpress.Commands
                     fileSystem.Directory.Delete(nodePath, true);
                 }
 
-                // TODO: expressFile.Chain
-                var settings = expressFile.Chain.GetProtocolSettings();
-                var contract = expressFile.Chain.CreateGenesisContract();
+                var settings = chain.GetProtocolSettings();
+                var scriptHash = node.Wallet.DefaultAccount?.GetScriptHash() 
+                    ?? throw new Exception("Consensus wallet is missing a default account");
                 RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                    settings.Network, settings.AddressVersion, contract.ScriptHash);
+                    settings.Network, settings.AddressVersion, scriptHash);
                 fileSystem.Directory.Move(checkpointTempPath, nodePath);
 
-                return checkPointArchive;
+                console.WriteLine($"Checkpoint {fileSystem.Path.GetFileName(checkPointArchive)} successfully restored");
             }
         }
     }

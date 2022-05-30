@@ -1,5 +1,4 @@
 using System;
-using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Models;
@@ -9,11 +8,11 @@ namespace NeoExpress.Commands
     [Command("stop", Description = "Stop Neo-Express instance node")]
     class StopCommand
     {
-        readonly IExpressChain expressFile;
+        readonly IExpressChain chain;
 
-        public StopCommand(IExpressChain expressFile)
+        public StopCommand(IExpressChain chain)
         {
-            this.expressFile = expressFile;
+            this.chain = chain;
         }
 
         public StopCommand(CommandLineApplication app) : this(app.GetExpressFile())
@@ -38,10 +37,10 @@ namespace NeoExpress.Commands
 
             if (All)
             {
-                var tasks = new Task[expressFile.ConsensusNodes.Count];
-                for (int i = 0; i < expressFile.ConsensusNodes.Count; i++)
+                var tasks = new Task[chain.ConsensusNodes.Count];
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    tasks[i] = StopNodeAsync(expressFile.ConsensusNodes[i]);
+                    tasks[i] = StopNodeAsync(chain.ConsensusNodes[i]);
                 }
                 await Task.WhenAll(tasks).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"all nodes stopped").ConfigureAwait(false);
@@ -50,11 +49,11 @@ namespace NeoExpress.Commands
             {
                 var nodeIndex = NodeIndex.HasValue
                     ? NodeIndex.Value
-                    : expressFile.ConsensusNodes.Count == 1
+                    : chain.ConsensusNodes.Count == 1
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                var wasRunning = await StopNodeAsync(expressFile.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
+                var wasRunning = await StopNodeAsync(chain.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"node {nodeIndex} {(wasRunning ? "stopped" : "was not running")}").ConfigureAwait(false);
             }
 

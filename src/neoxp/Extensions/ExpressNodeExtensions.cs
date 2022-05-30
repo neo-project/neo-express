@@ -1,18 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
-using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
-using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
 
@@ -177,74 +174,6 @@ namespace NeoExpress
             }
 
             throw new Exception("invalid script results");
-        }
-
-
-        public static Task<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)
-        {
-            return GetPolicyAsync(script => expressNode.InvokeAsync(script));
-        }
-        
-        public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
-        {
-            return GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
-        }
-
-        static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
-        {
-            using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "getGasPerBlock");
-            builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "getMinimumDeploymentFee");
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "getRegisterPrice");
-            builder.EmitDynamicCall(NativeContract.Oracle.Hash, "getPrice");
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getFeePerByte");
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getStoragePrice");
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getExecFeeFactor");
-
-            var result = await invokeAsync(builder.ToArray()).ConfigureAwait(false);
-
-            if (result.State != VMState.HALT) throw new Exception(result.Exception);
-            if (result.Stack.Length != 7) throw new InvalidOperationException();
-
-            return new PolicyValues()
-            {
-                GasPerBlock = new BigDecimal(result.Stack[0].GetInteger(), NativeContract.GAS.Decimals),
-                MinimumDeploymentFee = new BigDecimal(result.Stack[1].GetInteger(), NativeContract.GAS.Decimals),
-                CandidateRegistrationFee = new BigDecimal(result.Stack[2].GetInteger(), NativeContract.GAS.Decimals),
-                OracleRequestFee = new BigDecimal(result.Stack[3].GetInteger(), NativeContract.GAS.Decimals),
-                NetworkFeePerByte = new BigDecimal(result.Stack[4].GetInteger(), NativeContract.GAS.Decimals),
-                StorageFeeFactor = (uint)result.Stack[5].GetInteger(),
-                ExecutionFeeFactor = (uint)result.Stack[6].GetInteger(),
-            };
-        }
-
-        public static async Task<bool> GetIsBlockedAsync(this IExpressNode expressNode, UInt160 scriptHash)
-        {
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, "isBlocked", scriptHash);
-            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-            var stack = result.Stack;
-            if (stack.Length >= 1)
-            {
-                var value = stack[0].GetBoolean();
-                return value;
-            }
-
-            throw new Exception("invalid script results");
-        }
-
-        public static async Task<UInt256> BlockAccountAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, UInt160 scriptHash)
-        {
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, "blockAccount", scriptHash);
-            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
-        }
-
-        public static async Task<UInt256> UnblockAccountAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, UInt160 scriptHash)
-        {
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, "unblockAccount", scriptHash);
-            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
         }
     }
 }

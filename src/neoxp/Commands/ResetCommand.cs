@@ -8,11 +8,11 @@ namespace NeoExpress.Commands
     [Command("reset", Description = "Reset neo-express instance node")]
     class ResetCommand
     {
-        readonly IExpressChain expressFile;
+        readonly IExpressChain chain;
 
-        public ResetCommand(IExpressChain expressFile)
+        public ResetCommand(IExpressChain chain)
         {
-            this.expressFile = expressFile;
+            this.chain = chain;
         }
 
         public ResetCommand(CommandLineApplication app) : this(app.GetExpressFile())
@@ -39,9 +39,9 @@ namespace NeoExpress.Commands
 
             if (All)
             {
-                for (int i = 0; i < expressFile.ConsensusNodes.Count; i++)
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
-                    ResetNode(fileSystem, expressFile.ConsensusNodes[i], Force);
+                    ResetNode(fileSystem, chain.ConsensusNodes[i], Force);
                     console.Out.WriteLine($"node {i} reset");
                 }
             }
@@ -49,11 +49,11 @@ namespace NeoExpress.Commands
             {
                 var nodeIndex = NodeIndex.HasValue
                     ? NodeIndex.Value
-                    : expressFile.ConsensusNodes.Count == 1
+                    : chain.ConsensusNodes.Count == 1
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
-                ResetNode(fileSystem, expressFile.ConsensusNodes[nodeIndex], Force);
+                ResetNode(fileSystem, chain.ConsensusNodes[nodeIndex], Force);
                 console.Out.WriteLine($"node {nodeIndex} reset");
             }
         }
@@ -77,6 +77,5 @@ namespace NeoExpress.Commands
                 fileSystem.Directory.Delete(nodePath, true);
             }
         }
-
     }
 }

@@ -1,12 +1,9 @@
-using System;
-using System.IO;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.SmartContract.Manifest;
 using Newtonsoft.Json;
-using System.IO.Abstractions;
 using Neo.VM;
 using Neo.SmartContract.Native;
 
@@ -17,11 +14,11 @@ namespace NeoExpress.Commands
         [Command(Name = "get", Description = "Get information for a deployed contract")]
         internal class Get
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Get(IExpressChain expressFile)
+            public Get(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Get(CommandLineApplication app) : this(app.GetExpressFile())
@@ -37,7 +34,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode();
+                using var expressNode = chain.GetExpressNode();
                 using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
                 using var _ = writer.WriteArray();
 

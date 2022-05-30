@@ -1,9 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Abstractions;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Cryptography.ECC;
@@ -18,11 +14,11 @@ namespace NeoExpress.Commands
         [Command("list", Description = "List oracle nodes")]
         internal class List
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public List(IExpressChain expressFile)
+            public List(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public List(CommandLineApplication app) : this(app.GetExpressFile())
@@ -34,7 +30,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode();
+                using var expressNode = chain.GetExpressNode();
                 var oracleNodes = await ListOracleNodesAsync(expressNode);
 
                 await console.Out.WriteLineAsync($"Oracle Nodes ({oracleNodes.Count}): ").ConfigureAwait(false);

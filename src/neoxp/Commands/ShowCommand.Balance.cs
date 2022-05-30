@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -12,11 +11,11 @@ namespace NeoExpress.Commands
         [Command("balance", Description = "Show asset balance for account")]
         internal class Balance
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Balance(IExpressChain expressFile)
+            public Balance(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Balance(CommandLineApplication app) : this(app.GetExpressFile())
@@ -35,7 +34,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode();
+                using var expressNode = chain.GetExpressNode();
                 var accountHash = expressNode.Chain.ResolveAccountHash(Account);
                 var assetHash = await expressNode.ParseAssetAsync(Asset).ConfigureAwait(false);
 

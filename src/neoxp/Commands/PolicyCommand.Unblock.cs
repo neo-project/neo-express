@@ -1,6 +1,4 @@
-using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -53,6 +51,7 @@ namespace NeoExpress.Commands
                 var txHash = await ExecuteAsync(expressNode, ScriptHash, Account, password).ConfigureAwait(false);
                 await console.Out.WriteTxHashAsync(txHash, $"{ScriptHash} blocked", Json).ConfigureAwait(false);
             }
+
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password)
             {
                 var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);

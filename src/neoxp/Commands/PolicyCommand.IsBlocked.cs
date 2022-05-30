@@ -1,6 +1,4 @@
-using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.SmartContract.Native;
@@ -13,11 +11,11 @@ namespace NeoExpress.Commands
         [Command("isBlocked", "blocked", Description = "Unblock account for usage")]
         internal class IsBlocked
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public IsBlocked(IExpressChain expressFile)
+            public IsBlocked(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public IsBlocked(CommandLineApplication app) : this(app.GetExpressFile())
@@ -33,7 +31,7 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode();
+                using var expressNode = chain.GetExpressNode();
                 var scriptHash = await PolicyCommand.ResolveScriptHashAsync(expressNode, ScriptHash);
                 using var builder = new ScriptBuilder();
                 builder.EmitDynamicCall(NativeContract.Policy.Hash, "isBlocked", scriptHash);

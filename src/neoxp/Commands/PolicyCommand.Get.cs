@@ -1,8 +1,11 @@
 using System;
-using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
+using Neo.SmartContract.Native;
+using Neo.VM;
 using NeoExpress.Models;
 
 namespace NeoExpress.Commands
@@ -38,15 +41,14 @@ namespace NeoExpress.Commands
                 if (string.IsNullOrEmpty(RpcUri))
                 {
                     using var expressNode = expressFile.GetExpressNode();
-                    policy = await expressNode.GetPolicyAsync().ConfigureAwait(false);
+                    policy = await GetPolicyAsync(script => expressNode.InvokeAsync(script)).ConfigureAwait(false);
                 }
                 else
                 {
                     if (!TransactionExecutor.TryParseRpcUri(RpcUri, out var uri))
                         throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
                     using var rpcClient = new RpcClient(uri);
-
-                    policy = await rpcClient.GetPolicyAsync().ConfigureAwait(false);
+                    policy = await GetPolicyAsync(rpcClient).ConfigureAwait(false);
                 }
 
                 if (Json)
@@ -55,21 +57,52 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    await WritePolicyValueAsync(console, $"             {nameof(PolicyValues.GasPerBlock)}", policy.GasPerBlock);
-                    await WritePolicyValueAsync(console, $"    {nameof(PolicyValues.MinimumDeploymentFee)}", policy.MinimumDeploymentFee);
-                    await WritePolicyValueAsync(console, $"{nameof(PolicyValues.CandidateRegistrationFee)}", policy.CandidateRegistrationFee);
-                    await WritePolicyValueAsync(console, $"        {nameof(PolicyValues.OracleRequestFee)}", policy.OracleRequestFee);
-                    await WritePolicyValueAsync(console, $"       {nameof(PolicyValues.NetworkFeePerByte)}", policy.NetworkFeePerByte);
-                    await WritePolicyValueAsync(console, $"        {nameof(PolicyValues.StorageFeeFactor)}", policy.StorageFeeFactor);
-                    await WritePolicyValueAsync(console, $"      {nameof(PolicyValues.ExecutionFeeFactor)}", policy.ExecutionFeeFactor);
+                    await WritePolicyDecimalAsync(console, $"             {nameof(PolicyValues.GasPerBlock)}", policy.GasPerBlock);
+                    await WritePolicyDecimalAsync(console, $"    {nameof(PolicyValues.MinimumDeploymentFee)}", policy.MinimumDeploymentFee);
+                    await WritePolicyDecimalAsync(console, $"{nameof(PolicyValues.CandidateRegistrationFee)}", policy.CandidateRegistrationFee);
+                    await WritePolicyDecimalAsync(console, $"        {nameof(PolicyValues.OracleRequestFee)}", policy.OracleRequestFee);
+                    await WritePolicyDecimalAsync(console, $"       {nameof(PolicyValues.NetworkFeePerByte)}", policy.NetworkFeePerByte);
+                    await    WritePolicyUIntAsync(console, $"        {nameof(PolicyValues.StorageFeeFactor)}", policy.StorageFeeFactor);
+                    await    WritePolicyUIntAsync(console, $"      {nameof(PolicyValues.ExecutionFeeFactor)}", policy.ExecutionFeeFactor);
                 }
+
+                static Task WritePolicyDecimalAsync(IConsole console, string name, Neo.BigDecimal value)
+                    => console.Out.WriteLineAsync($"{name}: {value.Value} ({value} GAS)");
+
+                static Task WritePolicyUIntAsync(IConsole console, string name, uint value)
+                    => console.Out.WriteLineAsync($"{name}: {value}");
             }
 
-            static Task WritePolicyValueAsync(IConsole console, string name, Neo.BigDecimal value)
-                => console.Out.WriteLineAsync($"{name}: {value.Value} ({value} GAS)");
+            public static Task<PolicyValues> GetPolicyAsync(RpcClient rpcClient)
+                => GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
 
-            static Task WritePolicyValueAsync(IConsole console, string name, uint value)
-                => console.Out.WriteLineAsync($"{name}: {value}");
+            internal static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
+            {
+                using var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(NativeContract.NEO.Hash, "getGasPerBlock");
+                builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "getMinimumDeploymentFee");
+                builder.EmitDynamicCall(NativeContract.NEO.Hash, "getRegisterPrice");
+                builder.EmitDynamicCall(NativeContract.Oracle.Hash, "getPrice");
+                builder.EmitDynamicCall(NativeContract.Policy.Hash, "getFeePerByte");
+                builder.EmitDynamicCall(NativeContract.Policy.Hash, "getStoragePrice");
+                builder.EmitDynamicCall(NativeContract.Policy.Hash, "getExecFeeFactor");
+
+                var result = await invokeAsync(builder.ToArray()).ConfigureAwait(false);
+
+                if (result.State != VMState.HALT) throw new Exception(result.Exception);
+                if (result.Stack.Length != 7) throw new InvalidOperationException();
+
+                return new PolicyValues()
+                {
+                    GasPerBlock = new BigDecimal(result.Stack[0].GetInteger(), NativeContract.GAS.Decimals),
+                    MinimumDeploymentFee = new BigDecimal(result.Stack[1].GetInteger(), NativeContract.GAS.Decimals),
+                    CandidateRegistrationFee = new BigDecimal(result.Stack[2].GetInteger(), NativeContract.GAS.Decimals),
+                    OracleRequestFee = new BigDecimal(result.Stack[3].GetInteger(), NativeContract.GAS.Decimals),
+                    NetworkFeePerByte = new BigDecimal(result.Stack[4].GetInteger(), NativeContract.GAS.Decimals),
+                    StorageFeeFactor = (uint)result.Stack[5].GetInteger(),
+                    ExecutionFeeFactor = (uint)result.Stack[6].GetInteger(),
+                };
+            }
         }
     }
 }

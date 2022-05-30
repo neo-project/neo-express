@@ -55,7 +55,7 @@ namespace NeoExpress.Commands
                 if (TransactionExecutor.TryParseRpcUri(Source, out var uri))
                 {
                     using var rpcClient = new RpcClient(uri);
-                    policy = await rpcClient.GetPolicyAsync().ConfigureAwait(false);
+                    policy = await Get.GetPolicyAsync(rpcClient).ConfigureAwait(false);
                 }
                 else
                 {

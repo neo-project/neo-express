@@ -18,11 +18,11 @@ namespace NeoExpress.Commands
         [Command("deploy", Description = "Deploy contract to a neo-express instance")]
         internal class Deploy
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Deploy(IExpressChain expressFile)
+            public Deploy(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Deploy(CommandLineApplication app) : this(app.GetExpressFile())
@@ -61,8 +61,8 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode(Trace);
-                var password = expressFile.ResolvePassword(Account, Password);
+                using var expressNode = chain.GetExpressNode(Trace);
+                var password = chain.ResolvePassword(Account, Password);
                 var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
 
                 var (txHash, contractHash) = await ExecuteAsync(expressNode, nefFile, manifest, Account, password, WitnessScope, Data, Force)

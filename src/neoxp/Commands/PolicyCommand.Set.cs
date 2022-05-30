@@ -16,11 +16,11 @@ namespace NeoExpress.Commands
         [Command(Name = "set", Description = "Set single policy value")]
         internal class Set
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Set(IExpressChain expressFile)
+            public Set(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Set(CommandLineApplication app) : this(app.GetExpressFile())
@@ -53,15 +53,15 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                var password = expressFile.ResolvePassword(Account, Password);
-                using var expressNode = expressFile.GetExpressNode(Trace);
+                var password = chain.ResolvePassword(Account, Password);
+                using var expressNode = chain.GetExpressNode(Trace);
                 var txHash = await ExecuteAsync(expressNode, Policy, Value, Account, password).ConfigureAwait(false);
                 await console.Out.WriteTxHashAsync(txHash, $"{Policy} Policy Set", Json).ConfigureAwait(false);
             }
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicySettings policy, decimal value, string account, string password)
             {
-                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(account, password);
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
                 var (hash, operation) = policy switch
                 {

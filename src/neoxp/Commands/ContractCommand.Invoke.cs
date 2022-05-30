@@ -52,24 +52,26 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    if (string.IsNullOrEmpty(Account) && !Results)
-                    {
-                        throw new Exception("Either Account or --results must be specified");
-                    }
+                    // if (string.IsNullOrEmpty(Account) && !Results)
+                    // {
+                    //     throw new Exception("Either Account or --results must be specified");
+                    // }
 
-                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                    using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out);
-                    var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
+                    // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
+                    // using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out);
+                    // var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 
-                    if (Results)
-                    {
-                        await txExec.InvokeForResultsAsync(script, Account, WitnessScope);
-                    }
-                    else
-                    {
-                        var password = chain.ResolvePassword(Account, Password);
-                        await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
-                    }
+                    // if (Results)
+                    // {
+                    //     await txExec.InvokeForResultsAsync(script, Account, WitnessScope);
+                    // }
+                    // else
+                    // {
+                    //     var password = chain.ResolvePassword(Account, Password);
+                    //     await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
+                    // }
+
+                    await Task.CompletedTask;
 
                     return 0;
                 }

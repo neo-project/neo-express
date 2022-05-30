@@ -85,7 +85,7 @@ namespace NeoExpress.Commands
             public static async Task<(UInt256 txHash, UInt160 contractHash)>
                 ExecuteAsync(IExpressNode expressNode, NefFile nefFile, ContractManifest manifest, string accountName, string password, WitnessScope witnessScope, string data, bool force)
             {
-                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(accountName, password);
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(accountName, password);
 
                 // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
                 Neo.VM.Script script = nefFile.Script;

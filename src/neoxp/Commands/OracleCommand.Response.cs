@@ -42,9 +42,11 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                    using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out); 
-                    await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
+                    // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
+                    // using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out); 
+                    // await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
+
+                    await Task.CompletedTask;
                     return 0;
                 }
                 catch (Exception ex)

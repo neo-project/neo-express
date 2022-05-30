@@ -209,5 +209,19 @@ namespace NeoExpress
             return false;
         }
 
+        public static string ResolvePassword(this IExpressChain chain, string name, string password)
+        {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
+
+            // if the user specified a password, use it
+            if (!string.IsNullOrEmpty(password)) return password;
+
+            // if the name is a valid Neo Express account name, no password is needed
+            if (chain.IsReservedName(name)) return string.Empty;
+            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return string.Empty;
+
+            // if a password is needed but not provided, prompt the user
+            return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
+        }
     }
 }

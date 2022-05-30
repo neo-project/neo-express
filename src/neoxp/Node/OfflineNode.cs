@@ -36,7 +36,7 @@ namespace NeoExpress.Node
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         bool disposedValue;
 
-        public IExpressChain ExpressChain { get; }
+        public IExpressChain Chain { get; }
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
         public OfflineNode(
@@ -45,7 +45,7 @@ namespace NeoExpress.Node
             RocksDbStorageProvider rocksDbStorageProvider, 
             bool enableTrace)
         {
-            this.ExpressChain = chain;
+            this.Chain = chain;
             var settings = chain.GetProtocolSettings();
             this.nodeWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
             this.rocksDbStorageProvider = rocksDbStorageProvider;
@@ -136,38 +136,41 @@ namespace NeoExpress.Node
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
 
-            var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
-            var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
-            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
-            if (additionalGas > 0.0m)
-            {
-                tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
-            }
+            await Task.CompletedTask;
+            throw new Exception();
 
-            var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
-            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            if (account.IsMultiSigContract())
-            {
-                var multiSigWallets = ExpressChain.GetMultiSigWallets(neoSystem.Settings, accountHash);
-                for (int i = 0; i < multiSigWallets.Count; i++)
-                {
-                    multiSigWallets[i].Sign(context);
-                    if (context.Completed) break;
-                }
-            }
-            else
-            {
-                wallet.Sign(context);
-            }
+            // var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
+            // var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
+            // var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
+            // if (additionalGas > 0.0m)
+            // {
+            //     tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
+            // }
 
-            if (!context.Completed)
-            {
-                throw new Exception();
-            }
+            // var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
+            // var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            // if (account.IsMultiSigContract())
+            // {
+            //     var multiSigWallets = chain.GetMultiSigWallets(neoSystem.Settings, accountHash);
+            //     for (int i = 0; i < multiSigWallets.Count; i++)
+            //     {
+            //         multiSigWallets[i].Sign(context);
+            //         if (context.Completed) break;
+            //     }
+            // }
+            // else
+            // {
+            //     wallet.Sign(context);
+            // }
 
-            tx.Witnesses = context.GetWitnesses();
-            var blockHash = await SubmitTransactionAsync(tx).ConfigureAwait(false);
-            return tx.Hash;
+            // if (!context.Completed)
+            // {
+            //     throw new Exception();
+            // }
+
+            // tx.Witnesses = context.GetWitnesses();
+            // var blockHash = await SubmitTransactionAsync(tx).ConfigureAwait(false);
+            // return tx.Hash;
         }
 
         public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
@@ -333,7 +336,7 @@ namespace NeoExpress.Node
         public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
             => MakeAsync(() =>
             {
-                if (ExpressChain.ConsensusNodes.Count != 1)
+                if (Chain.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Contract download is only supported for single-node consensus");
                 }

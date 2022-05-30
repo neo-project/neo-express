@@ -30,25 +30,26 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                    if (!chain.TryResolveAccountHash(Account, out var accountHash))
-                    {
-                        throw new Exception($"{Account} account not found.");
-                    }
+                    // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
+                    // if (!chain.TryResolveAccountHash(Account, out var accountHash))
+                    // {
+                    //     throw new Exception($"{Account} account not found.");
+                    // }
 
-                    using var expressNode = chain.GetExpressNode(fileSystem);
-                    var balances = await expressNode.ListBalancesAsync(accountHash).ConfigureAwait(false);
+                    // using var expressNode = chain.GetExpressNode(fileSystem);
+                    // var balances = await expressNode.ListBalancesAsync(accountHash).ConfigureAwait(false);
 
-                    if (balances.Count == 0)
-                    {
-                        console.WriteLine($"No balances for {Account}");
-                    }
+                    // if (balances.Count == 0)
+                    // {
+                    //     console.WriteLine($"No balances for {Account}");
+                    // }
 
-                    for (int i = 0; i < balances.Count; i++)
-                    {
-                        console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
-                        console.WriteLine($"  balance: {new BigDecimal(balances[i].balance, balances[i].contract.Decimals)}");
-                    }
+                    // for (int i = 0; i < balances.Count; i++)
+                    // {
+                    //     console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
+                    //     console.WriteLine($"  balance: {new BigDecimal(balances[i].balance, balances[i].contract.Decimals)}");
+                    // }
+                    await Task.CompletedTask;
 
                     return 0;
                 }

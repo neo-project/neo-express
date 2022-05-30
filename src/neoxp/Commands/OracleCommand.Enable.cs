@@ -19,11 +19,11 @@ namespace NeoExpress.Commands
         [Command("enable", Description = "Enable oracles for neo-express instance")]
         internal class Enable
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Enable(IExpressChain expressFile)
+            public Enable(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Enable(CommandLineApplication app) : this(app.GetExpressFile())
@@ -48,15 +48,15 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode(Trace);
-                var password = expressFile.ResolvePassword(Account, Password);
+                using var expressNode = chain.GetExpressNode(Trace);
+                var password = chain.ResolvePassword(Account, Password);
                 var txHash = await ExecuteAsync(expressNode, Account, password).ConfigureAwait(false);
                 await console.Out.WriteTxHashAsync(txHash, "Oracle Enable", Json).ConfigureAwait(false);
             }
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string account, string password)
             {
-                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(account, password);
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
                 var oracles = expressNode.Chain.ConsensusNodes
                     .Select(n => n.Wallet.DefaultAccount ?? throw new Exception("missing default account"))

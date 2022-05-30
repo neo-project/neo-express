@@ -27,12 +27,12 @@ namespace NeoExpress.Node
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
 
-        public IExpressChain ExpressChain { get; }
+        public IExpressChain Chain { get; }
         public ProtocolSettings ProtocolSettings { get; }
 
         public OnlineNode(IExpressChain chain, ExpressConsensusNode node)
         {
-            this.ExpressChain = chain;
+            Chain = chain;
             ProtocolSettings = chain.GetProtocolSettings();
             rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
@@ -75,45 +75,48 @@ namespace NeoExpress.Node
             var factory = new TransactionManagerFactory(rpcClient);
             var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
 
-            if (additionalGas > 0.0m)
-            {
-                tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
-            }
+            throw new NotImplementedException();
+            // if (additionalGas > 0.0m)
+            // {
+            //     tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
+            // }
 
-            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            if (account.Contract.Script.IsMultiSigContract())
-            {
-                var signatureCount = account.Contract.ParameterList.Length;
-                var multiSigWallets = ExpressChain.GetMultiSigWallets(ProtocolSettings, accountHash);
-                if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
+            // var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            // if (account.Contract.Script.IsMultiSigContract())
+            // {
+            //     var signatureCount = account.Contract.ParameterList.Length;
+            //     var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
+            //     if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
 
-                var publicKeys = multiSigWallets
-                    .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
-                    .ToArray();
+            //     var publicKeys = multiSigWallets
+            //         .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
+            //         .ToArray();
 
-                for (var i = 0; i < signatureCount; i++)
-                {
-                    var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey() ?? throw new Exception();
-                    tm.AddMultiSig(key, signatureCount, publicKeys);
-                }
-            }
-            else
-            {
-                tm.AddSignature(account.GetKey() ?? throw new Exception());
-            }
+            //     for (var i = 0; i < signatureCount; i++)
+            //     {
+            //         var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey() ?? throw new Exception();
+            //         tm.AddMultiSig(key, signatureCount, publicKeys);
+            //     }
+            // }
+            // else
+            // {
+            //     tm.AddSignature(account.GetKey() ?? throw new Exception());
+            // }
 
-            var tx = await tm.SignAsync().ConfigureAwait(false);
+            // var tx = await tm.SignAsync().ConfigureAwait(false);
 
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            // return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
         public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
         {
-            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
-            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, ExpressChain, tx, oracleNodes);
+            await Task.CompletedTask;
+            throw new NotImplementedException();
+            // var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
+            // var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
+            // NodeUtility.SignOracleResponseTransaction(ProtocolSettings, ExpressChain, tx, oracleNodes);
 
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            // return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
         public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
@@ -211,7 +214,7 @@ namespace NeoExpress.Node
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
-            if (ExpressChain.ConsensusNodes.Count != 1)
+            if (Chain.ConsensusNodes.Count != 1)
             {
                 throw new ArgumentException("Contract download is only supported for single-node consensus");
             }

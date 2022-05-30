@@ -13,11 +13,11 @@ namespace NeoExpress.Commands
     [Command("transfer", Description = "Transfer asset between accounts")]
     class TransferCommand
     {
-        readonly IExpressChain expressFile;
+        readonly IExpressChain chain;
 
-        public TransferCommand(IExpressChain expressFile)
+        public TransferCommand(IExpressChain chain)
         {
-            this.expressFile = expressFile;
+            this.chain = chain;
         }
 
         public TransferCommand(CommandLineApplication app) : this(app.GetExpressFile())
@@ -54,8 +54,8 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IConsole console)
         {
-            using var expressNode = expressFile.GetExpressNode(Trace);
-            var password = expressFile.ResolvePassword(Sender, Password);
+            using var expressNode = chain.GetExpressNode(Trace);
+            var password = chain.ResolvePassword(Sender, Password);
             var txHash = await ExecuteAsync(expressNode, Quantity, Asset, Sender, password, Receiver)
                 .ConfigureAwait(false);
             await console.Out.WriteTxHashAsync(txHash, "Transfer", Json)
@@ -66,7 +66,7 @@ namespace NeoExpress.Commands
             
             string quantity, string asset, string sender, string password, string receiver)
         {
-            var (senderWallet, senderHash) = expressNode.ExpressChain.ResolveSigner(sender, password);
+            var (senderWallet, senderHash) = expressNode.Chain.ResolveSigner(sender, password);
             var receiverHash = expressNode.Chain.ResolveAccountHash(receiver);
 
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);

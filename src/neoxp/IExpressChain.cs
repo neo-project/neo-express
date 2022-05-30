@@ -15,8 +15,8 @@ namespace NeoExpress
         IReadOnlyList<ExpressWallet> Wallets { get; }
         IReadOnlyDictionary<string, string> Settings { get; }
 
-        void AddWallet(ExpressWallet wallet);
         IExpressNode GetExpressNode(bool offlineTrace = false);
+        void AddWallet(ExpressWallet wallet);
         void RemoveWallet(ExpressWallet wallet);
         void SaveChain();
         bool TryResolveSigner(string name, string password, [MaybeNullWhen(false)] out Neo.Wallets.Wallet wallet, out UInt160 accountHash);

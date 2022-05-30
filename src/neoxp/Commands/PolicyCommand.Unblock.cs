@@ -15,11 +15,11 @@ namespace NeoExpress.Commands
         [Command(Name = "unblock", Description = "Unblock account for usage")]
         internal class Unblock
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Unblock(IExpressChain expressFile)
+            public Unblock(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Unblock(CommandLineApplication app) : this(app.GetExpressFile())
@@ -48,14 +48,14 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(IConsole console)
             {
-                using var expressNode = expressFile.GetExpressNode(Trace);
-                var password = expressFile.ResolvePassword(Account, Password);
+                using var expressNode = chain.GetExpressNode(Trace);
+                var password = chain.ResolvePassword(Account, Password);
                 var txHash = await ExecuteAsync(expressNode, ScriptHash, Account, password).ConfigureAwait(false);
                 await console.Out.WriteTxHashAsync(txHash, $"{ScriptHash} blocked", Json).ConfigureAwait(false);
             }
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password)
             {
-                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(account, password);
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
                 var hash = await PolicyCommand.ResolveScriptHashAsync(expressNode, scriptHash);
                 using var builder = new ScriptBuilder();

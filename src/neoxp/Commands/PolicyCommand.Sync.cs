@@ -18,11 +18,11 @@ namespace NeoExpress.Commands
         [Command(Name = "sync", Description = "Synchronize local policy values with public Neo network")]
         internal class Sync
         {
-            readonly IExpressChain expressFile;
+            readonly IExpressChain chain;
 
-            public Sync(IExpressChain expressFile)
+            public Sync(IExpressChain chain)
             {
-                this.expressFile = expressFile;
+                this.chain = chain;
             }
 
             public Sync(CommandLineApplication app) : this(app.GetExpressFile())
@@ -66,15 +66,15 @@ namespace NeoExpress.Commands
                     }
                 }
 
-                var password = expressFile.ResolvePassword(Account, Password);
-                using var expressNode = expressFile.GetExpressNode(Trace);
+                var password = chain.ResolvePassword(Account, Password);
+                using var expressNode = chain.GetExpressNode(Trace);
                 var txHash = await ExecuteAsync(expressNode, policy, Account, password).ConfigureAwait(false);
                 await console.Out.WriteTxHashAsync(txHash, "Policy Sync}", Json).ConfigureAwait(false);
             }
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicyValues policyValues, string account, string password)
             {
-                var (wallet, accountHash) = expressNode.ExpressChain.ResolveSigner(account, password);
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
                 using var builder = new ScriptBuilder();
                 builder.EmitDynamicCall(NativeContract.NEO.Hash, "setGasPerBlock", policyValues.GasPerBlock.Value);

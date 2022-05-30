@@ -48,7 +48,7 @@ namespace NeoExpress.Commands
             public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)>
                 ExecuteAsync(IExpressNode expressNode, string checkpointPath, IFileSystem fileSystem, bool force)
             {
-                if (expressNode.ConsensusNodes.Count != 1)
+                if (expressNode.Chain.ConsensusNodes.Count != 1)
                 {
                     throw new NotSupportedException("Checkpoint create is only supported on single node express instances");
                 }

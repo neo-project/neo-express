@@ -1,7 +1,6 @@
-using System;
-using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -10,62 +9,45 @@ namespace NeoExpress.Commands
         [Command(Name = "list", Description = "List deployed contracts")]
         internal class List
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressChain chain;
 
-            public List(IFileSystem fileSystem)
+            public List(IExpressChain chain)
             {
-                this.fileSystem = fileSystem;
+                this.chain = chain;
             }
 
-            
-            internal string Input { get; init; } = string.Empty;
+            public List(CommandLineApplication app) : this(app.GetExpressFile())
+            {
+            }
 
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task ExecuteAsync(System.IO.TextWriter writer)
-            {
-                var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                using var expressNode = chain.GetExpressNode(fileSystem);
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
 
+            internal async Task ExecuteAsync(IConsole console)
+            {
+                using var expressNode = chain.GetExpressNode();
                 var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
 
                 if (Json)
                 {
-                    using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
-                    await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+                    using var writer = new JsonTextWriter(console.Out);
+                    using var _ = writer.WriteArray();
                     foreach (var (hash, manifest) in contracts)
                     {
-
-                        await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
-                        await jsonWriter.WritePropertyNameAsync("name").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(manifest.Name).ConfigureAwait(false);
-                        await jsonWriter.WritePropertyNameAsync("hash").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(hash.ToString()).ConfigureAwait(false);
-                        await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
+                        using var __ = writer.WriteObject();
+                        writer.WriteProperty("name", manifest.Name);
+                        writer.WriteProperty("hash", $"{hash}");
                     }
-                    await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
                 }
                 else
                 {
                     foreach (var (hash, manifest) in contracts)
                     {
-                        await writer.WriteLineAsync($"{manifest.Name} ({hash})").ConfigureAwait(false);
+                        console.WriteLine($"{manifest.Name} ({hash})");
                     }
-                }
-            }
-
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
-            {
-                try
-                {
-                    await ExecuteAsync(Console.Out).ConfigureAwait(false);
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
                 }
             }
         }

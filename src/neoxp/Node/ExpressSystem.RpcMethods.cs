@@ -25,7 +25,7 @@ namespace NeoExpress.Node
 
     partial class ExpressSystem
     {
-        readonly CancellationTokenSource tokenSource = new();
+        readonly CancellationTokenSource shutdownTokenSource = new();
         readonly string cacheId = DateTimeOffset.Now.Ticks.ToString();
 
         [RpcMethod]
@@ -38,9 +38,36 @@ namespace NeoExpress.Node
             response["process-id"] = proc.Id;
 
             Neo.Utility.Log(nameof(ExpressSystem), Neo.LogLevel.Info, $"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds");
-            tokenSource.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
+            shutdownTokenSource.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
             return response;
         }
+
+        [RpcMethod]
+        public JObject? ExpressListContracts(JArray @params)
+        {
+            var json = new JArray();
+            foreach (var (hash, manifest) in ListContracts())
+            {
+                var jsonContract = new JObject();
+                jsonContract["hash"] = hash.ToString();
+                jsonContract["manifest"] = manifest.ToJson();
+                json.Add(jsonContract);
+            }
+            return json;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         [RpcMethod]
         public JObject ExpressGetPopulatedBlocks(JArray @params)
@@ -155,22 +182,7 @@ namespace NeoExpress.Node
             return storages;
         }
 
-        [RpcMethod]
-        public JObject? ExpressListContracts(JArray @params)
-        {
-            var contracts = NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
-                .OrderBy(c => c.Id);
 
-            var json = new JArray();
-            foreach (var contract in contracts)
-            {
-                var jsonContract = new JObject();
-                jsonContract["hash"] = contract.Hash.ToString();
-                jsonContract["manifest"] = contract.Manifest.ToJson();
-                json.Add(jsonContract);
-            }
-            return json;
-        }
 
         [RpcMethod]
         public JObject? ExpressCreateCheckpoint(JArray @params)

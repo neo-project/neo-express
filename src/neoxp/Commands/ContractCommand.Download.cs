@@ -57,6 +57,7 @@ namespace NeoExpress.Commands
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
+                await Task.CompletedTask;
                 try
                 {
                     var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
@@ -66,8 +67,8 @@ namespace NeoExpress.Commands
                         throw new ArgumentException("Contract download is only supported for single-node consensus");
                     }
 
-                    using var expressNode = chain.GetExpressNode(fileSystem);
-                    await ExecuteAsync(expressNode, Contract, RpcUri, Height, Force, console.Out).ConfigureAwait(false);
+                    // using var expressNode = chain.GetExpressNode(fileSystem);
+                    // await ExecuteAsync(expressNode, Contract, RpcUri, Height, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

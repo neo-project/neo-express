@@ -23,16 +23,17 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                using var expressNode = chain.GetExpressNode(fileSystem);
-                var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+                await Task.CompletedTask;
+                // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
+                // using var expressNode = chain.GetExpressNode(fileSystem);
+                // var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
 
-                foreach (var (id, request) in requests)
-                {
-                    await writer.WriteLineAsync($"request #{id}:").ConfigureAwait(false);
-                    await writer.WriteLineAsync($"    Original Tx Hash: {request.OriginalTxid}").ConfigureAwait(false);
-                    await writer.WriteLineAsync($"    Request Url:      \"{request.Url}\"").ConfigureAwait(false);
-                }
+                // foreach (var (id, request) in requests)
+                // {
+                //     await writer.WriteLineAsync($"request #{id}:").ConfigureAwait(false);
+                //     await writer.WriteLineAsync($"    Original Tx Hash: {request.OriginalTxid}").ConfigureAwait(false);
+                //     await writer.WriteLineAsync($"    Request Url:      \"{request.Url}\"").ConfigureAwait(false);
+                // }
             }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

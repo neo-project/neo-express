@@ -22,23 +22,27 @@ namespace NeoExpress
         IExpressChain Chain { get; }
         ProtocolSettings ProtocolSettings { get; }
 
-        enum CheckpointMode { Online, Offline }
-
-        Task<CheckpointMode> CreateCheckpointAsync(string checkPointPath);
-
         Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null);
         Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0);
+
+        Task<Block> GetBlockAsync(UInt256 hash);
+        Task<Block> GetBlockAsync(uint index);
+        Task<Block> GetLatestBlockAsync();
+        Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
+        Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
+
+
+
+
+
+        enum CheckpointMode { Online, Offline }
+        Task<CheckpointMode> CreateCheckpointAsync(string checkPointPath);
         Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes);
         Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta);
-
-        Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
-
         Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);
-        Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
         Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash);
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
-
         Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force);
         IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter);
     }

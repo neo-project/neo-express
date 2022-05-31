@@ -78,40 +78,25 @@ namespace NeoExpress
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
                 .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
 
+        public static IReadOnlyList<Neo.Wallets.Wallet> GetAccountWallets(this IExpressChain chain, UInt160 accountHash)
+        {
+            var wallets = new List<DevWallet>();
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var wallet = DevWallet.FromExpressWallet(chain.ConsensusNodes[i].Wallet, chain.AddressVersion);
+                if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
+            }
+
+            for (int i = 0; i < chain.Wallets.Count; i++)
+            {
+                var wallet = DevWallet.FromExpressWallet(chain.Wallets[i], chain.AddressVersion);
+                if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
+            }
+
+            return wallets;
+        }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // public static IReadOnlyList<Neo.Wallets.Wallet> GetMultiSigWallets(this IExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
-        // {
-        //     var wallets = new List<DevWallet>();
-        //     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-        //     {
-        //         var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
-        //         if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
-        //     }
-
-        //     for (int i = 0; i < chain.Wallets.Count; i++)
-        //     {
-        //         var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-        //         if (wallet.GetAccount(accountHash) != null) wallets.Add(wallet);
-        //     }
-
-        //     return wallets;
-        // }
 
         public delegate bool TryParse<T>(string value, [MaybeNullWhen(false)] out T parsedValue);
 

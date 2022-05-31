@@ -16,6 +16,8 @@ using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.SmartContract.Manifest;
+using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
 using static Neo.Ledger.Blockchain;
@@ -24,11 +26,10 @@ namespace NeoExpress.Node
 {
     partial class ExpressSystem : IDisposable
     {
+        public const string GLOBAL_PREFIX = "Global\\";
         public const string APP_LOGS_STORE_NAME = "app-logs-store";
         public const string CONSENSUS_STATE_STORE_NAME = "ConsensusState";
         public const string NOTIFICATIONS_COLUMN_STORE_NAME = "notifications-store";
-
-        public const string GLOBAL_PREFIX = "Global\\";
 
         readonly IExpressChain chain;
         readonly ExpressConsensusNode node;
@@ -43,13 +44,6 @@ namespace NeoExpress.Node
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
         public Neo.Persistence.DataCache StoreView => neoSystem.StoreView;
-
-
-        public void Dispose()
-        {
-            neoSystem.Dispose();
-            expressStorage.Dispose();
-        }
 
         public ExpressSystem(IExpressChain chain, ExpressConsensusNode node, IExpressStorage expressStorage, bool trace, uint? secondsPerBlock)
         {
@@ -74,6 +68,166 @@ namespace NeoExpress.Node
             neoSystem = new NeoSystem(settings, storageProviderPlugin.Name);
         }
 
+        public void Dispose()
+        {
+            neoSystem.Dispose();
+            expressStorage.Dispose();
+        }
+
+        void OnPersist(Block block, IReadOnlyList<ApplicationExecuted> appExecutions)
+        {
+            if (appExecutions.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
+
+            using var appLogsSnapshot = expressStorage.AppLogsStore.GetSnapshot();
+            using var notificationsSnapshot = expressStorage.NotificationsStore.GetSnapshot();
+
+            var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
+            BinaryPrimitives.WriteUInt32BigEndian(
+                notificationIndex.AsSpan(0, sizeof(uint)),
+                block.Index);
+
+            for (int i = 0; i < appExecutions.Count; i++)
+            {
+                ApplicationExecuted appExec = appExecutions[i];
+                if (appExec.Transaction == null) continue;
+
+                var txJson = TxLogToJson(appExec);
+                appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
+
+                if (appExec.VMState != VMState.FAULT)
+                {
+                    if (appExec.Notifications.Length > ushort.MaxValue) throw new Exception("appExec.Notifications too big");
+
+                    BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)i);
+
+                    for (int j = 0; j < appExec.Notifications.Length; j++)
+                    {
+                        BinaryPrimitives.WriteUInt16BigEndian(
+                            notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
+                            (ushort)j);
+                        var record = new NotificationRecord(appExec.Notifications[j]);
+                        notificationsSnapshot.Put(notificationIndex, record.ToArray());
+                    }
+                }
+            }
+
+            var blockJson = BlockLogToJson(block, appExecutions);
+            if (blockJson != null)
+            {
+                appLogsSnapshot.Put(block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
+            }
+
+            appLogsSnapshot.Commit();
+            notificationsSnapshot.Commit();
+
+            // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
+            // to avoid dependency on LevelDBStore package
+
+            static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
+            {
+                global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
+
+                var txJson = new JObject();
+                txJson["txid"] = appExec.Transaction.Hash.ToString();
+                JObject trigger = new JObject();
+                trigger["trigger"] = appExec.Trigger;
+                trigger["vmstate"] = appExec.VMState;
+                trigger["exception"] = appExec.Exception?.GetBaseException().Message;
+                trigger["gasconsumed"] = appExec.GasConsumed.ToString();
+                try
+                {
+                    trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
+                }
+                catch (InvalidOperationException)
+                {
+                    trigger["stack"] = "error: recursive reference";
+                }
+                trigger["notifications"] = appExec.Notifications.Select(q =>
+                {
+                    JObject notification = new JObject();
+                    notification["contract"] = q.ScriptHash.ToString();
+                    notification["eventname"] = q.EventName;
+                    try
+                    {
+                        notification["state"] = q.State.ToJson();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        notification["state"] = "error: recursive reference";
+                    }
+                    return notification;
+                }).ToArray();
+
+                txJson["executions"] = new List<JObject>() { trigger }.ToArray();
+                return txJson;
+            }
+
+            static JObject? BlockLogToJson(Block block, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+            {
+                var blocks = applicationExecutedList.Where(p => p.Transaction is null).ToArray();
+                if (blocks.Length > 0)
+                {
+                    var blockJson = new JObject();
+                    var blockHash = block.Hash.ToArray();
+                    blockJson["blockhash"] = block.Hash.ToString();
+                    var triggerList = new List<JObject>();
+                    foreach (var appExec in blocks)
+                    {
+                        JObject trigger = new JObject();
+                        trigger["trigger"] = appExec.Trigger;
+                        trigger["vmstate"] = appExec.VMState;
+                        trigger["gasconsumed"] = appExec.GasConsumed.ToString();
+                        try
+                        {
+                            trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            trigger["stack"] = "error: recursive reference";
+                        }
+                        trigger["notifications"] = appExec.Notifications.Select(q =>
+                        {
+                            JObject notification = new JObject();
+                            notification["contract"] = q.ScriptHash.ToString();
+                            notification["eventname"] = q.EventName;
+                            try
+                            {
+                                notification["state"] = q.State.ToJson();
+                            }
+                            catch (InvalidOperationException)
+                            {
+                                notification["state"] = "error: recursive reference";
+                            }
+                            return notification;
+                        }).ToArray();
+                        triggerList.Add(trigger);
+                    }
+                    blockJson["executions"] = triggerList.ToArray();
+                    return blockJson;
+                }
+
+                return null;
+            }
+        }
+
+        public IEnumerable<(UInt160 hash, ContractManifest manifest)> ListContracts()
+        {
+            return NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
+                .OrderBy(c => c.Id)
+                .Select(c => (c.Hash, c.Manifest));
+        }
+
+
+
+
+
+
+
+
+
+
+
+
         public Neo.Persistence.SnapshotCache GetSnapshot() => neoSystem.GetSnapshot();
         public Task<RelayResult> RelayBlockAsync(Block block) => neoSystem.Blockchain.Ask<RelayResult>(block);
 
@@ -95,7 +249,7 @@ namespace NeoExpress.Node
 
         public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
             SeekDirection direction, IReadOnlySet<UInt160>? contracts, string eventName)
-                => GetNotifications(direction, contracts, 
+                => GetNotifications(direction, contracts,
                     string.IsNullOrEmpty(eventName) ? null : new HashSet<string>(StringComparer.OrdinalIgnoreCase) { eventName });
 
         public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
@@ -147,7 +301,7 @@ namespace NeoExpress.Node
                     // Do not remove or re-word this console output:
                     consolePlugin.WriteLine($"Neo express is running ({expressStorage.Name})");
 
-                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, tokenSource.Token);
+                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, shutdownTokenSource.Token);
                     linkedToken.Token.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)
@@ -162,52 +316,7 @@ namespace NeoExpress.Node
             await tcs.Task.ConfigureAwait(false);
         }
 
-        private void OnPersist(Block block, IReadOnlyList<ApplicationExecuted> appExecutions)
-        {
-            if (appExecutions.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
 
-            using var appLogsSnapshot = expressStorage.AppLogsStore.GetSnapshot();
-            using var notificationsSnapshot = expressStorage.NotificationsStore.GetSnapshot();
-
-            var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
-            BinaryPrimitives.WriteUInt32BigEndian(
-                notificationIndex.AsSpan(0, sizeof(uint)),
-                block.Index);
-
-            for (int i = 0; i < appExecutions.Count; i++)
-            {
-                ApplicationExecuted appExec = appExecutions[i];
-                if (appExec.Transaction == null) continue;
-
-                var txJson = TxLogToJson(appExec);
-                appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
-
-                if (appExec.VMState != VMState.FAULT)
-                {
-                    if (appExec.Notifications.Length > ushort.MaxValue) throw new Exception("appExec.Notifications too big");
-
-                    BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)i);
-
-                    for (int j = 0; j < appExec.Notifications.Length; j++)
-                    {
-                        BinaryPrimitives.WriteUInt16BigEndian(
-                            notificationIndex.AsSpan(sizeof(uint) + sizeof(ushort), sizeof(ushort)),
-                            (ushort)j);
-                        var record = new NotificationRecord(appExec.Notifications[j]);
-                        notificationsSnapshot.Put(notificationIndex, record.ToArray());
-                    }
-                }
-            }
-
-            var blockJson = BlockLogToJson(block, appExecutions);
-            if (blockJson != null)
-            {
-                appLogsSnapshot.Put(block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
-            }
-
-            appLogsSnapshot.Commit();
-            notificationsSnapshot.Commit();
-        }
 
         static Neo.Consensus.Settings GetConsensusSettings(IExpressChain chain)
         {
@@ -220,95 +329,6 @@ namespace NeoExpress.Node
 
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
             return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
-        }
-
-        // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
-        // to avoid dependency on LevelDBStore package
-
-        public static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
-        {
-            global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
-
-            var txJson = new JObject();
-            txJson["txid"] = appExec.Transaction.Hash.ToString();
-            JObject trigger = new JObject();
-            trigger["trigger"] = appExec.Trigger;
-            trigger["vmstate"] = appExec.VMState;
-            trigger["exception"] = appExec.Exception?.GetBaseException().Message;
-            trigger["gasconsumed"] = appExec.GasConsumed.ToString();
-            try
-            {
-                trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
-            }
-            catch (InvalidOperationException)
-            {
-                trigger["stack"] = "error: recursive reference";
-            }
-            trigger["notifications"] = appExec.Notifications.Select(q =>
-            {
-                JObject notification = new JObject();
-                notification["contract"] = q.ScriptHash.ToString();
-                notification["eventname"] = q.EventName;
-                try
-                {
-                    notification["state"] = q.State.ToJson();
-                }
-                catch (InvalidOperationException)
-                {
-                    notification["state"] = "error: recursive reference";
-                }
-                return notification;
-            }).ToArray();
-
-            txJson["executions"] = new List<JObject>() { trigger }.ToArray();
-            return txJson;
-        }
-
-        public static JObject? BlockLogToJson(Block block, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
-        {
-            var blocks = applicationExecutedList.Where(p => p.Transaction is null).ToArray();
-            if (blocks.Length > 0)
-            {
-                var blockJson = new JObject();
-                var blockHash = block.Hash.ToArray();
-                blockJson["blockhash"] = block.Hash.ToString();
-                var triggerList = new List<JObject>();
-                foreach (var appExec in blocks)
-                {
-                    JObject trigger = new JObject();
-                    trigger["trigger"] = appExec.Trigger;
-                    trigger["vmstate"] = appExec.VMState;
-                    trigger["gasconsumed"] = appExec.GasConsumed.ToString();
-                    try
-                    {
-                        trigger["stack"] = appExec.Stack.Select(q => q.ToJson()).ToArray();
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        trigger["stack"] = "error: recursive reference";
-                    }
-                    trigger["notifications"] = appExec.Notifications.Select(q =>
-                    {
-                        JObject notification = new JObject();
-                        notification["contract"] = q.ScriptHash.ToString();
-                        notification["eventname"] = q.EventName;
-                        try
-                        {
-                            notification["state"] = q.State.ToJson();
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            notification["state"] = "error: recursive reference";
-                        }
-                        return notification;
-                    }).ToArray();
-                    triggerList.Add(trigger);
-                }
-                blockJson["executions"] = triggerList.ToArray();
-                return blockJson;
-            }
-
-            return null;
         }
     }
 }

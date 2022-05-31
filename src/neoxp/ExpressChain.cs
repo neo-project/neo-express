@@ -8,6 +8,7 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.SmartContract;
 using NeoExpress.Models;
 using NeoExpress.Node;
 
@@ -77,7 +78,7 @@ namespace NeoExpress
         {
             if (!string.IsNullOrEmpty(name))
             {
-                if (name.Equals(ExpressChainExtensions.GENESIS, StringComparison.OrdinalIgnoreCase))
+                if (name.Equals(IExpressChain.GENESIS, StringComparison.OrdinalIgnoreCase))
                 {
                     var contract = chainInfo.CreateGenesisContract();
                     wallet = new DevWallet(string.Empty, chainInfo.AddressVersion);
@@ -128,7 +129,7 @@ namespace NeoExpress
                         var account = devWallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
                             ?? devWallet.GetAccounts().SingleOrDefault()
                             ?? throw new InvalidOperationException("Neo-express only supports NEP-6 wallets with a single default account or a single account");
-                        if (account.IsMultiSigContract())
+                        if (account.Contract.Script.IsMultiSigContract())
                         {
                             throw new Exception("Neo-express doesn't supports multi-sig NEP-6 accounts");
                         }

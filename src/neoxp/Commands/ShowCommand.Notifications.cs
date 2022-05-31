@@ -36,61 +36,62 @@ namespace NeoExpress.Commands
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
+                await Task.CompletedTask;
                 try
                 {
-                    var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                    using var expressNode = chain.GetExpressNode(fileSystem);
+                    // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
+                    // using var expressNode = chain.GetExpressNode(fileSystem);
 
-                    var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-                    var contractMap = contracts.ToDictionary(c => c.hash, c => c.manifest.Name);
+                    // var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+                    // var contractMap = contracts.ToDictionary(c => c.hash, c => c.manifest.Name);
 
-                    IReadOnlySet<UInt160>? contractFilter = null;
-                    if (!string.IsNullOrEmpty(Contract))
-                    {
-                        if (UInt160.TryParse(Contract, out var _contract))
-                        {
-                            contractFilter = new HashSet<UInt160>() { _contract };
-                        }
-                        else
-                        {
-                            contractFilter = contracts
-                                .Where(c => Contract.Equals(c.manifest.Name, StringComparison.OrdinalIgnoreCase))
-                                .Select(c => c.hash)
-                                .ToHashSet();
-                            if (contractFilter.Count == 0) throw new Exception($"Couldn't resolve {Contract} contract");
-                        }
-                    }
+                    // IReadOnlySet<UInt160>? contractFilter = null;
+                    // if (!string.IsNullOrEmpty(Contract))
+                    // {
+                    //     if (UInt160.TryParse(Contract, out var _contract))
+                    //     {
+                    //         contractFilter = new HashSet<UInt160>() { _contract };
+                    //     }
+                    //     else
+                    //     {
+                    //         contractFilter = contracts
+                    //             .Where(c => Contract.Equals(c.manifest.Name, StringComparison.OrdinalIgnoreCase))
+                    //             .Select(c => c.hash)
+                    //             .ToHashSet();
+                    //         if (contractFilter.Count == 0) throw new Exception($"Couldn't resolve {Contract} contract");
+                    //     }
+                    // }
 
-                    IReadOnlySet<string>? eventFilter = null;
-                    if (!string.IsNullOrEmpty(EventName))
-                    {
-                        eventFilter = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { EventName };
-                    }
+                    // IReadOnlySet<string>? eventFilter = null;
+                    // if (!string.IsNullOrEmpty(EventName))
+                    // {
+                    //     eventFilter = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { EventName };
+                    // }
 
-                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                    using var _ = writer.WriteArray();
+                    // using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                    // using var _ = writer.WriteArray();
 
-                    var count = 0;
-                    await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
-                    {
-                        if (Count.HasValue && count++ >= Count.Value) break;
+                    // var count = 0;
+                    // await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
+                    // {
+                    //     if (Count.HasValue && count++ >= Count.Value) break;
 
-                        using var __ = writer.WriteObject();
+                    //     using var __ = writer.WriteObject();
 
-                        writer.WritePropertyName("block-index");
-                        writer.WriteValue(blockIndex);
-                        writer.WritePropertyName("script-hash");
-                        writer.WriteValue(notification.ScriptHash.ToString());
-                        if (contractMap.TryGetValue(notification.ScriptHash, out var name))
-                        {
-                            writer.WritePropertyName("contract-name");
-                            writer.WriteValue(name);
-                        }
-                        writer.WritePropertyName("event-name");
-                        writer.WriteValue(notification.EventName);
-                        writer.WritePropertyName("state");
-                        writer.WriteJson(Neo.VM.Helper.ToJson(notification.State)["value"]);
-                    }
+                    //     writer.WritePropertyName("block-index");
+                    //     writer.WriteValue(blockIndex);
+                    //     writer.WritePropertyName("script-hash");
+                    //     writer.WriteValue(notification.ScriptHash.ToString());
+                    //     if (contractMap.TryGetValue(notification.ScriptHash, out var name))
+                    //     {
+                    //         writer.WritePropertyName("contract-name");
+                    //         writer.WriteValue(name);
+                    //     }
+                    //     writer.WritePropertyName("event-name");
+                    //     writer.WriteValue(notification.EventName);
+                    //     writer.WritePropertyName("state");
+                    //     writer.WriteJson(Neo.VM.Helper.ToJson(notification.State)["value"]);
+                    // }
 
                     return 0;
                 }

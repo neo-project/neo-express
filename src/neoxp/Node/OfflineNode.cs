@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
-using Akka.Actor;
 using Neo;
-using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
-using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography.ECC;
 using Neo.IO;
@@ -23,7 +20,6 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
-using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
 {
@@ -39,7 +35,7 @@ namespace NeoExpress.Node
         public OfflineNode(
             IExpressChain chain,
             ExpressConsensusNode node,
-            IExpressStorage expressStorage, 
+            IExpressStorage expressStorage,
             bool enableTrace)
         {
             ApplicationEngine.Log += OnLog!;
@@ -47,7 +43,7 @@ namespace NeoExpress.Node
             this.Chain = chain;
             expressSystem = new ExpressSystem(chain, node, expressStorage, enableTrace, null);
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
-    }
+        }
 
         void Dispose(bool disposing)
         {
@@ -68,7 +64,134 @@ namespace NeoExpress.Node
             GC.SuppressFinalize(this);
         }
 
-        private void OnLog(object sender, LogEventArgs args)
+#pragma warning disable 1998
+        public async Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script, Signer? signer = null)
+#pragma warning restore 1998
+        {
+            var tx = TestApplicationEngine.CreateTestTransaction(signer);
+            using var engine = script.Invoke(ProtocolSettings, expressSystem.StoreView, tx);
+
+            return new RpcInvokeResult()
+            {
+                State = engine.State,
+                Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
+                GasConsumed = engine.GasConsumed,
+                Stack = engine.ResultStack.ToArray(),
+                Script = string.Empty,
+                Tx = string.Empty
+            };
+        }
+
+        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
+        {
+            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+
+            var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
+            var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
+            var tx = wallet.MakeTransaction(expressSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
+            if (additionalGas > 0.0m)
+            {
+                tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
+            }
+
+            var account = wallet.GetAccount(accountHash) ?? throw new Exception($"{accountHash} not found");
+
+            var context = new ContractParametersContext(expressSystem.StoreView, tx, ProtocolSettings.Network);
+            if (account.Contract.Script.IsMultiSigContract())
+            {
+                var signatureCount = account.Contract.ParameterList.Length;
+                var accountWallets = Chain.GetAccountWallets(accountHash);
+                if (accountWallets.Count < signatureCount) throw new Exception($"{signatureCount} signatures needed, only {accountWallets.Count} wallets found");
+
+                for (int i = 0; i < accountWallets.Count; i++)
+                {
+                    accountWallets[i].Sign(context);
+                    if (context.Completed) break;
+                }
+            }
+            else
+            {
+                wallet.Sign(context);
+            }
+
+            if (!context.Completed) throw new Exception("Not enough signatures provided");
+
+            tx.Witnesses = context.GetWitnesses();
+            var blockHash = await SubmitTransactionAsync(tx).ConfigureAwait(false);
+            return tx.Hash;
+        }
+
+#pragma warning disable 1998
+        public async Task<Block> GetBlockAsync(UInt256 hash)
+            => NativeContract.Ledger.GetBlock(expressSystem.StoreView, hash)
+                ?? throw new Exception("Unknown block");
+
+        public async Task<Block> GetBlockAsync(uint index)
+            => NativeContract.Ledger.GetBlock(expressSystem.StoreView, index)
+                ?? throw new Exception("Unknown block");
+
+        public async Task<Block> GetLatestBlockAsync()
+        {
+            var hash = NativeContract.Ledger.CurrentHash(expressSystem.StoreView)
+                ?? throw new Exception("no current hash");
+            return NativeContract.Ledger.GetBlock(expressSystem.StoreView, hash)
+                ?? throw new Exception("Unknown block");
+        }
+
+        public async Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        {
+            var tx = NativeContract.Ledger.GetTransaction(expressSystem.StoreView, txHash)
+                ?? throw new Exception("Unknown Transaction");
+            var appLog = expressSystem.GetAppLog(txHash);
+            return appLog != null
+                ? (tx, RpcApplicationLog.FromJson(appLog, ProtocolSettings))
+                : (tx, null);
+        }
+
+        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
+            => expressSystem.ListContracts().ToList();
+#pragma warning restore 1998
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        void OnLog(object sender, LogEventArgs args)
         {
             var engine = sender as ApplicationEngine;
             var tx = engine?.ScriptContainer as Transaction;
@@ -103,65 +226,7 @@ namespace NeoExpress.Node
         public Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
             => MakeAsync(() => CreateCheckpoint(checkPointPath));
 
-        RpcInvokeResult Invoke(Neo.VM.Script script, Signer? signer = null)
-        {
-            var tx = TestApplicationEngine.CreateTestTransaction(signer);
-            using var engine = script.Invoke(ProtocolSettings, expressSystem.StoreView, tx);
 
-            return new RpcInvokeResult()
-            {
-                State = engine.State,
-                Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
-                GasConsumed = engine.GasConsumed,
-                Stack = engine.ResultStack.ToArray(),
-                Script = string.Empty,
-                Tx = string.Empty
-            };
-        }
-
-        public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script, Signer? signer = null)
-            => MakeAsync(() => Invoke(script, signer));
-
-        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
-        {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
-
-            await Task.CompletedTask;
-            throw new Exception();
-
-            // var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
-            // var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
-            // var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
-            // if (additionalGas > 0.0m)
-            // {
-            //     tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
-            // }
-
-            // var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
-            // var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            // if (account.IsMultiSigContract())
-            // {
-            //     var multiSigWallets = chain.GetMultiSigWallets(neoSystem.Settings, accountHash);
-            //     for (int i = 0; i < multiSigWallets.Count; i++)
-            //     {
-            //         multiSigWallets[i].Sign(context);
-            //         if (context.Completed) break;
-            //     }
-            // }
-            // else
-            // {
-            //     wallet.Sign(context);
-            // }
-
-            // if (!context.Completed)
-            // {
-            //     throw new Exception();
-            // }
-
-            // tx.Witnesses = context.GetWitnesses();
-            // var blockHash = await SubmitTransactionAsync(tx).ConfigureAwait(false);
-            // return tx.Hash;
-        }
 
         public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
         {
@@ -229,19 +294,6 @@ namespace NeoExpress.Node
             }
         }
 
-        (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
-        {
-            var tx = NativeContract.Ledger.GetTransaction(expressSystem.StoreView, txHash);
-            if (tx == null) throw new Exception("Unknown Transaction");
-
-            var jsonLog = expressSystem.GetAppLog(txHash);
-            return jsonLog != null
-                ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
-                : (tx, null);
-        }
-
-        public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
-            => MakeAsync(() => GetTransaction(txHash));
 
         IReadOnlyList<(TokenContract contract, BigInteger balance)> ListBalances(UInt160 address)
         {
@@ -281,16 +333,7 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
             => MakeAsync(() => ListBalances(address));
 
-        IReadOnlyList<(UInt160 hash, ContractManifest manifest)> ListContracts()
-        {
-            return NativeContract.ContractManagement.ListContracts(expressSystem.StoreView)
-                .OrderBy(c => c.Id)
-                .Select(c => (c.Hash, c.Manifest))
-                .ToList();
-        }
 
-        public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
-            => MakeAsync(ListContracts);
 
         IReadOnlyList<(ulong requestId, OracleRequest request)> ListOracleRequests()
             => NativeContract.Oracle.GetRequests(expressSystem.StoreView).ToList();

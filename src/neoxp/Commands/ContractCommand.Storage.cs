@@ -91,18 +91,19 @@ namespace NeoExpress.Commands
 
             internal async Task ExecuteAsync(TextWriter writer)
             {
-                var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                var expressNode = chain.GetExpressNode(fileSystem);
+                await Task.CompletedTask;
+                // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
+                // var expressNode = chain.GetExpressNode(fileSystem);
 
-                if (UInt160.TryParse(Contract, out var hash))
-                {
-                    await WriteStoragesAsync(expressNode, writer, new (UInt160, ContractManifest)[] { (hash, null!) }).ConfigureAwait(false);
-                }
-                else
-                {
-                    var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
-                    await WriteStoragesAsync(expressNode, writer, contracts).ConfigureAwait(false);
-                }
+                // if (UInt160.TryParse(Contract, out var hash))
+                // {
+                //     await WriteStoragesAsync(expressNode, writer, new (UInt160, ContractManifest)[] { (hash, null!) }).ConfigureAwait(false);
+                // }
+                // else
+                // {
+                //     var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
+                //     await WriteStoragesAsync(expressNode, writer, contracts).ConfigureAwait(false);
+                // }
             }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

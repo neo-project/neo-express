@@ -35,10 +35,10 @@ namespace NeoExpress.Commands
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
                     using var _ = writer.WriteObject();
 
-                    writer.WritePropertyName(ExpressChainExtensions.GENESIS);
+                    writer.WritePropertyName(IExpressChain.GENESIS);
                     using (var __ = writer.WriteObject())
                     {
-                        writer.WriteProperty("account-label", ExpressChainExtensions.GENESIS);
+                        writer.WriteProperty("account-label", IExpressChain.GENESIS);
                         writer.WriteProperty("address", consensusAddress);
                         writer.WriteProperty("script-hash", consensusScriptHash.ToString());
                     }
@@ -57,7 +57,7 @@ namespace NeoExpress.Commands
                 {
                     var genesisScriptHash = Neo.IO.Helper.ToArray(consensusScriptHash);
 
-                    console.Out.WriteLine(ExpressChainExtensions.GENESIS);
+                    console.Out.WriteLine(IExpressChain.GENESIS);
                     console.Out.WriteLine($"  {consensusAddress}");
                     console.Out.WriteLine($"    script hash: {BitConverter.ToString(genesisScriptHash)}");
 

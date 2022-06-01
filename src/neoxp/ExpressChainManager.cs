@@ -313,10 +313,9 @@ namespace NeoExpress
         {
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-            throw new Exception();
-            // return discard
-            //     ? RocksDbStorageProvider.OpenForDiscard(nodePath)
-            //     : RocksDbStorageProvider.Open(nodePath);
+            return discard
+                ? CheckpointExpressStorage.OpenForDiscard(nodePath)
+                : new RocksDbExpressStorage(nodePath);
         }
 
         public IExpressStorage GetCheckpointStorageProvider(string checkPointPath)
@@ -338,8 +337,7 @@ namespace NeoExpress
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-            throw new Exception();
-            // return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
+            return CheckpointExpressStorage.OpenCheckpoint(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
         OfflineNode GetOfflineNode(bool offlineTrace = false)
@@ -347,13 +345,12 @@ namespace NeoExpress
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-            throw new Exception();
 
-            // return new Node.OfflineNode(ProtocolSettings,
-            //     RocksDbStorageProvider.Open(nodePath),
-            //     node.Wallet,
-            //     chain,
-            //     offlineTrace);
+            return new Node.OfflineNode(ProtocolSettings,
+                new RocksDbExpressStorage(nodePath),
+                node.Wallet,
+                chain,
+                offlineTrace);
         }
 
         public IExpressNode GetExpressNode(bool offlineTrace = false)

@@ -268,7 +268,8 @@ namespace NeoExpress.Node
             {
                 var proof = await stateAPI.GetProofAsync(stateRoot.RootHash, NativeContract.ContractManagement.Hash, key)
                     .ConfigureAwait(false);
-                var (_, item) = NeoBctkUtility.VerifyProof(proof, stateRoot.RootHash);
+                var (_, value) = NeoBctkUtility.VerifyProof(stateRoot.RootHash, proof);
+                var item = new StorageItem(value);
                 contractState = item.GetInteroperable<ContractState>();
             }
             catch (RpcException ex) when (ex.HResult == COR_E_KEYNOTFOUND)
@@ -317,13 +318,13 @@ namespace NeoExpress.Node
             static void ValidateProof(UInt256 rootHash, JObject proof, JObject result)
             {
                 var proofBytes = Convert.FromBase64String(proof.AsString());
-                var (provenKey, provenItem) = NeoBctkUtility.VerifyProof(proofBytes, rootHash);
+                var (provenKey, provenItem) = NeoBctkUtility.VerifyProof(rootHash, proofBytes);
 
                 var key = Convert.FromBase64String(result["key"].AsString());
                 if (!provenKey.Key.AsSpan().SequenceEqual(key)) throw new Exception("Incorrect StorageKey");
 
                 var value = Convert.FromBase64String(result["value"].AsString());
-                if (!provenItem.Value.AsSpan().SequenceEqual(value)) throw new Exception("Incorrect StorageItem");
+                if (!provenItem.AsSpan().SequenceEqual(value)) throw new Exception("Incorrect StorageItem");
             }
         }
 

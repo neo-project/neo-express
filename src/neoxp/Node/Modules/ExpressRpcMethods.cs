@@ -27,12 +27,12 @@ namespace NeoExpress.Node
     class ExpressRpcMethods
     {
         readonly NeoSystem neoSystem;
-        readonly IStorageProvider storageProvider;
+        readonly IExpressStorage storageProvider;
         readonly UInt160 nodeAccountAddress;
         readonly CancellationTokenSource cancellationToken;
         readonly string cacheId;
 
-        public ExpressRpcMethods(NeoSystem neoSystem, IStorageProvider storageProvider, UInt160 nodeAccountAddress, CancellationTokenSource cancellationToken)
+        public ExpressRpcMethods(NeoSystem neoSystem, IExpressStorage storageProvider, UInt160 nodeAccountAddress, CancellationTokenSource cancellationToken)
         {
             this.neoSystem = neoSystem;
             this.storageProvider = storageProvider;
@@ -195,9 +195,9 @@ namespace NeoExpress.Node
                 throw new Exception("Checkpoint create is only supported on single node express instances");
             }
 
-            if (storageProvider is RocksDbStorageProvider rocksDbStorageProvider)
+            if (storageProvider is RocksDbExpressStorage rocksDbStorageProvider)
             {
-                rocksDbStorageProvider.CreateCheckpoint(filename, neoSystem.Settings, nodeAccountAddress);
+                rocksDbStorageProvider.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
                 return filename;
             }
 

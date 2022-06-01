@@ -193,7 +193,7 @@ namespace NeoExpress
             await process.WaitForExitAsync().ConfigureAwait(false);
             return true;
         }
-        public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
+        public async Task RunAsync(IExpressStorage expressStorage, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
         {
             if (IsNodeRunning(node))
             {
@@ -214,16 +214,16 @@ namespace NeoExpress
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
                     var logPlugin = new Node.LogPlugin(writer);
-                    var storageProviderPlugin = new Node.StorageProviderPlugin(store);
+                    var storageProviderPlugin = new Node.StorageProviderPlugin(expressStorage);
                     var appEngineProvider = enableTrace ? new Node.ApplicationEngineProvider() : null;
                     var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
-                    var persistencePlugin = new Node.PersistencePlugin(store);
+                    var persistencePlugin = new Node.PersistencePlugin(expressStorage);
 
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
                     _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));
                     var rpcSettings = GetRpcServerSettings(chain, node);
                     var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
-                    var expressRpcMethods = new ExpressRpcMethods(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
+                    var expressRpcMethods = new ExpressRpcMethods(neoSystem, expressStorage, multiSigAccount.ScriptHash, linkedToken);
                     rpcServer.RegisterMethods(expressRpcMethods);
                     rpcServer.RegisterMethods(persistencePlugin);
                     rpcServer.StartRpcServer();
@@ -237,7 +237,7 @@ namespace NeoExpress
 
                     // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
                     // Do not remove or re-word this console output:
-                    writer.WriteLine($"Neo express is running ({store.GetType().Name})");
+                    writer.WriteLine($"Neo express is running ({expressStorage.Name})");
 
                     linkedToken.Token.WaitHandle.WaitOne();
                 }
@@ -309,17 +309,17 @@ namespace NeoExpress
             }
         }
 
-        public IStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
+        public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
-            return discard
-                ? RocksDbStorageProvider.OpenForDiscard(nodePath)
-                : RocksDbStorageProvider.Open(nodePath);
+            throw new Exception();
+            // return discard
+            //     ? RocksDbStorageProvider.OpenForDiscard(nodePath)
+            //     : RocksDbStorageProvider.Open(nodePath);
         }
 
-        public IStorageProvider GetCheckpointStorageProvider(string checkPointPath)
+        public IExpressStorage GetCheckpointStorageProvider(string checkPointPath)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -338,7 +338,8 @@ namespace NeoExpress
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-            return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
+            throw new Exception();
+            // return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
         OfflineNode GetOfflineNode(bool offlineTrace = false)
@@ -346,12 +347,13 @@ namespace NeoExpress
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            throw new Exception();
 
-            return new Node.OfflineNode(ProtocolSettings,
-                RocksDbStorageProvider.Open(nodePath),
-                node.Wallet,
-                chain,
-                offlineTrace);
+            // return new Node.OfflineNode(ProtocolSettings,
+            //     RocksDbStorageProvider.Open(nodePath),
+            //     node.Wallet,
+            //     chain,
+            //     offlineTrace);
         }
 
         public IExpressNode GetExpressNode(bool offlineTrace = false)

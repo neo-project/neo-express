@@ -21,8 +21,7 @@ using NeoExpress.Models;
 
 namespace NeoExpress.Node
 {
-
-    internal class OnlineNode : IExpressNode
+    class OnlineNode : IExpressNode
     {
         readonly ExpressChain chain;
         readonly RpcClient rpcClient;

@@ -7,13 +7,13 @@ namespace NeoExpress.Node
 {
     internal class StorageProviderPlugin : Plugin, IStorageProvider
     {
-        public readonly IStorageProvider storageProvider;
+        public readonly IExpressStorage expressStorage;
 
-        public StorageProviderPlugin(IStorageProvider storageProvider)
+        public StorageProviderPlugin(IExpressStorage expressStorage)
         {
-            this.storageProvider = storageProvider;
+            this.expressStorage = expressStorage;
         }
 
-        public IStore GetStore(string path) => storageProvider.GetStore(path);
+        public IStore GetStore(string path) => expressStorage.GetStore(path);
     }
 }

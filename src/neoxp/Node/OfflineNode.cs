@@ -33,13 +33,13 @@ namespace NeoExpress.Node
         readonly ApplicationEngineProvider? applicationEngineProvider;
         readonly Wallet nodeWallet;
         readonly ExpressChain chain;
-        readonly RocksDbStorageProvider rocksDbStorageProvider;
+        readonly RocksDbExpressStorage rocksDbStorageProvider;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         bool disposedValue;
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
-        public OfflineNode(ProtocolSettings settings, RocksDbStorageProvider rocksDbStorageProvider, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
+        public OfflineNode(ProtocolSettings settings, RocksDbExpressStorage rocksDbStorageProvider, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
             this.nodeWallet = DevWallet.FromExpressWallet(settings, nodeWallet);
             this.chain = chain;
@@ -101,7 +101,7 @@ namespace NeoExpress.Node
         IExpressNode.CheckpointMode CreateCheckpoint(string checkPointPath)
         {
             var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-            rocksDbStorageProvider.CreateCheckpoint(checkPointPath, ProtocolSettings, multiSigAccount.ScriptHash);
+            rocksDbStorageProvider.CreateCheckpoint(checkPointPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
             return IExpressNode.CheckpointMode.Offline;
         }
 

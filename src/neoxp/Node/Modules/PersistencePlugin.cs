@@ -20,21 +20,21 @@ namespace NeoExpress.Node
         const string APP_LOGS_STORE_PATH = "app-logs-store";
         const string NOTIFICATIONS_STORE_PATH = "notifications-store";
 
-        static IStore GetAppLogStore(IStorageProvider storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
-        static IStore GetNotificationsStore(IStorageProvider storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
+        static IStore GetAppLogStore(IExpressStorage storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
+        static IStore GetNotificationsStore(IExpressStorage storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
 
         readonly IStore appLogsStore;
         readonly IStore notificationsStore;
         ISnapshot? appLogsSnapshot;
         ISnapshot? notificationsSnapshot;
 
-        public PersistencePlugin(IStorageProvider storageProvider)
+        public PersistencePlugin(IExpressStorage expressStorage)
         {
-            appLogsStore = GetAppLogStore(storageProvider);
-            notificationsStore = GetNotificationsStore(storageProvider);
+            appLogsStore = GetAppLogStore(expressStorage);
+            notificationsStore = GetNotificationsStore(expressStorage);
         }
 
-        public static JObject? GetAppLog(IStorageProvider storageProvider, UInt256 hash)
+        public static JObject? GetAppLog(IExpressStorage storageProvider, UInt256 hash)
         {
             var store = GetAppLogStore(storageProvider);
             var value = store.TryGet(hash.ToArray());
@@ -52,7 +52,7 @@ namespace NeoExpress.Node
         });
 
         public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
-            IStorageProvider storageProvider,
+            IExpressStorage storageProvider,
             SeekDirection direction,
             IReadOnlySet<UInt160>? contracts,
             string eventName) => string.IsNullOrEmpty(eventName)
@@ -61,7 +61,7 @@ namespace NeoExpress.Node
                     new HashSet<string>(StringComparer.OrdinalIgnoreCase) { eventName });
 
         public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
-            IStorageProvider storageProvider,
+            IExpressStorage storageProvider,
             SeekDirection direction = SeekDirection.Forward,
             IReadOnlySet<UInt160>? contracts = null,
             IReadOnlySet<string>? eventNames = null)

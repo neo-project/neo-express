@@ -12,6 +12,7 @@ using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
+using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 
@@ -82,7 +83,6 @@ namespace NeoExpress
             }
         }
 
-
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)
         {
             var showStackTrace = ((CommandOption<bool>)app.GetOptions().Single(o => o.LongName == "stack-trace")).ParsedValue;
@@ -101,8 +101,8 @@ namespace NeoExpress
             }
         }
 
-        public static bool IsMultiSigContract(this WalletAccount @this) => @this.Contract.Script.IsMultiSigContract();
-
+        public static bool IsMultiSigContract(this WalletAccount @this) => Neo.SmartContract.Helper.IsMultiSigContract(@this.Contract.Script);
+        
         public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
 
         public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
@@ -131,42 +131,21 @@ namespace NeoExpress
         public static BigDecimal ToBigDecimal(this RpcNep17Balance balance, byte decimals)
             => new BigDecimal(balance.Amount, decimals);
 
-        public static string ToHexString(this byte[] value, bool reverse = false)
-        {
-            var sb = new System.Text.StringBuilder();
-
-            if (reverse)
-            {
-                for (int i = value.Length - 1; i >= 0; i--)
-                {
-                    sb.AppendFormat("{0:x2}", value[i]);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < value.Length; i++)
-                {
-                    sb.AppendFormat("{0:x2}", value[i]);
-                }
-            }
-            return sb.ToString();
-        }
-
-        public static byte[] ToByteArray(this string value)
-        {
-            if (value == null || value.Length == 0)
-                return new byte[0];
-            if (value.Length % 2 == 1)
-                throw new FormatException();
-            byte[] result = new byte[value.Length / 2];
-            for (int i = 0; i < result.Length; i++)
-                result[i] = byte.Parse(value.Substring(i * 2, 2), System.Globalization.NumberStyles.AllowHexSpecifier);
-            return result;
-        }
-
         public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
         {
             return ExpressNodeExtensions.GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
+        }
+
+        // TODO: Remove when https://github.com/neo-project/neo-modules/issues/720 is fixed
+        public static async Task<RpcInvokeResult> InvokeScriptAsync(this RpcClient rpcClient, Script script, params Signer[] signers)
+        {
+            List<Neo.IO.Json.JObject> list = new List<Neo.IO.Json.JObject> { Convert.ToBase64String(script.AsSpan()) };
+            if (signers.Length != 0)
+            {
+                list.Add(signers.Select((Signer p) => p.ToJson()).ToArray());
+            }
+            var result = await rpcClient.RpcSendAsync("invokescript", list.ToArray()).ConfigureAwait(false);
+            return RpcInvokeResult.FromJson(result);
         }
 
         public static bool TryGetSigningAccount(this ExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
@@ -201,7 +180,7 @@ namespace NeoExpress
                     if (name.Equals(expWallet.Name, StringComparison.OrdinalIgnoreCase))
                     {
                         wallet = DevWallet.FromExpressWallet(settings, expWallet);
-                        accountHash = wallet.GetAccounts().Single(a => !a.Contract.Script.IsMultiSigContract()).ScriptHash;
+                        accountHash = wallet.GetAccounts().Single(a => !a.IsMultiSigContract()).ScriptHash;
                         return true;
                     }
                 }
@@ -246,8 +225,7 @@ namespace NeoExpress
             {
                 try
                 {
-                    var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(path, settings);
-                    using var unlock = nep6wallet.Unlock(password);
+                    var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(path, password, settings);
                     var nep6account = nep6wallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
                         ?? nep6wallet.GetAccounts().SingleOrDefault()
                         ?? throw new InvalidOperationException("Neo-express only supports NEP-6 wallets with a single default account or a single account");

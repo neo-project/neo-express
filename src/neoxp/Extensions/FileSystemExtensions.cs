@@ -56,18 +56,31 @@ namespace NeoExpress
 
         public static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(this IFileSystem fileSystem, string contractPath)
         {
-            var nefTask = Task.Run(() =>
-            {
-                using var stream = fileSystem.File.OpenRead(contractPath);
-                using var reader = new System.IO.BinaryReader(stream, System.Text.Encoding.UTF8, false);
-                return reader.ReadSerializable<NefFile>();
-            });
-
-            var manifestTask = fileSystem.File.ReadAllBytesAsync(fileSystem.Path.ChangeExtension(contractPath, ".manifest.json"))
-                .ContinueWith(t => ContractManifest.Parse(t.Result), default, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+            var nefTask = LoadNefAsync(fileSystem, contractPath);
+            var manifestTask = LoadManifestAsync(fileSystem, contractPath);
 
             await Task.WhenAll(nefTask, manifestTask).ConfigureAwait(false);
             return (await nefTask, await manifestTask);
+
+            static async Task<NefFile> LoadNefAsync(IFileSystem fileSystem, string contractPath)
+            {
+                var buffer = await fileSystem.File.ReadAllBytesAsync(contractPath).ConfigureAwait(false);
+                return LoadNef(buffer);
+
+            }
+
+            static NefFile LoadNef(ReadOnlyMemory<byte> memory)
+            {
+                var reader = new MemoryReader(memory);
+                return reader.ReadSerializable<NefFile>();
+            }
+
+            static async Task<ContractManifest> LoadManifestAsync(IFileSystem fileSystem, string contractPath)
+            {
+                var path = fileSystem.Path.ChangeExtension(contractPath, ".manifest.json");
+                var buffer = await fileSystem.File.ReadAllBytesAsync(path).ConfigureAwait(false);
+                return ContractManifest.Parse(buffer);
+            }
         }
     }
 }

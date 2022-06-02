@@ -50,13 +50,11 @@ namespace NeoExpress.Models
             + InventoryHash.Size
             + sizeof(byte);
 
-        public void Deserialize(BinaryReader reader)
+        public void Deserialize(ref MemoryReader reader)
         {
             ScriptHash = reader.ReadSerializable<UInt160>();
             State = (Neo.VM.Types.Array)BinarySerializer.Deserialize(
-                reader,
-                ExecutionEngineLimits.Default,
-                null);
+                ref reader, ExecutionEngineLimits.Default, null);
             EventName = reader.ReadVarString();
             InventoryHash = reader.ReadSerializable<UInt256>();
             InventoryType = (InventoryType)reader.ReadByte();
@@ -64,10 +62,10 @@ namespace NeoExpress.Models
 
         public void Serialize(BinaryWriter writer)
         {
-            ((ISerializable)ScriptHash).Serialize(writer);
+            ScriptHash.Serialize(writer);
             BinarySerializer.Serialize(writer, State, ExecutionEngineLimits.Default.MaxItemSize);
             writer.WriteVarString(EventName);
-            ((ISerializable)InventoryHash).Serialize(writer);
+            InventoryHash.Serialize(writer);
             writer.Write((byte)InventoryType);
         }
 

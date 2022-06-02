@@ -5,15 +5,16 @@ using Neo.SmartContract;
 
 namespace NeoExpress.Node
 {
-    internal class StorageProviderPlugin : Plugin, IStorageProvider
+    internal class ExpressStoreProvider : IStoreProvider
     {
         public readonly IExpressStorage expressStorage;
 
-        public StorageProviderPlugin(IExpressStorage expressStorage)
+        public ExpressStoreProvider(IExpressStorage expressStorage)
         {
             this.expressStorage = expressStorage;
         }
 
+        public string Name => nameof(ExpressStoreProvider);
         public IStore GetStore(string path) => expressStorage.GetStore(path);
     }
 }

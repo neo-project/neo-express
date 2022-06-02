@@ -15,8 +15,10 @@ using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
 
 namespace NeoExpress.Node
 {
-    class PersistencePlugin : Plugin, IPersistencePlugin
+    class ExpressPersistencePlugin : Plugin
     {
+        NeoSystem? neoSystem;
+
         const string APP_LOGS_STORE_PATH = "app-logs-store";
         const string NOTIFICATIONS_STORE_PATH = "notifications-store";
 
@@ -28,10 +30,26 @@ namespace NeoExpress.Node
         ISnapshot? appLogsSnapshot;
         ISnapshot? notificationsSnapshot;
 
-        public PersistencePlugin(IExpressStorage expressStorage)
+        public ExpressPersistencePlugin(IExpressStorage expressStorage)
         {
             appLogsStore = GetAppLogStore(expressStorage);
             notificationsStore = GetNotificationsStore(expressStorage);
+
+            Blockchain.Committing += OnCommitting;
+            Blockchain.Committed += OnCommitted;
+        }
+
+        public override void Dispose()
+        {
+            Blockchain.Committing -= OnCommitting;
+            Blockchain.Committed -= OnCommitted;
+        }
+
+        protected override void OnSystemLoaded(NeoSystem system)
+        {
+            if (this.neoSystem is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+            neoSystem = system;
+            base.OnSystemLoaded(system);
         }
 
         public static JObject? GetAppLog(IExpressStorage storageProvider, UInt256 hash)
@@ -85,7 +103,7 @@ namespace NeoExpress.Node
             }
         }
 
-        void IPersistencePlugin.OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        void OnCommitting(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             appLogsSnapshot?.Dispose();
             notificationsSnapshot?.Dispose();
@@ -131,7 +149,7 @@ namespace NeoExpress.Node
             }
         }
 
-        void IPersistencePlugin.OnCommit(NeoSystem system, Block block, DataCache snapshot)
+        void OnCommitted(NeoSystem system, Block block)
         {
             appLogsSnapshot?.Commit();
             notificationsSnapshot?.Commit();
@@ -140,7 +158,7 @@ namespace NeoExpress.Node
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
         // to avoid dependency on LevelDBStore package
 
-        public static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
+        static JObject TxLogToJson(ApplicationExecuted appExec)
         {
             global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
 
@@ -177,9 +195,14 @@ namespace NeoExpress.Node
 
             txJson["executions"] = new List<JObject>() { trigger }.ToArray();
             return txJson;
+
+            static string? GetExceptionMessage(Exception exception)
+            {
+                return exception?.GetBaseException().Message;
+            }
         }
 
-        public static JObject? BlockLogToJson(Block block, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        static JObject? BlockLogToJson(Block block, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             var blocks = applicationExecutedList.Where(p => p.Transaction is null).ToArray();
             if (blocks.Length > 0)
@@ -224,11 +247,6 @@ namespace NeoExpress.Node
             }
 
             return null;
-        }
-
-        static string? GetExceptionMessage(Exception exception)
-        {
-            return exception?.GetBaseException().Message;
         }
     }
 }

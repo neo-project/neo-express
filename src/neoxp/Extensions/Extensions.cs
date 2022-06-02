@@ -148,6 +148,26 @@ namespace NeoExpress
             return RpcInvokeResult.FromJson(result);
         }
 
+        // TODO: Remove when https://github.com/neo-project/neo-modules/issues/720 is fixed
+        public static async Task<TransactionManager> MakeTransactionAsync(this RpcClient rpcClient, Script script, params Signer[] signers)
+        {
+            var invokeResult = await rpcClient.InvokeScriptAsync(script, signers).ConfigureAwait(false);
+            var blockCount = await rpcClient.GetBlockCountAsync().ConfigureAwait(false) - 1;
+
+            var tx = new Transaction
+            {
+                Version = 0,
+                Nonce = (uint)new Random().Next(),
+                Script = script,
+                Signers = signers ?? Array.Empty<Signer>(),
+                ValidUntilBlock = blockCount - 1 + ProtocolSettings.Default.MaxValidUntilBlockIncrement,
+                SystemFee = invokeResult.GasConsumed,
+                Attributes = Array.Empty<TransactionAttribute>(),
+            };
+
+            return new TransactionManager(tx, rpcClient);
+        }
+
         public static bool TryGetSigningAccount(this ExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
         {
             if (!string.IsNullOrEmpty(name))

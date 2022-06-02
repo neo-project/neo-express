@@ -43,7 +43,7 @@ namespace NeoExpress.Commands
 
                 var storageProvider = chainManager.GetCheckpointStorageProvider(Name);
                 using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-                await chainManager.RunAsync(storageProvider, chain.ConsensusNodes[0], Trace, console.Out, token);
+                await chainManager.RunAsync(storageProvider, chain.ConsensusNodes[0], Trace, console, token);
             }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)

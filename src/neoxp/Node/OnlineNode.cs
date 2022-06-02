@@ -71,8 +71,7 @@ namespace NeoExpress.Node
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
-            var factory = new TransactionManagerFactory(rpcClient);
-            var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
+            var tm = await rpcClient.MakeTransactionAsync(script, signers).ConfigureAwait(false);
 
             if (additionalGas > 0.0m)
             {
@@ -80,7 +79,7 @@ namespace NeoExpress.Node
             }
 
             var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            if (account.Contract.Script.IsMultiSigContract())
+            if (account.IsMultiSigContract())
             {
                 var signatureCount = account.Contract.ParameterList.Length;
                 var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);

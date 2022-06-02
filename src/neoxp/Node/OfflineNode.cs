@@ -5,9 +5,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Neo;
-using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
-using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography.ECC;
 using Neo.IO;
@@ -27,51 +25,44 @@ using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
 {
-    sealed class OfflineNode : IDisposable, IExpressNode
+    sealed class OfflineNode : IExpressNode
     {
         readonly NeoSystem neoSystem;
-        readonly ApplicationEngineProvider? applicationEngineProvider;
         readonly Wallet nodeWallet;
         readonly ExpressChain chain;
-        readonly RocksDbExpressStorage rocksDbStorageProvider;
+        readonly RocksDbExpressStorage expressStorage;
+        readonly ExpressPersistencePlugin persistencePlugin;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         bool disposedValue;
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
-        public OfflineNode(ProtocolSettings settings, RocksDbExpressStorage rocksDbStorageProvider, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
+        public OfflineNode(ProtocolSettings settings, RocksDbExpressStorage expressStorage, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
             this.nodeWallet = DevWallet.FromExpressWallet(settings, nodeWallet);
             this.chain = chain;
-            this.rocksDbStorageProvider = rocksDbStorageProvider;
-            applicationEngineProvider = enableTrace ? new ApplicationEngineProvider() : null;
+            this.expressStorage = expressStorage;
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
 
-            var storageProviderPlugin = new StorageProviderPlugin(rocksDbStorageProvider);
-            _ = new PersistencePlugin(rocksDbStorageProvider);
-            neoSystem = new NeoSystem(settings, storageProviderPlugin.Name);
+            var storeProvider = new ExpressStoreProvider(expressStorage);
+            StoreFactory.RegisterProvider(storeProvider);
+            if (enableTrace) { ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+
+            persistencePlugin = new ExpressPersistencePlugin(expressStorage);
+            neoSystem = new NeoSystem(settings, storeProvider.Name);
 
             ApplicationEngine.Log += OnLog!;
         }
 
-        void Dispose(bool disposing)
+        public void Dispose()
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                    neoSystem.Dispose();
-                    rocksDbStorageProvider.Dispose();
-                }
-
+                persistencePlugin.Dispose();
+                neoSystem.Dispose();
+                expressStorage.Dispose();
                 disposedValue = true;
             }
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
 
         private void OnLog(object sender, LogEventArgs args)
@@ -101,7 +92,7 @@ namespace NeoExpress.Node
         IExpressNode.CheckpointMode CreateCheckpoint(string checkPointPath)
         {
             var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-            rocksDbStorageProvider.CreateCheckpoint(checkPointPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+            expressStorage.CreateCheckpoint(checkPointPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
             return IExpressNode.CheckpointMode.Offline;
         }
 
@@ -261,7 +252,7 @@ namespace NeoExpress.Node
             var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
             if (tx == null) throw new Exception("Unknown Transaction");
 
-            var jsonLog = PersistencePlugin.GetAppLog(rocksDbStorageProvider, txHash);
+            var jsonLog = ExpressPersistencePlugin.GetAppLog(expressStorage, txHash);
             return jsonLog != null
                 ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
                 : (tx, null);
@@ -354,7 +345,7 @@ namespace NeoExpress.Node
 
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
             return snapshot.Find(prefix)
-                .Select(t => (t.Key.Key.ToHexString(), t.Value.Value.ToHexString()))
+                .Select(t => (Convert.ToHexString(t.Key.Key.Span), Convert.ToHexString(t.Value.Value.Span)))
                 .ToList();
         }
 
@@ -377,7 +368,7 @@ namespace NeoExpress.Node
 #pragma warning disable 1998 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
-            var notifications = PersistencePlugin.GetNotifications(this.rocksDbStorageProvider, SeekDirection.Backward, contractFilter, eventFilter);
+            var notifications = ExpressPersistencePlugin.GetNotifications(this.expressStorage, SeekDirection.Backward, contractFilter, eventFilter);
             foreach (var (block, _, notification) in notifications)
             {
                 yield return (block, notification);

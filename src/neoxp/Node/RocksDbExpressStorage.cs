@@ -34,7 +34,7 @@ namespace NeoExpress.Node
                 return new RocksDbStore(db, columnFamily, readOnly: false, shared: true);
 
             columnFamily = db.CreateColumnFamily(new ColumnFamilyOptions(), path);
-            return new RocksDbStore(db, columnFamily, readOnly:false, shared: true);
+            return new RocksDbStore(db, columnFamily, readOnly: false, shared: true);
         }
 
         public void CreateCheckpoint(string checkPointFileName, uint network, byte addressVersion, UInt160 scriptHash)

@@ -64,7 +64,7 @@ namespace NeoExpress.Node
 
         void OnNeoUtilityLog(string source, LogLevel level, object message)
         {
-             console.WriteLine($"{DateTimeOffset.Now:HH:mm:ss.ff} {source} {level} {message}");
+            console.WriteLine($"{DateTimeOffset.Now:HH:mm:ss.ff} {source} {level} {message}");
         }
 
         void OnCommitting(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)

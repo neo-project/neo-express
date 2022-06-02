@@ -4,6 +4,7 @@ using System.IO;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
+using Nito.Disposables;
 using RocksDbSharp;
 
 namespace NeoExpress.Node
@@ -18,18 +19,18 @@ namespace NeoExpress.Node
 
         CheckpointExpressStorage()
         {
-            disposable = Nito.Disposables.NoopDisposable.Instance;
+            disposable = NoopDisposable.Instance;
             defaultStore = new Lazy<IStore>(() => new MemoryTrackingStore(GetUnderlyingStore(null)));
         }
 
-        CheckpointExpressStorage(RocksDb db, string checkpointTempPath = "")
+        CheckpointExpressStorage(RocksDb db, string checkpointTempPath)
         {
             this.db = db;
             defaultStore = new Lazy<IStore>(() => new MemoryTrackingStore(GetUnderlyingStore(null)));
 
             this.disposable = string.IsNullOrEmpty(checkpointTempPath)
-                ? Nito.Disposables.NoopDisposable.Instance
-                : new Nito.Disposables.AnonymousDisposable(() => 
+                ? NoopDisposable.Instance
+                : new AnonymousDisposable(() =>
                 {
                     if (Directory.Exists(checkpointTempPath))
                     {
@@ -51,20 +52,17 @@ namespace NeoExpress.Node
         {
             if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
             {
-                try
-                {
-                    var db = RocksDbUtility.OpenReadOnlyDb(path);
-                    return new CheckpointExpressStorage(db, string.Empty);
-                }
-                catch {}
+                var db = RocksDbUtility.OpenReadOnlyDb(path);
+                return new CheckpointExpressStorage(db, string.Empty);
             }
 
             return new CheckpointExpressStorage();
         }
-        
 
         public void Dispose()
         {
+            if (defaultStore.IsValueCreated) { defaultStore.Value.Dispose(); }
+            foreach (var store in stores.Values) { store.Dispose(); }
             db?.Dispose();
             disposable.Dispose();
         }
@@ -84,7 +82,7 @@ namespace NeoExpress.Node
             return db.TryGetColumnFamily(path, out var columnFamily)
                 ? CreateReadOnlyStore(db, columnFamily)
                 : NullStore.Instance;
-            
+
             static RocksDbStore CreateReadOnlyStore(RocksDb db, ColumnFamilyHandle columnFamily)
                 => new RocksDbStore(db, columnFamily, readOnly: true, shared: true);
         }

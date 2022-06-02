@@ -218,7 +218,7 @@ namespace NeoExpress
                     using var persistencePlugin = new ExpressPersistencePlugin();
                     using var logPlugin = new ExpressLogPlugin(console);
                     using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
-                    using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node), 
+                    using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
                         expressStorage, multiSigAccount.ScriptHash);
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 

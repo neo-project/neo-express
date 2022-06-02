@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net;
@@ -12,7 +11,6 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.Ledger;
 using Neo.Plugins;
 using NeoExpress.Models;
 using NeoExpress.Node;
@@ -217,11 +215,11 @@ namespace NeoExpress
                     Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
                     if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
-                    using var persistencePlugin = new ExpressPersistencePlugin(expressStorage);
+                    using var persistencePlugin = new ExpressPersistencePlugin();
                     using var logPlugin = new ExpressLogPlugin(console);
                     using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
-                    using var rpcServerPlugin = new ExpressRpcServerPlugin(
-                        GetRpcServerSettings(chain, node), expressStorage, multiSigAccount.ScriptHash);
+                    using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node), 
+                        expressStorage, multiSigAccount.ScriptHash);
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 
                     neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig

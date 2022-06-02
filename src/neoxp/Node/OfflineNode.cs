@@ -48,7 +48,7 @@ namespace NeoExpress.Node
             StoreFactory.RegisterProvider(storeProvider);
             if (enableTrace) { ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
-            persistencePlugin = new ExpressPersistencePlugin(expressStorage);
+            persistencePlugin = new ExpressPersistencePlugin();
             neoSystem = new NeoSystem(settings, storeProvider.Name);
 
             ApplicationEngine.Log += OnLog!;
@@ -58,9 +58,9 @@ namespace NeoExpress.Node
         {
             if (!disposedValue)
             {
+                ApplicationEngine.Log -= OnLog!;
                 persistencePlugin.Dispose();
                 neoSystem.Dispose();
-                expressStorage.Dispose();
                 disposedValue = true;
             }
         }
@@ -252,7 +252,7 @@ namespace NeoExpress.Node
             var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
             if (tx == null) throw new Exception("Unknown Transaction");
 
-            var jsonLog = ExpressPersistencePlugin.GetAppLog(expressStorage, txHash);
+            var jsonLog = persistencePlugin.GetAppLog(txHash);
             return jsonLog != null
                 ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
                 : (tx, null);
@@ -368,7 +368,7 @@ namespace NeoExpress.Node
 #pragma warning disable 1998 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
-            var notifications = ExpressPersistencePlugin.GetNotifications(this.expressStorage, SeekDirection.Backward, contractFilter, eventFilter);
+            var notifications = persistencePlugin.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter);
             foreach (var (block, _, notification) in notifications)
             {
                 yield return (block, notification);

@@ -17,24 +17,20 @@ namespace NeoExpress.Node
 {
     class ExpressPersistencePlugin : Plugin
     {
-        NeoSystem? neoSystem;
-
         const string APP_LOGS_STORE_PATH = "app-logs-store";
         const string NOTIFICATIONS_STORE_PATH = "notifications-store";
 
-        static IStore GetAppLogStore(IExpressStorage storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
-        static IStore GetNotificationsStore(IExpressStorage storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
+        // static IStore GetAppLogStore(IExpressStorage storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
+        // static IStore GetNotificationsStore(IExpressStorage storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
 
-        readonly IStore appLogsStore;
-        readonly IStore notificationsStore;
+        NeoSystem? neoSystem;
+        IStore? appLogsStore;
+        IStore? notificationsStore;
         ISnapshot? appLogsSnapshot;
         ISnapshot? notificationsSnapshot;
 
-        public ExpressPersistencePlugin(IExpressStorage expressStorage)
+        public ExpressPersistencePlugin()
         {
-            appLogsStore = GetAppLogStore(expressStorage);
-            notificationsStore = GetNotificationsStore(expressStorage);
-
             Blockchain.Committing += OnCommitting;
             Blockchain.Committed += OnCommitted;
         }
@@ -43,19 +39,26 @@ namespace NeoExpress.Node
         {
             Blockchain.Committing -= OnCommitting;
             Blockchain.Committed -= OnCommitted;
+            appLogsSnapshot?.Dispose();
+            appLogsStore?.Dispose();
+            notificationsSnapshot?.Dispose();
+            notificationsStore?.Dispose();
         }
 
         protected override void OnSystemLoaded(NeoSystem system)
         {
             if (this.neoSystem is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
             neoSystem = system;
+            appLogsStore = neoSystem.LoadStore(APP_LOGS_STORE_PATH);
+            notificationsStore = neoSystem.LoadStore(NOTIFICATIONS_STORE_PATH);
+
             base.OnSystemLoaded(system);
         }
 
-        public static JObject? GetAppLog(IExpressStorage storageProvider, UInt256 hash)
+        public JObject? GetAppLog(UInt256 hash)
         {
-            var store = GetAppLogStore(storageProvider);
-            var value = store.TryGet(hash.ToArray());
+            if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
+            var value = appLogsStore.TryGet(hash.ToArray());
             return value != null && value.Length != 0
                 ? JObject.Parse(Neo.Utility.StrictUTF8.GetString(value))
                 : null;
@@ -69,28 +72,28 @@ namespace NeoExpress.Node
             return buffer;
         });
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
-            IExpressStorage storageProvider,
+        public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
             SeekDirection direction,
             IReadOnlySet<UInt160>? contracts,
             string eventName) => string.IsNullOrEmpty(eventName)
-                ? GetNotifications(storageProvider, direction, contracts)
-                : GetNotifications(storageProvider, direction, contracts,
+                ? GetNotifications(direction, contracts)
+                : GetNotifications(direction, contracts,
                     new HashSet<string>(StringComparer.OrdinalIgnoreCase) { eventName });
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
-            IExpressStorage storageProvider,
+        public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
             SeekDirection direction = SeekDirection.Forward,
             IReadOnlySet<UInt160>? contracts = null,
             IReadOnlySet<string>? eventNames = null)
         {
-            var store = GetNotificationsStore(storageProvider);
+            if (notificationsStore is null) throw new NullReferenceException(nameof(notificationsStore));
+
+            using var snapshot = notificationsStore.GetSnapshot();
 
             var prefix = direction == SeekDirection.Forward
                 ? Array.Empty<byte>()
                 : backwardsNotificationsPrefix.Value;
 
-            return store.Seek(prefix, direction)
+            return snapshot.Seek(prefix, direction)
                 .Select(t => ParseNotification(t.Key, t.Value))
                 .Where(t => contracts is null || contracts.Contains(t.notification.ScriptHash))
                 .Where(t => eventNames is null || eventNames.Contains(t.notification.EventName));
@@ -105,10 +108,13 @@ namespace NeoExpress.Node
 
         void OnCommitting(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
+            if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
+            if (notificationsStore is null) throw new NullReferenceException(nameof(notificationsStore));
+
             appLogsSnapshot?.Dispose();
             notificationsSnapshot?.Dispose();
             appLogsSnapshot = appLogsStore.GetSnapshot();
-            notificationsSnapshot = notificationsStore!.GetSnapshot(); // TODO: why is there a deref warning here?
+            notificationsSnapshot = notificationsStore.GetSnapshot();
 
             if (applicationExecutedList.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
 

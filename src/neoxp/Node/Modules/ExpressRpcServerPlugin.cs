@@ -27,20 +27,23 @@ namespace NeoExpress.Node
     {
         NeoSystem? neoSystem;
         RpcServer? rpcServer;
+        readonly IExpressStorage expressStorage;
         readonly RpcServerSettings settings;
-        readonly IExpressStorage storageProvider;
         readonly UInt160 nodeAccountAddress;
+        readonly Lazy<ExpressPersistencePlugin> persistencePlugin;
         readonly CancellationTokenSource cancellationToken = new();
         readonly string cacheId;
 
         public CancellationToken CancellationToken => cancellationToken.Token;
 
-        public ExpressRpcServerPlugin(RpcServerSettings settings, IExpressStorage storageProvider, UInt160 nodeAccountAddress)
+        public ExpressRpcServerPlugin(RpcServerSettings settings, IExpressStorage expressStorage, UInt160 nodeAccountAddress)
         {
+            this.expressStorage = expressStorage;
             this.settings = settings;
-            this.storageProvider = storageProvider;
             this.nodeAccountAddress = nodeAccountAddress;
-            this.cacheId = DateTimeOffset.Now.Ticks.ToString();
+
+            cacheId = DateTimeOffset.Now.Ticks.ToString();
+            persistencePlugin = new Lazy<ExpressPersistencePlugin>(() => (ExpressPersistencePlugin)Plugins.Single(p => p is ExpressPersistencePlugin));
         }
 
         protected override void OnSystemLoaded(NeoSystem system)
@@ -218,16 +221,16 @@ namespace NeoExpress.Node
 
             if (neoSystem.Settings.ValidatorsCount > 1)
             {
-                throw new Exception("Checkpoint create is only supported on single node express instances");
+                throw new NotSupportedException("Checkpoint create is only supported on single node express instances");
             }
 
-            if (storageProvider is RocksDbExpressStorage rocksDbStorageProvider)
+            if (expressStorage is RocksDbExpressStorage rocksDbExpressStorage)
             {
-                rocksDbStorageProvider.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
+                rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
                 return filename;
             }
 
-            throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
+            throw new NotSupportedException($"Checkpoint create is only supported for {nameof(RocksDbExpressStorage)}");
         }
 
         [RpcMethod]
@@ -283,9 +286,8 @@ namespace NeoExpress.Node
             int take = @params.Count >= 4 ? (int)@params[3].AsNumber() : MAX_NOTIFICATIONS;
             if (take > MAX_NOTIFICATIONS) take = MAX_NOTIFICATIONS;
 
-            var notifications = ExpressPersistencePlugin
+            var notifications = persistencePlugin.Value
                 .GetNotifications(
-                    storageProvider,
                     SeekDirection.Backward,
                     contracts.Count > 0 ? contracts : null,
                     events.Count > 0 ? events : null)
@@ -327,7 +329,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0].AsString());
-            return ExpressPersistencePlugin.GetAppLog(storageProvider, hash) ?? throw new RpcException(-100, "Unknown transaction");
+            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
         // Neo-Express uses a custom implementation of TokenTracker RPC methods. Originally, this was
@@ -359,8 +361,7 @@ namespace NeoExpress.Node
             var updateIndexes = new Dictionary<UInt160, uint>();
             if (addressBalances.Count > 0)
             {
-                var notifications = ExpressPersistencePlugin.GetNotifications(
-                    storageProvider,
+                var notifications = persistencePlugin.Value.GetNotifications(
                     SeekDirection.Backward,
                     addressBalances.Select(b => b.scriptHash).ToHashSet(),
                     TRANSFER);
@@ -466,8 +467,7 @@ namespace NeoExpress.Node
             var updateIndexes = new Dictionary<(UInt160 scriptHash, ReadOnlyMemory<byte> tokenId), uint>(TokenEqualityComparer.Instance);
             if (tokens.Count > 0)
             {
-                var notifications = ExpressPersistencePlugin.GetNotifications(
-                    storageProvider,
+                var notifications = persistencePlugin.Value.GetNotifications(
                     SeekDirection.Backward,
                     tokens.Select(b => b.scriptHash).ToHashSet(),
                     TRANSFER);
@@ -603,8 +603,7 @@ namespace NeoExpress.Node
                 .Where(c => c.standard == standard)
                 .Select(c => c.scriptHash)
                 .ToHashSet();
-            var notifications = ExpressPersistencePlugin.GetNotifications(storageProvider,
-                SeekDirection.Forward, contracts, TRANSFER);
+            var notifications = persistencePlugin.Value.GetNotifications(SeekDirection.Forward, contracts, TRANSFER);
 
             foreach (var (blockIndex, txIndex, notification) in notifications)
             {

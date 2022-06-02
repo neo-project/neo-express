@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -58,7 +59,7 @@ namespace NeoExpress
                     writer.WriteValue(boolean.Value);
                     break;
                 case Neo.IO.Json.JNumber number:
-                    writer.WriteValue(number.Value);
+                    writer.WriteValue(new BigInteger(number.Value));
                     break;
                 case Neo.IO.Json.JString @string:
                     writer.WriteValue(@string.Value);

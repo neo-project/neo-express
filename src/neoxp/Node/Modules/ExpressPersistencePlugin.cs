@@ -20,10 +20,6 @@ namespace NeoExpress.Node
         const string APP_LOGS_STORE_PATH = "app-logs-store";
         const string NOTIFICATIONS_STORE_PATH = "notifications-store";
 
-        // static IStore GetAppLogStore(IExpressStorage storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
-        // static IStore GetNotificationsStore(IExpressStorage storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
-
-        NeoSystem? neoSystem;
         IStore? appLogsStore;
         IStore? notificationsStore;
         ISnapshot? appLogsSnapshot;
@@ -47,10 +43,11 @@ namespace NeoExpress.Node
 
         protected override void OnSystemLoaded(NeoSystem system)
         {
-            if (this.neoSystem is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
-            neoSystem = system;
-            appLogsStore = neoSystem.LoadStore(APP_LOGS_STORE_PATH);
-            notificationsStore = neoSystem.LoadStore(NOTIFICATIONS_STORE_PATH);
+            if (this.appLogsStore is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+            if (this.notificationsStore is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+
+            appLogsStore = system.LoadStore(APP_LOGS_STORE_PATH);
+            notificationsStore = system.LoadStore(NOTIFICATIONS_STORE_PATH);
 
             base.OnSystemLoaded(system);
         }
@@ -87,13 +84,11 @@ namespace NeoExpress.Node
         {
             if (notificationsStore is null) throw new NullReferenceException(nameof(notificationsStore));
 
-            using var snapshot = notificationsStore.GetSnapshot();
-
             var prefix = direction == SeekDirection.Forward
                 ? Array.Empty<byte>()
                 : backwardsNotificationsPrefix.Value;
 
-            return snapshot.Seek(prefix, direction)
+            return notificationsStore.Seek(prefix, direction)
                 .Select(t => ParseNotification(t.Key, t.Value))
                 .Where(t => contracts is null || contracts.Contains(t.notification.ScriptHash))
                 .Where(t => eventNames is null || eventNames.Contains(t.notification.EventName));

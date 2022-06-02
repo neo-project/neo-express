@@ -94,7 +94,7 @@ namespace NeoExpress
 
             if (showInnerExceptions || showStackTrace)
             {
-                while (exception.InnerException != null)
+                while (exception.InnerException is not null)
                 {
                     app.Error.WriteLine($"\x1b[1m\x1b[33m\x1b[40m\tInner {exception.InnerException.GetType().Name}: {exception.InnerException.Message}\x1b[0m");
                     exception = exception.InnerException;
@@ -181,7 +181,7 @@ namespace NeoExpress
                     return true;
                 }
 
-                if (chainManager.Chain.Wallets != null && chainManager.Chain.Wallets.Count > 0)
+                if (chainManager.Chain.Wallets is not null && chainManager.Chain.Wallets.Count > 0)
                 {
                     for (int i = 0; i < chainManager.Chain.Wallets.Count; i++)
                     {

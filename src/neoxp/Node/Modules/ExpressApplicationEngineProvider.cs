@@ -18,7 +18,7 @@ namespace NeoExpress.Node
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx
-                && tx.Witnesses != null
+                && tx.Witnesses is not null
                 && tx.Witnesses.Length > 0
                 && EnumerateContractCalls(tx.Script).Any())
             {

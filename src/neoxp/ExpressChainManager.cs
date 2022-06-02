@@ -56,7 +56,7 @@ namespace NeoExpress
 
         public bool IsRunning(ExpressConsensusNode? node = null)
         {
-            if (node == null)
+            if (node is null)
             {
                 for (var i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
@@ -101,7 +101,7 @@ namespace NeoExpress
 
             var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
 
-            if (writer != null)
+            if (writer is not null)
             {
                 await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
             }

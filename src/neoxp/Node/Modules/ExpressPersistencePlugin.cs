@@ -56,7 +56,7 @@ namespace NeoExpress.Node
         {
             if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
             var value = appLogsStore.TryGet(hash.ToArray());
-            return value != null && value.Length != 0
+            return value is not null && value.Length != 0
                 ? JObject.Parse(Neo.Utility.StrictUTF8.GetString(value))
                 : null;
         }
@@ -121,7 +121,7 @@ namespace NeoExpress.Node
             for (int i = 0; i < applicationExecutedList.Count; i++)
             {
                 ApplicationExecuted appExec = applicationExecutedList[i];
-                if (appExec.Transaction == null) continue;
+                if (appExec.Transaction is null) continue;
 
                 var txJson = TxLogToJson(appExec);
                 appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
@@ -144,7 +144,7 @@ namespace NeoExpress.Node
             }
 
             var blockJson = BlockLogToJson(block, applicationExecutedList);
-            if (blockJson != null)
+            if (blockJson is not null)
             {
                 appLogsSnapshot.Put(block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
             }
@@ -161,7 +161,7 @@ namespace NeoExpress.Node
 
         static JObject TxLogToJson(ApplicationExecuted appExec)
         {
-            global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
+            global::System.Diagnostics.Debug.Assert(appExec.Transaction is not null);
 
             var txJson = new JObject();
             txJson["txid"] = appExec.Transaction.Hash.ToString();

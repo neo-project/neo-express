@@ -42,10 +42,10 @@ namespace NeoExpress.Node
 
         string GetContractName(UInt160 scriptHash)
         {
-            if (neoSystem != null)
+            if (neoSystem is not null)
             {
                 var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-                if (contract != null)
+                if (contract is not null)
                 {
                     return contract.Manifest.Name;
                 }

@@ -49,7 +49,7 @@ namespace NeoExpress.Node
 
         public Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null)
         {
-            return signer == null
+            return signer is null
                 ? rpcClient.InvokeScriptAsync(script)
                 : rpcClient.InvokeScriptAsync(script, signer);
         }
@@ -165,7 +165,7 @@ namespace NeoExpress.Node
         {
             var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
                 return array
                     .Select(j => (
@@ -181,7 +181,7 @@ namespace NeoExpress.Node
         {
             var json = await rpcClient.RpcSendAsync("expresslisttokencontracts").ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
                 return array.Select(TokenContract.FromJson).ToList();
             }
@@ -193,7 +193,7 @@ namespace NeoExpress.Node
         {
             var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
                 return array.Select(FromJson).ToList();
             }
@@ -228,7 +228,7 @@ namespace NeoExpress.Node
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
                 return array
                     .Select(s => (s["key"].AsString(), s["value"].AsString()))

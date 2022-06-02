@@ -180,7 +180,7 @@ namespace NeoExpress.Node
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             var scriptHash = UInt160.Parse(@params[0].AsString());
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-            if (contract == null) return null;
+            if (contract is null) return null;
 
             var storages = new JArray();
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
@@ -271,7 +271,7 @@ namespace NeoExpress.Node
             var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
-            return tx == null ? null : Convert.ToBase64String(tx.ToArray());
+            return tx is null ? null : Convert.ToBase64String(tx.ToArray());
         }
 
         const int MAX_NOTIFICATIONS = 100;

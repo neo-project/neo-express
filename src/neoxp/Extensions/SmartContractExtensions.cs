@@ -50,7 +50,7 @@ namespace NeoExpress
                 {
                     var decimals = (byte)engine.ResultStack.Pop().GetInteger();
                     var symbol = engine.ResultStack.Pop().GetString();
-                    if (symbol != null)
+                    if (symbol is not null)
                     {
                         info = (symbol, decimals);
                         return true;

@@ -72,7 +72,7 @@ namespace NeoExpress.Node
             var colorCode = tx?.Witnesses?.Any() ?? false ? "96" : "93";
 
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, args.ScriptHash);
-            var name = contract == null ? args.ScriptHash.ToString() : contract.Manifest.Name;
+            var name = contract is null ? args.ScriptHash.ToString() : contract.Manifest.Name;
             Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
         }
 
@@ -164,7 +164,7 @@ namespace NeoExpress.Node
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
-            if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
+            if (tx is null) throw new Exception("Failed to create Oracle Response Tx");
             NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
@@ -231,7 +231,7 @@ namespace NeoExpress.Node
         ContractManifest GetContract(UInt160 scriptHash)
         {
             var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-            if (contractState == null) throw new Exception("Unknown contract");
+            if (contractState is null) throw new Exception("Unknown contract");
             return contractState.Manifest;
         }
 
@@ -250,10 +250,10 @@ namespace NeoExpress.Node
         (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
         {
             var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
-            if (tx == null) throw new Exception("Unknown Transaction");
+            if (tx is null) throw new Exception("Unknown Transaction");
 
             var jsonLog = persistencePlugin.GetAppLog(txHash);
-            return jsonLog != null
+            return jsonLog is not null
                 ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
                 : (tx, null);
         }
@@ -297,7 +297,7 @@ namespace NeoExpress.Node
                 {
                     var index = i * 3;
                     var symbol = resultStack.Peek(index + 2).GetString();
-                    if (symbol == null) continue;
+                    if (symbol is null) continue;
                     var decimals = (byte)resultStack.Peek(index + 1).GetInteger();
                     var balance = resultStack.Peek(index).GetInteger();
                     balances.Add((new TokenContract(symbol, decimals, contracts[i].scriptHash, contracts[i].standard), balance));
@@ -341,7 +341,7 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
 
-            if (contract == null) return Array.Empty<(string, string)>();
+            if (contract is null) return Array.Empty<(string, string)>();
 
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
             return snapshot.Find(prefix)

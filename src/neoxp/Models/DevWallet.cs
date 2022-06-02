@@ -21,7 +21,7 @@ namespace NeoExpress.Models
         {
             this.Name = name;
 
-            if (accounts != null)
+            if (accounts is not null)
             {
                 foreach (var account in accounts)
                 {

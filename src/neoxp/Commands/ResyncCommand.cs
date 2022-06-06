@@ -87,8 +87,8 @@ namespace NeoExpress.Commands
                 const byte Prefix_BlockHash = 9;
                 var key = new KeyBuilder(NativeContract.Ledger.Id, Prefix_BlockHash);
                 return snapshot.Find(key.ToArray()).Select(record => {
-                    var index = BinaryPrimitives.ReadUInt32BigEndian(record.Key.Key);
-                    var hash = new UInt256(record.Value.Value);
+                    var index = BinaryPrimitives.ReadUInt32BigEndian(record.Key.Key.Span);
+                    var hash = new UInt256(record.Value.Value.Span);
                     return (index, hash);
                 });
             }
@@ -101,8 +101,8 @@ namespace NeoExpress.Commands
 
                 var item = snapshot.TryGet(key);
                 if (item is null) throw new Exception("Invalid transaction hash");
-                var @struct = (Neo.VM.Types.Struct)BinarySerializer.Deserialize(item.Value, Neo.VM.ExecutionEngineLimits.Default);
-                return @struct[1].GetSpan().AsSerializable<Transaction>();
+                var txState = item.GetInteroperable<TransactionState>();
+                return txState.Transaction;
             }
         }
     }

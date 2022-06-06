@@ -323,7 +323,7 @@ namespace NeoExpress
             return CheckpointExpressStorage.OpenCheckpoint(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
-        public OfflineNode GetOfflineNode(bool offlineTrace = false)
+        OfflineNode GetOfflineNode(bool offlineTrace = false)
         {
             if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
 

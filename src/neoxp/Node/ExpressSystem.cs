@@ -11,14 +11,17 @@ using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Consensus;
+using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
+using Neo.Wallets;
 using NeoExpress.Models;
 using static Neo.Ledger.Blockchain;
 
@@ -210,14 +213,72 @@ namespace NeoExpress.Node
             }
         }
 
-        public IEnumerable<(UInt160 hash, ContractManifest manifest)> ListContracts()
+        public JObject? GetAppLog(UInt256 hash)
         {
-            return NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
-                .OrderBy(c => c.Id)
-                .Select(c => (c.Hash, c.Manifest));
+            var value = expressStorage.AppLogsStore.TryGet(hash.ToArray());
+            return value != null && value.Length != 0
+                ? JObject.Parse(Neo.Utility.StrictUTF8.GetString(value))
+                : null;
         }
 
+        public IEnumerable<(UInt160 hash, ContractManifest manifest)> ListContracts() 
+            => NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
+                .OrderBy(c => c.Id)
+                .Select(c => (c.Hash, c.Manifest));
 
+        public IEnumerable<(ulong requestId, OracleRequest request)> ListOracleRequests()
+            => NativeContract.Oracle.GetRequests(neoSystem.StoreView);
+ 
+
+        public IEnumerable<(string key, string value)> ListStorages(UInt160 scriptHash)
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
+            if (contract == null) throw new Exception("Contract not found");
+
+            byte[] prefix = Neo.SmartContract.StorageKey.CreateSearchPrefix(contract.Id, default);
+            return snapshot.Find(prefix)
+                .Select(t => (t.Key.Key.ToHexString(), t.Value.Value.ToHexString()));
+        }
+
+       public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
+            var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
+            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            if (tx == null) throw new Exception("Failed to create Oracle Response Tx");
+
+            var signatures = new Dictionary<ECPoint, byte[]>();
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var account = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
+                var key = DevWalletAccount.FromExpressWalletAccount(ProtocolSettings, account).GetKey() ?? throw new Exception("Invalid KeyPair");
+                if (oracleNodes.Contains(key.PublicKey))
+                {
+                    signatures.Add(key.PublicKey, tx.Sign(key, chain.Network));
+                }
+            }
+
+            int m = oracleNodes.Count - (oracleNodes.Count - 1) / 3;
+            if (signatures.Count < m)
+            {
+                throw new Exception("Insufficient oracle response signatures");
+            }
+
+            var contract = Contract.CreateMultiSigContract(m, oracleNodes);
+            var sb = new ScriptBuilder();
+            foreach (var kvp in signatures.OrderBy(p => p.Key).Take(m))
+            {
+                sb.EmitPush(kvp.Value);
+            }
+            var index = tx.GetScriptHashesForVerifying(null)[0] == contract.ScriptHash ? 0 : 1;
+            tx.Witnesses[index].InvocationScript = sb.ToArray();
+
+
+            var blockHash = await SubmitTransactionAsync(tx);
+            return tx.Hash;
+        }
 
 
 
@@ -231,13 +292,6 @@ namespace NeoExpress.Node
         public Neo.Persistence.SnapshotCache GetSnapshot() => neoSystem.GetSnapshot();
         public Task<RelayResult> RelayBlockAsync(Block block) => neoSystem.Blockchain.Ask<RelayResult>(block);
 
-        public JObject? GetAppLog(UInt256 hash)
-        {
-            var value = expressStorage.AppLogsStore.TryGet(hash.ToArray());
-            return value != null && value.Length != 0
-                ? JObject.Parse(Neo.Utility.StrictUTF8.GetString(value))
-                : null;
-        }
 
         static Lazy<byte[]> backwardsNotificationsPrefix = new Lazy<byte[]>(() =>
         {

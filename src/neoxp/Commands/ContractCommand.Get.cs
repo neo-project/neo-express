@@ -49,8 +49,7 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
-
+                    var contracts = await expressNode.ListContractsByNameAsync(Contract).ConfigureAwait(false);
                     foreach (var (hash, manifest) in contracts)
                     {
                         WriteContract(writer, hash, manifest);

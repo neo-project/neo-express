@@ -33,7 +33,7 @@ namespace NeoExpress.Commands
 
                 if (Json)
                 {
-                    using var writer = new JsonTextWriter(console.Out);
+                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
                     using var _ = writer.WriteArray();
                     foreach (var (hash, manifest) in contracts)
                     {

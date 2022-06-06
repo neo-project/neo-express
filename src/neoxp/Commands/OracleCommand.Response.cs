@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.Network.P2P.Payloads;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -11,11 +15,15 @@ namespace NeoExpress.Commands
         [Command("response", Description = "Submit oracle response")]
         internal class Response
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressChain chain;
 
-            public Response(IFileSystem fileSystem)
+            public Response(IExpressChain chain)
             {
-                this.fileSystem = fileSystem;
+                this.chain = chain;
+            }
+
+            public Response(CommandLineApplication app) : this(app.GetExpressFile())
+            {
             }
 
             [Argument(0, Description = "URL of oracle request")]
@@ -29,30 +37,98 @@ namespace NeoExpress.Commands
             [Option(Description = "Oracle request ID")]
             internal ulong? RequestId { get; }
 
-            
-            internal string Input { get; init; } = string.Empty;
-
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
-            {
-                try
-                {
-                    // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                    // using var txExec = new TransactionExecutor(fileSystem, chain, Trace, Json, console.Out); 
-                    // await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
 
-                    await Task.CompletedTask;
-                    return 0;
-                }
-                catch (Exception ex)
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
+            {
+                if (!fileSystem.File.Exists(ResponsePath)) throw new Exception($"Response File {ResponsePath} couldn't be found");
+
+                Newtonsoft.Json.Linq.JObject responseJson;
                 {
-                    app.WriteException(ex, showInnerExceptions: true);
-                    return 1;
+                    using var stream = fileSystem.File.OpenRead(ResponsePath);
+                    using var reader = new System.IO.StreamReader(stream);
+                    using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
+                    responseJson = await Newtonsoft.Json.Linq.JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+                }
+
+                using var expressNode = chain.GetExpressNode();
+                var txHashes = await ExecuteAsync(expressNode, Url, OracleResponseCode.Success, responseJson, RequestId).ConfigureAwait(false);
+
+                if (Json)
+                {
+                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                    using var _ = writer.WriteArray();
+                    for (int i = 0; i < txHashes.Count; i++)
+                    {
+                        writer.WriteValue($"{txHashes[i]}");
+                    }
+                }
+                else
+                {
+                    if (txHashes.Count == 0)
+                    {
+                        console.WriteLine("No oracle response transactions submitted");
+                    }
+                    else
+                    {
+                        console.WriteLine($"{txHashes.Count} Oracle response transactions submitted:");
+                        for (int i = 0; i < txHashes.Count; i++)
+                        {
+                            console.WriteLine($"    {txHashes[i]}");
+                        }
+                    }
+                }
+            }
+
+            public static async Task<IReadOnlyList<UInt256>> ExecuteAsync(IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)
+            {
+                if (responseCode == OracleResponseCode.Success && responseJson == null)
+                {
+                    throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
+                }
+
+                var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+                var oracleNodes = await List.ListOracleNodesAsync(expressNode);
+
+                var txHashes = new List<UInt256>();
+                for (var x = 0; x < requests.Count; x++)
+                {
+                    var (id, request) = requests[x];
+                    if (requestId.HasValue && requestId.Value != id) continue;
+                    if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    var response = new OracleResponse
+                    {
+                        Code = responseCode,
+                        Id = id,
+                        Result = GetResponseData(request.Filter),
+                    };
+
+                    var txHash = await expressNode.SubmitOracleResponseAsync(response, oracleNodes);
+                    txHashes.Add(txHash);
+                }
+                return txHashes;
+
+                byte[] GetResponseData(string filter)
+                {
+                    if (responseCode != OracleResponseCode.Success)
+                    {
+                        return Array.Empty<byte>();
+                    }
+
+                    System.Diagnostics.Debug.Assert(responseJson != null);
+
+                    var json = string.IsNullOrEmpty(filter)
+                        ? (Newtonsoft.Json.Linq.JContainer)responseJson
+                        : new Newtonsoft.Json.Linq.JArray(responseJson.SelectTokens(filter, true));
+                    return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
                 }
             }
         }

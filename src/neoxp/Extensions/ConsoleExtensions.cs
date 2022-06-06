@@ -69,11 +69,7 @@ namespace NeoExpress
 
         public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)
         {
-            using var writer = new JsonTextWriter(console.Out)
-            {
-                Formatting = Formatting.Indented
-            };
-
+            using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
             writer.WriteJson(json);
             console.Out.WriteLine();
         }

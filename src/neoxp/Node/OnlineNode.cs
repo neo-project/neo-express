@@ -110,14 +110,13 @@ namespace NeoExpress.Node
         public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
         {
             var hash = txHash.ToString();
-            var txTask = rpcClient.GetRawTransactionAsync(hash);
-            var logTask = rpcClient.GetApplicationLogAsync(hash);
-            await Task.WhenAll(txTask, logTask).ConfigureAwait(false);
-            var tx = (await txTask).Transaction;
-            var log = logTask.IsCompletedSuccessfully ? await logTask : null;
-            return (tx, log);
+            var getTxTask = rpcClient.GetRawTransactionAsync(hash);
+            var getAppLogTask = rpcClient.GetApplicationLogAsync(hash);
+            await Task.WhenAll(getTxTask, getAppLogTask).ConfigureAwait(false);
+            var tx = (await getTxTask).Transaction;
+            var appLog = getAppLogTask.IsCompletedSuccessfully ? await getAppLogTask : null;
+            return (tx, appLog);
         }
-
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
         {
@@ -132,8 +131,45 @@ namespace NeoExpress.Node
                 .ToList();
         }
 
+        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+        {
+            var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
+            if (json is null) throw new Exception("invalid json return");
+            if (json is not JArray array) throw new Exception("invalid json return");
+            return array.Select(FromJson).ToList();
 
+            static (ulong, OracleRequest) FromJson(JObject json)
+            {
+                var id = ulong.Parse(json["requestid"].AsString());
+                var originalTxId = UInt256.Parse(json["originaltxid"].AsString());
+                var gasForResponse = long.Parse(json["gasforresponse"].AsString());
+                var url = json["url"].AsString();
+                var filter = json["filter"].AsString();
+                var callbackContract = UInt160.Parse(json["callbackcontract"].AsString());
+                var callbackMethod = json["callbackmethod"].AsString();
+                var userData = Convert.FromBase64String(json["userdata"].AsString());
 
+                return (id, new OracleRequest
+                {
+                    OriginalTxid = originalTxId,
+                    CallbackContract = callbackContract,
+                    CallbackMethod = callbackMethod,
+                    Filter = filter,
+                    GasForResponse = gasForResponse,
+                    Url = url,
+                    UserData = userData,
+                });
+            }
+        }
+
+        public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
+        {
+            var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
+                .ConfigureAwait(false);
+            if (json is null) throw new Exception("invalid json return");
+            if (json is not JArray array) throw new Exception("invalid json return");
+            return array.Select(s => (s["key"].AsString(), s["value"].AsString())).ToList();
+        }
 
 
 
@@ -197,53 +233,9 @@ namespace NeoExpress.Node
             return Array.Empty<TokenContract>();
         }
 
-        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
-        {
-            var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
-            {
-                return array.Select(FromJson).ToList();
-            }
-            return Array.Empty<(ulong, OracleRequest)>();
 
-            (ulong, OracleRequest) FromJson(JObject json)
-            {
-                var id = ulong.Parse(json["requestid"].AsString());
-                var originalTxId = UInt256.Parse(json["originaltxid"].AsString());
-                var gasForResponse = long.Parse(json["gasforresponse"].AsString());
-                var url = json["url"].AsString();
-                var filter = json["filter"].AsString();
-                var callbackContract = UInt160.Parse(json["callbackcontract"].AsString());
-                var callbackMethod = json["callbackmethod"].AsString();
-                var userData = Convert.FromBase64String(json["userdata"].AsString());
 
-                return (id, new OracleRequest
-                {
-                    OriginalTxid = originalTxId,
-                    CallbackContract = callbackContract,
-                    CallbackMethod = callbackMethod,
-                    Filter = filter,
-                    GasForResponse = gasForResponse,
-                    Url = url,
-                    UserData = userData,
-                });
-            }
-        }
-
-        public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
-        {
-            var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
-                .ConfigureAwait(false);
-
-            if (json != null && json is JArray array)
-            {
-                return array.Select(s => (s["key"].AsString(), s["value"].AsString()))
-                    .ToList();
-            }
-
-            return Array.Empty<(string, string)>();
-        }
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {

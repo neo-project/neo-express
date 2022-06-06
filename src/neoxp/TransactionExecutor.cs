@@ -204,47 +204,6 @@ namespace NeoExpress
             // }
         }
 
-        public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null)
-        {
-            if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");
-
-            JObject responseJson;
-            {
-                using var stream = fileSystem.File.OpenRead(responsePath);
-                using var reader = new System.IO.StreamReader(stream);
-                using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
-                responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
-            }
-
-            var txHashes = await expressNode.SubmitOracleResponseAsync(url, OracleResponseCode.Success, responseJson, requestId).ConfigureAwait(false);
-
-            if (json)
-            {
-                using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
-                await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
-                for (int i = 0; i < txHashes.Count; i++)
-                {
-                    await jsonWriter.WriteValueAsync(txHashes[i].ToString()).ConfigureAwait(false);
-                }
-                await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                if (txHashes.Count == 0)
-                {
-                    await writer.WriteLineAsync("No oracle response transactions submitted").ConfigureAwait(false);
-                }
-                else
-                {
-                    await writer.WriteLineAsync("Oracle response transactions submitted:").ConfigureAwait(false);
-                    for (int i = 0; i < txHashes.Count; i++)
-                    {
-                        await writer.WriteLineAsync($"    {txHashes[i]}").ConfigureAwait(false);
-                    }
-                }
-            }
-        }
-
         public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
         {
             if (value.Equals("mainnet", StringComparison.OrdinalIgnoreCase))

@@ -150,6 +150,14 @@ namespace NeoExpress.Node
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
             => expressSystem.ListContracts().ToList();
+
+        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+            => expressSystem.ListOracleRequests().ToList();
+
+        public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
+            => expressSystem.ListStorages(scriptHash).ToList();
+
+
 #pragma warning restore 1998
 
 
@@ -335,11 +343,7 @@ namespace NeoExpress.Node
 
 
 
-        IReadOnlyList<(ulong requestId, OracleRequest request)> ListOracleRequests()
-            => NativeContract.Oracle.GetRequests(expressSystem.StoreView).ToList();
 
-        public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
-            => MakeAsync(ListOracleRequests);
 
         IReadOnlyList<TokenContract> ListTokenContracts()
         {
@@ -349,22 +353,6 @@ namespace NeoExpress.Node
 
         public Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
             => MakeAsync(ListTokenContracts);
-
-        IReadOnlyList<(string key, string value)> ListStorages(UInt160 scriptHash)
-        {
-            using var snapshot = expressSystem.GetSnapshot();
-            var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
-
-            if (contract == null) return Array.Empty<(string, string)>();
-
-            byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
-            return snapshot.Find(prefix)
-                .Select(t => (t.Key.Key.ToHexString(), t.Value.Value.ToHexString()))
-                .ToList();
-        }
-
-        public Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
-            => MakeAsync(() => ListStorages(scriptHash));
 
         public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
             => MakeAsync<int>(() =>

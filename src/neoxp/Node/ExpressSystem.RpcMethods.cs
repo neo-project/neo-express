@@ -43,21 +43,56 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JObject? ExpressListContracts(JArray @params)
+        public JObject ExpressListContracts(JArray @params)
         {
             var json = new JArray();
             foreach (var (hash, manifest) in ListContracts())
             {
-                var jsonContract = new JObject();
-                jsonContract["hash"] = hash.ToString();
-                jsonContract["manifest"] = manifest.ToJson();
-                json.Add(jsonContract);
+                json.Add(new JObject()
+                {
+                    ["hash"] = $"{hash}",
+                    ["manifest"] = manifest.ToJson()
+                });
             }
             return json;
         }
 
+        [RpcMethod]
+        public JObject ExpressListOracleRequests(JArray _)
+        {
+            var json = new JArray();
+            foreach (var (requestId, request) in ListOracleRequests())
+            {
+                json.Add(new JObject()
+                {
+                    ["requestid"] = requestId,
+                    ["originaltxid"] = $"{request.OriginalTxid}",
+                    ["gasforresponse"] = request.GasForResponse,
+                    ["url"] = request.Url,
+                    ["filter"] = request.Filter,
+                    ["callbackcontract"] = $"{request.CallbackContract}",
+                    ["callbackmethod"] = request.CallbackMethod,
+                    ["userdata"] = Convert.ToBase64String(request.UserData)
+                });
+            }
+            return json;
+        }
 
-
+        [RpcMethod]
+        public JObject? ExpressGetContractStorage(JArray @params)
+        {
+            var scriptHash = UInt160.Parse(@params[0].AsString());
+            var json = new JArray();
+            foreach (var (key, value) in ListStorages(scriptHash))
+            {
+                json.Add(new JObject()
+                {
+                    ["key"] = key,
+                    ["value"] = value,
+                });
+            }
+            return json;
+        }
 
 
 
@@ -162,25 +197,6 @@ namespace NeoExpress.Node
             return contracts;
         }
 
-        [RpcMethod]
-        public JObject? ExpressGetContractStorage(JArray @params)
-        {
-            var scriptHash = UInt160.Parse(@params[0].AsString());
-            var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-            if (contract == null) return null;
-
-            var storages = new JArray();
-            byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
-            using var snapshot = neoSystem.GetSnapshot();
-            foreach (var (key, value) in snapshot.Find(prefix))
-            {
-                var storage = new JObject();
-                storage["key"] = key.Key.ToHexString();
-                storage["value"] = value.Value.ToHexString();
-                storages.Add(storage);
-            }
-            return storages;
-        }
 
 
 
@@ -204,25 +220,7 @@ namespace NeoExpress.Node
             throw new Exception("Checkpoint create is only supported for RocksDb storage implementation");
         }
 
-        [RpcMethod]
-        public JObject? ExpressListOracleRequests(JArray _)
-        {
-            var requests = new JArray();
-            foreach (var (requestId, request) in NativeContract.Oracle.GetRequests(neoSystem.StoreView))
-            {
-                var json = new JObject();
-                json["requestid"] = requestId;
-                json["originaltxid"] = request.OriginalTxid.ToString();
-                json["gasforresponse"] = request.GasForResponse;
-                json["url"] = request.Url;
-                json["filter"] = request.Filter;
-                json["callbackcontract"] = request.CallbackContract.ToString();
-                json["callbackmethod"] = request.CallbackMethod;
-                json["userdata"] = Convert.ToBase64String(request.UserData);
-                requests.Add(json);
-            }
-            return requests;
-        }
+
 
         [RpcMethod]
         public JObject? ExpressCreateOracleResponseTx(JArray @params)

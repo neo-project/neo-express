@@ -70,10 +70,10 @@ namespace NeoExpress
             // return new ContractParameterParser(expressNode.ProtocolSettings, expressNode.TryResolveAccountHash, tryGetContract);
         }
 
-        public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsByNameAsync(this IExpressNode expressNode, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            return contracts.Where(c => c.manifest.Name.Equals(contractName, comparison)).ToList();
+            return contracts.Where(c => c.manifest.Name.Equals(name, comparison)).ToList();
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)
@@ -104,51 +104,6 @@ namespace NeoExpress
             }
 
             throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
-        }
-
-        public static async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(this IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)
-        {
-            if (responseCode == OracleResponseCode.Success && responseJson == null)
-            {
-                throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
-            }
-
-            var oracleNodes = await Commands.OracleCommand.List.ListOracleNodesAsync(expressNode);
-
-            var txHashes = new List<UInt256>();
-            var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
-            for (var x = 0; x < requests.Count; x++)
-            {
-                var (id, request) = requests[x];
-                if (requestId.HasValue && requestId.Value != id) continue;
-                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
-
-                var response = new OracleResponse
-                {
-                    Code = responseCode,
-                    Id = id,
-                    Result = GetResponseData(request.Filter),
-                };
-
-                var txHash = await expressNode.SubmitOracleResponseAsync(response, oracleNodes);
-                txHashes.Add(txHash);
-            }
-            return txHashes;
-
-            byte[] GetResponseData(string filter)
-            {
-                if (responseCode != OracleResponseCode.Success)
-                {
-                    return Array.Empty<byte>();
-                }
-
-                System.Diagnostics.Debug.Assert(responseJson != null);
-
-                var json = string.IsNullOrEmpty(filter)
-                    ? (Newtonsoft.Json.Linq.JContainer)responseJson
-                    : new Newtonsoft.Json.Linq.JArray(responseJson.SelectTokens(filter, true));
-                return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
-            }
         }
 
         public static async Task<(RpcNep17Balance balance, Nep17Contract token)> GetBalanceAsync(this IExpressNode expressNode, UInt160 accountHash, string asset)

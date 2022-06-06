@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System;
 using System.IO;
 using System.IO.Abstractions;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -11,42 +12,49 @@ namespace NeoExpress.Commands
         [Command("requests", Description = "List outstanding oracle requests")]
         internal class Requests
         {
-            readonly IFileSystem fileSystem;
+            readonly IExpressChain chain;
 
-            public Requests(IFileSystem fileSystem)
+            public Requests(IExpressChain chain)
             {
-                this.fileSystem = fileSystem;
+                this.chain = chain;
             }
 
-            
-            internal string Input { get; init; } = string.Empty;
-
-            internal async Task ExecuteAsync(TextWriter writer)
+            public Requests(CommandLineApplication app) : this(app.GetExpressFile())
             {
-                await Task.CompletedTask;
-                // var (chain, _) = fileSystem.LoadExpressChainInfo(Input);
-                // using var expressNode = chain.GetExpressNode(fileSystem);
-                // var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
-
-                // foreach (var (id, request) in requests)
-                // {
-                //     await writer.WriteLineAsync($"request #{id}:").ConfigureAwait(false);
-                //     await writer.WriteLineAsync($"    Original Tx Hash: {request.OriginalTxid}").ConfigureAwait(false);
-                //     await writer.WriteLineAsync($"    Request Url:      \"{request.Url}\"").ConfigureAwait(false);
-                // }
             }
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            [Option(Description = "Output as JSON")]
+            internal bool Json { get; }
+
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
+                using var expressNode = chain.GetExpressNode();
+                var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+                if (Json)
                 {
-                    await ExecuteAsync(console.Out);
-                    return 0;
+                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                    using var _ = writer.WriteArray();
+                    for (int i = 0; i < requests.Count; i++)
+                    {
+                        var (requestId, request) = requests[i];
+                        using var __ = writer.WriteObject();
+                        writer.WriteProperty("request-id", $"{requestId}");
+                        writer.WriteProperty("original-tx-hash", $"{request.OriginalTxid}");
+                        writer.WriteProperty("request-url", $"{request.Url}");
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    app.WriteException(ex);
-                    return 1;
+                    for (int i = 0; i < requests.Count; i++)
+                    {
+                        var (requestId, request) = requests[i];
+                        console.WriteLine($"request #{requestId}:");
+                        console.WriteLine($"    Original Tx Hash: {request.OriginalTxid}");
+                        console.WriteLine($"    Request Url:      \"{request.Url}\"");
+                    }
                 }
             }
         }

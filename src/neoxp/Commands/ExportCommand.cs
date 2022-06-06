@@ -125,7 +125,7 @@ namespace NeoExpress.Commands
                 var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
                 var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
                 var key = devAccount.GetKey();
-                if (key != null)
+                if (key is not null)
                 {
                     writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
                 }

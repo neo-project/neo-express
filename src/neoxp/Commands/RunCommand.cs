@@ -40,7 +40,7 @@ namespace NeoExpress.Commands
             var node = chain.ConsensusNodes[NodeIndex];
             var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
             using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-            await chainManager.RunAsync(storageProvider, node, Trace, console.Out, token);
+            await chainManager.RunAsync(storageProvider, node, Trace, console, token);
         }
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)

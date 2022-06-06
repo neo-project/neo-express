@@ -30,9 +30,9 @@ namespace NeoExpress.Models
             if (notification.State.Count < 3) return null;
 
             var from = ParseAddress(notification.State[0]);
-            if (from == null) return null;
+            if (from is null) return null;
             var to = ParseAddress(notification.State[1]);
-            if (to == null) return null;
+            if (to is null) return null;
             if (from == UInt160.Zero && to == UInt160.Zero) return null;
 
             var amountItem = notification.State[2];

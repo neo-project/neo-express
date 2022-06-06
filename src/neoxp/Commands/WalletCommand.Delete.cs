@@ -32,7 +32,7 @@ namespace NeoExpress.Commands
                 var chain = chainManager.Chain;
                 var wallet = chain.GetWallet(Name);
 
-                if (wallet == null)
+                if (wallet is null)
                 {
                     throw new Exception($"{Name} privatenet wallet not found.");
                 }

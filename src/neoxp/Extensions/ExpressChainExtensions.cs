@@ -21,13 +21,13 @@ namespace NeoExpress
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
-                if (wallet.GetAccount(accountHash) != null) builder.Add(wallet);
+                if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
             }
 
             for (int i = 0; i < chain.Wallets.Count; i++)
             {
                 var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                if (wallet.GetAccount(accountHash) != null) builder.Add(wallet);
+                if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
             }
 
             return builder.ToImmutable();
@@ -81,7 +81,7 @@ namespace NeoExpress
 
         public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash)
         {
-            if (chain.Wallets != null && chain.Wallets.Count > 0)
+            if (chain.Wallets is not null && chain.Wallets.Count > 0)
             {
                 for (int i = 0; i < chain.Wallets.Count; i++)
                 {
@@ -93,7 +93,7 @@ namespace NeoExpress
                 }
             }
 
-            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
+            Debug.Assert(chain.ConsensusNodes is not null && chain.ConsensusNodes.Count > 0);
 
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
@@ -135,7 +135,7 @@ namespace NeoExpress
 
         public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
         {
-            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
+            Debug.Assert(chain.ConsensusNodes is not null && chain.ConsensusNodes.Count > 0);
 
             var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
             var account = wallet.GetMultiSigAccounts().Single();

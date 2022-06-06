@@ -21,8 +21,7 @@ using NeoExpress.Models;
 
 namespace NeoExpress.Node
 {
-
-    internal class OnlineNode : IExpressNode
+    class OnlineNode : IExpressNode
     {
         readonly ExpressChain chain;
         readonly RpcClient rpcClient;
@@ -50,7 +49,7 @@ namespace NeoExpress.Node
 
         public Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null)
         {
-            return signer == null
+            return signer is null
                 ? rpcClient.InvokeScriptAsync(script)
                 : rpcClient.InvokeScriptAsync(script, signer);
         }
@@ -72,8 +71,7 @@ namespace NeoExpress.Node
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
-            var factory = new TransactionManagerFactory(rpcClient);
-            var tm = await factory.MakeTransactionAsync(script, signers).ConfigureAwait(false);
+            var tm = await rpcClient.MakeTransactionAsync(script, signers).ConfigureAwait(false);
 
             if (additionalGas > 0.0m)
             {
@@ -81,7 +79,7 @@ namespace NeoExpress.Node
             }
 
             var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            if (account.Contract.Script.IsMultiSigContract())
+            if (account.IsMultiSigContract())
             {
                 var signatureCount = account.Contract.ParameterList.Length;
                 var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
@@ -167,7 +165,7 @@ namespace NeoExpress.Node
         {
             var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
                 return array
                     .Select(j => (
@@ -183,7 +181,7 @@ namespace NeoExpress.Node
         {
             var json = await rpcClient.RpcSendAsync("expresslisttokencontracts").ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
                 return array.Select(TokenContract.FromJson).ToList();
             }
@@ -195,7 +193,7 @@ namespace NeoExpress.Node
         {
             var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
                 return array.Select(FromJson).ToList();
             }
@@ -225,22 +223,19 @@ namespace NeoExpress.Node
             }
         }
 
-        public async Task<IReadOnlyList<ExpressStorage>> ListStoragesAsync(UInt160 scriptHash)
+        public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
         {
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
 
-            if (json != null && json is JArray array)
+            if (json is not null && json is JArray array)
             {
-                return array.Select(s => new ExpressStorage()
-                {
-                    Key = s["key"].AsString(),
-                    Value = s["value"].AsString(),
-                })
+                return array
+                    .Select(s => (s["key"].AsString(), s["value"].AsString()))
                     .ToList();
             }
 
-            return Array.Empty<ExpressStorage>();
+            return Array.Empty<(string, string)>();
         }
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)

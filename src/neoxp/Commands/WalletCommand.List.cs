@@ -85,9 +85,9 @@ namespace NeoExpress.Commands
                             writer.WritePropertyName("script-hash");
                             writer.WriteValue(account.ScriptHash.ToString());
                             writer.WritePropertyName("private-key");
-                            writer.WriteValue(keyPair.PrivateKey.ToHexString());
+                            writer.WriteValue(Convert.ToHexString(keyPair.PrivateKey));
                             writer.WritePropertyName("public-key");
-                            writer.WriteValue(keyPair.PublicKey.EncodePoint(true).ToHexString());
+                            writer.WriteValue(Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
                             writer.WriteEndObject();
                         }
                     }
@@ -125,8 +125,8 @@ namespace NeoExpress.Commands
 
                             writer.WriteLine($"  {account.Address} ({(account.IsDefault ? "Default" : account.Label)})");
                             writer.WriteLine($"    script hash: {BitConverter.ToString(account.ScriptHash.ToArray())}");
-                            writer.WriteLine($"    public key:    {keyPair.PublicKey.EncodePoint(true).ToHexString()}");
-                            writer.WriteLine($"    private key:   {keyPair.PrivateKey.ToHexString()}");
+                            writer.WriteLine($"    public key:    {Convert.ToHexString(keyPair.PublicKey.EncodePoint(true))}");
+                            writer.WriteLine($"    private key:   {Convert.ToHexString(keyPair.PrivateKey)}");
                         }
                     }
 

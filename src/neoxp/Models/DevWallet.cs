@@ -21,7 +21,7 @@ namespace NeoExpress.Models
         {
             this.Name = name;
 
-            if (accounts != null)
+            if (accounts is not null)
             {
                 foreach (var account in accounts)
                 {
@@ -52,8 +52,7 @@ namespace NeoExpress.Models
 
         public void Export(string filename, string password)
         {
-            var nep6Wallet = new NEP6Wallet(filename, ProtocolSettings, Name);
-            nep6Wallet.Unlock(password);
+            var nep6Wallet = new NEP6Wallet(filename, password, ProtocolSettings, Name);
             foreach (var account in GetAccounts())
             {
                 nep6Wallet.CreateAccount(account.Contract, account.GetKey());
@@ -105,6 +104,10 @@ namespace NeoExpress.Models
             => throw new NotImplementedException();
 
         public override void Delete()
+        {
+        }
+
+        public override void Save()
         {
         }
     }

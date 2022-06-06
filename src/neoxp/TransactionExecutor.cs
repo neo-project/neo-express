@@ -372,7 +372,7 @@ namespace NeoExpress
             }
 
             return (Uri.TryCreate(value, UriKind.Absolute, out uri)
-                && uri != null
+                && uri is not null
                 && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
         }
 

@@ -325,6 +325,8 @@ namespace NeoExpress
 
         OfflineNode GetOfflineNode(bool offlineTrace = false)
         {
+            if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
+
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);

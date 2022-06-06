@@ -23,7 +23,7 @@ namespace NeoExpress.Models
             Contract = contract;
         }
 
-        public override bool HasKey => key != null;
+        public override bool HasKey => key is not null;
 
         public override KeyPair? GetKey() => key;
 

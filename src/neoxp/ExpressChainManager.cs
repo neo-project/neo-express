@@ -1,18 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.BlockchainToolkit.SmartContract;
-using Neo.Ledger;
 using Neo.Plugins;
 using NeoExpress.Models;
 using NeoExpress.Node;
@@ -58,7 +56,7 @@ namespace NeoExpress
 
         public bool IsRunning(ExpressConsensusNode? node = null)
         {
-            if (node == null)
+            if (node is null)
             {
                 for (var i = 0; i < chain.ConsensusNodes.Count; i++)
                 {
@@ -103,7 +101,7 @@ namespace NeoExpress
 
             var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
 
-            if (writer != null)
+            if (writer is not null)
             {
                 await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
             }
@@ -194,7 +192,8 @@ namespace NeoExpress
             await process.WaitForExitAsync().ConfigureAwait(false);
             return true;
         }
-        public async Task RunAsync(IStorageProvider store, ExpressConsensusNode node, bool enableTrace, TextWriter writer, CancellationToken token)
+
+        public async Task RunAsync(IExpressStorage expressStorage, ExpressConsensusNode node, bool enableTrace, IConsole console, CancellationToken token)
         {
             if (IsNodeRunning(node))
             {
@@ -206,28 +205,22 @@ namespace NeoExpress
             {
                 try
                 {
-                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token);
-
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
                     using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
                     var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-                    var logPlugin = new Node.LogPlugin(writer);
-                    var storageProviderPlugin = new Node.StorageProviderPlugin(store);
-                    var appEngineProvider = enableTrace ? new Node.ApplicationEngineProvider() : null;
-                    var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
-                    var persistencePlugin = new Node.PersistencePlugin(store);
+                    var storeProvider = new ExpressStoreProvider(expressStorage);
+                    Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
+                    if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
-                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storageProviderPlugin.Name);
-                    _ = neoSystem.ActorSystem.ActorOf(EventWrapper<Blockchain.ApplicationExecuted>.Props(OnApplicationExecuted));
-                    var rpcSettings = GetRpcServerSettings(chain, node);
-                    var rpcServer = new Neo.Plugins.RpcServer(neoSystem, rpcSettings);
-                    var expressRpcMethods = new ExpressRpcMethods(neoSystem, store, multiSigAccount.ScriptHash, linkedToken);
-                    rpcServer.RegisterMethods(expressRpcMethods);
-                    rpcServer.RegisterMethods(persistencePlugin);
-                    rpcServer.StartRpcServer();
+                    using var persistencePlugin = new ExpressPersistencePlugin();
+                    using var logPlugin = new ExpressLogPlugin(console);
+                    using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
+                    using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
+                        expressStorage, multiSigAccount.ScriptHash);
+                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 
                     neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {
@@ -238,8 +231,9 @@ namespace NeoExpress
 
                     // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
                     // Do not remove or re-word this console output:
-                    writer.WriteLine($"Neo express is running ({store.GetType().Name})");
+                    console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
 
+                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
                     linkedToken.Token.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)
@@ -257,7 +251,8 @@ namespace NeoExpress
             {
                 var settings = new Dictionary<string, string>()
                 {
-                    { "PluginConfiguration:Network", $"{chain.Network}" }
+                    { "PluginConfiguration:Network", $"{chain.Network}" },
+                    { "IgnoreRecoveryLogs", "true" }
                 };
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
@@ -297,30 +292,16 @@ namespace NeoExpress
             }
         }
 
-        void OnApplicationExecuted(Blockchain.ApplicationExecuted applicationExecuted)
-        {
-            if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
-            {
-                var logMessage = $"Tx FAULT: hash={applicationExecuted.Transaction.Hash}";
-                if (!string.IsNullOrEmpty(applicationExecuted.Exception.Message))
-                {
-                    logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
-                }
-                Console.Error.WriteLine($"\x1b[31m{logMessage}\x1b[0m");
-            }
-        }
-
-        public IStorageProvider GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
+        public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
-
             return discard
-                ? RocksDbStorageProvider.OpenForDiscard(nodePath)
-                : RocksDbStorageProvider.Open(nodePath);
+                ? CheckpointExpressStorage.OpenForDiscard(nodePath)
+                : new RocksDbExpressStorage(nodePath);
         }
 
-        public IStorageProvider GetCheckpointStorageProvider(string checkPointPath)
+        public IExpressStorage GetCheckpointStorageProvider(string checkPointPath)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -339,7 +320,7 @@ namespace NeoExpress
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-            return CheckpointStorageProvider.Open(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
+            return CheckpointExpressStorage.OpenCheckpoint(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
         public OfflineNode GetOfflineNode(bool offlineTrace = false)
@@ -347,8 +328,11 @@ namespace NeoExpress
             if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
 
             var node = chain.ConsensusNodes[0];
+            var nodePath = fileSystem.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+
             return new Node.OfflineNode(ProtocolSettings,
-                (RocksDbStorageProvider)GetNodeStorageProvider(node, false),
+                new RocksDbExpressStorage(nodePath),
                 node.Wallet,
                 chain,
                 offlineTrace);

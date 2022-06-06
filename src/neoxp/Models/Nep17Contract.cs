@@ -45,7 +45,7 @@ namespace NeoExpress.Models
             }
 
             var contractState = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
-            if (contractState != null)
+            if (contractState is not null)
             {
                 using var sb = new ScriptBuilder();
                 sb.EmitDynamicCall(scriptHash, "symbol");

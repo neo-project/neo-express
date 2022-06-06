@@ -15,30 +15,48 @@ using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
 
 namespace NeoExpress.Node
 {
-    class PersistencePlugin : Plugin, IPersistencePlugin
+    class ExpressPersistencePlugin : Plugin
     {
         const string APP_LOGS_STORE_PATH = "app-logs-store";
         const string NOTIFICATIONS_STORE_PATH = "notifications-store";
 
-        static IStore GetAppLogStore(IStorageProvider storageProvider) => storageProvider.GetStore(APP_LOGS_STORE_PATH);
-        static IStore GetNotificationsStore(IStorageProvider storageProvider) => storageProvider.GetStore(NOTIFICATIONS_STORE_PATH);
-
-        readonly IStore appLogsStore;
-        readonly IStore notificationsStore;
+        IStore? appLogsStore;
+        IStore? notificationsStore;
         ISnapshot? appLogsSnapshot;
         ISnapshot? notificationsSnapshot;
 
-        public PersistencePlugin(IStorageProvider storageProvider)
+        public ExpressPersistencePlugin()
         {
-            appLogsStore = GetAppLogStore(storageProvider);
-            notificationsStore = GetNotificationsStore(storageProvider);
+            Blockchain.Committing += OnCommitting;
+            Blockchain.Committed += OnCommitted;
         }
 
-        public static JObject? GetAppLog(IStorageProvider storageProvider, UInt256 hash)
+        public override void Dispose()
         {
-            var store = GetAppLogStore(storageProvider);
-            var value = store.TryGet(hash.ToArray());
-            return value != null && value.Length != 0
+            Blockchain.Committing -= OnCommitting;
+            Blockchain.Committed -= OnCommitted;
+            appLogsSnapshot?.Dispose();
+            appLogsStore?.Dispose();
+            notificationsSnapshot?.Dispose();
+            notificationsStore?.Dispose();
+        }
+
+        protected override void OnSystemLoaded(NeoSystem system)
+        {
+            if (this.appLogsStore is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+            if (this.notificationsStore is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+
+            appLogsStore = system.LoadStore(APP_LOGS_STORE_PATH);
+            notificationsStore = system.LoadStore(NOTIFICATIONS_STORE_PATH);
+
+            base.OnSystemLoaded(system);
+        }
+
+        public JObject? GetAppLog(UInt256 hash)
+        {
+            if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
+            var value = appLogsStore.TryGet(hash.ToArray());
+            return value is not null && value.Length != 0
                 ? JObject.Parse(Neo.Utility.StrictUTF8.GetString(value))
                 : null;
         }
@@ -51,28 +69,26 @@ namespace NeoExpress.Node
             return buffer;
         });
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
-            IStorageProvider storageProvider,
+        public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
             SeekDirection direction,
             IReadOnlySet<UInt160>? contracts,
             string eventName) => string.IsNullOrEmpty(eventName)
-                ? GetNotifications(storageProvider, direction, contracts)
-                : GetNotifications(storageProvider, direction, contracts,
+                ? GetNotifications(direction, contracts)
+                : GetNotifications(direction, contracts,
                     new HashSet<string>(StringComparer.OrdinalIgnoreCase) { eventName });
 
-        public static IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
-            IStorageProvider storageProvider,
+        public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
             SeekDirection direction = SeekDirection.Forward,
             IReadOnlySet<UInt160>? contracts = null,
             IReadOnlySet<string>? eventNames = null)
         {
-            var store = GetNotificationsStore(storageProvider);
+            if (notificationsStore is null) throw new NullReferenceException(nameof(notificationsStore));
 
             var prefix = direction == SeekDirection.Forward
                 ? Array.Empty<byte>()
                 : backwardsNotificationsPrefix.Value;
 
-            return store.Seek(prefix, direction)
+            return notificationsStore.Seek(prefix, direction)
                 .Select(t => ParseNotification(t.Key, t.Value))
                 .Where(t => contracts is null || contracts.Contains(t.notification.ScriptHash))
                 .Where(t => eventNames is null || eventNames.Contains(t.notification.EventName));
@@ -85,12 +101,15 @@ namespace NeoExpress.Node
             }
         }
 
-        void IPersistencePlugin.OnPersist(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        void OnCommitting(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
+            if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
+            if (notificationsStore is null) throw new NullReferenceException(nameof(notificationsStore));
+
             appLogsSnapshot?.Dispose();
             notificationsSnapshot?.Dispose();
             appLogsSnapshot = appLogsStore.GetSnapshot();
-            notificationsSnapshot = notificationsStore!.GetSnapshot(); // TODO: why is there a deref warning here?
+            notificationsSnapshot = notificationsStore.GetSnapshot();
 
             if (applicationExecutedList.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
 
@@ -102,7 +121,7 @@ namespace NeoExpress.Node
             for (int i = 0; i < applicationExecutedList.Count; i++)
             {
                 ApplicationExecuted appExec = applicationExecutedList[i];
-                if (appExec.Transaction == null) continue;
+                if (appExec.Transaction is null) continue;
 
                 var txJson = TxLogToJson(appExec);
                 appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
@@ -125,13 +144,13 @@ namespace NeoExpress.Node
             }
 
             var blockJson = BlockLogToJson(block, applicationExecutedList);
-            if (blockJson != null)
+            if (blockJson is not null)
             {
                 appLogsSnapshot.Put(block.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(blockJson.ToString()));
             }
         }
 
-        void IPersistencePlugin.OnCommit(NeoSystem system, Block block, DataCache snapshot)
+        void OnCommitted(NeoSystem system, Block block)
         {
             appLogsSnapshot?.Commit();
             notificationsSnapshot?.Commit();
@@ -140,9 +159,9 @@ namespace NeoExpress.Node
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
         // to avoid dependency on LevelDBStore package
 
-        public static JObject TxLogToJson(Blockchain.ApplicationExecuted appExec)
+        static JObject TxLogToJson(ApplicationExecuted appExec)
         {
-            global::System.Diagnostics.Debug.Assert(appExec.Transaction != null);
+            global::System.Diagnostics.Debug.Assert(appExec.Transaction is not null);
 
             var txJson = new JObject();
             txJson["txid"] = appExec.Transaction.Hash.ToString();
@@ -177,9 +196,14 @@ namespace NeoExpress.Node
 
             txJson["executions"] = new List<JObject>() { trigger }.ToArray();
             return txJson;
+
+            static string? GetExceptionMessage(Exception exception)
+            {
+                return exception?.GetBaseException().Message;
+            }
         }
 
-        public static JObject? BlockLogToJson(Block block, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)
+        static JObject? BlockLogToJson(Block block, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             var blocks = applicationExecutedList.Where(p => p.Transaction is null).ToArray();
             if (blocks.Length > 0)
@@ -224,11 +248,6 @@ namespace NeoExpress.Node
             }
 
             return null;
-        }
-
-        static string? GetExceptionMessage(Exception exception)
-        {
-            return exception?.GetBaseException().Message;
         }
     }
 }

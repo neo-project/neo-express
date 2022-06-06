@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
                 var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
                 var wallet = chainManager.Chain.GetWallet(Name);
 
-                if (wallet == null)
+                if (wallet is null)
                 {
                     throw new Exception($"{Name} express wallet not found.");
                 }

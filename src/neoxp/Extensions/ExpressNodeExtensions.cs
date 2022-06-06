@@ -35,7 +35,7 @@ namespace NeoExpress
             {
                 if (contracts[i].manifest.Name.Equals(name, comparison))
                 {
-                    if (_scriptHash == null)
+                    if (_scriptHash is null)
                     {
                         _scriptHash = contracts[i].hash;
                     }
@@ -47,13 +47,13 @@ namespace NeoExpress
             }
 
             scriptHash = _scriptHash!;
-            return _scriptHash != null;
+            return _scriptHash is not null;
         }
 
         public static async Task<OneOf<UInt160, None>> ParseScriptHashToBlockAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             // only check express chain wallets to block, not consensus nodes or genesis account
-            if (chain.Wallets != null && chain.Wallets.Count > 0)
+            if (chain.Wallets is not null && chain.Wallets.Count > 0)
             {
                 for (int i = 0; i < chain.Wallets.Count; i++)
                 {
@@ -179,7 +179,7 @@ namespace NeoExpress
             for (var i = 0; i < script.Length;)
             {
                 var instruction = script.GetInstruction(i);
-                if (instruction == null)
+                if (instruction is null)
                 {
                     throw new FormatException($"null opcode found at {i}");
                 }
@@ -245,7 +245,7 @@ namespace NeoExpress
 
         public static async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(this IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)
         {
-            if (responseCode == OracleResponseCode.Success && responseJson == null)
+            if (responseCode == OracleResponseCode.Success && responseJson is null)
             {
                 throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
             }
@@ -279,7 +279,7 @@ namespace NeoExpress
                     return Array.Empty<byte>();
                 }
 
-                System.Diagnostics.Debug.Assert(responseJson != null);
+                System.Diagnostics.Debug.Assert(responseJson is not null);
 
                 var json = string.IsNullOrEmpty(filter)
                     ? (Newtonsoft.Json.Linq.JContainer)responseJson

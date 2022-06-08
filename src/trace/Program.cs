@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -50,11 +50,11 @@ namespace NeoTrace
         };
 
         static IReadOnlyList<string> testNetRpcUris = new string[] {
-            "http://seed1t4.neo.org:20332",
-            "http://seed2t4.neo.org:20332",
-            "http://seed3t4.neo.org:20332",
-            "http://seed4t4.neo.org:20332",
-            "http://seed5t4.neo.org:20332"
+            "http://seed1t5.neo.org:20332",
+            "http://seed2t5.neo.org:20332",
+            "http://seed3t5.neo.org:20332",
+            "http://seed4t5.neo.org:20332",
+            "http://seed5t5.neo.org:20332"
         };
 
         internal static Uri ParseRpcUri(string value)

@@ -26,7 +26,7 @@ namespace NeoExpress
         typeof(StopCommand),
         typeof(TransferCommand),
         typeof(WalletCommand))]
-    class Program
+    partial class Program
     {
         public static async Task<int> Main(string[] args)
         {
@@ -40,9 +40,9 @@ namespace NeoExpress
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();
-            app.Option<bool>("--stack-trace", "", CommandOptionType.NoValue, o => o.ShowInHelpText = false, inherited: true);
             app.Conventions
                 .UseDefaultConventions()
+                .AddConvention(new StackTraceConvention())
                 .UseConstructorInjection(services);
 
             try

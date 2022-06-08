@@ -367,7 +367,7 @@ namespace NeoExpress
 
             if (value.Equals("testnet", StringComparison.OrdinalIgnoreCase))
             {
-                uri = new Uri("http://seed1t4.neo.org:20332");
+                uri = new Uri("http://seed1t5.neo.org:20333");
                 return true;
             }
 

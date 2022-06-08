@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -20,22 +20,14 @@ using SysIO = System.IO;
 namespace NeoTrace
 {
     [Command("neotrace", Description = "Generates .neo-trace files for transactions on a public Neo N3 blockchains", UsePagerForHelpText = false)]
+    [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
     [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
     class Program
     {
         public static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
-        [Option]
-        bool Version { get; }
-
         int OnExecute(CommandLineApplication app, IConsole console)
         {
-            if (Version)
-            {
-                console.WriteLine(ThisAssembly.AssemblyInformationalVersion);
-                return 0;
-            }
-
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp(false);
             return 1;

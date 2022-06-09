@@ -10,11 +10,16 @@ namespace NeoExpress.Commands
         [Command("balance", Description = "Show asset balance for account")]
         internal class Balance
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IExpressChain chain;
 
-            public Balance(ExpressChainManagerFactory chainManagerFactory)
+            public Balance(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.chain = chain;
+            }
+
+            public Balance(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Asset to show balance of (symbol or script hash)")]
@@ -25,22 +30,19 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
-                    {
-                        throw new Exception($"{Account} account not found.");
-                    }
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
+                    // {
+                    //     throw new Exception($"{Account} account not found.");
+                    // }
 
-                    using var expressNode = chainManager.GetExpressNode();
-                    var (balance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
+                    // using var expressNode = chainManager.GetExpressNode();
+                    // var (balance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
+                    // await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
                     return 0;
                 }
                 catch (Exception ex)

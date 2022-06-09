@@ -10,13 +10,16 @@ namespace NeoExpress.Commands
         [Command("response", Description = "Submit oracle response")]
         internal class Response
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
-            readonly TransactionExecutorFactory txExecutorFactory;
+            readonly IExpressChain chain;
 
-            public Response(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Response(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
-                this.txExecutorFactory = txExecutorFactory;
+                this.chain = chain;
+            }
+
+            public Response(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "URL of oracle request")]
@@ -30,9 +33,6 @@ namespace NeoExpress.Commands
             [Option(Description = "Oracle request ID")]
             internal ulong? RequestId { get; }
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
@@ -43,9 +43,9 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    // await txExec.OracleResponseAsync(Url, ResponsePath, RequestId).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

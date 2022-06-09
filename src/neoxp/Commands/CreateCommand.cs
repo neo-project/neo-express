@@ -7,13 +7,6 @@ namespace NeoExpress.Commands
     [Command("create", Description = "Create new neo-express instance")]
     internal class CreateCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
-
-        public CreateCommand(ExpressChainManagerFactory chainManagerFactory)
-        {
-            this.chainManagerFactory = chainManagerFactory;
-        }
-
         [Argument(0, Description = "name of " + EXPRESS_EXTENSION + " file to create (Default: ./" + DEFAULT_EXPRESS_FILENAME + ")")]
         internal string Output { get; set; } = string.Empty;
 
@@ -31,12 +24,12 @@ namespace NeoExpress.Commands
         {
             try
             {
-                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force);
-                chainManager.SaveChain(outputPath);
+                // var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force);
+                // chainManager.SaveChain(outputPath);
 
-                console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");
-                console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-                console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                // console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");
+                // console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
+                // console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
 
                 return 0;
             }

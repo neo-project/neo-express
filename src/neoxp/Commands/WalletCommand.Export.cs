@@ -11,21 +11,21 @@ namespace NeoExpress.Commands
         [Command("export", Description = "Export neo-express wallet in NEP-6 format")]
         internal class Export
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
-            readonly IFileSystem fileSystem;
+            readonly IExpressChain chain;
 
-            public Export(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Export(IExpressChain chain)
             {
-                this.fileSystem = fileSystem;
-                this.chainManagerFactory = chainManagerFactory;
+                this.chain = chain;
+            }
+
+            public Export(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Wallet name")]
             [Required]
             internal string Name { get; init; } = string.Empty;
-
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "NEP-6 wallet name (Defaults to Neo-Express name if unspecified)")]
             internal string Output { get; init; } = string.Empty;
@@ -33,44 +33,45 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            internal string Execute()
-            {
-                var output = string.IsNullOrEmpty(Output)
-                   ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
-                   : Output;
+            // internal string Execute()
+            // {
+            //     var output = string.IsNullOrEmpty(Output)
+            //        ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
+            //        : Output;
 
-                var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
-                var wallet = chainManager.Chain.GetWallet(Name);
+            //     var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+            //     var wallet = chainManager.Chain.GetWallet(Name);
 
-                if (wallet is null)
-                {
-                    throw new Exception($"{Name} express wallet not found.");
-                }
+            //     if (wallet is null)
+            //     {
+            //         throw new Exception($"{Name} express wallet not found.");
+            //     }
 
-                if (fileSystem.File.Exists(output))
-                {
-                    if (Force)
-                    {
-                        fileSystem.File.Delete(output);
-                    }
-                    else
-                    {
-                        throw new Exception("You must specify force to overwrite an exported wallet.");
-                    }
-                }
+            //     if (fileSystem.File.Exists(output))
+            //     {
+            //         if (Force)
+            //         {
+            //             fileSystem.File.Delete(output);
+            //         }
+            //         else
+            //         {
+            //             throw new Exception("You must specify force to overwrite an exported wallet.");
+            //         }
+            //     }
 
-                var password = Prompt.GetPassword("Input password to use for exported wallet");
-                var devWallet = DevWallet.FromExpressWallet(chainManager.ProtocolSettings, wallet);
-                devWallet.Export(output, password);
-                return output;
-            }
+            //     var password = Prompt.GetPassword("Input password to use for exported wallet");
+            //     var devWallet = DevWallet.FromExpressWallet(chainManager.ProtocolSettings, wallet);
+            //     devWallet.Export(output, password);
+            //     return output;
+            // }
 
             private int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var output = Execute();
-                    console.WriteLine($"{Name} privatenet wallet exported to {output}");
+                    // var output = Execute();
+                    // console.WriteLine($"{Name} privatenet wallet exported to {output}");
+                    console.WriteLine($"{nameof(WalletCommand)} {nameof(Export)}");
                     return 0;
                 }
                 catch (Exception ex)

@@ -12,13 +12,16 @@ namespace NeoExpress.Commands
         [Command(Name = "hash", Description = "Get contract hash for contract path and deployment account")]
         internal class Hash
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
-            readonly IFileSystem fileSystem;
+            readonly IExpressChain chain;
 
-            public Hash(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem)
+            public Hash(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
-                this.fileSystem = fileSystem;
+                this.chain = chain;
+            }
+
+            public Hash(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Path to contract .nef file")]
@@ -29,23 +32,20 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
-                    {
-                        throw new Exception($"{Account} account not found.");
-                    }
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
+                    // {
+                    //     throw new Exception($"{Account} account not found.");
+                    // }
 
-                    var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
-                    var contractHash = GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
+                    // var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
+                    // var contractHash = GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
 
-                    await console.Out.WriteLineAsync($"{contractHash}").ConfigureAwait(false);
+                    // await console.Out.WriteLineAsync($"{contractHash}").ConfigureAwait(false);
 
                     return 0;
                 }

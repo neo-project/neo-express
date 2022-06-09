@@ -12,11 +12,16 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create neo-express wallet")]
         internal class Create
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IExpressChain chain;
 
-            public Create(ExpressChainManagerFactory chainManagerFactory)
+            public Create(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.chain = chain;
+            }
+
+            public Create(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Wallet name")]
@@ -26,53 +31,50 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
+            // internal ExpressWallet Execute()
+            // {
+            //     var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
+            //     var chain = chainManager.Chain;
 
-            internal ExpressWallet Execute()
-            {
-                var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
-                var chain = chainManager.Chain;
+            //     if (chain.IsReservedName(Name))
+            //     {
+            //         throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
+            //     }
 
-                if (chain.IsReservedName(Name))
-                {
-                    throw new Exception($"{Name} is a reserved name. Choose a different wallet name.");
-                }
+            //     var existingWallet = chain.GetWallet(Name);
+            //     if (existingWallet is not null)
+            //     {
+            //         if (!Force)
+            //         {
+            //             throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
+            //         }
 
-                var existingWallet = chain.GetWallet(Name);
-                if (existingWallet is not null)
-                {
-                    if (!Force)
-                    {
-                        throw new Exception($"{Name} dev wallet already exists. Use --force to overwrite.");
-                    }
+            //         chain.Wallets.Remove(existingWallet);
+            //     }
 
-                    chain.Wallets.Remove(existingWallet);
-                }
+            //     var wallet = new DevWallet(chainManager.ProtocolSettings, Name);
+            //     var account = wallet.CreateAccount();
+            //     account.IsDefault = true;
 
-                var wallet = new DevWallet(chainManager.ProtocolSettings, Name);
-                var account = wallet.CreateAccount();
-                account.IsDefault = true;
-
-                var expressWallet = wallet.ToExpressWallet();
-                chain.Wallets ??= new List<ExpressWallet>(1);
-                chain.Wallets.Add(expressWallet);
-                chainManager.SaveChain(chainPath);
-                return expressWallet;
-            }
+            //     var expressWallet = wallet.ToExpressWallet();
+            //     chain.Wallets ??= new List<ExpressWallet>(1);
+            //     chain.Wallets.Add(expressWallet);
+            //     chainManager.SaveChain(chainPath);
+            //     return expressWallet;
+            // }
 
             internal int OnExecute(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var wallet = Execute();
-                    console.WriteLine(Name);
-                    for (int i = 0; i < wallet.Accounts.Count; i++)
-                    {
-                        console.WriteLine($"    {wallet.Accounts[i].ScriptHash}");
-                    }
-                    console.WriteLine("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
-                    console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                    // var wallet = Execute();
+                    // console.WriteLine(Name);
+                    // for (int i = 0; i < wallet.Accounts.Count; i++)
+                    // {
+                    //     console.WriteLine($"    {wallet.Accounts[i].ScriptHash}");
+                    // }
+                    // console.WriteLine("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
+                    // console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
                     return 0;
                 }
                 catch (Exception ex)

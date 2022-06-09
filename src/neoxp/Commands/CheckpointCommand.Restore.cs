@@ -9,19 +9,21 @@ namespace NeoExpress.Commands
         [Command("restore", Description = "Restore a neo-express checkpoint")]
         internal class Restore
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IExpressChain chain;
 
-            public Restore(ExpressChainManagerFactory chainManagerFactory)
+            public Restore(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.chain = chain;
+            }
+
+            public Restore(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, "Checkpoint file name")]
             [Required]
             internal string Name { get; init; } = string.Empty;
-
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
@@ -30,9 +32,9 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    chainManager.RestoreCheckpoint(Name, Force);
-                    console.WriteLine($"Checkpoint {Name} successfully restored");
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // chainManager.RestoreCheckpoint(Name, Force);
+                    // console.WriteLine($"Checkpoint {Name} successfully restored");
                     return 0;
                 }
                 catch (Exception ex)

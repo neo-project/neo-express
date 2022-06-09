@@ -8,11 +8,16 @@ namespace NeoExpress.Commands
     [Command("fastfwd", Description = "Mint empty blocks to fast forward the block chain")]
     class FastForwardCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly IExpressChain chain;
 
-        public FastForwardCommand(ExpressChainManagerFactory chainManagerFactory)
+        public FastForwardCommand(IExpressChain chain)
         {
-            this.chainManagerFactory = chainManagerFactory;
+            this.chain = chain;
+        }
+
+        public FastForwardCommand(CommandLineApplication app)
+        {
+            this.chain = app.GetExpressFile();
         }
 
         [Argument(0, Description = "Number of blocks to mint")]
@@ -22,20 +27,17 @@ namespace NeoExpress.Commands
         [Option(Description = "Timestamp delta for last generated block")]
         internal string TimestampDelta { get; init; } = string.Empty;
 
-        [Option(Description = "Path to neo-express data file")]
-        internal string Input { get; init; } = string.Empty;
-
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                using var expressNode = chainManager.GetExpressNode();
+                // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                // using var expressNode = chainManager.GetExpressNode();
 
-                TimeSpan delta = ParseTimestampDelta(TimestampDelta);
-                await expressNode.FastForwardAsync(Count, delta).ConfigureAwait(false);
+                // TimeSpan delta = ParseTimestampDelta(TimestampDelta);
+                // await expressNode.FastForwardAsync(Count, delta).ConfigureAwait(false);
 
-                await console.Out.WriteLineAsync($"{Count} empty blocks minted").ConfigureAwait(false);
+                // await console.Out.WriteLineAsync($"{Count} empty blocks minted").ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)

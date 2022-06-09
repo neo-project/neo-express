@@ -10,19 +10,21 @@ namespace NeoExpress.Commands
         [Command("create", Description = "Create a new neo-express checkpoint")]
         internal class Create
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IExpressChain chain;
 
-            public Create(ExpressChainManagerFactory chainManagerFactory)
+            public Create(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.chain = chain;
+            }
+
+            public Create(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, "Checkpoint file name")]
             [Required]
             internal string Name { get; init; } = string.Empty;
-
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
@@ -31,9 +33,9 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode();
-                    _ = await chainManager.CreateCheckpointAsync(expressNode, Name, Force, console.Out).ConfigureAwait(false);
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // using var expressNode = chainManager.GetExpressNode();
+                    // _ = await chainManager.CreateCheckpointAsync(expressNode, Name, Force, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

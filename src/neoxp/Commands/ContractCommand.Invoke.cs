@@ -11,13 +11,16 @@ namespace NeoExpress.Commands
         [Command(Name = "invoke", Description = "Invoke a contract using parameters from .neo-invoke.json file")]
         internal class Invoke
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
-            readonly TransactionExecutorFactory txExecutorFactory;
+            readonly IExpressChain chain;
 
-            public Invoke(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Invoke(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
-                this.txExecutorFactory = txExecutorFactory;
+                this.chain = chain;
+            }
+
+            public Invoke(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Path to contract invocation JSON file")]
@@ -46,31 +49,28 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    if (string.IsNullOrEmpty(Account) && !Results)
-                    {
-                        throw new Exception("Either Account or --results must be specified");
-                    }
+                    // if (string.IsNullOrEmpty(Account) && !Results)
+                    // {
+                    //     throw new Exception("Either Account or --results must be specified");
+                    // }
 
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    // var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
 
-                    if (Results)
-                    {
-                        await txExec.InvokeForResultsAsync(script, Account, WitnessScope);
-                    }
-                    else
-                    {
-                        var password = chainManager.Chain.ResolvePassword(Account, Password);
-                        await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
-                    }
+                    // if (Results)
+                    // {
+                    //     await txExec.InvokeForResultsAsync(script, Account, WitnessScope);
+                    // }
+                    // else
+                    // {
+                    //     var password = chainManager.Chain.ResolvePassword(Account, Password);
+                    //     await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
+                    // }
 
                     return 0;
                 }

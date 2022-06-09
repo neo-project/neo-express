@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.DependencyInjection;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
@@ -100,6 +102,14 @@ namespace NeoExpress
                     exception = exception.InnerException;
                 }
             }
+        }
+
+        public static IExpressChain GetExpressFile(this CommandLineApplication app)
+        {
+            var option = app.GetOptions().Single(o => o.LongName == "input");
+            var input = option.Value() ?? string.Empty;
+            var fileSystem = app.GetRequiredService<IFileSystem>();
+            return new ExpressChainImpl(input, fileSystem);
         }
 
         public static bool IsMultiSigContract(this WalletAccount @this) => Neo.SmartContract.Helper.IsMultiSigContract(@this.Contract.Script);

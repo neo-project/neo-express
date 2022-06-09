@@ -10,13 +10,16 @@ namespace NeoExpress.Commands
         [Command(Name = "block", Description = "Block account from usage")]
         internal class Block
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
-            readonly TransactionExecutorFactory txExecutorFactory;
+            readonly IExpressChain chain;
 
-            public Block(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Block(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
-                this.txExecutorFactory = txExecutorFactory;
+                this.chain = chain;
+            }
+
+            public Block(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Account to block")]
@@ -30,9 +33,6 @@ namespace NeoExpress.Commands
             [Option(Description = "password to use for NEP-2/NEP-6 sender")]
             internal string Password { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
@@ -43,10 +43,10 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.BlockAsync(ScriptHash, Account, Password).ConfigureAwait(false);
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // var password = chainManager.Chain.ResolvePassword(Account, Password);
+                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    // await txExec.BlockAsync(ScriptHash, Account, Password).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

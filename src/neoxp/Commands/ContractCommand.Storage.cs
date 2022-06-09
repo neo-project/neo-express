@@ -16,19 +16,21 @@ namespace NeoExpress.Commands
         [Command(Name = "storage", Description = "Display storage for specified contract")]
         internal class Storage
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IExpressChain chain;
 
-            public Storage(ExpressChainManagerFactory chainManagerFactory)
+            public Storage(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.chain = chain;
+            }
+
+            public Storage(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Contract name or invocation hash")]
             [Required]
             internal string Contract { get; init; } = string.Empty;
-
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
 
             [Option(Description = "Output as JSON")]
             internal bool Json { get; }
@@ -89,27 +91,27 @@ namespace NeoExpress.Commands
                 }
             }
 
-            internal async Task ExecuteAsync(TextWriter writer)
-            {
-                var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                var expressNode = chainManager.GetExpressNode();
+            // internal async Task ExecuteAsync(TextWriter writer)
+            // {
+            //     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            //     var expressNode = chainManager.GetExpressNode();
 
-                if (UInt160.TryParse(Contract, out var hash))
-                {
-                    await WriteStoragesAsync(expressNode, writer, new (UInt160, ContractManifest)[] { (hash, null!) }).ConfigureAwait(false);
-                }
-                else
-                {
-                    var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
-                    await WriteStoragesAsync(expressNode, writer, contracts).ConfigureAwait(false);
-                }
-            }
+            //     if (UInt160.TryParse(Contract, out var hash))
+            //     {
+            //         await WriteStoragesAsync(expressNode, writer, new (UInt160, ContractManifest)[] { (hash, null!) }).ConfigureAwait(false);
+            //     }
+            //     else
+            //     {
+            //         var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
+            //         await WriteStoragesAsync(expressNode, writer, contracts).ConfigureAwait(false);
+            //     }
+            // }
 
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    await ExecuteAsync(console.Out).ConfigureAwait(false);
+                    // await ExecuteAsync(console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

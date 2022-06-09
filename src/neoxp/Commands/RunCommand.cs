@@ -8,18 +8,20 @@ namespace NeoExpress.Commands
     [Command("run", Description = "Run Neo-Express instance node")]
     class RunCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly IExpressChain chain;
 
-        public RunCommand(ExpressChainManagerFactory chainManagerFactory)
+        public RunCommand(IExpressChain chain)
         {
-            this.chainManagerFactory = chainManagerFactory;
+            this.chain = chain;
+        }
+
+        public RunCommand(CommandLineApplication app)
+        {
+            this.chain = app.GetExpressFile();
         }
 
         [Argument(0, Description = "Index of node to run")]
         internal int NodeIndex { get; init; } = 0;
-
-        [Option(Description = "Path to neo-express data file")]
-        internal string Input { get; init; } = string.Empty;
 
         [Option(Description = "Time between blocks")]
         internal uint? SecondsPerBlock { get; }
@@ -30,24 +32,24 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
-        internal async Task ExecuteAsync(IConsole console, CancellationToken token)
-        {
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
-            var chain = chainManager.Chain;
+        // internal async Task ExecuteAsync(IConsole console, CancellationToken token)
+        // {
+        //     var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
+        //     var chain = chainManager.Chain;
 
-            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
+        //     if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
 
-            var node = chain.ConsensusNodes[NodeIndex];
-            var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
-            using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-            await chainManager.RunAsync(storageProvider, node, Trace, console, token);
-        }
+        //     var node = chain.ConsensusNodes[NodeIndex];
+        //     var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
+        //     using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
+        //     await chainManager.RunAsync(storageProvider, node, Trace, console, token);
+        // }
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
         {
             try
             {
-                await ExecuteAsync(console, token);
+                // await ExecuteAsync(console, token);
                 return 0;
             }
             catch (Exception ex)

@@ -11,13 +11,16 @@ namespace NeoExpress.Commands
         [Command(Name = "set", Description = "Set single policy value")]
         internal class Set
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
-            readonly TransactionExecutorFactory txExecutorFactory;
+            readonly IExpressChain chain;
 
-            public Set(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Set(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
-                this.txExecutorFactory = txExecutorFactory;
+                this.chain = chain;
+            }
+
+            public Set(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Policy to set")]
@@ -35,9 +38,6 @@ namespace NeoExpress.Commands
             [Option(Description = "password to use for NEP-2/NEP-6 sender")]
             internal string Password { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
@@ -48,10 +48,10 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
 
-                    await txExec.SetPolicyAsync(Policy, Value, Account, Password).ConfigureAwait(false);
+                    // await txExec.SetPolicyAsync(Policy, Value, Account, Password).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

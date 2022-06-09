@@ -11,13 +11,16 @@ namespace NeoExpress.Commands
         [Command("deploy", Description = "Deploy contract to a neo-express instance")]
         internal class Deploy
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
-            readonly TransactionExecutorFactory txExecutorFactory;
+            readonly IExpressChain chain;
 
-            public Deploy(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public Deploy(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
-                this.txExecutorFactory = txExecutorFactory;
+                this.chain = chain;
+            }
+
+            public Deploy(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Path to contract .nef file")]
@@ -38,9 +41,6 @@ namespace NeoExpress.Commands
             [Option(Description = "Password to use for NEP-2/NEP-6 account")]
             internal string Password { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
@@ -54,10 +54,10 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force).ConfigureAwait(false);
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // var password = chainManager.Chain.ResolvePassword(Account, Password);
+                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                    // await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

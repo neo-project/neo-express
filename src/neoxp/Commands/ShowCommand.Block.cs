@@ -9,27 +9,29 @@ namespace NeoExpress.Commands
         [Command("block", Description = "Show block")]
         internal class Block
         {
-            readonly ExpressChainManagerFactory chainManagerFactory;
+            readonly IExpressChain chain;
 
-            public Block(ExpressChainManagerFactory chainManagerFactory)
+            public Block(IExpressChain chain)
             {
-                this.chainManagerFactory = chainManagerFactory;
+                this.chain = chain;
+            }
+
+            public Block(CommandLineApplication app)
+            {
+                this.chain = app.GetExpressFile();
             }
 
             [Argument(0, Description = "Optional block hash or index. Show most recent block if unspecified")]
             internal string BlockHash { get; init; } = string.Empty;
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
-
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
-                    var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    using var expressNode = chainManager.GetExpressNode();
-                    var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
-                    console.WriteJson(block.ToJson(chainManager.ProtocolSettings));
+                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    // using var expressNode = chainManager.GetExpressNode();
+                    // var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
+                    // console.WriteJson(block.ToJson(chainManager.ProtocolSettings));
                     return 0;
                 }
                 catch (Exception ex)

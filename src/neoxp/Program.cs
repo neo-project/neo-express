@@ -33,14 +33,16 @@ namespace NeoExpress
             EnableAnsiEscapeSequences();
 
             var services = new ServiceCollection()
-                .AddSingleton<ExpressChainManagerFactory>()
-                .AddSingleton<TransactionExecutorFactory>()
+                // .AddSingleton<ExpressChainManagerFactory>()
+                // .AddSingleton<TransactionExecutorFactory>()
                 .AddSingleton<IFileSystem, FileSystem>()
-                .AddSingleton<IConsole>(PhysicalConsole.Singleton)
+                .AddTransient<IExpressChain, ExpressChainImpl>()
+                // .AddSingleton<IConsole>(PhysicalConsole.Singleton)
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();
             app.Conventions
+                .AddConvention(new InputFileConvention())
                 .UseDefaultConventions()
                 .AddConvention(new StackTraceConvention())
                 .UseConstructorInjection(services);

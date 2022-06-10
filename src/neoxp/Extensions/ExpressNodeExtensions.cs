@@ -267,7 +267,7 @@ namespace NeoExpress
                     Result = GetResponseData(request.Filter),
                 };
 
-                var txHash = await expressNode.SubmitOracleResponseAsync(response, oracleNodes);
+                var txHash = await expressNode.SubmitOracleResponseAsync(response);
                 txHashes.Add(txHash);
             }
             return txHashes;
@@ -361,10 +361,10 @@ namespace NeoExpress
             };
         }
 
-        public static Task<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)
-        {
-            return GetPolicyAsync(script => expressNode.InvokeAsync(script));
-        }
+        // public static ValueTask<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)
+        // {
+        //     return GetPolicyAsync(script => expressNode.InvokeAsync(script));
+        // }
 
         public static async Task<bool> GetIsBlockedAsync(this IExpressNode expressNode, UInt160 scriptHash)
         {

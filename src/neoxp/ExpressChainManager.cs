@@ -149,11 +149,11 @@ namespace NeoExpress
                 fileSystem.Directory.Delete(nodePath, true);
             }
 
-            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
-            fileSystem.Directory.Move(checkpointTempPath, nodePath);
+            // var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            // var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            // RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
+            //     ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+            // fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
         public void SaveChain(string path)
@@ -247,50 +247,50 @@ namespace NeoExpress
             });
             await tcs.Task.ConfigureAwait(false);
 
-            static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
-            {
-                var settings = new Dictionary<string, string>()
-                {
-                    { "PluginConfiguration:Network", $"{chain.Network}" },
-                    { "IgnoreRecoveryLogs", "true" }
-                };
+            // static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
+            // {
+            //     var settings = new Dictionary<string, string>()
+            //     {
+            //         { "PluginConfiguration:Network", $"{chain.Network}" },
+            //         { "IgnoreRecoveryLogs", "true" }
+            //     };
 
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-                return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
-            }
+            //     var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+            //     return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
+            // }
 
-            static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
-            {
-                throw new Exception();
-                // var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
-                //     ? bindAddress : IPAddress.Loopback;
+            // static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+            // {
+            //     throw new Exception();
+            //     // var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+            //     //     ? bindAddress : IPAddress.Loopback;
 
-                // var settings = new Dictionary<string, string>()
-                // {
-                //     { "PluginConfiguration:Network", $"{chain.Network}" },
-                //     { "PluginConfiguration:BindAddress", $"{ipAddress}" },
-                //     { "PluginConfiguration:Port", $"{node.RpcPort}" }
-                // };
+            //     // var settings = new Dictionary<string, string>()
+            //     // {
+            //     //     { "PluginConfiguration:Network", $"{chain.Network}" },
+            //     //     { "PluginConfiguration:BindAddress", $"{ipAddress}" },
+            //     //     { "PluginConfiguration:Port", $"{node.RpcPort}" }
+            //     // };
 
-                // if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
-                // {
-                //     settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
-                // }
+            //     // if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
+            //     // {
+            //     //     settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
+            //     // }
 
-                // if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
-                // {
-                //     settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
-                // }
+            //     // if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
+            //     // {
+            //     //     settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
+            //     // }
 
-                // if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
-                //     && maxIteratorResultItems > 0)
-                // {
-                //     settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
-                // }
+            //     // if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
+            //     //     && maxIteratorResultItems > 0)
+            //     // {
+            //     //     settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
+            //     // }
 
-                // var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-                // return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
-            }
+            //     // var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+            //     // return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+            // }
         }
 
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
@@ -318,25 +318,27 @@ namespace NeoExpress
                 throw new Exception($"Checkpoint {checkPointPath} couldn't be found");
             }
 
-            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            throw new Exception();
+            // var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            // var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-            return CheckpointExpressStorage.OpenCheckpoint(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
+            // return CheckpointExpressStorage.OpenCheckpoint(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
         OfflineNode GetOfflineNode(bool offlineTrace = false)
         {
-            if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
+            throw new Exception();
+            // if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
 
-            var node = chain.ConsensusNodes[0];
-            var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            // var node = chain.ConsensusNodes[0];
+            // var nodePath = fileSystem.GetNodePath(node);
+            // if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
 
-            return new Node.OfflineNode(ProtocolSettings,
-                new RocksDbExpressStorage(nodePath),
-                node.Wallet,
-                chain,
-                offlineTrace);
+            // return new Node.OfflineNode(ProtocolSettings,
+            //     new RocksDbExpressStorage(nodePath),
+            //     node.Wallet,
+            //     chain,
+            //     offlineTrace);
         }
 
         public IExpressNode GetExpressNode(bool offlineTrace = false)

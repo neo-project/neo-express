@@ -15,23 +15,23 @@ namespace NeoExpress
     static class ExpressChainExtensions
     {
         // this method only used in Online/OfflineNode ExecuteAsync
-        public static IReadOnlyList<Wallet> GetMultiSigWallets(this ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
-        {
-            var builder = ImmutableList.CreateBuilder<Wallet>();
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
-                if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
-            }
+        // public static IReadOnlyList<Wallet> GetMultiSigWallets(this ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
+        // {
+        //     var builder = ImmutableList.CreateBuilder<Wallet>();
+        //     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+        //     {
+        //         var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
+        //         if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
+        //     }
 
-            for (int i = 0; i < chain.Wallets.Count; i++)
-            {
-                var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
-            }
+        //     for (int i = 0; i < chain.Wallets.Count; i++)
+        //     {
+        //         var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
+        //         if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
+        //     }
 
-            return builder.ToImmutable();
-        }
+        //     return builder.ToImmutable();
+        // }
 
         public static KeyPair[] GetConsensusNodeKeys(this ExpressChain chain)
             => chain.ConsensusNodes
@@ -133,14 +133,14 @@ namespace NeoExpress
             }
         }
 
-        public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
-        {
-            Debug.Assert(chain.ConsensusNodes is not null && chain.ConsensusNodes.Count > 0);
+        // public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
+        // {
+        //     Debug.Assert(chain.ConsensusNodes is not null && chain.ConsensusNodes.Count > 0);
 
-            var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
-            var account = wallet.GetMultiSigAccounts().Single();
-            return (wallet, account.ScriptHash);
-        }
+        //     var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
+        //     var account = wallet.GetMultiSigAccounts().Single();
+        //     return (wallet, account.ScriptHash);
+        // }
 
         public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
             => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())

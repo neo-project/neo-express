@@ -26,6 +26,7 @@ namespace NeoExpress
         public IReadOnlyDictionary<string, string> Settings
             => (chainInfo.Settings as IReadOnlyDictionary<string, string>) 
                 ?? ImmutableDictionary<string, string>.Empty;
+                
 
         public ExpressChainImpl(string input, IFileSystem fileSystem)
         {

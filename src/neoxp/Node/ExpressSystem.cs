@@ -3,8 +3,10 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Akka.Actor;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -15,17 +17,23 @@ using Microsoft.Extensions.DependencyInjection;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Consensus;
+using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using Neo.VM;
+using Neo.Wallets;
 using NeoExpress.Models;
 using static Neo.Ledger.Blockchain;
 using static Neo.SmartContract.Native.NativeContract;
+using OracleRequest = Neo.SmartContract.Native.OracleRequest;
 
 namespace NeoExpress.Node
 {
@@ -35,7 +43,20 @@ namespace NeoExpress.Node
         const string APP_LOGS_STORE_NAME = "app-logs-store";
         const string NOTIFICATIONS_STORE_NAME = "notifications-store";
 
+        [ThreadStatic]
+        static Random? random;
+
+        static Random Random
+        {
+            get
+            {
+                random ??= new Random();
+                return random;
+            }
+        }
+
         readonly IExpressChain chain;
+        readonly Lazy<KeyPair[]> consensusNodesKeys;
         readonly ExpressConsensusNode node;
         readonly IExpressStorage expressStorage;
         readonly IStore appLogsStore;
@@ -50,7 +71,7 @@ namespace NeoExpress.Node
         IWebHost? webHost;
         IConsole? console;
 
-        // public ProtocolSettings ProtocolSettings => neoSystem.Settings;
+        public ProtocolSettings ProtocolSettings => neoSystem.Settings;
         // public Neo.Persistence.DataCache StoreView => neoSystem.StoreView;
 
         public ExpressSystem(IExpressChain chain, ExpressConsensusNode node, IExpressStorage expressStorage, bool trace, uint? secondsPerBlock)
@@ -58,8 +79,13 @@ namespace NeoExpress.Node
             this.chain = chain;
             this.node = node;
             this.expressStorage = expressStorage;
+
             appLogsStore = expressStorage.GetStore(APP_LOGS_STORE_NAME);
             notificationsStore = expressStorage.GetStore(NOTIFICATIONS_STORE_NAME);
+            this.consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
+                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
+                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
+                .ToArray());
 
             var storeProvider = new StoreProvider(expressStorage);
             Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
@@ -111,7 +137,7 @@ namespace NeoExpress.Node
             webHost = BuildWebHost(rpcServer, rpcSettings);
 
             var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
-            var wallet = DevWallet.FromExpressWallet(neoSystem.Settings, node.Wallet);
+            var wallet = DevWallet.FromExpressWallet(node.Wallet, neoSystem.Settings);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
             using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
@@ -125,7 +151,8 @@ namespace NeoExpress.Node
 
             // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
             // Do not remove or re-word this console output:
-            console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
+            await console.Out.WriteLineAsync($"Neo express is running ({expressStorage.Name})")
+                .ConfigureAwait(false);
 
             var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, shutdownTokenSource.Token);
 
@@ -146,6 +173,390 @@ namespace NeoExpress.Node
                 }
             });
             await tcs.Task.ConfigureAwait(false);
+        }
+
+        static Lazy<byte[]> backwardsNotificationsPrefix = new Lazy<byte[]>(() =>
+        {
+            var buffer = new byte[sizeof(uint) + sizeof(ushort)];
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, uint.MaxValue);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(sizeof(uint)), ushort.MaxValue);
+            return buffer;
+        });
+
+        public RpcApplicationLog? GetAppLog(UInt256 hash)
+        {
+            var value = appLogsStore.TryGet(hash.ToArray());
+            if (value is null || value.Length == 0) return null;
+            var json = JObject.Parse(Neo.Utility.StrictUTF8.GetString(value));
+            return json is not null
+                ? RpcApplicationLog.FromJson(json, ProtocolSettings)
+                : null;
+        }
+
+        public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
+            SeekDirection direction, IReadOnlySet<UInt160>? contracts, string eventName)
+                => GetNotifications(direction, contracts,
+                    string.IsNullOrEmpty(eventName) ? null : new HashSet<string>(StringComparer.OrdinalIgnoreCase) { eventName });
+
+        public IEnumerable<(uint blockIndex, ushort txIndex, NotificationRecord notification)> GetNotifications(
+            SeekDirection direction = SeekDirection.Forward,
+            IReadOnlySet<UInt160>? contracts = null,
+            IReadOnlySet<string>? eventNames = null)
+        {
+            var prefix = direction == SeekDirection.Forward
+                ? Array.Empty<byte>()
+                : backwardsNotificationsPrefix.Value;
+
+            return notificationsStore.Seek(prefix, direction)
+                .Select(t => ParseNotification(t.Key, t.Value))
+                .Where(t => contracts is null || contracts.Contains(t.notification.ScriptHash))
+                .Where(t => eventNames is null || eventNames.Contains(t.notification.EventName));
+
+            static (uint blockIndex, ushort txIndex, NotificationRecord notification) ParseNotification(byte[] key, byte[] value)
+            {
+                var blockIndex = BinaryPrimitives.ReadUInt32BigEndian(key.AsSpan(0, sizeof(uint)));
+                var txIndex = BinaryPrimitives.ReadUInt16BigEndian(key.AsSpan(sizeof(uint), sizeof(ushort)));
+                return (blockIndex, txIndex, notification: value.AsSerializable<NotificationRecord>());
+            }
+        }
+
+        public void CreateCheckpoint(string path)
+        {
+            if (neoSystem.Settings.ValidatorsCount > 1)
+            {
+                throw new NotSupportedException("Checkpoint create is only supported on single node express instances");
+            }
+
+            if (expressStorage is RocksDbExpressStorage rocksDbExpressStorage)
+            {
+                var keys = chain.ConsensusNodes
+                    .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
+                    .Select(a => new KeyPair(Convert.FromHexString(a.PrivateKey)).PublicKey)
+                    .ToArray();
+                var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+                rocksDbExpressStorage.CreateCheckpoint(path, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, contract.ScriptHash);
+            }
+            else
+            {
+                throw new NotSupportedException($"Checkpoint create is only supported for {nameof(RocksDbExpressStorage)}");
+            }
+        }
+
+        public Block GetBlock(UInt256 blockHash)
+            => Ledger.GetBlock(neoSystem.StoreView, blockHash);
+
+        public Block GetBlock(uint blockIndex)
+            => Ledger.GetBlock(neoSystem.StoreView, blockIndex);
+
+        public ContractManifest GetContract(UInt160 scriptHash)
+        {
+            var contractState = ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
+            if (contractState is null) throw new Exception("Unknown contract");
+            return contractState.Manifest;
+        }
+
+        public Transaction GetTransaction(UInt256 txHash)
+        {
+            return Ledger.GetTransaction(neoSystem.StoreView, txHash)
+                ?? throw new Exception($"Unknown Transaction {txHash}");
+        }
+
+        public uint GetTransactionHeight(UInt256 txHash)
+        {
+            var txState = Ledger.GetTransactionState(neoSystem.StoreView, txHash)
+                ?? throw new Exception($"Unknown Transaction {txHash}");
+            return txState.BlockIndex;
+        }
+
+        public IReadOnlyList<(UInt160 hash, ContractManifest manifest)> ListContracts()
+            => ContractManagement.ListContracts(neoSystem.StoreView)
+                .OrderBy(c => c.Id)
+                .Select(c => (c.Hash, c.Manifest))
+                .ToList();
+
+        public IReadOnlyList<(ulong requestId, OracleRequest request)> ListOracleRequests()
+            => Oracle.GetRequests(neoSystem.StoreView)
+                .ToList();
+
+        public IReadOnlyList<(string key, string value)> ListStorages(UInt160 scriptHash)
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            var contract = ContractManagement.GetContract(snapshot, scriptHash);
+
+            if (contract is null) return Array.Empty<(string, string)>();
+
+            byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
+            return snapshot.Find(prefix)
+                .Select(t => (
+                    Convert.ToBase64String(t.Key.Key.Span),
+                    Convert.ToBase64String(t.Value.Value.Span)))
+                .ToList();
+        }
+        public RpcInvokeResult Invoke(Neo.VM.Script script, Signer? signer = null)
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            return Invoke(snapshot, script, signer);
+        }
+
+        RpcInvokeResult Invoke(DataCache snapshot, Neo.VM.Script script, Signer? signer = null)
+        {
+            var tx = new Transaction()
+            {
+                Nonce = (uint)Random.Next(),
+                Script = script,
+                Signers = signer is null ? Array.Empty<Signer>() : new Signer[1] { signer },
+                Attributes = Array.Empty<TransactionAttribute>(),
+                Witnesses = Array.Empty<Witness>(),
+            };
+
+            using var engine = ApplicationEngine.Run(script, snapshot,
+                settings: ProtocolSettings,
+                container: tx);
+
+            return new RpcInvokeResult()
+            {
+                State = engine.State,
+                Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
+                GasConsumed = engine.GasConsumed,
+                Stack = engine.ResultStack.ToArray(),
+                Script = string.Empty,
+                Tx = string.Empty
+            };
+        }
+
+        public (RpcNep17Balance balance, Nep17Contract token) GetBalance(UInt160 accountHash, UInt160 assetHash)
+        {
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(assetHash, "balanceOf", accountHash);
+            builder.EmitDynamicCall(assetHash, "symbol");
+            builder.EmitDynamicCall(assetHash, "decimals");
+
+            var result = Invoke(builder.ToArray());
+            if (result.Stack.Length >= 3)
+            {
+                var balance = result.Stack[0].GetInteger();
+                var symbol = result.Stack[1].GetString() ?? throw new Exception("invalid symbol");
+                var decimals = (byte)result.Stack[2].GetInteger();
+
+                return (
+                    new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },
+                    new Nep17Contract(symbol, decimals, assetHash));
+            }
+
+            throw new Exception("invalid script results");
+        }
+
+        public IReadOnlyList<(TokenContract contract, BigInteger balance)> ListBalances(UInt160 address)
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            var contracts = TokenContract.Enumerate(snapshot)
+                .Where(c => c.standard == TokenStandard.Nep17)
+                .ToList();
+
+            var addressArray = address.ToArray();
+            using var builder = new ScriptBuilder();
+            for (var i = contracts.Count; i-- > 0;)
+            {
+                builder.EmitDynamicCall(contracts[i].scriptHash, "symbol");
+                builder.EmitDynamicCall(contracts[i].scriptHash, "decimals");
+                builder.EmitDynamicCall(contracts[i].scriptHash, "balanceOf", addressArray);
+            }
+
+            List<(TokenContract contract, BigInteger balance)> balances = new();
+            using var engine = builder.Invoke(neoSystem.Settings, snapshot);
+            if (engine.State != VMState.FAULT && engine.ResultStack.Count == contracts.Count * 3)
+            {
+                var resultStack = engine.ResultStack;
+                for (var i = 0; i < contracts.Count; i++)
+                {
+                    var index = i * 3;
+                    var symbol = resultStack.Peek(index + 2).GetString();
+                    if (symbol is null) continue;
+                    var decimals = (byte)resultStack.Peek(index + 1).GetInteger();
+                    var balance = resultStack.Peek(index).GetInteger();
+                    balances.Add((new TokenContract(symbol, decimals, contracts[i].scriptHash, contracts[i].standard), balance));
+                }
+            }
+
+            return balances;
+        }
+
+        public IReadOnlyList<TokenContract> ListTokenContracts()
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            return snapshot.EnumerateTokenContracts(neoSystem.Settings).ToList();
+        }
+
+        public Block GetLatestBlock()
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            return GetLatestBlock(snapshot);
+        }
+
+        Block GetLatestBlock(DataCache snapshot)
+        {
+            var hash = Ledger.CurrentHash(snapshot);
+            return Ledger.GetBlock(snapshot, hash);
+        }
+
+        public IReadOnlyList<ECPoint> ListOracleNodes()
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            return ListOracleNodes(neoSystem.StoreView);
+        }
+
+        public IReadOnlyList<ECPoint> ListOracleNodes(DataCache snapshot)
+        {
+            var lastBlock = GetLatestBlock(snapshot);
+
+            var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Neo.SmartContract.Native.Role.Oracle };
+            var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
+
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(RoleManagement.Hash, "getDesignatedByRole", role, index);
+            var result = Invoke(snapshot, builder.ToArray());
+
+            if (result.State == Neo.VM.VMState.HALT
+                && result.Stack.Length >= 1
+                && result.Stack[0] is Neo.VM.Types.Array array)
+            {
+                var nodes = new ECPoint[array.Count];
+                for (var x = 0; x < array.Count; x++)
+                {
+                    nodes[x] = ECPoint.DecodePoint(array[x].GetSpan(), ECCurve.Secp256r1);
+                }
+                return nodes;
+            }
+
+            return Array.Empty<ECPoint>();
+        }
+
+        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
+        {
+            var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
+            var (balance, _) = GetBalance(accountHash, GAS.Hash);
+            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
+            if (additionalGas > 0.0m)
+            {
+                tx.SystemFee += (long)additionalGas.ToBigInteger(GAS.Decimals);
+            }
+
+            var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
+            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            if (account.IsMultiSigContract())
+            {
+
+                var multiSigWallets = chain.GetMultiSigWallets(accountHash);
+                for (int i = 0; i < multiSigWallets.Count; i++)
+                {
+                    multiSigWallets[i].Sign(context);
+                    if (context.Completed) break;
+                }
+            }
+            else
+            {
+                wallet.Sign(context);
+            }
+
+            if (!context.Completed)
+            {
+                throw new Exception();
+            }
+
+            tx.Witnesses = context.GetWitnesses();
+            var blockHash = await SubmitTransactionAsync(tx).ConfigureAwait(false);
+            return tx.Hash;
+        }
+
+        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
+        {
+            using var snapshot = neoSystem.GetSnapshot();
+            var height = Ledger.CurrentIndex(snapshot) + 1;
+            var request = Oracle.GetRequest(snapshot, response.Id);
+            var oracleNodes = ListOracleNodes(snapshot);
+            // TODO: move NodeUtility methods over
+            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            if (tx is null) throw new Exception("Failed to create Oracle Response Tx");
+            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+
+            var blockHash = await SubmitTransactionAsync(tx);
+            return tx.Hash;
+        }
+
+        public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
+        {
+            if (timestampDelta.TotalSeconds < 0) throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
+            if (blockCount == 0) return;
+
+            using var snapshot = neoSystem.GetSnapshot();
+            var prevHash = Ledger.CurrentHash(snapshot);
+            var prevHeader = Ledger.GetHeader(snapshot, prevHash);
+            var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
+            var delta = (ulong)timestampDelta.TotalMilliseconds;
+
+            if (blockCount == 1)
+            {
+                var block = NodeUtility.CreateSignedBlock(prevHeader, consensusNodesKeys.Value, chain.Network, timestamp: timestamp + delta);
+                await RelayBlockAsync(block).ConfigureAwait(false);
+            }
+            else
+            {
+                var period = delta / (blockCount - 1);
+                for (int i = 0; i < blockCount; i++)
+                {
+                    var block = NodeUtility.CreateSignedBlock(prevHeader, consensusNodesKeys.Value, chain.Network, timestamp: timestamp);
+                    await RelayBlockAsync(block).ConfigureAwait(false);
+                    prevHeader = block.Header;
+                    timestamp += period;
+                }
+            }
+        }
+
+
+        public int PersistContract(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, Commands.ContractCommand.OverwriteForce force)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Contract download is only supported for single-node consensus");
+            }
+
+            // TODO: move this over
+            return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
+        }
+
+        async Task<UInt256> SubmitTransactionAsync(Transaction tx)
+        {
+            var transactions = new[] { tx };
+
+            // Verify the provided transactions. When running, Blockchain class does verification in two steps: VerifyStateIndependent and VerifyStateDependent.
+            // However, Verify does both parts and there's no point in verifying dependent/independent in separate steps here
+            var verificationContext = new TransactionVerificationContext();
+            for (int i = 0; i < transactions.Length; i++)
+            {
+                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext) != VerifyResult.Succeed)
+                {
+                    throw new Exception("Verification failed");
+                }
+            }
+
+            var prevHash = Ledger.CurrentHash(neoSystem.StoreView);
+            var prevHeader = Ledger.GetHeader(neoSystem.StoreView, prevHash);
+            // TODO: move CreateSignedBlock over from NodeUtility
+            var block = NodeUtility.CreateSignedBlock(prevHeader,
+                consensusNodesKeys.Value,
+                neoSystem.Settings.Network,
+                transactions);
+            await RelayBlockAsync(block).ConfigureAwait(false);
+            return block.Hash;
+        }
+
+        async Task RelayBlockAsync(Block block)
+        {
+            var blockRelay = await neoSystem.Blockchain.Ask<RelayResult>(block).ConfigureAwait(false);
+            if (blockRelay.Result != VerifyResult.Succeed)
+            {
+                throw new Exception($"Block relay failed {blockRelay.Result}");
+            }
         }
 
         void OnCommitting(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<Blockchain.ApplicationExecuted> applicationExecutedList)

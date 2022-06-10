@@ -22,27 +22,27 @@ namespace NeoExpress
 
         enum CheckpointMode { Online, Offline }
 
-        Task<CheckpointMode> CreateCheckpointAsync(string checkPointPath);
+        ValueTask<CheckpointMode> CreateCheckpointAsync(string checkPointPath);
 
-        Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null);
+        ValueTask<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null);
         Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0);
-        Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes);
+        Task<UInt256> SubmitOracleResponseAsync(OracleResponse response);
         Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta);
 
-        Task<Block> GetBlockAsync(UInt256 blockHash);
-        Task<Block> GetBlockAsync(uint blockIndex);
-        Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
-        Task<Block> GetLatestBlockAsync();
-        Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
-        Task<uint> GetTransactionHeightAsync(UInt256 txHash);
+        ValueTask<Block> GetBlockAsync(UInt256 blockHash);
+        ValueTask<Block> GetBlockAsync(uint blockIndex);
+        ValueTask<ContractManifest> GetContractAsync(UInt160 scriptHash);
+        ValueTask<Block> GetLatestBlockAsync();
+        ValueTask<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
+        ValueTask<uint> GetTransactionHeightAsync(UInt256 txHash);
 
-        Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);
-        Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
-        Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
-        Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash);
-        Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
+        ValueTask<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);
+        ValueTask<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
+        ValueTask<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
+        ValueTask<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash);
+        ValueTask<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
 
-        Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force);
+        ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force);
         IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter);
     }
 }

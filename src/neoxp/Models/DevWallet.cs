@@ -44,7 +44,7 @@ namespace NeoExpress.Models
                     .ToList(),
         };
 
-        public static DevWallet FromExpressWallet(ProtocolSettings settings, ExpressWallet wallet)
+        public static DevWallet FromExpressWallet(ExpressWallet wallet, ProtocolSettings settings)
         {
             var accounts = wallet.Accounts.Select(a => DevWalletAccount.FromExpressWalletAccount(settings, a));
             return new DevWallet(settings, wallet.Name, accounts);

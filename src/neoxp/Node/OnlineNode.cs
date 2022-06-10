@@ -41,17 +41,17 @@ namespace NeoExpress.Node
         {
         }
 
-        public async Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
+        public async ValueTask<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
         {
             await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointPath).ConfigureAwait(false);
             return IExpressNode.CheckpointMode.Online;
         }
 
-        public Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null)
+        public async ValueTask<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null)
         {
-            return signer is null
+            return await (signer is null
                 ? rpcClient.InvokeScriptAsync(script)
-                : rpcClient.InvokeScriptAsync(script, signer);
+                : rpcClient.InvokeScriptAsync(script, signer));
         }
 
         public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
@@ -59,87 +59,89 @@ namespace NeoExpress.Node
             var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
             var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
             var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
+            await Task.CompletedTask;
 
-            await NodeUtility.FastForwardAsync(prevHeader,
-                blockCount,
-                timestampDelta,
-                consensusNodesKeys.Value,
-                ProtocolSettings.Network,
-                block => rpcClient.SubmitBlockAsync(block.ToArray()));
+            // await NodeUtility.FastForwardAsync(prevHeader,
+            //     blockCount,
+            //     timestampDelta,
+            //     consensusNodesKeys.Value,
+            //     ProtocolSettings.Network,
+            //     block => rpcClient.SubmitBlockAsync(block.ToArray()));
         }
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)
         {
-            var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
-            var tm = await rpcClient.MakeTransactionAsync(script, signers).ConfigureAwait(false);
+            throw new Exception();
+            // var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
+            // var tm = await rpcClient.MakeTransactionAsync(script, signers).ConfigureAwait(false);
 
-            if (additionalGas > 0.0m)
-            {
-                tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
-            }
+            // if (additionalGas > 0.0m)
+            // {
+            //     tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
+            // }
 
-            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            if (account.IsMultiSigContract())
-            {
-                var signatureCount = account.Contract.ParameterList.Length;
-                var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
-                if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
+            // var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            // if (account.IsMultiSigContract())
+            // {
+            //     var signatureCount = account.Contract.ParameterList.Length;
+            //     var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
+            //     if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
 
-                var publicKeys = multiSigWallets
-                    .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
-                    .ToArray();
+            //     var publicKeys = multiSigWallets
+            //         .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
+            //         .ToArray();
 
-                for (var i = 0; i < signatureCount; i++)
-                {
-                    var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey() ?? throw new Exception();
-                    tm.AddMultiSig(key, signatureCount, publicKeys);
-                }
-            }
-            else
-            {
-                tm.AddSignature(account.GetKey() ?? throw new Exception());
-            }
+            //     for (var i = 0; i < signatureCount; i++)
+            //     {
+            //         var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey() ?? throw new Exception();
+            //         tm.AddMultiSig(key, signatureCount, publicKeys);
+            //     }
+            // }
+            // else
+            // {
+            //     tm.AddSignature(account.GetKey() ?? throw new Exception());
+            // }
 
-            var tx = await tm.SignAsync().ConfigureAwait(false);
+            // var tx = await tm.SignAsync().ConfigureAwait(false);
 
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            // return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
-        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
+        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
         {
             var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            // NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
-        public async Task<Block> GetBlockAsync(UInt256 blockHash)
+        public async ValueTask<Block> GetBlockAsync(UInt256 blockHash)
         {
             var rpcBlock = await rpcClient.GetBlockAsync(blockHash.ToString()).ConfigureAwait(false);
             return rpcBlock.Block;
         }
 
-        public async Task<Block> GetBlockAsync(uint blockIndex)
+        public async ValueTask<Block> GetBlockAsync(uint blockIndex)
         {
             var rpcBlock = await rpcClient.GetBlockAsync(blockIndex.ToString()).ConfigureAwait(false);
             return rpcBlock.Block;
         }
 
-        public async Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
+        public async ValueTask<ContractManifest> GetContractAsync(UInt160 scriptHash)
         {
             var contractState = await rpcClient.GetContractStateAsync(scriptHash.ToString()).ConfigureAwait(false);
             return contractState.Manifest;
         }
 
-        public async Task<Block> GetLatestBlockAsync()
+        public async ValueTask<Block> GetLatestBlockAsync()
         {
             var hash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
             var rpcBlock = await rpcClient.GetBlockAsync(hash).ConfigureAwait(false);
             return rpcBlock.Block;
         }
 
-        public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        public async ValueTask<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
         {
             var hash = txHash.ToString();
             var response = await rpcClient.GetRawTransactionAsync(hash).ConfigureAwait(false);
@@ -147,12 +149,12 @@ namespace NeoExpress.Node
             return (response.Transaction, log);
         }
 
-        public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
+        public async ValueTask<uint> GetTransactionHeightAsync(UInt256 txHash)
         {
-            return rpcClient.GetTransactionHeightAsync(txHash.ToString());
+            return await rpcClient.GetTransactionHeightAsync(txHash.ToString());
         }
 
-        public async Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
+        public async ValueTask<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address)
         {
             var rpcBalances = await rpcClient.GetNep17BalancesAsync(address.ToAddress(ProtocolSettings.AddressVersion))
                 .ConfigureAwait(false);
@@ -161,7 +163,7 @@ namespace NeoExpress.Node
             return contracts.Select(c => (c, balanceMap.TryGetValue(c.ScriptHash, out var value) ? value : 0)).ToList();
         }
 
-        public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
+        public async ValueTask<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
         {
             var json = await rpcClient.RpcSendAsync("expresslistcontracts").ConfigureAwait(false);
 
@@ -177,7 +179,7 @@ namespace NeoExpress.Node
             return Array.Empty<(UInt160 hash, ContractManifest manifest)>();
         }
 
-        public async Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
+        public async ValueTask<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
         {
             var json = await rpcClient.RpcSendAsync("expresslisttokencontracts").ConfigureAwait(false);
 
@@ -189,7 +191,7 @@ namespace NeoExpress.Node
             return Array.Empty<TokenContract>();
         }
 
-        public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
+        public async ValueTask<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
         {
             var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);
 
@@ -223,7 +225,7 @@ namespace NeoExpress.Node
             }
         }
 
-        public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
+        public async ValueTask<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
         {
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
@@ -238,7 +240,7 @@ namespace NeoExpress.Node
             return Array.Empty<(string, string)>();
         }
 
-        public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
+        public async ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
             if (chain.ConsensusNodes.Count != 1)
             {

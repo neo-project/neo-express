@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Wallets;
+using NeoExpress.Models;
 using NeoExpress.Node;
 
 namespace NeoExpress
@@ -32,7 +36,6 @@ namespace NeoExpress
 
         public static ProtocolSettings GetProtocolSettings(this IExpressChain? chain, uint? secondsPerBlock = null)
         {
-
             var blockTime = secondsPerBlock.HasValue
                 ? secondsPerBlock.Value
                 : (chain?.TryReadSetting("chain.SecondsPerBlock", uint.TryParse, out uint setting) ?? false)
@@ -55,6 +58,32 @@ namespace NeoExpress
 
             static Neo.Cryptography.ECC.ECPoint GetPublicKey(ExpressConsensusNode node)
                 => new Neo.Wallets.KeyPair(node.Wallet.Accounts.Select(a => a.PrivateKey).Distinct().Single().HexToBytes()).PublicKey;
+        }
+
+        public static KeyPair[] GetConsensusNodeKeys(this IExpressChain chain)
+            => chain.ConsensusNodes
+                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
+                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
+                .ToArray();
+
+        public static IReadOnlyList<Wallet> GetMultiSigWallets(this IExpressChain chain, UInt160 accountHash)
+        {
+            var wallets = new List<Wallet>();
+            var settings = ProtocolSettings.Default with { AddressVersion = chain.AddressVersion };
+
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var wallet = DevWallet.FromExpressWallet(chain.ConsensusNodes[i].Wallet, settings);
+                if (wallet.GetAccount(accountHash) is not null) wallets.Add(wallet);
+            }
+
+            for (int i = 0; i < chain.Wallets.Count; i++)
+            {
+                var wallet = DevWallet.FromExpressWallet(chain.Wallets[i], settings);
+                if (wallet.GetAccount(accountHash) is not null) wallets.Add(wallet);
+            }
+
+            return wallets;
         }
     }
 }

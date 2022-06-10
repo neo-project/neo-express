@@ -34,8 +34,8 @@ namespace NeoExpress
 
             uint secondsPerBlockResult = secondsPerBlock.HasValue
                 ? secondsPerBlock.Value
-                : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
-                    ? secondsPerBlockSetting
+                // : chain.TryReadSetting<uint>("chain.SecondsPerBlock", uint.TryParse, out var secondsPerBlockSetting)
+                //     ? secondsPerBlockSetting
                     : 0;
 
             this.ProtocolSettings = chain.GetProtocolSettings(secondsPerBlockResult);
@@ -205,36 +205,36 @@ namespace NeoExpress
             {
                 try
                 {
-                    var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
-                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
+                    // var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
+                    // using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
-                    var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-                    var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+                    // var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+                    // var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
-                    var storeProvider = new ExpressStoreProvider(expressStorage);
-                    Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
-                    if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+                    // var storeProvider = new StoreProvider(expressStorage);
+                    // Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
+                    // if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ApplicationEngineProvider(); }
 
-                    using var persistencePlugin = new ExpressPersistencePlugin();
-                    using var logPlugin = new ExpressLogPlugin(console);
-                    using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
-                    using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
-                        expressStorage, multiSigAccount.ScriptHash);
-                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
+                    // using var persistencePlugin = new ExpressPersistencePlugin();
+                    // // using var logPlugin = new ExpressLogPlugin(console);
+                    // using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
+                    // using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
+                    //     expressStorage, multiSigAccount.ScriptHash);
+                    // using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 
-                    neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
-                    {
-                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
-                        WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
-                    });
-                    dbftPlugin.Start(wallet);
+                    // neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    // {
+                    //     Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
+                    //     WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
+                    // });
+                    // dbftPlugin.Start(wallet);
 
-                    // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
-                    // Do not remove or re-word this console output:
-                    console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
+                    // // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
+                    // // Do not remove or re-word this console output:
+                    // console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
 
-                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
-                    linkedToken.Token.WaitHandle.WaitOne();
+                    // var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
+                    // linkedToken.Token.WaitHandle.WaitOne();
                 }
                 catch (Exception ex)
                 {
@@ -261,34 +261,35 @@ namespace NeoExpress
 
             static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
             {
-                var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
-                    ? bindAddress : IPAddress.Loopback;
+                throw new Exception();
+                // var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+                //     ? bindAddress : IPAddress.Loopback;
 
-                var settings = new Dictionary<string, string>()
-                {
-                    { "PluginConfiguration:Network", $"{chain.Network}" },
-                    { "PluginConfiguration:BindAddress", $"{ipAddress}" },
-                    { "PluginConfiguration:Port", $"{node.RpcPort}" }
-                };
+                // var settings = new Dictionary<string, string>()
+                // {
+                //     { "PluginConfiguration:Network", $"{chain.Network}" },
+                //     { "PluginConfiguration:BindAddress", $"{ipAddress}" },
+                //     { "PluginConfiguration:Port", $"{node.RpcPort}" }
+                // };
 
-                if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
-                {
-                    settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
-                }
+                // if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
+                // {
+                //     settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
+                // }
 
-                if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
-                {
-                    settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
-                }
+                // if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
+                // {
+                //     settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
+                // }
 
-                if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
-                    && maxIteratorResultItems > 0)
-                {
-                    settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
-                }
+                // if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
+                //     && maxIteratorResultItems > 0)
+                // {
+                //     settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
+                // }
 
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-                return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+                // var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                // return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
             }
         }
 

@@ -148,7 +148,7 @@ namespace NeoExpress
 
         public delegate bool TryParse<T>(string value, [MaybeNullWhen(false)] out T parsedValue);
 
-        public static bool TryReadSetting<T>(this ExpressChain chain, string setting, TryParse<T> tryParse, [MaybeNullWhen(false)] out T value)
+        public static bool TryReadSetting<T>(this IExpressChain chain, string setting, TryParse<T> tryParse, [MaybeNullWhen(false)] out T value)
         {
             if (chain.Settings.TryGetValue(setting, out var stringValue)
                 && tryParse(stringValue, out var result))

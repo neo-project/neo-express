@@ -31,7 +31,7 @@ namespace NeoExpress.Node
         readonly Wallet nodeWallet;
         readonly ExpressChain chain;
         readonly RocksDbExpressStorage expressStorage;
-        readonly ExpressPersistencePlugin persistencePlugin;
+        // readonly ExpressPersistencePlugin persistencePlugin;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         bool disposedValue;
 
@@ -39,19 +39,19 @@ namespace NeoExpress.Node
 
         public OfflineNode(ProtocolSettings settings, RocksDbExpressStorage expressStorage, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
-            this.nodeWallet = DevWallet.FromExpressWallet(settings, nodeWallet);
-            this.chain = chain;
-            this.expressStorage = expressStorage;
-            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
+            // this.nodeWallet = DevWallet.FromExpressWallet(settings, nodeWallet);
+            // this.chain = chain;
+            // this.expressStorage = expressStorage;
+            // consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
 
-            var storeProvider = new ExpressStoreProvider(expressStorage);
-            StoreFactory.RegisterProvider(storeProvider);
-            if (enableTrace) { ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+            // var storeProvider = new StoreProvider(expressStorage);
+            // StoreFactory.RegisterProvider(storeProvider);
+            // if (enableTrace) { ApplicationEngine.Provider = new ApplicationEngineProvider(); }
 
-            persistencePlugin = new ExpressPersistencePlugin();
-            neoSystem = new NeoSystem(settings, storeProvider.Name);
+            // persistencePlugin = new ExpressPersistencePlugin();
+            // neoSystem = new NeoSystem(settings, storeProvider.Name);
 
-            ApplicationEngine.Log += OnLog!;
+            // ApplicationEngine.Log += OnLog!;
         }
 
         public void Dispose()
@@ -59,7 +59,7 @@ namespace NeoExpress.Node
             if (!disposedValue)
             {
                 ApplicationEngine.Log -= OnLog!;
-                persistencePlugin.Dispose();
+                // persistencePlugin.Dispose();
                 neoSystem.Dispose();
                 disposedValue = true;
             }
@@ -249,13 +249,14 @@ namespace NeoExpress.Node
 
         (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
         {
-            var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
-            if (tx is null) throw new Exception("Unknown Transaction");
+            throw new Exception();
+            // var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
+            // if (tx is null) throw new Exception("Unknown Transaction");
 
-            var jsonLog = persistencePlugin.GetAppLog(txHash);
-            return jsonLog is not null
-                ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
-                : (tx, null);
+            // var jsonLog = persistencePlugin.GetAppLog(txHash);
+            // return jsonLog is not null
+            //     ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
+            //     : (tx, null);
         }
 
         public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
@@ -366,13 +367,14 @@ namespace NeoExpress.Node
         // warning CS1998: This async method lacks 'await' operators and will run synchronously.
         // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
 #pragma warning disable 1998 
-        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
+        public  IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
-            var notifications = persistencePlugin.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter);
-            foreach (var (block, _, notification) in notifications)
-            {
-                yield return (block, notification);
-            }
+            throw new Exception();
+            // var notifications = persistencePlugin.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter);
+            // foreach (var (block, _, notification) in notifications)
+            // {
+            //     yield return (block, notification);
+            // }
         }
 #pragma warning restore 1998
     }

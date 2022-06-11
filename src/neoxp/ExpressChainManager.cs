@@ -351,7 +351,8 @@ namespace NeoExpress
                 var consensusNode = chain.ConsensusNodes[i];
                 if (IsNodeRunning(consensusNode))
                 {
-                    return new Node.OnlineNode(ProtocolSettings, chain, consensusNode);
+                    throw new Exception();
+                    // return new Node.OnlineNode(ProtocolSettings, chain, consensusNode);
                 }
             }
 

@@ -268,30 +268,25 @@ namespace NeoExpress.Node
             return txState.BlockIndex;
         }
 
-        public IReadOnlyList<(UInt160 hash, ContractManifest manifest)> ListContracts()
+        public IEnumerable<(UInt160 hash, ContractManifest manifest)> ListContracts()
             => ContractManagement.ListContracts(neoSystem.StoreView)
                 .OrderBy(c => c.Id)
-                .Select(c => (c.Hash, c.Manifest))
-                .ToList();
+                .Select(c => (c.Hash, c.Manifest));
 
-        public IReadOnlyList<(ulong requestId, OracleRequest request)> ListOracleRequests()
-            => Oracle.GetRequests(neoSystem.StoreView)
-                .ToList();
+        public IEnumerable<(ulong requestId, OracleRequest request)> ListOracleRequests()
+            => Oracle.GetRequests(neoSystem.StoreView);
 
-        public IReadOnlyList<(string key, string value)> ListStorages(UInt160 scriptHash)
+        public IEnumerable<(ReadOnlyMemory<byte> key, ReadOnlyMemory<byte> value)> ListStorages(UInt160 scriptHash)
         {
             using var snapshot = neoSystem.GetSnapshot();
             var contract = ContractManagement.GetContract(snapshot, scriptHash);
 
-            if (contract is null) return Array.Empty<(string, string)>();
+            if (contract is null) return Array.Empty<(ReadOnlyMemory<byte>, ReadOnlyMemory<byte>)>();
 
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
-            return snapshot.Find(prefix)
-                .Select(t => (
-                    Convert.ToBase64String(t.Key.Key.Span),
-                    Convert.ToBase64String(t.Value.Value.Span)))
-                .ToList();
+            return snapshot.Find(prefix).Select(t => (t.Key.Key, t.Value.Value));
         }
+
         public RpcInvokeResult Invoke(Neo.VM.Script script, Signer? signer = null)
         {
             using var snapshot = neoSystem.GetSnapshot();
@@ -381,10 +376,10 @@ namespace NeoExpress.Node
             return balances;
         }
 
-        public IReadOnlyList<TokenContract> ListTokenContracts()
+        public IEnumerable<TokenContract> ListTokenContracts()
         {
             using var snapshot = neoSystem.GetSnapshot();
-            return snapshot.EnumerateTokenContracts(neoSystem.Settings).ToList();
+            return snapshot.EnumerateTokenContracts(neoSystem.Settings);
         }
 
         public Block GetLatestBlock()

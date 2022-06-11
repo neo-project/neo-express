@@ -131,53 +131,11 @@ namespace NeoExpress.Node
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
-
-
-
-
-
-
-
-
-
-
-
         public async ValueTask<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
         {
             await rpcClient.RpcSendAsync("expresscreatecheckpoint", checkPointPath).ConfigureAwait(false);
             return IExpressNode.CheckpointMode.Online;
         }
-
-
-        public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
-        {
-            var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
-            var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
-            var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
-            await Task.CompletedTask;
-
-            // await NodeUtility.FastForwardAsync(prevHeader,
-            //     blockCount,
-            //     timestampDelta,
-            //     consensusNodesKeys.Value,
-            //     ProtocolSettings.Network,
-            //     block => rpcClient.SubmitBlockAsync(block.ToArray()));
-        }
-
-
-        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
-        {
-            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
-            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            // NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
-
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
-        }
-
-
-
-
-
 
         public async ValueTask<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
         {
@@ -192,7 +150,7 @@ namespace NeoExpress.Node
                     .ToList();
             }
 
-            return Array.Empty<(UInt160 hash, ContractManifest manifest)>();
+            throw new Exception("invalid response from expresslistcontracts");
         }
 
         public async ValueTask<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
@@ -204,7 +162,7 @@ namespace NeoExpress.Node
                 return array.Select(TokenContract.FromJson).ToList();
             }
 
-            return Array.Empty<TokenContract>();
+            throw new Exception("invalid response from expresslisttokencontracts");
         }
 
         public async ValueTask<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
@@ -213,11 +171,12 @@ namespace NeoExpress.Node
 
             if (json is not null && json is JArray array)
             {
-                return array.Select(FromJson).ToList();
+                return array.Select(JsonToOracleRequest).ToList();
             }
-            return Array.Empty<(ulong, OracleRequest)>();
 
-            (ulong, OracleRequest) FromJson(JObject json)
+            throw new Exception("invalid response from expresslistoraclerequests");
+
+            static (ulong, OracleRequest) JsonToOracleRequest(JObject json)
             {
                 var id = ulong.Parse(json["requestid"].AsString());
                 var originalTxId = UInt256.Parse(json["originaltxid"].AsString());
@@ -241,20 +200,80 @@ namespace NeoExpress.Node
             }
         }
 
-        public async ValueTask<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
+        public async ValueTask<IReadOnlyList<(ReadOnlyMemory<byte> key, ReadOnlyMemory<byte> value)>> ListStoragesAsync(UInt160 scriptHash)
         {
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
 
             if (json is not null && json is JArray array)
             {
-                return array
-                    .Select(s => (s["key"].AsString(), s["value"].AsString()))
-                    .ToList();
+                return array.Select(JsonToStorage).ToList();
             }
 
-            return Array.Empty<(string, string)>();
+            throw new Exception("invalid response from expressgetcontractstorage");
+
+            static (ReadOnlyMemory<byte> key, ReadOnlyMemory<byte> value) JsonToStorage(JObject json)
+            {
+                var key = Convert.FromBase64String(json["key"].AsString());
+                var value = Convert.FromBase64String(json["value"].AsString());
+                return (key, value);
+            }
         }
+
+        // TODO NEXT: 
+        //  * Go thru the remaining IExpressNode methods below and make sure each RPC method is implemented 
+        //    in ExpressSystem.RpcMethods.
+        //  * Also need to make sure all the standard RPC methods that express implements such as GetApplicationLog
+        //    and GetNep17Balances are implemented in in ExpressSystem.RpcMethods
+
+
+
+
+
+
+
+
+
+
+
+        // skipping for now until getting to async rpc methods
+        public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
+        {
+            var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
+            var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
+            var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
+            await Task.CompletedTask;
+
+            // await NodeUtility.FastForwardAsync(prevHeader,
+            //     blockCount,
+            //     timestampDelta,
+            //     consensusNodesKeys.Value,
+            //     ProtocolSettings.Network,
+            //     block => rpcClient.SubmitBlockAsync(block.ToArray()));
+        }
+
+
+        // skipping for now until getting to async rpc methods
+        public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
+        {
+            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
+            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
+            // NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+
+            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
 
         public async ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {

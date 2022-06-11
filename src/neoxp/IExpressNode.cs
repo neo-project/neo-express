@@ -39,7 +39,7 @@ namespace NeoExpress
         ValueTask<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);
         ValueTask<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
         ValueTask<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
-        ValueTask<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash);
+        ValueTask<IReadOnlyList<(ReadOnlyMemory<byte> key, ReadOnlyMemory<byte> value)>> ListStoragesAsync(UInt160 scriptHash);
         ValueTask<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
 
         ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force);

@@ -85,5 +85,7 @@ namespace NeoExpress
 
             return wallets;
         }
+
+        public static IReadOnlyList<T> ToReadOnlyList<T>(this IEnumerable<T> @this) => @this.ToList();
     }
 }

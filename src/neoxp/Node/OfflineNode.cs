@@ -85,16 +85,16 @@ namespace NeoExpress.Node
             => MakeAsync(() => expressSystem.ListBalances(address));
 
         public ValueTask<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
-            => MakeAsync(() => expressSystem.ListContracts());
+            => MakeAsync(() => expressSystem.ListContracts().ToReadOnlyList());
 
         public ValueTask<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
-            => MakeAsync(() => expressSystem.ListOracleRequests());
+            => MakeAsync(() => expressSystem.ListOracleRequests().ToReadOnlyList());
 
-        public ValueTask<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
-            => MakeAsync(() =>  expressSystem.ListStorages(scriptHash));
+        public ValueTask<IReadOnlyList<(ReadOnlyMemory<byte> key, ReadOnlyMemory<byte> value)>> ListStoragesAsync(UInt160 scriptHash)
+            => MakeAsync(() =>  expressSystem.ListStorages(scriptHash).ToReadOnlyList());
 
         public ValueTask<IReadOnlyList<TokenContract>> ListTokenContractsAsync()
-            => MakeAsync(() => expressSystem.ListTokenContracts());
+            => MakeAsync(() => expressSystem.ListTokenContracts().ToReadOnlyList());
 
         public ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
             => MakeAsync(() => expressSystem.PersistContract(state, storagePairs, force));

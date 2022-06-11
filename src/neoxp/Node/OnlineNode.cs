@@ -220,60 +220,29 @@ namespace NeoExpress.Node
             }
         }
 
-        // TODO NEXT: 
-        //  * Go thru the remaining IExpressNode methods below and make sure each RPC method is implemented 
-        //    in ExpressSystem.RpcMethods.
-        //  * Also need to make sure all the standard RPC methods that express implements such as GetApplicationLog
-        //    and GetNep17Balances are implemented in in ExpressSystem.RpcMethods
-
-
-
-
-
-
-
-
-
-
-
         // skipping for now until getting to async rpc methods
         public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
-            var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
-            var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
-            var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
-            await Task.CompletedTask;
+            var json = await rpcClient.RpcSendAsync("expressfastforwardasync", blockCount, $"{timestampDelta}")
+                .ConfigureAwait(false);
 
-            // await NodeUtility.FastForwardAsync(prevHeader,
-            //     blockCount,
-            //     timestampDelta,
-            //     consensusNodesKeys.Value,
-            //     ProtocolSettings.Network,
-            //     block => rpcClient.SubmitBlockAsync(block.ToArray()));
+            if (json is null || !json.AsBoolean())
+            {
+                throw new Exception("invalid response from expressfastforwardasync");
+            }
         }
 
-
-        // skipping for now until getting to async rpc methods
         public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response)
         {
-            var jsonTx = await rpcClient.RpcSendAsync("expresscreateoracleresponsetx", response.ToJson()).ConfigureAwait(false);
-            var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
-            // NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            var json = await rpcClient.RpcSendAsync("expresssubmitoracleresponseasync", response.ToJson()).ConfigureAwait(false);
 
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            if (json is not null && json is JString @string)
+            {
+                return UInt256.Parse(@string.Value);
+            }
+
+            throw new Exception("invalid response from expresssubmitoracleresponseasync");
         }
-
-
-
-
-
-
-
-
-
-
-
-
 
         public async ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
@@ -282,23 +251,31 @@ namespace NeoExpress.Node
                 throw new ArgumentException("Contract download is only supported for single-node consensus");
             }
 
-            JObject o = new JObject();
-            o["state"] = state.ToJson();
-
             JArray storage = new JArray();
             foreach (var pair in storagePairs)
             {
-                JObject kv = new JObject();
-                kv["key"] = pair.key;
-                kv["value"] = pair.value;
-                storage.Add(kv);
+                storage.Add(new JObject()
+                {
+                    ["key"] = pair.key,
+                    ["value"] = pair.value
+                });
             }
 
-            o["storage"] = storage;
-            o["force"] = force;
+            var request = new JObject()
+            {
+                ["state"] = state.ToJson(),
+                ["storage"] = storage,
+                ["force"] = force
+            };
 
-            var response = await rpcClient.RpcSendAsync("expresspersistcontract", o).ConfigureAwait(false);
-            return (int)response.AsNumber();
+            var json = await rpcClient.RpcSendAsync("expresspersistcontract", request).ConfigureAwait(false);
+            
+            if (json is not null && json is JNumber number)
+            {
+                return (int)number.Value;
+            }
+
+            throw new Exception("invalid response from expresspersistcontract");
         }
 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)

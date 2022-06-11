@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo;
 using Neo.IO.Json;
+using Neo.Network.P2P.Payloads;
 using Neo.Plugins;
 using Neo.SmartContract;
 using static Neo.SmartContract.Native.NativeContract;
@@ -136,44 +138,53 @@ namespace NeoExpress.Node
             return json;
         }
 
-        // [RpcMethod]
-        // public JObject? ExpressGetContractState(JArray @params)
-        // {
-        //     using var snapshot = neoSystem.GetSnapshot();
+        [RpcMethod]
+        public async Task<JObject?> ExpressFastForwardAsync(JArray @params)
+        {
+            var blockCount = (uint)@params[0].AsNumber();
+            var timestampDelta = TimeSpan.Parse(@params[1].AsString());
+            await FastForwardAsync(blockCount, timestampDelta).ConfigureAwait(false);
+            return true;
+        }
 
-        //     if (@params[0] is JNumber number)
-        //     {
-        //         var id = (int)number.AsNumber();
-        //         foreach (var nativeContract in Contracts)
-        //         {
-        //             if (id == nativeContract.Id)
-        //             {
-        //                 var contract = ContractManagement.GetContract(snapshot, nativeContract.Hash);
-        //                 return contract?.ToJson() ?? throw new RpcException(-100, $"Failed to retrieve contract state for {nativeContract.Name}");
-        //             }
-        //         }
-        //     }
+        [RpcMethod]
+        public async Task<JObject?> ExpressSubmitOracleResponseAsync(JArray @params)
+        {
+            var response = JsonToOracleResponse(@params[0]);
+            var txHash = await SubmitOracleResponseAsync(response).ConfigureAwait(false);
+            return $"{txHash}";
 
-        //     var param = @params[0].AsString();
+            static OracleResponse JsonToOracleResponse(JObject json)
+            {
+                var id = (ulong)json["id"].AsNumber();
+                var code = (OracleResponseCode)json["code"].AsNumber();
+                var result = Convert.FromBase64String(json["result"].AsString());
+                return new OracleResponse()
+                {
+                    Id = id,
+                    Code = code,
+                    Result = result
+                };
+            }
+        }
 
-        //     if (UInt160.TryParse(param, out var scriptHash))
-        //     {
-        //         var contract = ContractManagement.GetContract(snapshot, scriptHash);
-        //         return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
-        //     }
+        [RpcMethod]
+        public JObject ExpressPersistContract(JObject @params)
+        {
+            var state = Neo.Network.RPC.RpcClient.ContractStateFromJson(@params[0]["state"]);
+            var storagePairs = ((JArray)@params[0]["storage"])
+                .Select(s => (
+                    s["key"].AsString(),
+                    s["value"].AsString())
+                ).ToArray();
+            var force = Enum.Parse<Commands.ContractCommand.OverwriteForce>(@params[0]["force"].AsString());
 
-        //     var contracts = new JArray();
-        //     foreach (var contract in ContractManagement.ListContracts(snapshot))
-        //     {
-        //         if (param.Equals(contract.Manifest.Name, StringComparison.OrdinalIgnoreCase))
-        //         {
-        //             contracts.Add(contract.ToJson());
-        //         }
-        //     }
-        //     return contracts;
-        // }
+            return PersistContract(state, storagePairs, force);
+        }
 
-
+        // TODO NEXT: 
+        //  * Also need to make sure all the standard RPC methods that express implements such as GetApplicationLog
+        //    and GetNep17Balances are implemented in in ExpressSystem.RpcMethods
 
     }
 }

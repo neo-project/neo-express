@@ -1,6 +1,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Numerics;
@@ -56,7 +57,7 @@ namespace NeoExpress.Node
         }
 
         readonly IExpressChain chain;
-        readonly Lazy<KeyPair[]> consensusNodesKeys;
+        readonly Lazy<IReadOnlyList<KeyPair>> consensusNodesKeys;
         readonly ExpressConsensusNode node;
         readonly IExpressStorage expressStorage;
         readonly IStore appLogsStore;
@@ -82,7 +83,7 @@ namespace NeoExpress.Node
 
             appLogsStore = expressStorage.GetStore(APP_LOGS_STORE_NAME);
             notificationsStore = expressStorage.GetStore(NOTIFICATIONS_STORE_NAME);
-            this.consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
+            this.consensusNodesKeys = new Lazy<IReadOnlyList<KeyPair>>(() => chain.ConsensusNodes
                 .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
                 .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
                 .ToArray());
@@ -469,13 +470,134 @@ namespace NeoExpress.Node
             var height = Ledger.CurrentIndex(snapshot) + 1;
             var request = Oracle.GetRequest(snapshot, response.Id);
             var oracleNodes = ListOracleNodes(snapshot);
-            // TODO: move NodeUtility methods over
-            var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
+            var tx = CreateOracleResponseTx(snapshot, request, response, oracleNodes);
             if (tx is null) throw new Exception("Failed to create Oracle Response Tx");
-            NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
+            SignOracleResponseTransaction(tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
             return tx.Hash;
+        }
+
+        // Copied from OracleService.CreateResponseTx to avoid taking dependency on OracleService package and it's 110mb GRPC runtime
+        Transaction? CreateOracleResponseTx(DataCache snapshot, OracleRequest request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
+        {
+            if (oracleNodes.Count == 0) throw new Exception("No oracle nodes available. Have you enabled oracles via the `oracle enable` command?");
+
+            var requestTx = Ledger.GetTransactionState(snapshot, request.OriginalTxid);
+            var n = oracleNodes.Count;
+            var m = n - (n - 1) / 3;
+            var oracleSignContract = Contract.CreateMultiSigContract(m, oracleNodes);
+
+            var tx = new Transaction()
+            {
+                Version = 0,
+                Nonce = unchecked((uint)response.Id),
+                ValidUntilBlock = requestTx.BlockIndex + ProtocolSettings.MaxValidUntilBlockIncrement,
+                Signers = new[]
+                {
+                    new Signer
+                    {
+                        Account = Oracle.Hash,
+                        Scopes = WitnessScope.None
+                    },
+                    new Signer
+                    {
+                        Account = oracleSignContract.ScriptHash,
+                        Scopes = WitnessScope.None
+                    }
+                },
+                Attributes = new[] { response },
+                Script = OracleResponse.FixedScript,
+                Witnesses = new Witness[2]
+            };
+            Dictionary<UInt160, Witness> witnessDict = new Dictionary<UInt160, Witness>
+            {
+                [oracleSignContract.ScriptHash] = new Witness
+                {
+                    InvocationScript = Array.Empty<byte>(),
+                    VerificationScript = oracleSignContract.Script,
+                },
+                [Oracle.Hash] = new Witness
+                {
+                    InvocationScript = Array.Empty<byte>(),
+                    VerificationScript = Array.Empty<byte>(),
+                }
+            };
+
+            UInt160[] hashes = tx.GetScriptHashesForVerifying(snapshot);
+            tx.Witnesses[0] = witnessDict[hashes[0]];
+            tx.Witnesses[1] = witnessDict[hashes[1]];
+
+            // Calculate network fee
+
+            var oracleContract = ContractManagement.GetContract(snapshot, Oracle.Hash);
+            var engine = ApplicationEngine.Create(TriggerType.Verification, tx, snapshot.CreateSnapshot(), settings: ProtocolSettings);
+            ContractMethodDescriptor md = oracleContract.Manifest.Abi.GetMethod("verify", -1);
+            engine.LoadContract(oracleContract, md, CallFlags.None);
+            if (engine.Execute() != Neo.VM.VMState.HALT) return null;
+            tx.NetworkFee += engine.GasConsumed;
+
+            var executionFactor = Policy.GetExecFeeFactor(snapshot);
+            var networkFee = executionFactor * Neo.SmartContract.Helper.MultiSignatureContractCost(m, n);
+            tx.NetworkFee += networkFee;
+
+            // Base size for transaction: includes const_header + signers + script + hashes + witnesses, except attributes
+
+            int size_inv = 66 * m;
+            int size = Transaction.HeaderSize + tx.Signers.GetVarSize() + tx.Script.GetVarSize()
+                + Neo.IO.Helper.GetVarSize(hashes.Length) + witnessDict[Oracle.Hash].Size
+                + Neo.IO.Helper.GetVarSize(size_inv) + size_inv + oracleSignContract.Script.GetVarSize();
+
+            var feePerByte = Policy.GetFeePerByte(snapshot);
+            if (response.Result.Length > OracleResponse.MaxResultSize)
+            {
+                response.Code = OracleResponseCode.ResponseTooLarge;
+                response.Result = Array.Empty<byte>();
+            }
+            else if (tx.NetworkFee + (size + tx.Attributes.GetVarSize()) * feePerByte > request.GasForResponse)
+            {
+                response.Code = OracleResponseCode.InsufficientFunds;
+                response.Result = Array.Empty<byte>();
+            }
+            size += tx.Attributes.GetVarSize();
+            tx.NetworkFee += size * feePerByte;
+
+            // Calculate system fee
+
+            tx.SystemFee = request.GasForResponse - tx.NetworkFee;
+
+            return tx;
+        }
+
+        void SignOracleResponseTransaction(Transaction tx, IReadOnlyList<ECPoint> oracleNodes)
+        {
+            var signatures = new Dictionary<ECPoint, byte[]>();
+
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var account = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
+                var key = DevWalletAccount.FromExpressWalletAccount(ProtocolSettings, account).GetKey()
+                    ?? throw new Exception("Invalid KeyPair");
+                if (oracleNodes.Contains(key.PublicKey))
+                {
+                    signatures.Add(key.PublicKey, tx.Sign(key, chain.Network));
+                }
+            }
+
+            int m = oracleNodes.Count - (oracleNodes.Count - 1) / 3;
+            if (signatures.Count < m)
+            {
+                throw new Exception("Insufficient oracle response signatures");
+            }
+
+            var contract = Contract.CreateMultiSigContract(m, oracleNodes);
+            var sb = new ScriptBuilder();
+            foreach (var kvp in signatures.OrderBy(p => p.Key).Take(m))
+            {
+                sb.EmitPush(kvp.Value);
+            }
+            var index = tx.GetScriptHashesForVerifying(null)[0] == contract.ScriptHash ? 0 : 1;
+            tx.Witnesses[index].InvocationScript = sb.ToArray();
         }
 
         public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
@@ -491,7 +613,7 @@ namespace NeoExpress.Node
 
             if (blockCount == 1)
             {
-                var block = NodeUtility.CreateSignedBlock(prevHeader, consensusNodesKeys.Value, chain.Network, timestamp: timestamp + delta);
+                var block = CreateSignedBlock(prevHeader, timestamp: timestamp + delta);
                 await RelayBlockAsync(block).ConfigureAwait(false);
             }
             else
@@ -499,7 +621,7 @@ namespace NeoExpress.Node
                 var period = delta / (blockCount - 1);
                 for (int i = 0; i < blockCount; i++)
                 {
-                    var block = NodeUtility.CreateSignedBlock(prevHeader, consensusNodesKeys.Value, chain.Network, timestamp: timestamp);
+                    var block = CreateSignedBlock(prevHeader, timestamp: timestamp);
                     await RelayBlockAsync(block).ConfigureAwait(false);
                     prevHeader = block.Header;
                     timestamp += period;
@@ -510,13 +632,129 @@ namespace NeoExpress.Node
 
         public int PersistContract(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, Commands.ContractCommand.OverwriteForce force)
         {
-            if (chain.ConsensusNodes.Count != 1)
+            const byte Prefix_Contract = 8;
+            const byte Prefix_NextAvailableId = 15;
+
+            if (chain.ConsensusNodes.Count != 1) { throw new ArgumentException("Contract download is only supported for single-node consensus"); }
+            if (state.Id < 0) throw new ArgumentException("PersistContract not supported for native contracts", nameof(state));
+
+            using var snapshot = neoSystem.GetSnapshot();
+
+            StorageKey key = new KeyBuilder(ContractManagement.Id, Prefix_Contract).Add(state.Hash);
+            var localContract = snapshot.GetAndChange(key)?.GetInteroperable<ContractState>();
+            if (localContract is null)
             {
-                throw new ArgumentException("Contract download is only supported for single-node consensus");
+                // if localContract is null, the downloaded contract does not exist in the local Express chain
+                // Save the downloaded state + storage directly to the local chain
+
+                state.Id = GetNextAvailableId(snapshot);
+                snapshot.Add(key, new StorageItem(state));
+                PersistStoragePairs(snapshot, state.Id, storagePairs);
+
+                snapshot.Commit();
+                return state.Id;
             }
 
-            // TODO: move this over
-            return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
+            // if localContract is not null, compare the current state + storage to the downloaded state + storage
+            // and overwrite changes if specified by user option
+
+            var (overwriteContract, overwriteStorage) = force switch
+            {
+                Commands.ContractCommand.OverwriteForce.All => (true, true),
+                Commands.ContractCommand.OverwriteForce.ContractOnly => (true, false),
+                Commands.ContractCommand.OverwriteForce.None => (false, false),
+                Commands.ContractCommand.OverwriteForce.StorageOnly => (false, true),
+                _ => throw new NotSupportedException($"Invalid OverwriteForce value {force}"),
+            };
+
+            var dirty = false;
+
+            if (!ContractStateEquals(state, localContract))
+            {
+                if (overwriteContract)
+                {
+                    // Note: a ManagementContract.Update() will not change the contract hash. Not even if the NEF changed.
+                    localContract.Nef = state.Nef;
+                    localContract.Manifest = state.Manifest;
+                    localContract.UpdateCounter = state.UpdateCounter;
+                    dirty = true;
+                }
+                else
+                {
+                    throw new Exception("Downloaded contract already exists. Use --force to overwrite");
+                }
+            }
+
+            if (!ContractStorageEquals(localContract.Id, snapshot, storagePairs))
+            {
+                if (overwriteStorage)
+                {
+                    byte[] prefix_key = StorageKey.CreateSearchPrefix(localContract.Id, default);
+                    foreach (var (k, v) in snapshot.Find(prefix_key))
+                    {
+                        snapshot.Delete(k);
+                    }
+                    PersistStoragePairs(snapshot, localContract.Id, storagePairs);
+                    dirty = true;
+                }
+                else
+                {
+                    throw new Exception("Downloaded contract storage already exists. Use --force to overwrite");
+                }
+            }
+
+            if (dirty) snapshot.Commit();
+            return localContract.Id;
+
+            static int GetNextAvailableId(DataCache snapshot)
+            {
+                StorageKey key = new KeyBuilder(ContractManagement.Id, Prefix_NextAvailableId);
+                StorageItem item = snapshot.GetAndChange(key);
+                int value = (int)(BigInteger)item;
+                item.Add(1);
+                return value;
+            }
+
+            static void PersistStoragePairs(DataCache snapshot, int contractId, IReadOnlyList<(string key, string value)> storagePairs)
+            {
+                for (int i = 0; i < storagePairs.Count; i++)
+                {
+                    snapshot.Add(
+                        new StorageKey { Id = contractId, Key = Convert.FromBase64String(storagePairs[i].key) },
+                        new StorageItem(Convert.FromBase64String(storagePairs[i].value)));
+                }
+            }
+
+            static bool ContractStateEquals(ContractState a, ContractState b)
+            {
+                return a.Hash.Equals(b.Hash)
+                    && a.UpdateCounter == b.UpdateCounter
+                    && a.Nef.ToArray().SequenceEqual(b.Nef.ToArray())
+                    && a.Manifest.ToJson().ToByteArray(false).SequenceEqual(b.Manifest.ToJson().ToByteArray(false));
+            }
+
+            static bool ContractStorageEquals(int contractId, DataCache snapshot, IReadOnlyList<(string key, string value)> storagePairs)
+            {
+                IReadOnlyDictionary<string, string> storagePairMap = storagePairs.ToDictionary(p => p.key, p => p.value);
+                var storageCount = 0;
+
+                byte[] prefixKey = StorageKey.CreateSearchPrefix(contractId, default);
+                foreach (var (k, v) in snapshot.Find(prefixKey))
+                {
+                    var storageKey = Convert.ToBase64String(k.Key.Span);
+                    if (storagePairMap.TryGetValue(storageKey, out var storageValue)
+                        && storageValue.Equals(Convert.ToBase64String(v.Value.Span)))
+                    {
+                        storageCount++;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                return storageCount != storagePairs.Count;
+            }
         }
 
         async Task<UInt256> SubmitTransactionAsync(Transaction tx)
@@ -536,13 +774,48 @@ namespace NeoExpress.Node
 
             var prevHash = Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = Ledger.GetHeader(neoSystem.StoreView, prevHash);
-            // TODO: move CreateSignedBlock over from NodeUtility
-            var block = NodeUtility.CreateSignedBlock(prevHeader,
-                consensusNodesKeys.Value,
-                neoSystem.Settings.Network,
-                transactions);
+            var block = CreateSignedBlock(prevHeader, transactions);
             await RelayBlockAsync(block).ConfigureAwait(false);
             return block.Hash;
+        }
+
+        Block CreateSignedBlock(Header prevHeader, Transaction[]? transactions = null, ulong timestamp = 0)
+        {
+            transactions ??= Array.Empty<Transaction>();
+
+            var blockHeight = prevHeader.Index + 1;
+            var block = new Block
+            {
+                Header = new Header
+                {
+                    Version = 0,
+                    PrevHash = prevHeader.Hash,
+                    MerkleRoot = Neo.Cryptography.MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
+                    Timestamp = timestamp > prevHeader.Timestamp
+                        ? timestamp
+                        : Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1),
+                    Index = blockHeight,
+                    PrimaryIndex = 0,
+                    NextConsensus = prevHeader.NextConsensus
+                },
+                Transactions = transactions
+            };
+
+            // generate the block header witness. Logic lifted from ConsensusContext.CreateBlock
+            var keyPairs = consensusNodesKeys.Value;
+            var m = keyPairs.Count - (keyPairs.Count - 1) / 3;
+            var contract = Contract.CreateMultiSigContract(m, keyPairs.Select(k => k.PublicKey).ToList());
+            var signingContext = new ContractParametersContext(null, new BlockScriptHashes(prevHeader.NextConsensus), chain.Network);
+            for (int i = 0; i < keyPairs.Count; i++)
+            {
+                var signature = block.Header.Sign(keyPairs[i], chain.Network);
+                signingContext.AddSignature(contract, keyPairs[i].PublicKey, signature);
+                if (signingContext.Completed) break;
+            }
+            if (!signingContext.Completed) throw new Exception("block signing incomplete");
+            block.Header.Witness = signingContext.GetWitnesses()[0];
+
+            return block;
         }
 
         async Task RelayBlockAsync(Block block)
@@ -698,6 +971,34 @@ namespace NeoExpress.Node
 
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
             return Neo.Plugins.RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+        }
+
+        // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
+        // depend on the DataCache snapshot parameter in order to create a 
+        // ContractParametersContext without direct access to node data.
+
+        class BlockScriptHashes : IVerifiable
+        {
+            readonly UInt160[] hashes;
+
+            public BlockScriptHashes(UInt160 scriptHash)
+            {
+                hashes = new[] { scriptHash };
+            }
+
+            public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
+
+            Witness[] IVerifiable.Witnesses
+            {
+                get => throw new NotImplementedException();
+                set => throw new NotImplementedException();
+            }
+
+            int ISerializable.Size => throw new NotImplementedException();
+            void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
+            void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
+            void ISerializable.Deserialize(ref MemoryReader reader) => throw new NotImplementedException();
+            void IVerifiable.DeserializeUnsigned(ref MemoryReader reader) => throw new NotImplementedException();
         }
 
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin

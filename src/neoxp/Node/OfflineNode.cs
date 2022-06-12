@@ -74,7 +74,7 @@ namespace NeoExpress.Node
             => MakeAsync(() => 
                 {
                     var tx = expressSystem.GetTransaction(txHash);
-                    var appLog = expressSystem.GetAppLog(txHash);
+                    var appLog = expressSystem.GetApplicationLog(txHash);
                     return (tx, appLog);
                 });
 

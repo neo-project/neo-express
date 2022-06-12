@@ -183,7 +183,7 @@ namespace NeoExpress.Node
             return buffer;
         });
 
-        public RpcApplicationLog? GetAppLog(UInt256 hash)
+        public RpcApplicationLog? GetApplicationLog(UInt256 hash)
         {
             var value = appLogsStore.TryGet(hash.ToArray());
             if (value is null || value.Length == 0) return null;

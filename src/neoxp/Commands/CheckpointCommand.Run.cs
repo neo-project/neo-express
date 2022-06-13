@@ -1,9 +1,10 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-
+using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -34,32 +35,21 @@ namespace NeoExpress.Commands
             [Option(Description = "Enable contract execution tracing")]
             internal bool Trace { get; init; } = false;
 
-            // internal async Task ExecuteAsync(IConsole console, CancellationToken token)
-            // {
-            //     var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
-            //     var chain = chainManager.Chain;
-            //     if (chain.ConsensusNodes.Count != 1)
-            //     {
-            //         throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
-            //     }
+            internal Task<int> OnExecuteAsync(CommandLineApplication app, CancellationToken token) => app.ExecuteAsync(this.ExecuteAsync, token);
 
-            //     var storageProvider = chainManager.GetCheckpointStorageProvider(Name);
-            //     using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-            //     await chainManager.RunAsync(storageProvider, chain.ConsensusNodes[0], Trace, console, token);
-            // }
-
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
             {
-                try
+                if (chain.ConsensusNodes.Count != 1)
                 {
-                    // await ExecuteAsync(console, token).ConfigureAwait(false);
-                    return 0;
+                    throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
                 }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+
+                var checkpointPath = CheckpointCommand.ResolveFileName(fileSystem, Name);
+                console.WriteLine(checkpointPath);
+                var consensusContract = chain.GetConsensusContract();
+                using var expressStorage = CheckpointExpressStorage.OpenCheckpoint(checkpointPath, chain.Network, chain.AddressVersion, consensusContract.ScriptHash);
+                using var expressSystem = new ExpressSystem(chain, chain.ConsensusNodes[0], expressStorage, Trace, SecondsPerBlock);
+                await expressSystem.RunAsync(console, token);
             }
         }
     }

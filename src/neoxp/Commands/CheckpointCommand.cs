@@ -1,3 +1,5 @@
+using System;
+using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
@@ -12,5 +14,10 @@ namespace NeoExpress.Commands
             app.ShowHelp(false);
             return 1;
         }
+
+        internal const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";
+
+        public static string ResolveFileName(IFileSystem fileSystem, string path)
+            => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
     }
 }

@@ -51,7 +51,7 @@ namespace NeoExpress.Commands
             using var expressStorage = Discard
                 ? CheckpointExpressStorage.OpenForDiscard(nodePath)
                 : new RocksDbExpressStorage(nodePath);
-            var expressSystem = new ExpressSystem(chain, node, expressStorage, Trace, SecondsPerBlock);
+            using var expressSystem = new ExpressSystem(chain, node, expressStorage, Trace, SecondsPerBlock);
             await expressSystem.RunAsync(console, token);
         }
     }

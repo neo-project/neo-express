@@ -40,10 +40,6 @@ namespace NeoExpress
         public static string ResolveExpressFileName(this IFileSystem fileSystem, string path)
             => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
 
-
-
-
-
         public static string ResolveFileName(this IFileSystem fileSystem, string fileName, string extension, Func<string> getDefaultFileName)
         {
             if (string.IsNullOrEmpty(fileName))

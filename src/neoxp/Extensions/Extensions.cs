@@ -179,9 +179,9 @@ namespace NeoExpress
             return new TransactionManager(tx, rpcClient);
         }
 
-        public static bool TryGetSigningAccount(this ExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
-        {
-            throw new Exception();
+        // public static bool TryGetSigningAccount(this ExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+        // {
+        //     throw new Exception();
             // if (!string.IsNullOrEmpty(name))
             // {
             //     var settings = chainManager.Chain.GetProtocolSettings();
@@ -275,6 +275,6 @@ namespace NeoExpress
             //         return false;
             //     }
             // }
-        }
+        // }
     }
 }

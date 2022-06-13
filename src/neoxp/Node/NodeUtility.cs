@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -28,7 +29,24 @@ namespace NeoExpress.Node
     {
 
 
+        public static bool TryParseRpcUri(string value, [MaybeNullWhen(false)] out Uri uri)
+        {
+            if (value.Equals("mainnet", StringComparison.OrdinalIgnoreCase))
+            {
+                uri = new Uri("http://seed1.neo.org:10332");
+                return true;
+            }
 
+            if (value.Equals("testnet", StringComparison.OrdinalIgnoreCase))
+            {
+                uri = new Uri("http://seed1t5.neo.org:20332");
+                return true;
+            }
+
+            return (Uri.TryCreate(value, UriKind.Absolute, out uri)
+                && uri is not null
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
+        }
 
 
 
@@ -42,7 +60,7 @@ namespace NeoExpress.Node
                 throw new ArgumentException($"Invalid contract hash: \"{contractHash}\"");
             }
 
-            if (!TransactionExecutor.TryParseRpcUri(rpcUri, out var uri))
+            if (!TryParseRpcUri(rpcUri, out var uri))
             {
                 throw new ArgumentException($"Invalid RpcUri value \"{rpcUri}\"");
             }

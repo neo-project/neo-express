@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Models;
+using Neo.Network.RPC.Models;
 using Newtonsoft.Json;
 
 namespace NeoExpress
@@ -52,5 +54,85 @@ namespace NeoExpress
                 writer.WriteProperty("public-key", Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
             }
         }
+
+        public static void WriteResult(this TextWriter @this, RpcInvokeResult result, bool json)
+        {
+            if (json)
+            {
+                using var writer = new JsonTextWriter(@this) { Formatting = Formatting.Indented };
+                writer.WriteJson(result.ToJson());
+            }
+            else
+            {
+                @this.WriteLine($"VM State:     {result.State}");
+                @this.WriteLine($"Gas Consumed: {result.GasConsumed}");
+                if (!string.IsNullOrEmpty(result.Exception))
+                {
+                    @this.WriteLine($"Exception:   {result.Exception}");
+                }
+                if (result.Stack.Length > 0)
+                {
+                    var stack = result.Stack;
+                    @this.WriteLine("Result Stack:");
+                    for (int i = 0; i < stack.Length; i++)
+                    {
+                        @this.WriteStackItem(stack[i]);
+                    }
+                }
+            }
+        }
+
+        public static void WriteStackItem(this TextWriter writer, Neo.VM.Types.StackItem item, int indent = 1, string prefix = "")
+        {
+            switch (item)
+            {
+                case Neo.VM.Types.Boolean _:
+                    WriteLine(item.GetBoolean() ? "true" : "false");
+                    break;
+                case Neo.VM.Types.Integer @int:
+                    WriteLine($"{@int.GetInteger()}");
+                    break;
+                case Neo.VM.Types.Buffer buffer:
+                    WriteLine(Convert.ToHexString(buffer.GetSpan()));
+                    break;
+                case Neo.VM.Types.ByteString byteString:
+                    WriteLine(Convert.ToHexString(byteString.GetSpan()));
+                    break;
+                case Neo.VM.Types.Null _:
+                    WriteLine($"<null>");
+                    break;
+                case Neo.VM.Types.Array array:
+                    WriteLine($"{(array is Neo.VM.Types.Struct ? "Struct" : "Array")}: ({array.Count})");
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        WriteStackItem(writer, array[i], indent + 1);
+                    }
+                    break;
+                case Neo.VM.Types.Map map:
+                    WriteLine($"Array: ({map.Count})");
+                    foreach (var m in map)
+                    {
+                        WriteStackItem(writer, m.Key, indent + 1, "key:   ");
+                        WriteStackItem(writer, m.Value, indent + 1, "value: ");
+                    }
+                    break;
+            }
+
+            void WriteLine(string value)
+            {
+                for (var i = 0; i < indent; i++)
+                {
+                    writer.Write("  ");
+                }
+
+                if (!string.IsNullOrEmpty(prefix))
+                {
+                    writer.Write(prefix);
+                }
+
+                writer.WriteLine(value);
+            }
+        }
+
     }
 }

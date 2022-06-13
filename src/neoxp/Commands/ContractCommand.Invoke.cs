@@ -1,8 +1,13 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC.Models;
+using Neo.VM;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -49,35 +54,31 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
-                try
+                using var expressNode = chain.GetExpressNode(Trace);
+
+                if (!fileSystem.File.Exists(InvocationFile))
                 {
-                    // if (string.IsNullOrEmpty(Account) && !Results)
-                    // {
-                    //     throw new Exception("Either Account or --results must be specified");
-                    // }
-
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    // var script = await txExec.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
-
-                    // if (Results)
-                    // {
-                    //     await txExec.InvokeForResultsAsync(script, Account, WitnessScope);
-                    // }
-                    // else
-                    // {
-                    //     var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    //     await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
-                    // }
-
-                    return 0;
+                    throw new Exception($"Invocation file {InvocationFile} couldn't be found");
                 }
-                catch (Exception ex)
+
+                var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
+                var script = await parser.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
+
+                if (Results)
                 {
-                    app.WriteException(ex, showInnerExceptions: true);
-                    return 1;
+                    var result = await expressNode.InvokeForResultsAsync(script, Account, WitnessScope);
+                    console.Out.WriteResult(result, Json);
+                }
+                else
+                {
+                    var password = chain.ResolvePassword(Account, Password);
+                    var txHash = await expressNode.SubmitTransactionAsync(script, Account, password, WitnessScope, AdditionalGas);
+                    await console.Out.WriteTxHashAsync(txHash, "Invocation", Json).ConfigureAwait(false);
                 }
             }
         }

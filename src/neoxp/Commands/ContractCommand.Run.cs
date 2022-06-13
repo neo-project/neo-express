@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -56,35 +57,24 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
+                using var expressNode = chain.GetExpressNode(Trace);
+                var script = await expressNode.BuildInvocationScriptAsync(Contract, Method, Arguments).ConfigureAwait(false);
+
+                if (Results)
                 {
-                    // if (string.IsNullOrEmpty(Account) && !Results)
-                    // {
-                    //     throw new Exception("Either --account or --results must be specified");
-                    // }
-
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    // var script = await txExec.BuildInvocationScriptAsync(Contract, Method, Arguments).ConfigureAwait(false);
-
-                    // if (Results)
-                    // {
-                    //     await txExec.InvokeForResultsAsync(script, Account, WitnessScope);
-                    // }
-                    // else
-                    // {
-                    //     var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    //     await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
-                    // }
-
-                    return 0;
+                    var result = await expressNode.InvokeForResultsAsync(script, Account, WitnessScope);
+                    console.Out.WriteResult(result, Json);
                 }
-                catch (Exception ex)
+                else
                 {
-                    app.WriteException(ex, showInnerExceptions: true);
-                    return 1;
+                    var password = chain.ResolvePassword(Account, Password);
+                    var txHash = await expressNode.SubmitTransactionAsync(script, Account, password, WitnessScope, AdditionalGas);
+                    await console.Out.WriteTxHashAsync(txHash, "Invocation", Json).ConfigureAwait(false);
                 }
             }
         }

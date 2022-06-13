@@ -79,15 +79,6 @@ namespace NeoExpress
             return new None();
         }
 
-        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, ExpressChain chain, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
-        {
-            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            ContractParameterParser.TryGetUInt160 tryGetContract =
-                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
-
-            return new ContractParameterParser(expressNode.ProtocolSettings, chain.TryGetAccountHash, tryGetContract);
-        }
-
         public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);

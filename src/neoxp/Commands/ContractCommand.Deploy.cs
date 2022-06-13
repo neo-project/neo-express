@@ -1,8 +1,15 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
+using Neo.SmartContract.Native;
+using Neo.VM;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -50,22 +57,83 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
-                try
+                using var expressNode = chain.GetExpressNode(Trace);
+                var password = chain.ResolvePassword(Account, Password);
+                var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
+
+                var (txHash, contractHash) = await ExecuteAsync(expressNode, nefFile, manifest, Account, password, WitnessScope, Data, Force)
+                    .ConfigureAwait(false);
+
+                if (Json)
                 {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    // await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force).ConfigureAwait(false);
-                    return 0;
+                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                    using var _ = writer.WriteObject();
+                    writer.WriteProperty("contract-name", manifest.Name);
+                    writer.WriteProperty("contract-hash", $"{contractHash}");
+                    writer.WriteProperty("tx-hash", $"{txHash}");
                 }
-                catch (Exception ex)
+                else
                 {
-                    app.WriteException(ex, showInnerExceptions: true);
-                    return 1;
+                    await console.Out.WriteLineAsync($"Deployment of {manifest.Name} ({contractHash}) Transaction {txHash} submitted").ConfigureAwait(false);
                 }
+            }
+
+            public static async Task<(UInt256 txHash, UInt160 contractHash)> ExecuteAsync(
+                IExpressNode expressNode, NefFile nefFile, ContractManifest manifest,
+                string accountName, string password, WitnessScope witnessScope, string data, bool force)
+            {
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(accountName, password);
+
+                // ensure valid script
+                var script = new Neo.VM.Script(nefFile.Script, true);
+
+                if (!force)
+                {
+                    var contracts = await ContractCommand.ListByNameAsync(expressNode, manifest.Name).ConfigureAwait(false);
+                    if (contracts.Count > 0)
+                    {
+                        throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
+                    }
+
+                    var nep11 = false; var nep17 = false;
+                    var standards = manifest.SupportedStandards;
+                    for (var i = 0; i < standards.Length; i++)
+                    {
+                        if (standards[i] == "NEP-11") nep11 = true;
+                        if (standards[i] == "NEP-17") nep17 = true;
+                    }
+                    if (nep11 && nep17)
+                    {
+                        throw new Exception($"{manifest.Name} Contract declares support for both NEP-11 and NEP-17 standards. Use --force to deploy contract with invalid supported standards declarations.");
+                    }
+                }
+
+                ContractParameter? dataParam = null;
+                if (!string.IsNullOrEmpty(data))
+                {
+                    dataParam = new ContractParameter(ContractParameterType.Any);
+                }
+                else
+                {
+                    var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
+                    dataParam = parser.ParseParameter(data);
+                }
+
+                using var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(NativeContract.ContractManagement.Hash,
+                    "deploy", Neo.IO.Helper.ToArray(nefFile), manifest.ToJson().ToString(), data);
+                var txHash = await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, builder.ToArray())
+                    .ConfigureAwait(false);
+
+                var contractHash = Neo.SmartContract.Helper.GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
+                return (txHash, contractHash);
             }
         }
     }
 }
+

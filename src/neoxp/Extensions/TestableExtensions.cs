@@ -18,6 +18,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using Neo.Network.RPC.Models;
 using Neo.VM;
+using Neo.BlockchainToolkit;
+using Neo.SmartContract.Manifest;
+using Neo.Network.P2P.Payloads;
 
 namespace NeoExpress
 {
@@ -101,7 +104,7 @@ namespace NeoExpress
         {
             var wallets = new List<Wallet>();
             var settings = chain.GetProtocolSettings();
-            
+
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var wallet = DevWallet.FromExpressWallet(chain.ConsensusNodes[i].Wallet, settings);
@@ -190,9 +193,80 @@ namespace NeoExpress
             return nep6Wallet.ToJson();
         }
 
+        public static async Task<UInt256> SubmitTransactionAsync(this IExpressNode expressNode, Script script, string accountName, string password, WitnessScope witnessScope, decimal additionalGas = 0m)
+        {
+            var (wallet, accountHash) = expressNode.Chain.ResolveSigner(accountName, password);
+            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script, additionalGas).ConfigureAwait(false);
+        }
+
+        public static async Task<RpcInvokeResult> InvokeForResultsAsync(this IExpressNode expressNode, Script script, string accountName, WitnessScope witnessScope)
+        {
+            Signer? signer = expressNode.Chain.TryResolveSigner(accountName, string.Empty, out _, out var accountHash)
+                ? signer = new Signer
+                {
+                    Account = accountHash,
+                    Scopes = witnessScope,
+                    AllowedContracts = Array.Empty<UInt160>(),
+                    AllowedGroups = Array.Empty<Neo.Cryptography.ECC.ECPoint>(),
+                    Rules = Array.Empty<WitnessRule>()
+                }
+                : null;
+
+            return await expressNode.InvokeAsync(script, signer).ConfigureAwait(false);
+        }
+
+        public static async Task<Script> BuildInvocationScriptAsync(this IExpressNode expressNode, string contract, string operation, IReadOnlyList<string>? arguments = null)
+        {
+            if (string.IsNullOrEmpty(operation))
+                throw new InvalidOperationException($"invalid contract operation \"{operation}\"");
+
+            var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
+            var scriptHash = parser.TryLoadScriptHash(contract, out var value)
+                ? value
+                : UInt160.TryParse(contract, out var uint160)
+                    ? uint160
+                    : throw new InvalidOperationException($"contract \"{contract}\" not found");
+
+            arguments ??= Array.Empty<string>();
+            var @params = new ContractParameter[arguments.Count];
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                @params[i] = ConvertArg(arguments[i], parser);
+            }
+
+            using var scriptBuilder = new ScriptBuilder();
+            scriptBuilder.EmitDynamicCall(scriptHash, operation, @params);
+            return scriptBuilder.ToArray();
+
+            static ContractParameter ConvertArg(string arg, ContractParameterParser parser)
+            {
+                if (bool.TryParse(arg, out var boolArg))
+                {
+                    return new ContractParameter()
+                    {
+                        Type = ContractParameterType.Boolean,
+                        Value = boolArg
+                    };
+                }
+
+                if (long.TryParse(arg, out var longArg))
+                {
+                    return new ContractParameter()
+                    {
+                        Type = ContractParameterType.Integer,
+                        Value = new System.Numerics.BigInteger(longArg)
+                    };
+                }
+
+                return parser.ParseParameter(arg);
+            }
+        }
+
+
+
         public static UInt160 ResolveAccountHash(this IExpressChain chain, string name)
-            => chain.TryResolveAccountHash(name, out var hash) 
-                ? hash 
+            => chain.TryResolveAccountHash(name, out var hash)
+                ? hash
                 : throw new Exception("TryResolveAccountHash failed");
 
         public static bool TryResolveAccountHash(this IExpressChain chain, string name, out UInt160 accountHash)
@@ -236,7 +310,7 @@ namespace NeoExpress
                 accountHash = Neo.Wallets.Helper.ToScriptHash(name, chain.AddressVersion);
                 return true;
             }
-            catch {}
+            catch { }
 
             accountHash = UInt160.Zero;
             return false;
@@ -291,7 +365,7 @@ namespace NeoExpress
             return result;
         }
 
-        public static string GetNodePath(this IFileSystem fileSystem,  ExpressConsensusNode node)
+        public static string GetNodePath(this IFileSystem fileSystem, ExpressConsensusNode node)
         {
             ArgumentNullException.ThrowIfNull(node);
             ArgumentNullException.ThrowIfNull(node.Wallet);
@@ -303,6 +377,36 @@ namespace NeoExpress
                 "Neo-Express",
                 "blockchain-nodes");
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
+        }
+
+        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        {
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            ContractParameterParser.TryGetUInt160 tryGetContract =
+                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, comparison, out scriptHash);
+            return new ContractParameterParser(expressNode.ProtocolSettings, expressNode.Chain.TryResolveAccountHash, tryGetContract);
+        }
+
+        static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, StringComparison comparison, out UInt160 scriptHash)
+        {
+            UInt160? _scriptHash = null;
+            for (int i = 0; i < contracts.Count; i++)
+            {
+                if (contracts[i].manifest.Name.Equals(name, comparison))
+                {
+                    if (_scriptHash == null)
+                    {
+                        _scriptHash = contracts[i].hash;
+                    }
+                    else
+                    {
+                        throw new Exception($"More than one deployed script named {name}");
+                    }
+                }
+            }
+
+            scriptHash = _scriptHash!;
+            return _scriptHash != null;
         }
     }
 }

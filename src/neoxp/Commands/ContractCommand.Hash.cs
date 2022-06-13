@@ -32,30 +32,17 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
-                try
-                {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
-                    // {
-                    //     throw new Exception($"{Account} account not found.");
-                    // }
+                var accountHash = chain.ResolveAccountHash(Account);
+                var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
 
-                    // var (nefFile, manifest) = await fileSystem.LoadContractAsync(Contract).ConfigureAwait(false);
-                    // var contractHash = GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
-
-                    // await console.Out.WriteLineAsync($"{contractHash}").ConfigureAwait(false);
-
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                var contractHash = GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
+                await console.Out.WriteLineAsync($"{contractHash}").ConfigureAwait(false);
             }
-
         }
     }
 }

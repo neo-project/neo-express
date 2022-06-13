@@ -39,11 +39,9 @@ namespace NeoExpress
                 .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
                 .ToArray();
 
-        internal const string GENESIS = "genesis";
-
-        public static bool IsReservedName(this ExpressChain chain, string name)
+        public static bool IsReservedName(this IExpressChain chain, string name)
         {
-            if (string.Equals(GENESIS, name, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(IExpressChain.GENESIS, name, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
@@ -55,20 +53,20 @@ namespace NeoExpress
             return false;
         }
 
-        public static string ResolvePassword(this ExpressChain chain, string name, string password)
-        {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
+        // public static string ResolvePassword(this ExpressChain chain, string name, string password)
+        // {
+        //     if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
 
-            // if the user specified a password, use it
-            if (!string.IsNullOrEmpty(password)) return password;
+        //     // if the user specified a password, use it
+        //     if (!string.IsNullOrEmpty(password)) return password;
 
-            // if the name is a valid Neo Express account name, no password is needed
-            if (chain.IsReservedName(name)) return password;
-            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return password;
+        //     // if the name is a valid Neo Express account name, no password is needed
+        //     if (chain.IsReservedName(name)) return password;
+        //     if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return password;
 
-            // if a password is needed but not provided, prompt the user
-            return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
-        }
+        //     // if a password is needed but not provided, prompt the user
+        //     return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
+        // }
 
         public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
         {
@@ -105,7 +103,7 @@ namespace NeoExpress
                 }
             }
 
-            if (GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
+            if (IExpressChain.GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
                 var keys = chain.ConsensusNodes
                     .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())

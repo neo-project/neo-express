@@ -33,52 +33,24 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            // internal string Execute()
-            // {
-            //     var output = string.IsNullOrEmpty(Output)
-            //        ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
-            //        : Output;
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
 
-            //     var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
-            //     var wallet = chainManager.Chain.GetWallet(Name);
-
-            //     if (wallet is null)
-            //     {
-            //         throw new Exception($"{Name} express wallet not found.");
-            //     }
-
-            //     if (fileSystem.File.Exists(output))
-            //     {
-            //         if (Force)
-            //         {
-            //             fileSystem.File.Delete(output);
-            //         }
-            //         else
-            //         {
-            //             throw new Exception("You must specify force to overwrite an exported wallet.");
-            //         }
-            //     }
-
-            //     var password = Prompt.GetPassword("Input password to use for exported wallet");
-            //     var devWallet = DevWallet.FromExpressWallet(chainManager.ProtocolSettings, wallet);
-            //     devWallet.Export(output, password);
-            //     return output;
-            // }
-
-            private int OnExecute(CommandLineApplication app, IConsole console)
+            internal void Execute(IFileSystem fileSystem, IConsole console)
             {
-                try
+                var output = string.IsNullOrEmpty(Output)
+                   ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
+                   : Output;
+
+                if (fileSystem.File.Exists(output) && !Force)
                 {
-                    // var output = Execute();
-                    // console.WriteLine($"{Name} privatenet wallet exported to {output}");
-                    console.WriteLine($"{nameof(WalletCommand)} {nameof(Export)}");
-                    return 0;
+                    throw new Exception("You must specify force to overwrite an exported wallet.");
                 }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+
+                var wallet = chain.GetWallet(Name) ?? throw new Exception($"{Name} express wallet not found.");
+                var password = Prompt.GetPassword("Input password to use for exported wallet");
+                var json = wallet.ExportNEP6(password, chain.AddressVersion);
+                fileSystem.File.WriteAllText(output, json.ToString());
+                console.WriteLine($"{Name} privatenet wallet exported to {output}");
             }
         }
     }

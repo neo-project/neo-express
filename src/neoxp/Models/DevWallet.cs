@@ -50,14 +50,14 @@ namespace NeoExpress.Models
             return new DevWallet(settings, wallet.Name, accounts);
         }
 
-        public void Export(string filename, string password)
+        public Neo.IO.Json.JObject Export(string password)
         {
-            var nep6Wallet = new NEP6Wallet(filename, password, ProtocolSettings, Name);
+            var nep6Wallet = new NEP6Wallet(string.Empty, password, ProtocolSettings, Name);
             foreach (var account in GetAccounts())
             {
                 nep6Wallet.CreateAccount(account.Contract, account.GetKey());
             }
-            nep6Wallet.Save();
+            return nep6Wallet.ToJson();
         }
 
         public override bool Contains(UInt160 scriptHash) => accounts.ContainsKey(scriptHash);

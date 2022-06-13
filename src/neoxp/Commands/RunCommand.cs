@@ -1,7 +1,9 @@
 using System;
+using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress.Node;
 
 namespace NeoExpress.Commands
 {
@@ -32,31 +34,25 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
-        // internal async Task ExecuteAsync(IConsole console, CancellationToken token)
-        // {
-        //     var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
-        //     var chain = chainManager.Chain;
+        internal Task<int> OnExecuteAsync(CommandLineApplication app, CancellationToken token) => app.ExecuteAsync(this.ExecuteAsync, token);
 
-        //     if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
-
-        //     var node = chain.ConsensusNodes[NodeIndex];
-        //     var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);
-        //     using var disposable = storageProvider as IDisposable ?? Nito.Disposables.NoopDisposable.Instance;
-        //     await chainManager.RunAsync(storageProvider, node, Trace, console, token);
-        // }
-
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
+        internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
         {
-            try
+            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
             {
-                // await ExecuteAsync(console, token);
-                return 0;
+                throw new Exception("Invalid node index");
             }
-            catch (Exception ex)
-            {
-                app.WriteException(ex);
-                return 1;
-            }
+
+            var node = chain.ConsensusNodes[NodeIndex];
+            var nodePath = chain.GetNodePath(node);
+            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            console.WriteLine(nodePath);
+
+            using var expressStorage = Discard
+                ? CheckpointExpressStorage.OpenForDiscard(nodePath)
+                : new RocksDbExpressStorage(nodePath);
+            var expressSystem = new ExpressSystem(chain, node, expressStorage, Trace, SecondsPerBlock);
+            await expressSystem.RunAsync(console, token);
         }
     }
 }

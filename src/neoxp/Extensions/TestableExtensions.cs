@@ -1,11 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.DependencyInjection;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
 using NeoExpress.Node;
+
+using FileMode = System.IO.FileMode;
+using FileAccess = System.IO.FileAccess;
+using StreamWriter = System.IO.StreamWriter;
+using Neo.Wallets.NEP6;
 
 namespace NeoExpress
 {
@@ -57,7 +69,22 @@ namespace NeoExpress
                 };
 
             static Neo.Cryptography.ECC.ECPoint GetPublicKey(ExpressConsensusNode node)
-                => new Neo.Wallets.KeyPair(node.Wallet.Accounts.Select(a => a.PrivateKey).Distinct().Single().HexToBytes()).PublicKey;
+                => new Neo.Wallets.KeyPair(Convert.FromHexString(node.Wallet.Accounts.Select(a => a.PrivateKey).Distinct().Single())).PublicKey;
+        }
+
+        public static Contract GetConsensusContract(this IExpressChain chain)
+        {
+            List<Neo.Cryptography.ECC.ECPoint> publicKeys = new(chain.ConsensusNodes.Count);
+            foreach (var node in chain.ConsensusNodes)
+            {
+                var account = node.Wallet.DefaultAccount ?? throw new Exception("Missing Default Account");
+                var privateKey = Convert.FromHexString(account.PrivateKey);
+                var keyPair = new Neo.Wallets.KeyPair(privateKey);
+                publicKeys.Add(keyPair.PublicKey);
+            }
+
+            var m = publicKeys.Count * 2 / 3 + 1;
+            return Contract.CreateMultiSigContract(m, publicKeys);
         }
 
         public static KeyPair[] GetConsensusNodeKeys(this IExpressChain chain)
@@ -65,6 +92,10 @@ namespace NeoExpress
                 .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
                 .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
                 .ToArray();
+
+        public static ExpressWallet? GetWallet(this IExpressChain chain, string name)
+            => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
 
         public static IReadOnlyList<Wallet> GetMultiSigWallets(this IExpressChain chain, UInt160 accountHash)
         {
@@ -87,5 +118,77 @@ namespace NeoExpress
         }
 
         public static IReadOnlyList<T> ToReadOnlyList<T>(this IEnumerable<T> @this) => @this.ToList();
+
+        public static int Execute(this CommandLineApplication app, Delegate @delegate)
+        {
+            if (@delegate.Method.ReturnType != typeof(void)) throw new Exception();
+
+            try
+            {
+                var @params = BindParameters(@delegate, app);
+                @delegate.DynamicInvoke(@params);
+                return 0;
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                app.WriteException(ex.InnerException);
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                app.WriteException(ex);
+                return 1;
+            }
+        }
+
+        public static async Task<int> ExecuteAsync(this CommandLineApplication app, Delegate @delegate, CancellationToken token = default)
+        {
+            if (@delegate.Method.ReturnType != typeof(Task)) throw new Exception();
+            if (@delegate.Method.ReturnType.GenericTypeArguments.Length > 0) throw new Exception();
+
+            try
+            {
+                var @params = BindParameters(@delegate, app);
+                var @return = @delegate.DynamicInvoke(@params) ?? throw new Exception();
+                await ((Task)@return).ConfigureAwait(false);
+                return 0;
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                app.WriteException(ex.InnerException);
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                app.WriteException(ex);
+                return 1;
+            }
+        }
+
+        static object[] BindParameters(Delegate @delegate, IServiceProvider provider, CancellationToken token = default)
+        {
+            var paramInfos = @delegate.Method.GetParameters() ?? throw new Exception();
+            var @params = new object[paramInfos.Length];
+            for (int i = 0; i < paramInfos.Length; i++)
+            {
+                @params[i] = paramInfos[i].ParameterType == typeof(CancellationToken)
+                    ? token : provider.GetRequiredService(paramInfos[i].ParameterType);
+            }
+            return @params;
+        }
+
+        public static Neo.IO.Json.JObject ExportNEP6(this ExpressWallet @this, string password, byte addressVersion)
+        {
+            var settings = ProtocolSettings.Default with { AddressVersion = addressVersion };
+            var nep6Wallet = new NEP6Wallet(string.Empty, password, settings, @this.Name);
+            foreach (var account in @this.Accounts)
+            {
+                var key = Convert.FromHexString(account.PrivateKey);
+                var nep6Account = nep6Wallet.CreateAccount(key);
+                nep6Account.Label = account.Label;
+                nep6Account.IsDefault = account.IsDefault;
+            }
+            return nep6Wallet.ToJson();
+        }
     }
 }

@@ -28,42 +28,18 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
-            // internal void Execute()
-            // {
-            //     var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
-            //     var chain = chainManager.Chain;
-            //     var wallet = chain.GetWallet(Name);
+            internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
 
-            //     if (wallet is null)
-            //     {
-            //         throw new Exception($"{Name} privatenet wallet not found.");
-            //     }
-            //     else
-            //     {
-            //         if (!Force)
-            //         {
-            //             throw new Exception("You must specify force to delete a privatenet wallet.");
-            //         }
-
-            //         chain.Wallets.Remove(wallet);
-            //         chainManager.SaveChain(chainPath);
-            //     }
-            // }
-
-            internal int OnExecute(CommandLineApplication app, IConsole console)
+            internal void Execute(IConsole console)
             {
-                try
-                {
-                    // Execute();
-                    // console.WriteLine($"{Name} privatenet wallet deleted.");
-                    console.WriteLine($"{nameof(WalletCommand)} {nameof(Delete)}");
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                var wallet = chain.GetWallet(Name);
+
+                if (wallet is null) throw new Exception($"{Name} privatenet wallet not found.");
+                if (!Force) throw new Exception("You must specify force to delete a privatenet wallet.");
+
+                chain.RemoveWallet(wallet);
+                chain.SaveChain();
+                console.WriteLine($"{Name} privatenet wallet deleted.");
             }
         }
     }

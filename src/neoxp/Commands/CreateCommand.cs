@@ -1,6 +1,16 @@
 using System;
+using System.Collections.Generic;
+using System.IO.Abstractions;
+using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
+using Neo.Wallets;
+using NeoExpress.Models;
 using static Neo.BlockchainToolkit.Constants;
+using ExpressChainInfo = Neo.BlockchainToolkit.Models.ExpressChain;
 
 namespace NeoExpress.Commands
 {
@@ -20,24 +30,85 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
-        internal int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
+
+        internal void Execute(IFileSystem fileSystem, IConsole console)
         {
-            try
+            var outputPath = fileSystem.ResolveExpressFileName(Output);
+            if (fileSystem.File.Exists(outputPath))
             {
-                // var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force);
-                // chainManager.SaveChain(outputPath);
-
-                // console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");
-                // console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-                // console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
-
-                return 0;
+                if (Force)
+                {
+                    fileSystem.File.Delete(outputPath);
+                }
+                else
+                {
+                    throw new Exception("You must specify --force to overwrite an existing file");
+                }
             }
-            catch (Exception ex)
+
+            if (fileSystem.File.Exists(outputPath))
             {
-                app.WriteException(ex);
-                return 1;
+                throw new Exception($"{outputPath} already exists");
             }
+
+            var chain = CreateChain();
+            fileSystem.SaveChain(chain, outputPath);
+
+            console.Out.WriteLine($"Created {chain.ConsensusNodes.Count} node privatenet at {outputPath}");
+            console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
+            console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+        }
+
+        internal ExpressChainInfo CreateChain()
+        {
+            if (Count != 1 && Count != 4 && Count != 7)
+            {
+                throw new ArgumentException("invalid blockchain node count", nameof(Count));
+            }
+
+            var settings = ProtocolSettings.Default with
+            {
+                Network = Neo.BlockchainToolkit.Models.ExpressChain.GenerateNetworkValue(),
+                AddressVersion = AddressVersion ?? ProtocolSettings.Default.AddressVersion
+            };
+
+            var wallets = new List<(DevWallet wallet, WalletAccount account)>(Count);
+            for (var i = 1; i <= Count; i++)
+            {
+                var wallet = new DevWallet(settings, $"node{i}" );
+                var account = wallet.CreateAccount();
+                account.IsDefault = true;
+                wallets.Add((wallet, account));
+            }
+
+            var keys = wallets.Select(t => t.account.GetKey().PublicKey).ToArray();
+            var contract = Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
+
+            foreach (var (wallet, account) in wallets)
+            {
+                var multiSigContractAccount = wallet.CreateAccount(contract, account.GetKey());
+                multiSigContractAccount.Label = "Consensus MultiSigContract";
+            }
+
+            var nodes = wallets.Select((w, i) => new ExpressConsensusNode
+            {
+                TcpPort = GetPortNumber(i, 3),
+                WebSocketPort = GetPortNumber(i, 4),
+                RpcPort = GetPortNumber(i, 2),
+                Wallet = w.wallet.ToExpressWallet()
+            });
+
+            return new ExpressChainInfo()
+            {
+                Network = settings.Network,
+                AddressVersion = settings.AddressVersion,
+                ConsensusNodes = nodes.ToList(),
+            };
+
+            // 49152 is the first port in the "Dynamic and/or Private" range as specified by IANA
+            // http://www.iana.org/assignments/port-numbers
+            static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
     }
 }

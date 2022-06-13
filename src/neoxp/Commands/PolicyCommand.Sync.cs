@@ -1,7 +1,15 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
+using Neo.SmartContract.Native;
+using Neo.VM;
+using NeoExpress.Models;
+using OneOf;
 
 namespace NeoExpress.Commands
 {
@@ -39,34 +47,62 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
+            {
+                PolicyValues policy;
+                if (Node.NodeUtility.TryParseRpcUri(Source, out var uri))
+                {
+                    using var rpcClient = new RpcClient(uri);
+                    policy = await Get.GetPolicyAsync(rpcClient).ConfigureAwait(false);
+                }
+                else
+                {
+                    var loadResult = await TryLoadPolicyFromFileSystemAsync(fileSystem, Source).ConfigureAwait(false);
+                    if (!loadResult.TryPickT0(out policy, out _))
+                    {
+                        throw new ArgumentException($"Could not load policy values from \"{Source}\"");
+                    }
+                }
+
+                var password = chain.ResolvePassword(Account, Password);
+                using var expressNode = chain.GetExpressNode(Trace);
+                var txHash = await ExecuteAsync(expressNode, policy, Account, password).ConfigureAwait(false);
+                await console.Out.WriteTxHashAsync(txHash, "Policy Sync", Json).ConfigureAwait(false);
+            }
+
+            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicyValues policyValues, string account, string password)
+            {
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
+
+                using var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(NativeContract.NEO.Hash, "setGasPerBlock", policyValues.GasPerBlock.Value);
+                builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "setMinimumDeploymentFee", policyValues.MinimumDeploymentFee.Value);
+                builder.EmitDynamicCall(NativeContract.NEO.Hash, "setRegisterPrice", policyValues.CandidateRegistrationFee.Value);
+                builder.EmitDynamicCall(NativeContract.Oracle.Hash, "setPrice", policyValues.OracleRequestFee.Value);
+                builder.EmitDynamicCall(NativeContract.Policy.Hash, "setFeePerByte", policyValues.NetworkFeePerByte.Value);
+                builder.EmitDynamicCall(NativeContract.Policy.Hash, "setStoragePrice", policyValues.StorageFeeFactor);
+                builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.ExecutionFeeFactor);
+
+                return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray())
+                    .ConfigureAwait(false);
+            }
+
+            public static async Task<OneOf<PolicyValues, Exception>> TryLoadPolicyFromFileSystemAsync(IFileSystem fileSystem, string path)
             {
                 try
                 {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-
-                    // var values = await txExec.TryGetRemoteNetworkPolicyAsync(Source).ConfigureAwait(false);
-                    // if (values.IsT1)
-                    // {
-                    //     values = await txExec.TryLoadPolicyFromFileSystemAsync(Source).ConfigureAwait(false);
-                    // }
-
-                    // if (values.TryPickT0(out var policyValues, out var _))
-                    // {
-                    //     await txExec.SetPolicyAsync(policyValues, Account, Password).ConfigureAwait(false);
-                    // }
-                    // else
-                    // {
-                    //     throw new ArgumentException($"Could not load policy values from \"{Source}\"");
-                    // }
-
-                    return 0;
+                    using var stream = fileSystem.File.OpenRead(path);
+                    using var reader = new System.IO.StreamReader(stream);
+                    var text = await reader.ReadToEndAsync().ConfigureAwait(false);
+                    var json = Neo.IO.Json.JObject.Parse(text);
+                    return PolicyValues.FromJson(json);
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex);
-                    return 1;
+                    return ex;
                 }
             }
         }

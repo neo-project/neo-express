@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.SmartContract.Native;
+using Neo.VM;
 
 namespace NeoExpress.Commands
 {
@@ -26,28 +28,18 @@ namespace NeoExpress.Commands
             [Required]
             internal string ScriptHash { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
-                {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // using var expressNode = chainManager.GetExpressNode();
-
-                    // var scriptHash = await expressNode.ParseScriptHashToBlockAsync(chainManager.Chain, ScriptHash).ConfigureAwait(false);
-                    // if (scriptHash.IsT1)
-                    // {
-                    //     throw new Exception($"{ScriptHash} script hash not found or not supported");
-                    // }
-
-                    // var isBlocked = await expressNode.GetIsBlockedAsync(scriptHash.AsT0).ConfigureAwait(false);
-                    // await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                using var expressNode = chain.GetExpressNode();
+                var scriptHash = await PolicyCommand.ResolveScriptHashAsync(expressNode, ScriptHash);
+                using var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(NativeContract.Policy.Hash, "isBlocked", scriptHash);
+                var result = await expressNode.GetResultAsync(builder.ToArray()).ConfigureAwait(false);
+                var isBlocked = result.Stack[0].GetBoolean();
+                await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
             }
         }
     }

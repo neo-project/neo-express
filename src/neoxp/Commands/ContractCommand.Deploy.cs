@@ -10,6 +10,7 @@ using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Newtonsoft.Json;
+using TextWriter = System.IO.TextWriter;
 
 namespace NeoExpress.Commands
 {
@@ -79,13 +80,14 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    await console.Out.WriteLineAsync($"Deployment of {manifest.Name} ({contractHash}) Transaction {txHash} submitted").ConfigureAwait(false);
+                    console.WriteLine($"Deployment of {manifest.Name} ({contractHash}) Transaction {txHash} submitted");
                 }
             }
 
             public static async Task<(UInt256 txHash, UInt160 contractHash)> ExecuteAsync(
                 IExpressNode expressNode, NefFile nefFile, ContractManifest manifest,
-                string accountName, string password, WitnessScope witnessScope, string data, bool force)
+                string accountName, string password, WitnessScope witnessScope, string data, bool force,
+                TextWriter? writer = null)
             {
                 var (wallet, accountHash) = expressNode.Chain.ResolveSigner(accountName, password);
 
@@ -131,6 +133,7 @@ namespace NeoExpress.Commands
                     .ConfigureAwait(false);
 
                 var contractHash = Neo.SmartContract.Helper.GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
+                writer?.WriteLineAsync($"Deployment of {manifest.Name} ({contractHash}) Transaction {txHash} submitted").ConfigureAwait(false);
                 return (txHash, contractHash);
             }
         }

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
-
+using TextWriter = System.IO.TextWriter;
 namespace NeoExpress.Commands
 {
     partial class CheckpointCommand
@@ -36,12 +36,11 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
                 using var expressNode = chain.GetExpressNode();
-                var (path, mode) = await ExecuteAsync(expressNode, fileSystem, Name, Force).ConfigureAwait(false);
-                console.WriteLine($"Created {fileSystem.Path.GetFileName(path)} checkpoint {mode}");
+                var (path, mode) = await ExecuteAsync(expressNode, fileSystem, Name, Force, console.Out).ConfigureAwait(false);
             }
 
             public static async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> ExecuteAsync(
-                IExpressNode expressNode, IFileSystem fileSystem, string checkpointPath, bool force)
+                IExpressNode expressNode, IFileSystem fileSystem, string checkpointPath, bool force, TextWriter? writer = null)
             {
                 if (expressNode.Chain.ConsensusNodes.Count != 1)
                 {
@@ -68,6 +67,8 @@ namespace NeoExpress.Commands
                 }
 
                 var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+                writer?.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}")
+                    .ConfigureAwait(false);
                 return (checkpointPath, mode);
             }
         }

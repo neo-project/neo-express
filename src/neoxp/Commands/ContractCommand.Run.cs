@@ -74,7 +74,7 @@ namespace NeoExpress.Commands
                 {
                     var password = chain.ResolvePassword(Account, Password);
                     var txHash = await expressNode.SubmitTransactionAsync(script, Account, password, WitnessScope, AdditionalGas);
-                    await console.Out.WriteTxHashAsync(txHash, "Invocation", Json).ConfigureAwait(false);
+                    console.Out.WriteTxHash(txHash, $"Invocation", Json);
                 }
             }
         }

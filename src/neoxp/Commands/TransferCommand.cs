@@ -5,6 +5,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.VM;
+using TextWriter = System.IO.TextWriter;
 
 namespace NeoExpress.Commands
 {
@@ -57,13 +58,11 @@ namespace NeoExpress.Commands
             var password = chain.ResolvePassword(Sender, Password);
             var txHash = await ExecuteAsync(expressNode, Quantity, Asset, Sender, password, Receiver)
                 .ConfigureAwait(false);
-            await console.Out.WriteTxHashAsync(txHash, "Transfer", Json)
-                .ConfigureAwait(false);
+            console.Out.WriteTxHash(txHash, "Transfer", Json);
         }
 
-        public static async Task<Neo.UInt256> ExecuteAsync(IExpressNode expressNode,
-            
-            string quantity, string asset, string sender, string password, string receiver)
+        public static async Task<Neo.UInt256> ExecuteAsync(IExpressNode expressNode, string quantity, 
+            string asset, string sender, string password, string receiver, TextWriter? writer = null)
         {
             var (senderWallet, senderHash) = expressNode.Chain.ResolveSigner(sender, password);
             var receiverHash = expressNode.Chain.ResolveAccountHash(receiver);
@@ -98,8 +97,10 @@ namespace NeoExpress.Commands
                 throw new ArgumentException($"Invalid quantity value {quantity}");
             }
 
-            return await expressNode.ExecuteAsync(senderWallet, senderHash, WitnessScope.CalledByEntry, builder.ToArray())
+            var txHash = await expressNode.ExecuteAsync(senderWallet, senderHash, WitnessScope.CalledByEntry, builder.ToArray())
                 .ConfigureAwait(false);
+            writer?.WriteTxHash(txHash, "Transfer");
+            return txHash;
         }    
     }
 }

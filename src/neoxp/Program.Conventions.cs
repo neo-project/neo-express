@@ -12,6 +12,7 @@ namespace NeoExpress
             public void Apply(ConventionContext context)
             {
                 if (context.ModelType is null) return;
+                if (context.ModelType.Equals(typeof(Commands.BatchCommand))) return;
                 if (context.ModelType.Equals(typeof(Commands.CreateCommand))) return;
 
                 var subCmdAttrib = context.ModelType.GetCustomAttribute<SubcommandAttribute>();

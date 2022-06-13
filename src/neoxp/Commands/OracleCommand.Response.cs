@@ -52,13 +52,7 @@ namespace NeoExpress.Commands
             {
                 if (!fileSystem.File.Exists(ResponsePath)) throw new Exception($"Response File {ResponsePath} couldn't be found");
 
-                JObject responseJson;
-                {
-                    using var stream = fileSystem.File.OpenRead(ResponsePath);
-                    using var reader = new System.IO.StreamReader(stream);
-                    using var jsonReader = new JsonTextReader(reader);
-                    responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
-                }
+                var responseJson = await LoadResponseAsync(fileSystem, ResponsePath).ConfigureAwait(false);
 
                 using var expressNode = chain.GetExpressNode();
                 var txHashes = await ExecuteAsync(expressNode, Url, OracleResponseCode.Success, responseJson, RequestId).ConfigureAwait(false);
@@ -87,6 +81,14 @@ namespace NeoExpress.Commands
                         }
                     }
                 }
+            }
+
+            public static async Task<JObject> LoadResponseAsync(IFileSystem fileSystem, string responsePath)
+            {
+                using var stream = fileSystem.File.OpenRead(responsePath);
+                using var reader = new System.IO.StreamReader(stream);
+                using var jsonReader = new JsonTextReader(reader);
+                return await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
             }
 
             public static async Task<IReadOnlyList<UInt256>> ExecuteAsync(IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)

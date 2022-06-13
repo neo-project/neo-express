@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using TextWriter = System.IO.TextWriter;
 
 namespace NeoExpress.Commands
 {
@@ -33,11 +34,10 @@ namespace NeoExpress.Commands
         internal async Task ExecuteAsync(IConsole console)
         {
             using var expressNode = chain.GetExpressNode();
-            await ExecuteAsync(expressNode, Count, TimestampDelta).ConfigureAwait(false);
-            await console.Out.WriteLineAsync($"{Count} empty blocks minted").ConfigureAwait(false);
+            await ExecuteAsync(expressNode, Count, TimestampDelta, console.Out).ConfigureAwait(false);
         }
 
-        public static async Task ExecuteAsync(IExpressNode expressNode, uint count, string timestampDelta)
+        public static async Task ExecuteAsync(IExpressNode expressNode, uint count, string timestampDelta, TextWriter? writer = null)
         {
             var delta = string.IsNullOrEmpty(timestampDelta)
                 ? TimeSpan.Zero
@@ -48,6 +48,7 @@ namespace NeoExpress.Commands
                         : throw new Exception($"Could not parse timestamp delta {timestampDelta}");
 
             await expressNode.FastForwardAsync(count, delta).ConfigureAwait(false);
+            writer?.WriteLineAsync($"{count} empty blocks minted").ConfigureAwait(false);
         }
     }
 }

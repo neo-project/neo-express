@@ -90,16 +90,16 @@ namespace NeoExpress
                 settings: settings,
                 container: container);
 
-        public static async Task WriteTxHashAsync(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false)
+        public static void WriteTxHash(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false)
         {
             if (json)
             {
-                await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
+                writer.WriteLine($"{txHash}");
             }
             else
             {
-                if (!string.IsNullOrEmpty(txType)) await writer.WriteAsync($"{txType} ").ConfigureAwait(false);
-                await writer.WriteLineAsync($"Transaction {txHash} submitted").ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(txType)) writer.Write($"{txType} ");
+                writer.WriteLine($"Transaction {txHash} submitted");
             }
         }
 

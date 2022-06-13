@@ -70,7 +70,7 @@ namespace NeoExpress.Commands
                 var password = chain.ResolvePassword(Account, Password);
                 using var expressNode = chain.GetExpressNode(Trace);
                 var txHash = await ExecuteAsync(expressNode, policy, Account, password).ConfigureAwait(false);
-                await console.Out.WriteTxHashAsync(txHash, "Policy Sync", Json).ConfigureAwait(false);
+                console.Out.WriteTxHash(txHash, $"Policy Sync", Json);
             }
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicyValues policyValues, string account, string password)

@@ -8,6 +8,7 @@ using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
 using Neo.VM;
 using Newtonsoft.Json;
+using TextWriter = System.IO.TextWriter;
 
 namespace NeoExpress.Commands
 {
@@ -61,13 +62,7 @@ namespace NeoExpress.Commands
             {
                 using var expressNode = chain.GetExpressNode(Trace);
 
-                if (!fileSystem.File.Exists(InvocationFile))
-                {
-                    throw new Exception($"Invocation file {InvocationFile} couldn't be found");
-                }
-
-                var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
-                var script = await parser.LoadInvocationScriptAsync(InvocationFile).ConfigureAwait(false);
+                var script = await LoadScriptAsync(expressNode, fileSystem, InvocationFile).ConfigureAwait(false);
 
                 if (Results)
                 {
@@ -78,8 +73,19 @@ namespace NeoExpress.Commands
                 {
                     var password = chain.ResolvePassword(Account, Password);
                     var txHash = await expressNode.SubmitTransactionAsync(script, Account, password, WitnessScope, AdditionalGas);
-                    await console.Out.WriteTxHashAsync(txHash, "Invocation", Json).ConfigureAwait(false);
+                    console.Out.WriteTxHash(txHash, $"Invocation", Json);
                 }
+            }
+
+            public static async Task<Script> LoadScriptAsync(IExpressNode expressNode, IFileSystem fileSystem, string invocationFile)
+            {
+                if (!fileSystem.File.Exists(invocationFile))
+                {
+                    throw new Exception($"Invocation file {invocationFile} couldn't be found");
+                }
+
+                var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
+                return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
             }
         }
     }

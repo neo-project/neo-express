@@ -51,7 +51,7 @@ namespace NeoExpress.Commands
                 using var expressNode = chain.GetExpressNode(Trace);
                 var password = chain.ResolvePassword(Account, Password);
                 var txHash = await ExecuteAsync(expressNode, ScriptHash, Account, password).ConfigureAwait(false);
-                await console.Out.WriteTxHashAsync(txHash, $"{ScriptHash} blocked", Json).ConfigureAwait(false);
+                console.Out.WriteTxHash(txHash, $"{ScriptHash} blocked", Json);
             }
 
             public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password)

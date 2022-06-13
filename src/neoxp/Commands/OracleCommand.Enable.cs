@@ -10,6 +10,7 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
+using TextWriter = System.IO.TextWriter;
 
 namespace NeoExpress.Commands
 {
@@ -51,10 +52,10 @@ namespace NeoExpress.Commands
                 using var expressNode = chain.GetExpressNode(Trace);
                 var password = chain.ResolvePassword(Account, Password);
                 var txHash = await ExecuteAsync(expressNode, Account, password).ConfigureAwait(false);
-                await console.Out.WriteTxHashAsync(txHash, "Oracle Enable", Json).ConfigureAwait(false);
+                console.Out.WriteTxHash(txHash, "Oracle Enable", Json);
             }
 
-            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string account, string password)
+            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string account, string password, TextWriter? writer = null)
             {
                 var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
@@ -68,7 +69,9 @@ namespace NeoExpress.Commands
 
                 using var builder = new ScriptBuilder();
                 builder.EmitDynamicCall(NativeContract.RoleManagement.Hash, "designateAsRole", roleParam, oraclesParam);
-                return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                writer?.WriteTxHash(txHash, $"Oracle Enable");
+                return txHash;
             }
         }
     }

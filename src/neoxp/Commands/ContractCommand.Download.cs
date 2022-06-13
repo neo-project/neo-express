@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Node;
+using TextWriter = System.IO.TextWriter;
 
 namespace NeoExpress.Commands
 {
@@ -56,12 +57,17 @@ namespace NeoExpress.Commands
                 {
                     throw new ArgumentException("Contract download is only supported for single-node consensus");
                 }
+                using var expressNode = chain.GetExpressNode();
+                await ExecuteAsync(expressNode, Contract, RpcUri, Height, Force, console.Out).ConfigureAwait(false);
+            }
 
-                var (state, storage) = await NodeUtility.DownloadContractStateAsync(Contract, RpcUri, Height)
+            public static async Task ExecuteAsync(IExpressNode expressNode, string contract, string rpcUri, uint height, OverwriteForce force, TextWriter? writer = null)
+            {
+                var (state, storage) = await NodeUtility.DownloadContractStateAsync(contract, rpcUri, height)
                     .ConfigureAwait(false);
 
-                using var expressNode = chain.GetExpressNode();
-                await expressNode.PersistContractAsync(state, storage, Force).ConfigureAwait(false);
+                await expressNode.PersistContractAsync(state, storage, force).ConfigureAwait(false);
+                writer?.WriteLineAsync($"{contract} downloaded from {rpcUri}").ConfigureAwait(false);
             }
         }
     }

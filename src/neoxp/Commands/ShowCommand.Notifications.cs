@@ -35,70 +35,55 @@ namespace NeoExpress.Commands
             internal string EventName { get; init; } = string.Empty;
 
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
+                using var expressNode = chain.GetExpressNode();
+                var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+                var contractMap = contracts.ToDictionary(c => c.hash, c => c.manifest.Name);
+
+                IReadOnlySet<UInt160>? contractFilter = null;
+                if (!string.IsNullOrEmpty(Contract))
                 {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // using var expressNode = chainManager.GetExpressNode();
-
-                    // var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-                    // var contractMap = contracts.ToDictionary(c => c.hash, c => c.manifest.Name);
-
-                    // IReadOnlySet<UInt160>? contractFilter = null;
-                    // if (!string.IsNullOrEmpty(Contract))
-                    // {
-                    //     if (UInt160.TryParse(Contract, out var _contract))
-                    //     {
-                    //         contractFilter = new HashSet<UInt160>() { _contract };
-                    //     }
-                    //     else
-                    //     {
-                    //         contractFilter = contracts
-                    //             .Where(c => Contract.Equals(c.manifest.Name, StringComparison.OrdinalIgnoreCase))
-                    //             .Select(c => c.hash)
-                    //             .ToHashSet();
-                    //         if (contractFilter.Count == 0) throw new Exception($"Couldn't resolve {Contract} contract");
-                    //     }
-                    // }
-
-                    // IReadOnlySet<string>? eventFilter = null;
-                    // if (!string.IsNullOrEmpty(EventName))
-                    // {
-                    //     eventFilter = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { EventName };
-                    // }
-
-                    // using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                    // writer.WriteStartArray();
-                    // var count = 0;
-                    // await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
-                    // {
-                    //     if (Count.HasValue && count++ >= Count.Value) break;
-
-                    //     writer.WriteStartObject();
-                    //     writer.WritePropertyName("block-index");
-                    //     writer.WriteValue(blockIndex);
-                    //     writer.WritePropertyName("script-hash");
-                    //     writer.WriteValue(notification.ScriptHash.ToString());
-                    //     if (contractMap.TryGetValue(notification.ScriptHash, out var name))
-                    //     {
-                    //         writer.WritePropertyName("contract-name");
-                    //         writer.WriteValue(name);
-                    //     }
-                    //     writer.WritePropertyName("event-name");
-                    //     writer.WriteValue(notification.EventName);
-                    //     writer.WritePropertyName("state");
-                    //     writer.WriteJson(Neo.VM.Helper.ToJson(notification.State)["value"]);
-                    //     writer.WriteEndObject();
-                    // }
-                    // writer.WriteEndArray();
-
-                    return 0;
+                    if (UInt160.TryParse(Contract, out var hash))
+                    {
+                        contractFilter = new HashSet<UInt160>() { hash };
+                    }
+                    else
+                    {
+                        contractFilter = contracts
+                            .Where(c => Contract.Equals(c.manifest.Name, StringComparison.OrdinalIgnoreCase))
+                            .Select(c => c.hash)
+                            .ToHashSet();
+                        if (contractFilter.Count == 0) throw new Exception($"Couldn't resolve {Contract} contract");
+                    }
                 }
-                catch (Exception ex)
+
+                IReadOnlySet<string>? eventFilter = null;
+                if (!string.IsNullOrEmpty(EventName))
                 {
-                    app.WriteException(ex);
-                    return 1;
+                    eventFilter = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { EventName };
+                }
+
+                using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                using var _ = writer.WriteArray();
+                var count = 0;
+
+                await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
+                {
+                    if (Count.HasValue && count++ >= Count.Value) break;
+
+                    using var __ = writer.WriteObject();
+                    writer.WriteProperty("block-index", blockIndex);
+                    writer.WriteProperty("script-hash", $"{notification.ScriptHash}");
+                    if (contractMap.TryGetValue(notification.ScriptHash, out var name))
+                    {
+                        writer.WriteProperty("contract-name", name);
+                    }
+                    writer.WriteProperty("event-name", notification.EventName);
+                    writer.WritePropertyName("state");
+                    writer.WriteJson(Neo.VM.Helper.ToJson(notification.State)["value"]);
                 }
             }
         }

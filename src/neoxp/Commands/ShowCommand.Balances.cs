@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -27,36 +28,44 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            [Option(Description = "Output as JSON")]
+            internal bool Json { get; init; } = false;
+
+            internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
+                using var expressNode = chain.GetExpressNode();
+                var accountHash = expressNode.Chain.ResolveAccountHash(Account);
+                var balances = await expressNode.ListBalancesAsync(accountHash).ConfigureAwait(false);
+
+                if (Json)
                 {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
-                    // {
-                    //     throw new Exception($"{Account} account not found.");
-                    // }
+                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                    using var _ = writer.WriteArray();
 
-                    // using var expressNode = chainManager.GetExpressNode();
-                    // var balances = await expressNode.ListBalancesAsync(accountHash).ConfigureAwait(false);
-
-                    // if (balances.Count == 0)
-                    // {
-                    //     console.WriteLine($"No balances for {Account}");
-                    // }
-
-                    // for (int i = 0; i < balances.Count; i++)
-                    // {
-                    //     console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
-                    //     console.WriteLine($"  balance: {new BigDecimal(balances[i].balance, balances[i].contract.Decimals)}");
-                    // }
-
-                    return 0;
+                    for (int i = 0; i < balances.Count; i++)
+                    {
+                        var balance = new BigDecimal(balances[i].balance, balances[i].contract.Decimals);
+                        
+                        using var o = writer.WriteObject();
+                        writer.WriteProperty("symbol", $"{balances[i].contract.Symbol}");
+                        writer.WriteProperty("contractHash", $"{balances[i].contract.ScriptHash}");
+                        writer.WriteProperty("balance", $"{balance}");
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    app.WriteException(ex);
-                    return 1;
+                    if (balances.Count == 0)
+                    {
+                        console.WriteLine($"No balances for {Account}");
+                    }
+
+                    for (int i = 0; i < balances.Count; i++)
+                    {
+                        console.WriteLine($"{balances[i].contract.Symbol} ({balances[i].contract.ScriptHash})");
+                        console.WriteLine($"  balance: {new BigDecimal(balances[i].balance, balances[i].contract.Decimals)}");
+                    }
                 }
             }
         }

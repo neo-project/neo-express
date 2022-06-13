@@ -20,10 +20,7 @@ namespace NeoExpress.Node
 
         public string Name => nameof(RocksDbExpressStorage);
 
-        public void Dispose()
-        {
-            throw new System.NotImplementedException();
-        }
+        public void Dispose() => db.Dispose();
 
         public IStore GetStore(string? path)
         {

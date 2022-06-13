@@ -2,6 +2,9 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
+using Neo.VM;
 
 namespace NeoExpress.Commands
 {
@@ -45,22 +48,58 @@ namespace NeoExpress.Commands
         [Option(Description = "Output as JSON")]
         internal bool Json { get; init; } = false;
 
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        internal Task<int> OnExecuteAsync(CommandLineApplication app)
+            => app.ExecuteAsync(this.ExecuteAsync);
+
+        internal async Task ExecuteAsync(IConsole console)
         {
-            try
-            {
-                await Task.CompletedTask;
-                // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                // var password = chainManager.Chain.ResolvePassword(Sender, Password);
-                // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                // await txExec.TransferAsync(Quantity, Asset, Sender, password, Receiver).ConfigureAwait(false);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                app.WriteException(ex);
-                return 1;
-            }
+            using var expressNode = chain.GetExpressNode(Trace);
+            var password = chain.ResolvePassword(Sender, Password);
+            var txHash = await ExecuteAsync(expressNode, Quantity, Asset, Sender, password, Receiver)
+                .ConfigureAwait(false);
+            await console.Out.WriteTxHashAsync(txHash, "Transfer", Json)
+                .ConfigureAwait(false);
         }
+
+        public static async Task<Neo.UInt256> ExecuteAsync(IExpressNode expressNode,
+            
+            string quantity, string asset, string sender, string password, string receiver)
+        {
+            var (senderWallet, senderHash) = expressNode.Chain.ResolveSigner(sender, password);
+            var receiverHash = expressNode.Chain.ResolveAccountHash(receiver);
+
+            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
+            using var builder = new ScriptBuilder();
+            if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
+            {
+                // balanceOf operation places current balance on eval stack
+                builder.EmitDynamicCall(assetHash, "balanceOf", senderHash);
+                // transfer operation takes 4 arguments, amount is 3rd parameter
+                // push null onto the stack and then switch positions of the top
+                // two items on eval stack so null is 4th arg and balance is 3rd
+                builder.Emit(OpCode.PUSHNULL, OpCode.SWAP);
+                builder.EmitPush(receiverHash);
+                builder.EmitPush(senderHash);
+                builder.EmitPush(4);
+                builder.Emit(OpCode.PACK);
+                builder.EmitPush("transfer");
+                builder.EmitPush(asset);
+                builder.EmitSysCall(Neo.SmartContract.ApplicationEngine.System_Contract_Call);
+            }
+            else if (decimal.TryParse(quantity, out var amount))
+            {
+                var decimalsScript = assetHash.MakeScript("decimals");
+                var result = await expressNode.GetResultAsync(decimalsScript).ConfigureAwait(false);
+                var decimals = (byte)(result.Stack[0].GetInteger());
+                builder.EmitDynamicCall(assetHash, "transfer", senderHash, receiverHash, amount.ToBigInteger(decimals), null);
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid quantity value {quantity}");
+            }
+
+            return await expressNode.ExecuteAsync(senderWallet, senderHash, WitnessScope.CalledByEntry, builder.ToArray())
+                .ConfigureAwait(false);
+        }    
     }
 }

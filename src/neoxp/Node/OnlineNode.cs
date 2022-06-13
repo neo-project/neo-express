@@ -5,7 +5,6 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit.Models;
-using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.IO.Json;
 using Neo.Network.P2P.Payloads;
@@ -27,6 +26,7 @@ namespace NeoExpress.Node
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
 
+        public IExpressChain Chain => chain;
         public ProtocolSettings ProtocolSettings { get; }
 
         public OnlineNode(IExpressChain chain, ExpressConsensusNode node)

@@ -13,11 +13,11 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
 using NeoExpress.Node;
-
-using FileMode = System.IO.FileMode;
-using FileAccess = System.IO.FileAccess;
-using StreamWriter = System.IO.StreamWriter;
 using Neo.Wallets.NEP6;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
+using Neo.Network.RPC.Models;
+using Neo.VM;
 
 namespace NeoExpress
 {
@@ -100,8 +100,8 @@ namespace NeoExpress
         public static IReadOnlyList<Wallet> GetMultiSigWallets(this IExpressChain chain, UInt160 accountHash)
         {
             var wallets = new List<Wallet>();
-            var settings = ProtocolSettings.Default with { AddressVersion = chain.AddressVersion };
-
+            var settings = chain.GetProtocolSettings();
+            
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var wallet = DevWallet.FromExpressWallet(chain.ConsensusNodes[i].Wallet, settings);
@@ -177,9 +177,8 @@ namespace NeoExpress
             return @params;
         }
 
-        public static Neo.IO.Json.JObject ExportNEP6(this ExpressWallet @this, string password, byte addressVersion)
+        public static Neo.IO.Json.JObject ExportNEP6(this ExpressWallet @this, string password, ProtocolSettings settings)
         {
-            var settings = ProtocolSettings.Default with { AddressVersion = addressVersion };
             var nep6Wallet = new NEP6Wallet(string.Empty, password, settings, @this.Name);
             foreach (var account in @this.Accounts)
             {
@@ -189,6 +188,107 @@ namespace NeoExpress
                 nep6Account.IsDefault = account.IsDefault;
             }
             return nep6Wallet.ToJson();
+        }
+
+        public static UInt160 ResolveAccountHash(this IExpressChain chain, string name)
+            => chain.TryResolveAccountHash(name, out var hash) 
+                ? hash 
+                : throw new Exception("TryResolveAccountHash failed");
+
+        public static bool TryResolveAccountHash(this IExpressChain chain, string name, out UInt160 accountHash)
+        {
+            if (chain.Wallets != null && chain.Wallets.Count > 0)
+            {
+                for (int i = 0; i < chain.Wallets.Count; i++)
+                {
+                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash();
+                        return true;
+                    }
+                }
+            }
+
+            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var nodeWallet = chain.ConsensusNodes[i].Wallet;
+                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    accountHash = nodeWallet.DefaultAccount.GetScriptHash();
+                    return true;
+                }
+            }
+
+            if (IExpressChain.GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                accountHash = chain.GetConsensusContract().ScriptHash;
+                return true;
+            }
+
+            if (UInt160.TryParse(name, out accountHash))
+            {
+                return true;
+            }
+
+            try
+            {
+                accountHash = Neo.Wallets.Helper.ToScriptHash(name, chain.AddressVersion);
+                return true;
+            }
+            catch {}
+
+            accountHash = UInt160.Zero;
+            return false;
+        }
+
+        public static string ResolvePassword(this IExpressChain chain, string name, string password)
+        {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
+
+            // if the user specified a password, use it
+            if (!string.IsNullOrEmpty(password)) return password;
+
+            // if the name is a valid Neo Express account name, no password is needed
+            if (chain.IsReservedName(name)) return string.Empty;
+            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return string.Empty;
+
+            // if a password is needed but not provided, prompt the user
+            return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
+        }
+
+        public static (Neo.Wallets.Wallet wallet, UInt160 accountHash) ResolveSigner(this IExpressChain @this, string name, string password)
+            => @this.TryResolveSigner(name, password, out var wallet, out var accountHash)
+                ? (wallet, accountHash)
+                : throw new Exception("ResolveSigner Failed");
+
+        public static bool TryImportNEP6(this IFileSystem fileSystem, string path, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
+        {
+            if (fileSystem.File.Exists(path))
+            {
+                var json = Neo.IO.Json.JObject.Parse(fileSystem.File.ReadAllBytes(path));
+                var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(string.Empty, password, settings, json);
+
+                wallet = new DevWallet(settings, nep6wallet.Name);
+                foreach (var account in nep6wallet.GetAccounts())
+                {
+                    var devAccount = wallet.CreateAccount(account.Contract, account.GetKey());
+                    devAccount.Label = account.Label;
+                    devAccount.IsDefault = account.IsDefault;
+                }
+
+                return true;
+            }
+
+            wallet = null;
+            return false;
+        }
+
+        public static async Task<RpcInvokeResult> GetResultAsync(this IExpressNode expressNode, Script script)
+        {
+            var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
+            if (result.State != VMState.HALT) throw new Exception(result.Exception ?? string.Empty);
+            return result;
         }
     }
 }

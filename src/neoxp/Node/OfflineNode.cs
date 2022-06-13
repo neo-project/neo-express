@@ -1,17 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
-using Akka.Actor;
 using Neo;
-using Neo.BlockchainToolkit.Models;
-using Neo.BlockchainToolkit.SmartContract;
-using Neo.Cryptography.ECC;
-using Neo.IO;
-using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
-using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
@@ -21,7 +13,6 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
-using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
 {
@@ -29,10 +20,12 @@ namespace NeoExpress.Node
     {
         readonly ExpressSystem expressSystem;
 
+        public IExpressChain Chain { get; }
         public ProtocolSettings ProtocolSettings => expressSystem.ProtocolSettings;
 
         public OfflineNode(IExpressChain chain, RocksDbExpressStorage expressStorage, bool enableTrace)
         {
+            Chain = chain;
             var node = chain.ConsensusNodes[0];
             expressSystem = new ExpressSystem(chain, node, expressStorage, enableTrace, null);
         }

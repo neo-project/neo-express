@@ -18,6 +18,7 @@ namespace NeoExpress
 {
     interface IExpressNode : IDisposable
     {
+        IExpressChain Chain { get; }
         ProtocolSettings ProtocolSettings { get; }
 
         enum CheckpointMode { Online, Offline }

@@ -48,7 +48,7 @@ namespace NeoExpress.Commands
                     {
                         var balance = new BigDecimal(balances[i].balance, balances[i].contract.Decimals);
                         
-                        using var o = writer.WriteObject();
+                        using var __ = writer.WriteObject();
                         writer.WriteProperty("symbol", $"{balances[i].contract.Symbol}");
                         writer.WriteProperty("contractHash", $"{balances[i].contract.ScriptHash}");
                         writer.WriteProperty("balance", $"{balance}");

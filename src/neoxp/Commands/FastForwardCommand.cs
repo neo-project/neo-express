@@ -27,33 +27,27 @@ namespace NeoExpress.Commands
         [Option(Description = "Timestamp delta for last generated block")]
         internal string TimestampDelta { get; init; } = string.Empty;
 
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        internal Task<int> OnExecuteAsync(CommandLineApplication app)
+            => app.ExecuteAsync(this.ExecuteAsync);
+
+        internal async Task ExecuteAsync(IConsole console)
         {
-            try
-            {
-                // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                // using var expressNode = chainManager.GetExpressNode();
-
-                // TimeSpan delta = ParseTimestampDelta(TimestampDelta);
-                // await expressNode.FastForwardAsync(Count, delta).ConfigureAwait(false);
-
-                // await console.Out.WriteLineAsync($"{Count} empty blocks minted").ConfigureAwait(false);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                app.WriteException(ex);
-                return 1;
-            }
+            using var expressNode = chain.GetExpressNode();
+            await ExecuteAsync(expressNode, Count, TimestampDelta).ConfigureAwait(false);
+            await console.Out.WriteLineAsync($"{Count} empty blocks minted").ConfigureAwait(false);
         }
 
-        internal static TimeSpan ParseTimestampDelta(string timestampDelta)
-            => string.IsNullOrEmpty(timestampDelta)
+        public static async Task ExecuteAsync(IExpressNode expressNode, uint count, string timestampDelta)
+        {
+            var delta = string.IsNullOrEmpty(timestampDelta)
                 ? TimeSpan.Zero
                 : ulong.TryParse(timestampDelta, out var @ulong)
                     ? TimeSpan.FromSeconds(@ulong)
                     : TimeSpan.TryParse(timestampDelta, out var timeSpan)
                         ? timeSpan
                         : throw new Exception($"Could not parse timestamp delta {timestampDelta}");
+
+            await expressNode.FastForwardAsync(count, delta).ConfigureAwait(false);
+        }
     }
 }

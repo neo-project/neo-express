@@ -5,6 +5,9 @@ using Neo;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
+using FileMode = System.IO.FileMode;
+using FileAccess = System.IO.FileAccess;
+using StreamWriter = System.IO.StreamWriter;
 
 namespace NeoExpress.Commands
 {
@@ -23,124 +26,88 @@ namespace NeoExpress.Commands
             this.chain = app.GetExpressFile();
         }
 
-        // internal void Execute(System.IO.TextWriter writer)
-        // {
-        //     var password = Prompt.GetPassword("Input password to use for exported wallets");
-        //     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-        //     var chain = chainManager.Chain;
-        //     var folder = fileSystem.Directory.GetCurrentDirectory();
+        internal int OnExecute(CommandLineApplication app) => app.Execute(this.Execute);
 
-        //     for (var i = 0; i < chain.ConsensusNodes.Count; i++)
-        //     {
-        //         var node = chain.ConsensusNodes[i];
-        //         writer.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
-        //         var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
-        //         ExportNodeWallet(chainManager.ProtocolSettings, node, walletPath, password);
-        //         var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
-        //         ExportNodeConfig(chainManager.ProtocolSettings, chain, node, nodeConfigPath, password, walletPath);
-        //     }
-        // }
-
-        internal int OnExecute(CommandLineApplication app, IConsole console)
+        internal void Execute(IFileSystem fileSystem, IConsole console)
         {
-            try
+            var password = Prompt.GetPassword("Input password to use for exported wallets");
+            var folder = fileSystem.Directory.GetCurrentDirectory();
+
+            for (var i = 0; i < chain.ConsensusNodes.Count; i++)
             {
-                // Execute(console.Out);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                app.WriteException(ex);
-                return 1;
+                var node = chain.ConsensusNodes[i];
+                console.Out.WriteLine($"Exporting {node.Wallet.Name} Consensus Node config + wallet");
+
+                var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
+                var json = node.Wallet.ExportNEP6(password, chain.GetProtocolSettings());
+                fileSystem.File.WriteAllText(walletPath, json.ToString());
+
+                var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
+                using var stream = fileSystem.File.Open(nodeConfigPath, FileMode.Create, FileAccess.Write);
+                using var writer = new JsonTextWriter(new StreamWriter(stream)) { Formatting = Formatting.Indented };
+                using var _ = writer.WriteObject();
+                WriteAppConfig(writer, node, password, walletPath);
+                WriteProtocolConfig(writer, chain);
             }
         }
 
-        // void ExportNodeWallet(ProtocolSettings settings, ExpressConsensusNode node, string path, string password)
-        // {
-        //     if (fileSystem.File.Exists(path)) fileSystem.File.Delete(path);
-        //     var devWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
-        //     devWallet.Export(path, password);
-        // }
+        internal static void WriteAppConfig(JsonWriter writer, ExpressConsensusNode node, string password, string walletPath)
+        {
+            // use neo-cli defaults for Logger & Storage
 
-        // void ExportNodeConfig(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node, string path, string password, string walletPath)
-        // {
-        //     using var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
-        //     using var writer = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented };
+            using var _ = writer.WritePropertyObject("ApplicationConfiguration");
 
-        //     // use neo-cli defaults for Logger & Storage
+            using (var __ = writer.WritePropertyObject("Storage"))
+            {
+                writer.WriteProperty("Engine", "MemoryStore");
+            }
 
-        //     writer.WriteStartObject();
-        //     writer.WritePropertyName("ApplicationConfiguration");
-        //     writer.WriteStartObject();
+            using (var __ = writer.WritePropertyObject("P2P"))
+            {
+                writer.WriteProperty("Port", node.TcpPort);
+                writer.WriteProperty("WsPort", node.WebSocketPort);
+            }
 
-        //     writer.WritePropertyName("Storage");
-        //     writer.WriteStartObject();
-        //     writer.WritePropertyName("Engine");
-        //     writer.WriteValue("MemoryStore");
-        //     writer.WriteEndObject();
+            using (var __ = writer.WritePropertyObject("UnlockWallet"))
+            {
+                writer.WriteProperty("Path", walletPath);
+                writer.WriteProperty("Password", password);
+                writer.WriteProperty("IsActive", true);
+            }
+        }
 
-        //     writer.WritePropertyName("P2P");
-        //     writer.WriteStartObject();
-        //     writer.WritePropertyName("Port");
-        //     writer.WriteValue(node.TcpPort);
-        //     writer.WritePropertyName("WsPort");
-        //     writer.WriteValue(node.WebSocketPort);
-        //     writer.WriteEndObject();
+        internal static void WriteProtocolConfig(JsonWriter writer, IExpressChain chain)
+        {
+            // use neo defaults for MillisecondsPerBlock
 
-        //     writer.WritePropertyName("UnlockWallet");
-        //     writer.WriteStartObject();
-        //     writer.WritePropertyName("Path");
-        //     writer.WriteValue(walletPath);
-        //     writer.WritePropertyName("Password");
-        //     writer.WriteValue(password);
-        //     writer.WritePropertyName("IsActive");
-        //     writer.WriteValue(true);
-        //     writer.WriteEndObject();
+            using var _ = writer.WritePropertyObject("ProtocolConfiguration");
 
-        //     writer.WriteEndObject();
+            writer.WriteProperty("Magic", chain.Network);
+            writer.WriteProperty("AddressVersion", chain.AddressVersion);
+            writer.WriteProperty("ValidatorsCount", chain.ConsensusNodes.Count);
 
-        //     WriteProtocolConfiguration(writer, settings, chain);
+            using (var __ = writer.WritePropertyArray("StandbyCommittee"))
+            {
+                var settings = chain.GetProtocolSettings();
+                for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+                {
+                    var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
+                    var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
+                    var key = devAccount.GetKey();
+                    if (key != null)
+                    {
+                        writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
+                    }
+                }
+            }
 
-        //     writer.WriteEndObject();
-        // }
-
-        // void WriteProtocolConfiguration(JsonTextWriter writer, ProtocolSettings settings, ExpressChain chain)
-        // {
-        //     // use neo defaults for MillisecondsPerBlock
-
-        //     writer.WritePropertyName("ProtocolConfiguration");
-        //     writer.WriteStartObject();
-
-        //     writer.WritePropertyName("Magic");
-        //     writer.WriteValue(chain.Network);
-        //     writer.WritePropertyName("AddressVersion");
-        //     writer.WriteValue(settings.AddressVersion);
-        //     writer.WritePropertyName("ValidatorsCount");
-        //     writer.WriteValue(chain.ConsensusNodes.Count);
-
-        //     writer.WritePropertyName("StandbyCommittee");
-        //     writer.WriteStartArray();
-        //     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-        //     {
-        //         var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
-        //         var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
-        //         var key = devAccount.GetKey();
-        //         if (key is not null)
-        //         {
-        //             writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
-        //         }
-        //     }
-        //     writer.WriteEndArray();
-
-        //     writer.WritePropertyName("SeedList");
-        //     writer.WriteStartArray();
-        //     foreach (var node in chain.ConsensusNodes)
-        //     {
-        //         writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
-        //     }
-        //     writer.WriteEndArray();
-
-        //     writer.WriteEndObject();
-        // }
+            using (var __ = writer.WritePropertyArray("SeedList"))
+            {
+                foreach (var node in chain.ConsensusNodes)
+                {
+                    writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
+                }
+            }
+        }
     }
 }

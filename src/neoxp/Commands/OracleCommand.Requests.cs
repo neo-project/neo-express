@@ -2,6 +2,7 @@ using McMaster.Extensions.CommandLineUtils;
 using System.Threading.Tasks;
 using System;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
 {
@@ -22,34 +23,38 @@ namespace NeoExpress.Commands
                 this.chain = app.GetExpressFile();
             }
 
-            [Option(Description = "Path to neo-express data file")]
-            internal string Input { get; init; } = string.Empty;
+            [Option(Description = "Output as JSON")]
+            internal bool Json { get; }
 
-            // internal async Task ExecuteAsync(TextWriter writer)
-            // {
-            //     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-            //     using var expressNode = chainManager.GetExpressNode();
-            //     var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
 
-            //     foreach (var (id, request) in requests)
-            //     {
-            //         await writer.WriteLineAsync($"request #{id}:").ConfigureAwait(false);
-            //         await writer.WriteLineAsync($"    Original Tx Hash: {request.OriginalTxid}").ConfigureAwait(false);
-            //         await writer.WriteLineAsync($"    Request Url:      \"{request.Url}\"").ConfigureAwait(false);
-            //     }
-            // }
-
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
+                using var expressNode = chain.GetExpressNode();
+                var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
+                if (Json)
                 {
-                    // await ExecuteAsync(console.Out);
-                    return 0;
+                    using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                    using var _ = writer.WriteArray();
+                    for (int i = 0; i < requests.Count; i++)
+                    {
+                        var (requestId, request) = requests[i];
+                        using var __ = writer.WriteObject();
+                        writer.WriteProperty("request-id", $"{requestId}");
+                        writer.WriteProperty("original-tx-hash", $"{request.OriginalTxid}");
+                        writer.WriteProperty("request-url", $"{request.Url}");
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    app.WriteException(ex);
-                    return 1;
+                    for (int i = 0; i < requests.Count; i++)
+                    {
+                        var (requestId, request) = requests[i];
+                        console.WriteLine($"request #{requestId}:");
+                        console.WriteLine($"    Original Tx Hash: {request.OriginalTxid}");
+                        console.WriteLine($"    Request Url:      \"{request.Url}\"");
+                    }
                 }
             }
         }

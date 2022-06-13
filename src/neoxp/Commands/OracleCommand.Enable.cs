@@ -1,7 +1,15 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
+using Neo.SmartContract.Native;
+using Neo.VM;
+using Neo.Wallets;
 
 namespace NeoExpress.Commands
 {
@@ -35,21 +43,32 @@ namespace NeoExpress.Commands
             [Option(Description = "Output as JSON")]
             internal bool Json { get; init; } = false;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app)
+                => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
-                {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // var password = chainManager.Chain.ResolvePassword(Account, Password);
-                    // using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    // await txExec.OracleEnableAsync(Account, password).ConfigureAwait(false);
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                using var expressNode = chain.GetExpressNode(Trace);
+                var password = chain.ResolvePassword(Account, Password);
+                var txHash = await ExecuteAsync(expressNode, Account, password).ConfigureAwait(false);
+                await console.Out.WriteTxHashAsync(txHash, "Oracle Enable", Json).ConfigureAwait(false);
+            }
+
+            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string account, string password)
+            {
+                var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
+
+                var oracles = expressNode.Chain.ConsensusNodes
+                    .Select(n => n.Wallet.DefaultAccount ?? throw new Exception("missing default account"))
+                    .Select(a => new KeyPair(Convert.FromHexString(a.PrivateKey)))
+                    .Select(kp => new ContractParameter(ContractParameterType.PublicKey) { Value = kp.PublicKey });
+
+                var roleParam = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
+                var oraclesParam = new ContractParameter(ContractParameterType.Array) { Value = oracles.ToList() };
+
+                using var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(NativeContract.RoleManagement.Hash, "designateAsRole", roleParam, oraclesParam);
+                return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
             }
         }
     }

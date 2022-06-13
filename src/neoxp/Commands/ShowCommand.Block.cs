@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 
 namespace NeoExpress.Commands
 {
@@ -22,23 +23,22 @@ namespace NeoExpress.Commands
             }
 
             [Argument(0, Description = "Optional block hash or index. Show most recent block if unspecified")]
-            internal string BlockHash { get; init; } = string.Empty;
+            internal string BlockIdentifier { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
-                {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // using var expressNode = chainManager.GetExpressNode();
-                    // var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
-                    // console.WriteJson(block.ToJson(chainManager.ProtocolSettings));
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+                using var expressNode = chain.GetExpressNode();
+                var blockTask = string.IsNullOrEmpty(BlockIdentifier)
+                    ? expressNode.GetLatestBlockAsync()
+                    : UInt256.TryParse(BlockIdentifier, out var hash)
+                        ? expressNode.GetBlockAsync(hash)
+                        : uint.TryParse(BlockIdentifier, out var index)
+                            ? expressNode.GetBlockAsync(index)
+                            : throw new ArgumentException(nameof(BlockIdentifier));
+                var block = await blockTask.ConfigureAwait(false);
+                console.WriteJson(block.ToJson(expressNode.ProtocolSettings));
             }
         }
     }

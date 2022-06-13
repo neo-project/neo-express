@@ -1,34 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
-using Neo.BlockchainToolkit.Models;
-using Neo.Cryptography;
-using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.IO.Json;
-using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
-using Neo.Persistence;
 using Neo.SmartContract;
-using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
-using Neo.VM;
-using Neo.Wallets;
-using NeoExpress.Commands;
-using NeoExpress.Models;
 using NeoBctkUtility = Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Node
 {
     class NodeUtility
     {
-
-
         public static bool TryParseRpcUri(string value, [MaybeNullWhen(false)] out Uri uri)
         {
             if (value.Equals("mainnet", StringComparison.OrdinalIgnoreCase))
@@ -48,12 +34,10 @@ namespace NeoExpress.Node
                 && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
         }
 
-
-
         const byte Prefix_Contract = 8;
 
-        public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)> DownloadContractStateAsync(
-                string contractHash, string rpcUri, uint stateHeight)
+        public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)>
+            DownloadContractStateAsync(string contractHash, string rpcUri, uint stateHeight)
         {
             if (!UInt160.TryParse(contractHash, out var _contractHash))
             {

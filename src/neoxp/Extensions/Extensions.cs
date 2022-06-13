@@ -46,44 +46,8 @@ namespace NeoExpress
                 Formatting = Newtonsoft.Json.Formatting.Indented
             };
 
-            WriteJson(writer, json);
+            writer.WriteJson(json);
             console.Out.WriteLine();
-        }
-
-        public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.IO.Json.JObject json)
-        {
-            switch (json)
-            {
-                case null:
-                    writer.WriteNull();
-                    break;
-                case Neo.IO.Json.JBoolean boolean:
-                    writer.WriteValue(boolean.Value);
-                    break;
-                case Neo.IO.Json.JNumber number:
-                    writer.WriteValue(new BigInteger(number.Value));
-                    break;
-                case Neo.IO.Json.JString @string:
-                    writer.WriteValue(@string.Value);
-                    break;
-                case Neo.IO.Json.JArray @array:
-                    writer.WriteStartArray();
-                    foreach (var value in @array)
-                    {
-                        WriteJson(writer, value);
-                    }
-                    writer.WriteEndArray();
-                    break;
-                case Neo.IO.Json.JObject @object:
-                    writer.WriteStartObject();
-                    foreach (var (key, value) in @object.Properties)
-                    {
-                        writer.WritePropertyName(key);
-                        WriteJson(writer, value);
-                    }
-                    writer.WriteEndObject();
-                    break;
-            }
         }
 
         public static void WriteException(this CommandLineApplication app, Exception exception, bool showInnerExceptions = false)

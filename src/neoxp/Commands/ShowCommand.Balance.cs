@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.VM;
 
 namespace NeoExpress.Commands
 {
@@ -30,26 +32,27 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
-            {
-                try
-                {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // if (!chainManager.Chain.TryGetAccountHash(Account, out var accountHash))
-                    // {
-                    //     throw new Exception($"{Account} account not found.");
-                    // }
+            internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
 
-                    // using var expressNode = chainManager.GetExpressNode();
-                    // var (balance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
-                    // await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
-                    return 0;
-                }
-                catch (Exception ex)
-                {
-                    app.WriteException(ex);
-                    return 1;
-                }
+            internal async Task ExecuteAsync(IConsole console)
+            {
+                using var expressNode = chain.GetExpressNode();
+                var accountHash = expressNode.Chain.ResolveAccountHash(Account);
+                var assetHash = await expressNode.ParseAssetAsync(Asset).ConfigureAwait(false);
+
+                var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(assetHash, "balanceOf", accountHash);
+                builder.EmitDynamicCall(assetHash, "symbol");
+                builder.EmitDynamicCall(assetHash, "decimals");
+
+                var result = await expressNode.GetResultAsync(builder.ToArray()).ConfigureAwait(false);
+                var balanceOf = result.Stack[0].GetInteger();
+                var symbol = result.Stack[1].GetString();
+                var decimals = (byte)result.Stack[2].GetInteger();
+                
+                var balance = new BigDecimal(balanceOf, decimals);
+
+                await console.Out.WriteLineAsync($"{symbol} ({assetHash}) balance: {balance}");
             }
         }
     }

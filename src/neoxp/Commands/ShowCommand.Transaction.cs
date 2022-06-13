@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
@@ -27,31 +28,22 @@ namespace NeoExpress.Commands
             [Required]
             internal string TransactionHash { get; init; } = string.Empty;
 
-            internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+            internal Task<int> OnExecuteAsync(CommandLineApplication app) => app.ExecuteAsync(this.ExecuteAsync);
+
+            internal async Task ExecuteAsync(IConsole console)
             {
-                try
-                {
-                    // var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    // using var expressNode = chainManager.GetExpressNode();
-                    // var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
+                using var expressNode = chain.GetExpressNode();
+                var (tx, log) = await expressNode.GetTransactionAsync(UInt256.Parse(TransactionHash))
+                    .ConfigureAwait(false);
 
-                    // using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
-                    // await writer.WriteStartObjectAsync();
-                    // await writer.WritePropertyNameAsync("transaction");
-                    // writer.WriteJson(tx.ToJson(chainManager.ProtocolSettings));
-                    // if (log is not null)
-                    // {
-                    //     await writer.WritePropertyNameAsync("application-log");
-                    //     writer.WriteJson(log.ToJson());
-                    // }
-                    // await writer.WriteEndObjectAsync();
-
-                    return 0;
-                }
-                catch (Exception ex)
+                using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                using var _ = writer.WriteObject();
+                writer.WritePropertyName("transaction");
+                writer.WriteJson(tx.ToJson(expressNode.ProtocolSettings));
+                if (log is not null)
                 {
-                    app.WriteException(ex);
-                    return 1;
+                    writer.WritePropertyName("application-log");
+                    writer.WriteJson(log.ToJson());
                 }
             }
         }

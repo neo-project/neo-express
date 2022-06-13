@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
             }
 
             var node = chain.ConsensusNodes[NodeIndex];
-            var nodePath = chain.GetNodePath(node);
+            var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
             console.WriteLine(nodePath);
 

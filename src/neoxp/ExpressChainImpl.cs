@@ -67,24 +67,10 @@ namespace NeoExpress
             }
 
             var node = chainInfo.ConsensusNodes[0];
-            var nodePath = GetNodePath(node);
+            var nodePath = fileSystem.GetNodePath(node);
             if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
             var expressStorage = new RocksDbExpressStorage(nodePath);
             return new OfflineNode(this, expressStorage, offlineTrace);
-        }
-
-        public string GetNodePath(ExpressConsensusNode node)
-        {
-            ArgumentNullException.ThrowIfNull(node);
-            ArgumentNullException.ThrowIfNull(node.Wallet);
-
-            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-
-            var rootPath = fileSystem.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
-                "Neo-Express",
-                "blockchain-nodes");
-            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 
         public bool TryResolveSigner(string name, string password, [MaybeNullWhen(false)] out Neo.Wallets.Wallet wallet, out UInt160 accountHash)

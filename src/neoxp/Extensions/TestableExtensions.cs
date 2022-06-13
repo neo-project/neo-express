@@ -290,5 +290,19 @@ namespace NeoExpress
             if (result.State != VMState.HALT) throw new Exception(result.Exception ?? string.Empty);
             return result;
         }
+
+        public static string GetNodePath(this IFileSystem fileSystem,  ExpressConsensusNode node)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+            ArgumentNullException.ThrowIfNull(node.Wallet);
+
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+
+            var rootPath = fileSystem.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
+                "Neo-Express",
+                "blockchain-nodes");
+            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
+        }
     }
 }

@@ -16,7 +16,6 @@ namespace NeoExpress
         IReadOnlyDictionary<string, string> Settings { get; }
 
         IExpressNode GetExpressNode(bool offlineTrace = false);
-        string GetNodePath(ExpressConsensusNode node);
         void AddWallet(ExpressWallet wallet);
         void RemoveWallet(ExpressWallet wallet);
         void SaveChain();

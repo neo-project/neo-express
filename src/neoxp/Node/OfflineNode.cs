@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Neo;
@@ -92,16 +93,10 @@ namespace NeoExpress.Node
         public ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
             => MakeAsync(() => expressSystem.PersistContract(state, storagePairs, force));
 
-#pragma warning disable CS1998
-        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
-        {
-            var notifications = expressSystem.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter);
-            foreach (var (block, _, notification) in notifications)
-            {
-                yield return (block, notification);
-            }
-        }
-#pragma warning restore CS1998
+        public IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
+            => expressSystem.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter)
+                .Select(t => (t.blockIndex, t.notification))
+                .ToAsyncEnumerable();
 
         ValueTask<T> MakeAsync<T>(Func<T> func)
         {

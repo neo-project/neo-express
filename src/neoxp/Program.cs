@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -67,11 +68,30 @@ namespace NeoExpress
             }
         }
 
-        private int OnExecute(CommandLineApplication app, IConsole console)
+        internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp(false);
             return 1;
+        }
+
+        public static bool TryParseRpcUri(string value, [MaybeNullWhen(false)] out Uri uri)
+        {
+            if (value.Equals("mainnet", StringComparison.OrdinalIgnoreCase))
+            {
+                uri = new Uri("http://seed1.neo.org:10332");
+                return true;
+            }
+
+            if (value.Equals("testnet", StringComparison.OrdinalIgnoreCase))
+            {
+                uri = new Uri("http://seed1t5.neo.org:20332");
+                return true;
+            }
+
+            return (Uri.TryCreate(value, UriKind.Absolute, out uri)
+                && uri is not null
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
         }
 
         static void EnableAnsiEscapeSequences()

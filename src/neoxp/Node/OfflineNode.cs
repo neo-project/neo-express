@@ -92,6 +92,7 @@ namespace NeoExpress.Node
         public ValueTask<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
             => MakeAsync(() => expressSystem.PersistContract(state, storagePairs, force));
 
+#pragma warning disable CS1998
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
             var notifications = expressSystem.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter);
@@ -100,6 +101,7 @@ namespace NeoExpress.Node
                 yield return (block, notification);
             }
         }
+#pragma warning restore CS1998
 
         ValueTask<T> MakeAsync<T>(Func<T> func)
         {

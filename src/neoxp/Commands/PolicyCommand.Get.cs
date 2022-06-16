@@ -46,7 +46,7 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    if (!Node.NodeUtility.TryParseRpcUri(RpcUri, out var uri))
+                    if (!Program.TryParseRpcUri(RpcUri, out var uri))
                         throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
                     using var rpcClient = new RpcClient(uri);
                     policy = await GetPolicyAsync(rpcClient).ConfigureAwait(false);

@@ -53,7 +53,7 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console)
             {
                 PolicyValues policy;
-                if (Node.NodeUtility.TryParseRpcUri(Source, out var uri))
+                if (Program.TryParseRpcUri(Source, out var uri))
                 {
                     using var rpcClient = new RpcClient(uri);
                     policy = await Get.GetPolicyAsync(rpcClient).ConfigureAwait(false);

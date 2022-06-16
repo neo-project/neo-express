@@ -40,19 +40,6 @@ namespace NeoExpress.Commands
         [Option(Description = "Path to neo-express data file")]
         internal string Input { get; init; } = string.Empty;
 
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
-        {
-            try
-            {
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                app.WriteException(ex, showInnerExceptions: true);
-                return 1;
-            }
-        }
-
         internal Task<int> OnExecuteAsync(CommandLineApplication app, CancellationToken token)
             => app.ExecuteAsync(this.ExecuteAsync, token);
 
@@ -64,9 +51,6 @@ namespace NeoExpress.Commands
 
             var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
             var root = batchFileInfo.Directory;
-
-            // await ExecuteAsync(batchFileInfo.Directory, commands, console.Out).ConfigureAwait(false);
-            // internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
 
             var input = root.Resolve(string.IsNullOrEmpty(Input)
                 ? Constants.DEFAULT_EXPRESS_FILENAME

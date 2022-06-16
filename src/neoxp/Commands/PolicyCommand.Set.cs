@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -59,7 +60,7 @@ namespace NeoExpress.Commands
                 console.Out.WriteTxHash(txHash, $"{Policy} Policy Set", Json);
             }
 
-            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicySettings policy, decimal value, string account, string password)
+            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicySettings policy, decimal value, string account, string password, TextWriter? writer = null)
             {
                 var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
@@ -95,7 +96,9 @@ namespace NeoExpress.Commands
                     builder.EmitDynamicCall(hash, operation, (uint)decimalValue.Value);
                 }
 
-                return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                writer?.WriteTxHash(txHash, $"{policy} Policy Set");
+                return txHash;
 
                 static bool GasPolicySetting(PolicySettings policy)
                 {

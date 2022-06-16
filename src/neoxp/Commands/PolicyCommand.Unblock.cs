@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -51,17 +52,19 @@ namespace NeoExpress.Commands
                 using var expressNode = chain.GetExpressNode(Trace);
                 var password = chain.ResolvePassword(Account, Password);
                 var txHash = await ExecuteAsync(expressNode, ScriptHash, Account, password).ConfigureAwait(false);
-                console.Out.WriteTxHash(txHash, $"{ScriptHash} blocked", Json);
+                console.Out.WriteTxHash(txHash, $"{ScriptHash} unblocked", Json);
             }
 
-            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password)
+            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password, TextWriter? writer = null)
             {
                 var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
                 var hash = await PolicyCommand.ResolveScriptHashAsync(expressNode, scriptHash);
                 using var builder = new ScriptBuilder();
                 builder.EmitDynamicCall(NativeContract.Policy.Hash, "unblockAccount", hash);
-                return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                writer?.WriteTxHash(txHash, $"{scriptHash} unblocked");
+                return txHash;
             }
         }
     }

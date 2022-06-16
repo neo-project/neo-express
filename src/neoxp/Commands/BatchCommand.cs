@@ -196,46 +196,56 @@ namespace NeoExpress.Commands
                             foreach (var txHash in txHashes) { console.WriteLine("  {txHash}"); }
                             break;
                         }
-                    // case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
-                    //     {
-                    //         await txExec.BlockAsync(
-                    //             cmd.Model.ScriptHash,
-                    //             cmd.Model.Account,
-                    //             cmd.Model.Password).ConfigureAwait(false);
-                    //         break;
-                    //     }
-                    // case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
-                    //     {
-                    //         await txExec.SetPolicyAsync(
-                    //             cmd.Model.Policy,
-                    //             cmd.Model.Value,
-                    //             cmd.Model.Account,
-                    //             cmd.Model.Password).ConfigureAwait(false);
-                    //         break;
-                    //     }
-                    // case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
-                    //     {
-                    //         var values = await txExec.TryLoadPolicyFromFileSystemAsync(
-                    //             root.Resolve(cmd.Model.Source))
-                    //             .ConfigureAwait(false);
-                    //         if (values.TryPickT0(out var policyValues, out _))
-                    //         {
-                    //             await txExec.SetPolicyAsync(policyValues, cmd.Model.Account, cmd.Model.Password);
-                    //         }
-                    //         else
-                    //         {
-                    //             throw new ArgumentException($"Could not load policy values from \"{cmd.Model.Source}\"");
-                    //         }
-                    //         break;
-                    //     }
-                    // case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
-                    //     {
-                    //         await txExec.UnblockAsync(
-                    //             cmd.Model.ScriptHash,
-                    //             cmd.Model.Account,
-                    //             cmd.Model.Password).ConfigureAwait(false);
-                    //         break;
-                    //     }
+                    case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
+                        {
+                            await PolicyCommand.Block.ExecuteAsync(
+                                expressNode, 
+                                cmd.Model.ScriptHash,
+                                cmd.Model.Account,
+                                cmd.Model.Password,
+                                console.Out).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
+                        {
+                            await PolicyCommand.Set.ExecuteAsync(
+                                expressNode, 
+                                cmd.Model.Policy,
+                                cmd.Model.Value,
+                                cmd.Model.Account,
+                                cmd.Model.Password,
+                                console.Out).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
+                        {
+                            var values = await PolicyCommand.Sync.TryLoadPolicyFromFileSystemAsync(
+                                fileSystem, root.Resolve(cmd.Model.Source)).ConfigureAwait(false);
+                            if (values.TryPickT0(out var policyValues, out _))
+                            {
+                                await PolicyCommand.Sync.ExecuteAsync(
+                                    expressNode, 
+                                    policyValues, 
+                                    cmd.Model.Account, 
+                                    cmd.Model.Password,
+                                    console.Out).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                throw new ArgumentException($"Could not load policy values from \"{cmd.Model.Source}\"");
+                            }
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
+                        {
+                            await PolicyCommand.Unblock.ExecuteAsync(
+                                expressNode,
+                                cmd.Model.ScriptHash,
+                                cmd.Model.Account,
+                                cmd.Model.Password,
+                                console.Out).ConfigureAwait(false);
+                            break;
+                        }
                     case CommandLineApplication<BatchFileCommands.Transfer> cmd:
                         {
                             await TransferCommand.ExecuteAsync(

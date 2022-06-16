@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -73,7 +74,7 @@ namespace NeoExpress.Commands
                 console.Out.WriteTxHash(txHash, $"Policy Sync", Json);
             }
 
-            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicyValues policyValues, string account, string password)
+            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, PolicyValues policyValues, string account, string password, TextWriter? writer = null)
             {
                 var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
 
@@ -86,8 +87,9 @@ namespace NeoExpress.Commands
                 builder.EmitDynamicCall(NativeContract.Policy.Hash, "setStoragePrice", policyValues.StorageFeeFactor);
                 builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.ExecutionFeeFactor);
 
-                return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray())
-                    .ConfigureAwait(false);
+                var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                writer?.WriteTxHash(txHash, $"Policy Sync");
+                return txHash;
             }
 
             public static async Task<OneOf<PolicyValues, Exception>> TryLoadPolicyFromFileSystemAsync(IFileSystem fileSystem, string path)

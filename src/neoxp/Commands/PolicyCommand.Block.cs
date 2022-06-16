@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -54,13 +55,15 @@ namespace NeoExpress.Commands
                 console.Out.WriteTxHash(txHash, $"{ScriptHash} blocked", Json);
             }
 
-            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password)
+            public static async Task<UInt256> ExecuteAsync(IExpressNode expressNode, string scriptHash, string account, string password, TextWriter? writer = null)
             {
                 var (wallet, accountHash) = expressNode.Chain.ResolveSigner(account, password);
                 var hash = await PolicyCommand.ResolveScriptHashAsync(expressNode, scriptHash);
                 using var builder = new ScriptBuilder();
                 builder.EmitDynamicCall(NativeContract.Policy.Hash, "blockAccount", hash);
-                return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+                writer?.WriteTxHash(txHash, $"{scriptHash} blocked");
+                return txHash;
             }
         }
     }

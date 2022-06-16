@@ -20,22 +20,14 @@ using SysIO = System.IO;
 namespace NeoTrace
 {
     [Command("neotrace", Description = "Generates .neo-trace files for transactions on a public Neo N3 blockchains", UsePagerForHelpText = false)]
+    [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
     [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
     class Program
     {
         public static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
-        [Option]
-        bool Version { get; }
-
         int OnExecute(CommandLineApplication app, IConsole console)
         {
-            if (Version)
-            {
-                console.WriteLine(ThisAssembly.AssemblyInformationalVersion);
-                return 0;
-            }
-
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp(false);
             return 1;
@@ -50,11 +42,11 @@ namespace NeoTrace
         };
 
         static IReadOnlyList<string> testNetRpcUris = new string[] {
-            "http://seed1t4.neo.org:20332",
-            "http://seed2t4.neo.org:20332",
-            "http://seed3t4.neo.org:20332",
-            "http://seed4t4.neo.org:20332",
-            "http://seed5t4.neo.org:20332"
+            "http://seed1t5.neo.org:20332",
+            "http://seed2t5.neo.org:20332",
+            "http://seed3t5.neo.org:20332",
+            "http://seed4t5.neo.org:20332",
+            "http://seed5t5.neo.org:20332"
         };
 
         internal static Uri ParseRpcUri(string value)

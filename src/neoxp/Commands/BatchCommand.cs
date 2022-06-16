@@ -46,7 +46,7 @@ namespace NeoExpress.Commands
         internal async Task ExecuteAsync(IFileSystem fileSystem, IConsole console, CancellationToken token)
         {
             if (!fileSystem.File.Exists(BatchFile)) throw new Exception($"Batch file {BatchFile} couldn't be found");
-            if (chain.IsRunning()) throw new Exception("Cannot run batch command while blockchain is running");
+            if (IsRunning(chain)) throw new Exception("Cannot run batch command while blockchain is running");
             var batchFileInfo = fileSystem.FileInfo.FromFileName(BatchFile);
 
             var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
@@ -262,6 +262,18 @@ namespace NeoExpress.Commands
                         throw new Exception($"Unknown batch command {pr.SelectedCommand.GetType()}");
                 }
             }
+        }
+
+        static bool IsRunning(IExpressChain @this)
+        {
+            for (var i = 0; i < @this.ConsensusNodes.Count; i++)
+            {
+                if (@this.ConsensusNodes[i].IsRunning())
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api

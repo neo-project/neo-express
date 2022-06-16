@@ -1,43 +1,155 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Neo;
-using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
+using NeoExpress.Node;
 
 namespace NeoExpress
 {
     static class ExpressChainExtensions
     {
-        // this method only used in Online/OfflineNode ExecuteAsync
-        // public static IReadOnlyList<Wallet> GetMultiSigWallets(this ExpressChain chain, ProtocolSettings settings, UInt160 accountHash)
-        // {
-        //     var builder = ImmutableList.CreateBuilder<Wallet>();
-        //     for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-        //     {
-        //         var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
-        //         if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
-        //     }
+        public static ProtocolSettings GetProtocolSettings(this IExpressChain? chain, uint? secondsPerBlock = null)
+        {
+            var blockTime = secondsPerBlock.HasValue
+                ? secondsPerBlock.Value
+                : (chain?.TryReadSetting("chain.SecondsPerBlock", uint.TryParse, out uint setting) ?? false)
+                    ? setting
+                    : 0;
 
-        //     for (int i = 0; i < chain.Wallets.Count; i++)
-        //     {
-        //         var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-        //         if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
-        //     }
+            return chain == null
+                ? ProtocolSettings.Default
+                : ProtocolSettings.Default with
+                {
+                    Network = chain.Network,
+                    AddressVersion = chain.AddressVersion,
+                    MillisecondsPerBlock = blockTime == 0 ? 15000 : blockTime * 1000,
+                    ValidatorsCount = chain.ConsensusNodes.Count,
+                    StandbyCommittee = chain.ConsensusNodes.Select(GetPublicKey).ToArray(),
+                    SeedList = chain.ConsensusNodes
+                        .Select(n => $"{System.Net.IPAddress.Loopback}:{n.TcpPort}")
+                        .ToArray(),
+                };
 
-        //     return builder.ToImmutable();
-        // }
+            static Neo.Cryptography.ECC.ECPoint GetPublicKey(ExpressConsensusNode node)
+                => new Neo.Wallets.KeyPair(Convert.FromHexString(node.Wallet.Accounts.Select(a => a.PrivateKey).Distinct().Single())).PublicKey;
+        }
 
-        public static KeyPair[] GetConsensusNodeKeys(this ExpressChain chain)
-            => chain.ConsensusNodes
-                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
-                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
-                .ToArray();
+        public static Contract GetConsensusContract(this IExpressChain chain)
+        {
+            List<Neo.Cryptography.ECC.ECPoint> publicKeys = new(chain.ConsensusNodes.Count);
+            foreach (var node in chain.ConsensusNodes)
+            {
+                var account = node.Wallet.DefaultAccount ?? throw new Exception("Missing Default Account");
+                var privateKey = Convert.FromHexString(account.PrivateKey);
+                var keyPair = new Neo.Wallets.KeyPair(privateKey);
+                publicKeys.Add(keyPair.PublicKey);
+            }
+
+            var m = publicKeys.Count * 2 / 3 + 1;
+            return Contract.CreateMultiSigContract(m, publicKeys);
+        }
+
+        public static ExpressWallet? GetWallet(this IExpressChain chain, string name)
+            => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
+                .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
+
+        public static IReadOnlyList<Wallet> GetMultiSigWallets(this IExpressChain chain, UInt160 accountHash)
+        {
+            var wallets = new List<Wallet>();
+            var settings = chain.GetProtocolSettings();
+
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var wallet = DevWallet.FromExpressWallet(chain.ConsensusNodes[i].Wallet, settings);
+                if (wallet.GetAccount(accountHash) is not null) wallets.Add(wallet);
+            }
+
+            for (int i = 0; i < chain.Wallets.Count; i++)
+            {
+                var wallet = DevWallet.FromExpressWallet(chain.Wallets[i], settings);
+                if (wallet.GetAccount(accountHash) is not null) wallets.Add(wallet);
+            }
+
+            return wallets;
+        }
+
+        public static UInt160 ResolveAccountHash(this IExpressChain chain, string name)
+            => chain.TryResolveAccountHash(name, out var hash)
+                ? hash
+                : throw new Exception("TryResolveAccountHash failed");
+
+        public static bool TryResolveAccountHash(this IExpressChain chain, string name, out UInt160 accountHash)
+        {
+            if (chain.Wallets != null && chain.Wallets.Count > 0)
+            {
+                for (int i = 0; i < chain.Wallets.Count; i++)
+                {
+                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        accountHash = chain.Wallets[i].DefaultAccount.CalculateScriptHash();
+                        return true;
+                    }
+                }
+            }
+
+            Debug.Assert(chain.ConsensusNodes != null && chain.ConsensusNodes.Count > 0);
+            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            {
+                var nodeWallet = chain.ConsensusNodes[i].Wallet;
+                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    accountHash = nodeWallet.DefaultAccount.CalculateScriptHash();
+                    return true;
+                }
+            }
+
+            if (IExpressChain.GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                accountHash = chain.GetConsensusContract().ScriptHash;
+                return true;
+            }
+
+            if (UInt160.TryParse(name, out accountHash))
+            {
+                return true;
+            }
+
+            try
+            {
+                accountHash = Neo.Wallets.Helper.ToScriptHash(name, chain.AddressVersion);
+                return true;
+            }
+            catch { }
+
+            accountHash = UInt160.Zero;
+            return false;
+        }
+
+        public static string ResolvePassword(this IExpressChain chain, string name, string password)
+        {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
+
+            // if the user specified a password, use it
+            if (!string.IsNullOrEmpty(password)) return password;
+
+            // if the name is a valid Neo Express account name, no password is needed
+            if (chain.IsReservedName(name)) return string.Empty;
+            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return string.Empty;
+
+            // if a password is needed but not provided, prompt the user
+            return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
+        }
+
+        public static (Neo.Wallets.Wallet wallet, UInt160 accountHash) ResolveSigner(this IExpressChain @this, string name, string password)
+            => @this.TryResolveSigner(name, password, out var wallet, out var accountHash)
+                ? (wallet, accountHash)
+                : throw new Exception("ResolveSigner Failed");
 
         public static bool IsReservedName(this IExpressChain chain, string name)
         {
@@ -53,22 +165,22 @@ namespace NeoExpress
             return false;
         }
 
-        // public static string ResolvePassword(this ExpressChain chain, string name, string password)
-        // {
-        //     if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
+        public static bool IsMultiSig(this WalletAccount @this) => Neo.SmartContract.Helper.IsMultiSigContract(@this.Contract.Script);
 
-        //     // if the user specified a password, use it
-        //     if (!string.IsNullOrEmpty(password)) return password;
+        public static Neo.IO.Json.JObject ExportNEP6(this ExpressWallet @this, string password, ProtocolSettings settings)
+        {
+            var nep6Wallet = new Neo.Wallets.NEP6.NEP6Wallet(string.Empty, password, settings, @this.Name);
+            foreach (var account in @this.Accounts)
+            {
+                var key = Convert.FromHexString(account.PrivateKey);
+                var nep6Account = nep6Wallet.CreateAccount(key);
+                nep6Account.Label = account.Label;
+                nep6Account.IsDefault = account.IsDefault;
+            }
+            return nep6Wallet.ToJson();
+        }
 
-        //     // if the name is a valid Neo Express account name, no password is needed
-        //     if (chain.IsReservedName(name)) return password;
-        //     if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return password;
-
-        //     // if a password is needed but not provided, prompt the user
-        //     return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
-        // }
-
-        public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
+        public static UInt160 CalculateScriptHash(this ExpressWalletAccount? @this)
         {
             ArgumentNullException.ThrowIfNull(@this);
 
@@ -77,72 +189,16 @@ namespace NeoExpress
             return contract.ScriptHash;
         }
 
-        public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash)
+        public static bool IsRunning(this ExpressConsensusNode node)
         {
-            if (chain.Wallets is not null && chain.Wallets.Count > 0)
-            {
-                for (int i = 0; i < chain.Wallets.Count; i++)
-                {
-                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash();
-                        return true;
-                    }
-                }
-            }
+            // Check to see if there's a neo-express blockchain currently running by
+            // attempting to open a mutex with the multisig account address for a name
 
-            Debug.Assert(chain.ConsensusNodes is not null && chain.ConsensusNodes.Count > 0);
-
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
-            {
-                var nodeWallet = chain.ConsensusNodes[i].Wallet;
-                if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    accountHash = nodeWallet.DefaultAccount.GetScriptHash();
-                    return true;
-                }
-            }
-
-            if (IExpressChain.GENESIS.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                var keys = chain.ConsensusNodes
-                    .Select(n => n.Wallet.DefaultAccount ?? throw new Exception())
-                    .Select(a => new KeyPair(a.PrivateKey.HexToBytes()).PublicKey)
-                    .ToArray();
-                var contract = Neo.SmartContract.Contract.CreateMultiSigContract((keys.Length * 2 / 3) + 1, keys);
-                accountHash = contract.ScriptHash;
-                return true;
-            }
-
-            return chain.TryParseScriptHash(name, out accountHash);
+            var account = node.Wallet.Accounts.Single(a => a.IsDefault);
+            return System.Threading.Mutex.TryOpenExisting(
+                ExpressSystem.GLOBAL_PREFIX + account.ScriptHash,
+                out var _);
         }
-
-        public static bool TryParseScriptHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 hash)
-        {
-            try
-            {
-                hash = name.ToScriptHash(chain.AddressVersion);
-                return true;
-            }
-            catch
-            {
-                hash = null;
-                return false;
-            }
-        }
-
-        // public static (Wallet wallet, UInt160 accountHash) GetGenesisAccount(this ExpressChain chain, ProtocolSettings settings)
-        // {
-        //     Debug.Assert(chain.ConsensusNodes is not null && chain.ConsensusNodes.Count > 0);
-
-        //     var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[0].Wallet);
-        //     var account = wallet.GetMultiSigAccounts().Single();
-        //     return (wallet, account.ScriptHash);
-        // }
-
-        public static ExpressWallet? GetWallet(this ExpressChain chain, string name)
-            => (chain.Wallets ?? Enumerable.Empty<ExpressWallet>())
-                .SingleOrDefault(w => string.Equals(name, w.Name, StringComparison.OrdinalIgnoreCase));
 
         public delegate bool TryParse<T>(string value, [MaybeNullWhen(false)] out T parsedValue);
 

@@ -34,7 +34,10 @@ namespace NeoExpress.Node
             this.chain = chain;
             ProtocolSettings = chain.GetProtocolSettings();
             rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
-            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
+            consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.ConsensusNodes
+                .Select(n => n.Wallet.DefaultAccount ?? throw new Exception($"{n.Wallet.Name} missing default account"))
+                .Select(a => new KeyPair(a.PrivateKey.HexToBytes()))
+                .ToArray());
         }
 
         public void Dispose() => rpcClient.Dispose();
@@ -97,7 +100,7 @@ namespace NeoExpress.Node
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
-            var tm = await rpcClient.MakeTransactionAsync(script, signers).ConfigureAwait(false);
+            var tm = await MakeTransactionAsync(rpcClient, script, signers).ConfigureAwait(false);
 
             if (additionalGas > 0.0m)
             {
@@ -105,7 +108,7 @@ namespace NeoExpress.Node
             }
 
             var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            if (account.IsMultiSigContract())
+            if (account.IsMultiSig())
             {
                 var signatureCount = account.Contract.ParameterList.Length;
                 var multiSigWallets = chain.GetMultiSigWallets(accountHash);
@@ -129,6 +132,26 @@ namespace NeoExpress.Node
             var tx = await tm.SignAsync().ConfigureAwait(false);
 
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+
+            // TODO: Remove when https://github.com/neo-project/neo-modules/issues/720 is fixed
+            static async Task<TransactionManager> MakeTransactionAsync(RpcClient rpcClient, Script script, params Signer[] signers)
+            {
+                var invokeResult = await rpcClient.InvokeScriptAsync(script, signers).ConfigureAwait(false);
+                var blockCount = await rpcClient.GetBlockCountAsync().ConfigureAwait(false) - 1;
+
+                var tx = new Transaction
+                {
+                    Version = 0,
+                    Nonce = (uint)new Random().Next(),
+                    Script = script,
+                    Signers = signers ?? Array.Empty<Signer>(),
+                    ValidUntilBlock = blockCount - 1 + ProtocolSettings.Default.MaxValidUntilBlockIncrement,
+                    SystemFee = invokeResult.GasConsumed,
+                    Attributes = Array.Empty<TransactionAttribute>(),
+                };
+
+                return new TransactionManager(tx, rpcClient);
+            }
         }
 
         public async ValueTask<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
@@ -269,7 +292,7 @@ namespace NeoExpress.Node
             };
 
             var json = await rpcClient.RpcSendAsync("expresspersistcontract", request).ConfigureAwait(false);
-            
+
             if (json is not null && json is JNumber number)
             {
                 return (int)number.Value;

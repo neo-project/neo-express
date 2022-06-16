@@ -139,7 +139,7 @@ namespace NeoExpress.Node
 
             var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
             var wallet = DevWallet.FromExpressWallet(node.Wallet, neoSystem.Settings);
-            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            var multiSigAccount = wallet.GetAccounts().Where(a => a.IsMultiSig()).Single();
 
             using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
@@ -439,7 +439,7 @@ namespace NeoExpress.Node
 
             var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
             var account = wallet.GetAccount(accountHash) ?? throw new Exception();
-            if (account.IsMultiSigContract())
+            if (account.IsMultiSig())
             {
 
                 var multiSigWallets = chain.GetMultiSigWallets(accountHash);

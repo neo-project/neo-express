@@ -59,7 +59,15 @@ namespace NeoExpress.Commands
                     throw new InvalidOperationException($"node {scriptHash} currently running");
                 }
 
-                var checkpointTempPath = fileSystem.GetTempFolder();
+                string checkpointTempPath;
+                do
+                {
+                    checkpointTempPath = fileSystem.Path.Combine(
+                        fileSystem.Path.GetTempPath(),
+                        fileSystem.Path.GetRandomFileName());
+                }
+                while (fileSystem.Directory.Exists(checkpointTempPath));
+
                 using var folderCleanup = AnonymousDisposable.Create(() =>
                 {
                     if (fileSystem.Directory.Exists(checkpointTempPath))

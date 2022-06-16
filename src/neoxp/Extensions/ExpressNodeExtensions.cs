@@ -1,90 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 using Neo;
 using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
-using Neo.Cryptography.ECC;
-using Neo.IO;
 using Neo.Network.P2P.Payloads;
-using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
-using Neo.Wallets;
 using NeoExpress.Models;
-using OneOf;
-using All = OneOf.Types.All;
-using None = OneOf.Types.None;
 
 namespace NeoExpress
 {
     static class ExpressNodeExtensions
     {
-        static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
-        {
-            UInt160? _scriptHash = null;
-            for (int i = 0; i < contracts.Count; i++)
-            {
-                if (contracts[i].manifest.Name.Equals(name, comparison))
-                {
-                    if (_scriptHash is null)
-                    {
-                        _scriptHash = contracts[i].hash;
-                    }
-                    else
-                    {
-                        throw new Exception($"More than one deployed script named {name}");
-                    }
-                }
-            }
-
-            scriptHash = _scriptHash!;
-            return _scriptHash is not null;
-        }
-
-        public static async Task<OneOf<UInt160, None>> ParseScriptHashToBlockAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
-        {
-            // only check express chain wallets to block, not consensus nodes or genesis account
-            if (chain.Wallets is not null && chain.Wallets.Count > 0)
-            {
-                for (int i = 0; i < chain.Wallets.Count; i++)
-                {
-                    if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return chain.Wallets[i].DefaultAccount.GetScriptHash();
-                    }
-                }
-            }
-
-            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            if (TryGetContractHash(contracts, name, out var contractHash, comparison))
-            {
-                // don't even try to block native contracts
-                if (!NativeContract.Contracts.Any(c => c.Hash == contractHash))
-                {
-                    return contractHash;
-                }
-            }
-
-            if (chain.TryParseScriptHash(name, out var scriptHash)) return scriptHash;
-
-            return new None();
-        }
-
-        public static async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync(this IExpressNode expressNode, string contractName, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
-        {
-            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-            return contracts.Where(c => c.manifest.Name.Equals(contractName, comparison)).ToList();
-        }
-
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)
         {
             if ("neo".Equals(asset, StringComparison.OrdinalIgnoreCase))
@@ -115,275 +46,110 @@ namespace NeoExpress
             throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
         }
 
-        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, Wallet sender, UInt160 senderHash, UInt160 receiverHash)
+        public static async Task<ContractParameterParser> GetContractParameterParserAsync(this IExpressNode expressNode, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            if (quantity.IsT0)
-            {
-                var results = await expressNode.InvokeAsync(asset.MakeScript("decimals")).ConfigureAwait(false);
-                if (results.Stack.Length > 0 && results.Stack[0].Type == Neo.VM.Types.StackItemType.Integer)
-                {
-                    var decimals = (byte)(results.Stack[0].GetInteger());
-                    var value = quantity.AsT0.ToBigInteger(decimals);
-                    var script = asset.MakeScript("transfer", senderHash, receiverHash, value, null);
-                    return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
-                }
-                else
-                {
-                    throw new Exception("Invalid response from decimals operation");
-                }
-            }
-            else
-            {
-                Debug.Assert(quantity.IsT1);
+            var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+            ContractParameterParser.TryGetUInt160 tryGetContract =
+                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, comparison, out scriptHash);
+            return new ContractParameterParser(expressNode.ProtocolSettings, expressNode.Chain.TryResolveAccountHash, tryGetContract);
 
-                using var sb = new ScriptBuilder();
-                // balanceOf operation places current balance on eval stack
-                sb.EmitDynamicCall(asset, "balanceOf", senderHash);
-                // transfer operation takes 4 arguments, amount is 3rd parameter
-                // push null onto the stack and then switch positions of the top
-                // two items on eval stack so null is 4th arg and balance is 3rd
-                sb.Emit(OpCode.PUSHNULL);
-                sb.Emit(OpCode.SWAP);
-                sb.EmitPush(receiverHash);
-                sb.EmitPush(senderHash);
-                sb.EmitPush(4);
-                sb.Emit(OpCode.PACK);
-                sb.EmitPush("transfer");
-                sb.EmitPush(asset);
-                sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
-                return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
-            }
-        }
-
-        public static async Task<UInt256> DeployAsync(this IExpressNode expressNode,
-                                                      NefFile nefFile,
-                                                      ContractManifest manifest,
-                                                      Wallet wallet,
-                                                      UInt160 accountHash,
-                                                      WitnessScope witnessScope,
-                                                      ContractParameter? data)
-        {
-            data ??= new ContractParameter(ContractParameterType.Any);
-
-            // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
-            Neo.VM.Script script = nefFile.Script;
-            for (var i = 0; i < script.Length;)
+            static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, StringComparison comparison, out UInt160 scriptHash)
             {
-                var instruction = script.GetInstruction(i);
-                if (instruction is null)
+                UInt160? _scriptHash = null;
+                for (int i = 0; i < contracts.Count; i++)
                 {
-                    throw new FormatException($"null opcode found at {i}");
-                }
-                else
-                {
-                    if (!Enum.IsDefined(typeof(Neo.VM.OpCode), instruction.OpCode))
+                    if (contracts[i].manifest.Name.Equals(name, comparison))
                     {
-                        throw new FormatException($"Invalid opcode found at {i}-{((byte)instruction.OpCode).ToString("x2")}");
+                        if (_scriptHash == null)
+                        {
+                            _scriptHash = contracts[i].hash;
+                        }
+                        else
+                        {
+                            throw new Exception($"More than one deployed script named {name}");
+                        }
                     }
-                    i += instruction.Size;
-                }
-            }
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.ContractManagement.Hash,
-                "deploy",
-                nefFile.ToArray(),
-                manifest.ToJson().ToString(),
-                data);
-            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
-        }
-
-        public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, IEnumerable<ECPoint> oracles)
-        {
-            var roleParam = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
-            var oraclesParam = new ContractParameter(ContractParameterType.Array)
-            {
-                Value = oracles
-                    .Select(o => new ContractParameter(ContractParameterType.PublicKey) { Value = o })
-                    .ToList()
-            };
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "designateAsRole", roleParam, oraclesParam);
-            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
-        }
-
-        public static async Task<IReadOnlyList<ECPoint>> ListOracleNodesAsync(this IExpressNode expressNode)
-        {
-            var lastBlock = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
-
-            var role = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)(byte)Role.Oracle };
-            var index = new ContractParameter(ContractParameterType.Integer) { Value = (BigInteger)lastBlock.Index + 1 };
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.RoleManagement.Hash, "getDesignatedByRole", role, index);
-            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-
-            if (result.State == Neo.VM.VMState.HALT
-                && result.Stack.Length >= 1
-                && result.Stack[0] is Neo.VM.Types.Array array)
-            {
-                var nodes = new ECPoint[array.Count];
-                for (var x = 0; x < array.Count; x++)
-                {
-                    nodes[x] = ECPoint.DecodePoint(array[x].GetSpan(), ECCurve.Secp256r1);
-                }
-                return nodes;
-            }
-
-            return Array.Empty<ECPoint>();
-        }
-
-        public static async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(this IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)
-        {
-            if (responseCode == OracleResponseCode.Success && responseJson is null)
-            {
-                throw new ArgumentException("responseJson cannot be null when responseCode is Success", nameof(responseJson));
-            }
-
-            var oracleNodes = await ListOracleNodesAsync(expressNode);
-
-            var txHashes = new List<UInt256>();
-            var requests = await expressNode.ListOracleRequestsAsync().ConfigureAwait(false);
-            for (var x = 0; x < requests.Count; x++)
-            {
-                var (id, request) = requests[x];
-                if (requestId.HasValue && requestId.Value != id) continue;
-                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
-
-                var response = new OracleResponse
-                {
-                    Code = responseCode,
-                    Id = id,
-                    Result = GetResponseData(request.Filter),
-                };
-
-                var txHash = await expressNode.SubmitOracleResponseAsync(response);
-                txHashes.Add(txHash);
-            }
-            return txHashes;
-
-            byte[] GetResponseData(string filter)
-            {
-                if (responseCode != OracleResponseCode.Success)
-                {
-                    return Array.Empty<byte>();
                 }
 
-                System.Diagnostics.Debug.Assert(responseJson is not null);
-
-                var json = string.IsNullOrEmpty(filter)
-                    ? (Newtonsoft.Json.Linq.JContainer)responseJson
-                    : new Newtonsoft.Json.Linq.JArray(responseJson.SelectTokens(filter, true));
-                return Neo.Utility.StrictUTF8.GetBytes(json.ToString());
+                scriptHash = _scriptHash!;
+                return _scriptHash != null;
             }
         }
 
-        public static async Task<(RpcNep17Balance balance, Nep17Contract token)> GetBalanceAsync(this IExpressNode expressNode, UInt160 accountHash, string asset)
+        public static async Task<UInt256> SubmitTransactionAsync(this IExpressNode expressNode, Script script, string accountName, string password, WitnessScope witnessScope, decimal additionalGas = 0m)
         {
-            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(assetHash, "balanceOf", accountHash);
-            sb.EmitDynamicCall(assetHash, "symbol");
-            sb.EmitDynamicCall(assetHash, "decimals");
-
-            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-            var stack = result.Stack;
-            if (stack.Length >= 3)
-            {
-                var balance = stack[0].GetInteger();
-                var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
-                var decimals = (byte)(stack[2].GetInteger());
-
-                return (
-                    new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },
-                    new Nep17Contract(symbol, decimals, assetHash));
-            }
-
-            throw new Exception("invalid script results");
+            var (wallet, accountHash) = expressNode.Chain.ResolveSigner(accountName, password);
+            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, script, additionalGas).ConfigureAwait(false);
         }
 
-        public static async Task<Block> GetBlockAsync(this IExpressNode expressNode, string blockHash)
+        public static async Task<RpcInvokeResult> InvokeForResultsAsync(this IExpressNode expressNode, Script script, string accountName, WitnessScope witnessScope)
         {
-            if (string.IsNullOrEmpty(blockHash))
-            {
-                return await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
-            }
+            Signer? signer = expressNode.Chain.TryResolveSigner(accountName, string.Empty, out _, out var accountHash)
+                ? signer = new Signer
+                {
+                    Account = accountHash,
+                    Scopes = witnessScope,
+                    AllowedContracts = Array.Empty<UInt160>(),
+                    AllowedGroups = Array.Empty<Neo.Cryptography.ECC.ECPoint>(),
+                    Rules = Array.Empty<WitnessRule>()
+                }
+                : null;
 
-            if (UInt256.TryParse(blockHash, out var uint256))
-            {
-                return await expressNode.GetBlockAsync(uint256).ConfigureAwait(false);
-            }
-
-            if (uint.TryParse(blockHash, out var index))
-            {
-                return await expressNode.GetBlockAsync(index).ConfigureAwait(false);
-            }
-
-            throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));
+            return await expressNode.InvokeAsync(script, signer).ConfigureAwait(false);
         }
 
-        internal static async Task<PolicyValues> GetPolicyAsync(Func<Script, Task<RpcInvokeResult>> invokeAsync)
+        public static async Task<RpcInvokeResult> GetResultAsync(this IExpressNode expressNode, Script script)
         {
-            using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "getGasPerBlock");
-            builder.EmitDynamicCall(NativeContract.ContractManagement.Hash, "getMinimumDeploymentFee");
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "getRegisterPrice");
-            builder.EmitDynamicCall(NativeContract.Oracle.Hash, "getPrice");
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getFeePerByte");
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getStoragePrice");
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "getExecFeeFactor");
-
-            var result = await invokeAsync(builder.ToArray()).ConfigureAwait(false);
-
-            if (result.State != VMState.HALT) throw new Exception(result.Exception);
-            if (result.Stack.Length != 7) throw new InvalidOperationException();
-
-            return new PolicyValues()
-            {
-                GasPerBlock = new BigDecimal(result.Stack[0].GetInteger(), NativeContract.GAS.Decimals),
-                MinimumDeploymentFee = new BigDecimal(result.Stack[1].GetInteger(), NativeContract.GAS.Decimals),
-                CandidateRegistrationFee = new BigDecimal(result.Stack[2].GetInteger(), NativeContract.GAS.Decimals),
-                OracleRequestFee = new BigDecimal(result.Stack[3].GetInteger(), NativeContract.GAS.Decimals),
-                NetworkFeePerByte = new BigDecimal(result.Stack[4].GetInteger(), NativeContract.GAS.Decimals),
-                StorageFeeFactor = (uint)result.Stack[5].GetInteger(),
-                ExecutionFeeFactor = (uint)result.Stack[6].GetInteger(),
-            };
+            var result = await expressNode.InvokeAsync(script).ConfigureAwait(false);
+            if (result.State != VMState.HALT) throw new Exception(result.Exception ?? string.Empty);
+            return result;
         }
 
-        // public static ValueTask<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)
-        // {
-        //     return GetPolicyAsync(script => expressNode.InvokeAsync(script));
-        // }
-
-        public static async Task<bool> GetIsBlockedAsync(this IExpressNode expressNode, UInt160 scriptHash)
+        public static async Task<Script> BuildInvocationScriptAsync(this IExpressNode expressNode, string contract, string operation, IReadOnlyList<string>? arguments = null)
         {
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, "isBlocked", scriptHash);
-            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-            var stack = result.Stack;
-            if (stack.Length >= 1)
+            if (string.IsNullOrEmpty(operation))
+                throw new InvalidOperationException($"invalid contract operation \"{operation}\"");
+
+            var parser = await expressNode.GetContractParameterParserAsync().ConfigureAwait(false);
+            var scriptHash = parser.TryLoadScriptHash(contract, out var value)
+                ? value
+                : UInt160.TryParse(contract, out var uint160)
+                    ? uint160
+                    : throw new InvalidOperationException($"contract \"{contract}\" not found");
+
+            arguments ??= Array.Empty<string>();
+            var @params = new ContractParameter[arguments.Count];
+            for (int i = 0; i < arguments.Count; i++)
             {
-                var value = stack[0].GetBoolean();
-                return value;
+                @params[i] = ConvertArg(arguments[i], parser);
             }
 
-            throw new Exception("invalid script results");
-        }
+            using var scriptBuilder = new ScriptBuilder();
+            scriptBuilder.EmitDynamicCall(scriptHash, operation, @params);
+            return scriptBuilder.ToArray();
 
-        public static async Task<UInt256> BlockAccountAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, UInt160 scriptHash)
-        {
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, "blockAccount", scriptHash);
-            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
-        }
+            static ContractParameter ConvertArg(string arg, ContractParameterParser parser)
+            {
+                if (bool.TryParse(arg, out var boolArg))
+                {
+                    return new ContractParameter()
+                    {
+                        Type = ContractParameterType.Boolean,
+                        Value = boolArg
+                    };
+                }
 
-        public static async Task<UInt256> UnblockAccountAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, UInt160 scriptHash)
-        {
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.Policy.Hash, "unblockAccount", scriptHash);
-            return await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, sb.ToArray()).ConfigureAwait(false);
+                if (long.TryParse(arg, out var longArg))
+                {
+                    return new ContractParameter()
+                    {
+                        Type = ContractParameterType.Integer,
+                        Value = new System.Numerics.BigInteger(longArg)
+                    };
+                }
+
+                return parser.ParseParameter(arg);
+            }
         }
     }
 }

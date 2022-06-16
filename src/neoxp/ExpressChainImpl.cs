@@ -7,6 +7,7 @@ using System.Linq;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
 using NeoExpress.Models;
 using NeoExpress.Node;
 
@@ -26,14 +27,30 @@ namespace NeoExpress
         public IReadOnlyList<ExpressConsensusNode> ConsensusNodes => chainInfo.ConsensusNodes;
         public IReadOnlyList<ExpressWallet> Wallets => chainInfo.Wallets;
         public IReadOnlyDictionary<string, string> Settings
-            => (chainInfo.Settings as IReadOnlyDictionary<string, string>) 
+            => (chainInfo.Settings as IReadOnlyDictionary<string, string>)
                 ?? ImmutableDictionary<string, string>.Empty;
 
         public ExpressChainImpl(string input, IFileSystem fileSystem)
         {
-            (chainInfo, chainPath) = fileSystem.LoadExpressChainInfo(input);
-            chainInfo.Wallets ??= new List<ExpressWallet>();
             this.fileSystem = fileSystem;
+            chainPath = fileSystem.ResolveExpressFileName(input);
+            if (!fileSystem.File.Exists(chainPath))
+            {
+                throw new Exception($"{input} file doesn't exist");
+            }
+
+            chainInfo = fileSystem.LoadChain(chainPath);
+            chainInfo.Wallets ??= new List<ExpressWallet>();
+
+            // validate neo-express file by ensuring stored node zero default account SignatureRedeemScript matches a generated script
+            var account = chainInfo.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("consensus node 0 missing default account");
+            var keyPair = new Neo.Wallets.KeyPair(Convert.FromHexString(account.PrivateKey));
+            var contractScript = Convert.FromHexString(account.Contract.Script);
+
+            if (!Contract.CreateSignatureRedeemScript(keyPair.PublicKey).AsSpan().SequenceEqual(contractScript))
+            {
+                throw new Exception("Invalid Signature Redeem Script. Was this neo-express file created before RC1?");
+            }
         }
 
         public void AddWallet(ExpressWallet wallet)
@@ -124,7 +141,7 @@ namespace NeoExpress
                         return true;
                     }
 
-                    if (fileSystem.TryImportNEP6(name, password, settings, out var devWallet))
+                    if (TryImportNEP6(fileSystem, name, password, settings, out var devWallet))
                     {
                         var account = devWallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
                             ?? devWallet.GetAccounts().SingleOrDefault()
@@ -173,6 +190,29 @@ namespace NeoExpress
                     return false;
                 }
             }
-        }    
+
+            static bool TryImportNEP6(IFileSystem fileSystem, string path, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out DevWallet wallet)
+            {
+                if (fileSystem.File.Exists(path))
+                {
+                    var json = Neo.IO.Json.JObject.Parse(fileSystem.File.ReadAllBytes(path));
+                    var nep6wallet = new Neo.Wallets.NEP6.NEP6Wallet(string.Empty, password, settings, json);
+
+                    wallet = new DevWallet(settings, nep6wallet.Name);
+                    foreach (var account in nep6wallet.GetAccounts())
+                    {
+                        var devAccount = wallet.CreateAccount(account.Contract, account.GetKey());
+                        devAccount.Label = account.Label;
+                        devAccount.IsDefault = account.IsDefault;
+                    }
+
+                    return true;
+                }
+
+                wallet = null;
+                return false;
+            }
+
+        }
     }
 }

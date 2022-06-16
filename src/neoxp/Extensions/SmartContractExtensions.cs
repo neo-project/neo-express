@@ -4,7 +4,9 @@ using System.Linq;
 using System.Numerics;
 using Neo;
 using Neo.IO;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.SmartContract;
 using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -18,6 +20,9 @@ namespace NeoExpress
 {
     static class SmartContractExtensions
     {
+        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+            => ApplicationEngine.Run(script: builder.ToArray(), snapshot: snapshot, settings: settings, container: container);
+
         public static IEnumerable<TokenContract> EnumerateTokenContracts(this DataCache snapshot, ProtocolSettings settings)
         {
             foreach (var (contractHash, standard) in TokenContract.Enumerate(snapshot))
@@ -60,24 +65,6 @@ namespace NeoExpress
                 info = default;
                 return false;
             }
-        }
-
-        public static bool TryGetDecimals(this DataCache snapshot, UInt160 asset, ProtocolSettings settings, out byte decimals)
-        {
-            using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "decimals");
-
-            using var engine = builder.Invoke(settings, snapshot);
-            if (engine.State != VMState.FAULT
-                && engine.ResultStack.Count >= 1
-                && engine.ResultStack.Pop() is Integer integer)
-            {
-                decimals = (byte)integer.GetInteger();
-                return true;
-            }
-
-            decimals = default;
-            return false;
         }
 
         public static BigInteger GetNep17Balance(this DataCache snapshot, UInt160 asset, UInt160 address, ProtocolSettings settings)

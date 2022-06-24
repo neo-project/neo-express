@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
-using Neo.Network.P2P.Payloads;
 using OneOf;
+using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoTrace.Commands
 {
@@ -22,7 +22,10 @@ namespace NeoTrace.Commands
         {
             try
             {
-                var uri = Program.ParseRpcUri(RpcUri);
+                if (!TryParseRpcUri(RpcUri, out var uri))
+                {
+                    throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
+                }
                 var blockId = ParseBlockIdentifier();
 
                 await Program.TraceBlockAsync(uri, blockId, console).ConfigureAwait(false);

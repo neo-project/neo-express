@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -33,36 +32,6 @@ namespace NeoTrace
             return 1;
         }
 
-        static IReadOnlyList<string> mainNetRpcUris = new string[] {
-            "http://seed1.neo.org:10332",
-            "http://seed2.neo.org:10332",
-            "http://seed3.neo.org:10332",
-            "http://seed4.neo.org:10332",
-            "http://seed5.neo.org:10332"
-        };
-
-        static IReadOnlyList<string> testNetRpcUris = new string[] {
-            "http://seed1t5.neo.org:20332",
-            "http://seed2t5.neo.org:20332",
-            "http://seed3t5.neo.org:20332",
-            "http://seed4t5.neo.org:20332",
-            "http://seed5t5.neo.org:20332"
-        };
-
-        internal static Uri ParseRpcUri(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return new Uri(mainNetRpcUris[0]);
-
-            if (value.Equals("mainnet", StringComparison.InvariantCultureIgnoreCase)) return new Uri(mainNetRpcUris[0]);
-            if (value.Equals("testnet", StringComparison.InvariantCultureIgnoreCase)) return new Uri(testNetRpcUris[0]);
-            if (Uri.TryCreate(value, UriKind.Absolute, out var uri)
-                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
-            {
-                return uri;
-            }
-
-            throw new ArgumentException($"Invalid Neo RPC Uri {value}");
-        }
 
         internal static async Task TraceBlockAsync(Uri uri, OneOf<uint, UInt256> blockId, IConsole console)
         {

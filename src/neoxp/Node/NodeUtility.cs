@@ -20,7 +20,7 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
-using NeoBctkUtility = Neo.BlockchainToolkit.Utility;
+using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Node
 {
@@ -225,7 +225,7 @@ namespace NeoExpress.Node
                 throw new ArgumentException($"Invalid contract hash: \"{contractHash}\"");
             }
 
-            if (!TransactionExecutor.TryParseRpcUri(rpcUri, out var uri))
+            if (!TryParseRpcUri(rpcUri, out var uri))
             {
                 throw new ArgumentException($"Invalid RpcUri value \"{rpcUri}\"");
             }
@@ -268,7 +268,7 @@ namespace NeoExpress.Node
             {
                 var proof = await stateAPI.GetProofAsync(stateRoot.RootHash, NativeContract.ContractManagement.Hash, key)
                     .ConfigureAwait(false);
-                var (_, value) = NeoBctkUtility.VerifyProof(stateRoot.RootHash, proof);
+                var (_, value) = VerifyProof(stateRoot.RootHash, proof);
                 var item = new StorageItem(value);
                 contractState = item.GetInteroperable<ContractState>();
             }
@@ -318,7 +318,7 @@ namespace NeoExpress.Node
             static void ValidateProof(UInt256 rootHash, JObject proof, JObject result)
             {
                 var proofBytes = Convert.FromBase64String(proof.AsString());
-                var (provenKey, provenItem) = NeoBctkUtility.VerifyProof(rootHash, proofBytes);
+                var (provenKey, provenItem) = VerifyProof(rootHash, proofBytes);
 
                 var key = Convert.FromBase64String(result["key"].AsString());
                 if (!provenKey.Key.Span.SequenceEqual(key)) throw new Exception("Incorrect StorageKey");

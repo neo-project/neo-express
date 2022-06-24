@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.RPC;
 using NeoExpress.Models;
+using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Commands
 {
@@ -72,8 +73,10 @@ namespace NeoExpress.Commands
                 }
                 else
                 {
-                    if (!TransactionExecutor.TryParseRpcUri(RpcUri, out var uri))
+                    if (!TryParseRpcUri(RpcUri, out var uri))
+                    {
                         throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
+                    }
                     using var rpcClient = new RpcClient(uri);
                     return await rpcClient.GetPolicyAsync().ConfigureAwait(false);
                 }

@@ -127,7 +127,7 @@ or a transaction by hash.
 
 NeoTrace depends on the Neo 3.0.3 [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService)
 running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet
-(such as `http://seed1.neo.org:10332` and `http://seed1t4.neo.org:20332`) are configured to
+(such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to
 run the StateService plugin with `FullState` enabled.
 
 Like NeoExpress, NeoTrace is distributed as a [.NET Core Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).

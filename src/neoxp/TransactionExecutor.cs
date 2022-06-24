@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -18,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OneOf;
 using OneOf.Types;
+using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress
 {
@@ -357,25 +357,6 @@ namespace NeoExpress
             }
         }
 
-        public static bool TryParseRpcUri(string value, [NotNullWhen(true)] out Uri? uri)
-        {
-            if (value.Equals("mainnet", StringComparison.OrdinalIgnoreCase))
-            {
-                uri = new Uri("http://seed1.neo.org:10332");
-                return true;
-            }
-
-            if (value.Equals("testnet", StringComparison.OrdinalIgnoreCase))
-            {
-                uri = new Uri("http://seed1t5.neo.org:20332");
-                return true;
-            }
-
-            return (Uri.TryCreate(value, UriKind.Absolute, out uri)
-                && uri is not null
-                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
-        }
-
         public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
         {
             if (TryParseRpcUri(rpcUri, out var uri))
@@ -384,7 +365,7 @@ namespace NeoExpress
                 return await rpcClient.GetPolicyAsync().ConfigureAwait(false);
             }
 
-            return new None();
+            return default(None);
         }
 
         public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string path)

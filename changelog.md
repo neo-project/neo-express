@@ -15,26 +15,40 @@ may not exactly match a publicly released version.
 
 ## [Unreleased]
 
+#### Changed
+* Updated to Neo 3.3.1 (af99e7030dbbe671d25a45a6e758f8d61c9b38de)
+* use [VersionOption] (a6f35f1c2eaa613c8e17f5cfaf7841597807ef9a)
+* update local build files for consistency with Neo Blockchain Toolkit Library (af99e7030dbbe671d25a45a6e758f8d61c9b38de)
+
 ### NeoExpress
 
 #### Added
 
-* `show notifications` command
 * `contract download` command (#209). Thank you to @ixje for contributing this code!
+* `--timestamp-delta` option for `fastfwd` command (#224)
+* `show notification` command (#215)
 * `--json` option to `wallet list` command (3ea29881d8be352cedaeebd8b8b16e49aee3aed6 and #216)
 * `--data` option to `contract deploy` command (#214)
 * `--timestamp-delta` option to `fastfwd` command (#224)
 * include genesis account in `wallet list` command (#216)
+* IsRunning check to GetOfflineNode (dfb11995e1d13ea471c9687cc3c61ed9cf142261)
 
 #### Changed
 
 * In `batch` command, resolve non-absolute paths relative to the batch file location (#210)
 * In `show tx` command, modified output to be valid JSON that an be piped into JSON parsing scripts (#215)
+* In `contract deploy` command, modified output to include contract name + hash (#227)
+* In `contract download`, validate proofs when retrieving data from State Service (#232)
+* Moved RocksDB and Checkpoint storage providers from Neo Blockchain Toolkit Library to NeoExpress (#235)
 
 #### Fixed
 
-* unknown command has no exception handler ([#211](https://github.com/neo-project/neo-express/issues/211))
+* Unknown command has no exception handler (#213)
 * fixed JSON output of `contract get` command (#217)
+* Fix Invalid GetNep17Balances results (#221)
+* Fix Oracle Response RequestId parameter (#223)
+* fix null deref in LogPlugin.OnLog (1441805e18febdef983dc027a025568f5d2627f3)
+* fix testnet json rpc node addresses (2b60ef2595d7d387c334d09fb0e48ae5a843c499)
 
 ## [3.1.46] 2022-03-22
 

@@ -15,14 +15,14 @@
   <Choose>
     <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
       <ItemGroup>
-        <ProjectReference Include="$(NeoModuleLocalPath)\src\DBFTPlugin\DBFTPlugin.csproj" />
-        <ProjectReference Include="$(NeoModuleLocalPath)\src\RpcServer\RpcServer.csproj" />
+        <ProjectReference Include="$(NeoMonorepoPath)\modules\src\DBFTPlugin\DBFTPlugin.csproj" />
+        <ProjectReference Include="$(NeoMonorepoPath)\modules\src\RpcServer\RpcServer.csproj" />
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoModulesVersion)" />
-        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoModulesVersion)" />
+        <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
       </ItemGroup>
     </Otherwise>
   </Choose>

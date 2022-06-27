@@ -50,6 +50,12 @@ may not exactly match a publicly released version.
 * fix null deref in LogPlugin.OnLog (1441805e18febdef983dc027a025568f5d2627f3)
 * fix testnet json rpc node addresses (2b60ef2595d7d387c334d09fb0e48ae5a843c499)
 
+### NeoTrace
+
+#### Added
+
+* Verify local execution state matches remote chain execution state via application log
+
 ## [3.1.46] 2022-03-22
 
 ### NeoExpress

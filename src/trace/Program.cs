@@ -41,8 +41,8 @@ namespace NeoTrace
             var block = await GetBlockAsync(rpcClient, blockId).ConfigureAwait(false);
             if (block.Transactions.Length == 0) throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
 
-            await console.Out.WriteLineAsync($"Tracing all the transactions in block {block.Index} ({block.Hash})");
-            TraceBlock(uri, block, settings, console);
+            await console.Out.WriteLineAsync($"Tracing all the transactions in block {block.Index} ({block.Hash})").ConfigureAwait(false);
+            await TraceBlockAsync(rpcClient, uri, block, settings, console).ConfigureAwait(false);
         }
 
         internal static async Task TraceTransactionAsync(Uri uri, UInt256 txHash, IConsole console)
@@ -52,11 +52,11 @@ namespace NeoTrace
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var rpcTx = await rpcClient.GetRawTransactionAsync($"{txHash}").ConfigureAwait(false);
             var block = await GetBlockAsync(rpcClient, rpcTx.BlockHash).ConfigureAwait(false);
-            await console.Out.WriteLineAsync($"Tracing transaction {txHash} in block {block.Index} ({block.Hash})");
-            TraceBlock(uri, block, settings, console, rpcTx.Transaction.Hash);
+            await console.Out.WriteLineAsync($"Tracing transaction {txHash} in block {block.Index} ({block.Hash})").ConfigureAwait(false);
+            await TraceBlockAsync(rpcClient, uri, block, settings, console, rpcTx.Transaction.Hash).ConfigureAwait(false);
         }
 
-        static void TraceBlock(Uri uri, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
+        static async Task TraceBlockAsync(RpcClient rpcClient, Uri uri, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
         {
             IReadOnlyStore roStore = block.Index > 0
                 ? new StateServiceStore(uri, block.Index - 1)
@@ -81,15 +81,24 @@ namespace NeoTrace
                 using var engine = GetEngine(tx, clonedSnapshot);
                 if (engine is TraceApplicationEngine)
                 {
-                    console.Out.WriteLine($"Tracing Transaction #{i} ({tx.Hash})");
+                    await console.Out.WriteLineAsync($"Tracing Transaction #{i} ({tx.Hash})").ConfigureAwait(false);
                 }
                 else
                 {
-                    console.Out.WriteLine($"Executing Transaction #{i} ({tx.Hash})");
+                    await console.Out.WriteLineAsync($"Executing Transaction #{i} ({tx.Hash})").ConfigureAwait(false);
                 }
 
+                var appLog = await rpcClient.GetApplicationLogAsync(tx.Hash.ToString()).ConfigureAwait(false);
+                if (appLog.Executions.Count != 1)
+                    throw new Exception($"Unexpected Application Log executions count. Expected 1, got {appLog.Executions.Count}");
+                var execution = appLog.Executions[0];
+
                 engine.LoadScript(tx.Script);
-                if (engine.Execute() == VMState.HALT)
+                engine.Execute();
+                if (engine.State != execution.VMState)
+                    throw new Exception($"Unexpected script execution state. Expected {execution.VMState} got {engine.State}");
+
+                if (engine.State == VMState.HALT)
                 {
                     clonedSnapshot.Commit();
                 }

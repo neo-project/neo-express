@@ -18,12 +18,11 @@ jobs:
       run: dotnet tool install nbgv --tool-path ./tools
     - name: Run nbgv
       run: echo "NUGET_PACKAGE_VERSION=$(./tools/nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_ENV
-    - name: Install dependencies
-      run: dotnet restore
-    - name: Pack NeoTrace 
-      run: dotnet pack src/trace --output ./out --configuration Release --no-restore --verbosity normal
-    - name: Pack NeoExpress
-      run: dotnet pack src/neoxp --output ./out --configuration Release --no-restore --verbosity normal
+    - name: Restore + Pack
+      run: |
+        dotnet restore
+        dotnet pack src/trace --output ./out --configuration Release --no-restore --verbosity normal
+        dotnet pack src/neoxp --output ./out --configuration Release --no-restore --verbosity normal
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -38,3 +37,5 @@ jobs:
         automatic_release_tag: ${{ env.NUGET_PACKAGE_VERSION }}
         files: |
           ./out/*
+    - name: Push to Nuget.org
+      run: dotnet nuget push out/*.nupkg --api-key ${{ secrets.NUGET_ORG_TOKEN }} --source https://api.nuget.org/v3/index.json

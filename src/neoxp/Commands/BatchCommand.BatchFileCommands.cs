@@ -68,7 +68,7 @@ namespace NeoExpress.Commands
                     [Required]
                     internal string RpcUri { get; } = string.Empty;
 
-                    [Argument(2, Description = "Block height to get contract state for")]
+                    [Option(Description = "Block height to get contract state for")]
                     [Required]
                     internal uint Height { get; } = 0;
 

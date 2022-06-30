@@ -35,7 +35,7 @@ Different versions of Neo-Express require different versions of .NET Core.
 
 |Neo-Express Version|.NET Core Version|
 |-------------------|-----------------|
-| v3.1 | [v6.0](https://dotnet.microsoft.com/download/dotnet/6.0) |
+| v3.1 and later | [v6.0](https://dotnet.microsoft.com/download/dotnet/6.0) |
 | v3.0 | [v5.0](https://dotnet.microsoft.com/download/dotnet/5.0) |
 | v1.1 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
 | v1.0 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |

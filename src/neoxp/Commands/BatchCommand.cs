@@ -135,12 +135,14 @@ namespace NeoExpress.Commands
                                 throw new ArgumentException("Contract download is only supported for single-node consensus");
                             }
 
+                            var force = ContractCommand.Download.ParseOverwriteForceOption(cmd);
+
                             await ContractCommand.Download.ExecuteAsync(
                                 txExec.ExpressNode,
                                 cmd.Model.Contract,
                                 cmd.Model.RpcUri,
                                 cmd.Model.Height,
-                                cmd.Model.Force,
+                                force,
                                 writer).ConfigureAwait(false);
                             break;
                         }

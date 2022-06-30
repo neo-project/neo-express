@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Node;
@@ -41,9 +42,8 @@ namespace NeoExpress.Commands
             internal uint Height { get; } = 0;
 
             [Option(CommandOptionType.SingleOrNoValue,
-                Description = "Replace contract and storage if it already exists (Default: All)")]
-            [AllowedValues(StringComparison.OrdinalIgnoreCase, "All", "ContractOnly", "StorageOnly")]
-            internal OverwriteForce Force { get; init; } = OverwriteForce.None;
+                Description = "Replace contract and storage if it already exists\nDefaults to None if option unspecified, All if option value unspecified")]
+            internal (bool hasValue, OverwriteForce value) Force { get; init; }
 
             internal static async Task ExecuteAsync(IExpressNode expressNode, string contract, string rpcUri, uint height, OverwriteForce force, TextWriter writer)
             {
@@ -54,10 +54,27 @@ namespace NeoExpress.Commands
                 await writer.WriteLineAsync($"{state.Manifest.Name} contract state and {storageCount} from {rpcUri} persisted successfully");
             }
 
+            internal static OverwriteForce ParseOverwriteForceOption(CommandLineApplication app)
+            {
+                var forceOpt = app.Options.Single(o => o.LongName == "force");
+                if (forceOpt.HasValue())
+                {
+                    // default to All if --force is specified without a value
+                    var value = forceOpt.Value();
+                    return value is null
+                        ? OverwriteForce.All
+                        : Enum.Parse<OverwriteForce>(value, true);
+                }
+
+                // default to None if --force is not specified
+                return OverwriteForce.None;
+            }
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
                 {
+                    var force = ParseOverwriteForceOption(app);
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
 
                     if (chainManager.Chain.ConsensusNodes.Count != 1)
@@ -66,7 +83,7 @@ namespace NeoExpress.Commands
                     }
 
                     using var expressNode = chainManager.GetExpressNode();
-                    await ExecuteAsync(expressNode, Contract, RpcUri, Height, Force, console.Out).ConfigureAwait(false);
+                    await ExecuteAsync(expressNode, Contract, RpcUri, Height, force, console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

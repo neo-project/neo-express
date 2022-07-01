@@ -68,14 +68,13 @@ namespace NeoExpress.Commands
                     [Required]
                     internal string RpcUri { get; } = string.Empty;
 
-                    [Argument(2, Description = "Block height to get contract state for")]
+                    [Option(Description = "Block height to get contract state for")]
                     [Required]
                     internal uint Height { get; } = 0;
 
                     [Option(CommandOptionType.SingleOrNoValue,
-                        Description = "Replace contract and storage if it already exists (Default: All)")]
-                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "All", "ContractOnly", "StorageOnly")]
-                    internal ContractCommand.OverwriteForce Force { get; init; } = ContractCommand.OverwriteForce.None;
+                        Description = "Replace contract and storage if it already exists\nDefaults to None if option unspecified, All if option value unspecified")]
+                    internal (bool hasValue, ContractCommand.OverwriteForce value) Force { get; init; }
                 }
 
                 [Command("invoke")]

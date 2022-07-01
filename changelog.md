@@ -15,6 +15,15 @@ may not exactly match a publicly released version.
 
 ## [3.3] - 2022-06-28
 
+### NeoExpress
+
+#### Fixed
+
+* Fixed parsing of `contract download --force` option ([#237](https://github.com/neo-project/neo-express/issues/237))
+* Changed `height` argument for batch mode `contract download` to option for consistency with non-batch mode command ([#238](https://github.com/neo-project/neo-express/issues/238))
+
+## [3.3] - 2022-06-28
+
 #### Changed
 * Updated to Neo 3.3.1 (af99e7030dbbe671d25a45a6e758f8d61c9b38de)
 * use [VersionOption] (a6f35f1c2eaa613c8e17f5cfaf7841597807ef9a)

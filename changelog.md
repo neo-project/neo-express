@@ -13,7 +13,7 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [Unreleased]
+## [3.3] - 2022-06-28
 
 ### NeoExpress
 
@@ -63,7 +63,7 @@ may not exactly match a publicly released version.
 
 #### Added
 
-* Verify local execution state matches remote chain execution state via application log
+* Verify local execution state matches remote chain execution state via application log (71e7f2e330d508824e86b3e980b24dd44b0ebad0)
 
 ## [3.1.46] 2022-03-22
 

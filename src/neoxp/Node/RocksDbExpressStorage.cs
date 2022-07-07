@@ -22,7 +22,7 @@ namespace NeoExpress.Node
 
         public void Dispose()
         {
-            throw new System.NotImplementedException();
+            this.db.Dispose();
         }
 
         public IStore GetStore(string? path)

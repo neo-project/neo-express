@@ -13,7 +13,7 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [3.3] - 2022-06-28
+## [Unreleased]
 
 ### NeoExpress
 
@@ -21,6 +21,7 @@ may not exactly match a publicly released version.
 
 * Fixed parsing of `contract download --force` option ([#237](https://github.com/neo-project/neo-express/issues/237))
 * Changed `height` argument for batch mode `contract download` to option for consistency with non-batch mode command ([#238](https://github.com/neo-project/neo-express/issues/238))
+* Fixed RocksDbExpressStorage.Dispose method (659b7620e3e0c347e473e4520a43a76558535e18)
 
 ## [3.3] - 2022-06-28
 

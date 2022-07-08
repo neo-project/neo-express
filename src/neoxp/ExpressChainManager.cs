@@ -268,7 +268,7 @@ namespace NeoExpress
                 {
                     { "PluginConfiguration:Network", $"{chain.Network}" },
                     { "PluginConfiguration:BindAddress", $"{ipAddress}" },
-                    { "PluginConfiguration:Port", $"{node.RpcPort}" }
+                    { "PluginConfiguration:Port", $"{node.RpcPort}" },
                 };
 
                 if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
@@ -286,6 +286,10 @@ namespace NeoExpress
                 {
                     settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
                 }
+
+                var sessionEnabled = chain.TryReadSetting<bool>("rpc.SessionEnabled", bool.TryParse, out var value)
+                    ? value : true;
+                settings.Add("PluginConfiguration:SessionEnabled", $"{sessionEnabled}");
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
                 return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));

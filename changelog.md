@@ -17,6 +17,14 @@ may not exactly match a publicly released version.
 
 ### NeoExpress
 
+### Changed
+
+* RpcServer iterator session support enabled by default (#241)
+
+### Added
+
+* `rpc.SessionEnabled` setting  (#241)
+
 #### Fixed
 
 * Fixed parsing of `contract download --force` option ([#237](https://github.com/neo-project/neo-express/issues/237))

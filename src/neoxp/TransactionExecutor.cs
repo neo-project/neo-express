@@ -375,10 +375,10 @@ namespace NeoExpress
                 using var stream = fileSystem.File.OpenRead(path);
                 using var reader = new StreamReader(stream);
                 var text = await reader.ReadToEndAsync().ConfigureAwait(false);
-                var json = Neo.IO.Json.JObject.Parse(text);
+                var json = (Neo.Json.JObject)Neo.Json.JObject.Parse(text)!;
                 try
                 {
-                    return PolicyValues.FromJson(json);
+                    return PolicyValues.FromJson(json!);
                 }
                 catch { }
             }

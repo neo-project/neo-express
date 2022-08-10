@@ -187,7 +187,7 @@ namespace NeoExpress
 
             var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
             var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
-            var processId = int.Parse(json["process-id"].AsString());
+            var processId = int.Parse(json["process-id"]!.AsString());
             var process = System.Diagnostics.Process.GetProcessById(processId);
             await process.WaitForExitAsync().ConfigureAwait(false);
             return true;

@@ -7,7 +7,7 @@ using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.IO;
-using Neo.IO.Json;
+using Neo.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
@@ -71,7 +71,7 @@ namespace NeoExpress.Node
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)
         {
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
-            var tm = await rpcClient.MakeTransactionAsync(script, signers).ConfigureAwait(false);
+            var tm = await TransactionManager.MakeTransactionAsync(rpcClient, script, signers).ConfigureAwait(false);
 
             if (additionalGas > 0.0m)
             {
@@ -169,8 +169,8 @@ namespace NeoExpress.Node
             {
                 return array
                     .Select(j => (
-                        UInt160.Parse(j["hash"].AsString()),
-                        ContractManifest.FromJson(j["manifest"])))
+                        UInt160.Parse(j!["hash"]!.AsString()),
+                        ContractManifest.FromJson((JObject)j["manifest"]!)))
                     .ToList();
             }
 
@@ -183,7 +183,7 @@ namespace NeoExpress.Node
 
             if (json is not null && json is JArray array)
             {
-                return array.Select(TokenContract.FromJson).ToList();
+                return array.Select(j => TokenContract.FromJson(j!)).ToList();
             }
 
             return Array.Empty<TokenContract>();
@@ -195,20 +195,20 @@ namespace NeoExpress.Node
 
             if (json is not null && json is JArray array)
             {
-                return array.Select(FromJson).ToList();
+                return array.Select(j => FromJson(j!)).ToList();
             }
             return Array.Empty<(ulong, OracleRequest)>();
 
-            (ulong, OracleRequest) FromJson(JObject json)
+            (ulong, OracleRequest) FromJson(JToken json)
             {
-                var id = ulong.Parse(json["requestid"].AsString());
-                var originalTxId = UInt256.Parse(json["originaltxid"].AsString());
-                var gasForResponse = long.Parse(json["gasforresponse"].AsString());
-                var url = json["url"].AsString();
-                var filter = json["filter"].AsString();
-                var callbackContract = UInt160.Parse(json["callbackcontract"].AsString());
-                var callbackMethod = json["callbackmethod"].AsString();
-                var userData = Convert.FromBase64String(json["userdata"].AsString());
+                var id = ulong.Parse(json["requestid"]!.AsString());
+                var originalTxId = UInt256.Parse(json["originaltxid"]!.AsString());
+                var gasForResponse = long.Parse(json["gasforresponse"]!.AsString());
+                var url = json["url"]!.AsString();
+                var filter = json["filter"]!.AsString();
+                var callbackContract = UInt160.Parse(json["callbackcontract"]!.AsString());
+                var callbackMethod = json["callbackmethod"]!.AsString();
+                var userData = Convert.FromBase64String(json["userdata"]!.AsString());
 
                 return (id, new OracleRequest
                 {
@@ -231,7 +231,7 @@ namespace NeoExpress.Node
             if (json is not null && json is JArray array)
             {
                 return array
-                    .Select(s => (s["key"].AsString(), s["value"].AsString()))
+                    .Select(s => (s!["key"]!.AsString(), s!["value"]!.AsString()))
                     .ToList();
             }
 
@@ -266,31 +266,28 @@ namespace NeoExpress.Node
 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
-            JObject contractsArg = (contractFilter ?? Enumerable.Empty<UInt160>())
-                .Select(c => (JString)c.ToString())
-                .ToArray();
-            JObject eventsArg = (eventFilter ?? Enumerable.Empty<string>())
-                .Select(e => (JString)e)
-                .ToArray();
+            var contractsArg = new JArray((contractFilter ?? Enumerable.Empty<UInt160>())
+                .Select(c => new JString($"{c}")));
+            var eventsArg = new JArray((eventFilter ?? Enumerable.Empty<string>())
+                .Select(e => new JString(e)));
 
             var count = 0;
-
             while (true)
             {
                 var json = await rpcClient.RpcSendAsync("expressenumnotifications", contractsArg, eventsArg, count, 3)
                     .ConfigureAwait(false);
 
-                var truncated = json["truncated"].AsBoolean();
-                var values = (JArray)json["notifications"];
+                var truncated = json["truncated"]!.AsBoolean();
+                var values = (JArray)json["notifications"]!;
 
                 foreach (var v in values)
                 {
-                    var blockIndex = (uint)v["block-index"].AsNumber();
-                    var scriptHash = UInt160.Parse(v["script-hash"].AsString());
-                    var eventName = v["event-name"].AsString();
-                    var invType = (InventoryType)(byte)v["inventory-type"].AsNumber();
-                    var invHash = UInt256.Parse(v["inventory-hash"].AsString());
-                    var state = (Neo.VM.Types.Array)Neo.Network.RPC.Utility.StackItemFromJson(v["state"]);
+                    var blockIndex = (uint)v!["block-index"]!.AsNumber();
+                    var scriptHash = UInt160.Parse(v["script-hash"]!.AsString());
+                    var eventName = v["event-name"]!.AsString();
+                    var invType = (InventoryType)(byte)v["inventory-type"]!.AsNumber();
+                    var invHash = UInt256.Parse(v["inventory-hash"]!.AsString());
+                    var state = (Neo.VM.Types.Array)Neo.Network.RPC.Utility.StackItemFromJson((JObject)v["state"]!);
                     var notification = new NotificationRecord(scriptHash, eventName, state, invType, invHash);
                     yield return (blockIndex, notification);
                 }

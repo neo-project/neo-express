@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo;
 using Neo.IO;
-using Neo.IO.Json;
+using Neo.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
@@ -57,7 +57,7 @@ namespace NeoExpress.Node
             if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
             var value = appLogsStore.TryGet(hash.ToArray());
             return value is not null && value.Length != 0
-                ? JObject.Parse(Neo.Utility.StrictUTF8.GetString(value))
+                ? JToken.Parse(Neo.Utility.StrictUTF8.GetString(value)) as JObject
                 : null;
         }
 

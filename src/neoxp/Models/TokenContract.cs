@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Neo;
-using Neo.IO.Json;
+using Neo.Json;
 using Neo.Persistence;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -38,12 +38,12 @@ namespace NeoExpress.Models
             return json;
         }
 
-        public static TokenContract FromJson(JObject json)
+        public static TokenContract FromJson(JToken json)
         {
-            var symbol = json["symbol"].AsString();
-            var scriptHash = UInt160.Parse(json["scriptHash"].AsString());
-            var decimals = (byte)json["decimals"].AsNumber();
-            var standard = (TokenStandard)(byte)json["standard"].AsNumber();
+            var symbol = json["symbol"]!.AsString();
+            var scriptHash = UInt160.Parse(json["scriptHash"]!.AsString());
+            var decimals = (byte)json["decimals"]!.AsNumber();
+            var standard = (TokenStandard)(byte)json["standard"]!.AsNumber();
             return new TokenContract(symbol, decimals, scriptHash, standard);
         }
 

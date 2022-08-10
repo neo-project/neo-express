@@ -135,14 +135,7 @@ namespace NeoTrace
         static async Task<ProtocolSettings> GetProtocolSettingsAsync(Uri uri)
         {
             using var rpcClient = new RpcClient(uri);
-            var result = await rpcClient.RpcSendAsync("getversion").ConfigureAwait(false);
-            if (result["protocol"] == null)
-            {
-                var userAgent = result["useragent"].AsString();
-                throw new NotSupportedException($"Trace not supported by {userAgent} running on {uri}");
-            }
-
-            var version = RpcVersion.FromJson(result);
+            var version = await rpcClient.GetVersionAsync().ConfigureAwait(false);
             return ProtocolSettings.Default with
             {
                 AddressVersion = version.Protocol.AddressVersion,

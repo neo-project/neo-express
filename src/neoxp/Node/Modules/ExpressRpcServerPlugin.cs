@@ -557,7 +557,7 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JToken ExpressPersistContract(JObject @params)
+        public JToken ExpressPersistContract(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             var state = RpcClient.ContractStateFromJson((JObject)@params[0]!["state"]!);

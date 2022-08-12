@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 using Neo;
-using Neo.IO.Json;
+using Neo.Json;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
@@ -76,9 +76,9 @@ namespace NeoExpress.Models
 
         public static Nep17Contract FromJson(JObject json)
         {
-            var symbol = json["symbol"].AsString();
-            var scriptHash = UInt160.Parse(json["scriptHash"].AsString());
-            var decimals = (byte)json["decimals"].AsNumber();
+            var symbol = json["symbol"]!.AsString();
+            var scriptHash = UInt160.Parse(json["scriptHash"]!.AsString());
+            var decimals = (byte)json["decimals"]!.AsNumber();
             return new Nep17Contract(symbol, decimals, scriptHash);
         }
     }

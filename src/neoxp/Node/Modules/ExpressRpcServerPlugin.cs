@@ -7,7 +7,7 @@ using System.Threading;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.IO;
-using Neo.IO.Json;
+using Neo.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
@@ -84,10 +84,10 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             var height = NativeContract.Ledger.CurrentIndex(snapshot);
 
-            var count = @params.Count >= 1 ? uint.Parse(@params[0].AsString()) : 20;
+            var count = @params.Count >= 1 ? uint.Parse(@params[0]!.AsString()) : 20;
             count = count > 100 ? 100 : count;
 
-            var start = @params.Count >= 2 ? uint.Parse(@params[1].AsString()) : height;
+            var start = @params.Count >= 2 ? uint.Parse(@params[1]!.AsString()) : height;
             start = start > height ? height : start;
 
             var populatedBlocks = new JArray();
@@ -119,10 +119,10 @@ namespace NeoExpress.Node
         // ExpressGetNep17Contracts has been renamed ExpressGetTokenContracts,
         // but we keep the old method around for compat purposes
         [RpcMethod]
-        public JObject ExpressGetNep17Contracts(JArray _) => ExpressListTokenContracts(_);
+        public JArray ExpressGetNep17Contracts(JArray _) => ExpressListTokenContracts(_);
 
         [RpcMethod]
-        public JObject ExpressListTokenContracts(JArray _)
+        public JArray ExpressListTokenContracts(JArray _)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
 
@@ -137,7 +137,7 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JObject? ExpressGetContractState(JArray @params)
+        public JToken ExpressGetContractState(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             using var snapshot = neoSystem.GetSnapshot();
@@ -155,7 +155,7 @@ namespace NeoExpress.Node
                 }
             }
 
-            var param = @params[0].AsString();
+            var param = @params[0]!.AsString();
 
             if (UInt160.TryParse(param, out var scriptHash))
             {
@@ -175,10 +175,10 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JObject? ExpressGetContractStorage(JArray @params)
+        public JArray? ExpressGetContractStorage(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
-            var scriptHash = UInt160.Parse(@params[0].AsString());
+            var scriptHash = UInt160.Parse(@params[0]!.AsString());
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
             if (contract is null) return null;
 
@@ -196,7 +196,7 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JObject? ExpressListContracts(JArray @params)
+        public JArray ExpressListContracts(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             var contracts = NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
@@ -214,10 +214,10 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JObject? ExpressCreateCheckpoint(JArray @params)
+        public JToken ExpressCreateCheckpoint(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
-            string filename = @params[0].AsString();
+            string filename = @params[0]!.AsString();
 
             if (neoSystem.Settings.ValidatorsCount > 1)
             {
@@ -227,14 +227,14 @@ namespace NeoExpress.Node
             if (expressStorage is RocksDbExpressStorage rocksDbExpressStorage)
             {
                 rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
-                return filename;
+                return new JString(filename);
             }
 
             throw new NotSupportedException($"Checkpoint create is only supported for {nameof(RocksDbExpressStorage)}");
         }
 
         [RpcMethod]
-        public JObject? ExpressListOracleRequests(JArray _)
+        public JArray ExpressListOracleRequests(JArray _)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             var requests = new JArray();
@@ -255,15 +255,15 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JObject? ExpressCreateOracleResponseTx(JArray @params)
+        public JToken? ExpressCreateOracleResponseTx(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
-            var jsonResponse = @params[0];
+            var jsonResponse = @params[0]!;
             var response = new OracleResponse
             {
-                Id = (ulong)jsonResponse["id"].AsNumber(),
-                Code = (OracleResponseCode)jsonResponse["code"].AsNumber(),
-                Result = Convert.FromBase64String(jsonResponse["result"].AsString())
+                Id = (ulong)jsonResponse["id"]!.AsNumber(),
+                Code = (OracleResponseCode)jsonResponse["code"]!.AsNumber(),
+                Result = Convert.FromBase64String(jsonResponse["result"]!.AsString())
             };
 
             using var snapshot = neoSystem.GetSnapshot();
@@ -280,10 +280,10 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject ExpressEnumNotifications(JArray @params)
         {
-            var contracts = ((JArray)@params[0]).Select(j => UInt160.Parse(j.AsString())).ToHashSet();
-            var events = ((JArray)@params[1]).Select(j => j.AsString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            int skip = @params.Count >= 3 ? (int)@params[2].AsNumber() : 0;
-            int take = @params.Count >= 4 ? (int)@params[3].AsNumber() : MAX_NOTIFICATIONS;
+            var contracts = ((JArray)@params[0]!).Select(j => UInt160.Parse(j!.AsString())).ToHashSet();
+            var events = ((JArray)@params[1]!).Select(j => j!.AsString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            int skip = @params.Count >= 3 ? (int)@params[2]!.AsNumber() : 0;
+            int take = @params.Count >= 4 ? (int)@params[3]!.AsNumber() : MAX_NOTIFICATIONS;
             if (take > MAX_NOTIFICATIONS) take = MAX_NOTIFICATIONS;
 
             var notifications = persistencePlugin.Value
@@ -328,7 +328,7 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject GetApplicationLog(JArray _params)
         {
-            UInt256 hash = UInt256.Parse(_params[0].AsString());
+            UInt256 hash = UInt256.Parse(_params[0]!.AsString());
             return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction");
         }
 
@@ -344,7 +344,7 @@ namespace NeoExpress.Node
         public JObject GetNep17Balances(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
-            var address = AsScriptHash(@params[0]);
+            var address = AsScriptHash(@params[0]!);
 
             using var snapshot = neoSystem.GetSnapshot();
 
@@ -437,7 +437,7 @@ namespace NeoExpress.Node
         public JObject GetNep11Balances(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
-            var address = AsScriptHash(@params[0]);
+            var address = AsScriptHash(@params[0]!);
 
             using var snapshot = neoSystem.GetSnapshot();
 
@@ -526,8 +526,8 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             // logic replicated from TokenTracker.GetNep11Properties. 
-            var nep11Hash = AsScriptHash(@params[0]);
-            var tokenId = @params[1].AsString().HexToBytes();
+            var nep11Hash = AsScriptHash(@params[0]!);
+            var tokenId = @params[1]!.AsString().HexToBytes();
 
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(nep11Hash, "properties", CallFlags.ReadOnly, tokenId);
@@ -557,16 +557,17 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JObject ExpressPersistContract(JObject @params)
+        public JToken ExpressPersistContract(JArray @params)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
-            var state = RpcClient.ContractStateFromJson(@params[0]["state"]);
-            var storagePairs = ((JArray)@params[0]["storage"])
+            var state = RpcClient.ContractStateFromJson((JObject)@params[0]!["state"]!);
+            var storagePairs = ((JArray)@params[0]!["storage"]!)
                 .Select(s => (
-                    s["key"].AsString(),
-                    s["value"].AsString())
+                    s!["key"]!.AsString(),
+                    s!["value"]!.AsString())
                 ).ToArray();
-            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]["force"].AsString());
+
+            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]!["force"]!.AsString());
 
             return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
         }
@@ -583,12 +584,12 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             // parse parameters
-            var address = AsScriptHash(@params[0]);
+            var address = AsScriptHash(@params[0]!);
             ulong startTime = @params.Count > 1
-                ? (ulong)@params[1].AsNumber()
+                ? (ulong)@params[1]!.AsNumber()
                 : (DateTime.UtcNow - TimeSpan.FromDays(7)).ToTimestampMS();
             ulong endTime = @params.Count > 2
-                ? (ulong)@params[2].AsNumber()
+                ? (ulong)@params[2]!.AsNumber()
                 : DateTime.UtcNow.ToTimestampMS();
 
             if (endTime < startTime) throw new RpcException(-32602, "Invalid params");
@@ -652,7 +653,7 @@ namespace NeoExpress.Node
             };
         }
 
-        UInt160 AsScriptHash(JObject json)
+        UInt160 AsScriptHash(JToken json)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             var text = json.AsString();

@@ -37,7 +37,7 @@ namespace NeoExpress
             return value;
         }
 
-        public static void WriteJson(this IConsole console, Neo.IO.Json.JObject json)
+        public static void WriteJson(this IConsole console, Neo.Json.JObject json)
         {
             using var writer = new Newtonsoft.Json.JsonTextWriter(console.Out)
             {
@@ -48,23 +48,23 @@ namespace NeoExpress
             console.Out.WriteLine();
         }
 
-        public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.IO.Json.JObject json)
+        public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
         {
             switch (json)
             {
                 case null:
                     writer.WriteNull();
                     break;
-                case Neo.IO.Json.JBoolean boolean:
+                case Neo.Json.JBoolean boolean:
                     writer.WriteValue(boolean.Value);
                     break;
-                case Neo.IO.Json.JNumber number:
+                case Neo.Json.JNumber number:
                     writer.WriteValue(new BigInteger(number.Value));
                     break;
-                case Neo.IO.Json.JString @string:
+                case Neo.Json.JString @string:
                     writer.WriteValue(@string.Value);
                     break;
-                case Neo.IO.Json.JArray @array:
+                case Neo.Json.JArray @array:
                     writer.WriteStartArray();
                     foreach (var value in @array)
                     {
@@ -72,7 +72,7 @@ namespace NeoExpress
                     }
                     writer.WriteEndArray();
                     break;
-                case Neo.IO.Json.JObject @object:
+                case Neo.Json.JObject @object:
                     writer.WriteStartObject();
                     foreach (var (key, value) in @object.Properties)
                     {
@@ -135,38 +135,6 @@ namespace NeoExpress
         public static Task<PolicyValues> GetPolicyAsync(this RpcClient rpcClient)
         {
             return ExpressNodeExtensions.GetPolicyAsync(script => rpcClient.InvokeScriptAsync(script));
-        }
-
-        // TODO: Remove when https://github.com/neo-project/neo-modules/issues/720 is fixed
-        public static async Task<RpcInvokeResult> InvokeScriptAsync(this RpcClient rpcClient, Script script, params Signer[] signers)
-        {
-            List<Neo.IO.Json.JObject> list = new List<Neo.IO.Json.JObject> { Convert.ToBase64String(script.AsSpan()) };
-            if (signers.Length != 0)
-            {
-                list.Add(signers.Select((Signer p) => p.ToJson()).ToArray());
-            }
-            var result = await rpcClient.RpcSendAsync("invokescript", list.ToArray()).ConfigureAwait(false);
-            return RpcInvokeResult.FromJson(result);
-        }
-
-        // TODO: Remove when https://github.com/neo-project/neo-modules/issues/720 is fixed
-        public static async Task<TransactionManager> MakeTransactionAsync(this RpcClient rpcClient, Script script, params Signer[] signers)
-        {
-            var invokeResult = await rpcClient.InvokeScriptAsync(script, signers).ConfigureAwait(false);
-            var blockCount = await rpcClient.GetBlockCountAsync().ConfigureAwait(false) - 1;
-
-            var tx = new Transaction
-            {
-                Version = 0,
-                Nonce = (uint)new Random().Next(),
-                Script = script,
-                Signers = signers ?? Array.Empty<Signer>(),
-                ValidUntilBlock = blockCount - 1 + ProtocolSettings.Default.MaxValidUntilBlockIncrement,
-                SystemFee = invokeResult.GasConsumed,
-                Attributes = Array.Empty<TransactionAttribute>(),
-            };
-
-            return new TransactionManager(tx, rpcClient);
         }
 
         public static bool TryGetSigningAccount(this ExpressChainManager chainManager, string name, string password, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)

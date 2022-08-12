@@ -9,7 +9,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
-using Neo.IO.Json;
+using Neo.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
@@ -292,25 +292,25 @@ namespace NeoExpress.Node
                 var @params = StateAPI.MakeFindStatesParams(stateRoot.RootHash, _contractHash, default, start.Span);
                 var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
 
-                var results = (JArray)response["results"];
+                var results = (JArray)response["results"]!;
                 if (results.Count == 0) break;
 
-                ValidateProof(stateRoot.RootHash, response["firstProof"], results[0]);
+                ValidateProof(stateRoot.RootHash, (JObject)response["firstProof"]!, (JObject)results[0]!);
 
                 if (results.Count > 1)
                 {
-                    ValidateProof(stateRoot.RootHash, response["lastProof"], results[^1]);
+                    ValidateProof(stateRoot.RootHash, (JObject)response["lastProof"]!, (JObject)results[^1]!);
                 }
 
                 states = states.Concat(results
                     .Select(j => (
-                        j["key"].AsString(),
-                        j["value"].AsString()
+                        j!["key"]!.AsString(),
+                        j!["value"]!.AsString()
                     )));
 
-                var truncated = response["truncated"].AsBoolean();
+                var truncated = response["truncated"]!.AsBoolean();
                 if (!truncated) break;
-                start = Convert.FromBase64String(results[^1]["key"].AsString());
+                start = Convert.FromBase64String(results[^1]!["key"]!.AsString());
             }
 
             return (contractState, states.ToList());
@@ -320,10 +320,10 @@ namespace NeoExpress.Node
                 var proofBytes = Convert.FromBase64String(proof.AsString());
                 var (provenKey, provenItem) = VerifyProof(rootHash, proofBytes);
 
-                var key = Convert.FromBase64String(result["key"].AsString());
+                var key = Convert.FromBase64String(result["key"]!.AsString());
                 if (!provenKey.Key.Span.SequenceEqual(key)) throw new Exception("Incorrect StorageKey");
 
-                var value = Convert.FromBase64String(result["value"].AsString());
+                var value = Convert.FromBase64String(result["value"]!.AsString());
                 if (!provenItem.AsSpan().SequenceEqual(value)) throw new Exception("Incorrect StorageItem");
             }
         }

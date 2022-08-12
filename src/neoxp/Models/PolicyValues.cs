@@ -1,6 +1,6 @@
 using System.Numerics;
 using Neo;
-using Neo.IO.Json;
+using Neo.Json;
 using Neo.SmartContract.Native;
 
 namespace NeoExpress.Models
@@ -32,13 +32,13 @@ namespace NeoExpress.Models
 
         public static PolicyValues FromJson(JObject json)
         {
-            var gasPerBlock = ParseGasValue(json[nameof(GasPerBlock)]);
-            var minimumDeploymentFee = ParseGasValue(json[nameof(MinimumDeploymentFee)]);
-            var candidateRegistrationFee = ParseGasValue(json[nameof(CandidateRegistrationFee)]);
-            var oracleRequestFee = ParseGasValue(json[nameof(OracleRequestFee)]);
-            var networkFeePerByte = ParseGasValue(json[nameof(NetworkFeePerByte)]);
-            var storageFeeFactor = (uint)json[nameof(NetworkFeePerByte)].AsNumber();
-            var executionFeeFactor = (uint)json[nameof(ExecutionFeeFactor)].AsNumber();
+            var gasPerBlock = ParseGasValue(json[nameof(GasPerBlock)]!);
+            var minimumDeploymentFee = ParseGasValue(json[nameof(MinimumDeploymentFee)]!);
+            var candidateRegistrationFee = ParseGasValue(json[nameof(CandidateRegistrationFee)]!);
+            var oracleRequestFee = ParseGasValue(json[nameof(OracleRequestFee)]!);
+            var networkFeePerByte = ParseGasValue(json[nameof(NetworkFeePerByte)]!);
+            var storageFeeFactor = (uint)json[nameof(NetworkFeePerByte)]!.AsNumber();
+            var executionFeeFactor = (uint)json[nameof(ExecutionFeeFactor)]!.AsNumber();
 
             return new PolicyValues
             {
@@ -51,7 +51,7 @@ namespace NeoExpress.Models
                 ExecutionFeeFactor = executionFeeFactor,
             };
 
-            static BigDecimal ParseGasValue(JObject json) => new BigDecimal(BigInteger.Parse(json.AsString()), NativeContract.GAS.Decimals);
+            static BigDecimal ParseGasValue(JToken json) => new BigDecimal(BigInteger.Parse(json.AsString()), NativeContract.GAS.Decimals);
         }
     }
 }

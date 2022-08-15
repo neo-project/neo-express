@@ -46,8 +46,16 @@ namespace NeoExpress
                 }
             }
 
-            scriptHash = _scriptHash!;
-            return _scriptHash is not null;
+            if (_scriptHash is not null)
+            {
+                scriptHash = _scriptHash;
+                return true;
+            }
+            else
+            {
+                scriptHash = UInt160.Zero;
+                return false;
+            }
         }
 
         public static async Task<OneOf<UInt160, None>> ParseScriptHashToBlockAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
@@ -92,6 +100,25 @@ namespace NeoExpress
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
             return contracts.Where(c => c.manifest.Name.Equals(contractName, comparison)).ToList();
+        }
+
+        public static async Task<OneOf<UInt160, None>> TryGetAccountHashAsync(this IExpressNode expressNode, ExpressChain chain, string name)
+        {
+            if (name.StartsWith('#'))
+            {
+                var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
+                if (TryGetContractHash(contracts, name.Substring(1), out var contractHash))
+                {
+                    return contractHash;
+                }
+            }
+
+            if (chain.TryGetAccountHash(name, out var accountHash))
+            {
+                return accountHash;
+            }
+
+            return default(None);
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)

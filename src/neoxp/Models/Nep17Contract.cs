@@ -44,21 +44,10 @@ namespace NeoExpress.Models
                 return true;
             }
 
-            var contractState = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
-            if (contractState is not null)
+            if (snapshot.TryGetTokenDetails(scriptHash, settings, out var details)) 
             {
-                using var sb = new ScriptBuilder();
-                sb.EmitDynamicCall(scriptHash, "symbol");
-                sb.EmitDynamicCall(scriptHash, "decimals");
-
-                using var engine = sb.Invoke(settings, snapshot);
-                if (engine.State != VMState.FAULT && engine.ResultStack.Count >= 2)
-                {
-                    var decimals = (byte)engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();
-                    var symbol = Encoding.UTF8.GetString(engine.ResultStack.Pop().GetSpan());
-                    contract = new Nep17Contract(symbol, decimals, scriptHash);
-                    return true;
-                }
+                contract = new Nep17Contract(details.symbol, details.decimals, scriptHash);
+                return true;
             }
 
             contract = default;

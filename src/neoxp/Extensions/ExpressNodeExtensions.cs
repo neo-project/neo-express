@@ -124,8 +124,10 @@ namespace NeoExpress
             throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
         }
 
-        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, Wallet sender, UInt160 senderHash, UInt160 receiverHash)
+        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, Wallet sender, UInt160 senderHash, UInt160 receiverHash, ContractParameter? data)
         {
+            data ??= new ContractParameter(ContractParameterType.Any);
+
             if (quantity.IsT0)
             {
                 var results = await expressNode.InvokeAsync(asset.MakeScript("decimals")).ConfigureAwait(false);
@@ -133,7 +135,7 @@ namespace NeoExpress
                 {
                     var decimals = (byte)(results.Stack[0].GetInteger());
                     var value = quantity.AsT0.ToBigInteger(decimals);
-                    var script = asset.MakeScript("transfer", senderHash, receiverHash, value, null);
+                    var script = asset.MakeScript("transfer", senderHash, receiverHash, value, data);
                     return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
                 }
                 else
@@ -149,9 +151,9 @@ namespace NeoExpress
                 // balanceOf operation places current balance on eval stack
                 sb.EmitDynamicCall(asset, "balanceOf", senderHash);
                 // transfer operation takes 4 arguments, amount is 3rd parameter
-                // push null onto the stack and then switch positions of the top
-                // two items on eval stack so null is 4th arg and balance is 3rd
-                sb.Emit(OpCode.PUSHNULL);
+                // push data parameter onto the stack then switch positions of the top
+                // two items on eval stack so data is 4th arg and balance is 3rd
+                sb.EmitPush(data);
                 sb.Emit(OpCode.SWAP);
                 sb.EmitPush(receiverHash);
                 sb.EmitPush(senderHash);

@@ -253,6 +253,9 @@ namespace NeoExpress.Commands
                 [Required]
                 internal string Receiver { get; init; } = string.Empty;
 
+                [Option(Description = "Optional data parameter to pass to transfer operation")]
+                internal string Data { get; init; } = string.Empty;
+
                 [Option(Description = "password to use for NEP-2/NEP-6 sender")]
                 internal string Password { get; init; } = string.Empty;
             }

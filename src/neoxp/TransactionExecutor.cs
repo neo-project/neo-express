@@ -332,7 +332,8 @@ namespace NeoExpress
                 throw new Exception($"{sender} sender not found.");
             }
 
-            if (!chainManager.Chain.TryGetAccountHash(receiver, out var receiverHash))
+            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, receiver).ConfigureAwait(false);
+            if (getHashResult.TryPickT1(out _, out var receiverHash))
             {
                 throw new Exception($"{receiver} account not found.");
             }

@@ -241,7 +241,8 @@ namespace NeoExpress.Commands
                                 cmd.Model.Asset,
                                 cmd.Model.Sender,
                                 cmd.Model.Password,
-                                cmd.Model.Receiver).ConfigureAwait(false);
+                                cmd.Model.Receiver,
+                                cmd.Model.Data).ConfigureAwait(false);
                             break;
                         }
                     default:

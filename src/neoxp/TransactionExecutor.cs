@@ -92,7 +92,6 @@ namespace NeoExpress
                 .DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope, dataParam)
                 .ConfigureAwait(false);
 
-
             var contractHash = Neo.SmartContract.Helper.GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
             if (json)
             {
@@ -325,7 +324,7 @@ namespace NeoExpress
             }
         }
 
-        public async Task TransferAsync(string quantity, string asset, string sender, string password, string receiver)
+        public async Task TransferAsync(string quantity, string asset, string sender, string password, string receiver, string data)
         {
             if (!chainManager.TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
             {
@@ -338,8 +337,15 @@ namespace NeoExpress
                 throw new Exception($"{receiver} account not found.");
             }
 
+            ContractParameter? dataParam = null;
+            if (!string.IsNullOrEmpty(data))
+            {
+                var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+                dataParam = parser.ParseParameter(data);
+            }
+
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccountHash, receiverHash);
+            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccountHash, receiverHash, dataParam);
             await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
 
             static OneOf<decimal, All> ParseQuantity(string quantity)

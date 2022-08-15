@@ -20,6 +20,7 @@ may not exactly match a publicly released version.
 #### Added
 
 * `--data` option for `transfer` command ([#198](https://github.com/neo-project/neo-express/issues/198))
+* Support `#` prefixed contract name as receiver argument for `transfer` and account argument for `show balance\balances` command ([#197](https://github.com/neo-project/neo-express/issues/197))
 
 #### Changed
 

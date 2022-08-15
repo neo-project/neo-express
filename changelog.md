@@ -17,13 +17,25 @@ may not exactly match a publicly released version.
 
 ### NeoExpress
 
-### Changed
+#### Added
 
-* RpcServer iterator session support enabled by default (#241)
+* `--data` option for `transfer` command ([#198](https://github.com/neo-project/neo-express/issues/198))
 
-### Added
+#### Changed
 
-* `rpc.SessionEnabled` setting  (#241)
+* Updated to Neo 3.4 ([#243](https://github.com/neo-project/neo-express/pull/243))
+
+## [3.3.27] - 2022-06-11
+
+### NeoExpress
+
+#### Changed
+
+* RpcServer iterator session support enabled by default ([#241](https://github.com/neo-project/neo-express/pull/241))
+
+#### Added
+
+* `rpc.SessionEnabled` setting  ([#241](https://github.com/neo-project/neo-express/pull/241))
 
 #### Fixed
 

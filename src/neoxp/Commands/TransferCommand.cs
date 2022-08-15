@@ -33,6 +33,9 @@ namespace NeoExpress.Commands
         [Required]
         internal string Receiver { get; init; } = string.Empty;
 
+        [Option(Description = "Optional data parameter to pass to transfer operation")]
+        internal string Data { get; init; } = string.Empty;
+
         [Option(Description = "password to use for NEP-2/NEP-6 sender")]
         internal string Password { get; init; } = string.Empty;
 
@@ -52,7 +55,7 @@ namespace NeoExpress.Commands
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var password = chainManager.Chain.ResolvePassword(Sender, Password);
                 using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                await txExec.TransferAsync(Quantity, Asset, Sender, password, Receiver).ConfigureAwait(false);
+                await txExec.TransferAsync(Quantity, Asset, Sender, password, Receiver, Data).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)

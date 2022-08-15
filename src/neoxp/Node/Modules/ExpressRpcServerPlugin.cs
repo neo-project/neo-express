@@ -391,10 +391,14 @@ namespace NeoExpress.Node
             {
                 var (scriptHash, balance) = addressBalances[i];
                 var lastUpdatedBlock = updateIndexes.TryGetValue(scriptHash, out var _index) ? _index : 0;
+                var details = GetTokenDetails(snapshot, scriptHash);
 
                 balances.Add(new JObject
                 {
                     ["assethash"] = scriptHash.ToString(),
+                    ["name"] = details.name,
+                    ["symbol"] = details.symbol,
+                    ["decimals"] = details.decimals.ToString(),
                     ["amount"] = balance.ToString(),
                     ["lastupdatedblock"] = lastUpdatedBlock,
                 });
@@ -489,6 +493,8 @@ namespace NeoExpress.Node
 
             foreach (var asset in tokens.GroupBy(t => t.scriptHash))
             {
+                var details = GetTokenDetails(snapshot, asset.Key);
+
                 var jsonTokens = new JArray();
                 foreach (var (_, tokenId, balance) in asset)
                 {
@@ -506,7 +512,10 @@ namespace NeoExpress.Node
 
                 balances.Add(new JObject
                 {
-                    ["assethash"] = asset.ToString(),
+                    ["assethash"] = asset.Key.ToString(),
+                    ["name"] = details.name,
+                    ["symbol"] = details.symbol,
+                    ["decimals"] = details.decimals.ToString(),
                     ["tokens"] = jsonTokens,
                 });
             }
@@ -660,6 +669,14 @@ namespace NeoExpress.Node
             return text.Length < 40
                ? text.ToScriptHash(neoSystem.Settings.AddressVersion)
                : UInt160.Parse(text);
+        }
+
+        (string name, string symbol, byte decimals) GetTokenDetails(DataCache snapshot, UInt160 tokenHash) 
+        {
+            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            return snapshot.TryGetTokenDetails(tokenHash, neoSystem.Settings, out var details)
+                ? details 
+                : ("<Unknown>", "<UNK>", (byte)0);
         }
     }
 }

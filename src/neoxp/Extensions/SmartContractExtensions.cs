@@ -62,21 +62,25 @@ namespace NeoExpress
             }
         }
 
-        public static bool TryGetDecimals(this DataCache snapshot, UInt160 asset, ProtocolSettings settings, out byte decimals)
+        public static bool TryGetTokenDetails(this DataCache snapshot, UInt160 asset, ProtocolSettings settings, out (string name, string symbol, byte decimals) details)
         {
-            using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "decimals");
-
-            using var engine = builder.Invoke(settings, snapshot);
-            if (engine.State != VMState.FAULT
-                && engine.ResultStack.Count >= 1
-                && engine.ResultStack.Pop() is Integer integer)
+            var contractState = NativeContract.ContractManagement.GetContract(snapshot, asset);
+            if (contractState is not null) 
             {
-                decimals = (byte)integer.GetInteger();
-                return true;
-            }
+                using var builder = new ScriptBuilder();
+                builder.EmitDynamicCall(asset, "symbol");
+                builder.EmitDynamicCall(asset, "decimals");
 
-            decimals = default;
+                using var engine = builder.Invoke(settings, snapshot);
+                if (engine.State != VMState.FAULT && engine.ResultStack.Count >= 2)
+                {
+                    var decimals = (byte)engine.ResultStack.Pop<Neo.VM.Types.Integer>().GetInteger();
+                    var symbol = System.Text.Encoding.UTF8.GetString(engine.ResultStack.Pop().GetSpan());
+                    details = (contractState.Manifest.Name, symbol, decimals);
+                    return true;
+                }
+            }
+            details = default;
             return false;
         }
 

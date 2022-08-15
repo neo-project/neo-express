@@ -25,6 +25,7 @@ may not exactly match a publicly released version.
 #### Changed
 
 * Updated to Neo 3.4 ([#243](https://github.com/neo-project/neo-express/pull/243))
+* Added `name`, `symbol` and `decimals` properties to `GetNep[11/17]Balances` to match changes to recent Neo Modules changes ([#242](https://github.com/neo-project/neo-express/issues/242))
 
 ## [3.3.27] - 2022-06-11
 

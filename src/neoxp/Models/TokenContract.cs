@@ -1,9 +1,7 @@
-using System.Collections.Generic;
 using Neo;
 using Neo.Json;
 using Neo.Persistence;
 using Neo.SmartContract.Native;
-using Neo.VM;
 
 namespace NeoExpress.Models
 {

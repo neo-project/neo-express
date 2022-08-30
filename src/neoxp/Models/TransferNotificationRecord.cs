@@ -1,8 +1,6 @@
-using System;
 using System.Numerics;
 using Neo;
 using Neo.VM.Types;
-using NeoExpress.Models;
 
 namespace NeoExpress.Models
 {

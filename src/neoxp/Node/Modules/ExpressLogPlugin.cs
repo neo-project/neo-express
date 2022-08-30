@@ -6,9 +6,6 @@ using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
-using System;
-using System.Collections.Generic;
-using System.IO;
 
 namespace NeoExpress.Node
 {

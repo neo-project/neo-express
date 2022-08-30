@@ -1,7 +1,5 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using static Neo.SmartContract.Helper;
 

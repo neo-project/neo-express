@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;

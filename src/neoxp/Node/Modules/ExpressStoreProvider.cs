@@ -1,7 +1,4 @@
-﻿using Neo.Network.P2P.Payloads;
-using Neo.Persistence;
-using Neo.Plugins;
-using Neo.SmartContract;
+﻿using Neo.Persistence;
 
 namespace NeoExpress.Node
 {

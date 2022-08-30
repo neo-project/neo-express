@@ -1,4 +1,3 @@
-using System;
 using Neo.Persistence;
 
 namespace NeoExpress

@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
@@ -13,7 +8,6 @@ using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
-using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 

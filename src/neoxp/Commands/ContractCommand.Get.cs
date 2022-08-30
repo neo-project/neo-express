@@ -1,7 +1,4 @@
-using System;
-using System.IO;
 using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.SmartContract.Manifest;

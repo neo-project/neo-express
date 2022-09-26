@@ -23,7 +23,18 @@
             "cwd": "${workspaceFolder}/src/trace",
             "stopAtEntry": false,
             "console": "internalConsole"
-        },        
+        },
+        {
+            "name": "worknet",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/worknet/bin/Debug/net6.0/neo-worknet.dll",
+            "cwd": "${workspaceFolder}/src/worknet",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        
         {
             "name": ".NET Core Attach",
             "type": "coreclr",

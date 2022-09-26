@@ -18,6 +18,7 @@ partial class RunCommand
         public IStore GetStore(string path)
         {
             if (string.IsNullOrEmpty(path)) return store;
+            if (path == "ConsensusState") return new MemoryStore();
             throw new NotSupportedException();
         }
     }

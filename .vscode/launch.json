@@ -20,6 +20,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/trace/bin/Debug/net6.0/neotrace.dll",
+            "args": "block 2190165 -r MainNet",
             "cwd": "${workspaceFolder}/src/trace",
             "stopAtEntry": false,
             "console": "internalConsole"
@@ -30,8 +31,11 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/worknet/bin/Debug/net6.0/neo-worknet.dll",
+            // "args": "create testnet -f",
+            // "args": "prefetch nudes",
+            "args": "run -s 1",
             "cwd": "${workspaceFolder}/src/worknet",
-            "console": "internalConsole",
+            "console": "integratedTerminal",
             "stopAtEntry": false
         },
         {

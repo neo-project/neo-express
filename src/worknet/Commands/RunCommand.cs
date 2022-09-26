@@ -1,6 +1,8 @@
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
+using Neo;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.Cryptography.ECC;
 using Neo.Persistence;
 using Neo.Wallets;
 using NeoWorkNet.Models;
@@ -19,6 +21,9 @@ partial class RunCommand
         this.fs = fs;
     }
 
+    [Option(Description = "Time between blocks")]
+    internal uint? SecondsPerBlock { get; }
+
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
     {
         try
@@ -32,8 +37,9 @@ partial class RunCommand
             using var db = RocksDbUtility.OpenDb(dataDir);
             using var stateStore = new StateServiceStore(worknet.Uri, worknet.BranchInfo, db, true);
             using var trackStore = new PersistentTrackingStore(db, stateStore, true);
+            var secondsPerBlock = SecondsPerBlock.HasValue ? SecondsPerBlock.Value : 0;
 
-            await RunAsync(trackStore, worknet, console, token).ConfigureAwait(false);
+            await RunAsync(trackStore, worknet, secondsPerBlock, console, token).ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)
@@ -43,13 +49,29 @@ partial class RunCommand
         }
     }
 
-    static async Task RunAsync(IStore store, WorknetFile worknet, IConsole console, CancellationToken token)
+    static ProtocolSettings GetProtocolSettings(WorknetFile worknetFile, uint secondsPerBlock = 0)
+    {
+        var account = worknetFile.ConsensusWallet.GetAccounts().Single();
+        var key = account.GetKey() ?? throw new Exception();
+        return ProtocolSettings.Default with
+        {
+            Network = worknetFile.BranchInfo.Network,
+            AddressVersion = worknetFile.BranchInfo.AddressVersion,
+            MillisecondsPerBlock = secondsPerBlock == 0 ? 15000 : secondsPerBlock * 1000,
+            ValidatorsCount = 1,
+            StandbyCommittee = new ECPoint[] { key.PublicKey },
+            SeedList = new string[] { $"{System.Net.IPAddress.Loopback}:{30333}" }
+        };
+    }
+
+    static async Task RunAsync(IStore store, WorknetFile worknet, uint secondsPerBlock, IConsole console, CancellationToken token)
     {
         var tcs = new TaskCompletionSource<bool>();
         _ = Task.Run(() =>
         {
             try
             {
+                var protocolSettings = GetProtocolSettings(worknet, secondsPerBlock);
                 // var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
                 // using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
@@ -57,7 +79,7 @@ partial class RunCommand
                 // var multiSigAccount = wallet.GetMultiSigAccounts().Single();
 
                 var storeProvider = new WorknetStorageProvider(store);
-                Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
+                StoreFactory.RegisterProvider(storeProvider);
                 // // if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
                 // using var persistencePlugin = new ExpressPersistencePlugin();
@@ -65,7 +87,7 @@ partial class RunCommand
                 using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(worknet));
                 // using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
                 //     expressStorage, multiSigAccount.ScriptHash);
-                using var neoSystem = new Neo.NeoSystem(worknet.BranchInfo.ProtocolSettings, storeProvider.Name);
+                using var neoSystem = new Neo.NeoSystem(protocolSettings, storeProvider.Name);
 
                 neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                 {
@@ -97,7 +119,8 @@ partial class RunCommand
             var settings = new Dictionary<string, string>()
             {
                 { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
-                { "IgnoreRecoveryLogs", "true" }
+                { "IgnoreRecoveryLogs", "true" },
+                { "RecoveryLogs", "ConsensusState" }
             };
 
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();

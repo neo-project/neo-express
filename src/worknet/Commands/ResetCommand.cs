@@ -14,10 +14,15 @@ class ResetCommand
         this.fs = fs;
     }
 
+    [Option(Description = "Overwrite existing data")]
+    internal bool Force { get; }
+
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
     {
         try
         {
+            if (!Force) throw new InvalidOperationException("--force must be specified when resetting worknet");
+
             var (fileName, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(fileName), "data");
             if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");

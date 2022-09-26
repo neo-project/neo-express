@@ -1,14 +1,15 @@
-using McMaster.Extensions.CommandLineUtils;
+using System.IO.Abstractions;
+using System.Net;
 using Microsoft.Extensions.Configuration;
+using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.Cryptography.ECC;
 using Neo.Persistence;
 using Neo.Plugins;
 using Neo.Wallets;
 using NeoWorkNet.Models;
-using System.IO.Abstractions;
-using System.Net;
 
 namespace NeoWorkNet.Commands;
 
@@ -35,12 +36,8 @@ partial class RunCommand
             var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(fileName), "data");
             if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
 
-            using var db = RocksDbUtility.OpenDb(dataDir);
-            using var stateStore = new StateServiceStore(worknet.Uri, worknet.BranchInfo, db, true);
-            using var trackStore = new PersistentTrackingStore(db, stateStore, true);
             var secondsPerBlock = SecondsPerBlock.HasValue ? SecondsPerBlock.Value : 0;
-
-            await RunAsync(trackStore, worknet, secondsPerBlock, console, token).ConfigureAwait(false);
+            await RunAsync(worknet, dataDir, secondsPerBlock, console, token).ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)
@@ -65,28 +62,29 @@ partial class RunCommand
         };
     }
 
-    static async Task RunAsync(IStore store, WorknetFile worknet, uint secondsPerBlock, IConsole console, CancellationToken token)
+    static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, IConsole console, CancellationToken token)
     {
         var tcs = new TaskCompletionSource<bool>();
         _ = Task.Run(() =>
         {
             try
             {
+                using var db = RocksDbUtility.OpenDb(dataDir);
+                using var stateStore = new StateServiceStore(worknet.Uri, worknet.BranchInfo, db, true);
+                using var trackStore = new PersistentTrackingStore(db, stateStore, true);
+
                 var protocolSettings = GetProtocolSettings(worknet, secondsPerBlock);
-                // var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
-                // using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
 
-                // var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-                // var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-
-                var storeProvider = new WorknetStorageProvider(store);
+                var storeProvider = new WorknetStorageProvider(trackStore);
                 StoreFactory.RegisterProvider(storeProvider);
-                // // if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
-                using var logPlugin = new WorknetLogPlugin(console);
+                using var persistencePlugin = new ToolkitPersistencePlugin();
+                using var logPlugin = new ToolkitLogPlugin(
+                    text => console.WriteLine(text),
+                    text => console.Error.WriteLine(text));
                 using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(worknet));
-                using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet));
-                using var neoSystem = new Neo.NeoSystem(protocolSettings, storeProvider.Name);
+                using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet), persistencePlugin, worknet.Uri);
+                using var neoSystem = new NeoSystem(protocolSettings, storeProvider.Name);
 
                 neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                 {
@@ -99,8 +97,8 @@ partial class RunCommand
                 // Do not remove or re-word this console output:
                 console.Out.WriteLine($"Neo worknet is running");
 
-                // var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
-                token.WaitHandle.WaitOne();
+                var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
+                linkedToken.Token.WaitHandle.WaitOne();
             }
             catch (Exception ex)
             {
@@ -143,6 +141,5 @@ partial class RunCommand
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
             return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
         }
-
     }
 }

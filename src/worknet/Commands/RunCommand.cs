@@ -78,7 +78,7 @@ partial class RunCommand
                 var storeProvider = new WorknetStorageProvider(trackStore);
                 StoreFactory.RegisterProvider(storeProvider);
 
-                using var persistencePlugin = new ToolkitPersistencePlugin();
+                using var persistencePlugin = new ToolkitPersistencePlugin(db);
                 using var logPlugin = new ToolkitLogPlugin(
                     text => console.WriteLine(text),
                     text => console.Error.WriteLine(text));

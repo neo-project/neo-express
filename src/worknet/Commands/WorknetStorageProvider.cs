@@ -5,6 +5,7 @@ namespace NeoWorkNet.Commands;
 class WorknetStorageProvider : IStoreProvider
 {
     readonly IStore store;
+    readonly Lazy<IStore> consensusStateStore = new(() => new MemoryStore());
 
     public WorknetStorageProvider(IStore store)
     {
@@ -16,7 +17,7 @@ class WorknetStorageProvider : IStoreProvider
     public IStore GetStore(string path)
     {
         if (string.IsNullOrEmpty(path)) return store;
-        if (path == "ConsensusState") return new MemoryStore();
+        if (path == "ConsensusState") return consensusStateStore.Value;
         throw new NotSupportedException();
     }
 }

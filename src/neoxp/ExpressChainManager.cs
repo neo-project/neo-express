@@ -239,7 +239,7 @@ namespace NeoExpress
                 {
                     tcs.TrySetResult(true);
                 }
-            });
+            }, CancellationToken.None);
             await tcs.Task.ConfigureAwait(false);
 
             static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)

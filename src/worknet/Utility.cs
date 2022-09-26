@@ -1,6 +1,7 @@
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using NeoWorkNet.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Abstractions;
@@ -10,18 +11,18 @@ namespace NeoWorkNet;
 
 static class Utility
 {
-    public static async Task<(string fileName, string url, BranchInfo branchInfo, ToolkitWallet wallet)> LoadWorknetAsync(this IFileSystem fs, CommandLineApplication app)
+    public static async Task<(string fileName, WorknetFile file)> LoadWorknetAsync(this IFileSystem fs, CommandLineApplication app)
     {
         var option = app.GetOptions().Single(o => o.LongName == "input");
         var fileName = fs.ResolveWorkNetFileName(option.Value() ?? string.Empty);
-        var (url, branchInfo, wallet) = await fs.LoadWorknetAsync(fileName).ConfigureAwait(false);
-        return (fileName, url, branchInfo, wallet);
+        var worknetFile = await fs.LoadWorknetAsync(fileName).ConfigureAwait(false);
+        return (fileName, worknetFile);
     }
 
     public static string ResolveWorkNetFileName(this IFileSystem fs, string path)
         => fs.ResolveFileName(path, WORKNET_EXTENSION, () => DEFAULT_WORKNET_FILENAME);
 
-    public static async Task<(string url, BranchInfo branchInfo, ToolkitWallet wallet)> LoadWorknetAsync(this IFileSystem fs, string filename)
+    public static async Task<WorknetFile> LoadWorknetAsync(this IFileSystem fs, string filename)
     {
         using var stream = fs.File.OpenRead(filename);
         using var textReader = new StreamReader(stream);
@@ -30,7 +31,7 @@ static class Utility
         var uri = json.Value<string>("uri") ?? throw new JsonException("uri");
         var branchInfo = BranchInfo.Load(json["branch-info"] as JObject ?? throw new JsonException("branch-info"));
         var wallet = ToolkitWallet.Load(json["consensus-wallet"] as JObject ?? throw new JsonException("consensus-wallet"), branchInfo.ProtocolSettings);
-        return (uri, branchInfo, wallet);
+        return new WorknetFile(new Uri(uri), branchInfo, wallet);
     }
 
     public static void SaveWorknetFile(this IFileSystem fs, string filename, Uri uri, BranchInfo branch, ToolkitWallet wallet)
@@ -48,6 +49,15 @@ static class Utility
         wallet.WriteJson(writer);
     }
 
+    public static CancellationToken OverrideCancelKeyPress(this IConsole console, CancellationToken token, bool continueRunning = false)
+    {
+        var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+        console.CancelKeyPress += (o, args) => {
+            args.Cancel = continueRunning;
+            linkedTokenSource.Cancel();
+        };
+        return linkedTokenSource.Token;
+    }
 }
 
     

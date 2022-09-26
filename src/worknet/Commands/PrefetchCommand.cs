@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
@@ -19,18 +20,26 @@ class PrefetchCommand
     [Argument(0)]
     string Contract { get; set; } = string.Empty;
 
-    internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+
+
+    internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
     {
         try
         {
-            var (fileName, url, branchInfo, wallet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
+            token = console.OverrideCancelKeyPress(token, true);
+
+            var stateServiceObserver = new KeyValuePairObserver(OnStateStoreDiagnostic);
+            var diagnosticObserver = new DiagnosticObserver(StateServiceStore.LoggerCategory, stateServiceObserver);
+            DiagnosticListener.AllListeners.Subscribe(diagnosticObserver);
+
+            var (fileName, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(fileName), "data");
             if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
 
             if (!UInt160.TryParse(Contract, out var contractHash))
             {
                 contractHash = UInt160.Zero;
-                foreach (var info in branchInfo.Contracts)
+                foreach (var info in worknet.BranchInfo.Contracts)
                 {
                     if (string.Equals(info.Name, Contract, StringComparison.OrdinalIgnoreCase))
                     {
@@ -44,8 +53,8 @@ class PrefetchCommand
             }
 
             using var db = RocksDbUtility.OpenDb(dataDir);
-            using var stateStore = new StateServiceStore(url, branchInfo, db);
-            var result = await stateStore.PrefetchAsync(contractHash).ConfigureAwait(false);
+            using var stateStore = new StateServiceStore(worknet.Uri, worknet.BranchInfo, db);
+            var result = await stateStore.PrefetchAsync(contractHash, token).ConfigureAwait(false);
             if (result.TryPickT1(out Error<string> error, out _))
             {
                 throw new Exception(error.Value);
@@ -53,10 +62,19 @@ class PrefetchCommand
 
             return 0;
         }
+        catch (OperationCanceledException)
+        {
+            return 1;
+        }
         catch (Exception ex)
         {
             await app.Error.WriteLineAsync(ex.Message);
             return 1;
+        }
+
+        void OnStateStoreDiagnostic(string name, object? value)
+        {
+            console.WriteLine($"{name}: {value}");
         }
     }
 }

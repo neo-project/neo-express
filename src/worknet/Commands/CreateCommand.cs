@@ -21,6 +21,7 @@ using NeoStruct = Neo.VM.Types.Struct;
 
 using static Neo.BlockchainToolkit.Utility;
 using static Neo.BlockchainToolkit.Constants;
+using System.Diagnostics;
 
 namespace NeoWorkNet.Commands;
 
@@ -51,6 +52,8 @@ class CreateCommand
     {
         try
         {
+            // DiagnosticListener.AllListeners.Subscribe(new DiagnosticObserver(console));
+
             if (!TryParseRpcUri(RpcUri, out var uri))
             {
                 throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
@@ -88,8 +91,8 @@ class CreateCommand
             fs.Directory.CreateDirectory(dataDir);
 
             using var db = RocksDbUtility.OpenDb(dataDir);
-            using var stateStore = new StateServiceStore(uri, branchInfo, db, true);
-            using var trackStore = new PersistentTrackingStore(db, stateStore, true);
+            using var stateStore = new StateServiceStore(uri, branchInfo, db);
+            using var trackStore = new PersistentTrackingStore(db, stateStore);
 
             InitializeStore(trackStore, consensusAccount);
 
@@ -103,10 +106,10 @@ class CreateCommand
         }
     }
 
-    static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)
+    internal static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)
         => InitializeStore(store, (IEnumerable<WalletAccount>)consensusAccounts);
 
-    static void InitializeStore(IStore store, IEnumerable<WalletAccount> consensusAccounts)
+    internal static void InitializeStore(IStore store, IEnumerable<WalletAccount> consensusAccounts)
     {
         const byte Prefix_Block = 5;
         const byte Prefix_BlockHash = 9;

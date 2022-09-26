@@ -8,7 +8,7 @@ namespace NeoWorkNet;
 
 [Command("neoxp", Description = "Neo N3 blockchain private net for developers", UsePagerForHelpText = false)]
 [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
-[Subcommand(typeof(CreateCommand), typeof(PrefetchCommand))]
+[Subcommand(typeof(CreateCommand), typeof(PrefetchCommand), typeof(ResetCommand), typeof(RunCommand))]
 partial class Program
 {
     public static async Task<int> Main(string[] args)

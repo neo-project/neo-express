@@ -231,9 +231,10 @@ namespace NeoExpress.Node
             if (stateHeight == 0)
             {
                 uint? validatedRootIndex;
+                uint? localRootIndex;
                 try
                 {
-                    (_, validatedRootIndex) = await stateAPI.GetStateHeightAsync().ConfigureAwait(false);
+                    (localRootIndex, validatedRootIndex) = await stateAPI.GetStateHeightAsync().ConfigureAwait(false);
                 }
                 catch (RpcException e) when (e.Message.Contains("Method not found"))
                 {
@@ -241,8 +242,8 @@ namespace NeoExpress.Node
                         "Could not get state information. Make sure the remote RPC server has state service support");
                 }
 
-                stateHeight = validatedRootIndex.HasValue ? validatedRootIndex.Value
-                    : throw new Exception($"Null \"{nameof(validatedRootIndex)}\" in state height response");
+                stateHeight = validatedRootIndex ?? localRootIndex 
+                    ?? throw new Exception($"GetStateHeight did not return local or validated root index");
             }
 
             var stateRoot = await stateAPI.GetStateRootAsync(stateHeight).ConfigureAwait(false);

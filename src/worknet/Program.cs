@@ -1,109 +1,107 @@
-﻿using System.Numerics;
-using Neo;
-using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
-using Neo.BlockchainToolkit.Persistence;
-using Neo.IO;
-using Neo.Network.P2P.Payloads;
-using Neo.Network.RPC;
-using Neo.Persistence;
-using Neo.SmartContract;
-using Neo.SmartContract.Native;
-using Neo.Wallets;
-
-using NeoArray = Neo.VM.Types.Array;
-using ByteString = Neo.VM.Types.ByteString;
-using NeoInt = Neo.VM.Types.Integer;
-using NeoStruct = Neo.VM.Types.Struct;
-using Neo.Cryptography;
+﻿using System.IO.Abstractions;
+using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.DependencyInjection;
+using NeoWorkNet.Commands;
+using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoWorkNet;
 
+[Command("neoxp", Description = "Neo N3 blockchain private net for developers", UsePagerForHelpText = false)]
+[VersionOption(ThisAssembly.AssemblyInformationalVersion)]
+[Subcommand(typeof(CreateCommand))]
 class Program
 {
-    const byte Prefix_Block = 5;
-    const byte Prefix_BlockHash = 9;
-    const byte Prefix_Candidate = 33;
-    const byte Prefix_Committee = 14;
-    const byte Prefix_CurrentBlock = 12;
-
-    static async Task Main(string[] args)
+    public static Task<int> Main(string[] args)
     {
-        var url = Constants.TESTNET_RPC_ENDPOINTS.First();
-        using var stateStore = await StateServiceStore.CreateAsync(url, 5000).ConfigureAwait(false);
-        
-        var consensusWallet = new ToolkitWallet("consensus", stateStore.Settings);
-        var consensusAccount = consensusWallet.CreateAccount();
-        var consensusContract = Contract.CreateMultiSigContract(1, consensusWallet.GetAccounts().Select(a => a.GetKey().PublicKey).ToArray());
+        EnableAnsiEscapeSequences();
 
+        var services = new ServiceCollection()
+            .AddSingleton<IFileSystem, FileSystem>()
+            .BuildServiceProvider();
 
-        using var trackingStore = new MemoryTrackingStore(stateStore);
-        CreateFork(trackingStore, consensusAccount);
+        var app = new CommandLineApplication<Program>();
+        app.Conventions
+            .UseDefaultConventions()
+            .UseConstructorInjection(services);
+
+        return app.ExecuteAsync(args);
     }
 
-    static void CreateFork(IStore store, params WalletAccount[] consensusAccounts)
+    internal int OnExecute(CommandLineApplication app, IConsole console)
     {
-        var keys = consensusAccounts.Select(a => a.GetKey().PublicKey).ToArray();
-        var signerCount = (keys.Length * 2 / 3) + 1;
-        var consensusContract = Contract.CreateMultiSigContract(signerCount, keys);
-
-        using var snapshot = new SnapshotCache(store.GetSnapshot());
-
-        // replace the Neo Committee with express consensus nodes
-        // Prefix_Committee stores array of structs containing PublicKey / vote count 
-        var members = consensusAccounts.Select(a => new NeoStruct { a.GetKey().PublicKey.ToArray(), 0 });
-        var committee = new NeoArray(members);
-        var committeeKeyBuilder = new KeyBuilder(NativeContract.NEO.Id, Prefix_Committee);
-        var committeeItem = snapshot.GetAndChange(committeeKeyBuilder);
-        committeeItem.Value = BinarySerializer.Serialize(committee, 1024 * 1024);
-
-        // remove existing candidates (Prefix_Candidate) to ensure that 
-        // worknet node account doesn't get outvoted
-        var candidateKeyBuilder = new KeyBuilder(NativeContract.NEO.Id, Prefix_Candidate);
-        foreach (var candidate in snapshot.Find(candidateKeyBuilder.ToArray()))
-        {
-            snapshot.Delete(candidate.Key);
-        }
-
-        // create an *UNSIGNED* block that will be appended to the chain 
-        // with updated NextConsensus field.
-        var prevHash = NativeContract.Ledger.CurrentHash(snapshot);
-        var prevBlock = NativeContract.Ledger.GetHeader(snapshot, prevHash);
-
-        var trimmedBlock = new TrimmedBlock
-        {
-            Header = new Header
-            {
-                Version = 0,
-                PrevHash = prevBlock.Hash,
-                MerkleRoot = MerkleTree.ComputeRoot(Array.Empty<UInt256>()),
-                Timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevBlock.Timestamp + 1),
-                Index = prevBlock.Index + 1,
-                PrimaryIndex = 0,
-                NextConsensus = consensusContract.ScriptHash,
-                Witness = new Witness()
-                {
-                    InvocationScript = Array.Empty<byte>(),
-                    VerificationScript = Array.Empty<byte>()
-                }
-            },
-            Hashes = Array.Empty<UInt256>(),
-        };
-
-         // update Prefix_BlockHash (mapping index -> hash)
-        var blockHashKey = new KeyBuilder(NativeContract.Ledger.Id, Prefix_BlockHash).AddBigEndian(trimmedBlock.Index);
-        snapshot.Add(blockHashKey, new StorageItem(trimmedBlock.Hash.ToArray()));
-
-        // update Prefix_Block (store block indexed by hash)
-        var blockKey = new KeyBuilder(NativeContract.Ledger.Id, Prefix_Block).Add(trimmedBlock.Hash);
-        snapshot.Add(blockKey, new StorageItem(trimmedBlock.ToArray()));
-
-        // update Prefix_CurrentBlock (struct containing current block hash + index)
-        var curBlockKey = new KeyBuilder(NativeContract.Ledger.Id, Prefix_CurrentBlock);
-        var currentBlock = new Neo.VM.Types.Struct() { trimmedBlock.Hash.ToArray(), trimmedBlock.Index };
-        var currentBlockItem = snapshot.GetAndChange(curBlockKey);
-        currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, 1024 * 1024);
-
-        snapshot.Commit();
+        console.WriteLine("You must specify a subcommand.");
+        app.ShowHelp(false);
+        return 1;
     }
+
+    // static async Task Main(string[] args)
+    // {
+    //     const string FILENAME = "./default.neo-worknet";
+    //     var fs = new System.IO.Abstractions.FileSystem();
+    //     var (url, branchInfo, wallet) = fs.File.Exists(FILENAME)
+    //         ? await ReadWorknetAsync(fs, FILENAME).ConfigureAwait(false)
+    //         : await GetWorknetAsync(Constants.MAINNET_RPC_ENDPOINTS[0], 2_000_001).ConfigureAwait(false);
+
+    //     var stateStore = new StateServiceStore(url, branchInfo);
+    //     var trackingStore = new MemoryTrackingStore(stateStore);
+
+    //     var stateIndex = GetCurrentIndex(stateStore);
+    //     var trackingIndex = GetCurrentIndex(trackingStore);
+    //     if (trackingIndex == stateIndex)
+    //     {
+    //         CreateBranch(trackingStore, wallet.GetAccounts());
+    //     }
+
+    //     SaveWorknet(fs, FILENAME, url, branchInfo, wallet);
+    // }
+
+    // static void SaveWorknet(IFileSystem fs, string filename, string url, BranchInfo branch, ToolkitWallet wallet)
+    // {
+    //     using var stream = fs.File.Open(filename, FileMode.Create, FileAccess.Write);
+
+    //     using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions() { Indented = true });
+    //     writer.WriteStartObject();
+    //     writer.WriteString("url", url);
+    //     writer.WritePropertyName("branch-info");
+    //     BranchInfoJsonConverter.WriteJson(writer, branch);
+    //     writer.WritePropertyName("consensus-wallet");
+    //     ToolkitWalletJsonConverter.WriteJson(writer, wallet);
+    //     writer.WriteEndObject();
+    // }
+
+    // static async Task<(string url, BranchInfo branchInfo, ToolkitWallet wallet)> GetWorknetAsync(string url, uint index)
+    // {
+    //     var branchInfo = await BranchInfo.GetBranchInfoAsync(url, index).ConfigureAwait(false);
+
+    //     var consensusWallet = new ToolkitWallet("consensus", branchInfo.ProtocolSettings);
+    //     using (var sha = SHA256.Create())
+    //     {
+    //         var bytes = Encoding.UTF8.GetBytes("worknet-consensus");
+    //         var hash = sha.ComputeHash(bytes);
+    //         consensusWallet.CreateAccount(hash);
+    //     }
+
+    //     return (url, branchInfo, consensusWallet);
+    // }
+
+    // static async Task<(string url, BranchInfo branchInfo, ToolkitWallet wallet)> ReadWorknetAsync(IFileSystem fs, string filename)
+    // {
+    //     using var stream = fs.File.OpenRead(filename);
+    //     using var doc = await JsonDocument.ParseAsync(stream).ConfigureAwait(false);
+    //     var url = doc.RootElement.GetProperty("url").GetString() ?? throw new JsonException("url");
+    //     var branchInfo = BranchInfoJsonConverter.ReadJson(doc.RootElement.GetProperty("branch-info"));
+    //     var wallet = ToolkitWalletJsonConverter.ReadJson(doc.RootElement.GetProperty("consensus-wallet"), branchInfo.ProtocolSettings);
+    //     return (url, branchInfo, wallet);
+    // }
+
+    // static uint GetCurrentIndex(IReadOnlyStore store)
+    // {
+    //     using var snapshot = new SnapshotCache(store);
+    //     return NativeContract.Ledger.CurrentIndex(snapshot);
+    // }
+
+    // static void CreateBranch(IStore store, params WalletAccount[] consensusAccounts)
+    //     => CreateBranch(store, consensusAccounts);
+
+
 }

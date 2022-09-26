@@ -56,7 +56,7 @@ class CreateCommand
                 throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
             }
 
-            var filename = ResolveWorkNetFileName(Output);
+            var filename = fs.ResolveWorkNetFileName(Output);
             if (fs.File.Exists(filename) && !Force) throw new Exception($"{filename} already exists");
 
             var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(filename), "data");
@@ -78,7 +78,7 @@ class CreateCommand
             var consensusWallet = new ToolkitWallet("consensus", branchInfo.ProtocolSettings);
             var consensusAccount = consensusWallet.CreateAccount();
 
-            SaveWorknetFile(filename, uri, branchInfo, consensusWallet);
+            fs.SaveWorknetFile(filename, uri, branchInfo, consensusWallet);
 
             if (fs.Directory.Exists(dataDir))
             {
@@ -101,27 +101,6 @@ class CreateCommand
             await app.Error.WriteLineAsync(ex.Message);
             return 1;
         }
-    }
-
-    string ResolveWorkNetFileName(string path) => fs.ResolveFileName(path, WORKNET_EXTENSION, () => DEFAULT_WORKNET_FILENAME);
-
-    void SaveWorknetFile(string filename, Uri uri, BranchInfo branch, ToolkitWallet wallet)
-    {
-        using var stream = fs.File.Open(filename, FileMode.Create, FileAccess.Write);
-        using var textWriter = new StreamWriter(stream);
-        using var writer = new JsonTextWriter(textWriter);
-        writer.Formatting = Formatting.Indented;
-        WriteJson(writer, uri, branch, wallet);
-    }
-
-    static void WriteJson(JsonWriter writer, Uri uri, BranchInfo branch, ToolkitWallet wallet)
-    {
-        using var o = writer.WriteObject();
-        writer.WriteProperty("uri", uri.ToString());
-        writer.WritePropertyName("branch-info");
-        branch.WriteJson(writer);
-        writer.WritePropertyName("consensus-wallet");
-        wallet.WriteJson(writer);
     }
 
     static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)

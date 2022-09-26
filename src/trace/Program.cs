@@ -1,3 +1,4 @@
+﻿using System.Diagnostics;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
@@ -31,6 +32,8 @@ namespace NeoTrace
 
         internal static async Task TraceBlockAsync(Uri uri, OneOf<uint, UInt256> blockId, IConsole console)
         {
+            // DiagnosticListener.AllListeners.Subscribe(new DiagnosticObserver());
+
             var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
@@ -42,6 +45,8 @@ namespace NeoTrace
 
         internal static async Task TraceTransactionAsync(Uri uri, UInt256 txHash, IConsole console)
         {
+            // DiagnosticListener.AllListeners.Subscribe(new DiagnosticObserver());
+
             var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
@@ -148,6 +153,37 @@ namespace NeoTrace
                 MillisecondsPerBlock = version.Protocol.MillisecondsPerBlock,
                 Network = version.Protocol.Network,
             };
+        }
+    }
+
+    public class DiagnosticObserver : IObserver<DiagnosticListener>
+    {
+        public void OnCompleted()
+            => throw new NotImplementedException();
+
+        public void OnError(Exception error)
+            => throw new NotImplementedException();
+
+        public void OnNext(DiagnosticListener value)
+        {
+            if (value.Name == StateServiceStore.LoggerCategory)
+            {
+                value.Subscribe(new KeyValueObserver());
+            }
+        }
+    }
+
+    public class KeyValueObserver : IObserver<KeyValuePair<string, object?>>
+    {
+        public void OnCompleted()
+            => throw new NotImplementedException();
+
+        public void OnError(Exception error)
+            => throw new NotImplementedException();
+
+        public void OnNext(KeyValuePair<string, object?> kvp)
+        {
+            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
         }
     }
 }

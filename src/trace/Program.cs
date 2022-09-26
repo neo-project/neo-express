@@ -56,7 +56,7 @@ namespace NeoTrace
         static async Task TraceBlockAsync(RpcClient rpcClient, Uri uri, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
         {
             IReadOnlyStore roStore = block.Index > 0
-                ? new StateServiceStore(uri, block.Index - 1)
+                ? await StateServiceStore.CreateAsync(uri, block.Index - 1).ConfigureAwait(false)
                 : NullStore.Instance;
 
             using var store = new MemoryTrackingStore(roStore);

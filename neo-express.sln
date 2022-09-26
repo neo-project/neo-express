@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neoxp", "src\neoxp\neoxp.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neotrace", "src\trace\neotrace.csproj", "{61B2D072-CF9E-49DE-BF2D-1922C5722471}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neoworknet", "src\worknet\neoworknet.csproj", "{30D9D037-989F-480D-B54E-3CC90B913B16}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{61B2D072-CF9E-49DE-BF2D-1922C5722471}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61B2D072-CF9E-49DE-BF2D-1922C5722471}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61B2D072-CF9E-49DE-BF2D-1922C5722471}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30D9D037-989F-480D-B54E-3CC90B913B16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30D9D037-989F-480D-B54E-3CC90B913B16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30D9D037-989F-480D-B54E-3CC90B913B16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30D9D037-989F-480D-B54E-3CC90B913B16}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -33,5 +39,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{0EF1DD29-0766-4E50-BAD3-4F04A2D8C91C} = {35A16713-AEB8-45CE-B393-EA9263B665F9}
 		{61B2D072-CF9E-49DE-BF2D-1922C5722471} = {35A16713-AEB8-45CE-B393-EA9263B665F9}
+		{30D9D037-989F-480D-B54E-3CC90B913B16} = {35A16713-AEB8-45CE-B393-EA9263B665F9}
 	EndGlobalSection
 EndGlobal

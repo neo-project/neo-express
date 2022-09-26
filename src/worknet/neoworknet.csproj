@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>neo-worknet</AssemblyName>
+    <Description></Description>
+    <OutputType>Exe</OutputType>
+    <PackageId>Neo.WorkNet</PackageId>
+    <PackAsTool>true</PackAsTool>
+    <RootNamespace>NeoWorkNet</RootNamespace>
+  </PropertyGroup>
+
+</Project>

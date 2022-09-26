@@ -1,27 +1,24 @@
-using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
-using Neo.BlockchainToolkit.Models;
-using Neo.Network.RPC;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO.Abstractions;
-using Newtonsoft.Json;
-
+using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.Cryptography;
+using Neo.IO;
+using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
-using Neo.Network.P2P.Payloads;
-using Neo;
-using Neo.Cryptography;
-using Neo.IO;
 using Neo.Wallets;
+using Newtonsoft.Json;
+using static Neo.BlockchainToolkit.Constants;
+using static Neo.BlockchainToolkit.Utility;
 
 using NeoArray = Neo.VM.Types.Array;
 using NeoStruct = Neo.VM.Types.Struct;
-
-using static Neo.BlockchainToolkit.Utility;
-using static Neo.BlockchainToolkit.Constants;
-using System.Diagnostics;
 
 namespace NeoWorkNet.Commands;
 
@@ -48,11 +45,19 @@ class CreateCommand
     [Option]
     internal bool Force { get; set; }
 
+    [Option("--disable-log")]
+    internal bool DisableLog { get; set; }
+
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
     {
         try
         {
-            // DiagnosticListener.AllListeners.Subscribe(new DiagnosticObserver(console));
+            if (!DisableLog)
+            {
+                var stateServiceObserver = new KeyValuePairObserver(Utility.GetDiagnosticWriter(console));
+                var diagnosticObserver = new DiagnosticObserver(StateServiceStore.LoggerCategory, stateServiceObserver);
+                DiagnosticListener.AllListeners.Subscribe(diagnosticObserver);
+            }
 
             if (!TryParseRpcUri(RpcUri, out var uri))
             {

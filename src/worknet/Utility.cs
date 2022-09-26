@@ -58,20 +58,31 @@ static class Utility
         };
         return linkedTokenSource.Token;
     }
+
+    public static Action<string, object?> GetDiagnosticWriter(IConsole console)
+        => (name, value) =>
+        {
+            switch (value)
+            {
+                case GetStorageStart v:
+                    console.WriteLine($"GetStorage for {v.ContractName} ({v.ContractHash}) with key {Convert.ToHexString(v.Key.Span)}");
+                    break;
+                case GetStorageStop v:
+                    console.WriteLine($"GetStorage complete in {v.Elapsed}");
+                    break;
+                case DownloadStatesStart v:
+                    var m = v.Prefix.HasValue ? $"{v.ContractHash} prefix {v.Prefix.Value}" : $"{v.ContractHash}";
+                    console.WriteLine($"DownloadStates starting for {v.ContractName} ({m})");
+                    break;
+                case DownloadStatesStop v:
+                    console.WriteLine($"DownloadStates complete. {v.Count} records downloaded in {v.Elapsed}");
+                    break;
+                case DownloadStatesFound v:
+                    console.WriteLine($"DownloadStates {v.Count} records found, {v.Total} records total");
+                    break;
+                default:
+                    console.WriteLine($"{name}: {value}");
+                    break;
+            }
+        };
 }
-
-    
-    // static async Task<(string url, BranchInfo branchInfo, ToolkitWallet wallet)> GetWorknetAsync(string url, uint index)
-    // {
-    //     var branchInfo = await BranchInfo.GetBranchInfoAsync(url, index).ConfigureAwait(false);
-
-    //     var consensusWallet = new ToolkitWallet("consensus", branchInfo.ProtocolSettings);
-    //     using (var sha = SHA256.Create())
-    //     {
-    //         var bytes = Encoding.UTF8.GetBytes("worknet-consensus");
-    //         var hash = sha.ComputeHash(bytes);
-    //         consensusWallet.CreateAccount(hash);
-    //     }
-
-    //     return (url, branchInfo, consensusWallet);
-    // }

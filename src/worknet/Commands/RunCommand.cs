@@ -4,6 +4,7 @@ using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Cryptography.ECC;
 using Neo.Persistence;
+using Neo.Plugins;
 using Neo.Wallets;
 using NeoWorkNet.Models;
 using System.IO.Abstractions;
@@ -82,11 +83,9 @@ partial class RunCommand
                 StoreFactory.RegisterProvider(storeProvider);
                 // // if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
-                // using var persistencePlugin = new ExpressPersistencePlugin();
                 using var logPlugin = new WorknetLogPlugin(console);
                 using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(worknet));
-                // using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
-                //     expressStorage, multiSigAccount.ScriptHash);
+                using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet));
                 using var neoSystem = new Neo.NeoSystem(protocolSettings, storeProvider.Name);
 
                 neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
@@ -125,6 +124,24 @@ partial class RunCommand
 
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
             return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
+        }
+
+        static RpcServerSettings GetRpcServerSettings(WorknetFile worknet)
+        {
+            // var ipAddress = IPAddress.TryParse("0.0.0.0", out var _address) ? _address : IPAddress.Loopback;
+            // chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+            //     ? bindAddress : IPAddress.Loopback;
+
+            var settings = new Dictionary<string, string>()
+                {
+                    { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
+                    { "PluginConfiguration:BindAddress", $"{IPAddress.Any}" },
+                    { "PluginConfiguration:Port", $"{30332}" },
+                    { "PluginConfiguration:SessionEnabled", $"{true}"}
+                };
+
+            var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+            return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
         }
 
     }

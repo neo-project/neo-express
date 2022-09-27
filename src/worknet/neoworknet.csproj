@@ -9,6 +9,10 @@
     <RootNamespace>NeoWorkNet</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Crayon" Version="2.0.64" />
+  </ItemGroup>
+
   <Choose>
     <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
       <ItemGroup>

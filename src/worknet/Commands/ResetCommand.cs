@@ -38,7 +38,7 @@ class ResetCommand
         }
         catch (Exception ex)
         {
-            await app.Error.WriteLineAsync(ex.Message);
+            app.WriteException(ex);
             return 1;
         }
     }

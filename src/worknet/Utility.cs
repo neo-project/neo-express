@@ -6,11 +6,17 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
+using static Crayon.Output;
 
 namespace NeoWorkNet;
 
 static class Utility
 {
+    public static void WriteException(this CommandLineApplication app, Exception exception)
+    {
+        app.Error.WriteLine(Bright.Red($"{exception.GetType()}: {exception.Message}"));
+    }
+
     public static async Task<(string fileName, WorknetFile file)> LoadWorknetAsync(this IFileSystem fs, CommandLineApplication app)
     {
         var option = app.GetOptions().Single(o => o.LongName == "input");
@@ -62,27 +68,17 @@ static class Utility
     public static Action<string, object?> GetDiagnosticWriter(IConsole console)
         => (name, value) =>
         {
-            switch (value)
+            var text = value switch 
             {
-                case GetStorageStart v:
-                    console.WriteLine($"GetStorage for {v.ContractName} ({v.ContractHash}) with key {Convert.ToHexString(v.Key.Span)}");
-                    break;
-                case GetStorageStop v:
-                    console.WriteLine($"GetStorage complete in {v.Elapsed}");
-                    break;
-                case DownloadStatesStart v:
-                    var m = v.Prefix.HasValue ? $"{v.ContractHash} prefix {v.Prefix.Value}" : $"{v.ContractHash}";
-                    console.WriteLine($"DownloadStates starting for {v.ContractName} ({m})");
-                    break;
-                case DownloadStatesStop v:
-                    console.WriteLine($"DownloadStates complete. {v.Count} records downloaded in {v.Elapsed}");
-                    break;
-                case DownloadStatesFound v:
-                    console.WriteLine($"DownloadStates {v.Count} records found, {v.Total} records total");
-                    break;
-                default:
-                    console.WriteLine($"{name}: {value}");
-                    break;
-            }
+                GetStorageStart v => $"GetStorage for {v.ContractName} ({v.ContractHash}) with key {Convert.ToHexString(v.Key.Span)}",
+                GetStorageStop v => $"GetStorage complete in {v.Elapsed}",
+                DownloadStatesStart v =>
+                    $"DownloadStates starting for {v.ContractName} ({(v.Prefix.HasValue ? $"{v.ContractHash} prefix {v.Prefix.Value}" : $"{v.ContractHash}")})",
+                DownloadStatesStop v => $"DownloadStates complete. {v.Count} records downloaded in {v.Elapsed}",
+                DownloadStatesFound v => $"DownloadStates {v.Count} records found, {v.Total} records total",
+                _ => $"{name}: {value}"
+            };
+
+            console.WriteLine(Bright.Blue(text));
         };
 }

@@ -3,6 +3,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
 using NeoWorkNet.Commands;
 using static Neo.BlockchainToolkit.Utility;
+using static Crayon.Output;
 
 namespace NeoWorkNet;
 
@@ -13,7 +14,7 @@ partial class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        EnableAnsiEscapeSequences();
+        Crayon.Output.Enable();
 
         var services = new ServiceCollection()
             .AddSingleton<IFileSystem, FileSystem>()
@@ -31,7 +32,7 @@ partial class Program
         }
         catch (CommandParsingException ex)
         {
-            await app.Error.WriteLineAsync($"\x1b[1m\x1b[31m\x1b[40m{ex.Message}");
+            await app.Error.WriteLineAsync(Bright.Red(ex.Message));
             if (ex is UnrecognizedCommandParsingException uex && uex.NearestMatches.Any())
             {
                 await app.Error.WriteLineAsync();
@@ -42,7 +43,7 @@ partial class Program
         }
         catch (Exception ex)
         {
-            await app.Error.WriteLineAsync($"\x1b[1m\x1b[31m\x1b[40m{ex.GetType()}: {ex.Message}\x1b[0m").ConfigureAwait(false);
+            await app.Error.WriteLineAsync(Bright.Red($"{ex.GetType()}: {ex.Message}")).ConfigureAwait(false);
             return -1;
         }
     }
@@ -53,6 +54,4 @@ partial class Program
         app.ShowHelp(false);
         return 1;
     }
-
-
 }

@@ -42,7 +42,7 @@ partial class RunCommand
         }
         catch (Exception ex)
         {
-            await app.Error.WriteLineAsync(ex.Message);
+            app.WriteException(ex);
             return 1;
         }
     }
@@ -79,9 +79,7 @@ partial class RunCommand
                 StoreFactory.RegisterProvider(storeProvider);
 
                 using var persistencePlugin = new ToolkitPersistencePlugin(db);
-                using var logPlugin = new ToolkitLogPlugin(
-                    text => console.WriteLine(text),
-                    text => console.Error.WriteLine(text));
+                using var logPlugin = new WorkNetLogPlugin(console, Utility.GetDiagnosticWriter(console));
                 using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(worknet));
                 using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet), persistencePlugin, worknet.Uri);
                 using var neoSystem = new NeoSystem(protocolSettings, storeProvider.Name);

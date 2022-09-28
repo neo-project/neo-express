@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using McMaster.Extensions.CommandLineUtils;
+﻿using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
@@ -23,51 +22,42 @@ namespace NeoTrace
     {
         public static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
-        public int OnExecute(CommandLineApplication app, IConsole console)
+        int OnExecute(CommandLineApplication app, IConsole console)
         {
             console.WriteLine("You must specify a subcommand.");
             app.ShowHelp(false);
             return 1;
         }
 
+
         internal static async Task TraceBlockAsync(Uri uri, OneOf<uint, UInt256> blockId, IConsole console)
         {
-            // DiagnosticListener.AllListeners.Subscribe(new DiagnosticObserver());
-
             var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var block = await GetBlockAsync(rpcClient, blockId).ConfigureAwait(false);
             if (block.Transactions.Length == 0) throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
+
             await console.Out.WriteLineAsync($"Tracing all the transactions in block {block.Index} ({block.Hash})").ConfigureAwait(false);
-            await TraceBlockAsync(rpcClient, block, settings, console).ConfigureAwait(false);
+            await TraceBlockAsync(rpcClient, uri, block, settings, console).ConfigureAwait(false);
         }
 
         internal static async Task TraceTransactionAsync(Uri uri, UInt256 txHash, IConsole console)
         {
-            // DiagnosticListener.AllListeners.Subscribe(new DiagnosticObserver());
-
             var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var rpcTx = await rpcClient.GetRawTransactionAsync($"{txHash}").ConfigureAwait(false);
             var block = await GetBlockAsync(rpcClient, rpcTx.BlockHash).ConfigureAwait(false);
             await console.Out.WriteLineAsync($"Tracing transaction {txHash} in block {block.Index} ({block.Hash})").ConfigureAwait(false);
-            await TraceBlockAsync(rpcClient, block, settings, console, rpcTx.Transaction.Hash).ConfigureAwait(false);
+            await TraceBlockAsync(rpcClient, uri, block, settings, console, rpcTx.Transaction.Hash).ConfigureAwait(false);
         }
 
-        static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
+        static async Task TraceBlockAsync(RpcClient rpcClient, Uri uri, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
         {
-            IReadOnlyStore roStore;
-            if (block.Index == 0)
-            {
-                roStore = NullStore.Instance;
-            }
-            else
-            {
-                var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, block.Index - 1).ConfigureAwait(false);
-                roStore = new StateServiceStore(rpcClient, branchInfo);
-            }
+            IReadOnlyStore roStore = block.Index > 0
+                ? new StateServiceStore(uri, block.Index - 1)
+                : NullStore.Instance;
 
             using var store = new MemoryTrackingStore(roStore);
             using var snapshot = new SnapshotCache(store.GetSnapshot());
@@ -153,37 +143,6 @@ namespace NeoTrace
                 MillisecondsPerBlock = version.Protocol.MillisecondsPerBlock,
                 Network = version.Protocol.Network,
             };
-        }
-    }
-
-    public class DiagnosticObserver : IObserver<DiagnosticListener>
-    {
-        public void OnCompleted()
-            => throw new NotImplementedException();
-
-        public void OnError(Exception error)
-            => throw new NotImplementedException();
-
-        public void OnNext(DiagnosticListener value)
-        {
-            if (value.Name == StateServiceStore.LoggerCategory)
-            {
-                value.Subscribe(new KeyValueObserver());
-            }
-        }
-    }
-
-    public class KeyValueObserver : IObserver<KeyValuePair<string, object?>>
-    {
-        public void OnCompleted()
-            => throw new NotImplementedException();
-
-        public void OnError(Exception error)
-            => throw new NotImplementedException();
-
-        public void OnNext(KeyValuePair<string, object?> kvp)
-        {
-            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
         }
     }
 }

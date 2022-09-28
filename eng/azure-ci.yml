@@ -32,7 +32,7 @@ steps:
     version: '6.0.x'
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet pack'
+  displayName: 'dotnet pack express'
   inputs:
     command: 'pack'
     packagesToPack: './src/neoxp/neoxp.csproj'
@@ -40,10 +40,18 @@ steps:
     versioningScheme: 'off'
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet pack'
+  displayName: 'dotnet pack trace'
   inputs:
     command: 'pack'
     packagesToPack: './src/trace/neotrace.csproj'
+    includesymbols: true
+    versioningScheme: 'off'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack worknet'
+  inputs:
+    command: 'pack'
+    packagesToPack: './src/worknet/neoworknet.csproj'
     includesymbols: true
     versioningScheme: 'off'
 

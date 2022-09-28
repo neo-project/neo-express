@@ -22,6 +22,7 @@
         "unencrypted",
         "Unspents",
         "vmstate",
-        "Vsts"
+        "Vsts",
+        "worknet"
     ],
 }

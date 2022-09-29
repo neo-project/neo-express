@@ -22,7 +22,7 @@ using NeoStruct = Neo.VM.Types.Struct;
 
 namespace NeoWorkNet.Commands;
 
-[Command("create", Description = "")]
+[Command("create", Description = "Create a Neo-Worknet branch")]
 class CreateCommand
 {
     readonly IFileSystem fs;
@@ -32,20 +32,20 @@ class CreateCommand
         this.fs = fileSystem;
     }
 
-    [Argument(0, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet, TestNet or JSON-RPC URL")]
+    [Argument(0, Description = "URL of Neo JSON-RPC Node. Specify MainNet, TestNet or JSON-RPC URL")]
     [Required]
     internal string RpcUri { get; } = string.Empty;
 
-    [Argument(1, Description = "")]
-    internal uint Height { get; } = 0;
-
-    [Option(Description = "name of " + WORKNET_EXTENSION + " file to create (Default: ./" + DEFAULT_WORKNET_FILENAME + ")")]
+    [Argument(1, Description = "Name of " + WORKNET_EXTENSION + " file to create (Default: ./" + DEFAULT_WORKNET_FILENAME + ")")]
     internal string Output { get; set; } = string.Empty;
 
-    [Option]
+    [Option(Description = "Block height to branch at")]
+    internal uint Index { get; } = 0;
+
+    [Option(Description = "Overwrite existing data")]
     internal bool Force { get; set; }
 
-    [Option("--disable-log")]
+    [Option("--disable-log", Description = "Disable verbose data logging")]
     internal bool DisableLog { get; set; }
 
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
@@ -72,14 +72,14 @@ class CreateCommand
 
             console.WriteLine($"Retrieving branch information from {RpcUri}");
             using var rpcClient = new RpcClient(uri);
-            var height = Height;
-            if (height == 0)
+            var index = Index;
+            if (index == 0)
             {
                 var stateApi = new StateAPI(rpcClient);
                 var (localRootIndex, validatedRootIndex) = await stateApi.GetStateHeightAsync().ConfigureAwait(false);
-                height = validatedRootIndex ?? localRootIndex ?? throw new Exception("No valid root index available");
+                index = validatedRootIndex ?? localRootIndex ?? throw new Exception("No valid root index available");
             }
-            var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, height).ConfigureAwait(false);
+            var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, index).ConfigureAwait(false);
 
             console.WriteLine($"Initializing local worknet");
 
@@ -102,6 +102,8 @@ class CreateCommand
             InitializeStore(trackStore, consensusAccount);
 
             console.WriteLine($"Created {filename}");
+            console.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
+            console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
             return 0;
         }
         catch (Exception ex)

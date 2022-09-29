@@ -1,6 +1,7 @@
 using System.Reflection;
 using McMaster.Extensions.CommandLineUtils;
 using McMaster.Extensions.CommandLineUtils.Conventions;
+using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoWorkNet;
 
@@ -19,7 +20,10 @@ partial class Program
             var parser = context.Application.ValueParsers.GetParser<string>()
                 ?? throw new InvalidOperationException("Can't get string value parser");
 
-            var option = new CommandOption<string>(parser, "--input", CommandOptionType.SingleValue);
+            var option = new CommandOption<string>(parser, "--input", CommandOptionType.SingleValue)
+            {
+                Description = $"Path to {WORKNET_EXTENSION} data file"
+            };
             context.Application.AddOption(option);
         }
     }

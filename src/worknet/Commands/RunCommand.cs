@@ -13,7 +13,7 @@ using NeoWorkNet.Models;
 
 namespace NeoWorkNet.Commands;
 
-[Command("run", Description = "")]
+[Command("run", Description = "Run Neo-WorkNet instance node")]
 partial class RunCommand
 {
     readonly IFileSystem fs;

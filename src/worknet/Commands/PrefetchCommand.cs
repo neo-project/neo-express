@@ -2,13 +2,12 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
-using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using OneOf.Types;
 
 namespace NeoWorkNet.Commands;
 
-[Command("prefetch", Description = "")]
+[Command("prefetch", Description = "Fetch data for specified contract")]
 class PrefetchCommand
 {
     readonly IFileSystem fs;
@@ -18,10 +17,10 @@ class PrefetchCommand
         fs = fileSystem;
     }
 
-    [Argument(0)]
+    [Argument(0, Description = "Name or Hash of contract to prefetch contract storage")]
     string Contract { get; set; } = string.Empty;
 
-    [Option("--disable-log")]
+    [Option("--disable-log", Description = "Disable verbose data logging")]
     bool DisableLog { get; set; }
 
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)

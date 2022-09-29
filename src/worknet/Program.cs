@@ -2,12 +2,11 @@
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
 using NeoWorkNet.Commands;
-using static Neo.BlockchainToolkit.Utility;
 using static Crayon.Output;
 
 namespace NeoWorkNet;
 
-[Command("neoxp", Description = "Neo N3 blockchain private net for developers", UsePagerForHelpText = false)]
+[Command("neo-worknet", Description = "Branch a public Neo N3 blockchain for private development use", UsePagerForHelpText = false)]
 [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
 [Subcommand(typeof(CreateCommand), typeof(PrefetchCommand), typeof(ResetCommand), typeof(RunCommand))]
 partial class Program

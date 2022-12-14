@@ -19,17 +19,18 @@ jobs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
       NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     steps:
+    - name: Checkout Code
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - name: Setup .NET Core
+    - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.0
       id: nbgv
-    - name: Restore, Build and Pack
+    - name: Pack
       run: |
         dotnet restore
         dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog

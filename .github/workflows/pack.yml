@@ -1,0 +1,49 @@
+name: Run Pack
+
+on:
+  workflow_call:
+
+env:
+  CONFIGURATION: 'Release'
+  DOTNET_VERSION: '6.0.x'
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: Nerdbank.GitVersioning
+      uses: dotnet/nbgv@v0.4.0
+      id: nbgv
+    - name: Restore, Build and Pack
+      run: |
+        dotnet restore
+        dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
+        dotnet pack --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
+        rm ./out/*.snupkg
+    - name: Upload NeoExpress
+      uses: actions/upload-artifact@v3
+      with:
+        name: express
+        path: ./out/Neo.Express.*.nupkg
+    - name: Upload NeoTrace
+      uses: actions/upload-artifact@v3
+      with:
+        name: trace
+        path: ./out/Neo.Trace.*.nupkg
+    - name: Upload NeoWorkNet
+      uses: actions/upload-artifact@v3
+      with:
+        name: worknet
+        path: ./out/Neo.WorkNet.*.nupkg
+    - name: Upload Build Log
+      uses: actions/upload-artifact@v3
+      with:
+        name: buildlog
+        path: ./msbuild.binlog

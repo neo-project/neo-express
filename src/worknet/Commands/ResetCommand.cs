@@ -23,8 +23,8 @@ class ResetCommand
         {
             if (!Force) throw new InvalidOperationException("--force must be specified when resetting worknet");
 
-            var (fileName, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
-            var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(fileName), "data");
+            var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
+            var dataDir = fs.GetWorknetDataDirectory(filename);
             if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
 
             using var db = RocksDbUtility.OpenDb(dataDir);

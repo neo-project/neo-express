@@ -28,6 +28,12 @@ static class Utility
     public static string ResolveWorkNetFileName(this IFileSystem fs, string path)
         => fs.ResolveFileName(path, WORKNET_EXTENSION, () => DEFAULT_WORKNET_FILENAME);
 
+    public static string GetWorknetDataDirectory(this IFileSystem fs, string filename)
+    {
+        var dirname = fs.Path.GetDirectoryName(filename) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
+        return fs.Path.Combine(dirname, "data");
+    }
+
     public static async Task<WorknetFile> LoadWorknetAsync(this IFileSystem fs, string filename)
     {
         using var stream = fs.File.OpenRead(filename);

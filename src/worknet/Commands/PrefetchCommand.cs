@@ -36,8 +36,8 @@ class PrefetchCommand
                 DiagnosticListener.AllListeners.Subscribe(diagnosticObserver);
             }
 
-            var (fileName, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
-            var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(fileName), "data");
+            var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
+            var dataDir = fs.GetWorknetDataDirectory(filename);
             if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
 
             var contracts = worknet.BranchInfo.Contracts;

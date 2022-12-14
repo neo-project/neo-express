@@ -30,13 +30,11 @@ partial class RunCommand
     {
         try
         {
-            // token = console.OverrideCancelKeyPress(token, true);
-
-            var (fileName, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
-            var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(fileName), "data");
+            var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
+            var dataDir = fs.GetWorknetDataDirectory(filename);
             if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
 
-            var secondsPerBlock = SecondsPerBlock.HasValue ? SecondsPerBlock.Value : 0;
+            var secondsPerBlock = SecondsPerBlock ?? 0;
             await RunAsync(worknet, dataDir, secondsPerBlock, console, token).ConfigureAwait(false);
             return 0;
         }

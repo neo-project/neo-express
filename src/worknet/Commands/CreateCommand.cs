@@ -66,8 +66,7 @@ class CreateCommand
 
             var filename = fs.ResolveWorkNetFileName(Output);
             if (fs.File.Exists(filename) && !Force) throw new Exception($"{filename} already exists");
-
-            var dataDir = fs.Path.Combine(fs.Path.GetDirectoryName(filename), "data");
+            var dataDir = fs.GetWorknetDataDirectory(filename);
             if (fs.Directory.Exists(dataDir) && !Force) throw new Exception($"{dataDir} already exists");
 
             console.WriteLine($"Retrieving branch information from {RpcUri}");

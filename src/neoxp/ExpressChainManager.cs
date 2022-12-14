@@ -88,7 +88,8 @@ namespace NeoExpress
                 }
             }
 
-            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath);
+            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath)
+                ?? throw new InvalidOperationException($"GetDirectoryName({checkpointPath}) returned null");
             if (!fileSystem.Directory.Exists(parentPath))
             {
                 fileSystem.Directory.CreateDirectory(parentPath);
@@ -282,8 +283,7 @@ namespace NeoExpress
                     settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
                 }
 
-                var sessionEnabled = chain.TryReadSetting<bool>("rpc.SessionEnabled", bool.TryParse, out var value)
-                    ? value : true;
+                var sessionEnabled = !chain.TryReadSetting<bool>("rpc.SessionEnabled", bool.TryParse, out var value) || value;
                 settings.Add("PluginConfiguration:SessionEnabled", $"{sessionEnabled}");
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();

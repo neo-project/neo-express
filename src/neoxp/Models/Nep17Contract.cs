@@ -40,7 +40,7 @@ namespace NeoExpress.Models
                 return true;
             }
 
-            if (snapshot.TryGetTokenDetails(scriptHash, settings, out var details)) 
+            if (snapshot.TryGetTokenDetails(scriptHash, settings, out var details))
             {
                 contract = new Nep17Contract(details.symbol, details.decimals, scriptHash);
                 return true;

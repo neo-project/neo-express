@@ -242,7 +242,7 @@ namespace NeoExpress.Node
                         "Could not get state information. Make sure the remote RPC server has state service support");
                 }
 
-                stateHeight = validatedRootIndex ?? localRootIndex 
+                stateHeight = validatedRootIndex ?? localRootIndex
                     ?? throw new Exception($"GetStateHeight did not return local or validated root index");
             }
 

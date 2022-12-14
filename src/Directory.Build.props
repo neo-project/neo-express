@@ -19,10 +19,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BlockchainToolkitLibraryVersion>3.5.17-preview</BlockchainToolkitLibraryVersion>
+    <BlockchainToolkitLibraryVersion>3.5.29</BlockchainToolkitLibraryVersion>
     <!-- <BlockchainToolkitLibraryVersion>local</BlockchainToolkitLibraryVersion> -->
     <BlockchainToolkitLibraryLocalPath>..\..\..\lib-bctk</BlockchainToolkitLibraryLocalPath>
-    <NeoVersion>3.4.0</NeoVersion>
+    <NeoVersion>3.5.0</NeoVersion>
     <NeoMonorepoPath>..\..\..\..\official\3neo-monorepo</NeoMonorepoPath>
   </PropertyGroup>
 

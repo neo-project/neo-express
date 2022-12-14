@@ -667,11 +667,11 @@ namespace NeoExpress.Node
                : UInt160.Parse(text);
         }
 
-        (string name, string symbol, byte decimals) GetTokenDetails(DataCache snapshot, UInt160 tokenHash) 
+        (string name, string symbol, byte decimals) GetTokenDetails(DataCache snapshot, UInt160 tokenHash)
         {
             if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
             return snapshot.TryGetTokenDetails(tokenHash, neoSystem.Settings, out var details)
-                ? details 
+                ? details
                 : ("<Unknown>", "<UNK>", (byte)0);
         }
     }

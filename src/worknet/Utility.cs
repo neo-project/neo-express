@@ -28,6 +28,12 @@ static class Utility
     public static string ResolveWorkNetFileName(this IFileSystem fs, string path)
         => fs.ResolveFileName(path, WORKNET_EXTENSION, () => DEFAULT_WORKNET_FILENAME);
 
+    public static string GetWorknetDataDirectory(this IFileSystem fs, string filename)
+    {
+        var dirname = fs.Path.GetDirectoryName(filename) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
+        return fs.Path.Combine(dirname, "data");
+    }
+
     public static async Task<WorknetFile> LoadWorknetAsync(this IFileSystem fs, string filename)
     {
         using var stream = fs.File.OpenRead(filename);
@@ -58,7 +64,8 @@ static class Utility
     public static CancellationToken OverrideCancelKeyPress(this IConsole console, CancellationToken token, bool continueRunning = false)
     {
         var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
-        console.CancelKeyPress += (o, args) => {
+        console.CancelKeyPress += (o, args) =>
+        {
             args.Cancel = continueRunning;
             linkedTokenSource.Cancel();
         };
@@ -68,7 +75,7 @@ static class Utility
     public static Action<string, object?> GetDiagnosticWriter(IConsole console)
         => (name, value) =>
         {
-            var text = value switch 
+            var text = value switch
             {
                 GetStorageStart v => $"GetStorage for {v.ContractName} ({v.ContractHash}) with key {Convert.ToHexString(v.Key.Span)}",
                 GetStorageStop v => $"GetStorage complete in {v.Elapsed}",

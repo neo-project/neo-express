@@ -2,6 +2,11 @@ name: Run Pack
 
 on:
   workflow_call:
+    outputs:
+      PrereleaseVersion:
+        value: ${{ jobs.pack.outputs.PrereleaseVersion}}
+      NuGetPackageVersion:
+        value: ${{ jobs.pack.outputs.NuGetPackageVersion}}
 
 env:
   CONFIGURATION: 'Release'
@@ -10,6 +15,9 @@ env:
 jobs:
   pack:
     runs-on: ubuntu-latest
+    outputs:
+      PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
+      NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     steps:
       uses: actions/checkout@v3
       with:

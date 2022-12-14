@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Crayon" Version="2.0.64" />
+    <PackageReference Include="Crayon" Version="2.0.69" />
   </ItemGroup>
 
   <Choose>

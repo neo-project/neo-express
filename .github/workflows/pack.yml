@@ -35,7 +35,12 @@ jobs:
         dotnet restore
         dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
         dotnet pack --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
-        rm ./out/*.snupkg
+    - name: Upload Build Log
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: buildlog
+        path: ./msbuild.binlog
     - name: Upload NeoExpress
       uses: actions/upload-artifact@v3
       with:
@@ -51,8 +56,3 @@ jobs:
       with:
         name: worknet
         path: ./out/Neo.WorkNet.*.nupkg
-    - name: Upload Build Log
-      uses: actions/upload-artifact@v3
-      with:
-        name: buildlog
-        path: ./msbuild.binlog

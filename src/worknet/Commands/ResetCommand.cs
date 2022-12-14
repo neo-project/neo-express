@@ -6,7 +6,7 @@ namespace NeoWorkNet.Commands;
 
 [Command("reset", Description = "Reset WorkNet back to initial branch point")]
 class ResetCommand
-{    
+{
     readonly IFileSystem fs;
 
     public ResetCommand(IFileSystem fs)

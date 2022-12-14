@@ -62,7 +62,7 @@ namespace NeoExpress
         public static bool TryGetTokenDetails(this DataCache snapshot, UInt160 asset, ProtocolSettings settings, out (string name, string symbol, byte decimals) details)
         {
             var contractState = NativeContract.ContractManagement.GetContract(snapshot, asset);
-            if (contractState is not null) 
+            if (contractState is not null)
             {
                 using var builder = new ScriptBuilder();
                 builder.EmitDynamicCall(asset, "symbol");

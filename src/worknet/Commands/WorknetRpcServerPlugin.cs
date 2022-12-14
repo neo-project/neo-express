@@ -168,8 +168,8 @@ class WorknetRpcServerPlugin : Plugin
         {
             json[key] = ToolkitRpcServer.Nep11PropertyNames.Contains(key)
                 ? value.GetString()
-                : value.IsNull 
-                    ? null 
+                : value.IsNull
+                    ? null
                     : Convert.ToBase64String(value.GetSpan());
         }
         return json;

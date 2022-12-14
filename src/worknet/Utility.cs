@@ -58,7 +58,8 @@ static class Utility
     public static CancellationToken OverrideCancelKeyPress(this IConsole console, CancellationToken token, bool continueRunning = false)
     {
         var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
-        console.CancelKeyPress += (o, args) => {
+        console.CancelKeyPress += (o, args) =>
+        {
             args.Cancel = continueRunning;
             linkedTokenSource.Cancel();
         };
@@ -68,7 +69,7 @@ static class Utility
     public static Action<string, object?> GetDiagnosticWriter(IConsole console)
         => (name, value) =>
         {
-            var text = value switch 
+            var text = value switch
             {
                 GetStorageStart v => $"GetStorage for {v.ContractName} ({v.ContractHash}) with key {Convert.ToHexString(v.Key.Span)}",
                 GetStorageStop v => $"GetStorage complete in {v.Elapsed}",

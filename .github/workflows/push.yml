@@ -15,7 +15,7 @@ env:
   DOTNET_VERSION: '6.0.x'
 
 jobs:
-  package:
+  pack:
     uses: ./.github/workflows/pack.yml
   publish:
     needs: [pack]

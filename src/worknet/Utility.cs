@@ -70,9 +70,9 @@ static class Utility
                 var key = account.GetKey();
                 if (key is not null) 
                 {
-                    writer.WriteProperty("private-key", Convert.ToHexString(key.PrivateKey));
+                    writer.WriteProperty("private-key", Convert.ToHexString(key.PrivateKey).ToLower());
                 }
-                writer.WriteProperty("script-hash", account.ScriptHash.ToAddress(branch.AddressVersion));
+                writer.WriteProperty("address", account.ScriptHash.ToAddress(branch.AddressVersion));
                 writer.WriteProperty("is-default", account.IsDefault);
             }
         }

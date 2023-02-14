@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 using static Crayon.Output;
+using Neo.Wallets;
 
 namespace NeoWorkNet;
 
@@ -54,6 +55,28 @@ static class Utility
         writer.Formatting = Formatting.Indented;
 
         using var _ = writer.WriteObject();
+        writer.WriteProperty("magic", branch.Network);
+        writer.WriteProperty("address-version", branch.AddressVersion);
+        {
+            using var _1 = writer.WritePropertyArray("consensus-nodes");
+            using var _2 = writer.WriteObject();
+            writer.WriteProperty("rpc-port", 30332);
+            using var _3 = writer.WritePropertyObject("wallet");
+            writer.WriteProperty("name", "node1");
+            using var _4 = writer.WritePropertyArray("accounts");
+            foreach (var account in wallet.GetAccounts())
+            {
+                using var _5 = writer.WriteObject();
+                var key = account.GetKey();
+                if (key is not null) 
+                {
+                    writer.WriteProperty("private-key", Convert.ToHexString(key.PrivateKey));
+                }
+                writer.WriteProperty("script-hash", account.ScriptHash.ToAddress(branch.AddressVersion));
+                writer.WriteProperty("is-default", account.IsDefault);
+            }
+        }
+
         writer.WriteProperty("uri", uri.ToString());
         writer.WritePropertyName("branch-info");
         branch.WriteJson(writer);

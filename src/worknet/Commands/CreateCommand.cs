@@ -84,6 +84,7 @@ class CreateCommand
 
             var consensusWallet = new ToolkitWallet("consensus", branchInfo.ProtocolSettings);
             var consensusAccount = consensusWallet.CreateAccount();
+            consensusAccount.IsDefault = true;
 
             fs.SaveWorknetFile(filename, uri, branchInfo, consensusWallet);
 

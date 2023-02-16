@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "neoxp",
+            "name": "express",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -15,7 +15,7 @@
             "stopAtEntry": false
         },
         {
-            "name": "neotrace",
+            "name": "trace",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",

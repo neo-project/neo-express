@@ -291,11 +291,11 @@ namespace NeoExpress.Node
                 var results = (JArray)response["results"]!;
                 if (results.Count == 0) break;
 
-                ValidateProof(stateRoot.RootHash, (JObject)response["firstProof"]!, (JObject)results[0]!);
+                ValidateProof(stateRoot.RootHash, (JString)response["firstProof"]!, (JObject)results[0]!);
 
                 if (results.Count > 1)
                 {
-                    ValidateProof(stateRoot.RootHash, (JObject)response["lastProof"]!, (JObject)results[^1]!);
+                    ValidateProof(stateRoot.RootHash, (JString)response["lastProof"]!, (JObject)results[^1]!);
                 }
 
                 states = states.Concat(results
@@ -311,7 +311,7 @@ namespace NeoExpress.Node
 
             return (contractState, states.ToList());
 
-            static void ValidateProof(UInt256 rootHash, JObject proof, JObject result)
+            static void ValidateProof(UInt256 rootHash, JString proof, JObject result)
             {
                 var proofBytes = Convert.FromBase64String(proof.AsString());
                 var (provenKey, provenItem) = VerifyProof(rootHash, proofBytes);

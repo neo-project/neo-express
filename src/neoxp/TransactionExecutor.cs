@@ -42,6 +42,39 @@ namespace NeoExpress
 
         public IExpressNode ExpressNode => expressNode;
 
+        public async Task ContractUpdateAsync(string contract, string nefFilePath, string accountName, string password, WitnessScope witnessScope)
+        {
+            if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{accountName} account not found.");
+            }
+
+            var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+            var scriptHash = parser.TryLoadScriptHash(contract, out var value)
+                ? value
+                : UInt160.TryParse(contract, out var uint160)
+                    ? uint160
+                    : throw new InvalidOperationException($"contract \"{contract}\" not found");
+
+            var originalManifest = await expressNode.GetContractAsync(scriptHash).ConfigureAwait(false);
+            var updateMethod = originalManifest.Abi.GetMethod("update", 2);
+            if (updateMethod == null)
+            {
+                throw new Exception($"update method on {contract} contract not found.");
+            }
+            if (updateMethod.Parameters[0].Type != ContractParameterType.ByteArray
+                || updateMethod.Parameters[1].Type != ContractParameterType.String)
+            {
+                throw new Exception($"update method on {contract} contract has unexpected signature.");
+            }
+
+            var (nefFile, manifest) = await fileSystem.LoadContractAsync(nefFilePath).ConfigureAwait(false);
+            var txHash = await expressNode
+                .UpdateAsync(scriptHash, nefFile, manifest, wallet, accountHash, witnessScope)
+                .ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, "Update", json).ConfigureAwait(false);
+        }
+
         public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, string data, bool force)
         {
             if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))

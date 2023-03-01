@@ -168,7 +168,7 @@ namespace NeoExpress
                     }
                 }
 
-                if (TryGetWIF(name, settings, out wallet, out accountHash))
+                if (TryGetWIFWallet(name, settings, out wallet, out accountHash))
                 {
                     return true;
                 }
@@ -191,7 +191,7 @@ namespace NeoExpress
             accountHash = null;
             return false;
 
-            static bool TryGetWIF(string wif, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+            static bool TryGetWIFWallet(string wif, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
             {
                 try
                 {
@@ -206,6 +206,7 @@ namespace NeoExpress
                     return false;
                 }
             }
+
             static bool TryGetNEP2Wallet(string nep2, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
             {
                 try

@@ -114,7 +114,29 @@ namespace NeoExpress
                 return accountHash;
             }
 
+            if (TryGetWIFAccountHash(name, out accountHash))
+            {
+                return accountHash;
+            }
+
             return default(None);
+
+            static bool TryGetWIFAccountHash(string wif, out UInt160 accountHash)
+            {
+                try
+                {
+                    var privateKey = Wallet.GetPrivateKeyFromWIF(wif);
+                    var keyPair = new KeyPair(privateKey);
+                    var contract = Contract.CreateSignatureContract(keyPair.PublicKey);
+                    accountHash = contract.ScriptHash;
+                    return true;
+                }
+                catch
+                {
+                    accountHash = UInt160.Zero;
+                    return false;
+                }
+            }
         }
 
         public static async Task<UInt160> ParseAssetAsync(this IExpressNode expressNode, string asset)

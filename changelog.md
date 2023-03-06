@@ -15,6 +15,10 @@ may not exactly match a publicly released version.
 
 ## [3.6] - Unreleased
 
+### Added
+
+* WIF encoded private keys can be used to specify signing and non-signing accounts
+
 ## [3.5] - 2023-01-03
 
 ### Changed

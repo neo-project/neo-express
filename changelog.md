@@ -13,7 +13,18 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
-## [3.5] - Unreleased
+## [3.6] - Unreleased
+
+## [3.5] - 2023-01-03
+
+### Changed
+
+* Updated to Neo 3.5 ([#258](https://github.com/neo-project/neo-express/pull/258))
+* Moved all CI/CD builds from Azure Pipelines to Github Actions
+
+### Fixed
+
+* contract download - remove exception on empty validatedrootindex ([#251](https://github.com/neo-project/neo-express/issues/251))
 
 ## [3.4.18] - 2022-08-17
 

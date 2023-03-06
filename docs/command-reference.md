@@ -21,11 +21,21 @@ multiple ways:
 - `genesis` to use the consensus node multi-sig account which holds the genesis NEO and GAS
 - Neo-Express wallet nickname (see `wallet create` below). Note, this includes `node1` etc to specify
   the default wallet account associated with each consensus node
+- A [WIF encoded](https://developer.bitcoin.org/devguide/wallets.html#wallet-import-format-wif) private key
 - A [standard NEP-2 Passphrase-protected private key](https://github.com/neo-project/proposals/blob/master/nep-2.mediawiki).
     - When using a NEP-2 protected private key, the passphrase must be specified using the `--password` option
 - The path to a [standard NEP-6 JSON wallet](https://github.com/neo-project/proposals/blob/master/nep-6.mediawiki).
     - When using a NEP-6 wallet, the password must be specified using the `--password` option. 
     - Note, Neo-Express only supports NEP-6 wallets with either a single account or a single default account
+
+NEP-2 private key and NEP-6 JSON wallet are password protected. When using one of these methods, the password
+can be specified using the `--password` option. If the password is not specified on the command line, Neo-Express
+will prompt the user to enter the password.
+
+> Note, `neoxp batch` command does not support interactive prompting. Using a NEP-2 private key or NEP-6 wallet
+> with `neoxp batch` also requires specifying the `--password` option. Needless to say, storing a password in 
+> an unencrpted batch file is not secure, and developers should not use wallets associated with production, mainnet
+> assets with Neo-Express.
 
 ### Specifying a Non-Signing Account
 
@@ -36,6 +46,7 @@ can be specified in multiple ways:
 - Neo-Express wallet nickname (see `wallet create` below). Note, this includes `node1` etc to specify
   the default wallet account associated with each consensus node
 - A standard Neo N3 address such as `Ne4Ko2JkzjAd8q2sasXsQCLfZ7nu8Gm5vR`
+- A [WIF encoded](https://developer.bitcoin.org/devguide/wallets.html#wallet-import-format-wif) private key
 
 ## neoxp create
 

@@ -17,7 +17,8 @@ may not exactly match a publicly released version.
 
 ### Added
 
-* WIF encoded private keys can be used to specify signing and non-signing accounts
+* WIF encoded private keys can be used to specify signing and non-signing accounts 
+* `contract update` command
 
 ## [3.5] - 2023-01-03
 

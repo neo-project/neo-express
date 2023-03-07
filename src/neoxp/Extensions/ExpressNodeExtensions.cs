@@ -211,6 +211,24 @@ namespace NeoExpress
             }
         }
 
+        public static async Task<UInt256> UpdateAsync(this IExpressNode expressNode,
+                                                      UInt160 contractHash,
+                                                      NefFile nefFile,
+                                                      ContractManifest manifest,
+                                                      Wallet wallet,
+                                                      UInt160 accountHash,
+                                                      WitnessScope witnessScope)
+        {
+            CheckNefFile(nefFile);
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(contractHash,
+                "update",
+                nefFile.ToArray(),
+                manifest.ToJson().ToString());
+
+            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
+        }
+
         public static async Task<UInt256> DeployAsync(this IExpressNode expressNode,
                                                       NefFile nefFile,
                                                       ContractManifest manifest,
@@ -219,8 +237,20 @@ namespace NeoExpress
                                                       WitnessScope witnessScope,
                                                       ContractParameter? data)
         {
-            data ??= new ContractParameter(ContractParameterType.Any);
+            CheckNefFile(nefFile);
 
+            data ??= new ContractParameter(ContractParameterType.Any);
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(NativeContract.ContractManagement.Hash,
+                "deploy",
+                nefFile.ToArray(),
+                manifest.ToJson().ToString(),
+                data);
+            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
+        }
+
+        static void CheckNefFile(NefFile nefFile)
+        {
             // check for bad opcodes (logic borrowed from neo-cli LoadDeploymentScript)
             Neo.VM.Script script = nefFile.Script;
             for (var i = 0; i < script.Length;)
@@ -239,14 +269,6 @@ namespace NeoExpress
                     i += instruction.Size;
                 }
             }
-
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(NativeContract.ContractManagement.Hash,
-                "deploy",
-                nefFile.ToArray(),
-                manifest.ToJson().ToString(),
-                data);
-            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
         }
 
         public static async Task<UInt256> DesignateOracleRolesAsync(this IExpressNode expressNode, Wallet wallet, UInt160 accountHash, IEnumerable<ECPoint> oracles)

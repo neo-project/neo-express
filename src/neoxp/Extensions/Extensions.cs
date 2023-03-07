@@ -168,6 +168,11 @@ namespace NeoExpress
                     }
                 }
 
+                if (TryGetWIFWallet(name, settings, out wallet, out accountHash))
+                {
+                    return true;
+                }
+
                 if (!string.IsNullOrEmpty(password))
                 {
                     if (TryGetNEP2Wallet(name, password, settings, out wallet, out accountHash))
@@ -186,14 +191,28 @@ namespace NeoExpress
             accountHash = null;
             return false;
 
+            static bool TryGetWIFWallet(string wif, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
+            {
+                try
+                {
+                    var privateKey = Wallet.GetPrivateKeyFromWIF(wif);
+                    CreateWallet(privateKey, settings, out wallet, out accountHash);
+                    return true;
+                }
+                catch
+                {
+                    wallet = null;
+                    accountHash = null;
+                    return false;
+                }
+            }
+
             static bool TryGetNEP2Wallet(string nep2, string password, ProtocolSettings settings, [MaybeNullWhen(false)] out Wallet wallet, [MaybeNullWhen(false)] out UInt160 accountHash)
             {
                 try
                 {
                     var privateKey = Wallet.GetPrivateKeyFromNEP2(nep2, password, settings.AddressVersion);
-                    wallet = new DevWallet(settings, string.Empty);
-                    var account = wallet.CreateAccount(privateKey);
-                    accountHash = account.ScriptHash;
+                    CreateWallet(privateKey, settings, out wallet, out accountHash);
                     return true;
                 }
                 catch
@@ -214,9 +233,7 @@ namespace NeoExpress
                         ?? throw new InvalidOperationException("Neo-express only supports NEP-6 wallets with a single default account or a single account");
                     if (nep6account.IsMultiSigContract()) throw new Exception("Neo-express doesn't supports multi-sig NEP-6 accounts");
                     var keyPair = nep6account.GetKey() ?? throw new Exception("account.GetKey() returned null");
-                    wallet = new DevWallet(settings, string.Empty);
-                    var account = wallet.CreateAccount(keyPair.PrivateKey);
-                    accountHash = account.ScriptHash;
+                    CreateWallet(keyPair.PrivateKey, settings, out wallet, out accountHash);
                     return true;
                 }
                 catch
@@ -226,6 +243,15 @@ namespace NeoExpress
                     return false;
                 }
             }
+
+            static void CreateWallet(byte[] privateKey, ProtocolSettings settings, out Wallet wallet, out UInt160 accountHash)
+            {
+                wallet = new DevWallet(settings, string.Empty);
+                var account = wallet.CreateAccount(privateKey);
+                accountHash = account.ScriptHash;
+            }
+
+
         }
     }
 }

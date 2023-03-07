@@ -83,6 +83,8 @@ namespace NeoExpress.Commands
                             writer.WriteValue(account.ScriptHash.ToString());
                             writer.WritePropertyName("private-key");
                             writer.WriteValue(Convert.ToHexString(keyPair.PrivateKey));
+                            writer.WritePropertyName("private-key-wif");
+                            writer.WriteValue(keyPair.Export());
                             writer.WritePropertyName("public-key");
                             writer.WriteValue(Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
                             writer.WriteEndObject();
@@ -121,9 +123,10 @@ namespace NeoExpress.Commands
                             var keyPair = account.GetKey() ?? throw new Exception();
 
                             writer.WriteLine($"  {account.Address} ({(account.IsDefault ? "Default" : account.Label)})");
-                            writer.WriteLine($"    script hash: {BitConverter.ToString(account.ScriptHash.ToArray())}");
-                            writer.WriteLine($"    public key:    {Convert.ToHexString(keyPair.PublicKey.EncodePoint(true))}");
-                            writer.WriteLine($"    private key:   {Convert.ToHexString(keyPair.PrivateKey)}");
+                            writer.WriteLine($"    script hash:       {BitConverter.ToString(account.ScriptHash.ToArray())}");
+                            writer.WriteLine($"    public key:        {Convert.ToHexString(keyPair.PublicKey.EncodePoint(true))}");
+                            writer.WriteLine($"    private key:       {Convert.ToHexString(keyPair.PrivateKey)}");
+                            writer.WriteLine($"    private key (WIF): {keyPair.Export()}");
                         }
                     }
 

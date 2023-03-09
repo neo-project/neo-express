@@ -123,7 +123,7 @@ namespace NeoExpress.Commands
                             var keyPair = account.GetKey() ?? throw new Exception();
 
                             writer.WriteLine($"  {account.Address} ({(account.IsDefault ? "Default" : account.Label)})");
-                            writer.WriteLine($"    script hash:       {BitConverter.ToString(account.ScriptHash.ToArray())}");
+                            writer.WriteLine($"    script hash:       {Convert.ToHexString(account.ScriptHash.ToArray())}");
                             writer.WriteLine($"    public key:        {Convert.ToHexString(keyPair.PublicKey.EncodePoint(true))}");
                             writer.WriteLine($"    private key:       {Convert.ToHexString(keyPair.PrivateKey)}");
                             writer.WriteLine($"    private key (WIF): {keyPair.Export()}");

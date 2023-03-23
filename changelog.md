@@ -20,6 +20,11 @@ may not exactly match a publicly released version.
 * WIF encoded private keys can be used to specify signing and non-signing accounts 
 * `contract update` command
 
+### Changed
+
+* use `UInt160.ToString` to write wallet account script hash to console in 
+  `wallet list` command  
+
 ## [3.5] - 2023-01-03
 
 ### Changed

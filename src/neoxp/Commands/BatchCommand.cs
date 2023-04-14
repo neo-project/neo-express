@@ -165,6 +165,16 @@ namespace NeoExpress.Commands
                                 cmd.Model.WitnessScope).ConfigureAwait(false);
                             break;
                         }
+                    case CommandLineApplication<BatchFileCommands.Contract.Update> cmd:
+                        {
+                            await txExec.ContractUpdateAsync(
+                                cmd.Model.Contract,
+                                cmd.Model.NefFile,
+                                cmd.Model.Account,
+                                cmd.Model.Password,
+                                cmd.Model.WitnessScope).ConfigureAwait(false);
+                            break;
+                        }
                     case CommandLineApplication<BatchFileCommands.FastForward> cmd:
                         {
                             var timestampDelta = FastForwardCommand.ParseTimestampDelta(cmd.Model.TimestampDelta);

@@ -120,6 +120,29 @@ namespace NeoExpress.Commands
                     [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
                 }
+
+                [Command("update")]
+                internal class Update
+                {
+                    [Argument(0, Description = "Contract name or invocation hash")]
+                    [Required]
+                    internal string Contract { get; init; } = string.Empty;
+
+                    [Argument(1, Description = "Path to contract .nef file")]
+                    [Required]
+                    internal string NefFile { get; init; } = string.Empty;
+
+                    [Argument(2, Description = "Account to pay contract deployment GAS fee")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
+
+                    [Option(Description = "Password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+                }
             }
 
             [Command("fastfwd")]

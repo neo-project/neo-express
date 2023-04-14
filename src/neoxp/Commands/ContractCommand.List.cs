@@ -33,7 +33,6 @@ namespace NeoExpress.Commands
                     await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
                     foreach (var (hash, manifest) in contracts)
                     {
-
                         await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
                         await jsonWriter.WritePropertyNameAsync("name").ConfigureAwait(false);
                         await jsonWriter.WriteValueAsync(manifest.Name).ConfigureAwait(false);

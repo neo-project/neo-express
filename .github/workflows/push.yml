@@ -12,7 +12,7 @@ on:
 
 env:
   AZURE_ARTIFACTS_FEED_URL: https://pkgs.dev.azure.com/ngdenterprise/Build/_packaging/public/nuget/v3/index.json
-  DOTNET_VERSION: '6.0.x'
+  DOTNET_VERSION: '7.0.x'
 
 jobs:
   pack:

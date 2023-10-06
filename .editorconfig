@@ -34,7 +34,7 @@ insert_final_newline = true
 # Organize usings
 dotnet_separate_import_directive_groups = false
 dotnet_sort_system_directives_first = false
-file_header_template = Copyright (C) 2023 neo-project\n\nThe neo-examples-csharp is free software distributed under the\nMIT software license, see the accompanying file LICENSE in\nthe main directory of the project for more details.
+file_header_template = Copyright (C) 2023 neo-project\n\nneo-express is free software distributed under the\nMIT software license, see the accompanying file LICENSE in\nthe main directory of the project for more details.
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false

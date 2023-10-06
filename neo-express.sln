@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neotrace", "src\trace\neotr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neoworknet", "src\worknet\neoworknet.csproj", "{AA14500F-C040-4B3C-A3E7-5463B57C02DD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neo-blockchaintoolkit-library", "src\neo-blockchaintoolkit-library\neo-blockchaintoolkit-library.csproj", "{61C77FB9-5626-4CB2-8523-B10F09DCE24D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{AA14500F-C040-4B3C-A3E7-5463B57C02DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA14500F-C040-4B3C-A3E7-5463B57C02DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA14500F-C040-4B3C-A3E7-5463B57C02DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61C77FB9-5626-4CB2-8523-B10F09DCE24D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61C77FB9-5626-4CB2-8523-B10F09DCE24D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61C77FB9-5626-4CB2-8523-B10F09DCE24D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61C77FB9-5626-4CB2-8523-B10F09DCE24D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

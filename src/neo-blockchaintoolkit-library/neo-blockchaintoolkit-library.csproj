@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Authors>The Neo Project</Authors>
+    <Copyright>2015-2023 The Neo Project</Copyright>
+    <Nullable>disable</Nullable>
+    <PackageId>Neo.BlockchainToolkit.Library</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
+    <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
+    <TargetFramework>net7.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="test.bctklib" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MessagePack" Version="2.4.59" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
+    <PackageReference Include="Nerdbank.Streams" Version="2.9.112" />
+    <PackageReference Include="Neo" Version="3.6.0" />
+    <PackageReference Include="OneOf" Version="3.0.223" />
+    <PackageReference Include="rocksdb" Version="7.7.3.33461" />
+    <PackageReference Include="System.IO.Abstractions" Version="19.1.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="MPTTrie">
+      <HintPath>..\..\Plugins\MPTTrie\MPTTrie.dll</HintPath>
+    </Reference>
+    <Reference Include="RpcClient">
+      <HintPath>..\..\Plugins\RpcClient\RpcClient.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

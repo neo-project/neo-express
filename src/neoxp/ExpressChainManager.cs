@@ -1,5 +1,9 @@
-using System.IO.Abstractions;
-using System.Net;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Neo;
@@ -10,6 +14,13 @@ using Neo.Plugins;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
+using System;
+using System.Collections.Generic;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoExpress
 {
@@ -49,7 +60,7 @@ namespace NeoExpress
             return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
         }
 
-        public bool IsRunning(ExpressConsensusNode? node = null)
+        public bool IsRunning(ExpressConsensusNode node = null)
         {
             if (node is null)
             {
@@ -68,7 +79,7 @@ namespace NeoExpress
             }
         }
 
-        public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkpointPath, bool force, System.IO.TextWriter? writer = null)
+        public async Task<(string path, IExpressNode.CheckpointMode checkpointMode)> CreateCheckpointAsync(IExpressNode expressNode, string checkpointPath, bool force, System.IO.TextWriter writer = null)
         {
             if (chain.ConsensusNodes.Count != 1)
             {
@@ -179,7 +190,8 @@ namespace NeoExpress
 
         public async Task<bool> StopNodeAsync(ExpressConsensusNode node)
         {
-            if (!IsNodeRunning(node)) return false;
+            if (!IsNodeRunning(node))
+                return false;
 
             var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
             var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
@@ -209,7 +221,8 @@ namespace NeoExpress
 
                     var storeProvider = new ExpressStoreProvider(expressStorage);
                     Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
-                    if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+                    if (enableTrace)
+                    { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
                     using var persistencePlugin = new ExpressPersistencePlugin();
                     using var logPlugin = new ExpressLogPlugin(console);
@@ -294,7 +307,8 @@ namespace NeoExpress
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            if (!fileSystem.Directory.Exists(nodePath))
+                fileSystem.Directory.CreateDirectory(nodePath);
             return discard
                 ? CheckpointExpressStorage.OpenForDiscard(nodePath)
                 : new RocksDbExpressStorage(nodePath);
@@ -308,7 +322,8 @@ namespace NeoExpress
             }
 
             var node = chain.ConsensusNodes[0];
-            if (IsNodeRunning(node)) throw new Exception($"node already running");
+            if (IsNodeRunning(node))
+                throw new Exception($"node already running");
 
             checkPointPath = ResolveCheckpointFileName(checkPointPath);
             if (!fileSystem.File.Exists(checkPointPath))
@@ -324,11 +339,13 @@ namespace NeoExpress
 
         OfflineNode GetOfflineNode(bool offlineTrace = false)
         {
-            if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
+            if (IsRunning())
+                throw new NotSupportedException("Cannot get offline node while chain is running");
 
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            if (!fileSystem.Directory.Exists(nodePath))
+                fileSystem.Directory.CreateDirectory(nodePath);
 
             return new Node.OfflineNode(ProtocolSettings,
                 new RocksDbExpressStorage(nodePath),

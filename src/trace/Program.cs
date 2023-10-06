@@ -1,4 +1,10 @@
-﻿using McMaster.Extensions.CommandLineUtils;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
+using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
@@ -11,12 +17,13 @@ using Neo.SmartContract;
 using Neo.VM;
 using NeoTrace.Commands;
 using OneOf;
+using System;
+using System.Threading.Tasks;
 using SysIO = System.IO;
 
 namespace NeoTrace
 {
     [Command("neotrace", Description = "Generates .neo-trace files for transactions on a public Neo N3 blockchains", UsePagerForHelpText = false)]
-    [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
     [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
     class Program
     {
@@ -36,7 +43,8 @@ namespace NeoTrace
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var block = await GetBlockAsync(rpcClient, blockId).ConfigureAwait(false);
-            if (block.Transactions.Length == 0) throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
+            if (block.Transactions.Length == 0)
+                throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
 
             await console.Out.WriteLineAsync($"Tracing all the transactions in block {block.Index} ({block.Hash})").ConfigureAwait(false);
             await TraceBlockAsync(rpcClient, block, settings, console).ConfigureAwait(false);
@@ -53,7 +61,7 @@ namespace NeoTrace
             await TraceBlockAsync(rpcClient, block, settings, console, rpcTx.Transaction.Hash).ConfigureAwait(false);
         }
 
-        static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
+        static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256 txHash = null)
         {
             IReadOnlyStore roStore;
             if (block.Index == 0)
@@ -74,7 +82,8 @@ namespace NeoTrace
                 using var sb = new ScriptBuilder();
                 sb.EmitSysCall(ApplicationEngine.System_Contract_NativeOnPersist);
                 engine.LoadScript(sb.ToArray());
-                if (engine.Execute() != VMState.HALT) throw new InvalidOperationException("NativeOnPersist operation failed", engine.FaultException);
+                if (engine.Execute() != VMState.HALT)
+                    throw new InvalidOperationException("NativeOnPersist operation failed", engine.FaultException);
             }
 
             var clonedSnapshot = snapshot.CreateSnapshot();

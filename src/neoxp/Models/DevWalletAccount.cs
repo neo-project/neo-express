@@ -1,21 +1,29 @@
-﻿using Neo.SmartContract;
-using Neo.Wallets;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
+using Neo.Wallets;
+using System;
+using System.Linq;
 
 namespace NeoExpress.Models
 {
     class DevWalletAccount : WalletAccount
     {
-        private readonly KeyPair? key;
+        private readonly KeyPair key;
 
-        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract? contract, UInt160 scriptHash) : base(scriptHash, settings)
+        public DevWalletAccount(ProtocolSettings settings, KeyPair key, Contract contract, UInt160 scriptHash) : base(scriptHash, settings)
         {
             this.key = key;
             Contract = contract;
         }
 
-        public DevWalletAccount(ProtocolSettings settings, KeyPair? key, Contract contract) : base(contract.ScriptHash, settings)
+        public DevWalletAccount(ProtocolSettings settings, KeyPair key, Contract contract) : base(contract.ScriptHash, settings)
         {
             this.key = key;
             Contract = contract;
@@ -23,7 +31,7 @@ namespace NeoExpress.Models
 
         public override bool HasKey => key is not null;
 
-        public override KeyPair? GetKey() => key;
+        public override KeyPair GetKey() => key;
 
         public ExpressWalletAccount ToExpressWalletAccount() => new ExpressWalletAccount()
         {

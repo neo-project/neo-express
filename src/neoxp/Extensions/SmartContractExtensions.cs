@@ -1,4 +1,9 @@
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.IO;
 using Neo.Persistence;
@@ -6,6 +11,9 @@ using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
+using System;
+using System.Collections.Generic;
+using System.Numerics;
 using ByteString = Neo.VM.Types.ByteString;
 using Integer = Neo.VM.Types.Integer;
 using InteropInterface = Neo.VM.Types.InteropInterface;

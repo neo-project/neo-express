@@ -1,6 +1,9 @@
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
-using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Models;
@@ -14,9 +17,15 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.Wallets;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Threading.Tasks;
 using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
-
 using NeoArray = Neo.VM.Types.Array;
 using NeoStruct = Neo.VM.Types.Struct;
 
@@ -65,9 +74,11 @@ class CreateCommand
             }
 
             var filename = fs.ResolveWorkNetFileName(Output);
-            if (fs.File.Exists(filename) && !Force) throw new Exception($"{filename} already exists");
+            if (fs.File.Exists(filename) && !Force)
+                throw new Exception($"{filename} already exists");
             var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (fs.Directory.Exists(dataDir) && !Force) throw new Exception($"{dataDir} already exists");
+            if (fs.Directory.Exists(dataDir) && !Force)
+                throw new Exception($"{dataDir} already exists");
 
             console.WriteLine($"Retrieving branch information from {RpcUri}");
             using var rpcClient = new RpcClient(uri);
@@ -90,7 +101,8 @@ class CreateCommand
 
             if (fs.Directory.Exists(dataDir))
             {
-                if (!Force) throw new Exception($"{dataDir} already exists");
+                if (!Force)
+                    throw new Exception($"{dataDir} already exists");
                 fs.Directory.Delete(dataDir, true);
             }
             fs.Directory.CreateDirectory(dataDir);

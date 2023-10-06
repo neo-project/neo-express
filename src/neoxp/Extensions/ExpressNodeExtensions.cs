@@ -1,7 +1,9 @@
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Text;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
@@ -17,6 +19,14 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
 using All = OneOf.Types.All;
 using None = OneOf.Types.None;
 
@@ -26,7 +36,7 @@ namespace NeoExpress
     {
         static bool TryGetContractHash(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
-            UInt160? _scriptHash = null;
+            UInt160 _scriptHash = null;
             for (int i = 0; i < contracts.Count; i++)
             {
                 if (contracts[i].manifest.Name.Equals(name, comparison))
@@ -78,7 +88,8 @@ namespace NeoExpress
                 }
             }
 
-            if (chain.TryParseScriptHash(name, out var scriptHash)) return scriptHash;
+            if (chain.TryParseScriptHash(name, out var scriptHash))
+                return scriptHash;
 
             return new None();
         }
@@ -169,7 +180,7 @@ namespace NeoExpress
             throw new ArgumentException($"Unknown Asset \"{asset}\"", nameof(asset));
         }
 
-        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, Wallet sender, UInt160 senderHash, UInt160 receiverHash, ContractParameter? data)
+        public static async Task<UInt256> TransferAsync(this IExpressNode expressNode, UInt160 asset, OneOf<decimal, All> quantity, Wallet sender, UInt160 senderHash, UInt160 receiverHash, ContractParameter data)
         {
             data ??= new ContractParameter(ContractParameterType.Any);
 
@@ -235,7 +246,7 @@ namespace NeoExpress
                                                       Wallet wallet,
                                                       UInt160 accountHash,
                                                       WitnessScope witnessScope,
-                                                      ContractParameter? data)
+                                                      ContractParameter data)
         {
             CheckNefFile(nefFile);
 
@@ -312,7 +323,7 @@ namespace NeoExpress
             return Array.Empty<ECPoint>();
         }
 
-        public static async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(this IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)
+        public static async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(this IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject responseJson, ulong? requestId)
         {
             if (responseCode == OracleResponseCode.Success && responseJson is null)
             {
@@ -326,8 +337,10 @@ namespace NeoExpress
             for (var x = 0; x < requests.Count; x++)
             {
                 var (id, request) = requests[x];
-                if (requestId.HasValue && requestId.Value != id) continue;
-                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
+                if (requestId.HasValue && requestId.Value != id)
+                    continue;
+                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase))
+                    continue;
 
                 var response = new OracleResponse
                 {
@@ -415,8 +428,10 @@ namespace NeoExpress
 
             var result = await invokeAsync(builder.ToArray()).ConfigureAwait(false);
 
-            if (result.State != VMState.HALT) throw new Exception(result.Exception);
-            if (result.Stack.Length != 7) throw new InvalidOperationException();
+            if (result.State != VMState.HALT)
+                throw new Exception(result.Exception);
+            if (result.Stack.Length != 7)
+                throw new InvalidOperationException();
 
             return new PolicyValues()
             {

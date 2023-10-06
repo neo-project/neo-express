@@ -1,9 +1,18 @@
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.Plugins;
 using Neo.Json;
 using Neo.Network.RPC;
 using Neo.Plugins;
 using Neo.SmartContract.Native;
+using System;
+using System.Linq;
+using System.Threading;
 
 namespace NeoWorkNet.Commands;
 
@@ -13,8 +22,8 @@ class WorknetRpcServerPlugin : Plugin
     readonly ToolkitPersistencePlugin persistencePlugin;
     readonly RpcClient rpcClient;
     readonly CancellationTokenSource cancellationToken = new();
-    NeoSystem? neoSystem;
-    RpcServer? rpcServer;
+    NeoSystem neoSystem;
+    RpcServer rpcServer;
 
     public CancellationToken CancellationToken => cancellationToken.Token;
 
@@ -27,7 +36,8 @@ class WorknetRpcServerPlugin : Plugin
 
     protected override void OnSystemLoaded(NeoSystem system)
     {
-        if (neoSystem is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+        if (neoSystem is not null)
+            throw new Exception($"{nameof(OnSystemLoaded)} already called");
         neoSystem = system;
         rpcServer = new RpcServer(system, settings);
         rpcServer.RegisterMethods(this);
@@ -58,7 +68,8 @@ class WorknetRpcServerPlugin : Plugin
     [RpcMethod]
     public JArray ExpressListContracts(JArray _)
     {
-        if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+        if (neoSystem is null)
+            throw new NullReferenceException(nameof(neoSystem));
         var contracts = NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
             .OrderBy(c => c.Id);
 
@@ -86,7 +97,8 @@ class WorknetRpcServerPlugin : Plugin
     [RpcMethod]
     public JObject GetNep17Balances(JArray @params)
     {
-        if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+        if (neoSystem is null)
+            throw new NullReferenceException(nameof(neoSystem));
         var address = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
         using var snapshot = neoSystem.GetSnapshot();
 
@@ -116,7 +128,8 @@ class WorknetRpcServerPlugin : Plugin
     [RpcMethod]
     public JObject GetNep11Balances(JArray @params)
     {
-        if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+        if (neoSystem is null)
+            throw new NullReferenceException(nameof(neoSystem));
         var address = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
         using var snapshot = neoSystem.GetSnapshot();
         var balances = ToolkitRpcServer.GetNep11Balances(snapshot, persistencePlugin, address, neoSystem.Settings);
@@ -156,7 +169,8 @@ class WorknetRpcServerPlugin : Plugin
     [RpcMethod]
     public JToken GetNep11Properties(JArray @params)
     {
-        if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+        if (neoSystem is null)
+            throw new NullReferenceException(nameof(neoSystem));
 
         var contractHash = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
         var tokenId = @params[1]!.AsString().HexToBytes();

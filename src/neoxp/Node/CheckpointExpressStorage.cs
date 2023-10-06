@@ -1,15 +1,23 @@
-using System.Collections.Immutable;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
 using Nito.Disposables;
 using RocksDbSharp;
+using System;
+using System.Collections.Immutable;
+using System.IO;
 
 namespace NeoExpress.Node
 {
     class CheckpointExpressStorage : IExpressStorage
     {
-        readonly RocksDb? db;
+        readonly RocksDb db;
         readonly IDisposable disposable;
         readonly Lazy<IStore> defaultStore;
         ImmutableDictionary<string, IStore> stores = ImmutableDictionary<string, IStore>.Empty;
@@ -37,7 +45,7 @@ namespace NeoExpress.Node
                 });
         }
 
-        public static CheckpointExpressStorage OpenCheckpoint(string checkpointPath, uint? network = null, byte? addressVersion = null, UInt160? scriptHash = null)
+        public static CheckpointExpressStorage OpenCheckpoint(string checkpointPath, uint? network = null, byte? addressVersion = null, UInt160 scriptHash = null)
         {
             var checkpointTempPath = RocksDbUtility.GetTempPath();
             var metadata = RocksDbUtility.RestoreCheckpoint(checkpointPath, checkpointTempPath, network, addressVersion, scriptHash);
@@ -59,23 +67,28 @@ namespace NeoExpress.Node
 
         public void Dispose()
         {
-            if (defaultStore.IsValueCreated) { defaultStore.Value.Dispose(); }
-            foreach (var store in stores.Values) { store.Dispose(); }
+            if (defaultStore.IsValueCreated)
+            { defaultStore.Value.Dispose(); }
+            foreach (var store in stores.Values)
+            { store.Dispose(); }
             db?.Dispose();
             disposable.Dispose();
         }
 
-        public IStore GetStore(string? path)
+        public IStore GetStore(string path)
         {
-            if (path is null) return defaultStore.Value;
+            if (path is null)
+                return defaultStore.Value;
             return ImmutableInterlocked.GetOrAdd(ref stores, path,
                 key => new MemoryTrackingStore(GetUnderlyingStore(key)));
         }
 
-        IReadOnlyStore GetUnderlyingStore(string? path)
+        IReadOnlyStore GetUnderlyingStore(string path)
         {
-            if (db is null) return NullStore.Instance;
-            if (path is null) return CreateReadOnlyStore(db, db.GetDefaultColumnFamily());
+            if (db is null)
+                return NullStore.Instance;
+            if (path is null)
+                return CreateReadOnlyStore(db, db.GetDefaultColumnFamily());
 
             return db.TryGetColumnFamily(path, out var columnFamily)
                 ? CreateReadOnlyStore(db, columnFamily)

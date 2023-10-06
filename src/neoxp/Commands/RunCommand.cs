@@ -1,4 +1,13 @@
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -32,7 +41,8 @@ namespace NeoExpress.Commands
             var (chainManager, _) = chainManagerFactory.LoadChain(Input, SecondsPerBlock);
             var chain = chainManager.Chain;
 
-            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count) throw new Exception("Invalid node index");
+            if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
+                throw new Exception("Invalid node index");
 
             var node = chain.ConsensusNodes[NodeIndex];
             var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);

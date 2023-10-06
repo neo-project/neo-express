@@ -1,5 +1,9 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
@@ -10,6 +14,13 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
 
 namespace NeoExpress
 {
@@ -42,7 +53,7 @@ namespace NeoExpress
             console.Out.WriteLine();
         }
 
-        public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
+        public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken json)
         {
             switch (json)
             {
@@ -84,7 +95,8 @@ namespace NeoExpress
 
             app.Error.WriteLine($"\x1b[1m\x1b[31m\x1b[40m{exception.GetType()}: {exception.Message}\x1b[0m");
 
-            if (showStackTrace) app.Error.WriteLine($"\x1b[1m\x1b[37m\x1b[40m{exception.StackTrace}\x1b[0m");
+            if (showStackTrace)
+                app.Error.WriteLine($"\x1b[1m\x1b[37m\x1b[40m{exception.StackTrace}\x1b[0m");
 
             if (showInnerExceptions || showStackTrace)
             {
@@ -100,10 +112,10 @@ namespace NeoExpress
 
         public static IEnumerable<WalletAccount> GetMultiSigAccounts(this Wallet wallet) => wallet.GetAccounts().Where(IsMultiSigContract);
 
-        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+        public static ApplicationEngine Invoke(this Neo.VM.ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable container = null)
             => Invoke(builder.ToArray(), settings, snapshot, container);
 
-        public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+        public static ApplicationEngine Invoke(this Neo.VM.Script script, ProtocolSettings settings, DataCache snapshot, IVerifiable container = null)
             => ApplicationEngine.Run(
                 script: script,
                 snapshot: snapshot,
@@ -118,7 +130,8 @@ namespace NeoExpress
             }
             else
             {
-                if (!string.IsNullOrEmpty(txType)) await writer.WriteAsync($"{txType} ").ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(txType))
+                    await writer.WriteAsync($"{txType} ").ConfigureAwait(false);
                 await writer.WriteLineAsync($"Transaction {txHash} submitted").ConfigureAwait(false);
             }
         }
@@ -231,7 +244,8 @@ namespace NeoExpress
                     var nep6account = nep6wallet.GetAccounts().SingleOrDefault(a => a.IsDefault)
                         ?? nep6wallet.GetAccounts().SingleOrDefault()
                         ?? throw new InvalidOperationException("Neo-express only supports NEP-6 wallets with a single default account or a single account");
-                    if (nep6account.IsMultiSigContract()) throw new Exception("Neo-express doesn't supports multi-sig NEP-6 accounts");
+                    if (nep6account.IsMultiSigContract())
+                        throw new Exception("Neo-express doesn't supports multi-sig NEP-6 accounts");
                     var keyPair = nep6account.GetKey() ?? throw new Exception("account.GetKey() returned null");
                     CreateWallet(keyPair.PrivateKey, settings, out wallet, out accountHash);
                     return true;

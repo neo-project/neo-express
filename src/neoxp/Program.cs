@@ -1,13 +1,21 @@
-﻿using System.IO.Abstractions;
-using System.Runtime.InteropServices;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
 using NeoExpress.Commands;
+using System;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace NeoExpress
 {
     [Command("neoxp", Description = "Neo N3 blockchain private net for developers", UsePagerForHelpText = false)]
-    [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
     [Subcommand(
         typeof(BatchCommand),
         typeof(CheckpointCommand),

@@ -1,7 +1,14 @@
-using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Models;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 
 namespace NeoExpress.Commands
 {

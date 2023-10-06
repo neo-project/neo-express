@@ -1,6 +1,16 @@
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -38,7 +48,7 @@ namespace NeoExpress.Commands
                     var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
                     var contractMap = contracts.ToDictionary(c => c.hash, c => c.manifest.Name);
 
-                    IReadOnlySet<UInt160>? contractFilter = null;
+                    IReadOnlySet<UInt160> contractFilter = null;
                     if (!string.IsNullOrEmpty(Contract))
                     {
                         if (UInt160.TryParse(Contract, out var _contract))
@@ -51,11 +61,12 @@ namespace NeoExpress.Commands
                                 .Where(c => Contract.Equals(c.manifest.Name, StringComparison.OrdinalIgnoreCase))
                                 .Select(c => c.hash)
                                 .ToHashSet();
-                            if (contractFilter.Count == 0) throw new Exception($"Couldn't resolve {Contract} contract");
+                            if (contractFilter.Count == 0)
+                                throw new Exception($"Couldn't resolve {Contract} contract");
                         }
                     }
 
-                    IReadOnlySet<string>? eventFilter = null;
+                    IReadOnlySet<string> eventFilter = null;
                     if (!string.IsNullOrEmpty(EventName))
                     {
                         eventFilter = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { EventName };
@@ -66,7 +77,8 @@ namespace NeoExpress.Commands
                     var count = 0;
                     await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
                     {
-                        if (Count.HasValue && count++ >= Count.Value) break;
+                        if (Count.HasValue && count++ >= Count.Value)
+                            break;
 
                         writer.WriteStartObject();
                         writer.WritePropertyName("block-index");

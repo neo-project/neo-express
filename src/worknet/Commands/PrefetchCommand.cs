@@ -1,9 +1,19 @@
-using System.Diagnostics;
-using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using OneOf.Types;
+using System;
+using System.Diagnostics;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoWorkNet.Commands;
 
@@ -38,7 +48,8 @@ class PrefetchCommand
 
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
+            if (!fs.Directory.Exists(dataDir))
+                throw new Exception($"Cannot locate data directory {dataDir}");
 
             var contracts = worknet.BranchInfo.Contracts;
             if (!UInt160.TryParse(Contract, out var contractHash))
@@ -47,10 +58,12 @@ class PrefetchCommand
                 contractHash = info.Hash ?? UInt160.Zero;
             }
 
-            if (contractHash == UInt160.Zero) throw new Exception("Invalid Contract argument");
+            if (contractHash == UInt160.Zero)
+                throw new Exception("Invalid Contract argument");
 
             var contractName = contracts.SingleOrDefault(c => c.Hash == contractHash).Name;
-            if (string.IsNullOrEmpty(contractName)) throw new Exception("Invalid Contract argument");
+            if (string.IsNullOrEmpty(contractName))
+                throw new Exception("Invalid Contract argument");
 
             console.WriteLine($"Prefetching {contractName} ({contractHash}) records");
 

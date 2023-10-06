@@ -1,9 +1,18 @@
-﻿using System.Collections.Immutable;
-using Neo.SmartContract;
-using Neo.Wallets;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.SmartContract;
+using Neo.Wallets;
 using Neo.Wallets.NEP6;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace NeoExpress.Models
 {
@@ -12,9 +21,9 @@ namespace NeoExpress.Models
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
 
         public override string Name { get; }
-        public override Version? Version => null;
+        public override Version Version => null;
 
-        public DevWallet(ProtocolSettings settings, string name, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty, settings)
+        public DevWallet(ProtocolSettings settings, string name, IEnumerable<DevWalletAccount> accounts = null) : base(string.Empty, settings)
         {
             this.Name = name;
 
@@ -77,7 +86,7 @@ namespace NeoExpress.Models
             return AddAccount(account);
         }
 
-        public override WalletAccount CreateAccount(Contract contract, KeyPair? key = null)
+        public override WalletAccount CreateAccount(Contract contract, KeyPair key = null)
         {
             var account = new DevWalletAccount(ProtocolSettings, key, contract);
             return AddAccount(account);
@@ -91,7 +100,7 @@ namespace NeoExpress.Models
 
         public override bool DeleteAccount(UInt160 scriptHash) => accounts.Remove(scriptHash);
 
-        public override WalletAccount? GetAccount(UInt160 scriptHash) => accounts.GetValueOrDefault(scriptHash);
+        public override WalletAccount GetAccount(UInt160 scriptHash) => accounts.GetValueOrDefault(scriptHash);
 
         public override IEnumerable<WalletAccount> GetAccounts() => accounts.Values;
 

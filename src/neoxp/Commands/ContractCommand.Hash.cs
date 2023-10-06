@@ -1,6 +1,14 @@
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
+using McMaster.Extensions.CommandLineUtils;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using McMaster.Extensions.CommandLineUtils;
+using System.Threading.Tasks;
 using static Neo.SmartContract.Helper;
 
 namespace NeoExpress.Commands

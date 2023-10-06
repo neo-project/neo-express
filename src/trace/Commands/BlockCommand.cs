@@ -1,7 +1,15 @@
-using System.ComponentModel.DataAnnotations;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using OneOf;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoTrace.Commands
@@ -40,10 +48,12 @@ namespace NeoTrace.Commands
         {
             if (uint.TryParse(BlockIdentifier, out var index))
             {
-                if (index == 0) throw new ArgumentException("Cannot trace genesis block");
+                if (index == 0)
+                    throw new ArgumentException("Cannot trace genesis block");
                 return index;
             }
-            if (UInt256.TryParse(BlockIdentifier, out var hash)) return hash;
+            if (UInt256.TryParse(BlockIdentifier, out var hash))
+                return hash;
 
             throw new ArgumentException($"Invalid Block Identifier {BlockIdentifier}");
         }

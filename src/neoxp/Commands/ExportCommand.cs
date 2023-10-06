@@ -1,9 +1,16 @@
-using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
+using System;
+using System.IO.Abstractions;
 
 namespace NeoExpress.Commands
 {
@@ -56,7 +63,8 @@ namespace NeoExpress.Commands
 
         void ExportNodeWallet(ProtocolSettings settings, ExpressConsensusNode node, string path, string password)
         {
-            if (fileSystem.File.Exists(path)) fileSystem.File.Delete(path);
+            if (fileSystem.File.Exists(path))
+                fileSystem.File.Delete(path);
             var devWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
             devWallet.Export(path, password);
         }

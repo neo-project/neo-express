@@ -1,6 +1,16 @@
-using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Persistence;
+using System;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoWorkNet.Commands;
 
@@ -21,11 +31,13 @@ class ResetCommand
     {
         try
         {
-            if (!Force) throw new InvalidOperationException("--force must be specified when resetting worknet");
+            if (!Force)
+                throw new InvalidOperationException("--force must be specified when resetting worknet");
 
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
+            if (!fs.Directory.Exists(dataDir))
+                throw new Exception($"Cannot locate data directory {dataDir}");
 
             using var db = RocksDbUtility.OpenDb(dataDir);
             using var stateStore = new StateServiceStore(worknet.Uri, worknet.BranchInfo, db, true);

@@ -1,7 +1,13 @@
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.Json;
 using Neo.SmartContract.Native;
+using System.Numerics;
 
 namespace NeoExpress.Models
 {

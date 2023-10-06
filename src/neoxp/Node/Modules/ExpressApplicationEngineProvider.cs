@@ -1,3 +1,9 @@
+// Copyright (C) 2023 neo-project
+//
+// The neo-examples-csharp is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.BlockchainToolkit.TraceDebug;
@@ -5,12 +11,16 @@ using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.VM;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace NeoExpress.Node
 {
     class ExpressApplicationEngineProvider : IApplicationEngineProvider
     {
-        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic? diagnostic)
+        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic diagnostic)
         {
             if (trigger == TriggerType.Application
                 && container is Transaction tx

@@ -17,13 +17,12 @@
     <InternalsVisibleTo Include="test.bctklib" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.4.59" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
-    <PackageReference Include="Nerdbank.Streams" Version="2.9.112" />
+    <PackageReference Include="MessagePack" Version="2.5.129" />
     <PackageReference Include="Neo" Version="3.6.0" />
-    <PackageReference Include="OneOf" Version="3.0.223" />
-    <PackageReference Include="rocksdb" Version="7.7.3.33461" />
-    <PackageReference Include="System.IO.Abstractions" Version="19.1.1" />
+    <PackageReference Include="Nerdbank.Streams" Version="2.10.72" />
+    <PackageReference Include="OneOf" Version="3.0.263" />
+    <PackageReference Include="rocksdb" Version="8.5.3.42578" />
+    <PackageReference Include="System.IO.Abstractions" Version="19.2.69" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MPTTrie">

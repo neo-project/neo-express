@@ -28,9 +28,11 @@
   <ItemGroup>
     <Reference Include="MPTTrie">
       <HintPath>..\..\Plugins\MPTTrie\MPTTrie.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="RpcClient">
       <HintPath>..\..\Plugins\RpcClient\RpcClient.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
 </Project>

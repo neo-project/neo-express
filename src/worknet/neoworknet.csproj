@@ -9,13 +9,18 @@
   <ItemGroup>
     <PackageReference Include="Crayon" Version="2.0.69" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.0" />
-    <PackageReference Include="Neo" Version="3.6.0" />
-    <PackageReference Include="Neo.BlockchainToolkit.Library" Version="3.5.30" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\neo-blockchaintoolkit-library\neo-blockchaintoolkit-library.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="DBFTPlugin">
       <HintPath>..\..\Plugins\DBFTPlugin\DBFTPlugin.dll</HintPath>
+    </Reference>
+    <Reference Include="RpcClient">
+      <HintPath>..\..\Plugins\RpcClient\RpcClient.dll</HintPath>
     </Reference>
     <Reference Include="RpcServer">
       <HintPath>..\..\Plugins\RpcServer\RpcServer.dll</HintPath>

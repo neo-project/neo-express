@@ -211,7 +211,7 @@ namespace NeoExpress.Node
             var verificationContext = new TransactionVerificationContext();
             for (int i = 0; i < transactions.Length; i++)
             {
-                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext) != VerifyResult.Succeed)
+                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext, Enumerable.Empty<Transaction>()) != VerifyResult.Succeed)
                 {
                     throw new Exception("Verification failed");
                 }

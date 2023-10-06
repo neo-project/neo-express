@@ -52,6 +52,29 @@ namespace Neo.BlockchainToolkit.Models
             return new BranchInfo(network, addressVersion, index, indexHash, rootHash, contracts);
         }
 
+        public static BranchInfo Load(JObject json)
+        {
+            var network = json.Value<uint>("network");
+            var addressVersion = json.Value<byte>("address-version");
+            var index = json.Value<uint>("index");
+            var indexHash = UInt256.Parse(json.Value<string>("index-hash"));
+            var rootHash = UInt256.Parse(json.Value<string>("root-hash"));
+
+            var contracts = new List<ContractInfo>();
+            var contractsJson = json["contracts"] as JArray;
+            if (contractsJson is not null)
+            {
+                foreach (var value in contractsJson)
+                {
+                    var id = value.Value<int>("id");
+                    var hash = UInt160.Parse(value.Value<string>("hash"));
+                    var name = value.Value<string>("name") ?? "";
+                    contracts.Add(new ContractInfo(id, hash, name));
+                }
+            }
+            return new BranchInfo(network, addressVersion, index, indexHash, rootHash, contracts);
+        }
+
         public void WriteJson(JsonWriter writer)
         {
             writer.WriteStartObject();

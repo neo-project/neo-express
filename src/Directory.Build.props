@@ -11,7 +11,7 @@
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>disable</Nullable>
-    <VersionPrefix>3.5.18</VersionPrefix>
+    <VersionPrefix>3.6.0</VersionPrefix>
   </PropertyGroup>
 
 </Project>

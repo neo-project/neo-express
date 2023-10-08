@@ -13,25 +13,16 @@
     <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
-  <ItemGroup>
-    <InternalsVisibleTo Include="test.bctklib" />
-  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="2.5.129" />
     <PackageReference Include="Neo" Version="3.6.0" />
+    <PackageReference Include="Neo.Cryptography.MPT" Version="3.6.1" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.6.1" />
     <PackageReference Include="Nerdbank.Streams" Version="2.10.72" />
     <PackageReference Include="OneOf" Version="3.0.263" />
     <PackageReference Include="rocksdb" Version="8.5.3.42578" />
     <PackageReference Include="System.IO.Abstractions" Version="19.2.69" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="MPTTrie">
-      <HintPath>..\..\Plugins\MPTTrie\MPTTrie.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="RpcClient">
-      <HintPath>..\..\Plugins\RpcClient\RpcClient.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
+    <PackageReference Include="Neo.Plugins.RpcServer" Version="3.6.1" />
   </ItemGroup>
 </Project>

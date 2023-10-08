@@ -11,16 +11,11 @@
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.6.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\neo-blockchaintoolkit-library\neo-blockchaintoolkit-library.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="RpcClient">
-      <HintPath>..\..\Plugins\RpcClient\RpcClient.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

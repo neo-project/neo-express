@@ -1,12 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>neotrace</AssemblyName>
     <Description>neotrace generates debug trace files for existing blocks and/or transactions</Description>
-    <OutputType>Exe</OutputType>
     <PackageId>Neo.Trace</PackageId>
     <PackAsTool>true</PackAsTool>
-    <RootNamespace>NeoTrace</RootNamespace>
+    <TargetFramework>net7.0</TargetFramework>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.6.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\neo-blockchaintoolkit-library\neo-blockchaintoolkit-library.csproj" />
+  </ItemGroup>
 
 </Project>

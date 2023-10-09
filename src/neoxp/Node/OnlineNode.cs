@@ -1,4 +1,9 @@
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
@@ -14,6 +19,11 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Node
 {
@@ -43,7 +53,7 @@ namespace NeoExpress.Node
             return IExpressNode.CheckpointMode.Online;
         }
 
-        public Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null)
+        public Task<RpcInvokeResult> InvokeAsync(Script script, Signer signer = null)
         {
             return signer is null
                 ? rpcClient.InvokeScriptAsync(script)
@@ -79,7 +89,8 @@ namespace NeoExpress.Node
             {
                 var signatureCount = account.Contract.ParameterList.Length;
                 var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
-                if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
+                if (multiSigWallets.Count < signatureCount)
+                    throw new InvalidOperationException();
 
                 var publicKeys = multiSigWallets
                     .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
@@ -135,7 +146,7 @@ namespace NeoExpress.Node
             return rpcBlock.Block;
         }
 
-        public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog appLog)> GetTransactionAsync(UInt256 txHash)
         {
             var hash = txHash.ToString();
             var response = await rpcClient.GetRawTransactionAsync(hash).ConfigureAwait(false);
@@ -260,7 +271,7 @@ namespace NeoExpress.Node
             return (int)response.AsNumber();
         }
 
-        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
+        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160> contractFilter, IReadOnlySet<string> eventFilter)
         {
             var contractsArg = new JArray((contractFilter ?? Enumerable.Empty<UInt160>())
                 .Select(c => new JString($"{c}")));
@@ -288,7 +299,8 @@ namespace NeoExpress.Node
                     yield return (blockIndex, notification);
                 }
 
-                if (!truncated) break;
+                if (!truncated)
+                    break;
 
                 count += values.Count;
             }

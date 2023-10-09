@@ -1,4 +1,9 @@
-using System.Diagnostics;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
@@ -8,16 +13,19 @@ using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using static Crayon.Output;
 
 namespace NeoWorkNet.Commands;
 
 class WorkNetLogPlugin : Plugin
 {
-    NeoSystem? neoSystem;
+    NeoSystem neoSystem;
     readonly IConsole console;
 
-    public WorkNetLogPlugin(IConsole console, Action<string, object?>? diagnosticWriter = null)
+    public WorkNetLogPlugin(IConsole console, Action<string, object> diagnosticWriter = null)
     {
         if (diagnosticWriter is not null)
         {
@@ -42,7 +50,8 @@ class WorkNetLogPlugin : Plugin
 
     protected override void OnSystemLoaded(NeoSystem system)
     {
-        if (neoSystem is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+        if (neoSystem is not null)
+            throw new Exception($"{nameof(OnSystemLoaded)} already called");
         neoSystem = system;
         base.OnSystemLoaded(system);
     }

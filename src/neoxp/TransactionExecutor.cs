@@ -1,5 +1,9 @@
-using System.IO.Abstractions;
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
@@ -12,6 +16,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OneOf;
 using OneOf.Types;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
 using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress
@@ -92,12 +103,15 @@ namespace NeoExpress
                     throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
                 }
 
-                var nep11 = false; var nep17 = false;
+                var nep11 = false;
+                var nep17 = false;
                 var standards = manifest.SupportedStandards;
                 for (var i = 0; i < standards.Length; i++)
                 {
-                    if (standards[i] == "NEP-11") nep11 = true;
-                    if (standards[i] == "NEP-17") nep17 = true;
+                    if (standards[i] == "NEP-11")
+                        nep11 = true;
+                    if (standards[i] == "NEP-17")
+                        nep17 = true;
                 }
                 if (nep11 && nep17)
                 {
@@ -150,7 +164,7 @@ namespace NeoExpress
             return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
         }
 
-        public async Task<Script> BuildInvocationScriptAsync(string contract, string operation, IReadOnlyList<string>? arguments = null)
+        public async Task<Script> BuildInvocationScriptAsync(string contract, string operation, IReadOnlyList<string> arguments = null)
         {
             if (string.IsNullOrEmpty(operation))
                 throw new InvalidOperationException($"invalid contract operation \"{operation}\"");
@@ -210,7 +224,7 @@ namespace NeoExpress
 
         public async Task InvokeForResultsAsync(Script script, string accountName, WitnessScope witnessScope)
         {
-            Signer? signer = chainManager.TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
+            Signer signer = chainManager.TryGetSigningAccount(accountName, string.Empty, out _, out var accountHash)
                 ? signer = new Signer
                 {
                     Account = accountHash,
@@ -313,7 +327,8 @@ namespace NeoExpress
 
         public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null)
         {
-            if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");
+            if (!fileSystem.File.Exists(responsePath))
+                throw new Exception($"Response File {responsePath} couldn't be found");
 
             JObject responseJson;
             {
@@ -365,7 +380,7 @@ namespace NeoExpress
                 throw new Exception($"{receiver} account not found.");
             }
 
-            ContractParameter? dataParam = null;
+            ContractParameter dataParam = null;
             if (!string.IsNullOrEmpty(data))
             {
                 var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
@@ -392,7 +407,7 @@ namespace NeoExpress
             }
         }
 
-        public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
+        public static async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
         {
             if (TryParseRpcUri(rpcUri, out var uri))
             {

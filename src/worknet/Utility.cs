@@ -1,13 +1,24 @@
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.Wallets;
 using NeoWorkNet.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.IO;
 using System.IO.Abstractions;
-using static Neo.BlockchainToolkit.Constants;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using static Crayon.Output;
-using Neo.Wallets;
+using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoWorkNet;
 
@@ -68,7 +79,7 @@ static class Utility
             {
                 using var _5 = writer.WriteObject();
                 var key = account.GetKey();
-                if (key is not null) 
+                if (key is not null)
                 {
                     writer.WriteProperty("private-key", Convert.ToHexString(key.PrivateKey).ToLower());
                 }
@@ -95,7 +106,7 @@ static class Utility
         return linkedTokenSource.Token;
     }
 
-    public static Action<string, object?> GetDiagnosticWriter(IConsole console)
+    public static Action<string, object> GetDiagnosticWriter(IConsole console)
         => (name, value) =>
         {
             var text = value switch

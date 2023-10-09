@@ -1,7 +1,18 @@
-using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -37,10 +48,11 @@ namespace NeoExpress.Commands
         {
             try
             {
-                if (!fileSystem.File.Exists(BatchFile)) throw new Exception($"Batch file {BatchFile} couldn't be found");
+                if (!fileSystem.File.Exists(BatchFile))
+                    throw new Exception($"Batch file {BatchFile} couldn't be found");
                 var batchFileInfo = fileSystem.FileInfo.New(BatchFile);
                 var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
-                
+
                 var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
                 await ExecuteAsync(batchDirInfo, commands, console.Out).ConfigureAwait(false);
                 return 0;
@@ -93,7 +105,8 @@ namespace NeoExpress.Commands
                 var args = SplitCommandLine(commands.Span[i]).ToArray();
                 if (args.Length == 0
                     || args[0].StartsWith('#')
-                    || args[0].StartsWith("//")) continue;
+                    || args[0].StartsWith("//"))
+                    continue;
 
                 var pr = batchApp.Parse(args);
                 switch (pr.SelectedCommand)

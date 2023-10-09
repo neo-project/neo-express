@@ -1,4 +1,9 @@
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography;
@@ -15,13 +20,19 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
 using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Node
 {
     class NodeUtility
     {
-        public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
+        public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[] transactions = null, ulong timestamp = 0)
         {
             transactions ??= Array.Empty<Transaction>();
 
@@ -51,9 +62,11 @@ namespace NeoExpress.Node
             {
                 var signature = block.Header.Sign(keyPairs[i], network);
                 signingContext.AddSignature(contract, keyPairs[i].PublicKey, signature);
-                if (signingContext.Completed) break;
+                if (signingContext.Completed)
+                    break;
             }
-            if (!signingContext.Completed) throw new Exception("block signing incomplete");
+            if (!signingContext.Completed)
+                throw new Exception("block signing incomplete");
             block.Header.Witness = signingContext.GetWitnesses()[0];
 
             return block;
@@ -61,8 +74,10 @@ namespace NeoExpress.Node
 
         public static async Task FastForwardAsync(Header prevHeader, uint blockCount, TimeSpan timestampDelta, KeyPair[] keyPairs, uint network, Func<Block, Task> submitBlockAsync)
         {
-            if (timestampDelta.TotalSeconds < 0) throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
-            if (blockCount == 0) return;
+            if (timestampDelta.TotalSeconds < 0)
+                throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
+            if (blockCount == 0)
+                return;
 
             var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
             var delta = (ulong)timestampDelta.TotalMilliseconds;
@@ -118,9 +133,10 @@ namespace NeoExpress.Node
         }
 
         // Copied from OracleService.CreateResponseTx to avoid taking dependency on OracleService package and it's 110mb GRPC runtime
-        public static Transaction? CreateResponseTx(DataCache snapshot, OracleRequest request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes, ProtocolSettings settings)
+        public static Transaction CreateResponseTx(DataCache snapshot, OracleRequest request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes, ProtocolSettings settings)
         {
-            if (oracleNodes.Count == 0) throw new Exception("No oracle nodes available. Have you enabled oracles via the `oracle enable` command?");
+            if (oracleNodes.Count == 0)
+                throw new Exception("No oracle nodes available. Have you enabled oracles via the `oracle enable` command?");
 
             var requestTx = NativeContract.Ledger.GetTransactionState(snapshot, request.OriginalTxid);
             var n = oracleNodes.Count;
@@ -173,7 +189,8 @@ namespace NeoExpress.Node
             var engine = ApplicationEngine.Create(TriggerType.Verification, tx, snapshot.CreateSnapshot(), settings: settings);
             ContractMethodDescriptor md = oracleContract.Manifest.Abi.GetMethod("verify", -1);
             engine.LoadContract(oracleContract, md, CallFlags.None);
-            if (engine.Execute() != Neo.VM.VMState.HALT) return null;
+            if (engine.Execute() != Neo.VM.VMState.HALT)
+                return null;
             tx.NetworkFee += engine.GasConsumed;
 
             var executionFactor = NativeContract.Policy.GetExecFeeFactor(snapshot);
@@ -278,7 +295,8 @@ namespace NeoExpress.Node
                 throw new Exception($"Contract {contractHash} not found at height {stateHeight}");
             }
 
-            if (contractState.Id < 0) throw new NotSupportedException("Contract download not supported for native contracts");
+            if (contractState.Id < 0)
+                throw new NotSupportedException("Contract download not supported for native contracts");
 
             var states = Enumerable.Empty<(string key, string value)>();
             ReadOnlyMemory<byte> start = default;
@@ -289,7 +307,8 @@ namespace NeoExpress.Node
                 var response = await rpcClient.RpcSendAsync("findstates", @params).ConfigureAwait(false);
 
                 var results = (JArray)response["results"]!;
-                if (results.Count == 0) break;
+                if (results.Count == 0)
+                    break;
 
                 ValidateProof(stateRoot.RootHash, (JString)response["firstProof"]!, (JObject)results[0]!);
 
@@ -305,7 +324,8 @@ namespace NeoExpress.Node
                     )));
 
                 var truncated = response["truncated"]!.AsBoolean();
-                if (!truncated) break;
+                if (!truncated)
+                    break;
                 start = Convert.FromBase64String(results[^1]!["key"]!.AsString());
             }
 
@@ -317,17 +337,20 @@ namespace NeoExpress.Node
                 var (provenKey, provenItem) = VerifyProof(rootHash, proofBytes);
 
                 var key = Convert.FromBase64String(result["key"]!.AsString());
-                if (!provenKey.Key.Span.SequenceEqual(key)) throw new Exception("Incorrect StorageKey");
+                if (!provenKey.Key.Span.SequenceEqual(key))
+                    throw new Exception("Incorrect StorageKey");
 
                 var value = Convert.FromBase64String(result["value"]!.AsString());
-                if (!provenItem.AsSpan().SequenceEqual(value)) throw new Exception("Incorrect StorageItem");
+                if (!provenItem.AsSpan().SequenceEqual(value))
+                    throw new Exception("Incorrect StorageItem");
             }
         }
 
         public static int PersistContract(NeoSystem neoSystem, ContractState state,
             IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)
         {
-            if (state.Id < 0) throw new ArgumentException("PersistContract not supported for native contracts", nameof(state));
+            if (state.Id < 0)
+                throw new ArgumentException("PersistContract not supported for native contracts", nameof(state));
 
             using var snapshot = neoSystem.GetSnapshot();
 
@@ -394,7 +417,8 @@ namespace NeoExpress.Node
                 }
             }
 
-            if (dirty) snapshot.Commit();
+            if (dirty)
+                snapshot.Commit();
             return localContract.Id;
 
             static int GetNextAvailableId(DataCache snapshot)

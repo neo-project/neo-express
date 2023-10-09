@@ -2,52 +2,16 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <Authors>ngd enterprise</Authors>
-    <Company>The Neo Project</Company>
-    <Copyright>2015-2021 The Neo Project</Copyright>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>10</LangVersion>
-    <Nullable>enable</Nullable>
-    <PackageIcon>neo-logo-72.png</PackageIcon>
+    <Authors>The Neo Project</Authors>
+    <Copyright>2015-2023 The Neo Project</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/neo-project/neo-express</PackageProjectUrl>
     <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <VersionPrefix>3.6.0</VersionPrefix>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <BlockchainToolkitLibraryVersion>3.6.13-preview</BlockchainToolkitLibraryVersion>
-    <!-- <BlockchainToolkitLibraryVersion>local</BlockchainToolkitLibraryVersion> -->
-    <BlockchainToolkitLibraryLocalPath>..\..\..\lib-bctk</BlockchainToolkitLibraryLocalPath>
-    <NeoVersion>3.5.0</NeoVersion>
-    <NeoMonorepoPath>..\..\..\..\official\3neo-monorepo</NeoMonorepoPath>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1"/>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
-  </ItemGroup>
-
-  <Choose>
-    <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
-      <ItemGroup>
-        <ProjectReference Include="$(BlockchainToolkitLibraryLocalPath)\src\bctklib\bctklib.csproj" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <PackageReference Include="Neo.BlockchainToolkit.Library" Version="$(BlockchainToolkitLibraryVersion)" />
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
-  
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
 </Project>

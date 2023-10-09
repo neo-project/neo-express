@@ -1,7 +1,14 @@
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.Json;
 using Neo.Persistence;
 using Neo.SmartContract.Native;
+using System.Collections.Generic;
 
 namespace NeoExpress.Models
 {
@@ -49,13 +56,16 @@ namespace NeoExpress.Models
         {
             foreach (var contract in NativeContract.ContractManagement.ListContracts(snapshot))
             {
-                var nep11 = false; var nep17 = false;
+                var nep11 = false;
+                var nep17 = false;
 
                 var standards = contract.Manifest.SupportedStandards;
                 for (var i = 0; i < standards.Length; i++)
                 {
-                    if (standards[i] == "NEP-11") nep11 = true;
-                    if (standards[i] == "NEP-17") nep17 = true;
+                    if (standards[i] == "NEP-11")
+                        nep11 = true;
+                    if (standards[i] == "NEP-17")
+                        nep17 = true;
                 }
 
                 // Return contracts that declare either NEP-11 or NEP-17 but not both. Obviously, if

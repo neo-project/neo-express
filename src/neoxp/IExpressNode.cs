@@ -1,4 +1,9 @@
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
@@ -10,6 +15,10 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Threading.Tasks;
 
 namespace NeoExpress
 {
@@ -21,7 +30,7 @@ namespace NeoExpress
 
         Task<CheckpointMode> CreateCheckpointAsync(string checkPointPath);
 
-        Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null);
+        Task<RpcInvokeResult> InvokeAsync(Script script, Signer signer = null);
         Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0);
         Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes);
         Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta);
@@ -30,7 +39,7 @@ namespace NeoExpress
         Task<Block> GetBlockAsync(uint blockIndex);
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
         Task<Block> GetLatestBlockAsync();
-        Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
+        Task<(Transaction tx, RpcApplicationLog appLog)> GetTransactionAsync(UInt256 txHash);
         Task<uint> GetTransactionHeightAsync(UInt256 txHash);
 
         Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);
@@ -40,6 +49,6 @@ namespace NeoExpress
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();
 
         Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force);
-        IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter);
+        IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160> contractFilter, IReadOnlySet<string> eventFilter);
     }
 }

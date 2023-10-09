@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neoxp", "src\neoxp\neoxp.csproj", "{C93B1429-9240-4D0D-B4EE-E199EA51B011}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neotrace", "src\trace\neotrace.csproj", "{985BD7D3-1C24-4EF6-99C5-A736BFC94A2C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neoworknet", "src\worknet\neoworknet.csproj", "{AA14500F-C040-4B3C-A3E7-5463B57C02DD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neo-blockchaintoolkit-library", "src\neo-blockchaintoolkit-library\neo-blockchaintoolkit-library.csproj", "{62B8BD78-F652-4FB8-BFC2-CE3E23C1E2BE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C93B1429-9240-4D0D-B4EE-E199EA51B011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C93B1429-9240-4D0D-B4EE-E199EA51B011}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C93B1429-9240-4D0D-B4EE-E199EA51B011}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C93B1429-9240-4D0D-B4EE-E199EA51B011}.Release|Any CPU.Build.0 = Release|Any CPU
+		{985BD7D3-1C24-4EF6-99C5-A736BFC94A2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{985BD7D3-1C24-4EF6-99C5-A736BFC94A2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{985BD7D3-1C24-4EF6-99C5-A736BFC94A2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{985BD7D3-1C24-4EF6-99C5-A736BFC94A2C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA14500F-C040-4B3C-A3E7-5463B57C02DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA14500F-C040-4B3C-A3E7-5463B57C02DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA14500F-C040-4B3C-A3E7-5463B57C02DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA14500F-C040-4B3C-A3E7-5463B57C02DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62B8BD78-F652-4FB8-BFC2-CE3E23C1E2BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62B8BD78-F652-4FB8-BFC2-CE3E23C1E2BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62B8BD78-F652-4FB8-BFC2-CE3E23C1E2BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62B8BD78-F652-4FB8-BFC2-CE3E23C1E2BE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {60A02063-F178-42F3-A2DA-8E73AF1C53A1}
+	EndGlobalSection
+EndGlobal

@@ -1,15 +1,25 @@
-using System.IO.Abstractions;
-using System.Net;
-using Microsoft.Extensions.Configuration;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.Plugins;
 using Neo.Cryptography.ECC;
 using Neo.Persistence;
 using Neo.Plugins;
-using Neo.Wallets;
 using NeoWorkNet.Models;
+using System;
+using System.Collections.Generic;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NeoWorkNet.Commands;
 
@@ -32,7 +42,8 @@ partial class RunCommand
         {
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
+            if (!fs.Directory.Exists(dataDir))
+                throw new Exception($"Cannot locate data directory {dataDir}");
 
             var secondsPerBlock = SecondsPerBlock ?? 0;
             await RunAsync(worknet, dataDir, secondsPerBlock, console, token).ConfigureAwait(false);

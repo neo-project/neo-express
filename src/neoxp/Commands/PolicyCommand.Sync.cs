@@ -1,5 +1,13 @@
-using System.ComponentModel.DataAnnotations;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -44,7 +52,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
 
-                    var values = await txExec.TryGetRemoteNetworkPolicyAsync(Source).ConfigureAwait(false);
+                    var values = await TransactionExecutor.TryGetRemoteNetworkPolicyAsync(Source).ConfigureAwait(false);
                     if (values.IsT1)
                     {
                         values = await txExec.TryLoadPolicyFromFileSystemAsync(Source).ConfigureAwait(false);

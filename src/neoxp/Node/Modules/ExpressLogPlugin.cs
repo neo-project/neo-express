@@ -1,4 +1,10 @@
-﻿using McMaster.Extensions.CommandLineUtils;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
+using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
@@ -6,12 +12,14 @@ using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using System;
+using System.Collections.Generic;
 
 namespace NeoExpress.Node
 {
     class ExpressLogPlugin : Plugin
     {
-        NeoSystem? neoSystem;
+        NeoSystem neoSystem;
         readonly IConsole console;
 
         public ExpressLogPlugin(IConsole console)
@@ -32,7 +40,8 @@ namespace NeoExpress.Node
 
         protected override void OnSystemLoaded(NeoSystem system)
         {
-            if (this.neoSystem is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+            if (this.neoSystem is not null)
+                throw new Exception($"{nameof(OnSystemLoaded)} already called");
             neoSystem = system;
             base.OnSystemLoaded(system);
         }

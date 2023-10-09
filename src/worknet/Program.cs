@@ -1,19 +1,27 @@
-﻿using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
 using NeoWorkNet.Commands;
+using System;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Threading.Tasks;
 using static Crayon.Output;
 
 namespace NeoWorkNet;
 
 [Command("neo-worknet", Description = "Branch a public Neo N3 blockchain for private development use", UsePagerForHelpText = false)]
-[VersionOption(ThisAssembly.AssemblyInformationalVersion)]
 [Subcommand(typeof(CreateCommand), typeof(PrefetchCommand), typeof(ResetCommand), typeof(RunCommand))]
 partial class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        Crayon.Output.Enable();
+        Enable();
 
         var services = new ServiceCollection()
             .AddSingleton<IFileSystem, FileSystem>()

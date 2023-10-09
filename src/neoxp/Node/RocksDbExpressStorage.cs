@@ -1,3 +1,9 @@
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
@@ -25,7 +31,7 @@ namespace NeoExpress.Node
             this.db.Dispose();
         }
 
-        public IStore GetStore(string? path)
+        public IStore GetStore(string path)
         {
             if (path is null)
                 return new RocksDbStore(db, db.GetDefaultColumnFamily(), readOnly: false, shared: true);

@@ -1,6 +1,13 @@
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.VM.Types;
+using System;
+using System.Numerics;
 
 namespace NeoExpress.Models
 {
@@ -23,18 +30,23 @@ namespace NeoExpress.Models
             Notification = notification;
         }
 
-        public static TransferNotificationRecord? Create(NotificationRecord notification)
+        public static TransferNotificationRecord Create(NotificationRecord notification)
         {
-            if (notification.State.Count < 3) return null;
+            if (notification.State.Count < 3)
+                return null;
 
             var from = ParseAddress(notification.State[0]);
-            if (from is null) return null;
+            if (from is null)
+                return null;
             var to = ParseAddress(notification.State[1]);
-            if (to is null) return null;
-            if (from == UInt160.Zero && to == UInt160.Zero) return null;
+            if (to is null)
+                return null;
+            if (from == UInt160.Zero && to == UInt160.Zero)
+                return null;
 
             var amountItem = notification.State[2];
-            if (amountItem is not ByteString && amountItem is not Integer) return null;
+            if (amountItem is not ByteString && amountItem is not Integer)
+                return null;
             var amount = amountItem.GetInteger();
 
             var asset = notification.ScriptHash;
@@ -48,12 +60,15 @@ namespace NeoExpress.Models
 
             // returning null from ParseAddress implies invalid address value
             // A null StackItem address is valid and gets translated as UInt160.Zero
-            static UInt160? ParseAddress(StackItem item)
+            static UInt160 ParseAddress(StackItem item)
             {
-                if (!item.IsNull && item is not ByteString) return null;
-                if (item.IsNull) return UInt160.Zero;
+                if (!item.IsNull && item is not ByteString)
+                    return null;
+                if (item.IsNull)
+                    return UInt160.Zero;
                 var span = item.GetSpan();
-                if (span.Length != UInt160.Length) return null;
+                if (span.Length != UInt160.Length)
+                    return null;
                 return new UInt160(span);
             }
         }

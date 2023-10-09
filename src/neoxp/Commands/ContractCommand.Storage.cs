@@ -1,8 +1,18 @@
-using System.ComponentModel.DataAnnotations;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.SmartContract.Manifest;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace NeoExpress.Commands
 {
@@ -34,7 +44,8 @@ namespace NeoExpress.Commands
                 {
                     using var jsonWriter = new JsonTextWriter(writer);
 
-                    if (contracts.Count > 1) await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+                    if (contracts.Count > 1)
+                        await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
 
                     for (int i = 0; i < contracts.Count; i++)
                     {
@@ -60,7 +71,8 @@ namespace NeoExpress.Commands
                         await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
                     }
 
-                    if (contracts.Count > 1) await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                    if (contracts.Count > 1)
+                        await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
                 }
                 else
                 {

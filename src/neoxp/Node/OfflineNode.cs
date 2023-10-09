@@ -1,4 +1,9 @@
-using System.Numerics;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Akka.Actor;
 using Neo;
 using Neo.BlockchainToolkit.Models;
@@ -17,6 +22,11 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
 using static Neo.Ledger.Blockchain;
 
 namespace NeoExpress.Node
@@ -42,7 +52,8 @@ namespace NeoExpress.Node
 
             var storeProvider = new ExpressStoreProvider(expressStorage);
             StoreFactory.RegisterProvider(storeProvider);
-            if (enableTrace) { ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+            if (enableTrace)
+            { ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
             persistencePlugin = new ExpressPersistencePlugin();
             neoSystem = new NeoSystem(settings, storeProvider.Name);
@@ -76,7 +87,8 @@ namespace NeoExpress.Node
         {
             try
             {
-                if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+                if (disposedValue)
+                    throw new ObjectDisposedException(nameof(OfflineNode));
                 return Task.FromResult(func());
             }
             catch (Exception ex)
@@ -95,7 +107,7 @@ namespace NeoExpress.Node
         public Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
             => MakeAsync(() => CreateCheckpoint(checkPointPath));
 
-        RpcInvokeResult Invoke(Neo.VM.Script script, Signer? signer = null)
+        RpcInvokeResult Invoke(Neo.VM.Script script, Signer signer = null)
         {
             var tx = TestApplicationEngine.CreateTestTransaction(signer);
             using var engine = script.Invoke(neoSystem.Settings, neoSystem.StoreView, tx);
@@ -111,12 +123,13 @@ namespace NeoExpress.Node
             };
         }
 
-        public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script, Signer? signer = null)
+        public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script, Signer signer = null)
             => MakeAsync(() => Invoke(script, signer));
 
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+            if (disposedValue)
+                throw new ObjectDisposedException(nameof(OfflineNode));
 
             var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
             var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
@@ -134,7 +147,8 @@ namespace NeoExpress.Node
                 for (int i = 0; i < multiSigWallets.Count; i++)
                 {
                     multiSigWallets[i].Sign(context);
-                    if (context.Completed) break;
+                    if (context.Completed)
+                        break;
                 }
             }
             else
@@ -154,13 +168,15 @@ namespace NeoExpress.Node
 
         public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+            if (disposedValue)
+                throw new ObjectDisposedException(nameof(OfflineNode));
 
             using var snapshot = neoSystem.GetSnapshot();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
-            if (tx is null) throw new Exception("Failed to create Oracle Response Tx");
+            if (tx is null)
+                throw new Exception("Failed to create Oracle Response Tx");
             NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
             var blockHash = await SubmitTransactionAsync(tx);
@@ -169,7 +185,8 @@ namespace NeoExpress.Node
 
         public async Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+            if (disposedValue)
+                throw new ObjectDisposedException(nameof(OfflineNode));
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
@@ -184,7 +201,8 @@ namespace NeoExpress.Node
 
         async Task<UInt256> SubmitTransactionAsync(Transaction tx)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(OfflineNode));
+            if (disposedValue)
+                throw new ObjectDisposedException(nameof(OfflineNode));
 
             var transactions = new[] { tx };
 
@@ -193,7 +211,7 @@ namespace NeoExpress.Node
             var verificationContext = new TransactionVerificationContext();
             for (int i = 0; i < transactions.Length; i++)
             {
-                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext) != VerifyResult.Succeed)
+                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext, Enumerable.Empty<Transaction>()) != VerifyResult.Succeed)
                 {
                     throw new Exception("Verification failed");
                 }
@@ -227,7 +245,8 @@ namespace NeoExpress.Node
         ContractManifest GetContract(UInt160 scriptHash)
         {
             var contractState = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-            if (contractState is null) throw new Exception("Unknown contract");
+            if (contractState is null)
+                throw new Exception("Unknown contract");
             return contractState.Manifest;
         }
 
@@ -243,10 +262,11 @@ namespace NeoExpress.Node
 
         public Task<Block> GetLatestBlockAsync() => MakeAsync(GetLatestBlock);
 
-        (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
+        (Transaction tx, RpcApplicationLog appLog) GetTransaction(UInt256 txHash)
         {
             var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
-            if (tx is null) throw new Exception("Unknown Transaction");
+            if (tx is null)
+                throw new Exception("Unknown Transaction");
 
             var jsonLog = persistencePlugin.GetAppLog(txHash);
             return jsonLog is not null
@@ -254,7 +274,7 @@ namespace NeoExpress.Node
                 : (tx, null);
         }
 
-        public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        public Task<(Transaction tx, RpcApplicationLog appLog)> GetTransactionAsync(UInt256 txHash)
             => MakeAsync(() => GetTransaction(txHash));
 
         uint GetTransactionHeight(UInt256 txHash)
@@ -293,7 +313,8 @@ namespace NeoExpress.Node
                 {
                     var index = i * 3;
                     var symbol = resultStack.Peek(index + 2).GetString();
-                    if (symbol is null) continue;
+                    if (symbol is null)
+                        continue;
                     var decimals = (byte)resultStack.Peek(index + 1).GetInteger();
                     var balance = resultStack.Peek(index).GetInteger();
                     balances.Add((new TokenContract(symbol, decimals, contracts[i].scriptHash, contracts[i].standard), balance));
@@ -337,7 +358,8 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshot();
             var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
 
-            if (contract is null) return Array.Empty<(string, string)>();
+            if (contract is null)
+                return Array.Empty<(string, string)>();
 
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
             return snapshot.Find(prefix)
@@ -362,7 +384,7 @@ namespace NeoExpress.Node
         // warning CS1998: This async method lacks 'await' operators and will run synchronously.
         // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
 #pragma warning disable 1998 
-        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
+        public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160> contractFilter, IReadOnlySet<string> eventFilter)
         {
             var notifications = persistencePlugin.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter);
             foreach (var (block, _, notification) in notifications)

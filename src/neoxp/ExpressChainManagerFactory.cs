@@ -1,10 +1,19 @@
-using System.IO.Abstractions;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
+using System;
+using System.Collections.Generic;
+using System.IO.Abstractions;
+using System.Linq;
 using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress

@@ -1,8 +1,18 @@
-﻿using Neo.IO;
+// Copyright (C) 2023 neo-project
+//
+//  neo-express is free software distributed under the
+// MIT software license, see the accompanying file LICENSE in
+// the main directory of the project for more details.
+
 using Neo;
+using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace NeoExpress.Models
 {
@@ -114,7 +124,8 @@ namespace NeoExpress.Models
                 }
             }
 
-            if (size > maxSize) throw new InvalidOperationException();
+            if (size > maxSize)
+                throw new InvalidOperationException();
             return size;
         }
     }

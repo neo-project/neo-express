@@ -3,6 +3,6 @@
   <ItemGroup>
     <ProjectReference Include="src\neoxp\neoxp.csproj" />
     <ProjectReference Include="src\trace\neotrace.csproj" />
-    <!-- <ProjectReference Include="src\worknet\neoworknet.csproj" /> -->
+    <ProjectReference Include="src\worknet\neoworknet.csproj" />
   </ItemGroup>
 </Project>

@@ -51,18 +51,17 @@ can be specified in multiple ways:
 ## neoxp create
 
 ```
-Usage: neoxp create [options] <Output>
+Usage: neoxp create [Options] [Output]
 
 Arguments:
-  Output                                  name of .neo-express file to create (Default: ./default.neo-express)
-
-Options:
+[Options]:
   -c|--count <COUNT>                      Number of consensus nodes to create
                                           Default: 1
                                           Allowed values are: 1, 4, 7.
   -a|--address-version <ADDRESS_VERSION>  Version to use for addresses in this blockchain instance
                                           Default: 53
   -f|--force                              Overwrite existing data
+[Output]: name of .neo-express file to create (Default: ./default.neo-express)
 ```
 
 The `create` command is used to create a new Neo-Express blockchain network for local development
@@ -85,16 +84,15 @@ via the `--input` option.
 ## neoxp run
 
 ```
-Usage: neoxp run [options] <NodeIndex>
+Usage: neoxp run [Options] [NodeIndex]
 
 Arguments:
-  NodeIndex                                   Index of node to run
-
-Options:
+[Options]:
   -i|--input <INPUT>                          Path to neo-express data file
   -s|--seconds-per-block <SECONDS_PER_BLOCK>  Time between blocks
   -d|--discard                                Discard blockchain changes on shutdown
   -t|--trace                                  Enable contract execution tracing
+[NodeIndex]: Index of node to run (Default: 0)
 ```
 
 Once created, a Neo-Express blockchain network is started with the `run` command. The consensus
@@ -120,14 +118,13 @@ the blockchain network is shut down.
 ## neoxp stop
 
 ```
-Usage: neoxp stop [options] <NodeIndex>
+Usage: neoxp stop [Options] [NodeIndex]
 
 Arguments:
-  NodeIndex           Index of node to stop
-
-Options:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
   -a|--all            Stop all nodes
+[NodeIndex]: Index of node to stop (Default: 0)
 ```
 
 When running in a terminal window, neo-express can be shutdown via standard CTRL-C or CTRL-BREAK operations.
@@ -138,15 +135,14 @@ nodes in the network.
 ## neoxp reset
 
 ```
-Usage: neoxp reset [options] <NodeIndex>
+Usage: neoxp reset [Options] [NodeIndex]
 
 Arguments:
-  NodeIndex           Index of node to reset
-
-Options:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
   -f|--force          Overwrite existing data
   -a|--all            Reset all nodes
+[NodeIndex]: Index of node to reset (Default: 0)
 ```
 
 A Neo-express blockchain network can be reset back to its genesis block via the `reset` command. This
@@ -157,9 +153,10 @@ nodes. The `--force` option must be specified in order to discard existing block
 ### neoxp export
 
 ```
-Usage: neoxp export [options]
+Usage: neoxp export [Options]
 
-Options:
+Arguments:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
@@ -183,14 +180,13 @@ for use in the Neo-Express blockchain network.
 ### neoxp wallet create
 
 ```
-Usage: neoxp wallet create [options] <Name>
+Usage: neoxp wallet create [Options] <Name>
 
 Arguments:
-  Name                Wallet name
-
-Options:
+[Options]:
   -f|--force          Overwrite existing data
   -i|--input <INPUT>  Path to neo-express data file
+<Name>: Wallet name
 ```
 
 The `wallet create` command creates a new standard wallet with a single account. This command takes
@@ -203,9 +199,10 @@ To overwrite an existing wallet, the `--force` option must be specified.
 ### neoxp wallet list
 
 ```
-Usage: neoxp wallet list [options]
+Usage: neoxp wallet list [Options]
 
-Options:
+Arguments:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
@@ -215,14 +212,13 @@ along with their account addresses, private and public keys.
 ### neoxp wallet delete
 
 ```
-Usage: neoxp wallet delete [options] <Name>
+Usage: neoxp wallet delete [Options] <Name>
 
 Arguments:
-  Name                Wallet name
-
-Options:
+[Options]:
   -f|--force          Overwrite existing data
   -i|--input <INPUT>  Path to neo-express data file
+<Name>: Wallet name
 ```
 
 The `wallet delete` command removes a wallet and its accounts from the blockchain network file. This
@@ -231,15 +227,14 @@ command does not modify the blockchain data, so any assets associated with that 
 ### neoxp wallet export
 
 ```
-Usage: neoxp wallet export [options] <Name>
+Usage: neoxp wallet export [Options] <Name>
 
 Arguments:
-  Name                  Wallet name
-
-Options:
+[Options]:
   -i|--input <INPUT>    Path to neo-express data file
   -o|--output <OUTPUT>  NEP-6 wallet name (Defaults to Neo-Express name if unspecified)
   -f|--force            Overwrite existing data
+<Name>: Wallet name
 ```
 
 Similar the top-level `export` command described above, `wallet export` saves an existing Neo-Express
@@ -254,19 +249,18 @@ that can be read by standard Neo tools.
 ## neoxp transfer
 
 ```
-Usage: neoxp transfer [options] <Quantity> <Asset> <Sender> <Receiver>
+Usage: neoxp transfer [Options] <Quantity> <Asset> <Sender> <Receiver>
 
 Arguments:
-  Quantity                  Amount to transfer
-  Asset                     Asset to transfer (symbol or script hash)
-  Sender                    Account to send asset from
-  Receiver                  Account to send asset to
-
-Options:
+[Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
+<Quantity>: Amount to transfer
+<Asset>: Asset to transfer (symbol or script hash)
+<Sender>: Account to send asset from
+<Receiver>: Account to send asset to
 ```
 
 The `transfer` command is used to transfer assets between accounts in a Neo-Express
@@ -287,13 +281,10 @@ on a Neo-Express blockchain network
 ### neoxp contract deploy
 
 ```
-Usage: neoxp contract deploy [options] <Contract> <Account>
+Usage: neoxp contract deploy [Options] <Contract> <Account>
 
 Arguments:
-  Contract                            Path to contract .nef file
-  Account                             Account to pay contract deployment GAS fee
-
-Options:
+[Options]:
   -w|--witness-scope <WITNESS_SCOPE>  Witness Scope to use for transaction signer
                                       Default: CalledByEntry
                                       Allowed values are: None, CalledByEntry, Global.
@@ -302,6 +293,8 @@ Options:
   -t|--trace                          Enable contract execution tracing
   -f|--force                          Deploy contract regardless of name conflict
   -j|--json                           Output as JSON
+<Contract>: Path to contract .nef file
+<Account>: Account to pay contract deployment GAS fee
 ```
 
 The `contract deploy` command deploys a smart contract to a Neo-Express blockchain. The command takes
@@ -315,13 +308,10 @@ confusion. This behavior can be overridden with the `--force` option.
 ### neoxp contract invoke
 
 ```
-Usage: neoxp contract invoke [options] <InvocationFile> <Account>
+Usage: neoxp contract invoke [Options] <InvocationFile> <Account>
 
 Arguments:
-  InvocationFile                      Path to contract invocation JSON file
-  Account                             Account to pay contract invocation GAS fee
-
-Options:
+[Options]:
   -w|--witness-scope <WITNESS_SCOPE>  Witness Scope to use for transaction
                                       signer (Default: CalledByEntry)
                                       Allowed values are: None, CalledByEntry,
@@ -334,6 +324,8 @@ Options:
   -t|--trace                          Enable contract execution tracing
   -j|--json                           Output as JSON
   -i|--input <INPUT>                  Path to neo-express data file
+<InvocationFile>: Path to contract invocation JSON file
+<Account>: Account to pay contract invocation GAS fee
 ```
 
 The `contract invoke` command generates a script from an
@@ -350,14 +342,10 @@ be retrieved via the `show transaction` command (described below).
 ### neoxp contract run
 
 ```
-Usage: neoxp contract run [options] <Contract> <Method> <Arguments>
+Usage: neoxp contract run [Options] <Contract> <Method> <Arguments>
 
 Arguments:
-  Contract                            Contract name or invocation hash
-  Method                              Contract method to invoke
-  Arguments                           Arguments to pass to the invoked method
-
-Options:
+[Options]:
   -a|--account <ACCOUNT>              Account to pay contract invocation GAS fee
   -w|--witness-scope <WITNESS_SCOPE>  Witness Scope to use for transaction
                                       signer (Default: CalledByEntry)
@@ -371,6 +359,9 @@ Options:
   -t|--trace                          Enable contract execution tracing
   -j|--json                           Output as JSON
   -i|--input <INPUT>                  Path to neo-express data file
+<Contract>: Contract name or invocation hash
+<Method>: Contract method to invoke
+<Arguments>: Arguments to pass to the invoked method
 ```
 
 Like `contract invoke`, the `contract run` command generates a script and submits it to the Neo-Express
@@ -387,13 +378,12 @@ arguments are string encoded values, following similar rules to
 ### neoxp contract get
 
 ```
-Usage: neoxp contract get [options] <Contract>
+Usage: neoxp contract get [Options] <Contract>
 
 Arguments:
-  Contract            Contract name or invocation hash
-
-Options:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
+<Contract>: Contract name or invocation hash
 ```  
 
 The `contract get` command retrieves the manifest of a deployed contract.
@@ -401,9 +391,10 @@ The `contract get` command retrieves the manifest of a deployed contract.
 ### neoxp contract list
 
 ```
-Usage: neoxp contract list [options]
+Usage: neoxp contract list [Options]
 
-Options:
+Arguments:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
   -j|--json           Output as JSON
 ```
@@ -414,14 +405,13 @@ Neo-express blockchain network. This includes native contracts that are part of 
 ### neoxp contract hash
 
 ```
-Usage: neoxp contract hash [options] <Contract> <Account>
+Usage: neoxp contract hash [Options] <Contract> <Account>
 
 Arguments:
-  Contract            Path to contract .nef file
-  Account             Account that would deploy the contract
-
-Options:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
+<Contract>:Path to contract .nef file
+<Account>:Account that would deploy the contract
 ```
 
 The `contract hash` command calculates what the contract hash would be from a path to an .NEF file
@@ -433,14 +423,13 @@ and the non-signing account information of the account that would deploy the con
 ### neoxp contract storage
 
 ```
-Usage: neoxp contract storage [options] <Contract>
+Usage: neoxp contract storage [Options] <Contract>
 
 Arguments:
-  Contract            Contract name or invocation hash
-
-Options:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
   -j|--json           Output as JSON
+<Contract>: Contract name or invocation hash
 ```
 The `contract storage` commands dumps all the key/value pairs stored in the blockchain for
 this contract. This command takes a single argument indicating the contract to dump storage
@@ -471,14 +460,13 @@ enables a variety of debug and test scenarios.
 ### neoxp checkpoint create
 
 ```
-Usage: neoxp checkpoint create [options] <Checkpoint file name>
+Usage: neoxp checkpoint create [Options] <Checkpoint>
 
 Arguments:
-  Checkpoint file name
-
-Options:
+[Options]:
   -i|--input <INPUT>    Path to neo-express data file
   -f|--force            Overwrite existing data
+<Checkpoint>: Checkpoint file name
 ```
 
 The `checkpoint create` enables the user to create a checkpoint of a Neo-express blockchain. This command
@@ -488,14 +476,13 @@ already been created, they must specify the `--force` option.
 ### neoxp checkpoint restore
 
 ```
-Usage: neoxp checkpoint restore [options] <Checkpoint file name>
+Usage: neoxp checkpoint restore [Options] <Checkpoint>
 
 Arguments:
-  Checkpoint file name
-
-Options:
+[Options]:
   -i|--input <INPUT>    Path to neo-express data file
   -f|--force            Overwrite existing data
+<Checkpoint>: Checkpoint file name
 ```
 
 The `checkpoint restore` command enables the user to discard the current state of a Neo-Express blockchain
@@ -508,15 +495,14 @@ essentially works as an import. If there is existing blockchain state, the user 
 ### neoxp checkpoint run
 
 ```
-Usage: neoxp checkpoint run [options] <Checkpoint file name>
+Usage: neoxp checkpoint run [Options] <Checkpoint>
 
 Arguments:
-  Checkpoint file name
-
-Options:
+[Options]:
   -i|--input <INPUT>                          Path to neo-express data file
   -s|--seconds-per-block <SECONDS_PER_BLOCK>  Time between blocks
   -t|--trace                                  Enable contract execution tracing
+<Checkpoint>: Checkpoint file name
 ```
 
 The `checkpoint run` command enables the user to run a checkpoint, similar to the standard `run` command
@@ -538,16 +524,15 @@ blockchain is not important beyond validating that all tests pass.
 ## neoxp batch
 
 ```
-Usage: neoxp batch [options] <BatchFile>
+Usage: neoxp batch [Options] <BatchFile>
 
 Arguments:
-  BatchFile                  Path to batch file to run
-
-Options:
-  -r|--reset[:<CHECKPOINT>]  Reset blockchain to genesis or specified checkpoint
+[Options]:
+  -r|--reset <CHECKPOINT>    Reset blockchain to genesis or specified checkpoint
                              before running batch file commands
   -t|--trace                 Enable contract execution tracing
   -i|--input <INPUT>         Path to neo-express data file
+<BatchFile>: Path to batch file to run
 ```
 
 The `neo batch` command executes a series of blockchain modifying commands against a single Neo-express
@@ -583,14 +568,13 @@ The commands supported in a batch file include:
 ## neoxp fastfwd
 
 ```
-Usage: neoxp fastfwd [options] <Count>
+Usage: neoxp fastfwd [Options] <Count>
 
 Arguments:
-  Count               Number of blocks to mint     
-
-Options:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
-  -?|-h|--help        Show help information.   
+  -?|-h|--help        Show help information.
+<Count>: Number of blocks to mint  
 ```
 
 The `fastfwd` command generates the specified number of empty blocks. This is useful for testing scenarios
@@ -608,19 +592,18 @@ as responding to oracle requests.
 
 ### neoxp oracle enable
 
-```
 Enable oracles for neo-express instance
 
-Usage: neoxp oracle enable [options] <Account>
+```
+Usage: neoxp oracle enable [Options] <Account>
 
 Arguments:
-  Account                   Account to pay contract invocation GAS fee
-
-Options:
+[Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
+<Account>: Account to pay contract invocation GAS fee
 ```
 
 A new Neo N3 blockchain (including a freshly created or reset Neo-Express blockchain) does not have
@@ -633,17 +616,16 @@ respond to oracle requests (via the `oracle response` command detailed below)
 ### neoxp oracle response
 
 ```
-Usage: neoxp oracle response [options] <Url> <ResponsePath>
+Usage: neoxp oracle response [Options] <Url> <ResponsePath>
 
 Arguments:
-  Url                             URL of oracle request
-  ResponsePath                    Path to JSON file with oracle response content
-
-Options:
-  -r|--request-id[:<REQUEST_ID>]  Oracle request ID
+[Options]:
+  -r|--request-id <REQUEST_ID>    Oracle request ID
   -i|--input <INPUT>              Path to neo-express data file
   -t|--trace                      Enable contract execution tracing
   -j|--json                       Output as JSON
+<Url>: URL of oracle request
+<ResponsePath>: Path to JSON file with oracle response content
 ```
 
 The `oracle response` command enables a developer to submit a response for an existing oracle request.
@@ -658,9 +640,10 @@ containing the oracle response content.
 ### neoxp oracle requests
 
 ```
-Usage: neoxp oracle requests [options]
+Usage: neoxp oracle requests [Options]
 
-Options:
+Arguments:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
@@ -669,9 +652,10 @@ The `oracle requests` command lists the request id, url and transaction hash tha
 ### neoxp oracle list
 
 ```
-Usage: neoxp oracle list [options]
+Usage: neoxp oracle list [Options]
 
-Options:
+Arguments:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
@@ -687,12 +671,13 @@ The `policy` command has a series of subcommands for configuring Neo-express' po
 
 ### neoxp policy get
 
-```
 Retrieve current value of a blockchain policy
 
-Usage: neoxp policy get [options]
+```
+Usage: neoxp policy get [Options]
 
-Options:
+Arguments:
+[Options]:
   -r|--rpc-uri <RPC_URI>  URL of Neo JSON-RPC Node
                           Specify MainNet (default), TestNet or JSON-RPC URL
   -i|--input <INPUT>      Path to neo-express data file
@@ -714,20 +699,19 @@ local file, can be used as the input for the `policy sync` command described bel
 ### neoxp policy set
 
 ```
-Usage: neoxp policy set [options] <Policy> <Value> <Account>
+Usage: neoxp policy set [Options] <Policy> <Value> <Account>
 
 Arguments:
-  Policy                    Policy to set
-                            Allowed values are: GasPerBlock, MinimumDeploymentFee, CandidateRegistrationFee,
-                            OracleRequestFee, NetworkFeePerByte, StorageFeeFactor, ExecutionFeeFactor.
-  Value                     New Policy Value
-  Account                   Account to pay contract invocation GAS fee
-
-Options:
+[Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
+<Policy>: Policy to set
+                            Allowed values are: GasPerBlock, MinimumDeploymentFee, CandidateRegistrationFee,
+                            OracleRequestFee, NetworkFeePerByte, StorageFeeFactor, ExecutionFeeFactor.
+<Value>: New Policy Value
+<Account>: Account to pay contract invocation GAS fee
 ```
 
 The `policy set` command updates the current value of the specified Neo-Express network policy.
@@ -736,19 +720,18 @@ The `policy set` command updates the current value of the specified Neo-Express 
 ```
 Synchronize local policy values with public Neo network
 
-Usage: neoxp policy sync [options] <Source> <Account>
+Usage: neoxp policy sync [Options] <Source> <Account>
 
 Arguments:
-  Source                    Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC
-                            Node
-                            For Node URL,"MainNet" or "TestNet" can be specified in addition to a standard HTTP URL
-  Account                   Account to pay contract invocation GAS fee
-
-Options:
+[Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
+<Source>: Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC
+                            Node
+                            For Node URL,"MainNet" or "TestNet" can be specified in addition to a standard HTTP URL
+<Account>: Account to pay contract invocation GAS fee
 ```
 
 The `policy sync` command updates the all the network policy values of the specified Neo-Express blockchain instance.
@@ -762,17 +745,16 @@ emitted by the `policy get --json` command described above.
 ### neoxp policy block
 
 ```
-Usage: neoxp policy block [options] <ScriptHash> <Account>
+Usage: neoxp policy block [Options] <ScriptHash> <Account>
 
 Arguments:
-  ScriptHash                Account to block
-  Account                   Account to pay contract invocation GAS fee
-
-Options:
+[Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
+<ScriptHash>: Account to block
+<Account>: Account to pay contract invocation GAS fee
 ```
 
 The `policy block` command blocks the specified non-signing user or contract account. The account
@@ -788,13 +770,12 @@ to block can be specified in the following ways:
 ### neoxp policy unblock
 
 ```
-Usage: neoxp policy unblock [options] <ScriptHash> <Account>
+Usage: neoxp policy unblock [Options] <ScriptHash> <Account>
 
 Arguments:
-  ScriptHash                Account to unblock
-  Account                   Account to pay contract invocation GAS fee
-
-Options:
+<ScriptHash>: Account to unblock
+<Account>: Account to pay contract invocation GAS fee
+[Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
@@ -807,13 +788,12 @@ to block is specified as described in `policy block` above
 ### neoxp policy isblocked
 
 ```
-Usage: neoxp policy isBlocked [options] <ScriptHash>
+Usage: neoxp policy isBlocked [Options] <ScriptHash>
 
 Arguments:
-  ScriptHash          Account to check block status of
-
-Options:
+[Options]:
   -i|--input <INPUT>  Path to neo-express data file
+<ScriptHash>: Account to check block status of
 ```
 
 The `policy isblocked` command checks the blocked status of the specified non-signing user or contract

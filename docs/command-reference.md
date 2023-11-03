@@ -436,6 +436,27 @@ this contract. This command takes a single argument indicating the contract to d
 records for. For each key/value pair, the command shows both the key and the value
 as both a hex-encoded byte array as well as a UTF-8 encoded string.
 
+### neoxp contract update
+
+Update a contract that has been deployed to a neo-express instance.
+
+```
+Usage: neoxp contract update [Options] <Contract> <Contract_File> <Account>
+
+Arguments:
+[Options]:
+  -w|--witness-scope <WITNESS_SCOPE>  Witness Scope to use for transaction signer
+                                      Default: CalledByEntry
+                                      Allowed values are: None, CalledByEntry, Global.
+  -p|--password <PASSWORD>            password to use for NEP-2/NEP-6 account
+  -i|--input <INPUT>                  Path to neo-express data file
+  -t|--trace                          Enable contract execution tracing
+  -j|--json                           Output as JSON
+<Contract>: Contract name or invocation hash
+<Contract_File>: Path to contract .nef file
+<Account>: Account to pay contract deployment GAS fee
+```
+
 ## neoxp show
 
 The `show` command will display information from the blockchain. There are multiple subcommands 

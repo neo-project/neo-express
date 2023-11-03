@@ -707,9 +707,7 @@ Arguments:
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
-<Policy>: Policy to set
-                            Allowed values are: GasPerBlock, MinimumDeploymentFee, CandidateRegistrationFee,
-                            OracleRequestFee, NetworkFeePerByte, StorageFeeFactor, ExecutionFeeFactor.
+<Policy>: Policy to set. Allowed values are: GasPerBlock, MinimumDeploymentFee, CandidateRegistrationFee, OracleRequestFee, NetworkFeePerByte, StorageFeeFactor, ExecutionFeeFactor.
 <Value>: New Policy Value
 <Account>: Account to pay contract invocation GAS fee
 ```
@@ -728,9 +726,7 @@ Arguments:
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
-<Source>: Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC
-                            Node
-                            For Node URL,"MainNet" or "TestNet" can be specified in addition to a standard HTTP URL
+<Source>: Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC Node For Node URL,"MainNet" or "TestNet" can be specified in addition to a standard HTTP URL
 <Account>: Account to pay contract invocation GAS fee
 ```
 
@@ -773,13 +769,13 @@ to block can be specified in the following ways:
 Usage: neoxp policy unblock [Options] <ScriptHash> <Account>
 
 Arguments:
-<ScriptHash>: Account to unblock
-<Account>: Account to pay contract invocation GAS fee
 [Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
+<ScriptHash>: Account to unblock
+<Account>: Account to pay contract invocation GAS fee
 ```
 
 The `policy unblock` command unblocks the specified non-signing user or contract account. The account

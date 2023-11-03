@@ -193,7 +193,7 @@ namespace NeoExpress.Node
             var verificationContext = new TransactionVerificationContext();
             for (int i = 0; i < transactions.Length; i++)
             {
-                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext) != VerifyResult.Succeed)
+                if (transactions[i].Verify(neoSystem.Settings, neoSystem.StoreView, verificationContext, new List<Transaction>()) != VerifyResult.Succeed)
                 {
                     throw new Exception("Verification failed");
                 }
@@ -361,7 +361,7 @@ namespace NeoExpress.Node
 
         // warning CS1998: This async method lacks 'await' operators and will run synchronously.
         // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
-#pragma warning disable 1998 
+#pragma warning disable 1998
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
             var notifications = persistencePlugin.GetNotifications(SeekDirection.Backward, contractFilter, eventFilter);

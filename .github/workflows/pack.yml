@@ -10,7 +10,7 @@ on:
 
 env:
   CONFIGURATION: 'Release'
-  DOTNET_VERSION: '6.0.x'
+  DOTNET_VERSION: '7.0.x'
 
 jobs:
   pack:

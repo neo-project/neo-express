@@ -42,8 +42,8 @@ static class Utility
         using var reader = new JsonTextReader(textReader);
         var json = await JObject.LoadAsync(reader).ConfigureAwait(false);
         var uri = json.Value<string>("uri") ?? throw new JsonException("uri");
-        var branchInfo = BranchInfo.Load(json["branch-info"] as JObject ?? throw new JsonException("branch-info"));
-        var wallet = ToolkitWallet.Load(json["consensus-wallet"] as JObject ?? throw new JsonException("consensus-wallet"), branchInfo.ProtocolSettings);
+        var branchInfo = BranchInfo.Parse(json["branch-info"] as JObject ?? throw new JsonException("branch-info"));
+        var wallet = ToolkitWallet.Parse(json["consensus-wallet"] as JObject ?? throw new JsonException("consensus-wallet"), branchInfo.ProtocolSettings);
         return new WorknetFile(new Uri(uri), branchInfo, wallet);
     }
 

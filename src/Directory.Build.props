@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
   <PropertyGroup>
     <Authors>ngd enterprise</Authors>
     <Company>The Neo Project</Company>
@@ -15,26 +14,22 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
-
   <PropertyGroup>
-    <BlockchainToolkitLibraryVersion>3.6.13-preview</BlockchainToolkitLibraryVersion>
+    <BlockchainToolkitLibraryVersion>3.6.0</BlockchainToolkitLibraryVersion>
     <!-- <BlockchainToolkitLibraryVersion>local</BlockchainToolkitLibraryVersion> -->
     <BlockchainToolkitLibraryLocalPath>..\..\..\lib-bctk</BlockchainToolkitLibraryLocalPath>
-    <NeoVersion>3.5.0</NeoVersion>
+    <NeoVersion>3.6.0</NeoVersion>
     <NeoMonorepoPath>..\..\..\..\official\3neo-monorepo</NeoMonorepoPath>
   </PropertyGroup>
-
   <ItemGroup>
     <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
   </ItemGroup>
-
   <Choose>
     <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
       <ItemGroup>
@@ -47,7 +42,5 @@
       </ItemGroup>
     </Otherwise>
   </Choose>
-  
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
-
 </Project>

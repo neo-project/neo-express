@@ -440,13 +440,6 @@ as both a hex-encoded byte array as well as a UTF-8 encoded string.
 
 Update a contract that has been deployed to a neo-express instance.
 
-> Note, The smart contract will need to have a method with this signature: e.g.
-> 
-> C#: `public static bool Update(ByteString nefFile, string manifest)`
-> 
-> Python: `def update(nef: bytes, manifest: str)`
-> 
-
 ```
 Usage: neoxp contract update [Options] <Contract> <Contract_File> <Account>
 
@@ -463,6 +456,13 @@ Arguments:
 <Contract_File>: Path to contract .nef file
 <Account>: Account to pay contract deployment GAS fee
 ```
+
+> Note, The smart contract will need to have a method with this signature: e.g.
+> 
+> C#: `public static bool Update(ByteString nefFile, string manifest)`
+> 
+> Python: `def update(nef: bytes, manifest: str):`
+> 
 
 ## neoxp show
 

@@ -1,9 +1,19 @@
-using System.IO.Abstractions;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
 using Newtonsoft.Json;
+using System.IO.Abstractions;
 
 namespace NeoExpress.Commands
 {
@@ -56,7 +66,8 @@ namespace NeoExpress.Commands
 
         void ExportNodeWallet(ProtocolSettings settings, ExpressConsensusNode node, string path, string password)
         {
-            if (fileSystem.File.Exists(path)) fileSystem.File.Delete(path);
+            if (fileSystem.File.Exists(path))
+                fileSystem.File.Delete(path);
             var devWallet = DevWallet.FromExpressWallet(settings, node.Wallet);
             devWallet.Export(path, password);
         }

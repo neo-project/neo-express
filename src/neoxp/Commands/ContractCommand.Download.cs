@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            [Option(Description = "Block height to get contract state for")]
+            [Option(Description = "Block height to get contract state for\nZero gets the latest")]
             internal uint Height { get; } = 0;
 
             [Option(CommandOptionType.SingleOrNoValue,

@@ -1,8 +1,8 @@
-﻿using System.IO.Abstractions;
-using System.Runtime.InteropServices;
-using McMaster.Extensions.CommandLineUtils;
+﻿using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
 using NeoExpress.Commands;
+using System.IO.Abstractions;
+using System.Runtime.InteropServices;
 
 namespace NeoExpress
 {
@@ -48,7 +48,7 @@ namespace NeoExpress
             }
             catch (CommandParsingException ex)
             {
-                await Console.Error.WriteLineAsync($"\x1b[1m\x1b[31m\x1b[40m{ex.Message}");
+                await Console.Error.WriteLineAsync($"\x1b[1m\x1b[31m\x1b[40m{ex.Message}\x1b[0m");
 
                 if (ex is UnrecognizedCommandParsingException uex && uex.NearestMatches.Any())
                 {

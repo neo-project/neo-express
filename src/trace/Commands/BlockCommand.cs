@@ -1,7 +1,17 @@
-using System.ComponentModel.DataAnnotations;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using OneOf;
+using System.ComponentModel.DataAnnotations;
 using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoTrace.Commands
@@ -40,10 +50,12 @@ namespace NeoTrace.Commands
         {
             if (uint.TryParse(BlockIdentifier, out var index))
             {
-                if (index == 0) throw new ArgumentException("Cannot trace genesis block");
+                if (index == 0)
+                    throw new ArgumentException("Cannot trace genesis block");
                 return index;
             }
-            if (UInt256.TryParse(BlockIdentifier, out var hash)) return hash;
+            if (UInt256.TryParse(BlockIdentifier, out var hash))
+                return hash;
 
             throw new ArgumentException($"Invalid Block Identifier {BlockIdentifier}");
         }

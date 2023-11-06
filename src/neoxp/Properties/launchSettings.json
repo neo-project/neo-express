@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "neoxp": {
-      "commandName": "Project",
-      "commandLineArgs": "run"
-    }
-  }
-}

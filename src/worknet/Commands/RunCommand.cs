@@ -1,15 +1,24 @@
-using System.IO.Abstractions;
-using System.Net;
-using Microsoft.Extensions.Configuration;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Configuration;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.Plugins;
 using Neo.Cryptography.ECC;
 using Neo.Persistence;
 using Neo.Plugins;
-using Neo.Wallets;
 using NeoWorkNet.Models;
+using System.IO.Abstractions;
+using System.Net;
 
 namespace NeoWorkNet.Commands;
 
@@ -32,7 +41,8 @@ partial class RunCommand
         {
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
+            if (!fs.Directory.Exists(dataDir))
+                throw new Exception($"Cannot locate data directory {dataDir}");
 
             var secondsPerBlock = SecondsPerBlock ?? 0;
             await RunAsync(worknet, dataDir, secondsPerBlock, console, token).ConfigureAwait(false);

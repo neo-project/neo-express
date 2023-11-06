@@ -1,4 +1,13 @@
-using System.Numerics;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
@@ -14,6 +23,7 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using System.Numerics;
 
 namespace NeoExpress.Node
 {
@@ -79,7 +89,8 @@ namespace NeoExpress.Node
             {
                 var signatureCount = account.Contract.ParameterList.Length;
                 var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
-                if (multiSigWallets.Count < signatureCount) throw new InvalidOperationException();
+                if (multiSigWallets.Count < signatureCount)
+                    throw new InvalidOperationException();
 
                 var publicKeys = multiSigWallets
                     .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
@@ -288,7 +299,8 @@ namespace NeoExpress.Node
                     yield return (blockIndex, notification);
                 }
 
-                if (!truncated) break;
+                if (!truncated)
+                    break;
 
                 count += values.Count;
             }

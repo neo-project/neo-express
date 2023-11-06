@@ -1,11 +1,21 @@
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Wallets;
 using NeoExpress.Models;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NeoExpress
 {
@@ -18,13 +28,15 @@ namespace NeoExpress
             for (int i = 0; i < chain.ConsensusNodes.Count; i++)
             {
                 var wallet = DevWallet.FromExpressWallet(settings, chain.ConsensusNodes[i].Wallet);
-                if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
+                if (wallet.GetAccount(accountHash) is not null)
+                    builder.Add(wallet);
             }
 
             for (int i = 0; i < chain.Wallets.Count; i++)
             {
                 var wallet = DevWallet.FromExpressWallet(settings, chain.Wallets[i]);
-                if (wallet.GetAccount(accountHash) is not null) builder.Add(wallet);
+                if (wallet.GetAccount(accountHash) is not null)
+                    builder.Add(wallet);
             }
 
             return builder.ToImmutable();
@@ -54,14 +66,18 @@ namespace NeoExpress
 
         public static string ResolvePassword(this ExpressChain chain, string name, string password)
         {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException($"{nameof(name)} parameter can't be null or empty", nameof(name));
 
             // if the user specified a password, use it
-            if (!string.IsNullOrEmpty(password)) return password;
+            if (!string.IsNullOrEmpty(password))
+                return password;
 
             // if the name is a valid Neo Express account name, no password is needed
-            if (chain.IsReservedName(name)) return password;
-            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase))) return password;
+            if (chain.IsReservedName(name))
+                return password;
+            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase)))
+                return password;
 
             // if a password is needed but not provided, prompt the user
             return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");

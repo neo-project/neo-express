@@ -1,3 +1,13 @@
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Newtonsoft.Json;
@@ -51,7 +61,8 @@ namespace NeoExpress.Commands
                                 .Where(c => Contract.Equals(c.manifest.Name, StringComparison.OrdinalIgnoreCase))
                                 .Select(c => c.hash)
                                 .ToHashSet();
-                            if (contractFilter.Count == 0) throw new Exception($"Couldn't resolve {Contract} contract");
+                            if (contractFilter.Count == 0)
+                                throw new Exception($"Couldn't resolve {Contract} contract");
                         }
                     }
 
@@ -66,7 +77,8 @@ namespace NeoExpress.Commands
                     var count = 0;
                     await foreach (var (blockIndex, notification) in expressNode.EnumerateNotificationsAsync(contractFilter, eventFilter))
                     {
-                        if (Count.HasValue && count++ >= Count.Value) break;
+                        if (Count.HasValue && count++ >= Count.Value)
+                            break;
 
                         writer.WriteStartObject();
                         writer.WritePropertyName("block-index");

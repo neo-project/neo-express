@@ -12,6 +12,10 @@
     <PackageReference Include="Nito.Disposables" Version="2.3.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="Neo.BlockchainToolkit.Library" Version="3.6.19" />
+  </ItemGroup>
+
   <Choose>
     <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
       <ItemGroup>

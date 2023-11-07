@@ -37,7 +37,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            [Option(Description = "Private key for default dev account (Default: Random)")]
+            [Option(Description = "Private key for account (Default: Random)")]
             internal string PrivateKey { get; set; } = string.Empty;
 
             internal ExpressWallet Execute()

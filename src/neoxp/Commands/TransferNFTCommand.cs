@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace NeoExpress.Commands
@@ -15,7 +16,7 @@ namespace NeoExpress.Commands
             this.txExecutorFactory = txExecutorFactory;
         }
 
-        [Argument(0, Description = "TokenId of NFT")]
+        [Argument(0, Description = "TokenId of NFT (Base64 string)")]
         [Required]
         internal string TokenId { get; init; } = string.Empty;
 
@@ -53,7 +54,7 @@ namespace NeoExpress.Commands
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var password = chainManager.Chain.ResolvePassword(Sender, Password);
                 using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                await txExec.TransferNFTAsync(Contract, TokenId, Sender, password, Receiver, Data).ConfigureAwait(false);
+                await txExec.TransferNFTAsync(Contract, Encoding.UTF8.GetString(Convert.FromBase64String(TokenId)), Sender, password, Receiver, Data).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)

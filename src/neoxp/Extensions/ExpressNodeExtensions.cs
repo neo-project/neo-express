@@ -211,6 +211,13 @@ namespace NeoExpress
             }
         }
 
+        public static async Task<UInt256> TransferNFTAsync(this IExpressNode expressNode, UInt160 contractHash, string tokenId, Wallet sender, UInt160 senderHash, UInt160 receiverHash, ContractParameter? data)
+        {
+            data ??= new ContractParameter(ContractParameterType.Any);
+            var script = contractHash.MakeScript("transfer", receiverHash, tokenId, data);
+            return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
+        }
+
         public static async Task<UInt256> UpdateAsync(this IExpressNode expressNode,
                                                       UInt160 contractHash,
                                                       NefFile nefFile,

@@ -413,23 +413,8 @@ namespace NeoExpress
             }
 
             var assetHash = await expressNode.ParseAssetAsync(contract).ConfigureAwait(false);
-            var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(tokenId), senderWallet, senderAccountHash, receiverHash, dataParam);
-            await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
-
-            static OneOf<decimal, All> ParseQuantity(string quantity)
-            {
-                if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
-                {
-                    return new All();
-                }
-
-                if (decimal.TryParse(quantity, out var amount))
-                {
-                    return amount;
-                }
-
-                throw new Exception($"Invalid quantity value {quantity}");
-            }
+            var txHash = await expressNode.TransferNFTAsync(assetHash, tokenId, senderWallet, senderAccountHash, receiverHash, dataParam);
+            await writer.WriteTxHashAsync(txHash, "TransferNFT", json).ConfigureAwait(false);
         }
 
         public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)

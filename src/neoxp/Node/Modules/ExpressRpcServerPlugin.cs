@@ -347,7 +347,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0]!.AsString());
-            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction");
+            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction/blockhash");
         }
 
         // Neo-Express uses a custom implementation of TokenTracker RPC methods. Originally, this was

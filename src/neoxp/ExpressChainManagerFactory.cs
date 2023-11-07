@@ -30,7 +30,7 @@ namespace NeoExpress
 
         string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
 
-        internal static ExpressChain CreateChain(int nodeCount, byte? addressVersion)
+        internal static ExpressChain CreateChain(int nodeCount, byte? addressVersion, byte[]? privateKey = null)
         {
             if (nodeCount != 1 && nodeCount != 4 && nodeCount != 7)
             {
@@ -47,7 +47,7 @@ namespace NeoExpress
             for (var i = 1; i <= nodeCount; i++)
             {
                 var wallet = new DevWallet(settings, $"node{i}");
-                var account = wallet.CreateAccount();
+                var account = privateKey == null ? wallet.CreateAccount() : wallet.CreateAccount(privateKey!);
                 account.IsDefault = true;
                 wallets.Add((wallet, account));
             }
@@ -81,7 +81,7 @@ namespace NeoExpress
             static ushort GetPortNumber(int index, ushort portNumber) => (ushort)(50000 + ((index + 1) * 10) + portNumber);
         }
 
-        public (ExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock = 0)
+        public (ExpressChainManager manager, string path) CreateChain(int nodeCount, byte? addressVersion, string output, bool force, uint secondsPerBlock = 0, byte[]? privateKey = null)
         {
             output = ResolveChainFileName(output);
             if (fileSystem.File.Exists(output))
@@ -101,7 +101,7 @@ namespace NeoExpress
                 throw new ArgumentException($"{output} already exists", nameof(output));
             }
 
-            var chain = CreateChain(nodeCount, addressVersion);
+            var chain = CreateChain(nodeCount, addressVersion, privateKey);
             return (new ExpressChainManager(fileSystem, chain, secondsPerBlock), output);
         }
 

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "neoxp": {
+      "commandName": "Project",
+      "commandLineArgs": "create -p 61212574fb057dcf3f1af4daefb22dfc3619d88fb9e8d25e53ee78338e7a1e0b"
+    }
+  }
+}

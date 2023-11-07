@@ -68,7 +68,8 @@ namespace NeoExpress.Commands
             static string HexStringToUTF8(string hex)
             {
                 hex = hex.ToLower().Trim();
-                if (!new Regex("^(0x)?([0-9a-f]{2})+$").IsMatch(hex)) throw new FormatException();
+                if (!new Regex("^(0x)?([0-9a-f]{2})+$").IsMatch(hex))
+                    throw new FormatException();
 
                 if (new Regex("^([0-9a-f]{2})+$").IsMatch(hex))
                 {

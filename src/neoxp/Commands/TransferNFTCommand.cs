@@ -16,19 +16,19 @@ namespace NeoExpress.Commands
             this.txExecutorFactory = txExecutorFactory;
         }
 
-        [Argument(0, Description = "TokenId of NFT (Base64 string)")]
-        [Required]
-        internal string TokenId { get; init; } = string.Empty;
-
-        [Argument(1, Description = "NFT Contract (symbol or script hash)")]
+        [Argument(0, Description = "NFT Contract (symbol or script hash)")]
         [Required]
         internal string Contract { get; init; } = string.Empty;
 
-        [Argument(2, Description = "Account to send asset from")]
+        [Argument(1, Description = "TokenId of NFT (Base64 string)")]
+        [Required]
+        internal string TokenId { get; init; } = string.Empty;
+
+        [Argument(2, Description = "Account to send NFT from")]
         [Required]
         internal string Sender { get; init; } = string.Empty;
 
-        [Argument(3, Description = "Account to send asset to")]
+        [Argument(3, Description = "Account to send NFT to")]
         [Required]
         internal string Receiver { get; init; } = string.Empty;
 

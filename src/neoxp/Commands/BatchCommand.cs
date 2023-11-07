@@ -1,7 +1,17 @@
-using System.ComponentModel.DataAnnotations;
-using System.IO.Abstractions;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit;
+using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 
 namespace NeoExpress.Commands
 {
@@ -37,7 +47,8 @@ namespace NeoExpress.Commands
         {
             try
             {
-                if (!fileSystem.File.Exists(BatchFile)) throw new Exception($"Batch file {BatchFile} couldn't be found");
+                if (!fileSystem.File.Exists(BatchFile))
+                    throw new Exception($"Batch file {BatchFile} couldn't be found");
                 var batchFileInfo = fileSystem.FileInfo.New(BatchFile);
                 var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
 
@@ -93,7 +104,8 @@ namespace NeoExpress.Commands
                 var args = SplitCommandLine(commands.Span[i]).ToArray();
                 if (args.Length == 0
                     || args[0].StartsWith('#')
-                    || args[0].StartsWith("//")) continue;
+                    || args[0].StartsWith("//"))
+                    continue;
 
                 var pr = batchApp.Parse(args);
                 switch (pr.SelectedCommand)

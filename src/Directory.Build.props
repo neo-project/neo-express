@@ -17,7 +17,7 @@
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
   <PropertyGroup>
-    <BlockchainToolkitLibraryVersion>3.6.0</BlockchainToolkitLibraryVersion>
+    <BlockchainToolkitLibraryVersion>3.6.19</BlockchainToolkitLibraryVersion>
     <!-- <BlockchainToolkitLibraryVersion>local</BlockchainToolkitLibraryVersion> -->
     <BlockchainToolkitLibraryLocalPath>..\..\..\lib-bctk</BlockchainToolkitLibraryLocalPath>
     <NeoVersion>3.6.0</NeoVersion>

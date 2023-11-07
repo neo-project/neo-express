@@ -1,6 +1,16 @@
-using System.IO.Abstractions;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Persistence;
+using System.IO.Abstractions;
 
 namespace NeoWorkNet.Commands;
 
@@ -21,11 +31,13 @@ class ResetCommand
     {
         try
         {
-            if (!Force) throw new InvalidOperationException("--force must be specified when resetting worknet");
+            if (!Force)
+                throw new InvalidOperationException("--force must be specified when resetting worknet");
 
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir)) throw new Exception($"Cannot locate data directory {dataDir}");
+            if (!fs.Directory.Exists(dataDir))
+                throw new Exception($"Cannot locate data directory {dataDir}");
 
             using var db = RocksDbUtility.OpenDb(dataDir);
             using var stateStore = new StateServiceStore(worknet.Uri, worknet.BranchInfo, db, true);

@@ -1,8 +1,8 @@
+using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.RegularExpressions;
-using McMaster.Extensions.CommandLineUtils;
-using Neo;
 
 namespace NeoExpress.Commands
 {

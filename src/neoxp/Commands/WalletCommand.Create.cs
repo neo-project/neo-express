@@ -37,6 +37,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
+            [Option(Description = "Private key for default dev account (Default: Random)")]
+            internal string PrivateKey { get; set; } = string.Empty;
+
             internal ExpressWallet Execute()
             {
                 var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
@@ -58,8 +61,12 @@ namespace NeoExpress.Commands
                     chain.Wallets.Remove(existingWallet);
                 }
 
+                byte[]? priKey = null;
+                if (string.IsNullOrEmpty(PrivateKey) == false)
+                    priKey = Convert.FromHexString(PrivateKey);
+
                 var wallet = new DevWallet(chainManager.ProtocolSettings, Name);
-                var account = wallet.CreateAccount();
+                var account = priKey == null ? wallet.CreateAccount() : wallet.CreateAccount(priKey!);
                 account.IsDefault = true;
 
                 var expressWallet = wallet.ToExpressWallet();

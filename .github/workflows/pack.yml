@@ -30,11 +30,14 @@ jobs:
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.0
       id: nbgv
+    - name: Format
+      run: |
+        dotnet format neo-express.sln --verify-no-changes --verbosity diagnostic
     - name: Pack
       run: |
-        dotnet restore
-        dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
-        dotnet pack --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
+        dotnet restore neo-express.sln
+        dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
+        dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
     - name: Upload Build Log
       if: always()
       uses: actions/upload-artifact@v3

@@ -1,4 +1,14 @@
-﻿using McMaster.Extensions.CommandLineUtils;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
+using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
@@ -36,7 +46,8 @@ namespace NeoTrace
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var block = await GetBlockAsync(rpcClient, blockId).ConfigureAwait(false);
-            if (block.Transactions.Length == 0) throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
+            if (block.Transactions.Length == 0)
+                throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
 
             await console.Out.WriteLineAsync($"Tracing all the transactions in block {block.Index} ({block.Hash})").ConfigureAwait(false);
             await TraceBlockAsync(rpcClient, block, settings, console).ConfigureAwait(false);
@@ -74,7 +85,8 @@ namespace NeoTrace
                 using var sb = new ScriptBuilder();
                 sb.EmitSysCall(ApplicationEngine.System_Contract_NativeOnPersist);
                 engine.LoadScript(sb.ToArray());
-                if (engine.Execute() != VMState.HALT) throw new InvalidOperationException("NativeOnPersist operation failed", engine.FaultException);
+                if (engine.Execute() != VMState.HALT)
+                    throw new InvalidOperationException("NativeOnPersist operation failed", engine.FaultException);
             }
 
             var clonedSnapshot = snapshot.CreateSnapshot();

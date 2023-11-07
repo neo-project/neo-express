@@ -1,4 +1,13 @@
-﻿using System.Buffers.Binary;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.IO;
 using Neo.Json;
@@ -8,6 +17,7 @@ using Neo.Persistence;
 using Neo.Plugins;
 using Neo.VM;
 using NeoExpress.Models;
+using System.Buffers.Binary;
 using ApplicationExecuted = Neo.Ledger.Blockchain.ApplicationExecuted;
 
 namespace NeoExpress.Node
@@ -40,8 +50,10 @@ namespace NeoExpress.Node
 
         protected override void OnSystemLoaded(NeoSystem system)
         {
-            if (this.appLogsStore is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
-            if (this.notificationsStore is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+            if (this.appLogsStore is not null)
+                throw new Exception($"{nameof(OnSystemLoaded)} already called");
+            if (this.notificationsStore is not null)
+                throw new Exception($"{nameof(OnSystemLoaded)} already called");
 
             appLogsStore = system.LoadStore(APP_LOGS_STORE_PATH);
             notificationsStore = system.LoadStore(NOTIFICATIONS_STORE_PATH);
@@ -51,7 +63,8 @@ namespace NeoExpress.Node
 
         public JObject? GetAppLog(UInt256 hash)
         {
-            if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
+            if (appLogsStore is null)
+                throw new NullReferenceException(nameof(appLogsStore));
             var value = appLogsStore.TryGet(hash.ToArray());
             return value is not null && value.Length != 0
                 ? JToken.Parse(Neo.Utility.StrictUTF8.GetString(value)) as JObject
@@ -79,7 +92,8 @@ namespace NeoExpress.Node
             IReadOnlySet<UInt160>? contracts = null,
             IReadOnlySet<string>? eventNames = null)
         {
-            if (notificationsStore is null) throw new NullReferenceException(nameof(notificationsStore));
+            if (notificationsStore is null)
+                throw new NullReferenceException(nameof(notificationsStore));
 
             var prefix = direction == SeekDirection.Forward
                 ? Array.Empty<byte>()
@@ -100,15 +114,18 @@ namespace NeoExpress.Node
 
         void OnCommitting(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
-            if (appLogsStore is null) throw new NullReferenceException(nameof(appLogsStore));
-            if (notificationsStore is null) throw new NullReferenceException(nameof(notificationsStore));
+            if (appLogsStore is null)
+                throw new NullReferenceException(nameof(appLogsStore));
+            if (notificationsStore is null)
+                throw new NullReferenceException(nameof(notificationsStore));
 
             appLogsSnapshot?.Dispose();
             notificationsSnapshot?.Dispose();
             appLogsSnapshot = appLogsStore.GetSnapshot();
             notificationsSnapshot = notificationsStore.GetSnapshot();
 
-            if (applicationExecutedList.Count > ushort.MaxValue) throw new Exception("applicationExecutedList too big");
+            if (applicationExecutedList.Count > ushort.MaxValue)
+                throw new Exception("applicationExecutedList too big");
 
             var notificationIndex = new byte[sizeof(uint) + (2 * sizeof(ushort))];
             BinaryPrimitives.WriteUInt32BigEndian(
@@ -118,14 +135,16 @@ namespace NeoExpress.Node
             for (int i = 0; i < applicationExecutedList.Count; i++)
             {
                 ApplicationExecuted appExec = applicationExecutedList[i];
-                if (appExec.Transaction is null) continue;
+                if (appExec.Transaction is null)
+                    continue;
 
                 var txJson = TxLogToJson(appExec);
                 appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
                 if (appExec.VMState != VMState.FAULT)
                 {
-                    if (appExec.Notifications.Length > ushort.MaxValue) throw new Exception("appExec.Notifications too big");
+                    if (appExec.Notifications.Length > ushort.MaxValue)
+                        throw new Exception("appExec.Notifications too big");
 
                     BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)i);
 

@@ -40,7 +40,7 @@ namespace NeoExpress.Commands
                 if (!fileSystem.File.Exists(BatchFile)) throw new Exception($"Batch file {BatchFile} couldn't be found");
                 var batchFileInfo = fileSystem.FileInfo.New(BatchFile);
                 var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
-                
+
                 var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
                 await ExecuteAsync(batchDirInfo, commands, console.Out).ConfigureAwait(false);
                 return 0;

@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text;
+using System.Text.RegularExpressions;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 
 namespace NeoExpress.Commands
 {
@@ -20,7 +22,7 @@ namespace NeoExpress.Commands
         [Required]
         internal string Contract { get; init; } = string.Empty;
 
-        [Argument(1, Description = "TokenId of NFT (Base64 string)")]
+        [Argument(1, Description = "TokenId of NFT (Hex string)")]
         [Required]
         internal string TokenId { get; init; } = string.Empty;
 
@@ -54,13 +56,28 @@ namespace NeoExpress.Commands
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var password = chainManager.Chain.ResolvePassword(Sender, Password);
                 using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                await txExec.TransferNFTAsync(Contract, Encoding.UTF8.GetString(Convert.FromBase64String(TokenId)), Sender, password, Receiver, Data).ConfigureAwait(false);
+                await txExec.TransferNFTAsync(Contract, HexStringToUTF8(TokenId), Sender, password, Receiver, Data).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)
             {
                 app.WriteException(ex);
                 return 1;
+            }
+
+            static string HexStringToUTF8(string hex)
+            {
+                hex = hex.ToLower().Trim();
+                if (!new Regex("^(0x)?([0-9a-f]{2})+$").IsMatch(hex)) throw new FormatException();
+
+                if (new Regex("^([0-9a-f]{2})+$").IsMatch(hex))
+                {
+                    return Encoding.UTF8.GetString(hex.HexToBytes());
+                }
+                else
+                {
+                    return Encoding.UTF8.GetString(hex[2..].HexToBytes().Reverse().ToArray());
+                }
             }
         }
     }

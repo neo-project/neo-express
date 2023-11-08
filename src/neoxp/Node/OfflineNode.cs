@@ -298,6 +298,9 @@ namespace NeoExpress.Node
             List<(TokenContract contract, BigInteger balance)> balances = new();
             for (int i = contracts.Count; i-- > 0;)
             {
+                // Note: this will throw error NotSupportedException if NEP-17 is not compliant.
+                // A check maybe added for exception in future, if crashes because SupportStandard
+                // invalid.
                 var nep17Contract = new Nep17Token(ProtocolSettings, snapshot, contracts[i].scriptHash);
                 balances.Add((new TokenContract(nep17Contract.Symbol, nep17Contract.Decimals, contracts[i].scriptHash, contracts[i].standard), nep17Contract.BalanceOf(address)));
             }

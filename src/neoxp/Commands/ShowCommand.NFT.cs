@@ -52,7 +52,7 @@ namespace NeoExpress.Commands
                     }
 
                     var list = await expressNode.GetNFTAsync(accountHash, Contract).ConfigureAwait(false);
-                    list.ForEach(p => console.Out.WriteLineAsync($"TokenId: {p}, TokenId(Hex): {Encoding.UTF8.GetBytes(p).ToHexString()}"));    
+                    list.ForEach(p => console.Out.WriteLineAsync($"TokenId: {p}, TokenId(Hex): {Encoding.UTF8.GetBytes(p).ToHexString()}"));
                     return 0;
                 }
                 catch (Exception ex)

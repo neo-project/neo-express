@@ -36,11 +36,18 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
+        [Option(Description = "Private key for default dev account (Default: Random)")]
+        internal string PrivateKey { get; set; } = string.Empty;
+
         internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
-                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force);
+                byte[]? priKey = null;
+                if (string.IsNullOrEmpty(PrivateKey) == false)
+                    priKey = Convert.FromHexString(PrivateKey);
+
+                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
                 chainManager.SaveChain(outputPath);
 
                 console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");

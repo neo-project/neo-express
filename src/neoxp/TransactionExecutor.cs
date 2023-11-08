@@ -206,7 +206,14 @@ namespace NeoExpress
                     };
                 }
 
-                return parser.ParseParameter(arg);
+                try
+                {
+                    return parser.ParseParameter(JToken.Parse(arg));
+                }
+                catch
+                {
+                    return parser.ParseParameter(arg);
+                }
             }
         }
 

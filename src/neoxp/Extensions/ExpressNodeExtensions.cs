@@ -113,10 +113,11 @@ namespace NeoExpress
 
         public static async Task<OneOf<UInt160, None>> TryGetAccountHashAsync(this IExpressNode expressNode, ExpressChain chain, string name)
         {
-            if (name.StartsWith('#'))
+            if (name.StartsWith('@'))
             {
+                name = name[1..];
                 var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-                if (TryGetContractHash(contracts, name.Substring(1), out var contractHash))
+                if (TryGetContractHash(contracts, name, out var contractHash))
                 {
                     return contractHash;
                 }

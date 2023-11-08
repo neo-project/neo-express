@@ -10,12 +10,7 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
-using Neo.Network.P2P.Payloads;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
-using System.IO.Abstractions;
-using System.Security.Principal;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NeoExpress.Commands;
 

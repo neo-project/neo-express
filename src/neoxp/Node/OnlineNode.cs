@@ -16,6 +16,7 @@ using Neo.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
+using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
@@ -304,6 +305,11 @@ namespace NeoExpress.Node
 
                 count += values.Count;
             }
+        }
+
+        public async Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
+        {
+            return false;
         }
     }
 }

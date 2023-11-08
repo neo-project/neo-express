@@ -22,7 +22,8 @@ namespace NeoExpress.Commands
         typeof(List),
         typeof(Run),
         typeof(Storage),
-        typeof(Update))]
+        typeof(Update),
+        typeof(Validate))]
     partial class ContractCommand
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)

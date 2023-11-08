@@ -26,6 +26,7 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using NeoExpress.Validators;
 using System.Numerics;
 using static Neo.Ledger.Blockchain;
 
@@ -393,5 +394,13 @@ namespace NeoExpress.Node
             }
         }
 #pragma warning restore 1998
+
+        public async Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
+        {
+            var snapshot = neoSystem.GetSnapshot();
+            var validator = new Nep17Token(ProtocolSettings, snapshot, contractHash);
+
+            return validator.CheckStaticSymbol();
+        }
     }
 }

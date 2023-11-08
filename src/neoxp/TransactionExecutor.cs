@@ -156,7 +156,7 @@ namespace NeoExpress
                             balanceOfValid == false &&
                             transferValid == false &&
                             transferEvent == false)
-                            throw new Exception($"{manifest.Name} Contract declares support for NEP-17 standards. However is not NEP-17 compliant. Invalid methods/events.");
+                            throw new NotSupportedException();
                     }
                     catch
                     {

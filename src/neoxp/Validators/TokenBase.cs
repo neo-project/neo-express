@@ -45,7 +45,7 @@ internal abstract class TokenBase
         Decimals = checked((byte)results.Pop().GetInteger());
     }
 
-    public bool CheckStaticSymbol()
+    public bool IsValidSymbol()
     {
         using var builder = new ScriptBuilder();
         builder.EmitDynamicCall(ScriptHash, "symbol");
@@ -53,7 +53,7 @@ internal abstract class TokenBase
         var symbol = string.Empty;
         int x = 0;
 
-        while (x <= 4)
+        while (x <= 5)
         {
             using var appEng = builder.Invoke(_protocolSettings, _snapshot);
             if (appEng.State != VMState.HALT)
@@ -68,6 +68,13 @@ internal abstract class TokenBase
                 else
                     return false;
             }
+        }
+
+        for (int i = 0; i < symbol.Length; i++)
+        {
+            var letter = symbol[i];
+            if ((letter >= 'A' && letter <= 'Z') == false)
+                return false;
         }
 
         return true;

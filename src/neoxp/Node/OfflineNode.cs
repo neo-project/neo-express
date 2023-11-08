@@ -400,7 +400,7 @@ namespace NeoExpress.Node
             var snapshot = neoSystem.GetSnapshot();
             var validator = new Nep17Token(ProtocolSettings, snapshot, contractHash);
 
-            return validator.CheckStaticSymbol();
+            return validator.IsValidSymbol();
         }
     }
 }

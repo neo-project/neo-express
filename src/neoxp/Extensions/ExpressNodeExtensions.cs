@@ -216,6 +216,7 @@ namespace NeoExpress
                 sb.EmitPush(senderHash);
                 sb.EmitPush(4);
                 sb.Emit(OpCode.PACK);
+                sb.EmitPush(CallFlags.All);
                 sb.EmitPush("transfer");
                 sb.EmitPush(asset);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);

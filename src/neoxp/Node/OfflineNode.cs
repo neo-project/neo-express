@@ -22,10 +22,10 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
-using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using NeoExpress.Validators.Tokens;
 using System.Numerics;
 using static Neo.Ledger.Blockchain;
 
@@ -295,30 +295,11 @@ namespace NeoExpress.Node
                 .Where(c => c.standard == TokenStandard.Nep17)
                 .ToList();
 
-            var addressArray = address.ToArray();
-            using var builder = new ScriptBuilder();
-            for (var i = contracts.Count; i-- > 0;)
-            {
-                builder.EmitDynamicCall(contracts[i].scriptHash, "symbol");
-                builder.EmitDynamicCall(contracts[i].scriptHash, "decimals");
-                builder.EmitDynamicCall(contracts[i].scriptHash, "balanceOf", addressArray);
-            }
-
             List<(TokenContract contract, BigInteger balance)> balances = new();
-            using var engine = builder.Invoke(neoSystem.Settings, snapshot);
-            if (engine.State != VMState.FAULT && engine.ResultStack.Count == contracts.Count * 3)
+            for (int i = contracts.Count; i-- > 0;)
             {
-                var resultStack = engine.ResultStack;
-                for (var i = 0; i < contracts.Count; i++)
-                {
-                    var index = i * 3;
-                    var symbol = resultStack.Peek(index + 2).GetString();
-                    if (symbol is null)
-                        continue;
-                    var decimals = (byte)resultStack.Peek(index + 1).GetInteger();
-                    var balance = resultStack.Peek(index).GetInteger();
-                    balances.Add((new TokenContract(symbol, decimals, contracts[i].scriptHash, contracts[i].standard), balance));
-                }
+                var nep17Contract = new Nep17Token(ProtocolSettings, snapshot, contracts[i].scriptHash);
+                balances.Add((new TokenContract(nep17Contract.Symbol, nep17Contract.Decimals, contracts[i].scriptHash, contracts[i].standard), nep17Contract.BalanceOf(address)));
             }
 
             return balances;

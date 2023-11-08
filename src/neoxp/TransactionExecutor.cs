@@ -13,6 +13,7 @@ using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
@@ -115,6 +116,45 @@ namespace NeoExpress
                 if (nep11 && nep17)
                 {
                     throw new Exception($"{manifest.Name} Contract declares support for both NEP-11 and NEP-17 standards. Use --force to deploy contract with invalid supported standards declarations.");
+                }
+
+                if (nep17)
+                {
+                    var symbolMethod = manifest.Abi.GetMethod("symbol", 0);
+                    var decimalsMethod = manifest.Abi.GetMethod("decimals", 0);
+                    var totalSupplyMethod = manifest.Abi.GetMethod("totalSupply", 0);
+                    var balanceOfMethod = manifest.Abi.GetMethod("balanceOf", 1);
+                    var transferMethod = manifest.Abi.GetMethod("transfer", 4);
+
+                    var symbolValid = symbolMethod.Safe == true &&
+                        symbolMethod.ReturnType == ContractParameterType.String;
+                    var decimalsValid = decimalsMethod.Safe == true &&
+                        decimalsMethod.ReturnType == ContractParameterType.Integer;
+                    var totalSupplyValid = totalSupplyMethod.Safe == true &&
+                        totalSupplyMethod.ReturnType == ContractParameterType.Integer;
+                    var balanceOfValid = balanceOfMethod.Safe == true &&
+                        balanceOfMethod.ReturnType == ContractParameterType.Integer &&
+                        balanceOfMethod.Parameters[0].Type == ContractParameterType.Hash160;
+                    var transferValid = transferMethod.Safe == false &&
+                        transferMethod.ReturnType == ContractParameterType.Boolean &&
+                        transferMethod.Parameters[0].Type == ContractParameterType.Hash160 &&
+                        transferMethod.Parameters[1].Type == ContractParameterType.Hash160 &&
+                        transferMethod.Parameters[2].Type == ContractParameterType.Integer &&
+                        transferMethod.Parameters[3].Type == ContractParameterType.Any;
+                    var transferEvent = manifest.Abi.Events.SingleOrDefault(s =>
+                        s.Name == "transfer" &&
+                        s.Parameters.Length == 3 &&
+                        s.Parameters[0].Type == ContractParameterType.Hash160 &&
+                        s.Parameters[1].Type == ContractParameterType.Hash160 &&
+                        s.Parameters[2].Type == ContractParameterType.Integer) != null;
+
+                    if (symbolValid == false &&
+                        decimalsValid == false &&
+                        totalSupplyValid == false &&
+                        balanceOfValid == false &&
+                        transferValid == false &&
+                        transferEvent == false)
+                        throw new Exception($"{manifest.Name} Contract declares support for NEP-17 standards. However is not NEP-17 compliant. Invalid methods/events.");
                 }
             }
 

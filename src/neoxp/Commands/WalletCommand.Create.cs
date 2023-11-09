@@ -1,7 +1,17 @@
-using System.ComponentModel.DataAnnotations;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
 {
@@ -27,6 +37,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
+            [Option(Description = "Private key for account (Default: Random)")]
+            internal string PrivateKey { get; set; } = string.Empty;
+
             internal ExpressWallet Execute()
             {
                 var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
@@ -48,8 +61,12 @@ namespace NeoExpress.Commands
                     chain.Wallets.Remove(existingWallet);
                 }
 
+                byte[]? priKey = null;
+                if (string.IsNullOrEmpty(PrivateKey) == false)
+                    priKey = Convert.FromHexString(PrivateKey);
+
                 var wallet = new DevWallet(chainManager.ProtocolSettings, Name);
-                var account = wallet.CreateAccount();
+                var account = priKey == null ? wallet.CreateAccount() : wallet.CreateAccount(priKey!);
                 account.IsDefault = true;
 
                 var expressWallet = wallet.ToExpressWallet();

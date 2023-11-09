@@ -1,5 +1,13 @@
-using System.IO.Abstractions;
-using System.Net;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Neo;
@@ -10,6 +18,8 @@ using Neo.Plugins;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
+using System.IO.Abstractions;
+using System.Net;
 
 namespace NeoExpress
 {
@@ -179,7 +189,8 @@ namespace NeoExpress
 
         public async Task<bool> StopNodeAsync(ExpressConsensusNode node)
         {
-            if (!IsNodeRunning(node)) return false;
+            if (!IsNodeRunning(node))
+                return false;
 
             var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
             var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
@@ -209,7 +220,8 @@ namespace NeoExpress
 
                     var storeProvider = new ExpressStoreProvider(expressStorage);
                     Neo.Persistence.StoreFactory.RegisterProvider(storeProvider);
-                    if (enableTrace) { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+                    if (enableTrace)
+                    { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
                     using var persistencePlugin = new ExpressPersistencePlugin();
                     using var logPlugin = new ExpressLogPlugin(console);
@@ -294,7 +306,8 @@ namespace NeoExpress
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            if (!fileSystem.Directory.Exists(nodePath))
+                fileSystem.Directory.CreateDirectory(nodePath);
             return discard
                 ? CheckpointExpressStorage.OpenForDiscard(nodePath)
                 : new RocksDbExpressStorage(nodePath);
@@ -308,7 +321,8 @@ namespace NeoExpress
             }
 
             var node = chain.ConsensusNodes[0];
-            if (IsNodeRunning(node)) throw new Exception($"node already running");
+            if (IsNodeRunning(node))
+                throw new Exception($"node already running");
 
             checkPointPath = ResolveCheckpointFileName(checkPointPath);
             if (!fileSystem.File.Exists(checkPointPath))
@@ -324,11 +338,13 @@ namespace NeoExpress
 
         OfflineNode GetOfflineNode(bool offlineTrace = false)
         {
-            if (IsRunning()) throw new NotSupportedException("Cannot get offline node while chain is running");
+            if (IsRunning())
+                throw new NotSupportedException("Cannot get offline node while chain is running");
 
             var node = chain.ConsensusNodes[0];
             var nodePath = fileSystem.GetNodePath(node);
-            if (!fileSystem.Directory.Exists(nodePath)) fileSystem.Directory.CreateDirectory(nodePath);
+            if (!fileSystem.Directory.Exists(nodePath))
+                fileSystem.Directory.CreateDirectory(nodePath);
 
             return new Node.OfflineNode(ProtocolSettings,
                 new RocksDbExpressStorage(nodePath),

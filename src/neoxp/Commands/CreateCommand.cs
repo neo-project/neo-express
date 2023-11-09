@@ -1,3 +1,13 @@
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using static Neo.BlockchainToolkit.Constants;
 
@@ -26,11 +36,18 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
+        [Option(Description = "Private key for default dev account (Default: Random)")]
+        internal string PrivateKey { get; set; } = string.Empty;
+
         internal int OnExecute(CommandLineApplication app, IConsole console)
         {
             try
             {
-                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force);
+                byte[]? priKey = null;
+                if (string.IsNullOrEmpty(PrivateKey) == false)
+                    priKey = Convert.FromHexString(PrivateKey);
+
+                var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
                 chainManager.SaveChain(outputPath);
 
                 console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");

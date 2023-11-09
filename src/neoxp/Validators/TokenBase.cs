@@ -8,8 +8,11 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 using Neo;
+using Neo.Network.P2P;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.VM;
+using Neo.Wallets;
 using System.Numerics;
 
 namespace NeoExpress.Validators;
@@ -54,7 +57,15 @@ internal abstract class TokenBase
         builder.EmitDynamicCall(ScriptHash, "balanceOf", UInt160.Zero);
         builder.EmitDynamicCall(ScriptHash, "transfer", UInt160.Zero, UInt160.Zero, 0, null);
 
-        using var engine = builder.Invoke(_protocolSettings, _snapshot);
+        // You need to add this line for transaction
+        // for ApplicationEngine not to crash
+        // see https://github.com/neo-project/neo/issues/2952
+        var tx = new Transaction() { Signers = new[] { new Signer() { Account = UInt160.Zero } }, Attributes = Array.Empty<TransactionAttribute>() };
+
+        using var engine = builder.Invoke(_protocolSettings, _snapshot, tx);
+        if (engine.State == VMState.FAULT)
+            throw engine.FaultException;
+
         return engine.State == VMState.HALT;
     }
 
@@ -76,7 +87,7 @@ internal abstract class TokenBase
         {
             using var appEng = builder.Invoke(_protocolSettings, _snapshot);
             if (appEng.State != VMState.HALT)
-                return false;
+                throw appEng.FaultException;
             try
             {
                 if (dec.HasValue == false)
@@ -111,7 +122,7 @@ internal abstract class TokenBase
         {
             using var appEng = builder.Invoke(_protocolSettings, _snapshot);
             if (appEng.State != VMState.HALT)
-                return false;
+                throw appEng.FaultException;
 
             if (string.IsNullOrEmpty(symbol))
                 symbol = appEng.ResultStack.Pop().GetString()!;

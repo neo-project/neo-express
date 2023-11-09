@@ -51,7 +51,7 @@ internal partial class ContractCommand
             }
             catch (Exception ex)
             {
-                app.WriteException(ex, showInnerExceptions: true);
+                app.WriteException(ex?.InnerException! ?? ex!);
                 return 1;
             }
         }

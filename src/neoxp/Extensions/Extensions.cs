@@ -52,6 +52,11 @@ namespace NeoExpress
             console.Out.WriteLine();
         }
 
+        public static void WriteWarning(string value)
+        {
+            Console.WriteLine($"\x1b[33mWarning: {value}\x1b[0m");
+        }
+
         public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
         {
             switch (json)

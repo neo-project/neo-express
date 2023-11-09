@@ -52,6 +52,21 @@ namespace NeoExpress
             console.Out.WriteLine();
         }
 
+        public static IConsole WriteWarning(this IConsole console, string value)
+        {
+            console.ForegroundColor = ConsoleColor.Yellow;
+            console.WriteLine(value);
+            console.ResetColor();
+            return console;
+        }
+
+        public static void WriteWarning(string value)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"Warning: {value}");
+            Console.ResetColor();
+        }
+
         public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
         {
             switch (json)

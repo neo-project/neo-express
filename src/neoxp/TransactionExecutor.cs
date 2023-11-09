@@ -413,6 +413,31 @@ namespace NeoExpress
             }
         }
 
+        public async Task TransferNFTAsync(string contract, string tokenId, string sender, string password, string receiver, string data)
+        {
+            if (!chainManager.TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
+            {
+                throw new Exception($"{sender} sender not found.");
+            }
+
+            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, receiver).ConfigureAwait(false);
+            if (getHashResult.TryPickT1(out _, out var receiverHash))
+            {
+                throw new Exception($"{receiver} account not found.");
+            }
+
+            ContractParameter? dataParam = null;
+            if (!string.IsNullOrEmpty(data))
+            {
+                var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+                dataParam = parser.ParseParameter(data);
+            }
+
+            var assetHash = await expressNode.ParseAssetAsync(contract).ConfigureAwait(false);
+            var txHash = await expressNode.TransferNFTAsync(assetHash, tokenId, senderWallet, senderAccountHash, receiverHash, dataParam);
+            await writer.WriteTxHashAsync(txHash, "TransferNFT", json).ConfigureAwait(false);
+        }
+
         public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
         {
             if (TryParseRpcUri(rpcUri, out var uri))

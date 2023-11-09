@@ -1,7 +1,13 @@
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Text;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
@@ -17,6 +23,10 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Text;
 using All = OneOf.Types.All;
 using None = OneOf.Types.None;
 
@@ -78,7 +88,8 @@ namespace NeoExpress
                 }
             }
 
-            if (chain.TryParseScriptHash(name, out var scriptHash)) return scriptHash;
+            if (chain.TryParseScriptHash(name, out var scriptHash))
+                return scriptHash;
 
             return new None();
         }
@@ -100,10 +111,11 @@ namespace NeoExpress
 
         public static async Task<OneOf<UInt160, None>> TryGetAccountHashAsync(this IExpressNode expressNode, ExpressChain chain, string name)
         {
-            if (name.StartsWith('#'))
+            if (name.StartsWith('@'))
             {
+                name = name[1..];
                 var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-                if (TryGetContractHash(contracts, name.Substring(1), out var contractHash))
+                if (TryGetContractHash(contracts, name, out var contractHash))
                 {
                     return contractHash;
                 }
@@ -326,8 +338,10 @@ namespace NeoExpress
             for (var x = 0; x < requests.Count; x++)
             {
                 var (id, request) = requests[x];
-                if (requestId.HasValue && requestId.Value != id) continue;
-                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
+                if (requestId.HasValue && requestId.Value != id)
+                    continue;
+                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase))
+                    continue;
 
                 var response = new OracleResponse
                 {
@@ -415,8 +429,10 @@ namespace NeoExpress
 
             var result = await invokeAsync(builder.ToArray()).ConfigureAwait(false);
 
-            if (result.State != VMState.HALT) throw new Exception(result.Exception);
-            if (result.Stack.Length != 7) throw new InvalidOperationException();
+            if (result.State != VMState.HALT)
+                throw new Exception(result.Exception);
+            if (result.Stack.Length != 7)
+                throw new InvalidOperationException();
 
             return new PolicyValues()
             {

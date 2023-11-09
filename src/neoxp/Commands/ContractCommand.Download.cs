@@ -1,6 +1,16 @@
-using System.ComponentModel.DataAnnotations;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Node;
+using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
 {
@@ -34,7 +44,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            [Option(Description = "Block height to get contract state for")]
+            [Option(Description = "Block height to get contract state for\nZero gets the latest")]
             internal uint Height { get; } = 0;
 
             [Option(CommandOptionType.SingleOrNoValue,

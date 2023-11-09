@@ -44,10 +44,7 @@ namespace NeoExpress
 
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
 
-            var rootPath = fileSystem.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
-                "Neo-Express",
-                "blockchain-nodes");
+            var rootPath = "blockchain-nodes";
             return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 

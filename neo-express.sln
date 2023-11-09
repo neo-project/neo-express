@@ -11,6 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neotrace", "src\trace\neotr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "neoworknet", "src\worknet\neoworknet.csproj", "{32D83A19-F910-42F6-9DEC-73902DE7B92A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{CEC93D42-4783-41C5-B638-5ACE0AF9ED19}"
+	ProjectSection(SolutionItems) = preProject
+		src\Directory.Build.props = src\Directory.Build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

@@ -20,6 +20,7 @@ using Neo.Wallets;
 using NeoExpress.Models;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Text;
 
 namespace NeoExpress
 {
@@ -55,6 +56,28 @@ namespace NeoExpress
         public static void WriteWarning(string value)
         {
             Console.WriteLine($"\x1b[33mWarning: {value}\x1b[0m");
+        }
+
+        public static bool TryGetUtf8String(this ReadOnlySpan<byte> data, out string text)
+        {
+            try
+            {
+                text = Encoding.UTF8.GetString(data);
+                byte[] reencodedBytes = Encoding.UTF8.GetBytes(text);
+                for (int i = 0; i < data.Length; i++)
+                {
+                    if (data[i] != reencodedBytes[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch (Exception)
+            {
+                text = String.Empty;
+                return false;
+            }
         }
 
         public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
@@ -268,7 +291,6 @@ namespace NeoExpress
                 var account = wallet.CreateAccount(privateKey);
                 accountHash = account.ScriptHash;
             }
-
 
         }
     }

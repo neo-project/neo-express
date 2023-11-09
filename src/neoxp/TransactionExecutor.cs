@@ -278,7 +278,14 @@ namespace NeoExpress
                         await WriteLineAsync(Neo.Helper.ToHexString(buffer.GetSpan())).ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.ByteString byteString:
-                        await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
+                        if (byteString.GetSpan().TryGetUtf8String(out var text))
+                        {
+                            await WriteLineAsync($"{Neo.Helper.ToHexString(byteString.GetSpan())}({text})").ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
+                        }
                         break;
                     case Neo.VM.Types.Null _:
                         await WriteLineAsync("<null>").ConfigureAwait(false);

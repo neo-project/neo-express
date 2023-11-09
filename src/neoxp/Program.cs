@@ -32,6 +32,7 @@ namespace NeoExpress
         typeof(ShowCommand),
         typeof(StopCommand),
         typeof(TransferCommand),
+        typeof(TransferNFTCommand),
         typeof(WalletCommand))]
     class Program
     {

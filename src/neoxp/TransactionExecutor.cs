@@ -1,5 +1,13 @@
-using System.IO.Abstractions;
-using System.Numerics;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
@@ -12,6 +20,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OneOf;
 using OneOf.Types;
+using System.IO.Abstractions;
+using System.Numerics;
 using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress
@@ -92,12 +102,15 @@ namespace NeoExpress
                     throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
                 }
 
-                var nep11 = false; var nep17 = false;
+                var nep11 = false;
+                var nep17 = false;
                 var standards = manifest.SupportedStandards;
                 for (var i = 0; i < standards.Length; i++)
                 {
-                    if (standards[i] == "NEP-11") nep11 = true;
-                    if (standards[i] == "NEP-17") nep17 = true;
+                    if (standards[i] == "NEP-11")
+                        nep11 = true;
+                    if (standards[i] == "NEP-17")
+                        nep17 = true;
                 }
                 if (nep11 && nep17)
                 {
@@ -193,7 +206,14 @@ namespace NeoExpress
                     };
                 }
 
-                return parser.ParseParameter(arg);
+                try
+                {
+                    return parser.ParseParameter(JToken.Parse(arg));
+                }
+                catch
+                {
+                    return parser.ParseParameter(arg);
+                }
             }
         }
 
@@ -313,7 +333,8 @@ namespace NeoExpress
 
         public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null)
         {
-            if (!fileSystem.File.Exists(responsePath)) throw new Exception($"Response File {responsePath} couldn't be found");
+            if (!fileSystem.File.Exists(responsePath))
+                throw new Exception($"Response File {responsePath} couldn't be found");
 
             JObject responseJson;
             {

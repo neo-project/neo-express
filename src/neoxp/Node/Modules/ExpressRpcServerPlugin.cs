@@ -1,5 +1,13 @@
-using System.Collections.Immutable;
-using System.Numerics;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.IO;
@@ -14,6 +22,8 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using System.Collections.Immutable;
+using System.Numerics;
 using RpcException = Neo.Plugins.RpcException;
 using Utility = Neo.Utility;
 
@@ -44,7 +54,8 @@ namespace NeoExpress.Node
 
         protected override void OnSystemLoaded(NeoSystem system)
         {
-            if (this.neoSystem is not null) throw new Exception($"{nameof(OnSystemLoaded)} already called");
+            if (this.neoSystem is not null)
+                throw new Exception($"{nameof(OnSystemLoaded)} already called");
             neoSystem = system;
             rpcServer = new RpcServer(system, settings);
             rpcServer.RegisterMethods(this);
@@ -76,7 +87,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject ExpressGetPopulatedBlocks(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             using var snapshot = neoSystem.GetSnapshot();
             var height = NativeContract.Ledger.CurrentIndex(snapshot);
 
@@ -102,7 +114,8 @@ namespace NeoExpress.Node
                     populatedBlocks.Add(index);
                 }
 
-                if (index == 0 || populatedBlocks.Count >= count) break;
+                if (index == 0 || populatedBlocks.Count >= count)
+                    break;
                 index--;
             }
 
@@ -120,7 +133,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JArray ExpressListTokenContracts(JArray _)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
 
             var jsonContracts = new JArray();
             using var snapshot = neoSystem.GetSnapshot();
@@ -135,7 +149,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JToken ExpressGetContractState(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             using var snapshot = neoSystem.GetSnapshot();
 
             if (@params[0] is JNumber number)
@@ -173,10 +188,12 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JArray? ExpressGetContractStorage(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var scriptHash = UInt160.Parse(@params[0]!.AsString());
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
-            if (contract is null) return null;
+            if (contract is null)
+                return null;
 
             var storages = new JArray();
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
@@ -194,7 +211,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JArray ExpressListContracts(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var contracts = NativeContract.ContractManagement.ListContracts(neoSystem.StoreView)
                 .OrderBy(c => c.Id);
 
@@ -212,7 +230,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JToken ExpressCreateCheckpoint(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             string filename = @params[0]!.AsString();
 
             if (neoSystem.Settings.ValidatorsCount > 1)
@@ -232,7 +251,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JArray ExpressListOracleRequests(JArray _)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var requests = new JArray();
             foreach (var (requestId, request) in NativeContract.Oracle.GetRequests(neoSystem.StoreView))
             {
@@ -253,7 +273,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JToken? ExpressCreateOracleResponseTx(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var jsonResponse = @params[0]!;
             var response = new OracleResponse
             {
@@ -280,7 +301,8 @@ namespace NeoExpress.Node
             var events = ((JArray)@params[1]!).Select(j => j!.AsString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
             int skip = @params.Count >= 3 ? (int)@params[2]!.AsNumber() : 0;
             int take = @params.Count >= 4 ? (int)@params[3]!.AsNumber() : MAX_NOTIFICATIONS;
-            if (take > MAX_NOTIFICATIONS) take = MAX_NOTIFICATIONS;
+            if (take > MAX_NOTIFICATIONS)
+                take = MAX_NOTIFICATIONS;
 
             var notifications = persistencePlugin.Value
                 .GetNotifications(
@@ -325,7 +347,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0]!.AsString());
-            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction");
+            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction/blockhash");
         }
 
         // Neo-Express uses a custom implementation of TokenTracker RPC methods. Originally, this was
@@ -339,7 +361,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject GetNep17Balances(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var address = AsScriptHash(@params[0]!);
 
             using var snapshot = neoSystem.GetSnapshot();
@@ -376,7 +399,8 @@ namespace NeoExpress.Node
                             // record the update index. Stop the iteration if indexes for all the assets are 
                             // have been recorded
                             updateIndexes.Add(notification.ScriptHash, blockIndex);
-                            if (updateIndexes.Count == addressBalances.Count) break;
+                            if (updateIndexes.Count == addressBalances.Count)
+                                break;
                         }
                     }
                 }
@@ -436,7 +460,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject GetNep11Balances(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var address = AsScriptHash(@params[0]!);
 
             using var snapshot = neoSystem.GetSnapshot();
@@ -444,9 +469,11 @@ namespace NeoExpress.Node
             List<(UInt160 scriptHash, ReadOnlyMemory<byte> tokenId, BigInteger balance)> tokens = new();
             foreach (var contract in NativeContract.ContractManagement.ListContracts(snapshot))
             {
-                if (!contract.Manifest.SupportedStandards.Contains("NEP-11")) continue;
+                if (!contract.Manifest.SupportedStandards.Contains("NEP-11"))
+                    continue;
                 var balanceOf = contract.Manifest.Abi.GetMethod("balanceOf", -1);
-                if (balanceOf is null) continue;
+                if (balanceOf is null)
+                    continue;
                 var divisible = balanceOf.Parameters.Length == 2;
 
                 foreach (var tokenId in snapshot.GetNep11Tokens(contract.Hash, address, neoSystem.Settings))
@@ -457,7 +484,8 @@ namespace NeoExpress.Node
                             ? BigInteger.One
                             : BigInteger.Zero;
 
-                    if (balance.IsZero) continue;
+                    if (balance.IsZero)
+                        continue;
 
                     tokens.Add((contract.Hash, tokenId, balance));
                 }
@@ -475,13 +503,18 @@ namespace NeoExpress.Node
                 foreach (var (blockIndex, _, notification) in notifications)
                 {
                     var transfer = TransferNotificationRecord.Create(notification);
-                    if (transfer is null) continue;
-                    if (transfer.From != address && transfer.To != address) continue;
-                    if (transfer.TokenId.Length == 0) continue;
+                    if (transfer is null)
+                        continue;
+                    if (transfer.From != address && transfer.To != address)
+                        continue;
+                    if (transfer.TokenId.Length == 0)
+                        continue;
                     var key = (notification.ScriptHash, transfer.TokenId);
-                    if (updateIndexes.ContainsKey(key)) continue;
+                    if (updateIndexes.ContainsKey(key))
+                        continue;
                     updateIndexes.Add(key, blockIndex);
-                    if (updateIndexes.Count == tokens.Count) break;
+                    if (updateIndexes.Count == tokens.Count)
+                        break;
                 }
             }
 
@@ -494,7 +527,8 @@ namespace NeoExpress.Node
                 var jsonTokens = new JArray();
                 foreach (var (_, tokenId, balance) in asset)
                 {
-                    if (balance.IsZero) continue;
+                    if (balance.IsZero)
+                        continue;
 
                     var lastUpdatedBlock = updateIndexes.TryGetValue((asset.Key, tokenId), out var value)
                         ? value : 0;
@@ -529,7 +563,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject GetNep11Properties(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             // logic replicated from TokenTracker.GetNep11Properties. 
             var nep11Hash = AsScriptHash(@params[0]!);
             var tokenId = @params[1]!.AsString().HexToBytes();
@@ -546,7 +581,8 @@ namespace NeoExpress.Node
                 var map = engine.ResultStack.Pop<Neo.VM.Types.Map>();
                 foreach (var keyValue in map)
                 {
-                    if (keyValue.Value is Neo.VM.Types.CompoundType) continue;
+                    if (keyValue.Value is Neo.VM.Types.CompoundType)
+                        continue;
                     var key = keyValue.Key.GetString() ?? string.Empty;
                     if (nep11PropertyNames.Contains(key))
                     {
@@ -564,7 +600,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JToken ExpressPersistContract(JArray @params)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var state = RpcClient.ContractStateFromJson((JObject)@params[0]!["state"]!);
             var storagePairs = ((JArray)@params[0]!["storage"]!)
                 .Select(s => (
@@ -587,7 +624,8 @@ namespace NeoExpress.Node
 
         JObject GetTransfers(JArray @params, TokenStandard standard)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             // parse parameters
             var address = AsScriptHash(@params[0]!);
             ulong startTime = @params.Count > 1
@@ -597,7 +635,8 @@ namespace NeoExpress.Node
                 ? (ulong)@params[2]!.AsNumber()
                 : DateTime.UtcNow.ToTimestampMS();
 
-            if (endTime < startTime) throw new RpcException(-32602, "Invalid params");
+            if (endTime < startTime)
+                throw new RpcException(-32602, "Invalid params");
 
             // iterate over the notifications to populate the send and receive arrays
             var sent = new JArray();
@@ -614,11 +653,14 @@ namespace NeoExpress.Node
             foreach (var (blockIndex, txIndex, notification) in notifications)
             {
                 var header = NativeContract.Ledger.GetHeader(snapshot, blockIndex);
-                if (startTime > header.Timestamp || header.Timestamp > endTime) continue;
+                if (startTime > header.Timestamp || header.Timestamp > endTime)
+                    continue;
 
                 var transfer = TransferNotificationRecord.Create(notification);
-                if (transfer is null) continue;
-                if (transfer.From != address && transfer.To != address) continue;
+                if (transfer is null)
+                    continue;
+                if (transfer.From != address && transfer.To != address)
+                    continue;
 
                 // create a JSON object to represent the transfer
                 var jsonTransfer = new JObject()
@@ -660,7 +702,8 @@ namespace NeoExpress.Node
 
         UInt160 AsScriptHash(JToken json)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             var text = json.AsString();
             return text.Length < 40
                ? text.ToScriptHash(neoSystem.Settings.AddressVersion)
@@ -669,7 +712,8 @@ namespace NeoExpress.Node
 
         (string name, string symbol, byte decimals) GetTokenDetails(DataCache snapshot, UInt160 tokenHash)
         {
-            if (neoSystem is null) throw new NullReferenceException(nameof(neoSystem));
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
             return snapshot.TryGetTokenDetails(tokenHash, neoSystem.Settings, out var details)
                 ? details
                 : ("<Unknown>", "<UNK>", (byte)0);

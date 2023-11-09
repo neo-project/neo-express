@@ -1,9 +1,19 @@
-using System.Collections.Immutable;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
 using Nito.Disposables;
 using RocksDbSharp;
+using System.Collections.Immutable;
 
 namespace NeoExpress.Node
 {
@@ -59,23 +69,28 @@ namespace NeoExpress.Node
 
         public void Dispose()
         {
-            if (defaultStore.IsValueCreated) { defaultStore.Value.Dispose(); }
-            foreach (var store in stores.Values) { store.Dispose(); }
+            if (defaultStore.IsValueCreated)
+            { defaultStore.Value.Dispose(); }
+            foreach (var store in stores.Values)
+            { store.Dispose(); }
             db?.Dispose();
             disposable.Dispose();
         }
 
         public IStore GetStore(string? path)
         {
-            if (path is null) return defaultStore.Value;
+            if (path is null)
+                return defaultStore.Value;
             return ImmutableInterlocked.GetOrAdd(ref stores, path,
                 key => new MemoryTrackingStore(GetUnderlyingStore(key)));
         }
 
         IReadOnlyStore GetUnderlyingStore(string? path)
         {
-            if (db is null) return NullStore.Instance;
-            if (path is null) return CreateReadOnlyStore(db, db.GetDefaultColumnFamily());
+            if (db is null)
+                return NullStore.Instance;
+            if (path is null)
+                return CreateReadOnlyStore(db, db.GetDefaultColumnFamily());
 
             return db.TryGetColumnFamily(path, out var columnFamily)
                 ? CreateReadOnlyStore(db, columnFamily)

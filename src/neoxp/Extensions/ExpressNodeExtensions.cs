@@ -1,7 +1,13 @@
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Text;
+// Copyright (C) 2015-2023 The Neo Project.
+//
+// The neo is free software distributed under the MIT software license,
+// see the accompanying file LICENSE in the main directory of the
+// project or http://www.opensource.org/licenses/mit-license.php
+// for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
+
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
@@ -17,6 +23,10 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Text;
 using All = OneOf.Types.All;
 using None = OneOf.Types.None;
 
@@ -38,6 +48,45 @@ namespace NeoExpress
                     else
                     {
                         throw new Exception($"More than one deployed script named {name}");
+                    }
+                }
+            }
+
+            if (_scriptHash is not null)
+            {
+                scriptHash = _scriptHash;
+                return true;
+            }
+            else
+            {
+                scriptHash = UInt160.Zero;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Find a contract by name. Output warning message to Console if 2 or more contracts were found, will use the last found contract as the result.
+        /// </summary>
+        /// <param name="contracts"></param>
+        /// <param name="name"></param>
+        /// <param name="scriptHash"></param>
+        /// <param name="comparison"></param>
+        /// <returns></returns>
+        static bool TryGetContractHashByName(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        {
+            UInt160? _scriptHash = null;
+            for (int i = contracts.Count - 1; i > 0; i--)
+            {
+                if (contracts[i].manifest.Name.Equals(name, comparison))
+                {
+                    if (_scriptHash is null)
+                    {
+                        _scriptHash = contracts[i].hash;
+                    }
+                    else
+                    {
+                        Extensions.WriteWarning($"More than one deployed contract named '{name}', using {_scriptHash}");
+                        break;
                     }
                 }
             }
@@ -78,7 +127,8 @@ namespace NeoExpress
                 }
             }
 
-            if (chain.TryParseScriptHash(name, out var scriptHash)) return scriptHash;
+            if (chain.TryParseScriptHash(name, out var scriptHash))
+                return scriptHash;
 
             return new None();
         }
@@ -87,7 +137,7 @@ namespace NeoExpress
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
             ContractParameterParser.TryGetUInt160 tryGetContract =
-                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
+                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHashByName(contracts, name, out scriptHash, comparison);
 
             return new ContractParameterParser(expressNode.ProtocolSettings, chain.TryGetAccountHash, tryGetContract);
         }
@@ -100,10 +150,11 @@ namespace NeoExpress
 
         public static async Task<OneOf<UInt160, None>> TryGetAccountHashAsync(this IExpressNode expressNode, ExpressChain chain, string name)
         {
-            if (name.StartsWith('#'))
+            if (name.StartsWith('@'))
             {
+                name = name[1..];
                 var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-                if (TryGetContractHash(contracts, name.Substring(1), out var contractHash))
+                if (TryGetContractHash(contracts, name, out var contractHash))
                 {
                     return contractHash;
                 }
@@ -204,6 +255,7 @@ namespace NeoExpress
                 sb.EmitPush(senderHash);
                 sb.EmitPush(4);
                 sb.Emit(OpCode.PACK);
+                sb.EmitPush(CallFlags.All);
                 sb.EmitPush("transfer");
                 sb.EmitPush(asset);
                 sb.EmitSysCall(ApplicationEngine.System_Contract_Call);
@@ -326,8 +378,10 @@ namespace NeoExpress
             for (var x = 0; x < requests.Count; x++)
             {
                 var (id, request) = requests[x];
-                if (requestId.HasValue && requestId.Value != id) continue;
-                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase)) continue;
+                if (requestId.HasValue && requestId.Value != id)
+                    continue;
+                if (!string.Equals(url, request.Url, StringComparison.OrdinalIgnoreCase))
+                    continue;
 
                 var response = new OracleResponse
                 {
@@ -415,8 +469,10 @@ namespace NeoExpress
 
             var result = await invokeAsync(builder.ToArray()).ConfigureAwait(false);
 
-            if (result.State != VMState.HALT) throw new Exception(result.Exception);
-            if (result.Stack.Length != 7) throw new InvalidOperationException();
+            if (result.State != VMState.HALT)
+                throw new Exception(result.Exception);
+            if (result.Stack.Length != 7)
+                throw new InvalidOperationException();
 
             return new PolicyValues()
             {

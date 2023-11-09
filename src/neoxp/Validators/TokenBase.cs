@@ -73,7 +73,8 @@ internal abstract class TokenBase
         for (int i = 0; i < symbol.Length; i++)
         {
             var letter = symbol[i];
-            if ((letter >= 'A' && letter <= 'Z') == false)
+            if (char.IsWhiteSpace(letter) || char.IsControl(letter) ||
+                char.IsAscii(letter) == false)
                 return false;
         }
 

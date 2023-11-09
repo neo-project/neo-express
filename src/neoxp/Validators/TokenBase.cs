@@ -45,7 +45,60 @@ internal abstract class TokenBase
         Decimals = checked((byte)results.Pop().GetInteger());
     }
 
-    public bool IsValidSymbol()
+    public bool HasValidMethods()
+    {
+        using var builder = new ScriptBuilder();
+        builder.EmitDynamicCall(ScriptHash, "decimals");
+        builder.EmitDynamicCall(ScriptHash, "symbol");
+        builder.EmitDynamicCall(ScriptHash, "totalSupply");
+        builder.EmitDynamicCall(ScriptHash, "balanceOf", UInt160.Zero);
+        builder.EmitDynamicCall(ScriptHash, "transfer", UInt160.Zero, UInt160.Zero, 0, null);
+
+        using var engine = builder.Invoke(_protocolSettings, _snapshot);
+        return engine.State == VMState.HALT;
+    }
+
+    public bool IsBalanceOfValid()
+    {
+        return BalanceOf(UInt160.Zero) == 0;
+    }
+
+    public bool IsDecimalsValid()
+    {
+        using var builder = new ScriptBuilder();
+        builder.EmitDynamicCall(ScriptHash, "decimals");
+
+        byte? dec = null;
+        int x = 0;
+
+        // This loop checks for constant byte of decimals
+        while (x <= 5)
+        {
+            using var appEng = builder.Invoke(_protocolSettings, _snapshot);
+            if (appEng.State != VMState.HALT)
+                return false;
+            try
+            {
+                if (dec.HasValue == false)
+                    dec = (byte)appEng.ResultStack.Pop().GetInteger();
+                else
+                {
+                    if (dec == (byte)appEng.ResultStack.Pop().GetInteger())
+                        x++;
+                    else
+                        return false;
+                }
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public bool IsSymbolValid()
     {
         using var builder = new ScriptBuilder();
         builder.EmitDynamicCall(ScriptHash, "symbol");
@@ -53,6 +106,7 @@ internal abstract class TokenBase
         var symbol = string.Empty;
         int x = 0;
 
+        // This loop checks for constant string of symbol
         while (x <= 5)
         {
             using var appEng = builder.Invoke(_protocolSettings, _snapshot);
@@ -70,13 +124,8 @@ internal abstract class TokenBase
             }
         }
 
-        for (int i = 0; i < symbol.Length; i++)
-        {
-            var letter = symbol[i];
-            if (char.IsWhiteSpace(letter) || char.IsControl(letter) ||
-                char.IsAscii(letter) == false)
-                return false;
-        }
+        if (symbol.Any(a => char.IsWhiteSpace(a) || char.IsControl(a) || char.IsAscii(a) == false))
+            return false;
 
         return true;
     }

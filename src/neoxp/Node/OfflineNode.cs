@@ -395,12 +395,16 @@ namespace NeoExpress.Node
         }
 #pragma warning restore 1998
 
-        public async Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
+        public Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
         {
             var snapshot = neoSystem.GetSnapshot();
             var validator = new Nep17Token(ProtocolSettings, snapshot, contractHash);
 
-            return validator.IsValidSymbol();
+            return Task.FromResult(
+                validator.HasValidMethods() &&
+                validator.IsSymbolValid() &&
+                validator.IsDecimalsValid() &&
+                validator.IsBalanceOfValid());
         }
     }
 }

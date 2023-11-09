@@ -64,6 +64,45 @@ namespace NeoExpress
             }
         }
 
+        /// <summary>
+        /// Find a contract by name. Output warning message to Console if 2 or more contracts were found, will use the last found contract as the result.
+        /// </summary>
+        /// <param name="contracts"></param>
+        /// <param name="name"></param>
+        /// <param name="scriptHash"></param>
+        /// <param name="comparison"></param>
+        /// <returns></returns>
+        static bool TryGetContractHashByName(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        {
+            UInt160? _scriptHash = null;
+            for (int i = contracts.Count - 1; i > 0; i--)
+            {
+                if (contracts[i].manifest.Name.Equals(name, comparison))
+                {
+                    if (_scriptHash is null)
+                    {
+                        _scriptHash = contracts[i].hash;
+                    }
+                    else
+                    {
+                        Extensions.WriteWarning($"More than one deployed contract named '{name}', using {_scriptHash}");
+                        break;
+                    }
+                }
+            }
+
+            if (_scriptHash is not null)
+            {
+                scriptHash = _scriptHash;
+                return true;
+            }
+            else
+            {
+                scriptHash = UInt160.Zero;
+                return false;
+            }
+        }
+
         public static async Task<OneOf<UInt160, None>> ParseScriptHashToBlockAsync(this IExpressNode expressNode, ExpressChain chain, string name, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             // only check express chain wallets to block, not consensus nodes or genesis account
@@ -98,7 +137,7 @@ namespace NeoExpress
         {
             var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
             ContractParameterParser.TryGetUInt160 tryGetContract =
-                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHash(contracts, name, out scriptHash, comparison);
+                (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) => TryGetContractHashByName(contracts, name, out scriptHash, comparison);
 
             return new ContractParameterParser(expressNode.ProtocolSettings, chain.TryGetAccountHash, tryGetContract);
         }

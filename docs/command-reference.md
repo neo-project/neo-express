@@ -464,6 +464,31 @@ Arguments:
 > Python: `def update(nef: bytes, manifest: str):`
 > 
 
+### neoxp contract download
+
+Download contract with storage from remote chain into local chain
+
+```
+Usage: neoxp contract download [Options] <Contract> <RpcUri>
+
+Arguments:
+  Contract              Target contract hash
+  RpcUri                URL of Neo JSON-RPC Node
+                        Specify MainNet (default), TestNet or JSON-RPC URL
+
+[Options]:
+  -i|--input <INPUT>    Path to neo-express data file
+  -h|--height <HEIGHT>  Block height to get contract state for
+                        Default value is: 0.
+  -f|--force[:<FORCE>]  Replace contract and storage if it already exists
+                        Defaults to None if option unspecified, All if option value unspecified
+                        Allowed values are: None, All, ContractOnly, StorageOnly.
+  -?|--help             Show help information.
+```
+
+Download contract and its storage from the remote rpc node into local chain.
+
+
 ## neoxp show
 
 The `show` command will display information from the blockchain. There are multiple subcommands 

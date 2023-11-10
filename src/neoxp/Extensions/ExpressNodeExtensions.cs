@@ -17,9 +17,11 @@ using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract;
+using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
+using Neo.VM.Types;
 using Neo.Wallets;
 using NeoExpress.Models;
 using OneOf;
@@ -263,6 +265,13 @@ namespace NeoExpress
             }
         }
 
+        public static async Task<UInt256> TransferNFTAsync(this IExpressNode expressNode, UInt160 contractHash, string tokenId, Wallet sender, UInt160 senderHash, UInt160 receiverHash, ContractParameter? data)
+        {
+            data ??= new ContractParameter(ContractParameterType.Any);
+            var script = contractHash.MakeScript("transfer", receiverHash, tokenId, data);
+            return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
+        }
+
         public static async Task<UInt256> UpdateAsync(this IExpressNode expressNode,
                                                       UInt160 contractHash,
                                                       NefFile nefFile,
@@ -361,7 +370,7 @@ namespace NeoExpress
                 return nodes;
             }
 
-            return Array.Empty<ECPoint>();
+            return System.Array.Empty<ECPoint>();
         }
 
         public static async Task<IReadOnlyList<UInt256>> SubmitOracleResponseAsync(this IExpressNode expressNode, string url, OracleResponseCode responseCode, Newtonsoft.Json.Linq.JObject? responseJson, ulong? requestId)
@@ -399,7 +408,7 @@ namespace NeoExpress
             {
                 if (responseCode != OracleResponseCode.Success)
                 {
-                    return Array.Empty<byte>();
+                    return System.Array.Empty<byte>();
                 }
 
                 System.Diagnostics.Debug.Assert(responseJson is not null);
@@ -434,6 +443,36 @@ namespace NeoExpress
             }
 
             throw new Exception("invalid script results");
+        }
+
+        public static async Task<List<string>> GetNFTAsync(this IExpressNode expressNode, UInt160 accountHash, string asset)
+        {
+            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
+
+            using var sb = new ScriptBuilder();
+            sb.EmitDynamicCall(assetHash, "tokensOf", accountHash);
+
+            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
+            var stack = result.Stack;
+            var list = new List<string>();
+            try
+            {
+                if (result.State != VMState.FAULT
+                        && result.Stack.Length >= 1
+                        && result.Stack[0] is InteropInterface interop
+                        && interop.GetInterface<object>() is IIterator iterator)
+                {
+                    while (iterator.Next())
+                    {
+                        list.Add(iterator.Value(null).GetString());
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("invalid script results");
+            }
+            return list;
         }
 
         public static async Task<Block> GetBlockAsync(this IExpressNode expressNode, string blockHash)

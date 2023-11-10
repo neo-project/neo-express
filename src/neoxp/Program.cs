@@ -55,6 +55,11 @@ namespace NeoExpress
 
             try
             {
+                var helpCommandIndex = Array.FindIndex(args, f => f.Equals("help", StringComparison.InvariantCultureIgnoreCase));
+
+                if (helpCommandIndex > -1)
+                    args[helpCommandIndex] = "--help";
+
                 return await app.ExecuteAsync(args);
             }
             catch (CommandParsingException ex)

@@ -112,13 +112,20 @@ namespace NeoExpress
                     if (standards[i] == "NEP-17")
                         nep17 = true;
                 }
+
                 if (nep11 && nep17)
                 {
                     throw new Exception($"{manifest.Name} Contract declares support for both NEP-11 and NEP-17 standards. Use --force to deploy contract with invalid supported standards declarations.");
                 }
+
                 if (nep17 && manifest.IsNep17Compliant() == false)
                 {
                     throw new Exception($"{manifest.Name} Contract declares support for NEP-17 standards. However is not NEP-17 compliant. Invalid methods/events.");
+                }
+
+                if (nep11 && manifest.IsNep11Compliant() == false)
+                {
+                    throw new Exception($"{manifest.Name} Contract declares support for NEP-11 standards. However is not NEP-11 compliant. Invalid methods/events.");
                 }
             }
 

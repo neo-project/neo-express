@@ -308,12 +308,12 @@ namespace NeoExpress.Node
 
         public async Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
         {
-            return false;
+            return true;
         }
 
         public async Task<bool> IsNep11CompliantAsync(UInt160 contractHash)
         {
-            return false;
+            return true;
         }
     }
 }

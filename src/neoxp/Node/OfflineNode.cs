@@ -406,5 +406,17 @@ namespace NeoExpress.Node
                 validator.IsDecimalsValid() &&
                 validator.IsBalanceOfValid());
         }
+
+        public Task<bool> IsNep11CompliantAsync(UInt160 contractHash)
+        {
+            var snapshot = neoSystem.GetSnapshot();
+            var validator = new Nep11Token(ProtocolSettings, snapshot, contractHash);
+
+            return Task.FromResult(
+                validator.HasValidMethods() &&
+                validator.IsSymbolValid() &&
+                validator.IsDecimalsValid() &&
+                validator.IsBalanceOfValid());
+        }
     }
 }

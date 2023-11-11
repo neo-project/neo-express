@@ -39,14 +39,14 @@ internal abstract class TokenBase
 
         using var engine = builder.Invoke(_protocolSettings, _snapshot);
         if (engine.State != VMState.HALT)
-            throw new NotSupportedException($"{ScriptHash} is not NEP-17 compliant.");
+            throw engine.FaultException?.InnerException! ?? engine.FaultException!;
 
         var results = engine.ResultStack;
         Symbol = results.Pop().GetString()!;
         Decimals = checked((byte)results.Pop().GetInteger());
     }
 
-    public bool HasValidMethods()
+    public virtual bool HasValidMethods()
     {
         using var builder = new ScriptBuilder();
         builder.EmitDynamicCall(ScriptHash, "decimals");
@@ -62,12 +62,12 @@ internal abstract class TokenBase
 
         using var engine = builder.Invoke(_protocolSettings, _snapshot, tx);
         if (engine.State == VMState.FAULT)
-            throw engine.FaultException;
+            throw engine.FaultException?.InnerException! ?? engine.FaultException!;
 
         return engine.State == VMState.HALT;
     }
 
-    public bool IsBalanceOfValid()
+    public virtual bool IsBalanceOfValid()
     {
         return BalanceOf(UInt160.Zero) == 0;
     }
@@ -85,7 +85,7 @@ internal abstract class TokenBase
         {
             using var appEng = builder.Invoke(_protocolSettings, _snapshot);
             if (appEng.State != VMState.HALT)
-                throw appEng.FaultException;
+                throw appEng.FaultException?.InnerException! ?? appEng.FaultException!;
             try
             {
                 if (dec.HasValue == false)
@@ -120,7 +120,7 @@ internal abstract class TokenBase
         {
             using var appEng = builder.Invoke(_protocolSettings, _snapshot);
             if (appEng.State != VMState.HALT)
-                throw appEng.FaultException;
+                throw appEng.FaultException?.InnerException! ?? appEng.FaultException!;
 
             if (string.IsNullOrEmpty(symbol))
                 symbol = appEng.ResultStack.Pop().GetString()!;
@@ -147,7 +147,7 @@ internal abstract class TokenBase
         using var appEng = builder.Invoke(_protocolSettings, _snapshot);
         if (appEng.State == VMState.HALT)
             return appEng.ResultStack.Pop().GetInteger();
-        throw new InvalidOperationException();
+        throw appEng.FaultException?.InnerException! ?? appEng.FaultException!;
     }
 
     public BigInteger BalanceOf(UInt160 owner)
@@ -158,6 +158,6 @@ internal abstract class TokenBase
         using var appEng = builder.Invoke(_protocolSettings, _snapshot);
         if (appEng.State == VMState.HALT)
             return appEng.ResultStack.Pop().GetInteger();
-        throw new InvalidOperationException();
+        throw appEng.FaultException?.InnerException! ?? appEng.FaultException!;
     }
 }

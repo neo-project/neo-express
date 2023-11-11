@@ -308,12 +308,20 @@ namespace NeoExpress.Node
 
         public async Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
         {
-            return true;
+            var json = await rpcClient.RpcSendAsync("expressisnep17compliant", contractHash.ToString()).ConfigureAwait(false);
+
+            if (json != null && json is JBoolean)
+                return json.AsBoolean();
+            return false;
         }
 
         public async Task<bool> IsNep11CompliantAsync(UInt160 contractHash)
         {
-            return true;
+            var json = await rpcClient.RpcSendAsync("expressisnep11compliant", contractHash.ToString()).ConfigureAwait(false);
+
+            if (json != null && json is JBoolean)
+                return json.AsBoolean();
+            return false;
         }
     }
 }

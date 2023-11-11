@@ -22,6 +22,7 @@ using Neo.VM;
 using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using NeoExpress.Validators;
 using System.Collections.Immutable;
 using System.Numerics;
 using RpcException = Neo.Plugins.RpcException;
@@ -612,6 +613,36 @@ namespace NeoExpress.Node
             var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]!["force"]!.AsString());
 
             return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
+        }
+
+        [RpcMethod]
+        public JToken ExpressIsNep11Compliant(JToken @param)
+        {
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
+            var nep11Hash = AsScriptHash(@param);
+
+            var nep11 = new Nep11Token(neoSystem.Settings, neoSystem.GetSnapshot(), nep11Hash);
+
+            return nep11.HasValidMethods() &&
+                nep11.IsSymbolValid() &&
+                nep11.IsDecimalsValid() &&
+                nep11.IsBalanceOfValid();
+        }
+
+        [RpcMethod]
+        public JToken ExpressIsNep17Compliant(JToken @param)
+        {
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
+            var nep17Hash = AsScriptHash(@param);
+
+            var nep17 = new Nep17Token(neoSystem.Settings, neoSystem.GetSnapshot(), nep17Hash);
+
+            return nep17.HasValidMethods() &&
+                nep17.IsSymbolValid() &&
+                nep17.IsDecimalsValid() &&
+                nep17.IsBalanceOfValid();
         }
 
         static readonly IReadOnlySet<string> nep11PropertyNames = new HashSet<string>

@@ -72,6 +72,7 @@ internal static class ContractManifestExtensions
                 s.Parameters[3].Type == ContractParameterType.ByteArray) != null;
 
             // Waiting on issue https://github.com/neo-project/neo-devpack-dotnet/issues/812
+            // decimals is being set to safe for Nep11Token in the neo compiler
 
             return (symbolValid &&
                 decimalsValid &&

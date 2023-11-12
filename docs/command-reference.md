@@ -466,7 +466,7 @@ Arguments:
 
 ### neoxp contract download
 
-Download contract with storage from remote chain into local chain
+Download contract and its storage from the remote rpc node into local chain.
 
 ```
 Usage: neoxp contract download [Options] <Contract> <RpcUri>
@@ -485,8 +485,6 @@ Arguments:
                         Allowed values are: None, All, ContractOnly, StorageOnly.
   -?|--help             Show help information.
 ```
-
-Download contract and its storage from the remote rpc node into local chain.
 
 
 ## neoxp show

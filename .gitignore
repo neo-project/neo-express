@@ -419,3 +419,4 @@ src/neoxp/default.neo-express
 src/trace/*.neo-trace
 src/worknet/default.neo-worknet
 src/worknet/data/*
+src/neoxp/Properties/launchSettings.json

@@ -20,14 +20,25 @@ namespace NeoExpress
     {
         public static string ResolveFileName(this IFileSystem fileSystem, string fileName, string extension, Func<string> getDefaultFileName)
         {
+            var isDefaultPath = false;
             if (string.IsNullOrEmpty(fileName))
             {
                 fileName = getDefaultFileName();
+                isDefaultPath = true;
             }
 
             if (!fileSystem.Path.IsPathFullyQualified(fileName))
             {
-                fileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
+                if (isDefaultPath)
+                {
+                    var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+                    var folder = Path.Combine(homeDir, ".neo-express");
+                    if (fileSystem.Path.Exists(folder) == false)
+                        fileSystem.Directory.CreateDirectory(folder);
+                    fileName = fileSystem.Path.Combine(folder, fileName);
+                }
+                else
+                    fileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
             }
 
             return extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.OrdinalIgnoreCase)

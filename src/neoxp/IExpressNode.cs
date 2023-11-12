@@ -10,6 +10,7 @@
 
 using Neo;
 using Neo.Cryptography.ECC;
+using Neo.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract;
@@ -40,7 +41,7 @@ namespace NeoExpress
         Task<Block> GetBlockAsync(uint blockIndex);
         Task<ContractManifest> GetContractAsync(UInt160 scriptHash);
         Task<Block> GetLatestBlockAsync();
-        Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash);
+        Task<(Transaction tx, JObject? appLog)> GetTransactionAsync(UInt256 txHash);
         Task<uint> GetTransactionHeightAsync(UInt256 txHash);
 
         Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);

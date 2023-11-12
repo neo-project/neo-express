@@ -146,12 +146,12 @@ namespace NeoExpress.Node
             return rpcBlock.Block;
         }
 
-        public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        public async Task<(Transaction tx, JObject? appLog)> GetTransactionAsync(UInt256 txHash)
         {
             var hash = txHash.ToString();
             var response = await rpcClient.GetRawTransactionAsync(hash).ConfigureAwait(false);
             var log = await rpcClient.GetApplicationLogAsync(hash).ConfigureAwait(false);
-            return (response.Transaction, log);
+            return (response.Transaction, log.ToJson());
         }
 
         public Task<uint> GetTransactionHeightAsync(UInt256 txHash)

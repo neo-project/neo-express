@@ -48,7 +48,7 @@ namespace NeoExpress.Commands
                     if (log is not null)
                     {
                         await writer.WritePropertyNameAsync("application-log");
-                        writer.WriteJson(log.ToJson());
+                        writer.WriteJson(log);
                     }
                     await writer.WriteEndObjectAsync();
 

@@ -14,6 +14,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography.ECC;
 using Neo.IO;
+using Neo.Json;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
@@ -262,7 +263,7 @@ namespace NeoExpress.Node
 
         public Task<Block> GetLatestBlockAsync() => MakeAsync(GetLatestBlock);
 
-        (Transaction tx, RpcApplicationLog? appLog) GetTransaction(UInt256 txHash)
+        (Transaction tx, JObject? appLog) GetTransaction(UInt256 txHash)
         {
             var tx = NativeContract.Ledger.GetTransaction(neoSystem.StoreView, txHash);
             if (tx is null)
@@ -270,11 +271,11 @@ namespace NeoExpress.Node
 
             var jsonLog = persistencePlugin.GetAppLog(txHash);
             return jsonLog is not null
-                ? (tx, RpcApplicationLog.FromJson(jsonLog, ProtocolSettings))
+                ? (tx, jsonLog)
                 : (tx, null);
         }
 
-        public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
+        public Task<(Transaction tx, JObject? appLog)> GetTransactionAsync(UInt256 txHash)
             => MakeAsync(() => GetTransaction(txHash));
 
         uint GetTransactionHeight(UInt256 txHash)

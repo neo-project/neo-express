@@ -15,6 +15,7 @@ using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Plugins;
+using Neo.SmartContract;
 using Neo.VM;
 using NeoExpress.Models;
 using System.Buffers.Binary;
@@ -31,17 +32,20 @@ namespace NeoExpress.Node
         IStore? notificationsStore;
         ISnapshot? appLogsSnapshot;
         ISnapshot? notificationsSnapshot;
+        List<LogEventArgs> appEngLogs = new();
 
         public ExpressPersistencePlugin()
         {
             Blockchain.Committing += OnCommitting;
             Blockchain.Committed += OnCommitted;
+            ApplicationEngine.Log += OnLog;
         }
 
         public override void Dispose()
         {
             Blockchain.Committing -= OnCommitting;
             Blockchain.Committed -= OnCommitted;
+            ApplicationEngine.Log -= OnLog;
             appLogsSnapshot?.Dispose();
             appLogsStore?.Dispose();
             notificationsSnapshot?.Dispose();
@@ -112,6 +116,11 @@ namespace NeoExpress.Node
             }
         }
 
+        void OnLog(object? sender, LogEventArgs e)
+        {
+            appEngLogs.Add(e);
+        }
+
         void OnCommitting(NeoSystem system, Block block, DataCache snapshot, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
         {
             if (appLogsStore is null)
@@ -138,7 +147,9 @@ namespace NeoExpress.Node
                 if (appExec.Transaction is null)
                     continue;
 
-                var txJson = TxLogToJson(appExec);
+                var engineLogs = appEngLogs.Where(w => w.ScriptContainer.Hash == appExec.Transaction.Hash).ToArray();
+
+                var txJson = TxLogToJson(appExec, engineLogs);
                 appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
                 if (appExec.VMState != VMState.FAULT)
@@ -170,12 +181,13 @@ namespace NeoExpress.Node
         {
             appLogsSnapshot?.Commit();
             notificationsSnapshot?.Commit();
+            appEngLogs.Clear();
         }
 
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin
         // to avoid dependency on LevelDBStore package
 
-        static JObject TxLogToJson(ApplicationExecuted appExec)
+        static JObject TxLogToJson(ApplicationExecuted appExec, LogEventArgs[] engineLogs)
         {
             global::System.Diagnostics.Debug.Assert(appExec.Transaction is not null);
 
@@ -208,6 +220,13 @@ namespace NeoExpress.Node
                     notification["state"] = "error: recursive reference";
                 }
                 return notification;
+            }).ToArray();
+            trigger["logs"] = engineLogs.Select(s =>
+            {
+                JObject log = new();
+                log["contract"] = s.ScriptHash.ToString();
+                log["message"] = s.Message;
+                return log;
             }).ToArray();
 
             txJson["executions"] = new List<JObject>() { trigger }.ToArray();

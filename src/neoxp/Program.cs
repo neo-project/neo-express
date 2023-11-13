@@ -61,14 +61,6 @@ namespace NeoExpress
             catch (CommandParsingException ex)
             {
                 await Console.Error.WriteLineAsync($"\x1b[1m\x1b[31m\x1b[40m{ex.Message}\x1b[0m");
-
-                if (ex is UnrecognizedCommandParsingException uex && uex.NearestMatches.Any())
-                {
-                    await Console.Error.WriteLineAsync();
-                    await Console.Error.WriteLineAsync("Did you mean this?");
-                    await Console.Error.WriteLineAsync("    " + uex.NearestMatches.First());
-                }
-
                 return 1;
             }
             catch (Exception ex)

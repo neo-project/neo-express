@@ -92,11 +92,11 @@ namespace NeoExpress.Commands
 
             using var txExec = txExecutorFactory.Create(chainManager, Trace, false);
 
-            var batchApp = new CommandLineApplication<BatchFileCommands>();
-            batchApp.Conventions.UseDefaultConventions();
-
             for (var i = 0; i < commands.Length; i++)
             {
+                var batchApp = new CommandLineApplication<BatchFileCommands>();
+                batchApp.Conventions.UseDefaultConventions();
+
                 var args = SplitCommandLine(commands.Span[i]).ToArray();
                 if (args.Length == 0
                     || args[0].StartsWith('#')

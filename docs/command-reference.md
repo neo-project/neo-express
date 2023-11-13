@@ -486,8 +486,6 @@ Arguments:
   -?|--help             Show help information.
 ```
 
-Download contract and its storage from the remote rpc node into local chain.
-
 
 ## neoxp show
 

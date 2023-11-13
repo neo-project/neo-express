@@ -466,7 +466,7 @@ Arguments:
 
 ### neoxp contract download
 
-Download contract with storage from remote chain into local chain
+Download contract and its storage from remote chain into the local chain.
 
 ```
 Usage: neoxp contract download [Options] <Contract> <RpcUri>
@@ -479,14 +479,12 @@ Arguments:
 [Options]:
   -i|--input <INPUT>    Path to neo-express data file
   -h|--height <HEIGHT>  Block height to get contract state for
-                        Default value is: 0.
+                        Default value is: 0 (latest).
   -f|--force[:<FORCE>]  Replace contract and storage if it already exists
                         Defaults to None if option unspecified, All if option value unspecified
                         Allowed values are: None, All, ContractOnly, StorageOnly.
   -?|--help             Show help information.
 ```
-
-Download contract and its storage from the remote rpc node into local chain.
 
 
 ## neoxp show

@@ -34,7 +34,7 @@ insert_final_newline = true
 # Organize usings
 dotnet_separate_import_directive_groups = false
 dotnet_sort_system_directives_first = false
-file_header_template = Copyright (C) 2015-2023 The Neo Project.\n\n{fileName} is free software distributed under the MIT software license,\nsee the accompanying file LICENSE in the main directory of the\nproject or http://www.opensource.org/licenses/mit-license.php\nfor more details.\n\nRedistribution and use in source and binary forms with or without\nmodifications are permitted.
+file_header_template = Copyright (C) 2015-2023 The Neo Project.\n\n{fileName} file belongs to neo-express project and is free\nsoftware distributed under the MIT software license, see the\naccompanying file LICENSE in the main directory of the\nrepository or http://www.opensource.org/licenses/mit-license.php\nfor more details.\n\nRedistribution and use in source and binary forms with or without\nmodifications are permitted.
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false
@@ -242,3 +242,6 @@ dotnet_naming_style.begins_with_i.required_prefix = I
 dotnet_naming_style.begins_with_i.required_suffix = 
 dotnet_naming_style.begins_with_i.word_separator = 
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
+
+# Require file header
+dotnet_diagnostic.IDE0073.severity = error

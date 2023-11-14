@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// FileSystemExtensions.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -20,14 +21,25 @@ namespace NeoExpress
     {
         public static string ResolveFileName(this IFileSystem fileSystem, string fileName, string extension, Func<string> getDefaultFileName)
         {
+            var isDefaultPath = false;
             if (string.IsNullOrEmpty(fileName))
             {
                 fileName = getDefaultFileName();
+                isDefaultPath = true;
             }
 
             if (!fileSystem.Path.IsPathFullyQualified(fileName))
             {
-                fileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
+                if (isDefaultPath)
+                {
+                    var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+                    var folder = Path.Combine(homeDir, ".neo-express");
+                    if (fileSystem.Path.Exists(folder) == false)
+                        fileSystem.Directory.CreateDirectory(folder);
+                    fileName = fileSystem.Path.Combine(folder, fileName);
+                }
+                else
+                    fileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
             }
 
             return extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.OrdinalIgnoreCase)

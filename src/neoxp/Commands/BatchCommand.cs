@@ -1,15 +1,15 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// BatchCommand.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 
@@ -65,11 +65,7 @@ namespace NeoExpress.Commands
 
         internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
         {
-            var input = root.Resolve(string.IsNullOrEmpty(Input)
-                ? Constants.DEFAULT_EXPRESS_FILENAME
-                : Input);
-
-            var (chainManager, _) = chainManagerFactory.LoadChain(input);
+            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
             if (chainManager.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");
@@ -96,11 +92,11 @@ namespace NeoExpress.Commands
 
             using var txExec = txExecutorFactory.Create(chainManager, Trace, false);
 
-            var batchApp = new CommandLineApplication<BatchFileCommands>();
-            batchApp.Conventions.UseDefaultConventions();
-
             for (var i = 0; i < commands.Length; i++)
             {
+                var batchApp = new CommandLineApplication<BatchFileCommands>();
+                batchApp.Conventions.UseDefaultConventions();
+
                 var args = SplitCommandLine(commands.Span[i]).ToArray();
                 if (args.Length == 0
                     || args[0].StartsWith('#')

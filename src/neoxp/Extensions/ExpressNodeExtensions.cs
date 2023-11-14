@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// ExpressNodeExtensions.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -152,11 +153,10 @@ namespace NeoExpress
 
         public static async Task<OneOf<UInt160, None>> TryGetAccountHashAsync(this IExpressNode expressNode, ExpressChain chain, string name)
         {
-            if (name.StartsWith('@'))
+            if (name.StartsWith('#'))
             {
-                name = name[1..];
                 var contracts = await expressNode.ListContractsAsync().ConfigureAwait(false);
-                if (TryGetContractHash(contracts, name, out var contractHash))
+                if (TryGetContractHash(contracts, name.Substring(1), out var contractHash))
                 {
                     return contractHash;
                 }

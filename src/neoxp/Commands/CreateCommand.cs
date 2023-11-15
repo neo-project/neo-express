@@ -47,18 +47,24 @@ namespace NeoExpress.Commands
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
                 {
-                    if (PrivateKey.StartsWith('L'))
-                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
-                    else
-                        priKey = Convert.FromHexString(PrivateKey);
+                    try
+                    {
+                        if (PrivateKey.StartsWith('L'))
+                            priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
+                        else
+                            priKey = Convert.FromHexString(PrivateKey);
+                    }
+                    catch (FormatException)
+                    {
+                        throw new FormatException("Private key must be in HEX or WIF format.");
+                    }
                 }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
                 chainManager.SaveChain(outputPath);
 
-                console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");
-                console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-                console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                console.WriteLine($"Created {Count} node privatenet at {outputPath}\n");
+                console.WriteLine("\x1b[33mNote: The private keys for the accounts in this file are are *not* encrypted.\x1b[0m");
 
                 return 0;
             }

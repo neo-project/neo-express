@@ -14,6 +14,7 @@ using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
+using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
@@ -308,6 +309,14 @@ namespace NeoExpress
                         {
                             await WriteStackItemAsync(writer, m.Key, indent + 1, "key:   ").ConfigureAwait(false);
                             await WriteStackItemAsync(writer, m.Value, indent + 1, "value: ").ConfigureAwait(false);
+                        }
+                        break;
+                    case Neo.VM.Types.InteropInterface iop:
+                        if (iop.GetInterface<object>() is IIterator iter)
+                        {
+                            await WriteLineAsync($"{iop.Type}: ({iter.GetType().Name})").ConfigureAwait(false);
+                            while (iter.Next())
+                                await WriteStackItemAsync(writer, iter.Value(null), indent + 1).ConfigureAwait(false);
                         }
                         break;
                 }

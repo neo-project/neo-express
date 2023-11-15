@@ -47,18 +47,16 @@ namespace NeoExpress.Commands
         [Option(Description = "Private key for default dev account (Default: Random)")]
         internal string PrivateKey { get; set; } = string.Empty;
 
-        [Option(Description = "Synchronize local policy values with public Neo network")]
-        internal bool SyncPolicy { get; set; } = false;
-
-        [Option(Description = "URL of Neo JSON-RPC Node\nSpecify MainNet, TestNet or JSON-RPC URL")]
-        internal string RpcUri { get; set; } = "mainnet";
+        [Option(Description = "Synchronize local policy with URL of Neo JSON-RPC Node\nSpecify MainNet, TestNet or JSON-RPC URL\nDefault is not to sync")]
+        internal string RpcUri { get; set; } = string.Empty;
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
                 Models.PolicyValues? policyValues = null;
-                if (SyncPolicy)
+
+                if (string.IsNullOrEmpty(RpcUri) == false)
                 {
                     if (TryParseRpcUri(RpcUri, out var uri) == false)
                         throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");

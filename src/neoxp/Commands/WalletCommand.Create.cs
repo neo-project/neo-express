@@ -38,7 +38,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            [Option(Description = "Private key for account (Default: Random)")]
+            [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
             internal string PrivateKey { get; set; } = string.Empty;
 
             internal ExpressWallet Execute()
@@ -64,7 +64,12 @@ namespace NeoExpress.Commands
 
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
-                    priKey = Convert.FromHexString(PrivateKey);
+                {
+                    if (PrivateKey.StartsWith('L'))
+                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
+                    else
+                        priKey = Convert.FromHexString(PrivateKey);
+                }
 
                 var wallet = new DevWallet(chainManager.ProtocolSettings, Name);
                 var account = priKey == null ? wallet.CreateAccount() : wallet.CreateAccount(priKey!);

@@ -47,7 +47,7 @@ namespace NeoExpress.Commands
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
                 {
-                    if (PrivateKey.StartsWith('N'))
+                    if (PrivateKey.StartsWith('L'))
                         priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
                     else
                         priKey = Convert.FromHexString(PrivateKey);

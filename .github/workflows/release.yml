@@ -19,7 +19,7 @@ jobs:
       uses: dotnet/nbgv@v0.4.0
       id: nbgv
     - name: Install dependencies
-      run: dotnet restore neo-express.sln
+      run: dotnet restore
 
     - name: Pack NeoExpress
       run: dotnet pack src/neoxp --output ./out --configuration Release --no-restore --verbosity normal

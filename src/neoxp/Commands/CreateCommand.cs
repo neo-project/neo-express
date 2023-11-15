@@ -37,7 +37,7 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
-        [Option(Description = "Private key for default dev account (Default: Random)")]
+        [Option(Description = "Private key for default dev account (Format: HEX or WIF)\nDefault: Random")]
         internal string PrivateKey { get; set; } = string.Empty;
 
         internal int OnExecute(CommandLineApplication app, IConsole console)
@@ -46,7 +46,12 @@ namespace NeoExpress.Commands
             {
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
-                    priKey = Convert.FromHexString(PrivateKey);
+                {
+                    if (PrivateKey.StartsWith('N'))
+                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
+                    else
+                        priKey = Convert.FromHexString(PrivateKey);
+                }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
                 chainManager.SaveChain(outputPath);

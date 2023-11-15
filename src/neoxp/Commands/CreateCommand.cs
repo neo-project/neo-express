@@ -64,7 +64,7 @@ namespace NeoExpress.Commands
                 chainManager.SaveChain(outputPath);
 
                 console.WriteLine($"Created {Count} node privatenet at {outputPath}\n");
-                console.WriteLine("\x1b[33mNote: The private keys for the accounts in this file are are *not* encrypted.\x1b[0m");
+                console.WriteLine("\x1b[33mNote: The private keys for the accounts in this file are *not* encrypted.\x1b[0m");
 
                 return 0;
             }

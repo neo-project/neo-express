@@ -38,7 +38,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            [Option(Description = "Private key for account (Default: Random)")]
+            [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
             internal string PrivateKey { get; set; } = string.Empty;
 
             internal ExpressWallet Execute()
@@ -64,7 +64,19 @@ namespace NeoExpress.Commands
 
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
-                    priKey = Convert.FromHexString(PrivateKey);
+                {
+                    try
+                    {
+                        if (PrivateKey.StartsWith('L'))
+                            priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
+                        else
+                            priKey = Convert.FromHexString(PrivateKey);
+                    }
+                    catch (FormatException)
+                    {
+                        throw new FormatException("Private key must be in HEX or WIF format.");
+                    }
+                }
 
                 var wallet = new DevWallet(chainManager.ProtocolSettings, Name);
                 var account = priKey == null ? wallet.CreateAccount() : wallet.CreateAccount(priKey!);
@@ -87,8 +99,7 @@ namespace NeoExpress.Commands
                     {
                         console.WriteLine($"    {wallet.Accounts[i].ScriptHash}");
                     }
-                    console.WriteLine("    Note: The private keys for the accounts in this wallet are *not* encrypted.");
-                    console.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                    console.WriteLine("\n\x1b[33mNote: The private keys for the accounts in this wallet are *not* encrypted.\x1b[0m");
                     return 0;
                 }
                 catch (Exception ex)

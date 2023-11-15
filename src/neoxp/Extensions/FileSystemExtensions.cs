@@ -65,11 +65,16 @@ namespace NeoExpress
 
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
 
-            var rootPath = fileSystem.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
-                "Neo-Express",
-                "blockchain-nodes");
-            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+            var expressBlockchainDir = fileSystem.Path.Combine(homeDir, ".neo-express", "blockchain-nodes", account.ScriptHash);
+
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
+            var expressOldBlockchainDir = fileSystem.Path.Combine(appData, "Neo-Express", "blockchain-nodes", account.ScriptHash);
+
+            if (fileSystem.Directory.Exists(expressOldBlockchainDir))
+                return expressOldBlockchainDir;
+
+            return expressBlockchainDir;
         }
 
         public static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(this IFileSystem fileSystem, string contractPath)

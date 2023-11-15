@@ -10,10 +10,8 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
 using Neo.Network.RPC;
-using System.Diagnostics;
-using System.Security.Principal;
+using NeoExpress.Models;
 using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
 
@@ -44,7 +42,7 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
-        [Option(Description = "Private key for default dev account (Default: Random)")]
+        [Option(Description = "Private key for default dev account (Format: HEX or WIF)\nDefault: Random")]
         internal string PrivateKey { get; set; } = string.Empty;
 
         [Option(Description = "Synchronize local policy with URL of Neo JSON-RPC Node\nSpecify MainNet, TestNet or JSON-RPC URL\nDefault is not to sync")]
@@ -54,7 +52,7 @@ namespace NeoExpress.Commands
         {
             try
             {
-                Models.PolicyValues? policyValues = null;
+                PolicyValues? policyValues = null;
 
                 if (string.IsNullOrEmpty(RpcUri) == false)
                 {
@@ -69,7 +67,12 @@ namespace NeoExpress.Commands
 
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
-                    priKey = Convert.FromHexString(PrivateKey);
+                {
+                    if (PrivateKey.StartsWith('N'))
+                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
+                    else
+                        priKey = Convert.FromHexString(PrivateKey);
+                }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
                 chainManager.SaveChain(outputPath);

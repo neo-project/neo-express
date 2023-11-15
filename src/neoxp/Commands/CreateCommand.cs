@@ -10,7 +10,12 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
+using Neo.Network.RPC;
+using System.Diagnostics;
+using System.Security.Principal;
 using static Neo.BlockchainToolkit.Constants;
+using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Commands
 {
@@ -18,10 +23,12 @@ namespace NeoExpress.Commands
     internal class CreateCommand
     {
         readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly TransactionExecutorFactory txExecutorFactory;
 
-        public CreateCommand(ExpressChainManagerFactory chainManagerFactory)
+        public CreateCommand(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
+            this.txExecutorFactory = txExecutorFactory;
         }
 
         [Argument(0, Description = $"Name of {EXPRESS_EXTENSION} file to create\nDefault location is home directory as:\nLinux: $HOME/.neo-express/{DEFAULT_EXPRESS_FILENAME}\nWindows: %UserProfile%\\.neo-express\\{DEFAULT_EXPRESS_FILENAME}")]
@@ -40,10 +47,26 @@ namespace NeoExpress.Commands
         [Option(Description = "Private key for default dev account (Format: HEX or WIF)\nDefault: Random")]
         internal string PrivateKey { get; set; } = string.Empty;
 
-        internal int OnExecute(CommandLineApplication app, IConsole console)
+        [Option(Description = "Synchronize local policy with URL of Neo JSON-RPC Node\nSpecify MainNet, TestNet or JSON-RPC URL\nDefault is not to sync")]
+        internal string RpcUri { get; set; } = string.Empty;
+
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
             try
             {
+                Models.PolicyValues? policyValues = null;
+
+                if (string.IsNullOrEmpty(RpcUri) == false)
+                {
+                    if (TryParseRpcUri(RpcUri, out var uri) == false)
+                        throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
+                    else
+                    {
+                        using var rpcClient = new RpcClient(uri);
+                        policyValues = await rpcClient.GetPolicyAsync().ConfigureAwait(false);
+                    }
+                }
+
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
                 {
@@ -63,8 +86,15 @@ namespace NeoExpress.Commands
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
                 chainManager.SaveChain(outputPath);
 
-                console.WriteLine($"Created {Count} node privatenet at {outputPath}\n");
-                console.WriteLine("\x1b[33mNote: The private keys for the accounts in this file are *not* encrypted.\x1b[0m");
+                await console.Out.WriteLineAsync($"Created {Count} node privatenet at {outputPath}").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("    Note: The private keys for the accounts in this file are are *not* encrypted.").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("          Do not use these accounts on MainNet or in any other system where security is a concern.\n").ConfigureAwait(false);
+
+                if (policyValues != null)
+                {
+                    using var txExec = txExecutorFactory.Create(chainManager, false, false);
+                    await txExec.SetPolicyAsync(policyValues!, ExpressChainExtensions.GENESIS, string.Empty).ConfigureAwait(false);
+                }
 
                 return 0;
             }

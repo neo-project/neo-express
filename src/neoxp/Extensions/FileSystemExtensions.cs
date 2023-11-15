@@ -75,7 +75,6 @@ namespace NeoExpress
                 return expressOldBlockchainDir;
 
             return expressBlockchainDir;
-            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
         }
 
         public static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(this IFileSystem fileSystem, string contractPath)

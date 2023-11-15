@@ -76,7 +76,7 @@ namespace NeoExpress.Commands
 
                 await console.Out.WriteLineAsync($"Created {Count} node privatenet at {outputPath}").ConfigureAwait(false);
                 await console.Out.WriteLineAsync("    Note: The private keys for the accounts in this file are are *not* encrypted.").ConfigureAwait(false);
-                await console.Out.WriteLineAsync("          Do not use these accounts on MainNet or in any other system where security is a concern.").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("          Do not use these accounts on MainNet or in any other system where security is a concern.\n").ConfigureAwait(false);
 
                 if (policyValues != null)
                 {

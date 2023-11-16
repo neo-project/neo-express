@@ -1,0 +1,77 @@
+{
+  "magic": 1052883281,
+  "address-version": 53,
+  "consensus-nodes": [
+    {
+      "tcp-port": 50013,
+      "ws-port": 50014,
+      "rpc-port": 50012,
+      "wallet": {
+        "name": "node1",
+        "accounts": [
+          {
+            "private-key": "20418b3584d3c6cc0617eebedbab19462296dff8911ba07a8b2b45a11c776fd6",
+            "script-hash": "NfWe2uE5bticn4E6cewxgPRN8UhzPbpQmU",
+            "label": null,
+            "is-default": true,
+            "contract": {
+              "script": "0c2102f250f08d14dc411de60635c57b244d1006e8ef7f9cc097b4d72c02295d82d9474156e7b327",
+              "parameters": [
+                "Signature"
+              ]
+            }
+          },
+          {
+            "private-key": "20418b3584d3c6cc0617eebedbab19462296dff8911ba07a8b2b45a11c776fd6",
+            "script-hash": "NMsVjh5FJbhYHUXokZEzkVEoP7Ecy2wFgm",
+            "label": "Consensus MultiSigContract",
+            "is-default": false,
+            "contract": {
+              "script": "110c2102f250f08d14dc411de60635c57b244d1006e8ef7f9cc097b4d72c02295d82d94711419ed0dc3a",
+              "parameters": [
+                "Signature"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "wallets": [
+    {
+      "name": "devhawk",
+      "accounts": [
+        {
+          "private-key": "2a79cfa210832eb7139c36168e415dc78e2649ea7735060bf1dae04c05050a98",
+          "script-hash": "NeJ7447Mh3ntyn8mb1mkBgTevgkWoxAhLb",
+          "label": null,
+          "is-default": true,
+          "contract": {
+            "script": "0c21020e220de97ef404352a5fa761b54790ddf554c059198d35314d3721e8679af7604156e7b327",
+            "parameters": [
+              "Signature"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "mintest",
+      "accounts": [
+        {
+          "private-key": "2a79cfa210832eb7139c36168e415dc78e2649ea7735060bf1dae04c05050a98"
+        }
+      ]
+    },
+    {
+      "name": "mintest2",
+      "accounts": [
+        {
+          "private-key": "2a79cfa210832eb7139c36168e415dc78e2649ea7735060bf1dae04c05050a98",
+          "is-default": true
+        }
+      ]
+    }
+  ],
+  "settings": {}
+}

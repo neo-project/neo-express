@@ -46,7 +46,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManger, chainFilename) = chainManagerFactory.LoadChain(Input);
-                    var wallet = chainManger.CreateWallet(Input, Name, PrivateKey, Force);
+                    var wallet = chainManger.CreateWallet(Name, PrivateKey, Force);
                     chainManger.SaveChain(chainFilename);
 
                     console.WriteLine($"Created Wallet {Name}");

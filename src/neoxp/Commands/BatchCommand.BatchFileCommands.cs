@@ -307,9 +307,6 @@ namespace NeoExpress.Commands
                     [Option(Description = "Overwrite existing data")]
                     internal bool Force { get; }
 
-                    [Option(Description = "Path to neo-express data file")]
-                    internal string Input { get; init; } = string.Empty;
-
                     [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
                     internal string PrivateKey { get; set; } = string.Empty;
                 }

@@ -371,7 +371,7 @@ namespace NeoExpress
             return GetOfflineNode(offlineTrace);
         }
 
-        public ExpressWallet CreateWallet(string filename, string name, string privateKey, bool overwrite = false)
+        public ExpressWallet CreateWallet(string name, string privateKey, bool overwrite = false)
         {
             if (chain.IsReservedName(name))
             {

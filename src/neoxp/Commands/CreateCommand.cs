@@ -83,7 +83,7 @@ namespace NeoExpress.Commands
                     var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
 
                     var commands = await fileSystem.File.ReadAllLinesAsync(batchFilename, token).ConfigureAwait(false);
-                    await batchCommand.ExecuteAsync(batchDirInfo, commands, console.Out, chainManager).ConfigureAwait(false);
+                    await batchCommand.ExecuteAsync(batchDirInfo, commands, console.Out, chainManager, outputPath).ConfigureAwait(false);
                 }
 
                 return 0;

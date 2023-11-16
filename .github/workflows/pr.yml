@@ -9,3 +9,5 @@ on:
 jobs:
   pack:
     uses: ./.github/workflows/pack.yml
+  test:
+    uses: ./.github/workflows/test.yml

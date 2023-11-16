@@ -1,0 +1,78 @@
+{
+    "struct": {
+        "TokenState": [
+            {
+                "name": "Owner",
+                "type": "Address"
+            },
+            {
+                "name": "Name",
+                "type": "String"
+            },
+            {
+                "name": "Description",
+                "type": "String"
+            },
+            {
+                "name": "Image",
+                "type": "String"
+            }
+        ]
+    },
+    "storage": {
+        "TotalSupply": {
+            "key": {
+                "prefix": 0
+            },
+            "value": "Integer"
+        },
+        "Balance": {
+            "key": {
+                "prefix": 1,
+                "segments": {
+                    "name": "owner",
+                    "type": "Address"
+                }
+            },
+            "value": "Integer"
+        },
+        "TokenId": {
+            "key": {
+                "prefix": 2
+            },
+            "value": "Integer"
+        },
+        "Token": {
+            "key": {
+                "prefix": 3,
+                "segments": {
+                    "name": "tokenId",
+                    "type": "Hash256"
+                }
+            },
+            "value": "TokenState"
+        },
+        "AccountToken": {
+            "key": {
+                "prefix": 4,
+                "segments": [
+                    {
+                        "name": "owner",
+                        "type": "Address"
+                    },
+                    {
+                        "name": "tokenId",
+                        "type": "Hash256"
+                    }
+                ]
+            },
+            "value": "Integer"
+        },
+        "ContractOwner": {
+            "key": {
+                "prefix": 255
+            },
+            "value": "Address"
+        }
+    }
+}

@@ -1,12 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <AssemblyName>neotrace</AssemblyName>
+        <Description>neotrace generates debug trace files for existing blocks and/or transactions</Description>
+        <OutputType>Exe</OutputType>
+        <PackageId>Neo.Trace</PackageId>
+        <PackAsTool>true</PackAsTool>
+        <RootNamespace>NeoTrace</RootNamespace>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <AssemblyName>neotrace</AssemblyName>
-    <Description>neotrace generates debug trace files for existing blocks and/or transactions</Description>
-    <OutputType>Exe</OutputType>
-    <PackageId>Neo.Trace</PackageId>
-    <PackAsTool>true</PackAsTool>
-    <RootNamespace>NeoTrace</RootNamespace>
-  </PropertyGroup>
-
+    <ItemGroup>
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\bctklib\bctklib.csproj" />
+    </ItemGroup>
 </Project>

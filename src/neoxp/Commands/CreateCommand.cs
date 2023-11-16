@@ -10,10 +10,7 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using Neo.BlockchainToolkit;
 using Neo.Network.RPC;
-using System.Diagnostics;
-using System.Security.Principal;
 using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
 

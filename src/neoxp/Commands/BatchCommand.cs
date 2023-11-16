@@ -114,7 +114,7 @@ namespace NeoExpress.Commands
                         {
                             _ = await chainManager.CreateCheckpointAsync(
                                 txExec.ExpressNode,
-                                root.Resolve(cmd.Model.Name),
+                                cmd.Model.Name,
                                 cmd.Model.Force,
                                 writer).ConfigureAwait(false);
                             break;

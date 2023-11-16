@@ -24,6 +24,7 @@ using OneOf;
 using OneOf.Types;
 using System.IO.Abstractions;
 using System.Numerics;
+using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress
@@ -470,11 +471,12 @@ namespace NeoExpress
             return default(None);
         }
 
-        public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string path)
+        public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string filename)
         {
-            if (fileSystem.File.Exists(path))
+            filename = fileSystem.ResolveFileName(filename, JSON_EXTENSION, () => DEAULT_POLICY_FILENAME);
+            if (fileSystem.File.Exists(filename))
             {
-                using var stream = fileSystem.File.OpenRead(path);
+                using var stream = fileSystem.File.OpenRead(filename);
                 using var reader = new StreamReader(stream);
                 var text = await reader.ReadToEndAsync().ConfigureAwait(false);
                 var json = (Neo.Json.JObject)Neo.Json.JObject.Parse(text)!;

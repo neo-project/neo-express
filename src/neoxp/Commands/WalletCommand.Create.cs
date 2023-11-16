@@ -12,57 +12,58 @@
 using McMaster.Extensions.CommandLineUtils;
 using System.ComponentModel.DataAnnotations;
 
-namespace NeoExpress.Commands;
-
-partial class WalletCommand
+namespace NeoExpress.Commands
 {
-    [Command("create", Description = "Create neo-express wallet")]
-    internal class Create
+    partial class WalletCommand
     {
-        readonly ExpressChainManagerFactory chainManagerFactory;
-
-        public Create(ExpressChainManagerFactory chainManagerFactory)
+        [Command("create", Description = "Create neo-express wallet")]
+        internal class Create
         {
-            this.chainManagerFactory = chainManagerFactory;
-        }
+            readonly ExpressChainManagerFactory chainManagerFactory;
 
-        [Argument(0, Description = "Wallet name")]
-        [Required]
-        internal string Name { get; init; } = string.Empty;
-
-        [Option(Description = "Overwrite existing data")]
-        internal bool Force { get; } = false;
-
-        [Option(Description = "Path to neo-express data file")]
-        internal string Input { get; init; } = string.Empty;
-
-        [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
-        internal string PrivateKey { get; set; } = string.Empty;
-
-        internal int OnExecute(CommandLineApplication app, IConsole console)
-        {
-            try
+            public Create(ExpressChainManagerFactory chainManagerFactory)
             {
-                var (chainManger, chainFilename) = chainManagerFactory.LoadChain(Input);
-                var wallet = chainManger.CreateWallet(Name, PrivateKey, Force);
-                chainManger.SaveChain(chainFilename);
-
-                console.WriteLine($"Created Wallet {Name}");
-
-                for (int i = 0; i < wallet.Accounts.Count; i++)
-                    console.WriteLine($"    Address: {wallet.Accounts[i].ScriptHash}");
-
-                console.WriteLine("\n\x1b[33mNote: The private keys for the accounts in this wallet are *not* encrypted.\x1b[0m");
-
-                return 0;
+                this.chainManagerFactory = chainManagerFactory;
             }
-            catch (Exception ex)
+
+            [Argument(0, Description = "Wallet name")]
+            [Required]
+            internal string Name { get; init; } = string.Empty;
+
+            [Option(Description = "Overwrite existing data")]
+            internal bool Force { get; } = false;
+
+            [Option(Description = "Path to neo-express data file")]
+            internal string Input { get; init; } = string.Empty;
+
+            [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
+            internal string PrivateKey { get; set; } = string.Empty;
+
+            internal int OnExecute(CommandLineApplication app, IConsole console)
             {
-                app.WriteException(ex);
-                return 1;
+                try
+                {
+                    var (chainManger, chainFilename) = chainManagerFactory.LoadChain(Input);
+                    var wallet = chainManger.CreateWallet(Name, PrivateKey, Force);
+                    chainManger.SaveChain(chainFilename);
+
+                    console.WriteLine($"Created Wallet {Name}");
+
+                    for (int i = 0; i < wallet.Accounts.Count; i++)
+                        console.WriteLine($"    Address: {wallet.Accounts[i].ScriptHash}");
+
+                    console.WriteLine("\n\x1b[33mNote: The private keys for the accounts in this wallet are *not* encrypted.\x1b[0m");
+
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    app.WriteException(ex);
+                    return 1;
+                }
             }
+
+
         }
-
-
     }
 }

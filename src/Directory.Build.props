@@ -4,7 +4,7 @@
         <Authors>ngd enterprise</Authors>
         <Company>The Neo Project</Company>
         <Copyright>2015-2023 The Neo Project</Copyright>
-         <ImplicitUsings>enable</ImplicitUsings> 
+        <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
         <PackageIcon>neo-logo-72.png</PackageIcon>
@@ -21,8 +21,6 @@
     </PropertyGroup>
     <ItemGroup>
         <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
-    </ItemGroup>
-    <ItemGroup>
     </ItemGroup>
     <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 </Project>

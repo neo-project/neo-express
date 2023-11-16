@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <AssemblyName>neotrace</AssemblyName>
         <Description>neotrace generates debug trace files for existing blocks and/or transactions</Description>
@@ -15,5 +14,4 @@
     <ItemGroup>
         <ProjectReference Include="..\bctklib\bctklib.csproj" />
     </ItemGroup>
-
 </Project>

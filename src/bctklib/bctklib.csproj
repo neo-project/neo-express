@@ -26,8 +26,7 @@
         <PackageReference Include="OneOf" Version="3.0.223" />
         <PackageReference Include="rocksdb" Version="7.7.3.33461" />
         <PackageReference Include="System.IO.Abstractions" Version="19.1.1" />
-        <PackageReference Include="Neo.Cryptography.MPT" Version="3.6.0" />
-        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.6.0" />
+        <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     </ItemGroup>
-
 </Project>

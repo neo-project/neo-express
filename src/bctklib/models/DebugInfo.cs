@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2023 The Neo Project.
 //
 // DebugInfo.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the

@@ -26,6 +26,9 @@ namespace NeoExpress
                 fileName = getDefaultFileName();
             }
 
+            if (extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.InvariantCultureIgnoreCase) == false)
+                fileName = $"{fileName}{extension}";
+
             if (fileSystem.Path.IsPathFullyQualified(fileName) == false)
             {
                 var defaultFileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
@@ -41,8 +44,7 @@ namespace NeoExpress
                     fileName = defaultFileName;
             }
 
-            return extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.OrdinalIgnoreCase)
-                ? fileName : fileName + extension;
+            return fileName;
         }
 
         public static string GetTempFolder(this IFileSystem fileSystem)

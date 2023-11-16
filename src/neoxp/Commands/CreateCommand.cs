@@ -11,6 +11,7 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.RPC;
+using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
 
@@ -21,10 +22,12 @@ namespace NeoExpress.Commands
     {
         readonly ExpressChainManagerFactory chainManagerFactory;
         readonly TransactionExecutorFactory txExecutorFactory;
+        readonly IFileSystem fileSystem;
 
-        public CreateCommand(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+        public CreateCommand(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
+            this.fileSystem = fileSystem;
             this.txExecutorFactory = txExecutorFactory;
         }
 
@@ -44,26 +47,10 @@ namespace NeoExpress.Commands
         [Option(Description = "Private key for default dev account (Format: HEX or WIF)\nDefault: Random")]
         internal string PrivateKey { get; set; } = string.Empty;
 
-        [Option(Description = "Synchronize local policy with URL of Neo JSON-RPC Node\nSpecify MainNet, TestNet or JSON-RPC URL\nDefault is not to sync")]
-        internal string RpcUri { get; set; } = string.Empty;
-
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
         {
             try
             {
-                Models.PolicyValues? policyValues = null;
-
-                if (string.IsNullOrEmpty(RpcUri) == false)
-                {
-                    if (TryParseRpcUri(RpcUri, out var uri) == false)
-                        throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
-                    else
-                    {
-                        using var rpcClient = new RpcClient(uri);
-                        policyValues = await rpcClient.GetPolicyAsync().ConfigureAwait(false);
-                    }
-                }
-
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
                 {
@@ -81,17 +68,24 @@ namespace NeoExpress.Commands
                 }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
-                chainManager.SaveChain(outputPath);
 
                 await console.Out.WriteLineAsync($"Created {Count} node privatenet at {outputPath}").ConfigureAwait(false);
                 await console.Out.WriteLineAsync("    Note: The private keys for the accounts in this file are are *not* encrypted.").ConfigureAwait(false);
                 await console.Out.WriteLineAsync("          Do not use these accounts on MainNet or in any other system where security is a concern.\n").ConfigureAwait(false);
 
-                if (policyValues != null)
+                var batchFilename = fileSystem.ResolveFileName(string.Empty, EXPRESS_BATCH_EXTENSION, () => DEFAULT_SETUP_BATCH_FILENAME);
+
+                if (fileSystem.File.Exists(batchFilename))
                 {
-                    using var txExec = txExecutorFactory.Create(chainManager, false, false);
-                    await txExec.SetPolicyAsync(policyValues!, ExpressChainExtensions.GENESIS, string.Empty).ConfigureAwait(false);
+                    var batchCommand = new BatchCommand(chainManagerFactory, fileSystem, txExecutorFactory);
+                    var batchFileInfo = fileSystem.FileInfo.New(batchFilename);
+                    var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
+
+                    var commands = await fileSystem.File.ReadAllLinesAsync(batchFilename, token).ConfigureAwait(false);
+                    await batchCommand.ExecuteAsync(batchDirInfo, commands, console.Out, chainManager).ConfigureAwait(false);
                 }
+
+                chainManager.SaveChain(outputPath);
 
                 return 0;
             }

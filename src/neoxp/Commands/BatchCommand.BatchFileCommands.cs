@@ -19,7 +19,7 @@ namespace NeoExpress.Commands
     partial class BatchCommand
     {
         [Command]
-        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer))]
+        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer), typeof(Wallet))]
         internal class BatchFileCommands
         {
             [Command("checkpoint")]
@@ -291,6 +291,28 @@ namespace NeoExpress.Commands
 
                 [Option(Description = "password to use for NEP-2/NEP-6 sender")]
                 internal string Password { get; init; } = string.Empty;
+            }
+
+            [Command("wallet")]
+            [Subcommand(typeof(Create))]
+            internal class Wallet
+            {
+                [Command("create")]
+                internal class Create
+                {
+                    [Argument(0, Description = "Wallet name")]
+                    [Required]
+                    internal string Name { get; init; } = string.Empty;
+
+                    [Option(Description = "Overwrite existing data")]
+                    internal bool Force { get; }
+
+                    [Option(Description = "Path to neo-express data file")]
+                    internal string Input { get; init; } = string.Empty;
+
+                    [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
+                    internal string PrivateKey { get; set; } = string.Empty;
+                }
             }
         }
     }

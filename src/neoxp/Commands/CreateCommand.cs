@@ -68,10 +68,11 @@ namespace NeoExpress.Commands
                 }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
+                chainManager.SaveChain(outputPath);
 
                 await console.Out.WriteLineAsync($"Created {Count} node privatenet at {outputPath}").ConfigureAwait(false);
-                await console.Out.WriteLineAsync("    Note: The private keys for the accounts in this file are are *not* encrypted.").ConfigureAwait(false);
-                await console.Out.WriteLineAsync("          Do not use these accounts on MainNet or in any other system where security is a concern.\n").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("\x1b[33m   Note: The private keys for the accounts in this file are are *not* encrypted.").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("         Do not use these accounts on MainNet or in any other system where security is a concern.\x1b[0m\n").ConfigureAwait(false);
 
                 var batchFilename = fileSystem.ResolveFileName(string.Empty, EXPRESS_BATCH_EXTENSION, () => DEFAULT_SETUP_BATCH_FILENAME);
 
@@ -84,8 +85,6 @@ namespace NeoExpress.Commands
                     var commands = await fileSystem.File.ReadAllLinesAsync(batchFilename, token).ConfigureAwait(false);
                     await batchCommand.ExecuteAsync(batchDirInfo, commands, console.Out, chainManager).ConfigureAwait(false);
                 }
-
-                chainManager.SaveChain(outputPath);
 
                 return 0;
             }

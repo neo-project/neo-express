@@ -15,6 +15,12 @@ namespace Neo.BlockchainToolkit
     {
         public const string EXPRESS_EXTENSION = ".neo-express";
         public const string DEFAULT_EXPRESS_FILENAME = "default" + EXPRESS_EXTENSION;
+
+        public const string EXPRESS_BATCH_EXTENSION = ".batch";
+        public const string DEFAULT_BATCH_FILENAME = "default" + EXPRESS_BATCH_EXTENSION;
+        public const string DEFAULT_INIT_BATCH_FILENAME = "init" + EXPRESS_BATCH_EXTENSION;
+        public const string DEFAULT_SETUP_BATCH_FILENAME = "setup" + EXPRESS_BATCH_EXTENSION;
+
         public const string WORKNET_EXTENSION = ".neo-worknet";
         public const string DEFAULT_WORKNET_FILENAME = "default" + WORKNET_EXTENSION;
 

@@ -11,6 +11,11 @@
 
   <ItemGroup>
     <PackageReference Include="Crayon" Version="2.0.69" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\bctklib\bctklib.csproj" />
   </ItemGroup>
 
   <Choose>

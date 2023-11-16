@@ -199,7 +199,7 @@ namespace NeoExpress.Commands
             }
 
             [Command("policy")]
-            [Subcommand(typeof(Block), typeof(Set), typeof(Unblock))]
+            [Subcommand(typeof(Block), typeof(Set), typeof(Sync), typeof(Unblock))]
             internal class Policy
             {
                 [Command("block")]

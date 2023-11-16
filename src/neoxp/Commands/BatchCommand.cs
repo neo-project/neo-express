@@ -65,9 +65,11 @@ namespace NeoExpress.Commands
             }
         }
 
-        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
+        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer, ExpressChainManager? chainManager = null)
         {
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            if (chainManager == null)
+                chainManager = chainManagerFactory.LoadChain(Input).manager;
+
             if (chainManager.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");
@@ -228,8 +230,7 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
                         {
-                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(
-                                root.Resolve(cmd.Model.Source))
+                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source)
                                 .ConfigureAwait(false);
                             if (values.TryPickT0(out var policyValues, out _))
                             {

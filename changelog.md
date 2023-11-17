@@ -25,13 +25,13 @@ may not exactly match a publicly released version.
 * Added autorun `setup.batch` on `create` command
 * WIF encoded private keys can be used to specify signing and non-signing accounts 
 * `contract update` command
-* #254
-* #257
-* #307
-* #302
-* #298
-* #320
-* #345
+* [#254](https://github.com/neo-project/neo-express/issues/254)
+* [#257](https://github.com/neo-project/neo-express/issues/257)
+* [#307](https://github.com/neo-project/neo-express/issues/307)
+* [#302](https://github.com/neo-project/neo-express/issues/302)
+* [#298](https://github.com/neo-project/neo-express/issues/298)
+* [#320](https://github.com/neo-project/neo-express/pull/320)
+* [#254](https://github.com/neo-project/neo-express/issues/345)
 
 ### Changed
 

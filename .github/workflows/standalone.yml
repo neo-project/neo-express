@@ -199,51 +199,51 @@ jobs:
 
     - name: Build (win-x64)
       run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime win-x64 \
-        --self-contained true \
-        --output ./out/win-x64 \
-        --verbosity normal \
-        -p:RuntimeIdentifier=win-x64 \
-        -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=false \
-        -p:PublishTrimmed=false \
-        -p:PublishSingleFile=true \
-        -p:PublishReadyToRun=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
+        dotnet publish ./src/neoxp `
+        --framework net7.0 `
+        --configuration Release `
+        --runtime win-x64 `
+        --self-contained true `
+        --output ./out/win-x64 `
+        --verbosity normal `
+        -p:RuntimeIdentifier=win-x64 `
+        -p:SelfContained=true `
+        -p:IncludeNativeLibrariesForSelfExtract=false `
+        -p:PublishTrimmed=false `
+        -p:PublishSingleFile=true `
+        -p:PublishReadyToRun=true `
+        -p:EnableCompressionInSingleFile=true `
+        -p:DebugType=embedded `
         -p:ServerGarbageCollection=true
 
     - name: Build (win-arm64)
       run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime win-arm64 \
-        --self-contained true \
-        --output ./out/win-arm64 \
-        --verbosity normal \
-        -p:RuntimeIdentifier=win-arm64 \
-        -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=false \
-        -p:PublishTrimmed=false \
-        -p:PublishSingleFile=true \
-        -p:PublishReadyToRun=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
+        dotnet publish ./src/neoxp `
+        --framework net7.0 `
+        --configuration Release `
+        --runtime win-arm64 `
+        --self-contained true `
+        --output ./out/win-arm64 `
+        --verbosity normal `
+        -p:RuntimeIdentifier=win-arm64 `
+        -p:SelfContained=true `
+        -p:IncludeNativeLibrariesForSelfExtract=false `
+        -p:PublishTrimmed=false `
+        -p:PublishSingleFile=true `
+        -p:PublishReadyToRun=true `
+        -p:EnableCompressionInSingleFile=true `
+        -p:DebugType=embedded `
         -p:ServerGarbageCollection=true
 
     - name: Zip (win-x64)
       run: |
         cd ./out/win-x64
-        zip -r ${{ format('../Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }} .
+        Compress-Archive -Path . -Destination ${{ format('../Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
 
     - name: Zip (win-arm64)
       run: |
         cd ./out/win-arm64
-        zip -r ${{ format('../Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }} .
+        Compress-Archive -Path . -Destination ${{ format('../Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
 
     - name: Upload Zips (Standalone)
       uses: actions/upload-artifact@v3

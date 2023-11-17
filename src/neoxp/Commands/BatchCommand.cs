@@ -10,7 +10,6 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 
@@ -65,10 +64,10 @@ namespace NeoExpress.Commands
             }
         }
 
-        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer, ExpressChainManager? chainManager = null)
+        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer, ExpressChainManager? chainManager = null, string? chainFilename = null)
         {
             if (chainManager == null)
-                chainManager = chainManagerFactory.LoadChain(Input).manager;
+                (chainManager, chainFilename) = chainManagerFactory.LoadChain(Input);
 
             if (chainManager.IsRunning())
             {
@@ -259,6 +258,18 @@ namespace NeoExpress.Commands
                                 cmd.Model.Password,
                                 cmd.Model.Receiver,
                                 cmd.Model.Data).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Wallet.Create> cmd:
+                        {
+                            var wallet = chainManager.CreateWallet(
+                                cmd.Model.Name,
+                                cmd.Model.PrivateKey,
+                                cmd.Model.Force);
+                            chainManager.SaveChain(chainFilename!);
+                            await writer.WriteLineAsync($"Created Wallet {cmd.Model.Name}");
+                            for (int x = 0; x < wallet.Accounts.Count; x++)
+                                await writer.WriteLineAsync($"    Address: {wallet.Accounts[x].ScriptHash}");
                             break;
                         }
                     default:

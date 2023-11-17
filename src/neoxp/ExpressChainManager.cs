@@ -370,5 +370,49 @@ namespace NeoExpress
 
             return GetOfflineNode(offlineTrace);
         }
+
+        public ExpressWallet CreateWallet(string name, string privateKey, bool overwrite = false)
+        {
+            if (chain.IsReservedName(name))
+            {
+                throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
+            }
+
+            var existingWallet = chain.GetWallet(name);
+            if (existingWallet is not null)
+            {
+                if (!overwrite)
+                {
+                    throw new Exception($"{name} dev wallet already exists. Use --force to overwrite.");
+                }
+
+                chain.Wallets.Remove(existingWallet);
+            }
+
+            byte[]? priKey = null;
+            if (string.IsNullOrEmpty(privateKey) == false)
+            {
+                try
+                {
+                    if (privateKey.StartsWith('L'))
+                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(privateKey);
+                    else
+                        priKey = Convert.FromHexString(privateKey);
+                }
+                catch (FormatException)
+                {
+                    throw new FormatException("Private key must be in HEX or WIF format.");
+                }
+            }
+
+            var wallet = new DevWallet(ProtocolSettings, name);
+            var account = priKey == null ? wallet.CreateAccount() : wallet.CreateAccount(priKey!);
+            account.IsDefault = true;
+
+            var expressWallet = wallet.ToExpressWallet();
+            chain.Wallets ??= new List<ExpressWallet>(1);
+            chain.Wallets.Add(expressWallet);
+            return expressWallet;
+        }
     }
 }

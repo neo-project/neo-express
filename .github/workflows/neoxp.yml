@@ -23,26 +23,34 @@ jobs:
       with:
         name: express
         path: ./out
-    - name: Download Trace
-      uses: actions/download-artifact@v3
-      with:
-        name: trace
-        path: ./out
-    - name: Download WorkNet
-      uses: actions/download-artifact@v3
-      with:
-        name: worknet
-        path: ./out
-    - name: Download bctklib
-      uses: actions/download-artifact@v3
-      with:
-        name: bctklib
-        path: ./out
+
     - name: Install Neo Express
       run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
-    - name: Run Create Command
+
+    - name: Test Create Command
       run: neoxp create
-    - name: Run Transfer Command
-      run: neoxp transfer 1 gas genesis node1
-    - name: Run Transfer Command
-      run: neoxp transfer 1 gas genesis node1
+
+    - name: Test Checkpoint Command
+      run: neoxp checkpoint create checkpoints/init --force
+
+    - name: Test Policy Command
+      run: |
+        neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
+        neoxp policy sync mainnet-policy genesis
+
+    - name: Test Wallet Command
+      run: |
+        neoxp wallet create bob
+
+    - name: Test Transfer Command
+      run: |
+        neoxp transfer 10000 gas genesis node1
+        neoxp transfer 10000 gas genesis bob
+
+    - name: Test Run Command
+      timeout-minutes: 1
+      run: neoxp run --seconds-per-block 3 &
+
+    - name: Test Stop Command
+      run: neoxp stop --all
+

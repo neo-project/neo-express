@@ -51,7 +51,7 @@ static class Utility
         const string storeTypeName = "Neo.Plugins.Storage.Store";
         var storeType = typeof(Neo.Plugins.Storage.RocksDBStore).Assembly.GetType(storeTypeName);
         var storeCtor = storeType?.GetConstructor(new[] { typeof(string) });
-        var store = storeCtor?.Invoke(new object[] { (string)path }) as IStore;
+        var store = storeCtor?.Invoke(new object[] { path }) as IStore;
         if (store == null)
             throw new Exception($"Failed to create {storeTypeName} instance");
         return store;

@@ -17,5 +17,4 @@ jobs:
   test:
     uses: ./.github/workflows/test.yml
   neoxp:
-    needs: [pack, test]
     uses: ./.github/workflows/neoxp.yml

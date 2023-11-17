@@ -35,7 +35,7 @@ jobs:
     - name: Test Neo Express Blockchain & Commands (non-dotnet)
       run: |
         cd ./src/neoxp/bin/Release/net7.0
-        if [ "$RUNNER_OS" == "Linux" || "$RUNNER_OS" == "macOS" ]; then
+        if [[ "$RUNNER_OS" == "Linux" || "$RUNNER_OS" == "macOS" ]]; then
             ./neoxp create
             ./neoxp transfer 1 gas genesis node1
         else

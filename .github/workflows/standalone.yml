@@ -86,20 +86,20 @@ jobs:
     - name: Zip (osx-x64)
       run: |
         cd ./out/osx-x64
-        zip -r ../Neo.Express.${VERSION}-osx-x64.zip .
+        zip -r Neo.Express.${VERSION}-osx-x64.zip .
 
     - name: Zip (linux-x64)
       run: |
         cd ./out/linux-x64
-        zip -r ../Neo.Express.${VERSION}-linux-x64.zip .
+        zip -r Neo.Express.${VERSION}-linux-x64.zip .
 
     - name: Zip (win-x64)
       run: |
         cd ./out/win-x64
-        zip -r ../Neo.Express.${VERSION}-win-x64.zip .
+        zip -r Neo.Express.${VERSION}-win-x64.zip .
 
     - name: Upload Zips (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: standalone
-        path: ./out/Neo.Express.*.zip
+        path: ./out/**/Neo.Express.*.zip

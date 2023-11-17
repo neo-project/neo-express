@@ -20,8 +20,6 @@ jobs:
     uses: ./.github/workflows/pack.yml
   test:
     uses: ./.github/workflows/test.yml
-  standalone:
-    uses: ./.github/workflows/standalone.yml
   publish:
     needs: [pack, test]
     runs-on: ubuntu-latest

@@ -17,8 +17,21 @@ may not exactly match a publicly released version.
 
 ### Added
 
+* Added option for private key on `create` or `wallet create` command (`WIF` or `HEX` formats)
+* Added `wallet create` command to batch files
+* Added global directory to search for files; _Note: still can be used in current directory_
+  * Windows Path: `%USERPROFILE%\.neo-express`
+  * Linux Path: `$HOME/.neo-express`
+* Added autorun `setup.batch` on `create` command
 * WIF encoded private keys can be used to specify signing and non-signing accounts 
 * `contract update` command
+* #254
+* #257
+* #307
+* #302
+* #298
+* #320
+* #345
 
 ### Changed
 

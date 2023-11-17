@@ -14,9 +14,6 @@
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="../ngdsea.png" Pack="true" Visible="false" PackagePath="" />
-    </ItemGroup>
-    <ItemGroup>
         <InternalsVisibleTo Include="test.bctklib" />
     </ItemGroup>
     <ItemGroup>

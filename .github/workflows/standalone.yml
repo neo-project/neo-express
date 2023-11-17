@@ -1,0 +1,103 @@
+name: Run Pack
+
+on:
+  workflow_call:
+
+env:
+  CONFIGURATION: 'Release'
+  DOTNET_VERSION: '7.0.x'
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: Nerdbank.GitVersioning
+      uses: dotnet/nbgv@v0.4.1
+      id: nbgv
+
+    - name: Build (osx-x64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime osx-x64 \
+        --self-contained true \
+        --output ./out/osx-x64 \
+        --verbosity normal
+        -p:RuntimeIdentifier=osx-x64 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Build (linux-x64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime linux-x64 \
+        --self-contained true \
+        --output ./out/linux-x64 \
+        --verbosity normal
+        -p:RuntimeIdentifier=linux-x64 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Build (win-x64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime win-x64 \
+        --self-contained true \
+        --output ./out/win-x64 \
+        --verbosity normal
+        -p:RuntimeIdentifier=win-x64 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Zip (osx-x64)
+      run: |
+        cd ./out/osx-x64
+        zip -r release-osx-x64.zip .
+
+    - name: Zip (linux-x64)
+      run: |
+        cd ./out/linux-x64
+        zip -r release-linux-x64.zip .
+
+    - name: Zip (win-x64)
+      run: |
+        cd ./out/win-x64
+        zip -r release-win-x64.zip .
+
+    - name: Upload Zips (Standalone)
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: standalone
+        path: ./out/**/*.zip

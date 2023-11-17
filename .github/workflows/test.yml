@@ -32,48 +32,6 @@ jobs:
         dotnet restore neo-express.sln
         dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.${{ matrix.os }}.binlog
         dotnet test neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
-
-    - name: Build (osx-x64)
-      run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime osx-x64 \
-        --self-contained true \
-        --output ./out/osx-x64 \
-        -p:RuntimeIdentifier=osx-x64 \
-        -p:SelfContained=true \
-        -p:PublishSingleFile=true \
-        -p:IncludeNativeLibrariesForSelfExtract=true \
-        -p:PublishTrimmed=false \
-        -p:PublishReadyToRun=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true
-
-    - name: Zip (osx-64)
-      run: |
-        cd ./out/osx-x64
-        zip -r release-osx-x64.zip .
-
-    - name: Build (win-x64)
-      run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime win-x64 \
-        --self-contained true \
-        --output ./out/win-x64 \
-        -p:RuntimeIdentifier=win-x64 \
-        -p:SelfContained=true \
-        -p:PublishSingleFile=true \
-        -p:IncludeNativeLibrariesForSelfExtract=false \
-        -p:PublishTrimmed=false \
-        -p:PublishReadyToRun=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true
-
     - name: Upload Coverage
       uses: actions/upload-artifact@v3
       with:

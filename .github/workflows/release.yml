@@ -9,6 +9,7 @@ jobs:
     uses: ./.github/workflows/standalone.yml
   build:
     if: startsWith(github.ref, 'refs/heads/release/')
+    needs: [standalone]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2

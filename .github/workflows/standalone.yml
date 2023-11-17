@@ -1,4 +1,4 @@
-name: Run Pack
+name: Run Standalone / Pack
 
 on:
   workflow_call:

@@ -41,6 +41,7 @@ jobs:
         else
             ./neoxp.exe create
             ./neoxp.exe transfer 1 genesis node1
+        fi
       shell: bash
     - name: Upload Coverage
       uses: actions/upload-artifact@v3

@@ -113,22 +113,22 @@ jobs:
     - name: Zip (osx-x64)
       run: |
         cd ./out/osx-x64
-        zip -r ./out/Neo.Express${VERSION}-osx-x64.zip .
+        zip -r ./out/Neo.Express.${VERSION}-osx-x64.zip .
 
     - name: Zip (linux-x64)
       run: |
         cd ./out/linux-x64
-        zip -r ./out/Neo.Express${VERSION}-linux-x64.zip .
+        zip -r ./out/Neo.Express.${VERSION}-linux-x64.zip .
 
     - name: Zip (linux-arm64)
       run: |
         cd ./out/linux-arm64
-        zip -r ./out/Neo.Express${VERSION}-linux-arm64.zip .
+        zip -r ./out/Neo.Express.${VERSION}-linux-arm64.zip .
 
     - name: Zip (win-x64)
       run: |
         cd ./out/win-x64
-        zip -r ./out/Neo.Express${VERSION}-win-x64.zip .
+        zip -r ./out/Neo.Express.${VERSION}-win-x64.zip .
 
     - name: Upload Zips (Standalone)
       if: always()

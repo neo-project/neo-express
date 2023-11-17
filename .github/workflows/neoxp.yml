@@ -39,7 +39,7 @@ jobs:
         name: bctklib
         path: ./out
     - name: Install Neo Express
-      run: dotnet tool install --add-source ./out --verbosity normal --global neo.express
+      run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
     - name: Run Create Command
       run: neoxp create
     - name: Run Transfer Command

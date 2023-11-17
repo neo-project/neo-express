@@ -40,7 +40,7 @@ jobs:
             ./neoxp transfer 1 genesis node1
         else
             ./neoxp.exe create
-            ./neoxp.exe transfer 1 genesis node1
+            ./neoxp.exe transfer 1 gas genesis node1
         fi
       shell: bash
     - name: Upload Coverage

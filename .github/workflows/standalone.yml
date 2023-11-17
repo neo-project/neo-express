@@ -1,4 +1,4 @@
-name: Run Standalone / Pack
+name: Run Standalone / Build / Pack
 
 on:
   workflow_call:
@@ -74,7 +74,7 @@ jobs:
         cd ./out/osx-arm64
         tar cJf ${{ format('../Neo.Express.{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }} .
 
-    - name: Upload Zips (Standalone)
+    - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
@@ -171,7 +171,7 @@ jobs:
         cd ./out/linux-musl-arm64
         tar -czvf ${{ format('../Neo.Express.{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
 
-    - name: Upload Zips (Standalone)
+    - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}

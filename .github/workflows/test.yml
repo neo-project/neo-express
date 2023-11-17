@@ -37,7 +37,7 @@ jobs:
         cd ./src/neoxp/bin/Release/net7.0
         if [ "$RUNNER_OS" == "Linux" ]; then
             ./neoxp create
-            ./neoxp transfer 1 genesis node1
+            ./neoxp transfer 1 gas genesis node1
         else
             ./neoxp.exe create
             ./neoxp.exe transfer 1 gas genesis node1

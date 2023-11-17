@@ -5,11 +5,4 @@
         <Nullable>enable</Nullable>
         <TargetFramework>net7.0</TargetFramework>
     </PropertyGroup>
-    <PropertyGroup>
-        <NeoVersion>3.6.1</NeoVersion>
-    </PropertyGroup>
-    <ItemGroup>
-        <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>
-    </ItemGroup>
-    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 </Project>

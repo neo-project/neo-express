@@ -17,14 +17,21 @@ may not exactly match a publicly released version.
 
 ### Added
 
-* Added option for private key on `create` or `wallet create` command (`WIF` or `HEX` formats)
-* Added `wallet create` command to batch files
-* Added global directory to search for files; _Note: still can be used in current directory_
+* Option for private key on `create` or `wallet create` command (`WIF` or `HEX` formats)
+* `wallet create` command to batch files
+* Global directory to search for files; _Note: still can be used in current directory_
   * Windows Path: `%USERPROFILE%\.neo-express`
   * Linux Path: `$HOME/.neo-express`
-* Added autorun `setup.batch` on `create` command
-* WIF encoded private keys can be used to specify signing and non-signing accounts 
+* autorun `setup.batch` on `create` command
+* WIF encoded private keys can be used to specify signing and non-signing accounts
 * `contract update` command
+
+### Changed
+
+* use `UInt160.ToString` to write wallet account script hash to console in
+  `wallet list` command
+
+### Issues Fixed
 * [#254](https://github.com/neo-project/neo-express/issues/254) - issues transferring genesis funds
 * [#257](https://github.com/neo-project/neo-express/issues/257) - How to specify public key as argument for contract run?
 * [#307](https://github.com/neo-project/neo-express/issues/307) - getapplicationlog response differs from neo-cli
@@ -32,11 +39,6 @@ may not exactly match a publicly released version.
 * [#298](https://github.com/neo-project/neo-express/issues/298) - Wrong command color
 * [#320](https://github.com/neo-project/neo-express/pull/320) - neoxp help suggests help
 * [#254](https://github.com/neo-project/neo-express/issues/345) - Updated vulnerable & package dependencies
-
-### Changed
-
-* use `UInt160.ToString` to write wallet account script hash to console in 
-  `wallet list` command  
 
 ## [3.5] - 2023-01-03
 

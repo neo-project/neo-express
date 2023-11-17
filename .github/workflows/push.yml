@@ -46,5 +46,10 @@ jobs:
       with:
         name: worknet
         path: ./out
+    - name: Download bctklib
+      uses: actions/download-artifact@v3
+      with:
+        name: bctklib
+        path: ./out
     - name: Publish to Azure Artifacts
       run: dotnet nuget push out/*.nupkg

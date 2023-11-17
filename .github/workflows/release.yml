@@ -23,11 +23,16 @@ jobs:
 
     - name: Pack NeoExpress
       run: dotnet pack src/neoxp --output ./out --configuration Release --no-restore --verbosity normal
+
     - name: Pack NeoTrace 
       run: dotnet pack src/trace --output ./out --configuration Release --no-restore --verbosity normal
-    # temporarily pack worknet into ./out2 so that it doesn't get included in release 
+
+    # temporarily pack worknet into ./out2 so that it doesn't get included in release
     - name: Pack NeoWorkNet 
       run: dotnet pack src/worknet --output ./out2 --configuration Release --no-restore --verbosity normal
+
+    - name: Pack Blockchain-toolkit-library 
+      run: dotnet pack src/bctklib --output ./out --configuration Release --no-restore --verbosity normal
 
     - name: Upload NeoExpress artifact
       uses: actions/upload-artifact@v2
@@ -44,6 +49,11 @@ jobs:
       with:
         name: neoworknet
         path: ./out2/Neo.WorkNet.*.nupkg
+    - name: Upload Blockchain-toolkit-library artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: bctklib
+        path: ./out/bctklib.*.nupkg
 
     - name: Create Release
       uses: marvinpinto/action-automatic-releases@v1.1.1
@@ -58,5 +68,7 @@ jobs:
       run: dotnet nuget push ${{ format('./out/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
     - name: Push Neo.Trace Nuget.org
       run: dotnet nuget push ${{ format('./out/Neo.Trace.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+    - name: Push Blockchain-toolkit-library Nuget.org
+      run: dotnet nuget push ${{ format('./out/bctklib.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
     # - name: Push Neo.WorkNet Nuget.org
     #   run: dotnet nuget push ${{ format('./out/Neo.WorkNet.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json

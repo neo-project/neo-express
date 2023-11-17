@@ -14,17 +14,15 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
-
-    - name: Set Environment Variables
-      run: |
-        echo "VERSION=${{ steps.nbgv.outputs.NuGetPackageVersion }}" >> $GITHUB_ENV
 
     - name: Build (osx-x64)
       run: |
@@ -86,20 +84,23 @@ jobs:
     - name: Zip (osx-x64)
       run: |
         cd ./out/osx-x64
-        zip -r Neo.Express.${VERSION}-osx-x64.zip .
+        zip -r ${{ format('../Neo.Express.{0}-osx-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }} .
 
     - name: Zip (linux-x64)
       run: |
         cd ./out/linux-x64
-        zip -r Neo.Express.${VERSION}-linux-x64.zip .
+        zip -r ${{ format('../Neo.Express.{0}-linux-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }} .
 
     - name: Zip (win-x64)
       run: |
         cd ./out/win-x64
-        zip -r Neo.Express.${VERSION}-win-x64.zip .
+        zip -r ${{ format('../Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }} .
 
     - name: Upload Zips (Standalone)
       uses: actions/upload-artifact@v3
       with:
-        name: standalone
-        path: ./out/**/Neo.Express.*.zip
+        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+        path: |
+          ${{ format('./out/Neo.Express.{0}-osx-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-linux-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}

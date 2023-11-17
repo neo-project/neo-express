@@ -318,7 +318,7 @@ public class ReadWriteStoreTests : IDisposable
         var storeType = typeof(Neo.Plugins.Storage.RocksDBStore).Assembly
             .GetType("Neo.Plugins.Storage.Store");
         var storeCtor = storeType?.GetConstructor(new[] { typeof(string) });
-        var store = storeCtor?.Invoke(new object[] { (string)path }) as IStore;
+        var store = storeCtor?.Invoke(new object[] { path }) as IStore;
         if (store is null)
             throw new NullReferenceException(nameof(Neo.Plugins.Storage.RocksDBStore));
         return store;

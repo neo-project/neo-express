@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <AssemblyName>neoxp</AssemblyName>
         <Description>neo-express is a Neo developer blockchain tool</Description>
@@ -11,8 +11,8 @@
     <ItemGroup>
         <PackageReference Include="Nito.Disposables" Version="2.4.0" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.0" />
-        <PackageReference Include="Neo.Consensus.DBFT" Version="3.6.2" />
-        <PackageReference Include="Neo.Plugins.RpcServer" Version="3.6.2" />
+        <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
         <PackageReference Include="System.Linq.Parallel" Version="4.3.0" />
     </ItemGroup>
 

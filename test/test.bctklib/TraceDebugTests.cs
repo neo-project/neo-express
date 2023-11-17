@@ -32,7 +32,7 @@ namespace test.bctklib
         public void can_deserialize_trace_record_with_no_gas()
         {
             var writer = new ArrayBufferWriter<byte>();
-            TraceRecord_WriteWithoutGas(writer, options, VMState.BREAK, Array.Empty<ExecutionContext>(), _ => UInt160.Zero);
+            TraceRecord_WriteWithoutGas(writer, options, VMState.BREAK, Array.Empty<Neo.VM.ExecutionContext>(), _ => UInt160.Zero);
 
             var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options);
 
@@ -46,7 +46,7 @@ namespace test.bctklib
 
         static void TraceRecord_WriteWithoutGas(
            IBufferWriter<byte> writer, MessagePackSerializerOptions options, VMState vmState,
-           IReadOnlyCollection<ExecutionContext> contexts, Func<ExecutionContext, UInt160> getScriptIdentifier)
+           IReadOnlyCollection<Neo.VM.ExecutionContext> contexts, Func<Neo.VM.ExecutionContext, UInt160> getScriptIdentifier)
         {
             var mpWriter = new MessagePackWriter(writer);
             mpWriter.WriteArrayHeader(2);
@@ -65,7 +65,7 @@ namespace test.bctklib
         public void can_deserialize_trace_record_with_gas()
         {
             var writer = new ArrayBufferWriter<byte>();
-            TraceRecord.Write(writer, options, VMState.BREAK, 1000, Array.Empty<ExecutionContext>(), _ => UInt160.Zero);
+            TraceRecord.Write(writer, options, VMState.BREAK, 1000, Array.Empty<Neo.VM.ExecutionContext>(), _ => UInt160.Zero);
 
             var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options);
 

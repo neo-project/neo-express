@@ -31,7 +31,7 @@ jobs:
         --runtime osx-x64 \
         --self-contained true \
         --output ./out/osx-x64 \
-        --verbosity normal
+        --verbosity normal \
         -p:RuntimeIdentifier=osx-x64 \
         -p:SelfContained=true \
         -p:PublishSingleFile=true \
@@ -50,7 +50,7 @@ jobs:
         --runtime linux-x64 \
         --self-contained true \
         --output ./out/linux-x64 \
-        --verbosity normal
+        --verbosity normal \
         -p:RuntimeIdentifier=linux-x64 \
         -p:SelfContained=true \
         -p:PublishSingleFile=true \
@@ -69,7 +69,7 @@ jobs:
         --runtime win-x64 \
         --self-contained true \
         --output ./out/win-x64 \
-        --verbosity normal
+        --verbosity normal \
         -p:RuntimeIdentifier=win-x64 \
         -p:SelfContained=true \
         -p:PublishSingleFile=true \

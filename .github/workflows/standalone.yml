@@ -2,14 +2,21 @@ name: Run Pack
 
 on:
   workflow_call:
+    outputs:
+      PrereleaseVersion:
+        value: ${{ jobs.pack.outputs.PrereleaseVersion}}
+      NuGetPackageVersion:
+        value: ${{ jobs.pack.outputs.NuGetPackageVersion}}
 
 env:
-  CONFIGURATION: 'Release'
   DOTNET_VERSION: '7.0.x'
 
 jobs:
   pack:
     runs-on: ubuntu-latest
+    outputs:
+      PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
+      NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}    
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
@@ -22,6 +29,10 @@ jobs:
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
+
+    - name: Set Environment Variables
+      run: |
+        echo "VERSION=${{ steps.nbgv.outputs.PrereleaseVersion }}" >> $GITHUB_ENV
 
     - name: Build (osx-x64)
       run: |
@@ -61,6 +72,25 @@ jobs:
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
 
+    - name: Build (linux-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime linux-arm64 \
+        --self-contained true \
+        --output ./out/linux-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=linux-arm64 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
     - name: Build (win-x64)
       run: |
         dotnet publish ./src/neoxp \
@@ -81,23 +111,30 @@ jobs:
         -p:ServerGarbageCollection=true
 
     - name: Zip (osx-x64)
+      env:
+        VERSION: ${{ steps.nbgv.outputs.PrereleaseVersion }}
       run: |
         cd ./out/osx-x64
-        zip -r release-osx-x64.zip .
+        zip -r ./out/Neo.Express.${VERSION}-osx-x64.zip .
 
     - name: Zip (linux-x64)
       run: |
         cd ./out/linux-x64
-        zip -r release-linux-x64.zip .
+        zip -r ./out/Neo.Express.${VERSION}-linux-x64.zip .
+
+    - name: Zip (linux-arm64)
+      run: |
+        cd ./out/linux-arm64
+        zip -r ./out/Neo.Express.${VERSION}-linux-arm64.zip .
 
     - name: Zip (win-x64)
       run: |
         cd ./out/win-x64
-        zip -r release-win-x64.zip .
+        zip -r ./out/Neo.Express.${VERSION}-win-x64.zip .
 
     - name: Upload Zips (Standalone)
       if: always()
       uses: actions/upload-artifact@v3
       with:
         name: standalone
-        path: ./out/**/*.zip
+        path: ./out/Neo.Express.*.zip

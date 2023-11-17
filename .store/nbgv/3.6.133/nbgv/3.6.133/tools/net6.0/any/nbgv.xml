@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>nbgv</name>
+    </assembly>
+    <members>
+        <member name="M:Nerdbank.GitVersioning.GitLoaderContext.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nerdbank.GitVersioning.GitLoaderContext"/> class.
+            </summary>
+            <param name="nativeDependencyBasePath">The path to the directory that contains the "runtimes" folder.</param>
+        </member>
+        <member name="M:Nerdbank.GitVersioning.GitLoaderContext.Load(System.Reflection.AssemblyName)">
+            <inheritdoc/>
+        </member>
+    </members>
+</doc>

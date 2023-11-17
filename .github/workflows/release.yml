@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
 
 jobs:
+  standalone:
+    if: startsWith(github.ref, 'refs/heads/release/')
+    uses: ./.github/workflows/standalone.yml
   build:
     if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
@@ -54,6 +57,12 @@ jobs:
       with:
         name: bctklib
         path: ./out/bctklib.*.nupkg
+
+    - name: Download Express Zips
+      uses: actions/download-artifact@v3
+      with:
+        name: standalone
+        path: ./out
 
     - name: Create Release
       uses: marvinpinto/action-automatic-releases@v1.1.1

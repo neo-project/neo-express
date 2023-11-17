@@ -35,7 +35,7 @@ jobs:
 
     - name: Build (osx-x64)
       run: |
-        dotnet publish .\src\neoxp \
+        dotnet publish ./src/neoxp \
         --framework net7.0 \
         --configuration Release \
         --runtime osx-x64 \
@@ -58,7 +58,7 @@ jobs:
 
     - name: Build (win-x64)
       run: |
-        dotnet publish .\src\neoxp \
+        dotnet publish ./src/neoxp \
         --framework net7.0 \
         --configuration Release \
         --runtime win-x64 \

@@ -17,6 +17,7 @@ using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using Neo.VM;
 using OneOf;
 using OneOf.Types;
 using RocksDbSharp;
@@ -268,7 +269,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     Debug.Assert(key.Length == 1);
 
                     var @struct = new VM.Types.Struct() { branchInfo.IndexHash.ToArray(), branchInfo.Index };
-                    return BinarySerializer.Serialize(@struct, 1024 * 1024);
+                    return BinarySerializer.Serialize(@struct, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
                 }
 
                 // all other ledger contract prefixes (Block, BlockHash and Transaction) store immutable

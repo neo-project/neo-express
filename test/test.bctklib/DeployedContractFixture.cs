@@ -124,7 +124,7 @@ public class DeployedContractFixture : IDisposable
 
             if (snapshot.Contains(key))
                 throw new InvalidOperationException($"Contract Already Exists: {hash}");
-            if (!manifest.IsValid(hash))
+            if (!manifest.IsValid(ExecutionEngineLimits.Default, hash))
                 throw new InvalidOperationException($"Invalid Manifest Hash: {hash}");
 
             var contract = new ContractState

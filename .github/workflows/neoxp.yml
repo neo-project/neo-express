@@ -9,7 +9,6 @@ env:
 
 jobs:
   neo-express:
-    needs: [pack, test]
     runs-on: ubuntu-latest
     steps:
     - name: Setup .NET

@@ -32,7 +32,7 @@ jobs:
 
     - name: Set Environment Variables
       run: |
-        echo "VERSION=${{ steps.nbgv.outputs.PrereleaseVersion }}" >> $GITHUB_ENV
+        echo "VERSION=${{ steps.nbgv.outputs.NuGetPackageVersion }}" >> $GITHUB_ENV
 
     - name: Build (osx-x64)
       run: |

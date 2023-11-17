@@ -2,11 +2,6 @@ name: Run Standalone / Pack
 
 on:
   workflow_call:
-    outputs:
-      PrereleaseVersion:
-        value: ${{ jobs.pack.outputs.PrereleaseVersion}}
-      NuGetPackageVersion:
-        value: ${{ jobs.pack.outputs.NuGetPackageVersion}}
 
 env:
   DOTNET_VERSION: '7.0.x'
@@ -14,9 +9,6 @@ env:
 jobs:
   pack:
     runs-on: ubuntu-latest
-    outputs:
-      PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
-      NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}    
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3

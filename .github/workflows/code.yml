@@ -14,11 +14,19 @@ name: "CodeQL"
 on:
   push:
     branches: [ "master", "master-2.x", "release/v*" ]
+    paths-ignore:
+      - '.gitignore'
+      - '.gitattributes'
+      - 'LICENSE'
+      - '**/*.md'
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "master" ]
-  schedule:
-    - cron: '35 10 * * 3'
+    paths-ignore:
+      - '.gitignore'
+      - '.gitattributes'
+      - 'LICENSE'
+      - '**/*.md'
 
 jobs:
   analyze:

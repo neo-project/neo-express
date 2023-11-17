@@ -4,20 +4,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  standalone:
+    if: startsWith(github.ref, 'refs/heads/release/')
+    uses: ./.github/workflows/standalone.yml
   build:
     if: startsWith(github.ref, 'refs/heads/release/')
+    needs: [standalone]
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '7.0.x'
+
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
+
     - name: Install dependencies
       run: dotnet restore neo-express.sln
 
@@ -39,21 +47,30 @@ jobs:
       with:
         name: neoxp
         path: ./out/Neo.Express.*.nupkg
+
     - name: Upload NeoTrace artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: neotrace
         path: ./out/Neo.Trace.*.nupkg
+
     - name: Upload NeoWorkNet artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: neoworknet
         path: ./out2/Neo.WorkNet.*.nupkg
+
     - name: Upload Blockchain-toolkit-library artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: bctklib
         path: ./out/bctklib.*.nupkg
+
+    - name: Download Express Zips
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+        path: ./out
 
     - name: Create Release
       uses: marvinpinto/action-automatic-releases@v1.1.1
@@ -64,10 +81,13 @@ jobs:
         automatic_release_tag: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         files: |
           ./out/*
+
     - name: Push Neo.Express Nuget.org
       run: dotnet nuget push ${{ format('./out/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+
     - name: Push Neo.Trace Nuget.org
       run: dotnet nuget push ${{ format('./out/Neo.Trace.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+
     - name: Push Blockchain-toolkit-library Nuget.org
       run: dotnet nuget push ${{ format('./out/bctklib.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
     # - name: Push Neo.WorkNet Nuget.org

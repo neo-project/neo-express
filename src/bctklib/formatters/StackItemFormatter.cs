@@ -47,12 +47,12 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
                     return reader.ReadBoolean() ? StackItem.True : StackItem.False;
                 case StackItemType.Buffer:
                     {
-                        var bytes = options.Resolver.GetFormatter<byte[]>().Deserialize(ref reader, options);
+                        var bytes = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
                         return new NeoBuffer(bytes);
                     }
                 case StackItemType.ByteString:
                     {
-                        var bytes = options.Resolver.GetFormatter<byte[]>().Deserialize(ref reader, options);
+                        var bytes = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
                         return new NeoByteString(bytes);
                     }
                 case StackItemType.Integer:

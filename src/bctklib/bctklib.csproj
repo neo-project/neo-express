@@ -4,8 +4,6 @@
         <DebugType>Embedded</DebugType>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <IncludeSymbols>true</IncludeSymbols>
-        <PackageIcon>ngdsea.png</PackageIcon>
-        <PackageId>Neo.BlockchainToolkit.Library</PackageId>
         <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>

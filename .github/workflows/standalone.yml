@@ -86,7 +86,7 @@ jobs:
     - name: Zip (osx-x64)
       run: |
         cd ./out/osx-x64
-        zip -r Neo.Express.${VERSION}-osx-x64.zip .
+        zip -r ../Neo.Express.${VERSION}-osx-x64.zip .
 
     - name: Zip (linux-x64)
       run: |

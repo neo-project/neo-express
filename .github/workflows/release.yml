@@ -5,10 +5,10 @@ on:
 
 jobs:
   standalone:
-    if: startsWith(github.ref, 'refs/heads/release/')
+    #if: startsWith(github.ref, 'refs/heads/release/')
     uses: ./.github/workflows/standalone.yml
   build:
-    if: startsWith(github.ref, 'refs/heads/release/')
+    #if: startsWith(github.ref, 'refs/heads/release/')
     needs: [standalone]
     runs-on: ubuntu-latest
     steps:

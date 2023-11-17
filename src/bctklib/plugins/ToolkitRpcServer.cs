@@ -338,7 +338,7 @@ namespace Neo.BlockchainToolkit.Plugins
                     return (name, symbol, decimals);
                 }
             }
-            return ("<Unknown>", "<UNK>", (byte)0);
+            return ("<Unknown>", "<UNK>", 0);
         }
 
         public static IEnumerable<ReadOnlyMemory<byte>> GetNep11Tokens(this DataCache snapshot, UInt160 asset, UInt160 address, ProtocolSettings settings)

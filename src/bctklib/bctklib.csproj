@@ -19,8 +19,8 @@
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
         <PackageReference Include="Nerdbank.Streams" Version="2.10.72" />
         <PackageReference Include="OneOf" Version="3.0.263" />
-        <PackageReference Include="rocksdb" Version="8.5.3.42578" />
-        <PackageReference Include="System.IO.Abstractions" Version="19.2.69" />
+        <PackageReference Include="rocksdb" Version="8.6.7.43630" />
+        <PackageReference Include="System.IO.Abstractions" Version="19.2.87" />
         <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
         <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     </ItemGroup>

@@ -53,6 +53,25 @@ jobs:
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
 
+    - name: Build (osx-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime osx-arm64 \
+        --self-contained true \
+        --output ./out/osx-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=osx-arm64 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
     - name: Build (linux-x64)
       run: |
         dotnet publish ./src/neoxp \
@@ -91,6 +110,25 @@ jobs:
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
 
+    - name: Build (linux-musl-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime linux-musl-arm64 \
+        --self-contained true \
+        --output ./out/linux-musl-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=linux-musl-arm64 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
     - name: Build (win-x64)
       run: |
         dotnet publish ./src/neoxp \
@@ -110,10 +148,53 @@ jobs:
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
 
+    - name: Build (win-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime win-arm64 \
+        --self-contained true \
+        --output ./out/win-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=win-arm64 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Build (win-x86)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime win-x86 \
+        --self-contained true \
+        --output ./out/win-x86 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=win-x86 \
+        -p:SelfContained=true \
+        -p:PublishSingleFile=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
+        -p:PublishTrimmed=false \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
     - name: Zip (osx-x64)
       run: |
         cd ./out/osx-x64
         zip -r Neo.Express.${VERSION}-osx-x64.zip .
+
+    - name: Zip (osx-arm64)
+      run: |
+        cd ./out/osx-arm64
+        zip -r Neo.Express.${VERSION}-osx-arm64.zip .
 
     - name: Zip (linux-x64)
       run: |
@@ -125,10 +206,25 @@ jobs:
         cd ./out/linux-arm64
         zip -r ../Neo.Express.${VERSION}-linux-arm64.zip .
 
+    - name: Zip (linux-musl-arm64)
+      run: |
+        cd ./out/linux-musl-arm64
+        zip -r ../Neo.Express.${VERSION}-linux-musl-arm64.zip .
+
     - name: Zip (win-x64)
       run: |
         cd ./out/win-x64
         zip -r ../Neo.Express.${VERSION}-win-x64.zip .
+
+    - name: Zip (win-arm64)
+      run: |
+        cd ./out/win-arm64
+        zip -r ../Neo.Express.${VERSION}-win-arm64.zip .
+
+    - name: Zip (win-x86)
+      run: |
+        cd ./out/win-x86
+        zip -r ../Neo.Express.${VERSION}-win-x86.zip .
 
     - name: Upload Zips (Standalone)
       uses: actions/upload-artifact@v3

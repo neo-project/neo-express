@@ -90,8 +90,15 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public static RocksDb OpenReadOnlyDb(string path)
         {
-            var columnFamilies = GetColumnFamilies(path);
-            return RocksDb.OpenReadOnly(new DbOptions(), path, columnFamilies, false);
+            try
+            {
+                var columnFamilies = GetColumnFamilies(path);
+                return RocksDb.OpenReadOnly(new DbOptions(), path, columnFamilies, false);
+            }
+            catch (Exception ex)
+            {
+                throw ex.InnerException ?? ex;
+            }
         }
 
         static ColumnFamilies GetColumnFamilies(string path)

@@ -66,13 +66,11 @@ jobs:
 
     - name: Copy Dependencies Files (osx-x64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/osx-x64
-          cp -v ./librocksdb.dylib ./out/osx-x64
+          cp -v ./src/neoxp/bin/Release/net7.0/osx-x64/librocksdb.dylib ./out/osx-x64
 
     - name: Copy Dependencies Files (osx-arm64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/osx-arm64
-          cp -v ./librocksdb.dylib ./out/osx-x64
+          cp -v ./src/neoxp/bin/Release/net7.0/osx-arm64/librocksdb.dylib ./out/osx-x64
 
     - name: Tarball (osx-x64)
       run: |
@@ -168,14 +166,12 @@ jobs:
 
     - name: Copy Dependencies Files (linux-x64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/linux-x64
-          cp -v ./librocksdb.so ./out/linux-x64
+          cp -v ./src/neoxp/bin/Release/net7.0/linux-x64/librocksdb.so ./out/linux-x64
 
     - name: Copy Dependencies Files (linux-arm64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/linux-arm64
-          cp -v ./librocksdb.so ./out/linux-arm64
-          cp -v ./librocksdb.so ./out/linux-musl-arm64
+          cp -v ./src/neoxp/bin/Release/net7.0/linux-arm64/librocksdb.so ./out/linux-arm64
+          cp -v ./src/neoxp/bin/Release/net7.0/linux-arm64/librocksdb.so ./out/linux-musl-arm64
 
     - name: Tarball (linux-x64)
       run: |

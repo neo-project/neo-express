@@ -238,12 +238,12 @@ jobs:
     - name: Zip (win-x64)
       run: |
         cd ./out/win-x64
-        Compress-Archive -Path . -Destination ${{ format('../Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+        Compress-Archive -Path ./* -Destination ${{ format('../Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
 
     - name: Zip (win-arm64)
       run: |
         cd ./out/win-arm64
-        Compress-Archive -Path . -Destination ${{ format('../Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+        Compress-Archive -Path ./* -Destination ${{ format('../Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
 
     - name: Upload Zips (Standalone)
       uses: actions/upload-artifact@v3

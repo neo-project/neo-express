@@ -36,7 +36,7 @@ internal class Nep11Token : TokenBase
         builder.EmitDynamicCall(ScriptHash, "totalSupply");
         builder.EmitDynamicCall(ScriptHash, "balanceOf", UInt160.Zero);
         builder.EmitDynamicCall(ScriptHash, "tokensOf", UInt160.Zero);
-        builder.EmitDynamicCall(ScriptHash, "ownerOf", Array.Empty<byte>());
+        //builder.EmitDynamicCall(ScriptHash, "ownerOf", Array.Empty<byte>());
         builder.EmitDynamicCall(ScriptHash, "transfer", UInt160.Zero, UInt160.Zero, 0, null);
         if (Decimals > 0)
         {

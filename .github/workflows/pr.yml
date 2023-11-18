@@ -5,7 +5,14 @@ on:
     branches:
       - master
       - release/*
+    paths-ignore:
+      - '.gitignore'
+      - '.gitattributes'
+      - 'LICENSE'
+      - '**/*.md'
 
 jobs:
   pack:
     uses: ./.github/workflows/pack.yml
+  test:
+    uses: ./.github/workflows/test.yml

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DebugType>Embedded</DebugType>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <IncludeSymbols>true</IncludeSymbols>
+        <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(CI)' == 'true'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="test.bctklib" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="MessagePack" Version="2.5.129" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+        <PackageReference Include="Nerdbank.Streams" Version="2.10.72" />
+        <PackageReference Include="OneOf" Version="3.0.263" />
+        <PackageReference Include="rocksdb" Version="8.6.7.43630" />
+        <PackageReference Include="System.IO.Abstractions" Version="19.2.87" />
+        <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,245 @@
+{
+    "hash": "0xf69e5188632deb3a9273519efc86cb68da8d42b8",
+    "documents": [
+        "C:\\Users\\harry\\Source\\neo\\seattle\\samples\\registrar-sample\\src\\Registrar.cs"
+    ],
+    "methods": [
+        {
+            "id": "DevHawk.Contracts.Registrar.Query(string)",
+            "name": "DevHawk.Contracts.Registrar,Query",
+            "range": "0-59",
+            "params": [
+                "domain,String"
+            ],
+            "return": "Hash160",
+            "variables": [
+                "currentOwner,Hash160"
+            ],
+            "sequence-points": [
+                "3[0]19:9-19:10",
+                "4[0]20:17-20:56",
+                "14[0]21:17-21:36",
+                "22[0]22:13-22:14",
+                "23[0]23:17-23:54",
+                "51[0]24:13-24:14",
+                "53[0]26:13-26:33",
+                "59[0]27:9-27:10"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.DomainStorage.Get(string)",
+            "name": "DevHawk.Contracts.DomainStorage,Get",
+            "range": "60-129",
+            "params": [
+                "domain,String"
+            ],
+            "return": "Hash160",
+            "variables": [],
+            "sequence-points": [
+                "63[0]123:46-123:93"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.DomainStorage.DomainStorage(string)",
+            "name": "DevHawk.Contracts.DomainStorage,.ctor",
+            "range": "212-230",
+            "params": [
+                "prefix,String"
+            ],
+            "return": "Void",
+            "variables": [],
+            "sequence-points": [
+                "215[0]119:9-119:10",
+                "216[0]120:13-120:73",
+                "230[0]121:9-121:10"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.Registrar.Register(string, Neo.UInt160)",
+            "name": "DevHawk.Contracts.Registrar,Register",
+            "range": "244-401",
+            "params": [
+                "domain,String",
+                "owner,Hash160"
+            ],
+            "return": "Boolean",
+            "variables": [
+                "currentOwner,Hash160",
+                "map,Any"
+            ],
+            "sequence-points": [
+                "247[0]30:9-30:10",
+                "248[0]31:17-31:56",
+                "258[0]32:17-32:37",
+                "267[0]33:13-33:14",
+                "268[0]34:17-34:58",
+                "300[0]35:17-35:30",
+                "308[0]36:13-36:14",
+                "310[0]37:17-37:45",
+                "322[0]38:13-38:14",
+                "323[0]39:17-39:52",
+                "349[0]40:17-40:30",
+                "357[0]41:13-41:14",
+                "359[0]43:13-43:45",
+                "369[0]46:17-46:71",
+                "385[0]47:13-47:36",
+                "393[0]49:13-49:25",
+                "401[0]50:9-50:10"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.DomainStorage.Put(string, Neo.UInt160)",
+            "name": "DevHawk.Contracts.DomainStorage,Put",
+            "range": "408-430",
+            "params": [
+                "domain,String",
+                "owner,Hash160"
+            ],
+            "return": "Void",
+            "variables": [],
+            "sequence-points": [
+                "411[0]124:58-124:99"
+            ]
+        },
+        {
+            "id": "Neo.SmartContract.Framework.Services.StorageMap.Put\u003CNeo.UInt160\u003E(Neo.SmartContract.Framework.ByteString, Neo.UInt160)",
+            "name": "Neo.SmartContract.Framework.Services.StorageMap,Put",
+            "range": "446-470",
+            "params": [
+                "key,ByteArray",
+                "value,Hash160"
+            ],
+            "return": "Void",
+            "variables": [],
+            "sequence-points": [
+                "449[-1]201:9-201:10",
+                "450[-1]202:13-202:47",
+                "470[-1]203:9-203:10"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.Registrar.Transfer(string, Neo.UInt160)",
+            "name": "DevHawk.Contracts.Registrar,Transfer",
+            "range": "475-683",
+            "params": [
+                "domain,String",
+                "to,Hash160"
+            ],
+            "return": "Boolean",
+            "variables": [
+                "currentOwner,Hash160"
+            ],
+            "sequence-points": [
+                "478[0]53:9-53:10",
+                "479[0]54:17-54:56",
+                "489[0]55:17-55:36",
+                "497[0]56:13-56:14",
+                "498[0]57:17-57:54",
+                "526[0]58:17-58:30",
+                "534[0]59:13-59:14",
+                "536[0]60:17-60:52",
+                "548[0]61:13-61:14",
+                "549[0]62:17-62:70",
+                "593[0]63:17-63:30",
+                "601[0]64:13-64:14",
+                "603[0]65:17-65:42",
+                "615[0]66:13-66:14",
+                "616[0]67:17-67:65",
+                "655[0]68:17-68:30",
+                "663[0]69:13-69:14",
+                "665[0]71:13-71:42",
+                "675[0]72:13-72:25",
+                "683[0]73:9-73:10"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.Registrar.Delete(string)",
+            "name": "DevHawk.Contracts.Registrar,Delete",
+            "range": "684-829",
+            "params": [
+                "domain,String"
+            ],
+            "return": "Boolean",
+            "variables": [
+                "currentOwner,Hash160"
+            ],
+            "sequence-points": [
+                "687[0]76:9-76:10",
+                "688[0]77:17-77:56",
+                "698[0]78:17-78:36",
+                "706[0]79:13-79:14",
+                "707[0]80:17-80:54",
+                "735[0]81:17-81:30",
+                "743[0]82:13-82:14",
+                "745[0]83:17-83:52",
+                "757[0]84:13-84:14",
+                "758[0]85:17-85:70",
+                "802[0]86:17-86:30",
+                "810[0]87:13-87:14",
+                "812[0]89:13-89:41",
+                "821[0]90:13-90:25",
+                "829[0]91:9-91:10"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.DomainStorage.Delete(string)",
+            "name": "DevHawk.Contracts.DomainStorage,Delete",
+            "range": "830-850",
+            "params": [
+                "domain,String"
+            ],
+            "return": "Void",
+            "variables": [],
+            "sequence-points": [
+                "833[0]125:46-125:71"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.Registrar.Deploy(object, bool)",
+            "name": "DevHawk.Contracts.Registrar,Deploy",
+            "range": "865-911",
+            "params": [
+                "data,Any",
+                "update,Boolean"
+            ],
+            "return": "Void",
+            "variables": [
+                "tx,Any"
+            ],
+            "sequence-points": [
+                "868[0]95:9-95:10",
+                "869[0]96:17-96:23",
+                "875[0]96:25-96:32",
+                "881[0]98:17-98:58",
+                "887[0]99:13-99:79",
+                "911[0]100:9-100:10"
+            ]
+        },
+        {
+            "id": "DevHawk.Contracts.Registrar.Update(Neo.SmartContract.Framework.ByteString, string)",
+            "name": "DevHawk.Contracts.Registrar,Update",
+            "range": "924-1026",
+            "params": [
+                "nefFile,ByteArray",
+                "manifest,String"
+            ],
+            "return": "Void",
+            "variables": [
+                "tx,Any",
+                "contractOwner,ByteArray"
+            ],
+            "sequence-points": [
+                "927[0]103:9-103:10",
+                "928[0]104:17-104:58",
+                "934[0]105:17-105:87",
+                "956[0]106:17-106:49",
+                "967[0]107:13-107:14",
+                "968[0]108:17-108:88",
+                "1018[0]109:13-109:14",
+                "1020[0]110:13-110:64",
+                "1026[0]111:9-111:10"
+            ]
+        }
+    ],
+    "events": []
+}

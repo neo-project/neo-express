@@ -10,8 +10,8 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
+using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress.Commands
 {
@@ -29,8 +29,7 @@ namespace NeoExpress.Commands
             this.txExecutorFactory = txExecutorFactory;
         }
 
-        [Argument(0, Description = "Path to batch file to run")]
-        [Required]
+        [Argument(0, Description = $"Path to {EXPRESS_BATCH_EXTENSION} file to run")]
         internal string BatchFile { get; init; } = string.Empty;
 
         [Option("-r|--reset[:<CHECKPOINT>]", CommandOptionType.SingleOrNoValue,
@@ -40,19 +39,21 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
-        [Option(Description = "Path to neo-express data file")]
+        [Option(Description = $"Path to {EXPRESS_EXTENSION} data file")]
         internal string Input { get; init; } = string.Empty;
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
         {
             try
             {
-                if (!fileSystem.File.Exists(BatchFile))
-                    throw new Exception($"Batch file {BatchFile} couldn't be found");
-                var batchFileInfo = fileSystem.FileInfo.New(BatchFile);
+                var batchFilename = fileSystem.ResolveFileName(BatchFile, EXPRESS_BATCH_EXTENSION, () => DEFAULT_BATCH_FILENAME);
+
+                if (!fileSystem.File.Exists(batchFilename))
+                    throw new Exception($"Batch file \"{batchFilename}\" could not be found");
+                var batchFileInfo = fileSystem.FileInfo.New(batchFilename);
                 var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
 
-                var commands = await fileSystem.File.ReadAllLinesAsync(BatchFile, token).ConfigureAwait(false);
+                var commands = await fileSystem.File.ReadAllLinesAsync(batchFilename, token).ConfigureAwait(false);
                 await ExecuteAsync(batchDirInfo, commands, console.Out).ConfigureAwait(false);
                 return 0;
             }
@@ -63,9 +64,11 @@ namespace NeoExpress.Commands
             }
         }
 
-        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer)
+        internal async Task ExecuteAsync(IDirectoryInfo root, ReadOnlyMemory<string> commands, System.IO.TextWriter writer, ExpressChainManager? chainManager = null, string? chainFilename = null)
         {
-            var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+            if (chainManager == null)
+                (chainManager, chainFilename) = chainManagerFactory.LoadChain(Input);
+
             if (chainManager.IsRunning())
             {
                 throw new Exception("Cannot run batch command while blockchain is running");
@@ -110,7 +113,7 @@ namespace NeoExpress.Commands
                         {
                             _ = await chainManager.CreateCheckpointAsync(
                                 txExec.ExpressNode,
-                                root.Resolve(cmd.Model.Name),
+                                cmd.Model.Name,
                                 cmd.Model.Force,
                                 writer).ConfigureAwait(false);
                             break;
@@ -226,8 +229,7 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
                         {
-                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(
-                                root.Resolve(cmd.Model.Source))
+                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source)
                                 .ConfigureAwait(false);
                             if (values.TryPickT0(out var policyValues, out _))
                             {
@@ -256,6 +258,18 @@ namespace NeoExpress.Commands
                                 cmd.Model.Password,
                                 cmd.Model.Receiver,
                                 cmd.Model.Data).ConfigureAwait(false);
+                            break;
+                        }
+                    case CommandLineApplication<BatchFileCommands.Wallet.Create> cmd:
+                        {
+                            var wallet = chainManager.CreateWallet(
+                                cmd.Model.Name,
+                                cmd.Model.PrivateKey,
+                                cmd.Model.Force);
+                            chainManager.SaveChain(chainFilename!);
+                            await writer.WriteLineAsync($"Created Wallet {cmd.Model.Name}");
+                            for (int x = 0; x < wallet.Accounts.Count; x++)
+                                await writer.WriteLineAsync($"    Address: {wallet.Accounts[x].ScriptHash}");
                             break;
                         }
                     default:

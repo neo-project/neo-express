@@ -1,31 +1,21 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <AssemblyName>neo-worknet</AssemblyName>
+        <Description></Description>
+        <OutputType>Exe</OutputType>
+        <PackageId>Neo.WorkNet</PackageId>
+        <PackAsTool>true</PackAsTool>
+        <RootNamespace>NeoWorkNet</RootNamespace>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <AssemblyName>neo-worknet</AssemblyName>
-    <Description></Description>
-    <OutputType>Exe</OutputType>
-    <PackageId>Neo.WorkNet</PackageId>
-    <PackAsTool>true</PackAsTool>
-    <RootNamespace>NeoWorkNet</RootNamespace>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Crayon" Version="2.0.69" />
-  </ItemGroup>
-
-  <Choose>
-    <When Condition=" '$(BlockchainToolkitLibraryVersion)' == 'local'">
-      <ItemGroup>
-        <ProjectReference Include="$(NeoMonorepoPath)\modules\src\DBFTPlugin\DBFTPlugin.csproj" />
-        <ProjectReference Include="$(NeoMonorepoPath)\modules\src\RpcServer\RpcServer.csproj" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Crayon" Version="2.0.69" />
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.0" />
         <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
         <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
+    </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\bctklib\bctklib.csproj" />
+    </ItemGroup>
 </Project>

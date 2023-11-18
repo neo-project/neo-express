@@ -6,9 +6,10 @@ on:
       - master
       - release/*
     paths-ignore:
-      - 'readme.md'
-      - 'CHANGELOG.md'
-      - 'docs/**'
+      - '.gitignore'
+      - '.gitattributes'
+      - 'LICENSE'
+      - '**/*.md'
 
 env:
   AZURE_ARTIFACTS_FEED_URL: https://nuget.pkg.github.com/neo-project/index.json
@@ -17,8 +18,10 @@ env:
 jobs:
   pack:
     uses: ./.github/workflows/pack.yml
+  test:
+    uses: ./.github/workflows/test.yml
   publish:
-    needs: [pack]
+    needs: [pack, test]
     runs-on: ubuntu-latest
     steps:
     - name: Setup .NET
@@ -42,6 +45,11 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: worknet
+        path: ./out
+    - name: Download bctklib
+      uses: actions/download-artifact@v3
+      with:
+        name: bctklib
         path: ./out
     - name: Publish to Azure Artifacts
       run: dotnet nuget push out/*.nupkg

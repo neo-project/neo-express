@@ -1,0 +1,254 @@
+name: Run Standalone / Build / Pack
+
+on:
+  workflow_call:
+
+env:
+  DOTNET_VERSION: '7.0.x'
+
+jobs:
+  osx-pack:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Nerdbank.GitVersioning
+      uses: dotnet/nbgv@v0.4.1
+      id: nbgv
+
+    - name: Build (osx-x64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime osx-x64 \
+        --self-contained true \
+        --output ./out/osx-x64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=osx-x64 \
+        -p:SelfContained=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishSingleFile=true \
+        -p:PublishReadyToRun=true \
+        -p:PublishReadyToRunComposite=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Build (osx-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime osx-arm64 \
+        --self-contained true \
+        --output ./out/osx-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=osx-arm64 \
+        -p:SelfContained=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishSingleFile=true \
+        -p:PublishReadyToRun=true \
+        -p:PublishReadyToRunComposite=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Tarball (osx-x64)
+      run: |
+        cd ./out/osx-x64
+        tar cJf ${{ format('../Neo.Express.{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+
+    - name: Tarball (osx-arm64)
+      run: |
+        cd ./out/osx-arm64
+        tar cJf ${{ format('../Neo.Express.{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+
+    - name: Upload Tarballs (Standalone)
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+        path: |
+          ${{ format('./out/Neo.Express.{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+
+  linux-pack:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Nerdbank.GitVersioning
+      uses: dotnet/nbgv@v0.4.1
+      id: nbgv
+
+    - name: Build (linux-x64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime linux-x64 \
+        --self-contained true \
+        --output ./out/linux-x64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=linux-x64 \
+        -p:SelfContained=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishSingleFile=true \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Build (linux-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime linux-arm64 \
+        --self-contained true \
+        --output ./out/linux-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=linux-arm64 \
+        -p:SelfContained=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishSingleFile=true \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Build (linux-musl-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime linux-musl-arm64 \
+        --self-contained true \
+        --output ./out/linux-musl-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=linux-musl-arm64 \
+        -p:SelfContained=true \
+        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:PublishTrimmed=false \
+        -p:PublishSingleFile=true \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
+
+    - name: Tarball (linux-x64)
+      run: |
+        cd ./out/linux-x64
+        tar -czvf ${{ format('../Neo.Express.{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+
+    - name: Tarball (linux-arm64)
+      run: |
+        cd ./out/linux-arm64
+        tar -czvf ${{ format('../Neo.Express.{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+
+    - name: Tarball (linux-musl-arm64)
+      run: |
+        cd ./out/linux-musl-arm64
+        tar -czvf ${{ format('../Neo.Express.{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+
+    - name: Upload Tarballs (Standalone)
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+        path: |
+          ${{ format('./out/Neo.Express.{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+
+  win-pack:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Nerdbank.GitVersioning
+      uses: dotnet/nbgv@v0.4.1
+      id: nbgv
+
+    - name: Build (win-x64)
+      run: |
+        dotnet publish ./src/neoxp `
+        --framework net7.0 `
+        --configuration Release `
+        --runtime win-x64 `
+        --self-contained true `
+        --output ./out/win-x64 `
+        --verbosity normal `
+        -p:RuntimeIdentifier=win-x64 `
+        -p:SelfContained=true `
+        -p:IncludeNativeLibrariesForSelfExtract=false `
+        -p:PublishTrimmed=false `
+        -p:PublishSingleFile=true `
+        -p:PublishReadyToRun=true `
+        -p:EnableCompressionInSingleFile=true `
+        -p:DebugType=embedded `
+        -p:ServerGarbageCollection=true
+
+    - name: Build (win-arm64)
+      run: |
+        dotnet publish ./src/neoxp `
+        --framework net7.0 `
+        --configuration Release `
+        --runtime win-arm64 `
+        --self-contained true `
+        --output ./out/win-arm64 `
+        --verbosity normal `
+        -p:RuntimeIdentifier=win-arm64 `
+        -p:SelfContained=true `
+        -p:IncludeNativeLibrariesForSelfExtract=false `
+        -p:PublishTrimmed=false `
+        -p:PublishSingleFile=true `
+        -p:PublishReadyToRun=true `
+        -p:EnableCompressionInSingleFile=true `
+        -p:DebugType=embedded `
+        -p:ServerGarbageCollection=true
+
+    - name: Zip (win-x64)
+      run: |
+        cd ./out/win-x64
+        Compress-Archive -Path ./* -Destination ${{ format('../Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+
+    - name: Zip (win-arm64)
+      run: |
+        cd ./out/win-arm64
+        Compress-Archive -Path ./* -Destination ${{ format('../Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+
+    - name: Upload Zips (Standalone)
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+        path: |
+          ${{ format('./out/Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}

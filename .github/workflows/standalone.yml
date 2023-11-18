@@ -66,12 +66,12 @@ jobs:
 
     - name: Copy Dependencies Files (osx-x64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/runtimes/osx-x64
+          cd ./src/neoxp/bin/Release/net7.0/osx-x64
           cp -rv ./*/*.lib ./out/osx-x64
 
     - name: Copy Dependencies Files (osx-arm64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/runtimes/osx-arm64
+          cd ./src/neoxp/bin/Release/net7.0/osx-arm64
           cp -rv ./*/*.lib ./out/osx-arm64
 
     - name: Tarball (osx-x64)
@@ -120,7 +120,7 @@ jobs:
         --verbosity normal \
         -p:RuntimeIdentifier=linux-x64 \
         -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
         -p:PublishTrimmed=false \
         -p:PublishSingleFile=true \
         -p:PublishReadyToRun=true \
@@ -168,12 +168,12 @@ jobs:
 
     - name: Copy Dependencies Files (linux-x64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/runtimes/linux-x64
+          cd ./src/neoxp/bin/Release/net7.0/linux-x64
           cp -rv ./*/*.lib ./out/linux-x64
 
     - name: Copy Dependencies Files (linux-arm64)
       run: |
-          cd ./src/neoxp/bin/Release/net7.0/runtimes/linux-arm64
+          cd ./src/neoxp/bin/Release/net7.0/linux-arm64
           cp -rv ./*/*.lib ./out/linux-arm64
           cp -rv ./*/*.lib ./out/linux-musl-arm64
 

@@ -35,7 +35,7 @@ jobs:
         --verbosity normal \
         -p:RuntimeIdentifier=osx-x64 \
         -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
         -p:PublishTrimmed=false \
         -p:PublishSingleFile=true \
         -p:PublishReadyToRun=true \
@@ -55,7 +55,7 @@ jobs:
         --verbosity normal \
         -p:RuntimeIdentifier=osx-arm64 \
         -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
         -p:PublishTrimmed=false \
         -p:PublishSingleFile=true \
         -p:PublishReadyToRun=true \
@@ -63,14 +63,6 @@ jobs:
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
-
-    - name: Copy Dependencies Files (osx-x64)
-      run: |
-          cp -v ./src/neoxp/bin/Release/net7.0/osx-x64/librocksdb.dylib ./out/osx-x64
-
-    - name: Copy Dependencies Files (osx-arm64)
-      run: |
-          cp -v ./src/neoxp/bin/Release/net7.0/osx-arm64/librocksdb.dylib ./out/osx-x64
 
     - name: Tarball (osx-x64)
       run: |
@@ -137,7 +129,7 @@ jobs:
         --verbosity normal \
         -p:RuntimeIdentifier=linux-arm64 \
         -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
         -p:PublishTrimmed=false \
         -p:PublishSingleFile=true \
         -p:PublishReadyToRun=true \
@@ -156,22 +148,13 @@ jobs:
         --verbosity normal \
         -p:RuntimeIdentifier=linux-musl-arm64 \
         -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
         -p:PublishTrimmed=false \
         -p:PublishSingleFile=true \
         -p:PublishReadyToRun=true \
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
-
-    - name: Copy Dependencies Files (linux-x64)
-      run: |
-          cp -v ./src/neoxp/bin/Release/net7.0/linux-x64/librocksdb.so ./out/linux-x64
-
-    - name: Copy Dependencies Files (linux-arm64)
-      run: |
-          cp -v ./src/neoxp/bin/Release/net7.0/linux-arm64/librocksdb.so ./out/linux-arm64
-          cp -v ./src/neoxp/bin/Release/net7.0/linux-arm64/librocksdb.so ./out/linux-musl-arm64
 
     - name: Tarball (linux-x64)
       run: |

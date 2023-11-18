@@ -229,8 +229,15 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
                         {
-                            var values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source)
-                                .ConfigureAwait(false);
+                            if (string.IsNullOrEmpty(cmd.Model.Account))
+                                throw new ArgumentException("Policy sync requires --account field");
+
+                            var values = await txExec.TryGetRemoteNetworkPolicyAsync(cmd.Model.Source).ConfigureAwait(false);
+
+                            if (values.IsT1)
+                                values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source)
+                                    .ConfigureAwait(false);
+
                             if (values.TryPickT0(out var policyValues, out _))
                             {
                                 await txExec.SetPolicyAsync(policyValues, cmd.Model.Account, cmd.Model.Password);

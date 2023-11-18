@@ -26,7 +26,7 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
                     throw new MessagePackSerializationException($"Invalid StorageItem Array Header {count}");
             }
 
-            var value = options.Resolver.GetFormatter<byte[]>().Deserialize(ref reader, options);
+            var value = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
             return new StorageItem(value);
         }
 

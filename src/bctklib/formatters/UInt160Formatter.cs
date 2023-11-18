@@ -24,7 +24,7 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
             // post RC3 serialization format of UInt160
             if (reader.NextMessagePackType == MessagePackType.Binary)
             {
-                var value = options.Resolver.GetFormatter<byte[]>().Deserialize(ref reader, options);
+                var value = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
                 return new UInt160(value);
             }
 

@@ -20,6 +20,7 @@ using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using Neo.VM;
 using Neo.Wallets;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
@@ -149,7 +150,7 @@ class CreateCommand
         var committee = new NeoArray(members);
         var committeeKeyBuilder = new KeyBuilder(NativeContract.NEO.Id, Prefix_Committee);
         var committeeItem = snapshot.GetAndChange(committeeKeyBuilder);
-        committeeItem.Value = BinarySerializer.Serialize(committee, 1024 * 1024);
+        committeeItem.Value = BinarySerializer.Serialize(committee, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         // remove existing candidates (Prefix_Candidate) to ensure that 
         // worknet node account doesn't get outvoted
@@ -196,7 +197,7 @@ class CreateCommand
         var curBlockKey = new KeyBuilder(NativeContract.Ledger.Id, Prefix_CurrentBlock);
         var currentBlock = new Neo.VM.Types.Struct() { trimmedBlock.Hash.ToArray(), trimmedBlock.Index };
         var currentBlockItem = snapshot.GetAndChange(curBlockKey);
-        currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, 1024 * 1024);
+        currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         snapshot.Commit();
     }

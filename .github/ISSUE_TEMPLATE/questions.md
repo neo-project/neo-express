@@ -14,6 +14,6 @@ Try our following resources:
 Discord - https://discord.io/neo
 offical documentation - https://docs.neo.org/docs/en-us/index.html
 
-If the above resource doesn't help feel encouraged to create an issue here
+If the above resources don't help feel encouraged to create an issue here
 on GitHub.
 -->

@@ -74,13 +74,27 @@ jobs:
         cd ./out/osx-arm64
         tar cJf ${{ format('../Neo.Express.{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }} .
 
+    - name: Generate SHA256 File (osx-x64)
+      env:
+        EXPRESS_FILENAME: ${{ format('./out/Neo.Express.{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        shasum --algorithm 256 $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+
+    - name: Generate SHA256 File (osx-arm64)
+      env:
+        EXPRESS_FILENAME: ${{ format('./out/Neo.Express.{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        shasum --algorithm 256 $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+
     - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: |
           ${{ format('./out/Neo.Express.{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-osx-x64.tar.xz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
           ${{ format('./out/Neo.Express.{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-osx-arm64.tar.xz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
 
   linux-pack:
     runs-on: ubuntu-latest
@@ -171,14 +185,35 @@ jobs:
         cd ./out/linux-musl-arm64
         tar -czvf ${{ format('../Neo.Express.{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
 
+    - name: Generate SHA256 File (linux-x64)
+      env:
+        EXPRESS_FILENAME: ${{ format('./out/Neo.Express.{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+
+    - name: Generate SHA256 File (linux-arm64)
+      env:
+        EXPRESS_FILENAME: ${{ format('./out/Neo.Express.{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+
+    - name: Generate SHA256 File (linux-musl-arm64)
+      env:
+        EXPRESS_FILENAME: ${{ format('./out/Neo.Express.{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+
     - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: |
           ${{ format('./out/Neo.Express.{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-linux-x64.tar.gz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
           ${{ format('./out/Neo.Express.{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-linux-arm64.tar.gz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
           ${{ format('./out/Neo.Express.{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-linux-musl-arm64.tar.gz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
 
   win-pack:
     runs-on: windows-latest
@@ -245,10 +280,24 @@ jobs:
         cd ./out/win-arm64
         Compress-Archive -Path ./* -Destination ${{ format('../Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
 
+    - name: Generate SHA256 File (win-x64)
+      run: |
+        $zipFileName = "./out/win-x64/${{ format('../Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}"
+        $zipHash = Get-FileHash -Path $zipFileName -Algorithm SHA256
+        $zipHash.Hash | Out-File -Encoding 'UTF8' "$($zipFileName).sha256"
+
+    - name: Generate SHA256 File (win-arm64)
+      run: |
+        $zipFileName = "./out/win-arm64/${{ format('../Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}"
+        $zipHash = Get-FileHash -Path $zipFileName -Algorithm SHA256
+        $zipHash.Hash | Out-File -Encoding 'UTF8' "$($zipFileName).sha256"
+
     - name: Upload Zips (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: |
           ${{ format('./out/Neo.Express.{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-win-x64.zip.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
           ${{ format('./out/Neo.Express.{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('./out/Neo.Express.{0}-win-arm64.zip.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}

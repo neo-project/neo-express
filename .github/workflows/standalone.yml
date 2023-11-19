@@ -4,10 +4,10 @@ on:
   workflow_call:
 
 env:
-  DOTNET_VERSION: 7.0.x
-  CONFIGURATION: Release
-  DIST_DIR: /tmp/dist
-  OUTPUT_DIR: /tmp/out
+  DOTNET_VERSION: '7.0.x'
+  CONFIGURATION: 'Release'
+  DIST_DIR: '/tmp/dist'
+  OUTPUT_DIR: '/tmp/out'
 
 jobs:
   osx-pack:

@@ -79,14 +79,14 @@ jobs:
         EXPRESS_FILENAME: ${{ format('Neo.Express.{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         cd ./out/
-        shasum --algorithm 256 $EXPRESS_FILENAME > ./out/$EXPRESS_FILENAME.sha256
+        shasum --algorithm 256 $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
 
     - name: Generate SHA256 File (osx-arm64)
       env:
         EXPRESS_FILENAME: ${{ format('Neo.Express.{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         cd ./out/
-        shasum --algorithm 256 $EXPRESS_FILENAME > ./out/$EXPRESS_FILENAME.sha256
+        shasum --algorithm 256 $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
 
     - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
@@ -192,21 +192,21 @@ jobs:
         EXPRESS_FILENAME: ${{ format('Neo.Express.{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         cd ./out/
-        sha256sum $EXPRESS_FILENAME > ./out/$EXPRESS_FILENAME.sha256
+        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
 
     - name: Generate SHA256 File (linux-arm64)
       env:
         EXPRESS_FILENAME: ${{ format('Neo.Express.{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         cd ./out/
-        sha256sum $EXPRESS_FILENAME > ./out/$EXPRESS_FILENAME.sha256
+        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
 
     - name: Generate SHA256 File (linux-musl-arm64)
       env:
         EXPRESS_FILENAME: ${{ format('Neo.Express.{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         cd ./out/
-        sha256sum $EXPRESS_FILENAME > ./out/$EXPRESS_FILENAME.sha256
+        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
 
     - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3

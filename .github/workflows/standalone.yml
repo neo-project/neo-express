@@ -67,6 +67,10 @@ jobs:
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
 
+    - name: Create Distribution Directory
+      run: |
+        md ${{ env.DIST_DIR }}
+
     - name: Tarball (osx-x64)
       working-directory: ${{ env.OUTPUT_DIR }}/osx-x64
       env:
@@ -179,6 +183,10 @@ jobs:
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
 
+    - name: Create Distribution Directory
+      run: |
+        md ${{ env.DIST_DIR }}
+
     - name: Tarball (linux-x64)
       working-directory: ${{ env.OUTPUT_DIR }}/linux-x64
       env:
@@ -288,19 +296,23 @@ jobs:
         -p:DebugType=embedded `
         -p:ServerGarbageCollection=true
 
+    - name: Create Distribution Directory
+      run: |
+        md ${{ env.DIST_DIR }}
+
     - name: Zip (win-x64)
       working-directory: ${{ env.OUTPUT_DIR }}/win-x64
       env:
         ZIP_FILE: ${{ format('{0}/Neo.Express-win-x64-{1}.zip', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        Compress-Archive -Path * -Destination ZIP_FILE
+        Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
 
     - name: Zip (win-arm64)
       working-directory: ${{ env.OUTPUT_DIR }}/win-arm64
       env:
         ZIP_FILE: ${{ format('{0}/Neo.Express-win-arm64-{1}.zip', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        Compress-Archive -Path * -Destination ZIP_FILE
+        Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
 
     - name: Generate SHA256 File (win-x64)
       working-directory: ${{ env.DIST_DIR }}

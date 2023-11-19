@@ -243,15 +243,6 @@ jobs:
   win-pack:
     runs-on: windows-latest
     steps:
-
-    - name: Set Environment Variables
-      env:
-        DIST_DIR: ${{ env.TEMP }}/dist
-        OUTPUT_DIR: ${{ env.TEMP }}/out
-      run: |
-        echo "${{ env.DIST_DIR }}"
-        echo "${{ env.OUTPUT_DIR }}"
-
     - name: Checkout Code
       uses: actions/checkout@v3
       with:
@@ -265,6 +256,14 @@ jobs:
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
+
+    - name: Set Environment Variables
+      env:
+        DIST_DIR: c:/tmp/dist
+        OUTPUT_DIR: c:/tmp/out
+      run: |
+        echo "${{ env.DIST_DIR }}"
+        echo "${{ env.OUTPUT_DIR }}"
 
     - name: Build (win-x64)
       run: |

@@ -235,12 +235,12 @@ jobs:
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: |
-          ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.xz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.xz.sha256', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.xz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.xz.sha256', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.xz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.xz.sha256', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.gz.sha256', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.gz.sha256', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.gz.sha256', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
 
   win-pack:
     runs-on: windows-latest

@@ -4,7 +4,10 @@ on:
   workflow_call:
 
 env:
-  DOTNET_VERSION: '7.0.x'
+  DOTNET_VERSION: 7.0.x
+  CONFIGURATION: Release
+  DIST_DIR: /tmp/dist
+  OUTPUT_DIR: /tmp/out
 
 jobs:
   osx-pack:
@@ -31,7 +34,7 @@ jobs:
         --configuration Release \
         --runtime osx-x64 \
         --self-contained true \
-        --output ./out/osx-x64 \
+        --output ${{ env.OUTPUT_DIR }}/osx-x64 \
         --verbosity normal \
         -p:RuntimeIdentifier=osx-x64 \
         -p:SelfContained=true \
@@ -51,7 +54,7 @@ jobs:
         --configuration Release \
         --runtime osx-arm64 \
         --self-contained true \
-        --output ./out/osx-arm64 \
+        --output ${{ env.OUTPUT_DIR }}/osx-arm64 \
         --verbosity normal \
         -p:RuntimeIdentifier=osx-arm64 \
         -p:SelfContained=true \
@@ -65,38 +68,42 @@ jobs:
         -p:ServerGarbageCollection=true
 
     - name: Tarball (osx-x64)
+      working-directory: ${{ env.OUTPUT_DIR }}/osx-x64
+      env:
+        TAR_FILE: ${{ format('{0}/Neo.Express-osx-x64-{1}.tar.xz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/osx-x64
-        tar cJf ${{ format('../Neo.Express.v{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+        tar cJf ${{ env.TAR_FILE }} .
 
     - name: Tarball (osx-arm64)
+      working-directory: ${{ env.OUTPUT_DIR }}/osx-arm64
+      env:
+        TAR_FILE: ${{ format('{0}/Neo.Express-osx-arm64-{1}.tar.xz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/osx-arm64
-        tar cJf ${{ format('../Neo.Express.v{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+        tar cJf ${{ env.TAR_FILE }} .
 
     - name: Generate SHA256 File (osx-x64)
+      working-directory: ${{ env.DIST_DIR }}
       env:
-        EXPRESS_FILENAME: ${{ format('Neo.Express.v{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-osx-x64-{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/
-        shasum --algorithm 256 $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+        shasum --algorithm 256 ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Generate SHA256 File (osx-arm64)
+      working-directory: ${{ env.DIST_DIR }}
       env:
-        EXPRESS_FILENAME: ${{ format('Neo.Express.v{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-osx-arm64-{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/
-        shasum --algorithm 256 $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+        shasum --algorithm 256 ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: |
-          ${{ format('./out/Neo.Express.v{0}-osx-x64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-osx-x64.tar.xz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-osx-arm64.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-osx-arm64.tar.xz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-osx-x64-{1}.tar.xz', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-osx-x64-{1}.tar.xz.sha256', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-osx-arm64-{1}.tar.xz', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-osx-arm64-{1}.tar.xz.sha256', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
 
   linux-pack:
     runs-on: ubuntu-latest
@@ -122,7 +129,7 @@ jobs:
         --configuration Release \
         --runtime linux-x64 \
         --self-contained true \
-        --output ./out/linux-x64 \
+        --output ${{ env.OUTPUT_DIR }}/linux-x64 \
         --verbosity normal \
         -p:RuntimeIdentifier=linux-x64 \
         -p:SelfContained=true \
@@ -141,7 +148,7 @@ jobs:
         --configuration Release \
         --runtime linux-arm64 \
         --self-contained true \
-        --output ./out/linux-arm64 \
+        --output ${{ env.OUTPUT_DIR }}/linux-arm64 \
         --verbosity normal \
         -p:RuntimeIdentifier=linux-arm64 \
         -p:SelfContained=true \
@@ -160,7 +167,7 @@ jobs:
         --configuration Release \
         --runtime linux-musl-arm64 \
         --self-contained true \
-        --output ./out/linux-musl-arm64 \
+        --output ${{ env.OUTPUT_DIR }}/linux-musl-arm64 \
         --verbosity normal \
         -p:RuntimeIdentifier=linux-musl-arm64 \
         -p:SelfContained=true \
@@ -173,52 +180,58 @@ jobs:
         -p:ServerGarbageCollection=true
 
     - name: Tarball (linux-x64)
+      working-directory: ${{ env.OUTPUT_DIR }}/linux-x64
+      env:
+        TAR_FILE: ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.gz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/linux-x64
-        tar -czvf ${{ format('../Neo.Express.v{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+        tar -czvf ${{ env.TAR_FILE }} .
 
     - name: Tarball (linux-arm64)
+      working-directory: ${{ env.OUTPUT_DIR }}/linux-arm64
+      env:
+        TAR_FILE: ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.gz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/linux-arm64
-        tar -czvf ${{ format('../Neo.Express.v{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+        tar -czvf ${{ env.TAR_FILE }} .
 
     - name: Tarball (linux-musl-arm64)
+      working-directory: ${{ env.OUTPUT_DIR }}/linux-musl-arm64
+      env:
+        TAR_FILE: ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.gz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/linux-musl-arm64
-        tar -czvf ${{ format('../Neo.Express.v{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }} .
+        tar -czvf ${{ env.TAR_FILE }} .
 
     - name: Generate SHA256 File (linux-x64)
+      working-directory: ${{ env.DIST_DIR }}
       env:
-        EXPRESS_FILENAME: ${{ format('Neo.Express.v{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-linux-x64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/
-        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+        sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Generate SHA256 File (linux-arm64)
+      working-directory: ${{ env.DIST_DIR }}
       env:
-        EXPRESS_FILENAME: ${{ format('Neo.Express.v{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-linux-arm64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/
-        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+        sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Generate SHA256 File (linux-musl-arm64)
+      working-directory: ${{ env.DIST_DIR }}
       env:
-        EXPRESS_FILENAME: ${{ format('Neo.Express.v{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-linux-musl-arm64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/
-        sha256sum $EXPRESS_FILENAME > $EXPRESS_FILENAME.sha256
+        sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: |
-          ${{ format('./out/Neo.Express.v{0}-linux-x64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-linux-x64.tar.gz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-linux-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-linux-arm64.tar.gz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-linux-musl-arm64.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-linux-musl-arm64.tar.gz.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.xz', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.xz.sha256', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.xz', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.xz.sha256', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.xz', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.xz.sha256', ${{ env.DIST_DIR }}, steps.nbgv.outputs.NuGetPackageVersion) }}
 
   win-pack:
     runs-on: windows-latest
@@ -244,7 +257,7 @@ jobs:
         --configuration Release `
         --runtime win-x64 `
         --self-contained true `
-        --output ./out/win-x64 `
+        --output ${{ env.OUTPUT_DIR }}/win-x64 `
         --verbosity normal `
         -p:RuntimeIdentifier=win-x64 `
         -p:SelfContained=true `
@@ -263,7 +276,7 @@ jobs:
         --configuration Release `
         --runtime win-arm64 `
         --self-contained true `
-        --output ./out/win-arm64 `
+        --output ${{ env.OUTPUT_DIR }}/win-arm64 `
         --verbosity normal `
         -p:RuntimeIdentifier=win-arm64 `
         -p:SelfContained=true `
@@ -276,33 +289,38 @@ jobs:
         -p:ServerGarbageCollection=true
 
     - name: Zip (win-x64)
+      working-directory: ${{ env.OUTPUT_DIR }}/win-x64
+      env:
+        ZIP_FILE: ${{ format('{0}/Neo.Express-win-x64-{1}.zip', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/win-x64
-        Compress-Archive -Path ./* -Destination ${{ format('../Neo.Express.v{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+        Compress-Archive -Path * -Destination ZIP_FILE
 
     - name: Zip (win-arm64)
+      working-directory: ${{ env.OUTPUT_DIR }}/win-arm64
+      env:
+        ZIP_FILE: ${{ format('{0}/Neo.Express-win-arm64-{1}.zip', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        cd ./out/win-arm64
-        Compress-Archive -Path ./* -Destination ${{ format('../Neo.Express.v{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+        Compress-Archive -Path * -Destination ZIP_FILE
 
     - name: Generate SHA256 File (win-x64)
+      working-directory: ${{ env.DIST_DIR }}
+      env:
+        ZIP_FILE: ${{ format('Neo.Express-win-x64-{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        $zipFileName = "./out/win-x64/${{ format('../Neo.Express.v{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}"
-        $zipHash = Get-FileHash -Path $zipFileName -Algorithm SHA256
-        $zipHash.Hash | Out-File -Encoding 'UTF8' "$($zipFileName).sha256"
+        $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
+        $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
 
     - name: Generate SHA256 File (win-arm64)
+      working-directory: ${{ env.DIST_DIR }}
+      env:
+        ZIP_FILE: ${{ format('Neo.Express-win-arm64-{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
-        $zipFileName = "./out/win-arm64/${{ format('../Neo.Express.v{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}"
-        $zipHash = Get-FileHash -Path $zipFileName -Algorithm SHA256
-        $zipHash.Hash | Out-File -Encoding 'UTF8' "$($zipFileName).sha256"
+        $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
+        $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
 
     - name: Upload Zips (Standalone)
       uses: actions/upload-artifact@v3
       with:
         name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: |
-          ${{ format('./out/Neo.Express.v{0}-win-x64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-win-x64.zip.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-win-arm64.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
-          ${{ format('./out/Neo.Express.v{0}-win-arm64.zip.sha256', steps.nbgv.outputs.NuGetPackageVersion) }}
+          ${{ env.DIST_DIR }}/*

@@ -5,7 +5,6 @@ on:
 
 env:
   DOTNET_VERSION: 7.0.x
-  CONFIGURATION: Release
   DIST_DIR: /tmp/dist
   OUTPUT_DIR: /tmp/out
 
@@ -69,7 +68,7 @@ jobs:
 
     - name: Create Distribution Directory
       run: |
-        md ${{ env.DIST_DIR }}
+        mkdir -p ${{ env.DIST_DIR }}
 
     - name: Tarball (osx-x64)
       working-directory: ${{ env.OUTPUT_DIR }}/osx-x64
@@ -185,7 +184,7 @@ jobs:
 
     - name: Create Distribution Directory
       run: |
-        md ${{ env.DIST_DIR }}
+        mkdir -p ${{ env.DIST_DIR }}
 
     - name: Tarball (linux-x64)
       working-directory: ${{ env.OUTPUT_DIR }}/linux-x64
@@ -244,6 +243,15 @@ jobs:
   win-pack:
     runs-on: windows-latest
     steps:
+
+    - name: Set Environment Variables
+      env:
+        DIST_DIR: ${{ env.TEMP }}/dist
+        OUTPUT_DIR: ${{ env.TEMP }}/out
+      run: |
+        echo "${{ env.DIST_DIR }}"
+        echo "${{ env.OUTPUT_DIR }}"
+
     - name: Checkout Code
       uses: actions/checkout@v3
       with:
@@ -298,7 +306,7 @@ jobs:
 
     - name: Create Distribution Directory
       run: |
-        md ${{ env.DIST_DIR }}
+        mkdir -p ${{ env.DIST_DIR }}
 
     - name: Zip (win-x64)
       working-directory: ${{ env.OUTPUT_DIR }}/win-x64

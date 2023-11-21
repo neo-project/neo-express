@@ -4,7 +4,7 @@
     <NeoContractName>$(AssemblyName)</NeoContractName>
     <NeoExpressBatchFile>../express.batch</NeoExpressBatchFile>
     <Nullable>enable</Nullable>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

@@ -14,7 +14,6 @@ on:
 env:
   DOTNET_VERSION: '7.0.x'
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
-  NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
 
 jobs:
   pack:
@@ -31,6 +30,8 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
+      env:
+        NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
 
     - name: Download Express
       uses: actions/download-artifact@v3

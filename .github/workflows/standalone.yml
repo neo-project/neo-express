@@ -10,7 +10,6 @@ env:
   WIN_DIST_DIR: c:/tmp/dist
   WIN_OUTPUT_DIR: c:/tmp/out
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
-  NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
 
 jobs:
   osx-pack:
@@ -26,6 +25,9 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
+      env:
+        NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
 
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1

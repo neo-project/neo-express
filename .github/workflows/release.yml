@@ -2,6 +2,8 @@ name: Release
 
 on:
   workflow_dispatch:
+env:
+  AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
 
 jobs:
   standalone:
@@ -41,30 +43,6 @@ jobs:
 
     - name: Pack Blockchain-toolkit-library 
       run: dotnet pack src/bctklib --output ./out --configuration Release --no-restore --verbosity normal
-
-    - name: Upload NeoExpress artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: neoxp
-        path: ./out/Neo.Express.*.nupkg
-
-    - name: Upload NeoTrace artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: neotrace
-        path: ./out/Neo.Trace.*.nupkg
-
-    - name: Upload NeoWorkNet artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: neoworknet
-        path: ./out2/Neo.WorkNet.*.nupkg
-
-    - name: Upload Blockchain-toolkit-library artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: bctklib
-        path: ./out/bctklib.*.nupkg
 
     - name: Download Express Files (Standalone)
       uses: actions/download-artifact@v3

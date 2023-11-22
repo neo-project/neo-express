@@ -27,6 +27,8 @@ on:
       - '.gitattributes'
       - 'LICENSE'
       - '**/*.md'
+  schedule:
+    - cron: '35 10 * * 3'
 
 jobs:
   analyze:

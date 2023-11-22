@@ -11,7 +11,6 @@ on:
 env:
   CONFIGURATION: 'Release'
   DOTNET_VERSION: '7.0.x'
-  AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
 
 jobs:
   pack:
@@ -30,9 +29,6 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
-      env:
-        NUGET_AUTH_TOKEN: ${MYGET_TOKEN}
 
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1
@@ -54,3 +50,9 @@ jobs:
       with:
         name: buildlog
         path: ./msbuild.binlog
+
+    - name: Upload NeoExpress
+      uses: actions/upload-artifact@v3
+      with:
+        name: packages
+        path: ./out/*.nupkg

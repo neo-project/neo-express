@@ -36,25 +36,7 @@ jobs:
     - name: Download Express
       uses: actions/download-artifact@v3
       with:
-        name: express
-        path: ./out
-
-    - name: Download Trace
-      uses: actions/download-artifact@v3
-      with:
-        name: trace
-        path: ./out
-
-    - name: Download WorkNet
-      uses: actions/download-artifact@v3
-      with:
-        name: worknet
-        path: ./out
-
-    - name: Download bctklib
-      uses: actions/download-artifact@v3
-      with:
-        name: bctklib
+        name: packages
         path: ./out
 
     - name: Publish to Azure Artifacts

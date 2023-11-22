@@ -40,8 +40,23 @@ jobs:
     - name: Pack NeoWorkNet 
       run: dotnet pack src/worknet --output ./out2 --configuration Release --no-restore --verbosity normal
 
-    - name: Pack Blockchain-toolkit-library 
+    - name: Pack BlockchainToolkitLibrary 
       run: dotnet pack src/bctklib --output ./out --configuration Release --no-restore --verbosity normal
+
+    - name: Pack NeoAssertions 
+      run: dotnet pack src/assertions --output ./out --configuration Release --no-restore --verbosity normal
+
+    - name: Pack NeoBuildTasks 
+      run: dotnet pack src/build-tasks --output ./out --configuration Release --no-restore --verbosity normal
+
+    - name: Pack NeoCollector 
+      run: dotnet pack src/collector --output ./out --configuration Release --no-restore --verbosity normal
+
+    - name: Pack NeoTestRunner 
+      run: dotnet pack src/runner --output ./out --configuration Release --no-restore --verbosity normal
+
+    - name: Pack NeoTestHarness 
+      run: dotnet pack src/test-harness --output ./out --configuration Release --no-restore --verbosity normal
 
     - name: Download Express Files (Standalone)
       uses: actions/download-artifact@v3

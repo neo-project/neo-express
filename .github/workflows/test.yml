@@ -7,7 +7,6 @@ env:
   CONFIGURATION: 'Release'
   DOTNET_VERSION: '7.0.x'
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
-  NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
 
 jobs:
   build:
@@ -15,45 +14,58 @@ jobs:
     strategy: 
       matrix:
         os: [macos-11, macos-12, macos-13, ubuntu-20.04, ubuntu-22.04, windows-2019, windows-2022]
+    env:
+      NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
+
     - name: Install RocksDB Dependencies
       if: ${{ runner.os == 'Linux'}}
       run: |
         sudo apt-get update
         sudo apt-get install libsnappy-dev libc6-dev librocksdb-dev -y
+
     - name: Build and Test
       run: |
         dotnet restore neo-express.sln
         dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.${{ matrix.os }}.binlog
         dotnet test neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
     - name: Upload Coverage
       uses: actions/upload-artifact@v3
       with:
         name: coverage
         path: ./test/test.bctklib/TestResults/*/coverage.cobertura.xml
+
     - name: Upload Build Log
       uses: actions/upload-artifact@v3
       with:
         name: buildlog
         path: ./msbuild.${{ matrix.os }}.binlog
+
   report:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
+
     steps:
       - name: Download Coverage Artifact
         uses: actions/download-artifact@v3
         with:
           name: coverage
           path: ./coverage
+
       - name: Code Coverage Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:

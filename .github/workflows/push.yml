@@ -14,7 +14,6 @@ on:
 env:
   DOTNET_VERSION: '7.0.x'
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
-  NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
 
 jobs:
   pack:
@@ -24,6 +23,9 @@ jobs:
   publish:
     needs: [pack, test]
     runs-on: ubuntu-latest
+    env:
+      NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
+
     steps:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -31,26 +33,31 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
       env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Download Express
       uses: actions/download-artifact@v3
       with:
         name: express
         path: ./out
+
     - name: Download Trace
       uses: actions/download-artifact@v3
       with:
         name: trace
         path: ./out
+
     - name: Download WorkNet
       uses: actions/download-artifact@v3
       with:
         name: worknet
         path: ./out
+
     - name: Download bctklib
       uses: actions/download-artifact@v3
       with:
         name: bctklib
         path: ./out
+
     - name: Publish to Azure Artifacts
       run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v2/package --api-key ${{ env.MYGET_TOKEN }} --symbol-source https://www.myget.org/F/neo/symbols/api/v2/package --symbol-api-key ${{ env.MYGET_TOKEN }}

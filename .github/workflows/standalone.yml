@@ -10,11 +10,11 @@ env:
   WIN_DIST_DIR: c:/tmp/dist
   WIN_OUTPUT_DIR: c:/tmp/out
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
-  NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
 
 jobs:
   osx-pack:
     runs-on: macos-latest
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3

@@ -4,16 +4,18 @@ on:
   workflow_dispatch:
 env:
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
-  NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
 
 jobs:
   standalone:
     if: startsWith(github.ref, 'refs/heads/release/')
     uses: ./.github/workflows/standalone.yml
+
   build:
     if: startsWith(github.ref, 'refs/heads/release/')
     needs: [standalone]
     runs-on: ubuntu-latest
+    env:
+      NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
 
     steps:
     - uses: actions/checkout@v3

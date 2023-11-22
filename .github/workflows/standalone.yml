@@ -290,6 +290,14 @@ jobs:
         -p:DebugType=embedded `
         -p:ServerGarbageCollection=true
 
+    - name: Build (portable)
+      run: |
+        dotnet publish ./src/neoxp `
+        --framework net7.0 `
+        --configuration Release `
+        --output ${{ env.WIN_OUTPUT_DIR }}/portable `
+        --verbosity normal
+
     - name: Create Distribution Directory
       run: |
         mkdir -p ${{ env.WIN_DIST_DIR }}
@@ -308,6 +316,13 @@ jobs:
       run: |
         Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
 
+    - name: Zip (portable)
+      working-directory: ${{ env.WIN_OUTPUT_DIR }}/portable
+      env:
+        ZIP_FILE: ${{ format('{0}/Neo.Express-portable-{1}.zip', env.WIN_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
+
     - name: Generate SHA256 File (win-x64)
       working-directory: ${{ env.WIN_DIST_DIR }}
       env:
@@ -320,6 +335,14 @@ jobs:
       working-directory: ${{ env.WIN_DIST_DIR }}
       env:
         ZIP_FILE: ${{ format('Neo.Express-win-arm64-{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
+        $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
+
+    - name: Generate SHA256 File (portable)
+      working-directory: ${{ env.WIN_DIST_DIR }}
+      env:
+        ZIP_FILE: ${{ format('Neo.Express-portable-{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
         $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256

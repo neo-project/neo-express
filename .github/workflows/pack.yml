@@ -20,7 +20,7 @@ jobs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
       NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     env:
-      NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
+      NUGET_AUTH_TOKEN: ${MYGET_TOKEN}
 
     steps:
     - name: Checkout Code

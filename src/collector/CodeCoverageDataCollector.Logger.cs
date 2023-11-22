@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
+using System;
 
 namespace Neo.Collector
 {

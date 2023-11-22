@@ -9,6 +9,9 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using System;
+using System.Collections.Generic;
+
 namespace Neo.BuildTasks
 {
     // https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-basics

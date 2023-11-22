@@ -9,6 +9,8 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using System;
+using System.IO;
 using System.Text;
 
 // This code was originally published as part of EFCore (https://github.com/dotnet/efcore/blob/main/src/EFCore/Infrastructure/IndentedStringBuilder.cs)

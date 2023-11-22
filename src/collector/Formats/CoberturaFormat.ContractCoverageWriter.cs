@@ -10,6 +10,8 @@
 // modifications are permitted.
 
 using Neo.Collector.Models;
+using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 
 namespace Neo.Collector.Formats

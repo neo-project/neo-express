@@ -10,6 +10,8 @@
 // modifications are permitted.
 
 using Microsoft.Build.Framework;
+using System;
+using System.IO;
 using Task = Microsoft.Build.Utilities.Task;
 
 namespace Neo.BuildTasks

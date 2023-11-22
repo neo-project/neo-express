@@ -10,6 +10,10 @@
 // modifications are permitted.
 
 using SimpleJSON;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Neo.BuildTasks
 {

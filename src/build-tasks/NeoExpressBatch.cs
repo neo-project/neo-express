@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Microsoft.Build.Framework;
+using System;
 using System.Text;
 
 namespace Neo.BuildTasks

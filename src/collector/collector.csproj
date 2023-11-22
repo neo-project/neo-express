@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <PackageId>Neo.Collector</PackageId>
         <RootNamespace>Neo.Collector</RootNamespace>
+        <ImplicitUsings>disable</ImplicitUsings>
         <TargetFramework></TargetFramework>
         <TargetFrameworks>netstandard2.0;net472</TargetFrameworks>
     </PropertyGroup>

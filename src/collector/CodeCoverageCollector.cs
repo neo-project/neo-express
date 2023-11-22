@@ -10,6 +10,10 @@
 // modifications are permitted.
 
 using Neo.Collector.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace Neo.Collector

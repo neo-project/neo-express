@@ -11,6 +11,7 @@
 
 // Adapted from https://github.com/dotnet/runtime/blob/main/src/libraries/Common/src/System/CSharpHelpers.cs
 
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace Neo.BuildTasks

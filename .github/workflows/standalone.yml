@@ -27,7 +27,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
       env:
-        NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
+        NUGET_AUTH_TOKEN: ${MYGET_TOKEN}
 
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1

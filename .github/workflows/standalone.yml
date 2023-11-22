@@ -10,6 +10,7 @@ env:
   WIN_DIST_DIR: c:/tmp/dist
   WIN_OUTPUT_DIR: c:/tmp/out
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
+  NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
 
 jobs:
   osx-pack:

@@ -14,6 +14,7 @@ on:
 env:
   DOTNET_VERSION: '7.0.x'
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
+  NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
 
 jobs:
   pack:
@@ -23,8 +24,6 @@ jobs:
   publish:
     needs: [pack, test]
     runs-on: ubuntu-latest
-    env:
-      NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
 
     steps:
     - name: Setup .NET
@@ -32,8 +31,6 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Download Express
       uses: actions/download-artifact@v3
@@ -60,4 +57,4 @@ jobs:
         path: ./out
 
     - name: Publish to Azure Artifacts
-      run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v2/package --api-key ${{ env.MYGET_TOKEN }} --symbol-source https://www.myget.org/F/neo/symbols/api/v2/package --symbol-api-key ${{ env.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v2/package --api-key ${{ secrets.MYGET_TOKEN }} --symbol-source https://www.myget.org/F/neo/symbols/api/v2/package --symbol-api-key ${{ secrets.MYGET_TOKEN }}

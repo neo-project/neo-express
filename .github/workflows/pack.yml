@@ -12,6 +12,7 @@ env:
   CONFIGURATION: 'Release'
   DOTNET_VERSION: '7.0.x'
   AZURE_ARTIFACTS_FEED_URL: https://www.myget.org/F/neo/api/v3/index.json
+  NUGET_AUTH_TOKEN: ${{ secrets.MYGET_TOKEN }}
 
 jobs:
   pack:
@@ -19,8 +20,6 @@ jobs:
     outputs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
       NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-    env:
-      NUGET_AUTH_TOKEN: ${MYGET_TOKEN}
 
     steps:
     - name: Checkout Code

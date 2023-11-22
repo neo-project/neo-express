@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
+        <IsPackable>false</IsPackable>
+        <NoWarn>IDE1006;NU1701</NoWarn>
+        <RootNamespace>build_tasks</RootNamespace>
+        <TargetFramework>net7.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Remove="integrationTests/*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\build-tasks\build-tasks.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="testFiles/*" />
+        <EmbeddedResource Include="integrationTests/*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="3.2.0">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Build.Locator" Version="1.5.5" />
+        <!-- 
+      neo-build-tasks depends on Microsoft.Build.Utilities.Core, but has PrivateAssets = All. The test project must explicitly
+      declare this dependency. However, for reasons I don't know, Microsoft.Build.Utilities.Core package v17.4.0 contains 
+      a copy of Microsoft.Build.Utilities.Core.dll v15.1.0.0. Tests that depend on types in that package fail unless the 
+      test project takes a dependency on Microsoft.Build.Utilities.Core package, v15.1.548.    
+    -->
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.1.548" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+        <PackageReference Include="Microsoft.VisualStudio.TestPlatform.ObjectModel" Version="14.0.0" />
+        <PackageReference Include="Moq" Version="4.18.3" />
+        <!-- <PackageReference Include="MSBuild.ProjectCreation" Version="2.0.1" /> -->
+        <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="Xunit.Combinatorial" Version="1.5.25" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+</Project>

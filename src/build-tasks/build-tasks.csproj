@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <AssemblyName>neo-build-tasks</AssemblyName>
+        <!-- Change the default location where NuGet will put the build output -->
+        <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+        <DevelopmentDependency>true</DevelopmentDependency>
+        <!-- Suppresses the warnings about the package not having assemblies in lib/*/.dll.-->
+        <NoPackageAnalysis>true</NoPackageAnalysis>
+        <Nullable>enable</Nullable>
+        <PackageId>Neo.BuildTasks</PackageId>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <TargetFramework></TargetFramework>
+        <TargetFrameworks>netstandard2.0;net472</TargetFrameworks>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="test-build-tasks" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="build\*" PackagePath="build\" />
+        <Content Include="buildMultiTargeting\*" PackagePath="buildMultiTargeting\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.4.0" PrivateAssets="All" />
+        <PackageReference Include="PolySharp" Version="1.12.1">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+</Project>

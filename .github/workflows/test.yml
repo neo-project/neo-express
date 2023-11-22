@@ -55,8 +55,6 @@ jobs:
   report:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      NUGET_AUTH_TOKEN: ${{ env.MYGET_TOKEN }}
 
     steps:
       - name: Download Coverage Artifact

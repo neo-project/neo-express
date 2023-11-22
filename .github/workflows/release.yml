@@ -31,32 +31,31 @@ jobs:
       run: dotnet restore neo-express.sln
 
     - name: Pack NeoExpress
-      run: dotnet pack src/neoxp --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/neoxp --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Pack NeoTrace 
-      run: dotnet pack src/trace --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/trace --output ./dist --configuration Release --no-restore --verbosity normal
 
-    # temporarily pack worknet into ./out2 so that it doesn't get included in release
     - name: Pack NeoWorkNet 
-      run: dotnet pack src/worknet --output ./out2 --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/worknet --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Pack BlockchainToolkitLibrary 
-      run: dotnet pack src/bctklib --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/bctklib --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Pack NeoAssertions 
-      run: dotnet pack src/assertions --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/assertions --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Pack NeoBuildTasks 
-      run: dotnet pack src/build-tasks --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/build-tasks --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Pack NeoCollector 
-      run: dotnet pack src/collector --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/collector --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Pack NeoTestRunner 
-      run: dotnet pack src/runner --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/runner --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Pack NeoTestHarness 
-      run: dotnet pack src/test-harness --output ./out --configuration Release --no-restore --verbosity normal
+      run: dotnet pack src/test-harness --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Download Express Files (Standalone)
       uses: actions/download-artifact@v3
@@ -75,28 +74,28 @@ jobs:
           ./out/*
 
     - name: Push Neo.Express Nuget.org
-      run: dotnet nuget push ${{ format('./out/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Neo.Trace Nuget.org
-      run: dotnet nuget push ${{ format('./out/Neo.Trace.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.Trace.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Blockchain-toolkit-library Nuget.org
-      run: dotnet nuget push ${{ format('./out/bctklib.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/bctklib.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Neo.Assertions Nuget.org
-      run: dotnet nuget push ${{ format('./out/Neo.Assertions.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.Assertions.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Neo.BuildTasks Nuget.org
-      run: dotnet nuget push ${{ format('./out/Neo.BuildTasks.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.BuildTasks.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Neo.Collector Nuget.org
-      run: dotnet nuget push ${{ format('./out/Neo.Collector.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.Collector.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Neo.Test.Runner Nuget.org
-      run: dotnet nuget push ${{ format('./out/Neo.Test.Runner.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.Test.Runner.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Neo.Test.Harness Nuget.org
-      run: dotnet nuget push ${{ format('./out/Neo.Test.Harness.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.Test.Harness.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
-    # - name: Push Neo.WorkNet Nuget.org
-    #   run: dotnet nuget push ${{ format('./out/Neo.WorkNet.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+    - name: Push Neo.WorkNet Nuget.org
+      run: dotnet nuget push ${{ format('./dist/Neo.WorkNet.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json

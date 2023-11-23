@@ -36,4 +36,4 @@ jobs:
         path: ./out
 
     - name: Publish to Azure Artifacts
-      run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN} 
+      run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.NUGET_TOKEN }}

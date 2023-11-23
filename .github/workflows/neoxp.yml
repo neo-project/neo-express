@@ -4,7 +4,6 @@ on:
   workflow_call:
 
 env:
-  AZURE_ARTIFACTS_FEED_URL: https://nuget.pkg.github.com/neo-project/index.json
   DOTNET_VERSION: '7.0.x'
 
 jobs:
@@ -15,14 +14,11 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Download Express
       uses: actions/download-artifact@v3
       with:
-        name: express
+        name: packages
         path: ./out
 
     - name: Install Neo Express

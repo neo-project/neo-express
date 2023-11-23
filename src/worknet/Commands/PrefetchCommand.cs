@@ -56,13 +56,13 @@ class PrefetchCommand
             if (!UInt160.TryParse(Contract, out var contractHash))
             {
                 var info = contracts.SingleOrDefault(c => c.Name.Equals(Contract, StringComparison.OrdinalIgnoreCase));
-                contractHash = info.Hash ?? UInt160.Zero;
+                contractHash = info!.Hash ?? UInt160.Zero;
             }
 
             if (contractHash == UInt160.Zero)
                 throw new Exception("Invalid Contract argument");
 
-            var contractName = contracts.SingleOrDefault(c => c.Hash == contractHash).Name;
+            var contractName = contracts.SingleOrDefault(c => c.Hash == contractHash)!.Name;
             if (string.IsNullOrEmpty(contractName))
                 throw new Exception("Invalid Contract argument");
 

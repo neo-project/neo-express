@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <AssemblyName>neotrace</AssemblyName>
         <Description>neotrace generates debug trace files for existing blocks and/or transactions</Description>

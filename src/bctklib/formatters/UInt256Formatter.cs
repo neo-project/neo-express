@@ -21,7 +21,7 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
 
         public UInt256 Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            var value = options.Resolver.GetFormatter<byte[]>().Deserialize(ref reader, options);
+            var value = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
             return new UInt256(value);
         }
 

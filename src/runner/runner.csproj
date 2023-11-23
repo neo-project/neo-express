@@ -8,6 +8,10 @@
         <PackageId>Neo.Test.Runner</PackageId>
         <PackAsTool>true</PackAsTool>
         <RootNamespace>Neo.Test.Runner</RootNamespace>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <DebugType>Embedded</DebugType>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup>

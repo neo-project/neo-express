@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <AssemblyName>neoxp</AssemblyName>
         <Description>neo-express is a Neo developer blockchain tool</Description>
@@ -6,6 +6,10 @@
         <PackageId>Neo.Express</PackageId>
         <PackAsTool>true</PackAsTool>
         <RootNamespace>NeoExpress</RootNamespace>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <DebugType>Embedded</DebugType>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup>

@@ -127,7 +127,7 @@ partial class RunCommand
                 { "RecoveryLogs", "ConsensusState" }
             };
 
-            var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+            var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
             return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
         }
 
@@ -145,7 +145,7 @@ partial class RunCommand
                     { "PluginConfiguration:SessionEnabled", $"{true}"}
                 };
 
-            var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+            var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
             return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
         }
     }

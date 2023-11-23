@@ -8,6 +8,7 @@
         <PackageId>Neo.Test.Runner</PackageId>
         <PackAsTool>true</PackAsTool>
         <RootNamespace>Neo.Test.Runner</RootNamespace>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
     </PropertyGroup>
 
     <ItemGroup>

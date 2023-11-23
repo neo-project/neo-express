@@ -37,7 +37,7 @@ jobs:
     - name: Test Policy Command (offline)
       run: |
         neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
-        neoxp policy sync mainnet-policy genesis
+        neoxp policy sync mainnet-policy --account genesis
 
     - name: Test Wallet Command
       run: |

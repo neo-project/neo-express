@@ -241,9 +241,9 @@ namespace NeoExpress.Commands
                 {
                     [Argument(0, Description = "Source of policy values. Must be path to policy settings JSON file")]
                     [Required]
-                    internal string Source { get; } = string.Empty;
+                    internal string Source { get; init; } = string.Empty;
 
-                    [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+                    [Option(Description = "Account to pay contract invocation GAS fee")]
                     [Required]
                     internal string Account { get; init; } = string.Empty;
 

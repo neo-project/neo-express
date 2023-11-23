@@ -4,6 +4,10 @@
     <Nullable>enable</Nullable>
     <PackageId>Neo.Test.Harness</PackageId>
     <RootNamespace>NeoTestHarness</RootNamespace>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>Embedded</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>

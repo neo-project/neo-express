@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <AssemblyName>neo-worknet</AssemblyName>
         <Description></Description>
@@ -6,6 +6,7 @@
         <PackageId>Neo.WorkNet</PackageId>
         <PackAsTool>true</PackAsTool>
         <RootNamespace>NeoWorkNet</RootNamespace>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
     </PropertyGroup>
 
     <ItemGroup>

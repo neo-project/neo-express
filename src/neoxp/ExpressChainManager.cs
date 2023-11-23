@@ -264,7 +264,7 @@ namespace NeoExpress
                     { "IgnoreRecoveryLogs", "true" }
                 };
 
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
                 return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
             }
 
@@ -299,7 +299,7 @@ namespace NeoExpress
                 var sessionEnabled = !chain.TryReadSetting<bool>("rpc.SessionEnabled", bool.TryParse, out var value) || value;
                 settings.Add("PluginConfiguration:SessionEnabled", $"{sessionEnabled}");
 
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
                 return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
             }
         }

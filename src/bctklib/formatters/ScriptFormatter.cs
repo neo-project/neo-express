@@ -20,7 +20,7 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
 
         public Script Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            var bytes = options.Resolver.GetFormatter<byte[]>().Deserialize(ref reader, options);
+            var bytes = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
             return new Script(bytes);
         }
 

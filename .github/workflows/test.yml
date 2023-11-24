@@ -8,7 +8,8 @@ env:
   DOTNET_VERSION: '7.0.x'
 
 jobs:
-  build-test:
+  build:
+    name: Build and Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy: 
       matrix:
@@ -91,7 +92,8 @@ jobs:
       run: neoxp stop --all
 
   report:
-    needs: [build-test]
+    name: Build Coverage (Report)
+    needs: [build]
     runs-on: ubuntu-latest
 
     steps:

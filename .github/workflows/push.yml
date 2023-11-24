@@ -17,7 +17,9 @@ env:
 
 jobs:
   test:
+    name: Test Application
     uses: ./.github/workflows/test.yml
   pack:
+    name: MyGet
     needs: [test]
     uses: ./.github/workflows/pack.yml

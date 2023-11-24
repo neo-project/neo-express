@@ -5,10 +5,12 @@ on:
 
 jobs:
   standalone:
+    name: Standalone Build
     if: startsWith(github.ref, 'refs/heads/release/')
     uses: ./.github/workflows/standalone.yml
 
   build:
+    name: Standalone Pack/Release/Publish
     if: startsWith(github.ref, 'refs/heads/release/')
     needs: [standalone]
     runs-on: ubuntu-latest

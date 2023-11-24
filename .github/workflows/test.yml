@@ -8,7 +8,7 @@ env:
   DOTNET_VERSION: '7.0.x'
 
 jobs:
-  build:
+  build-test:
     runs-on: ${{ matrix.os }}
     strategy: 
       matrix:
@@ -25,17 +25,20 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Install RocksDB Dependencies
-      if: ${{ runner.os == 'Linux'}}
-      run: |
-        sudo apt-get update
-        sudo apt-get install libsnappy-dev libc6-dev librocksdb-dev -y
+    # - name: Install RocksDB Dependencies
+    #   if: ${{ runner.os == 'Linux'}}
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get install libsnappy-dev libc6-dev librocksdb-dev -y
 
-    - name: Build and Test
-      run: |
-        dotnet restore neo-express.sln
-        dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.${{ matrix.os }}.binlog
-        dotnet test neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
+    - name: Restore
+      run: dotnet restore neo-express.sln
+
+    - name: Build
+      run: dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.${{ matrix.os }}.binlog
+
+    - name: Test
+      run: dotnet test neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
     - name: Upload Coverage
       uses: actions/upload-artifact@v3
@@ -49,8 +52,46 @@ jobs:
         name: buildlog
         path: ./msbuild.${{ matrix.os }}.binlog
 
+    - name: Pack neoxp
+      run: dotnet pack ./src/neoxp --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
+
+    - name: Install Neo Express
+      run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
+
+    - name: Test Create Command (neoxp)
+      run: neoxp create
+
+    - name: Test Checkpoint Command (offline)
+      run: neoxp checkpoint create checkpoints/init --force
+
+    - name: Test Policy Command (offline) (neoxp)
+      run: |
+        neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
+        neoxp policy sync mainnet-policy --account genesis
+
+    - name: Test Wallet Command
+      run: |
+        neoxp wallet create bob
+
+    - name: Test Transfer Command (offline) (neoxp)
+      run: |
+        neoxp transfer 10000 gas genesis node1
+        neoxp transfer 10000 gas genesis bob
+
+    - name: Test Run Command (online)
+      timeout-minutes: 1
+      run: neoxp run --seconds-per-block 3 --discard &
+
+    - name: Test Transfer Command (online) (neoxp)
+      run: |
+        neoxp transfer 10000 gas genesis node1
+        neoxp transfer 10000 gas genesis bob
+
+    - name: Test Stop Command (online) (neoxp)
+      run: neoxp stop --all
+
   report:
-    needs: build
+    needs: [build-test]
     runs-on: ubuntu-latest
 
     steps:

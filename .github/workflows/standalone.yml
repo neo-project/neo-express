@@ -1,4 +1,4 @@
-name: Run Standalone / Build / Pack
+name: Standalone Build
 
 on:
   workflow_call:

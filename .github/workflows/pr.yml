@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - development
       - release/*
     paths-ignore:
       - '.gitignore'
@@ -12,10 +13,6 @@ on:
       - '**/*.md'
 
 jobs:
-  pack:
-    uses: ./.github/workflows/pack.yml
   test:
+    name: Test Application
     uses: ./.github/workflows/test.yml
-  neoxp:
-    needs: [pack, test]  
-    uses: ./.github/workflows/neoxp.yml

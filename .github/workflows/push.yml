@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - development
       - release/*
     paths-ignore:
       - '.gitignore'
@@ -15,25 +16,10 @@ env:
   DOTNET_VERSION: '7.0.x'
 
 jobs:
-  pack:
-    uses: ./.github/workflows/pack.yml
   test:
+    name: Test Application
     uses: ./.github/workflows/test.yml
-  publish:
-    needs: [pack, test]
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Download Express
-      uses: actions/download-artifact@v3
-      with:
-        name: packages
-        path: ./out
-
-    - name: Publish to Azure Artifacts
-      run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+  pack:
+    name: MyGet
+    needs: [test]
+    uses: ./.github/workflows/pack.yml

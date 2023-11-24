@@ -1,14 +1,16 @@
-name: Release
+name: Release (Nuget.org)
 
 on:
   workflow_dispatch:
 
 jobs:
   standalone:
+    name: Standalone Build
     if: startsWith(github.ref, 'refs/heads/release/')
     uses: ./.github/workflows/standalone.yml
 
   build:
+    name: Standalone Pack/Release/Publish
     if: startsWith(github.ref, 'refs/heads/release/')
     needs: [standalone]
     runs-on: ubuntu-latest
@@ -31,31 +33,7 @@ jobs:
       run: dotnet restore neo-express.sln
 
     - name: Pack NeoExpress
-      run: dotnet pack src/neoxp --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack NeoTrace 
-      run: dotnet pack src/trace --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack NeoWorkNet 
-      run: dotnet pack src/worknet --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack BlockchainToolkitLibrary 
-      run: dotnet pack src/bctklib --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack NeoAssertions 
-      run: dotnet pack src/assertions --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack NeoBuildTasks 
-      run: dotnet pack src/build-tasks --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack NeoCollector 
-      run: dotnet pack src/collector --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack NeoTestRunner 
-      run: dotnet pack src/runner --output ./dist --configuration Release --no-restore --verbosity normal
-
-    - name: Pack NeoTestHarness 
-      run: dotnet pack src/test-harness --output ./dist --configuration Release --no-restore --verbosity normal
+      run: dotnet pack neo-express.sln --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Download Express Files (Standalone)
       uses: actions/download-artifact@v3

@@ -2,7 +2,6 @@
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <PackageId>Neo.BlockchainToolkit</PackageId>
         <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
     </PropertyGroup>
 

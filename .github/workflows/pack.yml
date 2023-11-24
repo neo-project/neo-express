@@ -51,8 +51,7 @@ jobs:
         name: buildlog
         path: ./msbuild.binlog
 
-    - name: Upload NeoExpress
-      uses: actions/upload-artifact@v3
-      with:
-        name: packages
-        path: ./out/*.nupkg
+    - name: Publish to MyGet
+      run: |
+        dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+        dotnet nuget push ./out/*.snupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}

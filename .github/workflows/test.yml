@@ -54,7 +54,7 @@ jobs:
         path: ./msbuild.${{ matrix.os }}.binlog
 
     - name: Pack neoxp
-      run: dotnet pack ./src/neoxp --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
+      run: dotnet pack ./src/neoxp --configuration ${{ env.CONFIGURATION }} --output ./out --verbosity normal
 
     - name: Install Neo Express
       run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express

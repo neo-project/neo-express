@@ -53,10 +53,10 @@ jobs:
         name: buildlog
         path: ./msbuild.${{ matrix.os }}.binlog
 
-    - name: Pack neoxp
-      run: dotnet pack ./src/neoxp --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
+    - name: Pack for Install
+      run: dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
 
-    - name: Install Neo Express
+    - name: Install neoxp tool
       run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
 
     - name: Test Create Command (neoxp)

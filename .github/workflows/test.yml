@@ -61,7 +61,7 @@ jobs:
     - name: Test Create Command (neoxp)
       run: neoxp create
 
-    - name: Test Checkpoint Command (offline)
+    - name: Test Checkpoint Command (offline) (neoxp)
       run: neoxp checkpoint create checkpoints/init --force
 
     - name: Test Policy Command (offline) (neoxp)
@@ -69,7 +69,7 @@ jobs:
         neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
         neoxp policy sync mainnet-policy --account genesis
 
-    - name: Test Wallet Command
+    - name: Test Wallet Command (neoxp)
       run: |
         neoxp wallet create bob
 
@@ -78,7 +78,7 @@ jobs:
         neoxp transfer 10000 gas genesis node1
         neoxp transfer 10000 gas genesis bob
 
-    - name: Test Run Command (online)
+    - name: Test Run Command (online) (neoxp)
       timeout-minutes: 1
       run: neoxp run --seconds-per-block 3 --discard &
 

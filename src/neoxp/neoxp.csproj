@@ -7,7 +7,6 @@
         <PackAsTool>true</PackAsTool>
         <RootNamespace>NeoExpress</RootNamespace>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <DebugType>Embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

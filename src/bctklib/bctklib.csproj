@@ -2,7 +2,9 @@
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <PackageId>Neo.BlockchainToolkit</PackageId>
         <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
+        <DebugType>Embedded</DebugType>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(CI)' == 'true'">

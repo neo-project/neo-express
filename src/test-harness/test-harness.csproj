@@ -5,6 +5,7 @@
     <PackageId>Neo.Test.Harness</PackageId>
     <RootNamespace>NeoTestHarness</RootNamespace>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>Embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

@@ -14,7 +14,6 @@
         <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
-        <DebugType>Embedded</DebugType>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <ApplicationIcon>../neo-cli.ico</ApplicationIcon>

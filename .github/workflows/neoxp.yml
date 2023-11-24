@@ -15,14 +15,8 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Download Express
-      uses: actions/download-artifact@v3
-      with:
-        name: packages
-        path: ./out
-
     - name: Install Neo Express
-      run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
+      run: dotnet tool install --add-source https://www.myget.org/F/neo/api/v3/index.json --verbosity normal --global --prerelease neo.express
 
     - name: Test Create Command
       run: neoxp create

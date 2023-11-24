@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      githubRelease:
+        description: 'Create a GitHub release (release branches only)'
+        default: true
+        type: boolean
+      marketplaceRelease:
+        description: 'Publish to VSCode Marketplace (release branches only)'
+        default: true
+        type: boolean
+
+jobs:
+  build:
+    uses: ./.github/workflows/vse-build.yml
+  publish:
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: extension
+          path: ./artifacts
+      - name: Create Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: ${{ contains(needs.build.outputs.extensionVersion, '-preview') }}
+          title: Release ${{ needs.build.outputs.extensionVersion }}
+          automatic_release_tag: ${{ needs.build.outputs.extensionVersion }}
+          files: |
+            *.vsix
+      - name: Publish debug extension to VSCode Marketplace
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: npx vsce publish -i ${{ format('./artifacts/neo3-visual-tracker-{0}.vsix', needs.build.outputs.extensionVersion) }} -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}

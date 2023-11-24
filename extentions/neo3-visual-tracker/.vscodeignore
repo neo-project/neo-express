@@ -1,0 +1,11 @@
+.github/**
+.vscode/**
+.tools/**
+sample-workspaces/**
+src/**
+.gitignore
+node_modules/**
+**/tsconfig.json
+**/*.map
+**/*.ts
+*.nupkg

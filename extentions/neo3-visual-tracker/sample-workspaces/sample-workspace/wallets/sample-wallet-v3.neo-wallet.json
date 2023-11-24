@@ -1,0 +1,37 @@
+{
+  "NOTE_0": "                                                ",
+  "NOTE_1": "    The password for this wallet file is:       ",
+  "NOTE_2": "        password                                ",
+  "NOTE_3": "    (without any whitespace or punctuation)     ",
+  "NOTE_4": "                                                ",
+  "NOTE_5": "    DO NOT USE IN PRODUCTION!                   ",
+  "NOTE_6": "                                                ",
+
+  "name": "V3 wallet with password",
+  "version": "1.0",
+  "scrypt": {
+    "n": 16384,
+    "r": 8,
+    "p": 8,
+    "size": 64
+  },
+  "accounts": [
+    {
+      "address": "NUEUE6t4FsdUNXb4LgdGgxLSRm58nLjWai",
+      "label": "V3 account with password",
+      "isDefault": true,
+      "lock": false,
+      "key": "6PYL9FNyJCTR8qiwatjvqEpDMmYLt1fVQkNsRUJxvRLmeoQPknZMbVkD5S",
+      "contract": {
+        "script": "DCED5sSySGt+eXhYpZIRMr/Jp4Qvm0ABlBeE/zBg/IC8UvRBVuezJw==",
+        "parameters": [
+          {
+            "name": "signature",
+            "type": "Signature"
+          }
+        ],
+        "deployed": false
+      }
+    }
+  ]
+}

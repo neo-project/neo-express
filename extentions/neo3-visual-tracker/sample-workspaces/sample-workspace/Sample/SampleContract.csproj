@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.0.0-rc3" />
+  </ItemGroup>
+
+  <Target 
+    Name="NccsBuild" 
+    AfterTargets="Build" 
+    Inputs="$(MSBuildProjectFullPath);@(Compile);" 
+    Outputs="$(TargetDir)/sc/$(TargetName).nef;$(TargetDir)/sc/$(TargetName).nefdbgnfo;$(TargetDir)/sc/$(TargetName).manifest.json;">
+    <PropertyGroup>
+      <_NccsDebugArguments Condition="'$(Configuration)'=='Debug'">--debug --no-optimize</_NccsDebugArguments>
+      <_NccsDebugArguments Condition="'$(Configuration)'!='Debug'"></_NccsDebugArguments>
+    </PropertyGroup>
+    <Exec WorkingDirectory="$(ProjectDir)" Command="nccs $(_NccsDebugArguments) $(MSBuildProjectFullPath)" />
+  </Target>
+
+</Project>

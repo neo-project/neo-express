@@ -305,7 +305,10 @@ namespace NeoExpress
                         await WriteLineAsync("<null>").ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.Array array:
-                        await WriteLineAsync($"Array: ({array.Count})").ConfigureAwait(false);
+                        if (item is Neo.VM.Types.Struct)
+                            await WriteLineAsync($"Struct: ({array.Count})").ConfigureAwait(false);
+                        else
+                            await WriteLineAsync($"Array: ({array.Count})").ConfigureAwait(false);
                         for (int i = 0; i < array.Count; i++)
                         {
                             await WriteStackItemAsync(writer, array[i], indent + 1).ConfigureAwait(false);

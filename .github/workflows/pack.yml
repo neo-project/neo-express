@@ -1,4 +1,4 @@
-name: Release (MyGet)
+name: Run Pack 
 
 on:
   workflow_call:
@@ -49,60 +49,32 @@ jobs:
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
 
-    - name: Publish Package to MyGet (Neo.Assertions) (master)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./out/Neo.Assertions.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN}
-
-    - name: Publish Package to MyGet (Neo.Assertions) (development)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish Package to MyGet (Neo.Assertions)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.Assertions.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Publish Package to MyGet (Neo.BlockchainToolkit) (master)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./out/Neo.BlockchainToolkit.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN}
-
-    - name: Publish Package to MyGet (Neo.BlockchainToolkit) (development)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish Package to MyGet (Neo.BlockchainToolkit)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.BlockchainToolkit.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Publish Package to MyGet (Neo.BuildTasks) (master)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./out/Neo.BuildTasks.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN}
-
-    - name: Publish Package to MyGet (Neo.BuildTasks) (development)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish Package to MyGet (Neo.BuildTasks)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.BuildTasks.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Publish Package to MyGet (Neo.Collector) (master)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./out/Neo.Collector.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN}
-
-    - name: Publish Package to MyGet (Neo.Collector) (development)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish Package to MyGet (Neo.Collector)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.Collector.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Publish Package to MyGet (Neo.Express) (master)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./out/Neo.Express.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN}
-
-    - name: Publish Package to MyGet (Neo.Express) (development)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish Package to MyGet (Neo.Express)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.Express.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Publish Package to MyGet (Neo.Test.Harness) (master)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./out/Neo.Test.Harness.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN}
-
-    - name: Publish Package to MyGet (Neo.Test.Harness) (development)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish Package to MyGet (Neo.Test.Harness)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.Test.Harness.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Publish Package to MyGet (Neo.Test.Runner) (master)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${MYGET_TOKEN}
-
-    - name: Publish Package to MyGet (Neo.Test.Runner) (development)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    - name: Publish Package to MyGet (Neo.Test.Runner)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Upload Build Log

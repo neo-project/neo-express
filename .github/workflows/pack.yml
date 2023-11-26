@@ -1,4 +1,4 @@
-name: Run Pack
+name: Release (MyGet)
 
 on:
   workflow_call:

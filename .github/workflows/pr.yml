@@ -14,5 +14,4 @@ on:
 
 jobs:
   test:
-    name: Test Application
     uses: ./.github/workflows/test.yml

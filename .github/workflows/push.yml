@@ -20,6 +20,6 @@ jobs:
     name: Test Application
     uses: ./.github/workflows/test.yml
   pack:
-    name: MyGet
+    name: MyGet Release
     needs: [test]
     uses: ./.github/workflows/pack.yml

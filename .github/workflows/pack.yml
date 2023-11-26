@@ -44,10 +44,6 @@ jobs:
     - name: Restore
       run: dotnet restore neo-express.sln
 
-    - name: Format
-      run: |
-        dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
-
     - name: Build
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog

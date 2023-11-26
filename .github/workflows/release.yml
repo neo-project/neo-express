@@ -1,4 +1,4 @@
-name: Release (Nuget.org)
+name: Release
 
 on:
   workflow_dispatch:

@@ -34,13 +34,12 @@ jobs:
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
 
+    - name: Restore
+      run: dotnet restore neo-express.sln
+
     - name: Format
       run: |
-        dotnet format neo-express.sln --verify-no-changes --verbosity diagnostic
-
-    - name: Restore
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet restore neo-express.sln
+        dotnet format neo-express.sln --verify-no-changes --verbosity --no-restore diagnostic
 
     - name: Build
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
@@ -107,7 +106,7 @@ jobs:
       run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Upload Build Log
-      if: always()
+      if: always() && (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development'))
       uses: actions/upload-artifact@v3
       with:
         name: buildlog

@@ -15,3 +15,7 @@ on:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+  pack:
+    name: Test Pack
+    needs: [test]
+    uses: ./.github/workflows/pack.yml

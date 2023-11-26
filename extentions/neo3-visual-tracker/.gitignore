@@ -1,0 +1,10 @@
+dist
+out
+node_modules
+*.vsix
+deps
+*.nupkg
+.DS_Store
+.tools/
+obj
+.idea/

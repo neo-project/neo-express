@@ -1,4 +1,4 @@
-name: Test Push/Pull
+name: Run Test
 
 on:
   workflow_call:

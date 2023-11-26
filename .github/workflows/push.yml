@@ -22,3 +22,6 @@ jobs:
   pack:
     needs: [test]
     uses: ./.github/workflows/pack.yml
+  publish:
+    needs: [pack]
+    uses: ./.github/workflows/pack.yml

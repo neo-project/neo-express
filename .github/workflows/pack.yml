@@ -15,6 +15,13 @@ env:
 jobs:
   pack:
     runs-on: ubuntu-latest
+
+    steps:
+    - name: echo
+      run: echo -e 'Hello World'
+
+  publish:
+    runs-on: ubuntu-latest
     outputs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
       NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}

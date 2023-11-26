@@ -2,6 +2,9 @@ name: Run Pack
 
 on:
   workflow_call:
+    secrets:
+      MYGET_TOKEN:
+        required: true
     outputs:
       PrereleaseVersion:
         value: ${{ jobs.pack.outputs.PrereleaseVersion}}
@@ -13,7 +16,13 @@ env:
   DOTNET_VERSION: '7.0.x'
 
 jobs:
+  publish:
+    runs-on: ubuntu-latest
+    outputs:
+      MyGet: ${{ secrets.MYGET_TOKEN }}
+
   pack:
+    needs: [publish]
     runs-on: ubuntu-latest
     outputs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
@@ -51,31 +60,31 @@ jobs:
 
     - name: Publish Package to MyGet (Neo.Assertions)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet nuget push ./out/Neo.Assertions.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/Neo.Assertions.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ jobs.publish.outputs.MyGet }}
 
     - name: Publish Package to MyGet (Neo.BlockchainToolkit)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet nuget push ./out/Neo.BlockchainToolkit.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/Neo.BlockchainToolkit.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ jobs.publish.outputs.MyGet }}
 
     - name: Publish Package to MyGet (Neo.BuildTasks)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet nuget push ./out/Neo.BuildTasks.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/Neo.BuildTasks.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ jobs.publish.outputs.MyGet }}
 
     - name: Publish Package to MyGet (Neo.Collector)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet nuget push ./out/Neo.Collector.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/Neo.Collector.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ jobs.publish.outputs.MyGet }}
 
     - name: Publish Package to MyGet (Neo.Express)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet nuget push ./out/Neo.Express.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/Neo.Express.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ jobs.publish.outputs.MyGet }}
 
     - name: Publish Package to MyGet (Neo.Test.Harness)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet nuget push ./out/Neo.Test.Harness.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/Neo.Test.Harness.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ jobs.publish.outputs.MyGet }}
 
     - name: Publish Package to MyGet (Neo.Test.Runner)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
-      run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+      run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ jobs.publish.outputs.MyGet }}
 
     - name: Upload Build Log
       if: always() && (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development'))

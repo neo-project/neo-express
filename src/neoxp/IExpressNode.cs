@@ -53,5 +53,8 @@ namespace NeoExpress
 
         Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force);
         IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter);
+
+        Task<bool> IsNep17CompliantAsync(UInt160 contractHash);
+        Task<bool> IsNep11CompliantAsync(UInt160 contractHash);
     }
 }

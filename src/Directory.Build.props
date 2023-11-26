@@ -4,6 +4,7 @@
         <Authors>The Neo Project</Authors>
         <Company>The Neo Project</Company>
         <Copyright>2015-2023 The Neo Project</Copyright>
+        <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
@@ -13,8 +14,9 @@
         <PackageTags>Neo;Blockchain;Smart Contract</PackageTags>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/neo-project/neo-express.git</RepositoryUrl>
+        <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <TargetFramework>net7.0</TargetFramework>
+        <ApplicationIcon>../neo-cli.ico</ApplicationIcon>
     </PropertyGroup>
     <PropertyGroup>
         <NeoVersion>3.6.2</NeoVersion>

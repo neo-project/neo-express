@@ -1,4 +1,4 @@
-name: Run Standalone / Build / Pack
+name: Standalone Build
 
 on:
   workflow_call:
@@ -12,6 +12,7 @@ env:
 
 jobs:
   osx-pack:
+    name: MacOS x64/arm64
     runs-on: macos-latest
 
     steps:
@@ -109,6 +110,7 @@ jobs:
           ${{ env.UNIX_DIST_DIR }}/*
 
   linux-pack:
+    name: Linux x64/arm64
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
@@ -236,6 +238,7 @@ jobs:
           ${{ env.UNIX_DIST_DIR }}/*
 
   win-pack:
+    name: Windows x64/arm64
     runs-on: windows-latest
     steps:
     - name: Checkout Code

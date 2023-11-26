@@ -47,11 +47,26 @@ jobs:
     - name: Pack
       run: dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
 
-    - name: Publish Packages to MyGet (Neo)
-      run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+    - name: Publish Package to MyGet (Neo.Assertions)
+      run: dotnet nuget push ./out/Neo.Assertions.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Publish Symbols to MyGet (Neo)
-      run: dotnet nuget push ./out/*.snupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+    - name: Publish Package to MyGet (Neo.BlockchainToolkit)
+      run: dotnet nuget push ./out/Neo.BlockchainToolkit.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+
+    - name: Publish Package to MyGet (Neo.BuildTasks)
+      run: dotnet nuget push ./out/Neo.BuildTasks.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+
+    - name: Publish Package to MyGet (Neo.Collector)
+      run: dotnet nuget push ./out/Neo.Collector.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+
+    - name: Publish Package to MyGet (Neo.Express)
+      run: dotnet nuget push ./out/Neo.Express.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+
+    - name: Publish Package to MyGet (Neo.Test.Harness)
+      run: dotnet nuget push ./out/Neo.Test.Harness.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
+
+    - name: Publish Package to MyGet (Neo.Test.Runner)
+      run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Upload Build Log
       if: always()

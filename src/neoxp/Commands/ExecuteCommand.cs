@@ -9,16 +9,20 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using Akka.Util.Internal;
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
 using Neo.VM;
-using OneOf;
 using System.ComponentModel.DataAnnotations;
+using System.Numerics;
+using System.Text;
 
 namespace NeoExpress.Commands
 {
-    [Command(Name = "execute", Description = "Invoke a script ")]
-
+    [Command(Name = "execute", Description = "Invoke a custom script, the input text will be converted to script with a priority: hex, base64, file path.")]
     class ExecuteCommand
     {
 
@@ -31,15 +35,9 @@ namespace NeoExpress.Commands
             this.txExecutorFactory = txExecutorFactory;
         }
 
-        [Argument(0, Description = "A validate neo-vm script")]
+        [Argument(0, Description = "A neo-vm script(hex,base64) or a script file path")]
         [Required]
-        internal string InputScript { get; set; } = string.Empty;
-
-
-
-        [Option("--format|-f", Description = "Input script format(hex,b64,file)")]
-        [AllowedValues(StringComparison.OrdinalIgnoreCase, "hex", "b64", "file")]
-        internal InputFormatType InputFormat { get; init; } = InputFormatType.Hex;
+        internal string InputText { get; set; } = string.Empty;
 
         [Option(Description = "Account to pay invocation GAS fee")]
         internal string Account { get; init; } = string.Empty;
@@ -60,11 +58,9 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
-        [Option(Description = "Output as JSON")]
-        internal bool Json { get; init; } = false;
-
         [Option(Description = "Path to neo-express data file")]
         internal string Input { get; init; } = string.Empty;
+
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
@@ -72,16 +68,16 @@ namespace NeoExpress.Commands
             {
                 if (string.IsNullOrEmpty(Account) && !Results)
                 {
-                    throw new Exception("Either Account or --results must be specified");
+                    throw new Exception("Either --account or --results must be specified");
                 }
 
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
+                using var txExec = txExecutorFactory.Create(chainManager, Trace, false);
 
-                var result = TryConvertToScript();
-                if (result.TryPickT1(out var msg, out var script))
+                var script = ConvertTextToScript(InputText) ?? LoadFileScript(InputText);
+                if (script == null)
                 {
-                    console.WriteLine(msg);
+                    console.WriteLine($"Invalid script: {InputText}");
                     return 1;
                 }
 
@@ -95,6 +91,11 @@ namespace NeoExpress.Commands
                     await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
                 }
 
+                console.WriteLine("Opcodes:");
+                foreach (var opinfo in GetInstructionString(script))
+                {
+                    console.WriteLine(opinfo);
+                }
                 return 0;
             }
             catch (Exception ex)
@@ -105,37 +106,141 @@ namespace NeoExpress.Commands
         }
 
 
-        private OneOf<Script, string> TryConvertToScript()
+
+        private Script? LoadFileScript(string fileName)
         {
-            byte[] data = null;
+            var fileText = File.ReadAllText(fileName);
+            var txScript = ConvertTextToScript(fileText);
+            if (txScript != null)
+            {
+                return txScript;
+
+            }
+            var file = File.ReadAllBytes(fileName);
+            if (TryConvertBytesToScript(file, out var bScript))
+            {
+                return bScript;
+
+            }
+            return null;
+        }
+
+
+        private Script? ConvertTextToScript(string inputScript)
+        {
+            if (inputScript.TryGetBytesFromHexString(out var hexBytes) && TryConvertBytesToScript(hexBytes, out var s1))
+            {
+                return s1;
+            }
+            if (inputScript.TryGetBytesFromBase64String(out var b64Bytes) && TryConvertBytesToScript(b64Bytes, out var s2))
+            {
+                return s2;
+            }
+            return null;
+        }
+
+
+        private bool TryConvertBytesToScript(Span<byte> bytes, out Script script)
+        {
             try
             {
-                data = Convert.FromHexString(InputScript);
+                script = new Script(bytes.ToArray(), true);
+                return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                return e.ToString();
+                script = null;
+                return false;
             }
+        }
 
-            try
+        private IEnumerable<string> GetInstructionString(Script script)
+        {
+            var list = new List<string>();
+            var sb = new StringBuilder();
+            foreach (var (offset, instruction) in script.EnumerateInstructions())
             {
-                var s = new Script(data, true);
-                return s;
+                if (offset == script.Length)
+                    break;
+                sb.Append($"[{offset}]:{instruction.OpCode}");
+                switch (instruction.OpCode)
+                {
+                    case OpCode.PUSHINT8:
+                    case OpCode.PUSHINT16:
+                    case OpCode.PUSHINT32:
+                    case OpCode.PUSHINT64:
+                    case OpCode.PUSHINT128:
+                    case OpCode.PUSHINT256:
+                        sb.Append($" - {new BigInteger(instruction.Operand.Span)}");
+                        break;
+                    case OpCode.PUSHA:
+                        sb.Append($" - {instruction.TokenI32}");
+                        break;
+                    case OpCode.PUSHDATA1:
+                    case OpCode.PUSHDATA2:
+                    case OpCode.PUSHDATA4:
+                        sb.Append($" - {instruction.Operand.Span.ToHexString()}");
+                        break;
+                    case OpCode.JMP:
+                    case OpCode.JMPIF:
+                    case OpCode.JMPIFNOT:
+                    case OpCode.JMPEQ:
+                    case OpCode.JMPNE:
+                    case OpCode.JMPGT:
+                    case OpCode.JMPGE:
+                    case OpCode.JMPLT:
+                    case OpCode.JMPLE:
+                    case OpCode.CALL:
+                    case OpCode.ENDTRY:
+                        sb.Append($" - offset:{instruction.TokenI8}[{offset + instruction.TokenI8}]");
+                        break;
+                    case OpCode.JMP_L:
+                    case OpCode.JMPIF_L:
+                    case OpCode.JMPIFNOT_L:
+                    case OpCode.JMPEQ_L:
+                    case OpCode.JMPNE_L:
+                    case OpCode.JMPGT_L:
+                    case OpCode.JMPGE_L:
+                    case OpCode.JMPLT_L:
+                    case OpCode.JMPLE_L:
+                    case OpCode.CALL_L:
+                    case OpCode.ENDTRY_L:
+                        sb.Append($" - offset:{instruction.TokenI32}[{offset + instruction.TokenI32}]");
+                        break;
+                    case OpCode.CALLT:
+                        sb.Append($" - {instruction.TokenU16}");
+                        break;
+                    case OpCode.TRY:
+                        sb.Append($" - catch:{instruction.TokenI8}[{offset + instruction.TokenI8}],final:{instruction.TokenI8_1}[{offset + instruction.TokenI8_1}]");
+                        break;
+                    case OpCode.TRY_L:
+                        sb.Append($" - catch:{instruction.TokenI32}[{offset + instruction.TokenI32}],final:{instruction.TokenI32_1}[{offset + instruction.TokenI32_1}]");
+                        break;
+                    case OpCode.SYSCALL:
+                        if (ApplicationEngine.Services.TryGetValue(instruction.TokenU32, out var method))
+                        {
+                            sb.Append($" - {method.Name}");
+                        }
+                        break;
+                    case OpCode.INITSLOT:
+                        sb.Append($" - local:{instruction.TokenU8}, args:{instruction.TokenU8_1}");
+                        break;
+                    case OpCode.INITSSLOT:
+                    case OpCode.LDSFLD:
+                    case OpCode.STSFLD:
+                    case OpCode.LDLOC:
+                    case OpCode.STLOC:
+                    case OpCode.LDARG:
+                    case OpCode.STARG:
+                    case OpCode.NEWARRAY_T:
+                    case OpCode.CONVERT:
+                        sb.Append($" - {instruction.TokenU8}");
+                        break;
+                }
+                list.Add(sb.ToString());
+                sb.Clear();
             }
-            catch (Exception e)
-            {
-                return e.ToString();
-            }
-
+            return list;
         }
     }
-
-    public enum InputFormatType
-    {
-        Hex,
-        B64,
-        File
-    }
-
-
 }

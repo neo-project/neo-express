@@ -8,7 +8,29 @@ env:
   DOTNET_VERSION: '7.0.x'
 
 jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore
+      run: dotnet restore neo-express.sln
+
+    - name: Format
+      run: |
+        dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
+
   build:
+    needs: [format]
     runs-on: ${{ matrix.os }}
     strategy: 
       matrix:

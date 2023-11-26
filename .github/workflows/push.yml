@@ -22,3 +22,7 @@ jobs:
   pack:
     needs: [test]
     uses: ./.github/workflows/pack.yml
+  publish:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')  
+    needs: [pack]
+    uses: ./.github/workflows/pack.yml

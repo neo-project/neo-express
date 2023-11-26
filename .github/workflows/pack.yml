@@ -15,6 +15,13 @@ env:
 jobs:
   pack:
     runs-on: ubuntu-latest
+
+    steps:
+    - name: echo
+      run: echo -e 'Hello World'
+
+  publish:
+    runs-on: ubuntu-latest
     outputs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
       NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
@@ -36,10 +43,6 @@ jobs:
 
     - name: Restore
       run: dotnet restore neo-express.sln
-
-    - name: Format
-      run: |
-        dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
 
     - name: Build
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')

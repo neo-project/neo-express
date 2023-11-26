@@ -39,7 +39,7 @@ jobs:
 
     - name: Format
       run: |
-        dotnet format neo-express.sln --verify-no-changes --verbosity --no-restore diagnostic
+        dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
 
     - name: Build
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')

@@ -81,6 +81,33 @@ namespace NeoExpress
             }
         }
 
+
+        public static string EscapeString(this string text)
+        {
+            if (text.Any(IsInvisibleChar))
+            {
+                var sb = new StringBuilder();
+                foreach (var c in text)
+                {
+                    if (c.IsInvisibleChar())
+                    {
+                        sb.Append($"\\u{(int)c:x4}");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                }
+                return sb.ToString();
+            }
+            return text;
+        }
+
+        public static bool IsInvisibleChar(this char c)
+        {
+            return char.IsControl(c) || char.IsHighSurrogate(c) || char.IsLowSurrogate(c);
+        }
+
         public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
         {
             switch (json)

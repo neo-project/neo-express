@@ -158,7 +158,7 @@ namespace NeoExpress.Commands
             }
         }
 
-        private IEnumerable<string> GetInstructionString(Script script)
+        private static IEnumerable<string> GetInstructionString(Script script)
         {
             var list = new List<string>();
             var sb = new StringBuilder();

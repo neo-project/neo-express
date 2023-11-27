@@ -108,7 +108,7 @@ namespace NeoExpress.Commands
 
 
 
-        private Script? LoadFileScript(string fileName)
+        private static Script? LoadFileScript(string fileName)
         {
             var fileText = File.ReadAllText(fileName);
             var txScript = ConvertTextToScript(fileText);

@@ -1,4 +1,4 @@
-name: Run Standalone / Build / Pack
+name: Standalone Build
 
 on:
   workflow_call:
@@ -12,6 +12,7 @@ env:
 
 jobs:
   osx-pack:
+    name: MacOS x64/arm64
     runs-on: macos-latest
 
     steps:
@@ -109,6 +110,7 @@ jobs:
           ${{ env.UNIX_DIST_DIR }}/*
 
   linux-pack:
+    name: Linux x64/arm64
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
@@ -163,24 +165,24 @@ jobs:
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true
 
-    # - name: Build (linux-musl-arm64)
-    #   run: |
-    #     dotnet publish ./src/neoxp \
-    #     --framework net7.0 \
-    #     --configuration Release \
-    #     --runtime linux-musl-arm64 \
-    #     --self-contained true \
-    #     --output ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64 \
-    #     --verbosity normal \
-    #     -p:RuntimeIdentifier=linux-musl-arm64 \
-    #     -p:SelfContained=true \
-    #     -p:IncludeNativeLibrariesForSelfExtract=false \
-    #     -p:PublishTrimmed=false \
-    #     -p:PublishSingleFile=true \
-    #     -p:PublishReadyToRun=true \
-    #     -p:EnableCompressionInSingleFile=true \
-    #     -p:DebugType=embedded \
-    #     -p:ServerGarbageCollection=true
+    - name: Build (linux-musl-arm64)
+      run: |
+        dotnet publish ./src/neoxp \
+        --framework net7.0 \
+        --configuration Release \
+        --runtime linux-musl-arm64 \
+        --self-contained true \
+        --output ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64 \
+        --verbosity normal \
+        -p:RuntimeIdentifier=linux-musl-arm64 \
+        -p:SelfContained=true \
+        -p:IncludeNativeLibrariesForSelfExtract=false \
+        -p:PublishTrimmed=false \
+        -p:PublishSingleFile=true \
+        -p:PublishReadyToRun=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:DebugType=embedded \
+        -p:ServerGarbageCollection=true
 
     - name: Create Distribution Directory
       run: |
@@ -200,12 +202,12 @@ jobs:
       run: |
         tar -czvf ${{ env.TAR_FILE }} .
 
-    # - name: Tarball (linux-musl-arm64)
-    #   working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64
-    #   env:
-    #     TAR_FILE: ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-    #   run: |
-    #     tar -czvf ${{ env.TAR_FILE }} .
+    - name: Tarball (linux-musl-arm64)
+      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64
+      env:
+        TAR_FILE: ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        tar -czvf ${{ env.TAR_FILE }} .
 
     - name: Generate SHA256 File (linux-x64)
       working-directory: ${{ env.UNIX_DIST_DIR }}
@@ -221,12 +223,12 @@ jobs:
       run: |
         sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
-    # - name: Generate SHA256 File (linux-musl-arm64)
-    #   working-directory: ${{ env.UNIX_DIST_DIR }}
-    #   env:
-    #     TAR_FILE: ${{ format('Neo.Express-linux-musl-arm64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
-    #   run: |
-    #     sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
+    - name: Generate SHA256 File (linux-musl-arm64)
+      working-directory: ${{ env.UNIX_DIST_DIR }}
+      env:
+        TAR_FILE: ${{ format('Neo.Express-linux-musl-arm64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Upload Tarballs (Standalone)
       uses: actions/upload-artifact@v3
@@ -236,6 +238,7 @@ jobs:
           ${{ env.UNIX_DIST_DIR }}/*
 
   win-pack:
+    name: Windows x64/arm64
     runs-on: windows-latest
     steps:
     - name: Checkout Code

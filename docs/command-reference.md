@@ -55,13 +55,16 @@ Usage: neoxp create [Options] [Output]
 
 Arguments:
 [Options]:
+  -o|--output <OUTPUT>                    Name of .neo-express file to create
+                                          Default location is home directory as:
+                                          Linux: $HOME/.neo-express/default.neo-express
+                                          Windows: %UserProfile%\.neo-express\default.neo-express
   -c|--count <COUNT>                      Number of consensus nodes to create
                                           Default: 1
                                           Allowed values are: 1, 4, 7.
   -a|--address-version <ADDRESS_VERSION>  Version to use for addresses in this blockchain instance
                                           Default: 53
   -f|--force                              Overwrite existing data
-[Output]: name of .neo-express file to create (Default: ./default.neo-express)
 ```
 
 The `create` command is used to create a new Neo-Express blockchain network for local development
@@ -84,15 +87,14 @@ via the `--input` option.
 ## neoxp run
 
 ```
-Usage: neoxp run [Options] [NodeIndex]
+Usage: neoxp run [Options]
 
-Arguments:
 [Options]:
+  -n|--node-index <NODE_INDEX>                Index of node to run (Default: 0)
   -i|--input <INPUT>                          Path to neo-express data file
   -s|--seconds-per-block <SECONDS_PER_BLOCK>  Time between blocks
   -d|--discard                                Discard blockchain changes on shutdown
   -t|--trace                                  Enable contract execution tracing
-[NodeIndex]: Index of node to run (Default: 0)
 ```
 
 Once created, a Neo-Express blockchain network is started with the `run` command. The consensus
@@ -118,13 +120,12 @@ the blockchain network is shut down.
 ## neoxp stop
 
 ```
-Usage: neoxp stop [Options] [NodeIndex]
+Usage: neoxp stop [Options]
 
-Arguments:
 [Options]:
-  -i|--input <INPUT>  Path to neo-express data file
+  -n|--node-index <NODE_INDEX>    Index of node to stop (Default: 0)
+  -i|--input <INPUT>              Path to neo-express data file
   -a|--all            Stop all nodes
-[NodeIndex]: Index of node to stop (Default: 0)
 ```
 
 When running in a terminal window, neo-express can be shutdown via standard CTRL-C or CTRL-BREAK operations.
@@ -135,14 +136,13 @@ nodes in the network.
 ## neoxp reset
 
 ```
-Usage: neoxp reset [Options] [NodeIndex]
+Usage: neoxp reset [Options]
 
-Arguments:
 [Options]:
-  -i|--input <INPUT>  Path to neo-express data file
-  -f|--force          Overwrite existing data
-  -a|--all            Reset all nodes
-[NodeIndex]: Index of node to reset (Default: 0)
+  -n|--node-index <NODE_INDEX>  Index of node to reset (Default: 0)
+  -i|--input <INPUT>            Path to neo-express data file
+  -f|--force                    Overwrite existing data
+  -a|--all                      Reset all nodes
 ```
 
 A Neo-express blockchain network can be reset back to its genesis block via the `reset` command. This

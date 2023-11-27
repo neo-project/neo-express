@@ -95,7 +95,7 @@ namespace NeoExpress.Commands
                 console.WriteLine("Opcodes:");
                 foreach (var opInfo in GetInstructionString(script))
                 {
-                    console.WriteLine(opinfo);
+                    console.WriteLine(opInfo);
                 }
                 return 0;
             }

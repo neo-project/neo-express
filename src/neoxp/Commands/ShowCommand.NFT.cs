@@ -12,7 +12,6 @@
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace NeoExpress.Commands
 {
@@ -45,12 +44,15 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
-                    if (!UInt160.TryParse(Account, out var accountHash))
+                    if (!UInt160.TryParse(Account, out var accountHash)) //wallet name
                     {
-                        var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
-                        if (getHashResult.TryPickT1(out _, out accountHash))
+                        if (!chainManager.Chain.TryParseScriptHash(Account, out accountHash)) //address
                         {
-                            throw new Exception($"{Account} account not found.");
+                            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false); //script hash
+                            if (getHashResult.TryPickT1(out _, out accountHash))
+                            {
+                                throw new Exception($"{Account} account not found.");
+                            }
                         }
                     }
                     var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
@@ -60,7 +62,10 @@ namespace NeoExpress.Commands
                             ? uint160
                             : throw new InvalidOperationException($"contract \"{Contract}\" not found");
                     var list = await expressNode.GetNFTAsync(accountHash, scriptHash).ConfigureAwait(false);
-                    list.ForEach(p => console.Out.WriteLine($"TokenId(Base64): {p}, TokenId(Hex): {Convert.FromBase64String(p).ToHexString()}"));
+                    if (list.Count == 0)
+                        await console.Out.WriteLineAsync($"No NFT yet. (Contract:{scriptHash}, Account:{accountHash})");
+                    else
+                        list.ForEach(p => console.Out.WriteLine($"TokenId(Base64): {p}, TokenId(Hex): {Convert.FromBase64String(p).ToHexString()}"));
                     return 0;
                 }
                 catch (Exception ex)

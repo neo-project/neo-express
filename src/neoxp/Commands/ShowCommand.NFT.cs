@@ -51,8 +51,13 @@ namespace NeoExpress.Commands
                     {
                         throw new Exception($"{Account} account not found.");
                     }
-
-                    var list = await expressNode.GetNFTAsync(accountHash, Contract).ConfigureAwait(false);
+                    var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+                    var scriptHash = parser.TryLoadScriptHash(Contract, out var value)
+                        ? value
+                        : UInt160.TryParse(Contract, out var uint160)
+                            ? uint160
+                            : throw new InvalidOperationException($"contract \"{Contract}\" not found");
+                    var list = await expressNode.GetNFTAsync(accountHash, scriptHash).ConfigureAwait(false);
                     list.ForEach(p => console.Out.WriteLine($"TokenId(Base64): {p}, TokenId(Hex): {Convert.FromBase64String(p).ToHexString()}"));
                     return 0;
                 }

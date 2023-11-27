@@ -450,8 +450,12 @@ namespace NeoExpress
                 var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
                 dataParam = parser.ParseParameter(data);
             }
-
-            var assetHash = await expressNode.ParseAssetAsync(contract).ConfigureAwait(false);
+            var parser2 = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+            var assetHash = parser2.TryLoadScriptHash(contract, out var value)
+                ? value
+                : UInt160.TryParse(contract, out var uint160)
+                    ? uint160
+                    : throw new InvalidOperationException($"contract \"{contract}\" not found");
             var txHash = await expressNode.TransferNFTAsync(assetHash, tokenId, senderWallet, senderAccountHash, receiverHash, dataParam);
             await writer.WriteTxHashAsync(txHash, "TransferNFT", json).ConfigureAwait(false);
         }

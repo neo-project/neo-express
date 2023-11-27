@@ -445,10 +445,8 @@ namespace NeoExpress
             throw new Exception("invalid script results");
         }
 
-        public static async Task<List<string>> GetNFTAsync(this IExpressNode expressNode, UInt160 accountHash, string asset)
+        public static async Task<List<string>> GetNFTAsync(this IExpressNode expressNode, UInt160 accountHash, UInt160 assetHash)
         {
-            var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
-
             using var sb = new ScriptBuilder();
             sb.EmitDynamicCall(assetHash, "tokensOf", accountHash);
 

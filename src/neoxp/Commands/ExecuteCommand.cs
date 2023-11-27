@@ -13,6 +13,7 @@ using Akka.Util.Internal;
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.VM;
@@ -117,10 +118,13 @@ namespace NeoExpress.Commands
 
             }
             var file = File.ReadAllBytes(fileName);
-            if (TryConvertBytesToScript(file, out var bScript))
+            try
             {
-                return bScript;
-
+                var nef = file.AsSerializable<NefFile>();
+                return nef?.Script;
+            }
+            catch (Exception)
+            {
             }
             return null;
         }
@@ -192,7 +196,7 @@ namespace NeoExpress.Commands
                     case OpCode.JMPLE:
                     case OpCode.CALL:
                     case OpCode.ENDTRY:
-                        sb.Append($" - offset:{instruction.TokenI8}[{offset + instruction.TokenI8}]");
+                        sb.Append($" - offset:{instruction.TokenI8}=>[{offset + instruction.TokenI8}]");
                         break;
                     case OpCode.JMP_L:
                     case OpCode.JMPIF_L:
@@ -205,16 +209,16 @@ namespace NeoExpress.Commands
                     case OpCode.JMPLE_L:
                     case OpCode.CALL_L:
                     case OpCode.ENDTRY_L:
-                        sb.Append($" - offset:{instruction.TokenI32}[{offset + instruction.TokenI32}]");
+                        sb.Append($" - offset:{instruction.TokenI32}=>[{offset + instruction.TokenI32}]");
                         break;
                     case OpCode.CALLT:
                         sb.Append($" - {instruction.TokenU16}");
                         break;
                     case OpCode.TRY:
-                        sb.Append($" - catch:{instruction.TokenI8}[{offset + instruction.TokenI8}],final:{instruction.TokenI8_1}[{offset + instruction.TokenI8_1}]");
+                        sb.Append($" - catch:{instruction.TokenI8}=>[{offset + instruction.TokenI8}],final:{instruction.TokenI8_1}=>[{offset + instruction.TokenI8_1}]");
                         break;
                     case OpCode.TRY_L:
-                        sb.Append($" - catch:{instruction.TokenI32}[{offset + instruction.TokenI32}],final:{instruction.TokenI32_1}[{offset + instruction.TokenI32_1}]");
+                        sb.Append($" - catch:{instruction.TokenI32}=>[{offset + instruction.TokenI32}],final:{instruction.TokenI32_1}=>[{offset + instruction.TokenI32_1}]");
                         break;
                     case OpCode.SYSCALL:
                         if (ApplicationEngine.Services.TryGetValue(instruction.TokenU32, out var method))

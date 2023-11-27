@@ -117,7 +117,7 @@ namespace NeoExpress
             return false;
         }
 
-        
+
 
         public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
         {

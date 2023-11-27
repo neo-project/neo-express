@@ -44,15 +44,15 @@ jobs:
         dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
         dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
 
-    - name: Upload Build Log
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: buildlog
-        path: ./msbuild.binlog
+    # - name: Upload Build Log
+    #   if: always()
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: buildlog
+    #     path: ./msbuild.binlog
 
-    - name: Upload NeoExpress
-      uses: actions/upload-artifact@v3
-      with:
-        name: packages
-        path: ./out/*.nupkg
+    # - name: Upload NeoExpress
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: packages
+    #     path: ./out/*.nupkg

@@ -37,11 +37,11 @@ namespace NeoExpress.Commands
         [Required]
         internal string TokenId { get; init; } = string.Empty;
 
-        [Argument(2, Description = "Account to send NFT from")]
+        [Argument(2, Description = "Account to send NFT from (Format: Wallet name, WIF)")]
         [Required]
         internal string Sender { get; init; } = string.Empty;
 
-        [Argument(3, Description = "Account to send NFT to")]
+        [Argument(3, Description = "Account to send NFT to (Format: HEX, BASE64, Address, Wallet name)")]
         [Required]
         internal string Receiver { get; init; } = string.Empty;
 

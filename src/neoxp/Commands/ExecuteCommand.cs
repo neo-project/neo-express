@@ -144,7 +144,7 @@ namespace NeoExpress.Commands
         }
 
 
-        private bool TryConvertBytesToScript(Span<byte> bytes, out Script script)
+        private static bool TryConvertBytesToScript(Span<byte> bytes, out Script script)
         {
             try
             {

@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// TransactionExecutor.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -13,6 +14,7 @@ using Neo.BlockchainToolkit;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
+using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoExpress.Models;
@@ -22,6 +24,7 @@ using OneOf;
 using OneOf.Types;
 using System.IO.Abstractions;
 using System.Numerics;
+using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress
@@ -278,7 +281,14 @@ namespace NeoExpress
                         await WriteLineAsync(Neo.Helper.ToHexString(buffer.GetSpan())).ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.ByteString byteString:
-                        await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
+                        if (byteString.GetSpan().TryGetUtf8String(out var text))
+                        {
+                            await WriteLineAsync($"{Neo.Helper.ToHexString(byteString.GetSpan())}({text})").ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
+                        }
                         break;
                     case Neo.VM.Types.Null _:
                         await WriteLineAsync("<null>").ConfigureAwait(false);
@@ -296,6 +306,14 @@ namespace NeoExpress
                         {
                             await WriteStackItemAsync(writer, m.Key, indent + 1, "key:   ").ConfigureAwait(false);
                             await WriteStackItemAsync(writer, m.Value, indent + 1, "value: ").ConfigureAwait(false);
+                        }
+                        break;
+                    case Neo.VM.Types.InteropInterface iop:
+                        if (iop.GetInterface<object>() is IIterator iter)
+                        {
+                            await WriteLineAsync($"{iop.Type}: ({iter.GetType().Name})").ConfigureAwait(false);
+                            while (iter.Next())
+                                await WriteStackItemAsync(writer, iter.Value(null), indent + 1).ConfigureAwait(false);
                         }
                         break;
                 }
@@ -413,6 +431,31 @@ namespace NeoExpress
             }
         }
 
+        public async Task TransferNFTAsync(string contract, string tokenId, string sender, string password, string receiver, string data)
+        {
+            if (!chainManager.TryGetSigningAccount(sender, password, out var senderWallet, out var senderAccountHash))
+            {
+                throw new Exception($"{sender} sender not found.");
+            }
+
+            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, receiver).ConfigureAwait(false);
+            if (getHashResult.TryPickT1(out _, out var receiverHash))
+            {
+                throw new Exception($"{receiver} account not found.");
+            }
+
+            ContractParameter? dataParam = null;
+            if (!string.IsNullOrEmpty(data))
+            {
+                var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+                dataParam = parser.ParseParameter(data);
+            }
+
+            var assetHash = await expressNode.ParseAssetAsync(contract).ConfigureAwait(false);
+            var txHash = await expressNode.TransferNFTAsync(assetHash, tokenId, senderWallet, senderAccountHash, receiverHash, dataParam);
+            await writer.WriteTxHashAsync(txHash, "TransferNFT", json).ConfigureAwait(false);
+        }
+
         public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)
         {
             if (TryParseRpcUri(rpcUri, out var uri))
@@ -424,11 +467,12 @@ namespace NeoExpress
             return default(None);
         }
 
-        public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string path)
+        public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string filename)
         {
-            if (fileSystem.File.Exists(path))
+            filename = fileSystem.ResolveFileName(filename, JSON_EXTENSION, () => DEAULT_POLICY_FILENAME);
+            if (fileSystem.File.Exists(filename))
             {
-                using var stream = fileSystem.File.OpenRead(path);
+                using var stream = fileSystem.File.OpenRead(filename);
                 using var reader = new StreamReader(stream);
                 var text = await reader.ReadToEndAsync().ConfigureAwait(false);
                 var json = (Neo.Json.JObject)Neo.Json.JObject.Parse(text)!;

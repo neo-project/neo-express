@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// FileSystemExtensions.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -25,13 +26,25 @@ namespace NeoExpress
                 fileName = getDefaultFileName();
             }
 
-            if (!fileSystem.Path.IsPathFullyQualified(fileName))
+            if (extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.InvariantCultureIgnoreCase) == false)
+                fileName = $"{fileName}{extension}";
+
+            if (fileSystem.Path.IsPathFullyQualified(fileName) == false)
             {
-                fileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
+                var defaultFileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
+                if (fileSystem.File.Exists(defaultFileName) == false)
+                {
+                    var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+                    var folder = fileSystem.Path.Combine(homeDir, ".neo-express");
+                    if (fileSystem.Path.Exists(folder) == false)
+                        fileSystem.Directory.CreateDirectory(folder);
+                    fileName = fileSystem.Path.Combine(folder, fileName);
+                }
+                else
+                    fileName = defaultFileName;
             }
 
-            return extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.OrdinalIgnoreCase)
-                ? fileName : fileName + extension;
+            return fileName;
         }
 
         public static string GetTempFolder(this IFileSystem fileSystem)
@@ -54,11 +67,16 @@ namespace NeoExpress
 
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
 
-            var rootPath = fileSystem.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify),
-                "Neo-Express",
-                "blockchain-nodes");
-            return fileSystem.Path.Combine(rootPath, account.ScriptHash);
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+            var expressBlockchainDir = fileSystem.Path.Combine(homeDir, ".neo-express", "blockchain-nodes", account.ScriptHash);
+
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
+            var expressOldBlockchainDir = fileSystem.Path.Combine(appData, "Neo-Express", "blockchain-nodes", account.ScriptHash);
+
+            if (fileSystem.Directory.Exists(expressOldBlockchainDir))
+                return expressOldBlockchainDir;
+
+            return expressBlockchainDir;
         }
 
         public static async Task<(NefFile nefFile, ContractManifest manifest)> LoadContractAsync(this IFileSystem fileSystem, string contractPath)

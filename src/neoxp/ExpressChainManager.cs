@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// ExpressChainManager.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -263,7 +264,7 @@ namespace NeoExpress
                     { "IgnoreRecoveryLogs", "true" }
                 };
 
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
                 return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
             }
 
@@ -298,7 +299,7 @@ namespace NeoExpress
                 var sessionEnabled = !chain.TryReadSetting<bool>("rpc.SessionEnabled", bool.TryParse, out var value) || value;
                 settings.Add("PluginConfiguration:SessionEnabled", $"{sessionEnabled}");
 
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+                var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
                 return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
             }
         }
@@ -368,6 +369,50 @@ namespace NeoExpress
             }
 
             return GetOfflineNode(offlineTrace);
+        }
+
+        public ExpressWallet CreateWallet(string name, string privateKey, bool overwrite = false)
+        {
+            if (chain.IsReservedName(name))
+            {
+                throw new Exception($"{name} is a reserved name. Choose a different wallet name.");
+            }
+
+            var existingWallet = chain.GetWallet(name);
+            if (existingWallet is not null)
+            {
+                if (!overwrite)
+                {
+                    throw new Exception($"{name} dev wallet already exists. Use --force to overwrite.");
+                }
+
+                chain.Wallets.Remove(existingWallet);
+            }
+
+            byte[]? priKey = null;
+            if (string.IsNullOrEmpty(privateKey) == false)
+            {
+                try
+                {
+                    if (privateKey.StartsWith('L'))
+                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(privateKey);
+                    else
+                        priKey = Convert.FromHexString(privateKey);
+                }
+                catch (FormatException)
+                {
+                    throw new FormatException("Private key must be in HEX or WIF format.");
+                }
+            }
+
+            var wallet = new DevWallet(ProtocolSettings, name);
+            var account = priKey == null ? wallet.CreateAccount() : wallet.CreateAccount(priKey!);
+            account.IsDefault = true;
+
+            var expressWallet = wallet.ToExpressWallet();
+            chain.Wallets ??= new List<ExpressWallet>(1);
+            chain.Wallets.Add(expressWallet);
+            return expressWallet;
         }
     }
 }

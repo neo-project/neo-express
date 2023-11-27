@@ -1,14 +1,16 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// CreateCommand.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress.Commands
@@ -17,13 +19,17 @@ namespace NeoExpress.Commands
     internal class CreateCommand
     {
         readonly ExpressChainManagerFactory chainManagerFactory;
+        readonly TransactionExecutorFactory txExecutorFactory;
+        readonly IFileSystem fileSystem;
 
-        public CreateCommand(ExpressChainManagerFactory chainManagerFactory)
+        public CreateCommand(ExpressChainManagerFactory chainManagerFactory, IFileSystem fileSystem, TransactionExecutorFactory txExecutorFactory)
         {
             this.chainManagerFactory = chainManagerFactory;
+            this.fileSystem = fileSystem;
+            this.txExecutorFactory = txExecutorFactory;
         }
 
-        [Argument(0, Description = "name of " + EXPRESS_EXTENSION + " file to create (Default: ./" + DEFAULT_EXPRESS_FILENAME + ")")]
+        [Argument(0, Description = $"Name of {EXPRESS_EXTENSION} file to create\nDefault location is home directory as:\nLinux: $HOME/.neo-express/{DEFAULT_EXPRESS_FILENAME}\nWindows: %UserProfile%\\.neo-express\\{DEFAULT_EXPRESS_FILENAME}")]
         internal string Output { get; set; } = string.Empty;
 
         [Option(Description = "Number of consensus nodes to create (Default: 1)")]
@@ -36,23 +42,47 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
-        [Option(Description = "Private key for default dev account (Default: Random)")]
+        [Option(Description = "Private key for default dev account (Format: HEX or WIF)\nDefault: Random")]
         internal string PrivateKey { get; set; } = string.Empty;
 
-        internal int OnExecute(CommandLineApplication app, IConsole console)
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
         {
             try
             {
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
-                    priKey = Convert.FromHexString(PrivateKey);
+                {
+                    try
+                    {
+                        if (PrivateKey.StartsWith('L'))
+                            priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
+                        else
+                            priKey = Convert.FromHexString(PrivateKey);
+                    }
+                    catch (FormatException)
+                    {
+                        throw new FormatException("Private key must be in HEX or WIF format.");
+                    }
+                }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);
                 chainManager.SaveChain(outputPath);
 
-                console.Out.WriteLine($"Created {Count} node privatenet at {outputPath}");
-                console.Out.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
-                console.Out.WriteLine("          Do not use these accounts on MainNet or in any other system where security is a concern.");
+                await console.Out.WriteLineAsync($"Created {Count} node privatenet at {outputPath}").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("\x1b[33m   Note: The private keys for the accounts in this file are are *not* encrypted.").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("         Do not use these accounts on MainNet or in any other system where security is a concern.\x1b[0m\n").ConfigureAwait(false);
+
+                var batchFilename = fileSystem.ResolveFileName(string.Empty, EXPRESS_BATCH_EXTENSION, () => DEFAULT_SETUP_BATCH_FILENAME);
+
+                if (fileSystem.File.Exists(batchFilename))
+                {
+                    var batchCommand = new BatchCommand(chainManagerFactory, fileSystem, txExecutorFactory);
+                    var batchFileInfo = fileSystem.FileInfo.New(batchFilename);
+                    var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
+
+                    var commands = await fileSystem.File.ReadAllLinesAsync(batchFilename, token).ConfigureAwait(false);
+                    await batchCommand.ExecuteAsync(batchDirInfo, commands, console.Out, chainManager, outputPath).ConfigureAwait(false);
+                }
 
                 return 0;
             }

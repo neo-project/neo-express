@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>neo-test-harness</AssemblyName>
+    <Nullable>enable</Nullable>
+    <PackageId>Neo.Test.Harness</PackageId>
+    <RootNamespace>NeoTestHarness</RootNamespace>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>Embedded</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\bctklib\bctklib.csproj" />
+  </ItemGroup>
+    
+</Project>

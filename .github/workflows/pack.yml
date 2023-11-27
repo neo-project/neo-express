@@ -18,44 +18,41 @@ jobs:
     outputs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}
       NuGetPackageVersion: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+
     - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.4.0
+      uses: dotnet/nbgv@v0.4.1
       id: nbgv
+
     - name: Format
       run: |
         dotnet format neo-express.sln --verify-no-changes --verbosity diagnostic
+
     - name: Pack
       run: |
         dotnet restore neo-express.sln
         dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
         dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
+
     - name: Upload Build Log
       if: always()
       uses: actions/upload-artifact@v3
       with:
         name: buildlog
         path: ./msbuild.binlog
+
     - name: Upload NeoExpress
       uses: actions/upload-artifact@v3
       with:
-        name: express
-        path: ./out/Neo.Express.*.nupkg
-    - name: Upload NeoTrace
-      uses: actions/upload-artifact@v3
-      with:
-        name: trace
-        path: ./out/Neo.Trace.*.nupkg
-    - name: Upload NeoWorkNet
-      uses: actions/upload-artifact@v3
-      with:
-        name: worknet
-        path: ./out/Neo.WorkNet.*.nupkg
+        name: packages
+        path: ./out/*.nupkg

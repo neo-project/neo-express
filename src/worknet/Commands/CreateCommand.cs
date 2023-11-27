@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// CreateCommand.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -19,6 +20,7 @@ using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using Neo.VM;
 using Neo.Wallets;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
@@ -148,7 +150,7 @@ class CreateCommand
         var committee = new NeoArray(members);
         var committeeKeyBuilder = new KeyBuilder(NativeContract.NEO.Id, Prefix_Committee);
         var committeeItem = snapshot.GetAndChange(committeeKeyBuilder);
-        committeeItem.Value = BinarySerializer.Serialize(committee, 1024 * 1024);
+        committeeItem.Value = BinarySerializer.Serialize(committee, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         // remove existing candidates (Prefix_Candidate) to ensure that 
         // worknet node account doesn't get outvoted
@@ -195,7 +197,7 @@ class CreateCommand
         var curBlockKey = new KeyBuilder(NativeContract.Ledger.Id, Prefix_CurrentBlock);
         var currentBlock = new Neo.VM.Types.Struct() { trimmedBlock.Hash.ToArray(), trimmedBlock.Index };
         var currentBlockItem = snapshot.GetAndChange(curBlockKey);
-        currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, 1024 * 1024);
+        currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         snapshot.Commit();
     }

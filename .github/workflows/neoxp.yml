@@ -1,0 +1,58 @@
+name: Neo Express
+
+on:
+  workflow_call:
+
+env:
+  DOTNET_VERSION: '7.0.x'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Download Express
+      uses: actions/download-artifact@v3
+      with:
+        name: packages
+        path: ./out
+
+    - name: Install Neo Express
+      run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
+
+    - name: Test Create Command
+      run: neoxp create
+
+    - name: Test Checkpoint Command (offline)
+      run: neoxp checkpoint create checkpoints/init --force
+
+    - name: Test Policy Command (offline)
+      run: |
+        neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
+        neoxp policy sync mainnet-policy --account genesis
+
+    - name: Test Wallet Command
+      run: |
+        neoxp wallet create bob
+
+    - name: Test Transfer Command (offline)
+      run: |
+        neoxp transfer 10000 gas genesis node1
+        neoxp transfer 10000 gas genesis bob
+
+    - name: Test Run Command (online)
+      timeout-minutes: 1
+      run: neoxp run --seconds-per-block 3 --discard &
+
+    - name: Test Transfer Command (online)
+      run: |
+        neoxp transfer 10000 gas genesis node1
+        neoxp transfer 10000 gas genesis bob
+
+    - name: Test Stop Command (online)
+      run: neoxp stop --all
+

@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// PrefetchCommand.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -55,13 +56,13 @@ class PrefetchCommand
             if (!UInt160.TryParse(Contract, out var contractHash))
             {
                 var info = contracts.SingleOrDefault(c => c.Name.Equals(Contract, StringComparison.OrdinalIgnoreCase));
-                contractHash = info.Hash ?? UInt160.Zero;
+                contractHash = info!.Hash ?? UInt160.Zero;
             }
 
             if (contractHash == UInt160.Zero)
                 throw new Exception("Invalid Contract argument");
 
-            var contractName = contracts.SingleOrDefault(c => c.Hash == contractHash).Name;
+            var contractName = contracts.SingleOrDefault(c => c.Hash == contractHash)!.Name;
             if (string.IsNullOrEmpty(contractName))
                 throw new Exception("Invalid Contract argument");
 

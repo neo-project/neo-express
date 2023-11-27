@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// ShowCommand.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -13,7 +14,7 @@ using McMaster.Extensions.CommandLineUtils;
 namespace NeoExpress.Commands
 {
     [Command("show", Description = "Show information")]
-    [Subcommand(typeof(Balance), typeof(Balances), typeof(Block), typeof(Notifications), typeof(Transaction))]
+    [Subcommand(typeof(Balance), typeof(Balances), typeof(Block), typeof(Notifications), typeof(Transaction), typeof(NFT))]
     partial class ShowCommand
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)

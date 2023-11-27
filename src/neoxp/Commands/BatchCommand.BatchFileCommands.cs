@@ -1,8 +1,9 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// The neo is free software distributed under the MIT software license,
-// see the accompanying file LICENSE in the main directory of the
-// project or http://www.opensource.org/licenses/mit-license.php
+// BatchCommand.BatchFileCommands.cs file belongs to neo-express project and is free
+// software distributed under the MIT software license, see the
+// accompanying file LICENSE in the main directory of the
+// repository or http://www.opensource.org/licenses/mit-license.php
 // for more details.
 //
 // Redistribution and use in source and binary forms with or without
@@ -18,7 +19,7 @@ namespace NeoExpress.Commands
     partial class BatchCommand
     {
         [Command]
-        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer))]
+        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer), typeof(Wallet))]
         internal class BatchFileCommands
         {
             [Command("checkpoint")]
@@ -198,7 +199,7 @@ namespace NeoExpress.Commands
             }
 
             [Command("policy")]
-            [Subcommand(typeof(Block), typeof(Set), typeof(Unblock))]
+            [Subcommand(typeof(Block), typeof(Set), typeof(Sync), typeof(Unblock))]
             internal class Policy
             {
                 [Command("block")]
@@ -240,9 +241,9 @@ namespace NeoExpress.Commands
                 {
                     [Argument(0, Description = "Source of policy values. Must be path to policy settings JSON file")]
                     [Required]
-                    internal string Source { get; } = string.Empty;
+                    internal string Source { get; init; } = string.Empty;
 
-                    [Argument(1, Description = "Account to pay contract invocation GAS fee")]
+                    [Option(Description = "Account to pay contract invocation GAS fee")]
                     [Required]
                     internal string Account { get; init; } = string.Empty;
 
@@ -290,6 +291,25 @@ namespace NeoExpress.Commands
 
                 [Option(Description = "password to use for NEP-2/NEP-6 sender")]
                 internal string Password { get; init; } = string.Empty;
+            }
+
+            [Command("wallet")]
+            [Subcommand(typeof(Create))]
+            internal class Wallet
+            {
+                [Command("create")]
+                internal class Create
+                {
+                    [Argument(0, Description = "Wallet name")]
+                    [Required]
+                    internal string Name { get; init; } = string.Empty;
+
+                    [Option(Description = "Overwrite existing data")]
+                    internal bool Force { get; }
+
+                    [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
+                    internal string PrivateKey { get; set; } = string.Empty;
+                }
             }
         }
     }

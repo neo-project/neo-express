@@ -6,42 +6,34 @@ on:
       - master
       - release/*
     paths-ignore:
-      - 'readme.md'
-      - 'CHANGELOG.md'
-      - 'docs/**'
+      - '.gitignore'
+      - '.gitattributes'
+      - 'LICENSE'
+      - '**/*.md'
 
 env:
-  AZURE_ARTIFACTS_FEED_URL: https://nuget.pkg.github.com/neo-project/index.json
   DOTNET_VERSION: '7.0.x'
 
 jobs:
   pack:
     uses: ./.github/workflows/pack.yml
+  test:
+    uses: ./.github/workflows/test.yml
   publish:
-    needs: [pack]
+    needs: [pack, test]
     runs-on: ubuntu-latest
+
     steps:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        source-url: ${{ env.AZURE_ARTIFACTS_FEED_URL }}
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+
     - name: Download Express
       uses: actions/download-artifact@v3
       with:
-        name: express
+        name: packages
         path: ./out
-    - name: Download Trace
-      uses: actions/download-artifact@v3
-      with:
-        name: trace
-        path: ./out
-    - name: Download WorkNet
-      uses: actions/download-artifact@v3
-      with:
-        name: worknet
-        path: ./out
+
     - name: Publish to Azure Artifacts
-      run: dotnet nuget push out/*.nupkg
+      run: dotnet nuget push ./out/*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}

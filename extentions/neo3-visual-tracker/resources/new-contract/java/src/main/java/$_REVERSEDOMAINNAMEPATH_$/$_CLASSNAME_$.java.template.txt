@@ -1,0 +1,12 @@
+package $_REVERSEDOMAINNAME_$;
+
+import io.neow3j.devpack.annotations.ManifestExtra;
+
+@ManifestExtra(key = "name", value = "YourName.$_CLASSNAME_$")
+public class $_CLASSNAME_$ {
+    
+    public static String helloWorld() {
+        return "Hello World!";
+    }
+    
+}

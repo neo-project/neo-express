@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <Projects Include="src/$_CLASSNAME_$.csproj" />
+        <Projects Include="test/$_CLASSNAME_$Tests.csproj" />
+    </ItemGroup>
+    <Target Name="build">
+        <MSBuild Projects="@(Projects)" Targets="build"/>
+    </Target>
+    <Target Name="restore">
+        <MSBuild Projects="@(Projects)" Targets="restore"/>
+    </Target>
+    <Target Name="VSTest">
+        <MSBuild Projects="@(Projects)" Targets="VSTest"/>
+    </Target>
+</Project>

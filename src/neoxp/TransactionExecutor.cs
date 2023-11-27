@@ -452,10 +452,16 @@ namespace NeoExpress
                 throw new Exception($"{sender} sender not found.");
             }
 
-            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, receiver).ConfigureAwait(false);
-            if (getHashResult.TryPickT1(out _, out var receiverHash))
+            if (!UInt160.TryParse(receiver, out var receiverHash)) //script hash
             {
-                throw new Exception($"{receiver} account not found.");
+                if (!chainManager.Chain.TryParseScriptHash(receiver, out receiverHash)) //address
+                {
+                    var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, receiver).ConfigureAwait(false); //wallet name
+                    if (getHashResult.TryPickT1(out _, out receiverHash))
+                    {
+                        throw new Exception($"{receiver} account not found.");
+                    }
+                }
             }
 
             ContractParameter? dataParam = null;

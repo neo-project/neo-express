@@ -44,11 +44,11 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
-                    if (!UInt160.TryParse(Account, out var accountHash)) //wallet name
+                    if (!UInt160.TryParse(Account, out var accountHash)) //script hash
                     {
                         if (!chainManager.Chain.TryParseScriptHash(Account, out accountHash)) //address
                         {
-                            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false); //script hash
+                            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false); //wallet name
                             if (getHashResult.TryPickT1(out _, out accountHash))
                             {
                                 throw new Exception($"{Account} account not found.");

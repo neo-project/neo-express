@@ -80,7 +80,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    return input.StartsWith("0x") ? Encoding.UTF8.GetString(input.HexToBytes()) : Encoding.UTF8.GetString(Convert.FromBase64String(input));
+                    return input.StartsWith("0x") ? Encoding.UTF8.GetString(input[2..].HexToBytes().Reverse().ToArray()) : Encoding.UTF8.GetString(Convert.FromBase64String(input));
                 }
                 catch (Exception)
                 {

@@ -130,7 +130,7 @@ namespace NeoExpress.Commands
         }
 
 
-        private Script? ConvertTextToScript(string inputScript)
+        private static Script? ConvertTextToScript(string inputScript)
         {
             if (inputScript.TryGetBytesFromHexString(out var hexBytes) && TryConvertBytesToScript(hexBytes, out var s1))
             {

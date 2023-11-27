@@ -45,11 +45,13 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
-
-                    var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
-                    if (getHashResult.TryPickT1(out _, out var accountHash))
+                    if (!UInt160.TryParse(Account, out var accountHash))
                     {
-                        throw new Exception($"{Account} account not found.");
+                        var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
+                        if (getHashResult.TryPickT1(out _, out accountHash))
+                        {
+                            throw new Exception($"{Account} account not found.");
+                        }
                     }
                     var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
                     var scriptHash = parser.TryLoadScriptHash(Contract, out var value)

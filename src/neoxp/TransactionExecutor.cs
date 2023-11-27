@@ -115,9 +115,20 @@ namespace NeoExpress
                     if (standards[i] == "NEP-17")
                         nep17 = true;
                 }
+
                 if (nep11 && nep17)
                 {
                     throw new Exception($"{manifest.Name} Contract declares support for both NEP-11 and NEP-17 standards. Use --force to deploy contract with invalid supported standards declarations.");
+                }
+
+                if (nep17 && manifest.IsNep17Compliant() == false)
+                {
+                    throw new Exception($"{manifest.Name} Contract declares support for NEP-17 standards. However is not NEP-17 compliant. Invalid methods/events.");
+                }
+
+                if (nep11 && manifest.IsNep11Compliant() == false)
+                {
+                    throw new Exception($"{manifest.Name} Contract declares support for NEP-11 standards. However is not NEP-11 compliant. Invalid methods/events.");
                 }
             }
 
@@ -294,7 +305,10 @@ namespace NeoExpress
                         await WriteLineAsync("<null>").ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.Array array:
-                        await WriteLineAsync($"Array: ({array.Count})").ConfigureAwait(false);
+                        if (item is Neo.VM.Types.Struct)
+                            await WriteLineAsync($"Struct: ({array.Count})").ConfigureAwait(false);
+                        else
+                            await WriteLineAsync($"Array: ({array.Count})").ConfigureAwait(false);
                         for (int i = 0; i < array.Count; i++)
                         {
                             await WriteStackItemAsync(writer, array[i], indent + 1).ConfigureAwait(false);

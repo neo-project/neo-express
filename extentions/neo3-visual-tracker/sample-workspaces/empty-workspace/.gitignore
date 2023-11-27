@@ -1,0 +1,9 @@
+*
+!.gitignore
+
+#
+# Note: This .gitignore file will cause certaion activations events to not fire when you
+#       might expect, e.g. workspaceContains:**/*.neo-invoke.json when there is a 
+#       neo-invoke.json file in this folder. This makes it seem like the editor window is
+#       hanging. Running any command or activating the main view will activate the extension.
+#

@@ -29,11 +29,11 @@ namespace NeoExpress.Commands
             this.txExecutorFactory = txExecutorFactory;
         }
 
-        [Argument(0, Description = "NFT Contract (symbol or script hash)")]
+        [Argument(0, Description = "NFT Contract (Symbol or Script Hash)")]
         [Required]
         internal string Contract { get; init; } = string.Empty;
 
-        [Argument(1, Description = "TokenId of NFT (Hex string)")]
+        [Argument(1, Description = "TokenId of NFT (Format: HEX, BASE64)")]
         [Required]
         internal string TokenId { get; init; } = string.Empty;
 
@@ -67,7 +67,7 @@ namespace NeoExpress.Commands
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var password = chainManager.Chain.ResolvePassword(Sender, Password);
                 using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                await txExec.TransferNFTAsync(Contract, HexStringToUTF8(TokenId), Sender, password, Receiver, Data).ConfigureAwait(false);
+                await txExec.TransferNFTAsync(Contract, HexOrBase64ToUTF8(TokenId), Sender, password, Receiver, Data).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)
@@ -76,19 +76,15 @@ namespace NeoExpress.Commands
                 return 1;
             }
 
-            static string HexStringToUTF8(string hex)
+            static string HexOrBase64ToUTF8(string input)
             {
-                hex = hex.ToLower().Trim();
-                if (!new Regex("^(0x)?([0-9a-f]{2})+$").IsMatch(hex))
-                    throw new FormatException();
-
-                if (new Regex("^([0-9a-f]{2})+$").IsMatch(hex))
+                try
                 {
-                    return Encoding.UTF8.GetString(hex.HexToBytes());
+                    return input.StartsWith("0x") ? Encoding.UTF8.GetString(input.HexToBytes()) : Encoding.UTF8.GetString(Convert.FromBase64String(input));
                 }
-                else
+                catch (Exception)
                 {
-                    return Encoding.UTF8.GetString(hex[2..].HexToBytes().Reverse().ToArray());
+                    throw new ArgumentException($"Unknown Asset \"{input}\"", nameof(TokenId));
                 }
             }
         }

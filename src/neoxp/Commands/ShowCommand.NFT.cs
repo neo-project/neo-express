@@ -28,11 +28,11 @@ namespace NeoExpress.Commands
                 this.chainManagerFactory = chainManagerFactory;
             }
 
-            [Argument(0, Description = "Contract to show NFT of (symbol or script hash)")]
+            [Argument(0, Description = "NFT Contract (Symbol or Script Hash)")]
             [Required]
             internal string Contract { get; init; } = string.Empty;
 
-            [Argument(1, Description = "Account to show asset balance for")]
+            [Argument(1, Description = "TokenId of NFT (Format: HEX, BASE64)")]
             [Required]
             internal string Account { get; init; } = string.Empty;
 
@@ -53,12 +53,12 @@ namespace NeoExpress.Commands
                     }
 
                     var list = await expressNode.GetNFTAsync(accountHash, Contract).ConfigureAwait(false);
-                    list.ForEach(p => console.Out.WriteLine($"TokenId: {p}, TokenId(Hex): {Encoding.UTF8.GetBytes(p).ToHexString()}"));
+                    list.ForEach(p => console.Out.WriteLine($"TokenId(Base64): {p}, TokenId(Hex): {Convert.FromBase64String(p).ToHexString()}"));
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex);
+                    app.WriteException(ex, true);
                     return 1;
                 }
             }

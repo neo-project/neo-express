@@ -464,7 +464,7 @@ namespace NeoExpress
                 {
                     while (iterator.Next())
                     {
-                        list.Add(iterator.Value(null).GetString()!);
+                        list.Add(Convert.ToBase64String(iterator.Value(null).GetSpan()));
                     }
                 }
             }

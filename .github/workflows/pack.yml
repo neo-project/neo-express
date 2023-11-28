@@ -26,51 +26,126 @@ jobs:
         fetch-depth: 0
 
     - name: Setup .NET
+      if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Nerdbank.GitVersioning
+      if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
 
     - name: Restore
+      if: |
+            github.event_name == 'push' &&
+            (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+            (
+              endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+              endsWith(github.event.pull_request.changes.*.filename, '.cs')
+            )
       run: dotnet restore neo-express.sln
 
     - name: Build
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
 
     - name: Pack
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
 
     - name: Publish Package to MyGet (Neo.Assertions)
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet nuget push ./out/Neo.Assertions.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Publish Package to MyGet (Neo.BlockchainToolkit)
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet nuget push ./out/Neo.BlockchainToolkit.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Publish Package to MyGet (Neo.BuildTasks)
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet nuget push ./out/Neo.BuildTasks.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Publish Package to MyGet (Neo.Collector)
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet nuget push ./out/Neo.Collector.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Publish Package to MyGet (Neo.Express)
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet nuget push ./out/Neo.Express.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Publish Package to MyGet (Neo.Test.Harness)
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet nuget push ./out/Neo.Test.Harness.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     - name: Publish Package to MyGet (Neo.Test.Runner)
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
+      if: |
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+          (
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
+          )
       run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
     # - name: Upload Build Log

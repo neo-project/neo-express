@@ -276,7 +276,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
           comments: JSONC.extractComments(fileContentsJson),
           errorText: "",
         });
-      } catch (e) {
+      } catch (e : any) {
         await this.updateViewState({
           errorText: e.message || "Unknown error",
           fileContentsJson,
@@ -378,7 +378,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     try {
       fs.writeFileSync(tempFile, JSONC.stringify([fragment]));
       await this.runFile(tempFile);
-    } catch (e) {
+    } catch (e : any) {
       Log.warn(
         LOG_PREFIX,
         "Error running fragment",
@@ -389,7 +389,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     } finally {
       try {
         fs.unlinkSync(tempFile);
-      } catch (e) {
+      } catch (e : any) {
         Log.warn(
           LOG_PREFIX,
           "Could not delete temporary file",
@@ -493,7 +493,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
               tx: tx?.tx,
               state: confirmed ? "confirmed" : ("pending" as TransactionStatus),
             };
-          } catch (e) {
+          } catch (e : any) {
             return _;
           }
         }

@@ -228,7 +228,7 @@ export default class TrackerPanelController extends PanelControllerBase<
           searchHistory: await this.getSearchHistory(),
         });
       }
-    } catch (e) {
+    } catch (e : any) {
       Log.error(
         LOG_PREFIX,
         "Unexpected error processing blockchain update",

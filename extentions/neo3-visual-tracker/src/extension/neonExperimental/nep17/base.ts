@@ -43,7 +43,7 @@ export class Nep17Contract {
         const divider = Math.pow(10, decimals);
         return parseInt(response.stack[0].value as string) / divider;
       }
-    } catch (e) {
+    } catch (e : any) {
       throw new Error(`Failed to get balance of address. Error: ${e}`);
     }
   }
@@ -63,7 +63,7 @@ export class Nep17Contract {
       }
       this._decimals = parseInt(response.stack[0].value as string);
       return this._decimals;
-    } catch (e) {
+    } catch (e : any) {
       throw new Error(
         `Failed to get decimals for contract: ${this.contractHash.toString()}. Error: ${e}`
       );
@@ -81,7 +81,7 @@ export class Nep17Contract {
       );
       this._name = response.manifest.name as string;
       return this._name;
-    } catch (e) {
+    } catch (e : any) {
       throw new Error(
         `Failed to get name for contract: ${this.contractHash.toString()}. Error: ${e}`
       );
@@ -105,7 +105,7 @@ export class Nep17Contract {
 
       this._symbol = u.utf82base64(response.stack[0].value as string);
       return this._symbol;
-    } catch (e) {
+    } catch (e : any) {
       throw new Error(
         `Failed to get symbol for contract: ${this.contractHash.toString()}. Error: ${e}`
       );
@@ -128,7 +128,7 @@ export class Nep17Contract {
         throw Error;
       }
       return parseInt(response.stack[0].value as string);
-    } catch (e) {
+    } catch (e : any) {
       throw new Error(
         `Failed to get total supply for contract: ${this.contractHash.toString()}. Error: ${e}`
       );

@@ -19,6 +19,12 @@ jobs:
   test:
     name: Test Application
     uses: ./.github/workflows/test.yml
+    if: |
+        github.event.pull_request.changes != null &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
   pack:
     needs: [test]
     uses: ./.github/workflows/pack.yml

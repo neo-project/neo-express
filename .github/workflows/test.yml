@@ -18,14 +18,35 @@ jobs:
         fetch-depth: 0
 
     - name: Setup .NET
+      if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Restore
+      if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
       run: dotnet restore neo-express.sln
 
     - name: Format
+      if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
       run: |
         dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
 

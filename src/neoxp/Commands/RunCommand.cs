@@ -23,7 +23,7 @@ namespace NeoExpress.Commands
             this.chainManagerFactory = chainManagerFactory;
         }
 
-        [Argument(0, Description = "Index of node to run")]
+        [Option(Description = "Index of node to run")]
         internal int NodeIndex { get; init; } = 0;
 
         [Option(Description = "Path to neo-express data file")]

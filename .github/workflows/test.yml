@@ -32,7 +32,7 @@ jobs:
   build:
     needs: [format]
     runs-on: ${{ matrix.os }}
-    strategy: 
+    strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
@@ -112,19 +112,19 @@ jobs:
     - name: Test Stop Command (online) (neoxp)
       run: neoxp stop --all
 
-  report:
-    name: Build Coverage (Report)
-    needs: [build]
-    runs-on: ubuntu-latest
+  # report:
+  #   name: Build Coverage (Report)
+  #   needs: [build]
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Download Coverage Artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: coverage
-          path: ./coverage
+  #   steps:
+  #     - name: Download Coverage Artifact
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: coverage
+  #         path: ./coverage
 
-      - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: ./coverage/**/coverage.cobertura.xml
+  #     - name: Code Coverage Report
+  #       uses: irongut/CodeCoverageSummary@v1.3.0
+  #       with:
+  #         filename: ./coverage/**/coverage.cobertura.xml

@@ -25,6 +25,7 @@ namespace NeoExpress
         typeof(CandidateCommand),
         typeof(ContractCommand),
         typeof(CreateCommand),
+        typeof(ExecuteCommand),
         typeof(ExportCommand),
         typeof(FastForwardCommand),
         typeof(OracleCommand),

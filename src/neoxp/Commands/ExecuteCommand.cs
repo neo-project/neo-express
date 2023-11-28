@@ -36,14 +36,14 @@ namespace NeoExpress.Commands
             this.txExecutorFactory = txExecutorFactory;
         }
 
-        [Argument(0, Description = "A neo-vm script(hex,base64) or a script file path")]
+        [Argument(0, Description = "A neo-vm script (Format: HEX, BASE64, Filename)")]
         [Required]
         internal string InputText { get; set; } = string.Empty;
 
         [Option(Description = "Account to pay invocation GAS fee")]
         internal string Account { get; init; } = string.Empty;
 
-        [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
+        [Option(Description = "Witness Scope for transaction signer(s) (Allowed: None, CalledByEntry, Global)")]
         [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
         internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 

@@ -267,6 +267,17 @@ namespace NeoExpress.Commands
                                 cmd.Model.Data).ConfigureAwait(false);
                             break;
                         }
+                    case CommandLineApplication<BatchFileCommands.TransferNFT> cmd:
+                        {
+                            await txExec.TransferNFTAsync(
+                                cmd.Model.Contract,
+                                cmd.Model.TokenId,
+                                cmd.Model.Sender,
+                                cmd.Model.Password,
+                                cmd.Model.Receiver,
+                                cmd.Model.Data).ConfigureAwait(false);
+                            break;
+                        }
                     case CommandLineApplication<BatchFileCommands.Wallet.Create> cmd:
                         {
                             var wallet = chainManager.CreateWallet(

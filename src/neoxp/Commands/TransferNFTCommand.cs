@@ -41,7 +41,7 @@ namespace NeoExpress.Commands
         [Required]
         internal string Sender { get; init; } = string.Empty;
 
-        [Argument(3, Description = "Account to send NFT to (Format: HEX, BASE64, Address, Wallet name)")]
+        [Argument(3, Description = "Account to send NFT to (Format: Script Hash, Address, Wallet name)")]
         [Required]
         internal string Receiver { get; init; } = string.Empty;
 

@@ -28,7 +28,7 @@ export default class NeoExpressIo {
     }
     try {
       return JSONC.parse(output.message) as neonSc.ContractManifestJson;
-    } catch (e) {
+    } catch (e : any) {
       throw Error(`Get contract error: ${e.message}`);
     }
   }
@@ -63,7 +63,7 @@ export default class NeoExpressIo {
         result[contractSummary.name] = { hash };
       }
       return result;
-    } catch (e) {
+    } catch (e : any) {
       throw Error(`List contract parse error: ${e.message}`);
     }
   }
@@ -96,7 +96,7 @@ export default class NeoExpressIo {
           constant?: boolean;
         }[]) || []
       );
-    } catch (e) {
+    } catch (e : any) {
       throw Error(`Contract storage parse error: ${e.message}`);
     }
   }

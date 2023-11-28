@@ -130,7 +130,7 @@ export default class NeoExpress {
             complete = true;
             try {
               process.kill();
-            } catch (e) {
+            } catch (e : any) {
               Log.error(
                 LOG_PREFIX,
                 `Could not kill timed out neoxp command: ${command} (${e.message})`
@@ -160,7 +160,7 @@ export default class NeoExpress {
           reject();
         });
       });
-    } catch (e) {
+    } catch (e : any) {
       return {
         isError: true,
         message:
@@ -185,7 +185,7 @@ export default class NeoExpress {
         parseInt(
           childProcess.execFileSync(this.dotnetPath, ["--version"]).toString()
         ) >= 5;
-    } catch (e) {
+    } catch (e : any) {
       Log.error(LOG_PREFIX, "checkForDotNet error:", e.message);
       ok = false;
     }

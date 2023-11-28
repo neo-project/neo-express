@@ -16,7 +16,7 @@ namespace NeoExpress.Commands
 {
     partial class CandidateCommand
     {
-        [Command(Name = "unregister", Description = "unregister candidate")]
+        [Command(Name = "unregister", Description = "Unregister candidate")]
         internal class UnRegister
         {
             readonly ExpressChainManagerFactory chainManagerFactory;

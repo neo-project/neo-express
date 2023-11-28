@@ -45,7 +45,8 @@ jobs:
       id: cache
       uses: actions/cache@v3
       with:
-        path: ./out
+        path: |
+          /tmp/dist/
         key: |
           macos-latest-cache-build
           ubuntu-latest-cache-build
@@ -60,7 +61,7 @@ jobs:
         title: Release ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         automatic_release_tag: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         files: |
-          ./out/*
+          /tmp/dist/*
 
     - name: Push Neo.Express Nuget.org
       run: dotnet nuget push ${{ format('./dist/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json

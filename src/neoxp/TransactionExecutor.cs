@@ -530,13 +530,31 @@ namespace NeoExpress
             await writer.WriteTxHashAsync(txHash, $"Unvote", json).ConfigureAwait(false);
         }
 
-        public async Task GetCandidatesAsync()
+        public async Task<List<string>> GetCandidatesAsync()
         {
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(NativeContract.NEO.Hash, "getCandidates");
 
-            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"Unvote", json).ConfigureAwait(false);
+            var result = await expressNode.InvokeAsync(builder.ToArray()).ConfigureAwait(false);
+            var stack = result.Stack;
+            var list = new List<string>();
+            try
+            {
+                if (result.State != VMState.FAULT
+                        && result.Stack.Length >= 1
+                        && result.Stack[0] is Neo.VM.Types.Array array)
+                {
+                    for (var x = 0; x < array.Count; x++)
+                    {
+                        list.Add(array[x].GetSpan().ToHexString());
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("invalid script results");
+            }
+            return list;
         }
 
         public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)

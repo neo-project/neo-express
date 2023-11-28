@@ -1,6 +1,6 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// ContractCommand.Run.cs file belongs to neo-express project and is free
+// CandidateCommand.Get.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
 // accompanying file LICENSE in the main directory of the
 // repository or http://www.opensource.org/licenses/mit-license.php
@@ -10,7 +10,6 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
 {

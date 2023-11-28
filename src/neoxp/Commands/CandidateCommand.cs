@@ -1,6 +1,6 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// ContractCommand.cs file belongs to neo-express project and is free
+// CandidateCommand.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
 // accompanying file LICENSE in the main directory of the
 // repository or http://www.opensource.org/licenses/mit-license.php
@@ -15,11 +15,11 @@ namespace NeoExpress.Commands
 {
     [Command("candidate", Description = "Candidate Commands")]
     [Subcommand(
+        typeof(Get),
         typeof(Register),
         typeof(UnRegister),
-        typeof(Vote),
         typeof(UnVote),
-        typeof(Get))]
+        typeof(Vote))]
     partial class CandidateCommand
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)

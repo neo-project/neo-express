@@ -46,11 +46,11 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          /tmp/dist/
+          /tmp/dist/*
         key: |
-          macos-latest-cache-build
-          ubuntu-latest-cache-build
-          windows-latest-cache-build
+          macOS-cache-build
+          Linux-cache-build
+          Windows-cache-build
 
     - name: Create Release
       if: steps.cache-primes.outputs.cache-hit != 'true'

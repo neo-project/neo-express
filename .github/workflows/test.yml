@@ -9,13 +9,6 @@ env:
 
 jobs:
   format:
-    if: |
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
-      (
-        contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-        contains(github.event.pull_request.changes.*.filename, '.cs')
-      )
     runs-on: ubuntu-latest
 
     steps:

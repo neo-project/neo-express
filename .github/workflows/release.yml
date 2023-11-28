@@ -63,7 +63,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          /tmp/dist/*
+          c:/tmp/dist/*
         key: cache-build-windows
         enableCrossOsArchive: true
         fail-on-cache-miss: true
@@ -77,6 +77,7 @@ jobs:
         automatic_release_tag: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         files: |
           /tmp/dist/*
+          c:/tmp/dist/*
 
     - name: Push Neo.Express Nuget.org
       run: dotnet nuget push ${{ format('./dist/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json

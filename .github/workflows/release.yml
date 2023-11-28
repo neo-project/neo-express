@@ -45,7 +45,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          /tmp/dist/*
+          ./dist/*
         key: cache-build-mac
         enableCrossOsArchive: true
         fail-on-cache-miss: true
@@ -54,7 +54,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          /tmp/dist/*
+          ./dist/*
         key: cache-build-linux
         enableCrossOsArchive: true
         fail-on-cache-miss: true
@@ -63,7 +63,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          c:/tmp/dist/*
+          ./dist/*
         key: cache-build-windows
         enableCrossOsArchive: true
         fail-on-cache-miss: true

@@ -23,7 +23,7 @@ namespace NeoExpress.Commands
             this.chainManagerFactory = chainManagerFactory;
         }
 
-        [Argument(0, Description = "Index of node to reset")]
+        [Option(Description = "Index of node to reset")]
         internal int? NodeIndex { get; }
 
         [Option(Description = "Path to neo-express data file")]

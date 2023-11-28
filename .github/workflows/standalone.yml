@@ -102,12 +102,20 @@ jobs:
       run: |
         shasum --algorithm 256 ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
-    - name: Upload Tarballs (Standalone)
-      uses: actions/upload-artifact@v3
+    # - name: Upload Tarballs (Standalone)
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+    #     path: |
+    #       ${{ env.UNIX_DIST_DIR }}/*
+
+    - name: Cache Files
+      id: cache
+      uses: actions/cache/save@v3
       with:
-        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-        path: |
-          ${{ env.UNIX_DIST_DIR }}/*
+        path: ${{ env.UNIX_DIST_DIR }}/*
+        key: ${{ runner.os }}-cache-build
+
 
   linux-pack:
     name: Linux x64/arm64
@@ -230,12 +238,19 @@ jobs:
       run: |
         sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
-    - name: Upload Tarballs (Standalone)
-      uses: actions/upload-artifact@v3
+    # - name: Upload Tarballs (Standalone)
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+    #     path: |
+    #       ${{ env.UNIX_DIST_DIR }}/*
+
+    - name: Cache Files
+      id: cache
+      uses: actions/cache/save@v3
       with:
-        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-        path: |
-          ${{ env.UNIX_DIST_DIR }}/*
+        path: ${{ env.UNIX_DIST_DIR }}/*
+        key: ${{ runner.os }}-cache-build
 
   win-pack:
     name: Windows x64/arm64
@@ -350,9 +365,16 @@ jobs:
         $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
         $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
 
-    - name: Upload Zips (Standalone)
-      uses: actions/upload-artifact@v3
+    # - name: Upload Zips (Standalone)
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+    #     path: |
+    #       ${{ env.WIN_DIST_DIR }}/*
+
+    - name: Cache Files
+      id: cache
+      uses: actions/cache/save@v3
       with:
-        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-        path: |
-          ${{ env.WIN_DIST_DIR }}/*
+        path: ${{ env.WIN_DIST_DIR }}/*
+        key: ${{ runner.os }}-cache-build

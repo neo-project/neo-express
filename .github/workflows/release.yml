@@ -35,13 +35,24 @@ jobs:
     - name: Pack NeoExpress
       run: dotnet pack neo-express.sln --output ./dist --configuration Release --no-restore --verbosity normal
 
-    - name: Download Express Files (Standalone)
-      uses: actions/download-artifact@v3
+    # - name: Download Express Files (Standalone)
+    #   uses: actions/download-artifact@v3
+    #   with:
+    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+    #     path: ./out
+
+    - name: Get Cache Files
+      id: cache
+      uses: actions/cache@v3
       with:
-        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         path: ./out
+        key: |
+          macos-latest-cache-build
+          ubuntu-latest-cache-build
+          windows-latest-cache-build
 
     - name: Create Release
+      if: steps.cache-primes.outputs.cache-hit != 'true'
       uses: marvinpinto/action-automatic-releases@latest
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"

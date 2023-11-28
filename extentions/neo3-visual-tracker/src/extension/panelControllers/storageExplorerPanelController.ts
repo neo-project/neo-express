@@ -80,7 +80,7 @@ export default class StorageExplorerPanelController extends PanelControllerBase<
       ) {
         updates.selectedContract = null;
       }
-    } catch (e) {
+    } catch (e : any) {
       await this.updateViewState({
         contracts: [],
         error: e.message || "Unknown error",
@@ -104,7 +104,7 @@ export default class StorageExplorerPanelController extends PanelControllerBase<
             this.identifier,
             selectedContract
           );
-        } catch (e) {
+        } catch (e : any) {
           updates.error = e.message || "Unknown error";
           updates.storage = [];
         }

@@ -119,26 +119,19 @@ jobs:
     - name: Test Stop Command (online) (neoxp)
       run: neoxp stop --all
 
-  report:
-    if: |
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
-      (
-        contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-        contains(github.event.pull_request.changes.*.filename, '.cs')
-      )
-    name: Build Coverage (Report)
-    needs: [build]
-    runs-on: ubuntu-latest
+  # report:
+  #   name: Build Coverage (Report)
+  #   needs: [build]
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Download Coverage Artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: coverage
-          path: ./coverage
+  #   steps:
+  #     - name: Download Coverage Artifact
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: coverage
+  #         path: ./coverage
 
-      - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: ./coverage/**/coverage.cobertura.xml
+  #     - name: Code Coverage Report
+  #       uses: irongut/CodeCoverageSummary@v1.3.0
+  #       with:
+  #         filename: ./coverage/**/coverage.cobertura.xml

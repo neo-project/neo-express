@@ -65,7 +65,7 @@ jobs:
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        if: endsWith(steps.changes.outputs.all_changed_files, '**/*.${matrix.language}')
+        if: (endsWith(steps.changes.outputs.all_changed_files, '**/*.ts') || endsWith(steps.changes.outputs.all_changed_files, '**/*.js') || endsWith(steps.changes.outputs.all_changed_files, '**/*.cs'))
         uses: github/codeql-action/init@v2
         with:
           languages: ${{ matrix.language }}

@@ -6,11 +6,6 @@ on:
       - master
       - development
       - release/*
-    paths-ignore:
-      - '.gitignore'
-      - '.gitattributes'
-      - 'LICENSE'
-      - '**/*.md'
 
 jobs:
   test:

@@ -31,7 +31,7 @@ namespace NeoExpress.Commands
             [Required]
             internal string Contract { get; init; } = string.Empty;
 
-            [Argument(1, Description = "TokenId of NFT (Format: Script Hash, Address, Wallet name)")]
+            [Argument(1, Description = "Account to show NFT (Format: Script Hash, Address, Wallet name)")]
             [Required]
             internal string Account { get; init; } = string.Empty;
 

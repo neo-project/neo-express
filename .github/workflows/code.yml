@@ -50,8 +50,7 @@ jobs:
       matrix:
         language:
           - csharp
-          - javascript
-          - typescript
+          - javascript-typescript
         # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
         # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
         # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
@@ -74,7 +73,7 @@ jobs:
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        if: contains(steps.changes.outputs.all_changed_files, '**/*.${matrix.language}')
+        if: endsWith(steps.changes.outputs.all_changed_files, '**/*.${matrix.language}')
         uses: github/codeql-action/init@v2
         with:
           languages: ${{ matrix.language }}
@@ -101,7 +100,7 @@ jobs:
       #     ./location_of_script_within_repo/buildscript.sh
 
       - name: Setup .NET Core
-        if: matrix.language == 'csharp' && contains(steps.changes.outputs.all_changed_files, '**/*.cs')
+        if: matrix.language == 'csharp' && endsWith(steps.changes.outputs.all_changed_files, '**/*.cs')
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: "7.0.x"
@@ -111,15 +110,15 @@ jobs:
         id: nbgv
 
       - name: Restore dependencies
-        if: matrix.language == 'csharp' && contains(steps.changes.outputs.all_changed_files, '**/*.cs')
+        if: matrix.language == 'csharp' && endsWith(steps.changes.outputs.all_changed_files, '**/*.cs')
         run: dotnet restore neo-express.sln
 
       - name: Build
-        if: matrix.language == 'csharp' && contains(steps.changes.outputs.all_changed_files, '**/*.cs')
+        if: matrix.language == 'csharp' && endsWith(steps.changes.outputs.all_changed_files, '**/*.cs')
         run: dotnet build neo-express.sln --configuration Release --no-restore --verbosity normal
 
       - name: Perform CodeQL Analysis
-        if: contains(steps.changes.outputs.all_changed_files, '**/*.${matrix.language}')
+        if: endsWith(steps.changes.outputs.all_changed_files, '**/*.${matrix.language}')
         uses: github/codeql-action/analyze@v2
         with:
           category: "/language:${{matrix.language}}"

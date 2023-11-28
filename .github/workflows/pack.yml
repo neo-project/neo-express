@@ -49,8 +49,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal --BinaryLogger:./msbuild.binlog
 
@@ -59,8 +59,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal
 
@@ -69,8 +69,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet nuget push ./out/Neo.Assertions.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
@@ -79,8 +79,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet nuget push ./out/Neo.BlockchainToolkit.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
@@ -89,8 +89,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet nuget push ./out/Neo.BuildTasks.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
@@ -99,8 +99,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet nuget push ./out/Neo.Collector.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
@@ -109,8 +109,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet nuget push ./out/Neo.Express.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
@@ -119,8 +119,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet nuget push ./out/Neo.Test.Harness.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
@@ -129,8 +129,8 @@ jobs:
           github.event_name == 'push' &&
           (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
           (
-            contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-            contains(github.event.pull_request.changes.*.filename, '.cs')
+            endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+            endsWith(github.event.pull_request.changes.*.filename, '.cs')
           )
       run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 

@@ -22,8 +22,8 @@ jobs:
     if: |
         github.event.pull_request.changes != null &&
         (
-          contains(github.event.pull_request.changes.*.filename, '.csproj') ||
-          contains(github.event.pull_request.changes.*.filename, '.cs')
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
         )
   pack:
     needs: [test]

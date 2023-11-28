@@ -15,6 +15,12 @@ on:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+    if: |
+        github.event.pull_request.changes != null &&
+        (
+          contains(github.event.pull_request.changes.*.filename, '.csproj') ||
+          contains(github.event.pull_request.changes.*.filename, '.cs')
+        )
   pack:
     needs: [test]
     uses: ./.github/workflows/pack.yml

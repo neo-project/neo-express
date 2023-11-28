@@ -1,4 +1,4 @@
-name: Run Pack 
+name: Run Pack
 
 on:
   workflow_call:
@@ -14,6 +14,12 @@ env:
 
 jobs:
   pack:
+    if: |
+        github.event.pull_request.changes != null &&
+        (
+          contains(github.event.pull_request.changes.*.filename, '.csproj') ||
+          contains(github.event.pull_request.changes.*.filename, '.cs')
+        )
     runs-on: ubuntu-latest
     outputs:
       PrereleaseVersion: ${{ steps.nbgv.outputs.PrereleaseVersion }}

@@ -1,6 +1,6 @@
 // Copyright (C) 2015-2023 The Neo Project.
 //
-// CandidateCommand.Get.cs file belongs to neo-express project and is free
+// CandidateCommand.List.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
 // accompanying file LICENSE in the main directory of the
 // repository or http://www.opensource.org/licenses/mit-license.php
@@ -15,13 +15,13 @@ namespace NeoExpress.Commands
 {
     partial class CandidateCommand
     {
-        [Command(Name = "get", Description = "get candidates")]
-        internal class Get
+        [Command(Name = "list", Description = "list candidates")]
+        internal class List
         {
             readonly ExpressChainManagerFactory chainManagerFactory;
             readonly TransactionExecutorFactory txExecutorFactory;
 
-            public Get(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
+            public List(ExpressChainManagerFactory chainManagerFactory, TransactionExecutorFactory txExecutorFactory)
             {
                 this.chainManagerFactory = chainManagerFactory;
                 this.txExecutorFactory = txExecutorFactory;
@@ -42,12 +42,12 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.GetCandidatesAsync().ConfigureAwait(false);
+                    await txExec.ListCandidatesAsync().ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex);
+                    app.WriteException(ex, true);
                     return 1;
                 }
             }

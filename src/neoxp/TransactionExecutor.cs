@@ -499,38 +499,32 @@ namespace NeoExpress
             await writer.WriteTxHashAsync(txHash, $"Unregister Candidate", json).ConfigureAwait(false);
         }
 
-        public async Task VoteAsync(string account, string publicKey, string password)
+        public async Task VoteAsync(string account, string? publicKey, string password)
         {
             if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
-            if (!ECPoint.TryParse(publicKey, ECCurve.Secp256r1, out ECPoint point))
-            {
-                throw new Exception($"PublicKey is not valid.");
-            }
 
             using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "vote", point);
-
-            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"Vote", json).ConfigureAwait(false);
-        }
-
-        public async Task UnvoteAsync(string account, string password)
-        {
-            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            if (!string.IsNullOrEmpty(publicKey))
             {
-                throw new Exception($"{account} account not found.");
+                if (!ECPoint.TryParse(publicKey, ECCurve.Secp256r1, out ECPoint point))
+                {
+                    throw new Exception($"PublicKey is not valid.");
+                }
+                builder.EmitDynamicCall(NativeContract.NEO.Hash, "vote", accountHash, point);
             }
-            using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(NativeContract.NEO.Hash, "unvote");
+            else
+            {
+                builder.EmitDynamicCall(NativeContract.NEO.Hash, "vote", accountHash, null);
+            }
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, $"Unvote", json).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Vote/Unvote", json).ConfigureAwait(false);
         }
 
-        public async Task<List<string>> GetCandidatesAsync()
+        public async Task<List<string>> ListCandidatesAsync()
         {
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(NativeContract.NEO.Hash, "getCandidates");
@@ -544,9 +538,11 @@ namespace NeoExpress
                         && result.Stack.Length >= 1
                         && result.Stack[0] is Neo.VM.Types.Array array)
                 {
-                    for (var x = 0; x < array.Count; x++)
+                    for (var i = 0; i < array.Count; i++)
                     {
-                        list.Add(array[x].GetSpan().ToHexString());
+                        var value = (Neo.VM.Types.Array)array[i];
+                        Console.Write(((Neo.VM.Types.ByteString)value?[0])?.GetSpan().ToHexString() + "\t");
+                        Console.WriteLine(((Neo.VM.Types.Integer)value?[1]).GetInteger());
                     }
                 }
             }

@@ -51,12 +51,12 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.UnvoteAsync(Account, password).ConfigureAwait(false);
+                    await txExec.VoteAsync(Account, null, password).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex);
+                    app.WriteException(ex, true);
                     return 1;
                 }
             }

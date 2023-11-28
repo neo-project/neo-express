@@ -15,7 +15,7 @@ namespace NeoExpress.Commands
 {
     [Command("candidate", Description = "Candidate Commands")]
     [Subcommand(
-        typeof(Get),
+        typeof(List),
         typeof(Register),
         typeof(UnRegister),
         typeof(UnVote),

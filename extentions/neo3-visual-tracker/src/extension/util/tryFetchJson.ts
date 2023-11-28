@@ -39,7 +39,7 @@ export default function tryFetchJson(
           response.on("end", () => {
             try {
               resolve(JSONC.parse(content));
-            } catch (e) {
+            } catch (e : any) {
               Log.warn(
                 LOG_PREFIX,
                 `Exception ("${e}") when parsing JSON from ${protocol}://${host}${path}`

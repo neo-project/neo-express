@@ -22,7 +22,7 @@ export default class Wallet {
       const result = new Wallet(path, new neonCore.wallet.Wallet(json));
       await result.tryUnlockWithoutPassword();
       return result;
-    } catch (e) {
+    } catch (e : any) {
       Log.debug(LOG_PREFIX, "Not a wallet", e.message, path);
       return undefined;
     }
@@ -55,7 +55,7 @@ export default class Wallet {
             this.wallet.accounts[i].label
           );
         }
-      } catch (e) {
+      } catch (e : any) {
         if (`${e.message}`.toLowerCase().indexOf("wrong password") !== -1) {
           Log.log(
             LOG_PREFIX,

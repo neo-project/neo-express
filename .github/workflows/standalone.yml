@@ -115,6 +115,7 @@ jobs:
       with:
         path: ${{ env.UNIX_DIST_DIR }}/*
         key: ${{ runner.os }}-cache-build
+        enableCrossOsArchive: true
 
   linux-pack:
     name: Linux x64/arm64
@@ -250,6 +251,7 @@ jobs:
       with:
         path: ${{ env.UNIX_DIST_DIR }}/*
         key: ${{ runner.os }}-cache-build
+        enableCrossOsArchive: true
 
   win-pack:
     name: Windows x64/arm64
@@ -377,3 +379,4 @@ jobs:
       with:
         path: ${{ env.WIN_DIST_DIR }}/*
         key: ${{ runner.os }}-cache-build
+        enableCrossOsArchive: true

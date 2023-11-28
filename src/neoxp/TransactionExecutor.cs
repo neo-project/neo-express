@@ -294,7 +294,7 @@ namespace NeoExpress
                     case Neo.VM.Types.ByteString byteString:
                         if (byteString.GetSpan().TryGetUtf8String(out var text))
                         {
-                            await WriteLineAsync($"{Neo.Helper.ToHexString(byteString.GetSpan())}({text})").ConfigureAwait(false);
+                            await WriteLineAsync($"{Neo.Helper.ToHexString(byteString.GetSpan())}({text.EscapeString()})").ConfigureAwait(false);
                         }
                         else
                         {

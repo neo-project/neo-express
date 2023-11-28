@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <DebugType>Embedded</DebugType>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <IncludeSymbols>true</IncludeSymbols>
+        <PackageId>Neo.BlockchainToolkit</PackageId>
         <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <DebugType>Embedded</DebugType>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(CI)' == 'true'">

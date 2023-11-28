@@ -5,8 +5,10 @@ on:
 
 env:
   DOTNET_VERSION: 7.0.x
-  DIST_DIR: ./dist
-  OUTPUT_DIR: ./out
+  UNIX_DIST_DIR: /tmp/dist
+  UNIX_OUTPUT_DIR: /tmp/out
+  WIN_DIST_DIR: c:/tmp/dist
+  WIN_OUTPUT_DIR: c:/tmp/out
 
 jobs:
   osx-pack:
@@ -35,7 +37,7 @@ jobs:
         --configuration Release \
         --runtime osx-x64 \
         --self-contained true \
-        --output ${{ env.OUTPUT_DIR }}/osx-x64 \
+        --output ${{ env.UNIX_OUTPUT_DIR }}/osx-x64 \
         --verbosity normal \
         -p:RuntimeIdentifier=osx-x64 \
         -p:SelfContained=true \
@@ -55,7 +57,7 @@ jobs:
         --configuration Release \
         --runtime osx-arm64 \
         --self-contained true \
-        --output ${{ env.OUTPUT_DIR }}/osx-arm64 \
+        --output ${{ env.UNIX_OUTPUT_DIR }}/osx-arm64 \
         --verbosity normal \
         -p:RuntimeIdentifier=osx-arm64 \
         -p:SelfContained=true \
@@ -70,33 +72,33 @@ jobs:
 
     - name: Create Distribution Directory
       run: |
-        mkdir -p ${{ env.DIST_DIR }}
+        mkdir -p ${{ env.UNIX_DIST_DIR }}
 
     - name: Tarball (osx-x64)
-      working-directory: ${{ env.OUTPUT_DIR }}/osx-x64
+      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/osx-x64
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-osx-x64.{1}.tar.xz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('{0}/Neo.Express-osx-x64-{1}.tar.xz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         tar cJf ${{ env.TAR_FILE }} .
 
     - name: Tarball (osx-arm64)
-      working-directory: ${{ env.OUTPUT_DIR }}/osx-arm64
+      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/osx-arm64
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-osx-arm64.{1}.tar.xz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('{0}/Neo.Express-osx-arm64-{1}.tar.xz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         tar cJf ${{ env.TAR_FILE }} .
 
     - name: Generate SHA256 File (osx-x64)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.UNIX_DIST_DIR }}
       env:
-        TAR_FILE: ${{ format('Neo.Express-osx-x64.{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-osx-x64-{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         shasum --algorithm 256 ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Generate SHA256 File (osx-arm64)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.UNIX_DIST_DIR }}
       env:
-        TAR_FILE: ${{ format('Neo.Express-osx-arm64.{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-osx-arm64-{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         shasum --algorithm 256 ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
@@ -105,13 +107,13 @@ jobs:
     #   with:
     #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     #     path: |
-    #       ${{ env.DIST_DIR }}/*
+    #       ${{ env.UNIX_DIST_DIR }}/*
 
     - name: Cache Files
       id: cache
       uses: actions/cache/save@v3
       with:
-        path: ${{ env.DIST_DIR }}/*
+        path: ${{ env.UNIX_DIST_DIR }}/*
         key: cache-build-mac
         enableCrossOsArchive: true
 
@@ -140,7 +142,7 @@ jobs:
         --configuration Release \
         --runtime linux-x64 \
         --self-contained true \
-        --output ${{ env.OUTPUT_DIR }}/linux-x64 \
+        --output ${{ env.UNIX_OUTPUT_DIR }}/linux-x64 \
         --verbosity normal \
         -p:RuntimeIdentifier=linux-x64 \
         -p:SelfContained=true \
@@ -159,7 +161,7 @@ jobs:
         --configuration Release \
         --runtime linux-arm64 \
         --self-contained true \
-        --output ${{ env.OUTPUT_DIR }}/linux-arm64 \
+        --output ${{ env.UNIX_OUTPUT_DIR }}/linux-arm64 \
         --verbosity normal \
         -p:RuntimeIdentifier=linux-arm64 \
         -p:SelfContained=true \
@@ -178,7 +180,7 @@ jobs:
         --configuration Release \
         --runtime linux-musl-arm64 \
         --self-contained true \
-        --output ${{ env.OUTPUT_DIR }}/linux-musl-arm64 \
+        --output ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64 \
         --verbosity normal \
         -p:RuntimeIdentifier=linux-musl-arm64 \
         -p:SelfContained=true \
@@ -192,47 +194,47 @@ jobs:
 
     - name: Create Distribution Directory
       run: |
-        mkdir -p ${{ env.DIST_DIR }}
+        mkdir -p ${{ env.UNIX_DIST_DIR }}
 
     - name: Tarball (linux-x64)
-      working-directory: ${{ env.OUTPUT_DIR }}/linux-x64
+      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-x64
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-linux-x64.{1}.tar.gz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('{0}/Neo.Express-linux-x64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         tar -czvf ${{ env.TAR_FILE }} .
 
     - name: Tarball (linux-arm64)
-      working-directory: ${{ env.OUTPUT_DIR }}/linux-arm64
+      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-arm64
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-linux-arm64.{1}.tar.gz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('{0}/Neo.Express-linux-arm64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         tar -czvf ${{ env.TAR_FILE }} .
 
     - name: Tarball (linux-musl-arm64)
-      working-directory: ${{ env.OUTPUT_DIR }}/linux-musl-arm64
+      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-linux-musl-arm64.{1}.tar.gz', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('{0}/Neo.Express-linux-musl-arm64-{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         tar -czvf ${{ env.TAR_FILE }} .
 
     - name: Generate SHA256 File (linux-x64)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.UNIX_DIST_DIR }}
       env:
-        TAR_FILE: ${{ format('Neo.Express-linux-x64.{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-linux-x64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Generate SHA256 File (linux-arm64)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.UNIX_DIST_DIR }}
       env:
-        TAR_FILE: ${{ format('Neo.Express-linux-arm64.{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-linux-arm64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
     - name: Generate SHA256 File (linux-musl-arm64)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.UNIX_DIST_DIR }}
       env:
-        TAR_FILE: ${{ format('Neo.Express-linux-musl-arm64.{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
+        TAR_FILE: ${{ format('Neo.Express-linux-musl-arm64-{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
 
@@ -241,13 +243,13 @@ jobs:
     #   with:
     #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     #     path: |
-    #       ${{ env.DIST_DIR }}/*
+    #       ${{ env.UNIX_DIST_DIR }}/*
 
     - name: Cache Files
       id: cache
       uses: actions/cache/save@v3
       with:
-        path: ${{ env.DIST_DIR }}/*
+        path: ${{ env.UNIX_DIST_DIR }}/*
         key: cache-build-linux
         enableCrossOsArchive: true
 
@@ -276,7 +278,7 @@ jobs:
         --configuration Release `
         --runtime win-x64 `
         --self-contained true `
-        --output ${{ env.OUTPUT_DIR }}/win-x64 `
+        --output ${{ env.WIN_OUTPUT_DIR }}/win-x64 `
         --verbosity normal `
         -p:RuntimeIdentifier=win-x64 `
         -p:SelfContained=true `
@@ -295,7 +297,7 @@ jobs:
         --configuration Release `
         --runtime win-arm64 `
         --self-contained true `
-        --output ${{ env.OUTPUT_DIR }}/win-arm64 `
+        --output ${{ env.WIN_OUTPUT_DIR }}/win-arm64 `
         --verbosity normal `
         -p:RuntimeIdentifier=win-arm64 `
         -p:SelfContained=true `
@@ -312,54 +314,54 @@ jobs:
         dotnet publish ./src/neoxp `
         --framework net7.0 `
         --configuration Release `
-        --output ${{ env.OUTPUT_DIR }}/portable `
+        --output ${{ env.WIN_OUTPUT_DIR }}/portable `
         --verbosity normal
 
     - name: Create Distribution Directory
       run: |
-        mkdir -p ${{ env.DIST_DIR }}
+        mkdir -p ${{ env.WIN_DIST_DIR }}
 
     - name: Zip (win-x64)
-      working-directory: ${{ env.OUTPUT_DIR }}/win-x64
+      working-directory: ${{ env.WIN_OUTPUT_DIR }}/win-x64
       env:
-        ZIP_FILE: ${{ format('{0}/Neo.Express-win-x64.{1}.zip', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        ZIP_FILE: ${{ format('{0}/Neo.Express-win-x64-{1}.zip', env.WIN_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
 
     - name: Zip (win-arm64)
-      working-directory: ${{ env.OUTPUT_DIR }}/win-arm64
+      working-directory: ${{ env.WIN_OUTPUT_DIR }}/win-arm64
       env:
-        ZIP_FILE: ${{ format('{0}/Neo.Express-win-arm64.{1}.zip', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        ZIP_FILE: ${{ format('{0}/Neo.Express-win-arm64-{1}.zip', env.WIN_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
 
     - name: Zip (portable)
-      working-directory: ${{ env.OUTPUT_DIR }}/portable
+      working-directory: ${{ env.WIN_OUTPUT_DIR }}/portable
       env:
-        ZIP_FILE: ${{ format('{0}/Neo.Express-portable.{1}.zip', env.DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
+        ZIP_FILE: ${{ format('{0}/Neo.Express-portable-{1}.zip', env.WIN_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
 
     - name: Generate SHA256 File (win-x64)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.WIN_DIST_DIR }}
       env:
-        ZIP_FILE: ${{ format('Neo.Express-win-x64.{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+        ZIP_FILE: ${{ format('Neo.Express-win-x64-{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
         $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
 
     - name: Generate SHA256 File (win-arm64)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.WIN_DIST_DIR }}
       env:
-        ZIP_FILE: ${{ format('Neo.Express-win-arm64.{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+        ZIP_FILE: ${{ format('Neo.Express-win-arm64-{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
         $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
 
     - name: Generate SHA256 File (portable)
-      working-directory: ${{ env.DIST_DIR }}
+      working-directory: ${{ env.WIN_DIST_DIR }}
       env:
-        ZIP_FILE: ${{ format('Neo.Express-portable.{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
+        ZIP_FILE: ${{ format('Neo.Express-portable-{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
         $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
@@ -369,12 +371,12 @@ jobs:
     #   with:
     #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     #     path: |
-    #       ${{ env.DIST_DIR }}/*
+    #       ${{ env.WIN_DIST_DIR }}/*
 
     - name: Cache Files
       id: cache
       uses: actions/cache/save@v3
       with:
-        path: ${{ env.DIST_DIR }}/*
+        path: ${{ env.WIN_DIST_DIR }}/*
         key: cache-build-windows
         enableCrossOsArchive: true

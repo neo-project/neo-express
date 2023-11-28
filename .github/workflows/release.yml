@@ -35,11 +35,38 @@ jobs:
     - name: Pack NeoExpress
       run: dotnet pack neo-express.sln --output ./dist --configuration Release --no-restore --verbosity normal
 
-    - name: Download Express Files (Standalone)
-      uses: actions/download-artifact@v3
+    # - name: Download Express Files (Standalone)
+    #   uses: actions/download-artifact@v3
+    #   with:
+    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+    #     path: ./out
+
+    - name: Get Cache Files (MacOS)
+      uses: actions/cache@v3
       with:
-        name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-        path: ./out
+        path: |
+          /tmp/dist/*
+        key: cache-build-mac
+        enableCrossOsArchive: true
+        fail-on-cache-miss: true
+
+    - name: Get Cache Files (Linux)
+      uses: actions/cache@v3
+      with:
+        path: |
+          /tmp/dist/*
+        key: cache-build-linux
+        enableCrossOsArchive: true
+        fail-on-cache-miss: true
+
+    - name: Get Cache Files (Windows)
+      uses: actions/cache@v3
+      with:
+        path: |
+          c:/tmp/dist/*
+        key: cache-build-windows
+        enableCrossOsArchive: true
+        fail-on-cache-miss: true
 
     - name: Create Release
       uses: marvinpinto/action-automatic-releases@latest
@@ -49,7 +76,8 @@ jobs:
         title: Release ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         automatic_release_tag: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         files: |
-          ./out/*
+          /tmp/dist/*
+          c:/tmp/dist/*
 
     - name: Push Neo.Express Nuget.org
       run: dotnet nuget push ${{ format('./dist/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json

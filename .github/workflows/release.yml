@@ -41,18 +41,37 @@ jobs:
     #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     #     path: ./out
 
-    - name: Get Cache Files
+    - name: Get Cache Files (MacOS)
       id: cache
       uses: actions/cache@v3
       with:
         path: |
           /tmp/dist/*
-        key: cache-build
+        key: cache-build-mac
+        enableCrossOsArchive: true
+        fail-on-cache-miss: true
+
+    - name: Get Cache Files (Linux)
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          /tmp/dist/*
+        key: cache-build-linux
+        enableCrossOsArchive: true
+        fail-on-cache-miss: true
+
+    - name: Get Cache Files (Windows)
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          c:/tmp/dist/*
+        key: cache-build-windows
         enableCrossOsArchive: true
         fail-on-cache-miss: true
 
     - name: Create Release
-      if: steps.cache-primes.outputs.cache-hit != 'true'
       uses: marvinpinto/action-automatic-releases@latest
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"

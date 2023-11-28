@@ -26,11 +26,25 @@ jobs:
         fetch-depth: 0
 
     - name: Setup .NET
+      if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Nerdbank.GitVersioning
+      if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          endsWith(github.event.pull_request.changes.*.filename, '.csproj') ||
+          endsWith(github.event.pull_request.changes.*.filename, '.cs')
+        )
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
 

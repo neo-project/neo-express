@@ -75,7 +75,7 @@ export default class NeoCommands {
     }
     try {
       await account.decrypt("");
-    } catch (e) {
+    } catch (e : any) {
       const password = await IoHelpers.enterPassword(
         "Enter your wallet password"
       );
@@ -84,7 +84,7 @@ export default class NeoCommands {
       }
       try {
         await account.decrypt(password);
-      } catch (e) {
+      } catch (e : any) {
         vscode.window.showErrorMessage("Incorrect password");
         return;
       }
@@ -110,7 +110,7 @@ export default class NeoCommands {
         contract.absolutePathToNef,
         null
       );
-    } catch (e) {
+    } catch (e : any) {
       vscode.window.showErrorMessage(
         `Could not read contract: ${contract.absolutePathToNef}`
       );
@@ -148,7 +148,7 @@ export default class NeoCommands {
         }
       );
       vscode.window.showInformationMessage(result);
-    } catch (e) {
+    } catch (e : any) {
       vscode.window.showErrorMessage(
         e.message || "Could not deploy contract: Unknown error"
       );

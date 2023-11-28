@@ -60,7 +60,7 @@ export default abstract class PanelControllerBase<
     this.postMessage = async (message) => {
       try {
         await panel?.webview.postMessage(message);
-      } catch (e) {
+      } catch (e : any) {
         Log.error(
           LOG_PREFIX,
           `Could not post message: ${e.message || "Unknown error"}`

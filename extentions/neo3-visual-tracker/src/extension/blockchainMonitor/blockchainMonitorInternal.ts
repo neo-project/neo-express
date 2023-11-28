@@ -83,7 +83,7 @@ export default class BlockchainMonitorInternal {
           gasBalance: allBalances[SCRIPTHASH_GAS] || 0,
           neoBalance: allBalances[SCRIPTHASH_NEO] || 0,
         };
-      } catch (e) {
+      } catch (e : any) {
         Log.warn(
           LOG_PREFIX,
           `Error retrieving address ${address} (${
@@ -123,7 +123,7 @@ export default class BlockchainMonitorInternal {
         }
         this.state.cachedLogs.push(result);
         return result;
-      } catch (e) {
+      } catch (e : any) {
         Log.warn(
           LOG_PREFIX,
           `Error retrieving app logs for ${txid}: ${
@@ -166,7 +166,7 @@ export default class BlockchainMonitorInternal {
           this.state.cachedBlocks.push(block);
         }
         return block;
-      } catch (e) {
+      } catch (e : any) {
         Log.warn(
           LOG_PREFIX,
           `Error retrieving block ${indexOrHash}: ${
@@ -206,7 +206,7 @@ export default class BlockchainMonitorInternal {
           this.state.cachedTransactions.push(transaction);
         }
         return transaction;
-      } catch (e) {
+      } catch (e : any) {
         Log.warn(
           LOG_PREFIX,
           `Error retrieving tx ${hash}: ${e.message || "Unknown error"}`
@@ -238,7 +238,7 @@ export default class BlockchainMonitorInternal {
     }
     try {
       await this.updateState();
-    } catch (e) {
+    } catch (e : any) {
       Log.error(LOG_PREFIX, "Unexpected error", e.message);
     } finally {
       const refreshInterval = this.state.currentRefreshInterval();
@@ -262,7 +262,7 @@ export default class BlockchainMonitorInternal {
     try {
       blockHeight = await this.rpcClient.getBlockCount();
       this.state.isHealthy = true;
-    } catch (e) {
+    } catch (e : any) {
       this.state.isHealthy = false;
     }
 
@@ -305,7 +305,7 @@ export default class BlockchainMonitorInternal {
             : 0;
           mayBeMoreResults = result.blocks.length >= count;
         } while (mayBeMoreResults);
-      } catch (e) {
+      } catch (e : any) {
         if (e.message?.indexOf("Method not found") !== -1) {
           this.tryGetPopulatedBlocks = false;
         } else {

@@ -19,7 +19,7 @@ namespace NeoExpress.Commands
     partial class BatchCommand
     {
         [Command]
-        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer), typeof(Wallet))]
+        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer), typeof(TransferNFT), typeof(Wallet))]
         internal class BatchFileCommands
         {
             [Command("checkpoint")]
@@ -283,6 +283,31 @@ namespace NeoExpress.Commands
                 internal string Sender { get; init; } = string.Empty;
 
                 [Argument(3, Description = "Account to send asset to")]
+                [Required]
+                internal string Receiver { get; init; } = string.Empty;
+
+                [Option(Description = "Optional data parameter to pass to transfer operation")]
+                internal string Data { get; init; } = string.Empty;
+
+                [Option(Description = "password to use for NEP-2/NEP-6 sender")]
+                internal string Password { get; init; } = string.Empty;
+            }
+            [Command("transfernft")]
+            internal class TransferNFT
+            {
+                [Argument(0, Description = "NFT Contract (Symbol or Script Hash)")]
+                [Required]
+                internal string Contract { get; init; } = string.Empty;
+
+                [Argument(1, Description = "TokenId of NFT (Format: HEX, BASE64)")]
+                [Required]
+                internal string TokenId { get; init; } = string.Empty;
+
+                [Argument(2, Description = "Account to send NFT from (Format: Wallet name, WIF)")]
+                [Required]
+                internal string Sender { get; init; } = string.Empty;
+
+                [Argument(3, Description = "Account to send NFT to (Format: Script Hash, Address, Wallet name)")]
                 [Required]
                 internal string Receiver { get; init; } = string.Empty;
 

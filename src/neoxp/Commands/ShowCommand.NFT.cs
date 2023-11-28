@@ -12,7 +12,6 @@
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace NeoExpress.Commands
 {
@@ -28,11 +27,11 @@ namespace NeoExpress.Commands
                 this.chainManagerFactory = chainManagerFactory;
             }
 
-            [Argument(0, Description = "Contract to show NFT of (symbol or script hash)")]
+            [Argument(0, Description = "NFT Contract (Symbol or Script Hash)")]
             [Required]
             internal string Contract { get; init; } = string.Empty;
 
-            [Argument(1, Description = "Account to show asset balance for")]
+            [Argument(1, Description = "Account to show NFT (Format: Script Hash, Address, Wallet name)")]
             [Required]
             internal string Account { get; init; } = string.Empty;
 
@@ -45,20 +44,33 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
-
-                    var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
-                    if (getHashResult.TryPickT1(out _, out var accountHash))
+                    if (!UInt160.TryParse(Account, out var accountHash)) //script hash
                     {
-                        throw new Exception($"{Account} account not found.");
+                        if (!chainManager.Chain.TryParseScriptHash(Account, out accountHash)) //address
+                        {
+                            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false); //wallet name
+                            if (getHashResult.TryPickT1(out _, out accountHash))
+                            {
+                                throw new Exception($"{Account} account not found.");
+                            }
+                        }
                     }
-
-                    var list = await expressNode.GetNFTAsync(accountHash, Contract).ConfigureAwait(false);
-                    list.ForEach(p => console.Out.WriteLine($"TokenId: {p}, TokenId(Hex): {Encoding.UTF8.GetBytes(p).ToHexString()}"));
+                    var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+                    var scriptHash = parser.TryLoadScriptHash(Contract, out var value)
+                        ? value
+                        : UInt160.TryParse(Contract, out var uint160)
+                            ? uint160
+                            : throw new InvalidOperationException($"contract \"{Contract}\" not found");
+                    var list = await expressNode.GetNFTAsync(accountHash, scriptHash).ConfigureAwait(false);
+                    if (list.Count == 0)
+                        await console.Out.WriteLineAsync($"No NFT yet. (Contract:{scriptHash}, Account:{accountHash})");
+                    else
+                        list.ForEach(p => console.Out.WriteLine($"TokenId(Base64): {p}, TokenId(Hex): 0x{Convert.FromBase64String(p).Reverse().ToArray().ToHexString()}"));
                     return 0;
                 }
                 catch (Exception ex)
                 {
-                    app.WriteException(ex);
+                    app.WriteException(ex, true);
                     return 1;
                 }
             }

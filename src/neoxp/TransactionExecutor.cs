@@ -11,6 +11,7 @@
 
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
@@ -468,6 +469,74 @@ namespace NeoExpress
             var assetHash = await expressNode.ParseAssetAsync(contract).ConfigureAwait(false);
             var txHash = await expressNode.TransferNFTAsync(assetHash, tokenId, senderWallet, senderAccountHash, receiverHash, dataParam);
             await writer.WriteTxHashAsync(txHash, "TransferNFT", json).ConfigureAwait(false);
+        }
+
+        public async Task RegisterCandidateAsync(string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+            var publicKey = wallet.GetAccount(accountHash).GetKey()?.PublicKey;
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "registerCandidate", publicKey);
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Register Candidate", json).ConfigureAwait(false);
+        }
+
+        public async Task UnregisterCandidateAsync(string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+            var publicKey = wallet.GetAccount(accountHash).GetKey()?.PublicKey;
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "unregisterCandidate", publicKey);
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Unregister Candidate", json).ConfigureAwait(false);
+        }
+
+        public async Task VoteAsync(string account, string publicKey, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+            if (!ECPoint.TryParse(publicKey, ECCurve.Secp256r1, out ECPoint point))
+            {
+                throw new Exception($"PublicKey is not valid.");
+            }
+
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "vote", point);
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Vote", json).ConfigureAwait(false);
+        }
+
+        public async Task UnvoteAsync(string account, string password)
+        {
+            if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
+            {
+                throw new Exception($"{account} account not found.");
+            }
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "unvote");
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Unvote", json).ConfigureAwait(false);
+        }
+
+        public async Task GetCandidatesAsync()
+        {
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(NativeContract.NEO.Hash, "getCandidates");
+
+            var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, $"Unvote", json).ConfigureAwait(false);
         }
 
         public async Task<OneOf<PolicyValues, None>> TryGetRemoteNetworkPolicyAsync(string rpcUri)

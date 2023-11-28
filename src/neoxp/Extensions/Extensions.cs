@@ -81,6 +81,44 @@ namespace NeoExpress
             }
         }
 
+        public static bool TryGetBytesFromHexString(this string text, out Span<byte> bytes)
+        {
+            bytes = null;
+            if (IsValidHexString(text))
+            {
+                bytes = text.HexToBytes();
+                return true;
+            }
+            return false;
+        }
+
+        public static bool IsValidHexString(this string text)
+        {
+            if (text.Length % 2 != 0)
+                return false;
+            foreach (var c in text)
+            {
+                if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' & c <= 'F')))
+                    return false;
+            }
+            return true;
+        }
+
+
+        public static bool TryGetBytesFromBase64String(this string text, out Span<byte> bytes)
+        {
+            bytes = null;
+            Span<byte> buffer = new byte[text.Length * 3 / 4];
+            if (Convert.TryFromBase64String(text, buffer, out var bytesWritten))
+            {
+                bytes = buffer[..bytesWritten];
+                return true;
+            }
+            return false;
+        }
+
+
+
         public static void WriteJson(this Newtonsoft.Json.JsonWriter writer, Neo.Json.JToken? json)
         {
             switch (json)

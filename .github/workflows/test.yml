@@ -30,9 +30,16 @@ jobs:
         dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
 
   build:
+    if: |
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+        (
+          contains(github.event.pull_request.changes.*.filename, '.csproj') ||
+          contains(github.event.pull_request.changes.*.filename, '.cs')
+        )
     needs: [format]
     runs-on: ${{ matrix.os }}
-    strategy: 
+    strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
@@ -113,6 +120,13 @@ jobs:
       run: neoxp stop --all
 
   report:
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development') &&
+      (
+        contains(github.event.pull_request.changes.*.filename, '.csproj') ||
+        contains(github.event.pull_request.changes.*.filename, '.cs')
+      )
     name: Build Coverage (Report)
     needs: [build]
     runs-on: ubuntu-latest

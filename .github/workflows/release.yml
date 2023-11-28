@@ -47,10 +47,7 @@ jobs:
       with:
         path: |
           /tmp/dist/*
-        key: |
-          macOS-cache-build
-          Linux-cache-build
-          Windows-cache-build
+        key: cache-build
         enableCrossOsArchive: true
         fail-on-cache-miss: true
 

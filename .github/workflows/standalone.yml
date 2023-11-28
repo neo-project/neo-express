@@ -114,7 +114,7 @@ jobs:
       uses: actions/cache/save@v3
       with:
         path: ${{ env.UNIX_DIST_DIR }}/*
-        key: ${{ runner.os }}-cache-build
+        key: cache-build
         enableCrossOsArchive: true
 
   linux-pack:
@@ -250,7 +250,7 @@ jobs:
       uses: actions/cache/save@v3
       with:
         path: ${{ env.UNIX_DIST_DIR }}/*
-        key: ${{ runner.os }}-cache-build
+        key: cache-build
         enableCrossOsArchive: true
 
   win-pack:
@@ -378,5 +378,5 @@ jobs:
       uses: actions/cache/save@v3
       with:
         path: ${{ env.WIN_DIST_DIR }}/*
-        key: ${{ runner.os }}-cache-build
+        key: cache-build
         enableCrossOsArchive: true

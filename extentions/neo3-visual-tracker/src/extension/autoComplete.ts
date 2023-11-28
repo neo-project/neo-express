@@ -152,7 +152,7 @@ export default class AutoComplete {
         this.wellKnownManifests[wellKnownContract.hash] =
           wellKnownContract.manifest;
       }
-    } catch (e) {
+    } catch (e : any) {
       Log.error(
         LOG_PREFIX,
         "Error initializing well-known manifests...",
@@ -246,7 +246,7 @@ export default class AutoComplete {
           }
           newData.contractNames[contractHash] = contractName;
         }
-      } catch (e) {
+      } catch (e : any) {
         Log.warn(
           LOG_PREFIX,
           "Could not list neo-express contracts",

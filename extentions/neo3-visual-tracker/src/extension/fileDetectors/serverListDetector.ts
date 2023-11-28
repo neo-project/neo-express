@@ -136,7 +136,7 @@ export default class ServerListDetector extends DetectorBase {
                   file
                 );
               }
-            } catch (e) {
+            } catch (e : any) {
               Log.log(
                 LOG_PREFIX,
                 "Ignoring malformed URL (parse error)",
@@ -146,7 +146,7 @@ export default class ServerListDetector extends DetectorBase {
             }
           }
         }
-      } catch (e) {
+      } catch (e : any) {
         Log.log(
           LOG_PREFIX,
           "Error parsing Neo Express config",
@@ -187,7 +187,7 @@ export default class ServerListDetector extends DetectorBase {
       const rpcClient = new neonCore.rpc.RPCClient(rpcUrl);
       const genesisBlock = await rpcClient.getBlock(0, true);
       return genesisBlock.hash;
-    } catch (e) {
+    } catch (e : any) {
       Log.log(
         LOG_PREFIX,
         "Could not get genesis blockhash from",

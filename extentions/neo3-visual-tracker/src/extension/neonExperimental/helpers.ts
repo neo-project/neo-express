@@ -39,7 +39,7 @@ export async function calculateNetworkFee(
       throw Error;
     }
     execFeeFactor = parseInt(response.stack[0].value as string);
-  } catch (e) {
+  } catch (e : any) {
     throw new Error(
       `Failed to get 'Execution Fee factor' from Policy contract. Error: ${e}`
     );
@@ -128,7 +128,7 @@ export async function calculateNetworkFee(
       response.stack[0].value as string
     );
     networkFee += networkFeeSize * nativeContractPolicyFeePerByte;
-  } catch (e) {
+  } catch (e : any) {
     throw new Error(
       `Failed to get 'fee per byte' from Policy contract. Error: ${e}`
     );
@@ -157,7 +157,7 @@ export async function getSystemFee(
       );
     }
     return u.BigInteger.fromDecimal(response.gasconsumed, 0);
-  } catch (e) {
+  } catch (e : any) {
     throw new Error(`Failed to get system fee. ${e}`);
   }
 }

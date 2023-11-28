@@ -78,8 +78,8 @@ jobs:
 
       # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
       # If this step fails, then you should remove it and run the build manually (see below)
-      - name: Dotnet build
-        if: matrix.language == 'csharp' && endsWith(steps.changes.outputs.all_changed_files, '**/*.cs')
+      - name: TypeScript and Javascript
+        if: matrix.language == 'javascript-typescript' && (endsWith(steps.changes.outputs.all_changed_files, '**/*.ts') || endsWith(steps.changes.outputs.all_changed_files, '**/*.js'))
         uses: github/codeql-action/autobuild@v2
 
       # ℹ️ Command-line programs to run using the OS shell.

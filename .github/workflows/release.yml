@@ -51,6 +51,8 @@ jobs:
           macOS-cache-build
           Linux-cache-build
           Windows-cache-build
+        enableCrossOsArchive: true
+        fail-on-cache-miss: true
 
     - name: Create Release
       if: steps.cache-primes.outputs.cache-hit != 'true'

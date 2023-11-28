@@ -1,4 +1,4 @@
-name: Run Pack 
+name: Run Pack
 
 on:
   workflow_call:
@@ -73,9 +73,9 @@ jobs:
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development')
       run: dotnet nuget push ./out/Neo.Test.Runner.*.nupkg --source https://www.myget.org/F/neo/api/v3/index.json --api-key ${{ secrets.MYGET_TOKEN }}
 
-    - name: Upload Build Log
-      if: always() && (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development'))
-      uses: actions/upload-artifact@v3
-      with:
-        name: buildlog
-        path: ./msbuild.binlog
+    # - name: Upload Build Log
+    #   if: always() && (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/development'))
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: buildlog
+    #     path: ./msbuild.binlog

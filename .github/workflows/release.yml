@@ -58,7 +58,7 @@ jobs:
       run: dotnet nuget push ${{ format('./dist/Neo.Trace.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Blockchain-toolkit-library Nuget.org
-      run: dotnet nuget push ${{ format('./dist/bctklib.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ format('./dist/Neo.BlockchainToolkit.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
     - name: Push Neo.Assertions Nuget.org
       run: dotnet nuget push ${{ format('./dist/Neo.Assertions.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json

@@ -36,7 +36,7 @@ namespace NeoExpress.Commands
             [Required]
             internal string PublicKey { get; init; } = string.Empty;
 
-            [Option(Description = "password to use for NEP-2/NEP-6 account")]
+            [Option(Description = "Password to use for NEP-2/NEP-6 account")]
             internal string Password { get; init; } = string.Empty;
 
             [Option(Description = "Enable contract execution tracing")]

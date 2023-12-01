@@ -20,8 +20,10 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using NeoExpress.Models;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Numerics;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NeoExpress
 {
@@ -108,6 +110,7 @@ namespace NeoExpress
         public static bool TryGetBytesFromBase64String(this string text, out Span<byte> bytes)
         {
             bytes = null;
+            text = Base64Fixed(text);
             Span<byte> buffer = new byte[text.Length * 3 / 4];
             if (Convert.TryFromBase64String(text, buffer, out var bytesWritten))
             {
@@ -117,7 +120,18 @@ namespace NeoExpress
             return false;
         }
 
-
+        public static string Base64Fixed(string str)
+        {
+            MatchCollection mc = Regex.Matches(str, @"\\u([\w]{2})([\w]{2})", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            byte[] bts = new byte[2];
+            foreach (Match m in mc)
+            {
+                bts[0] = (byte)int.Parse(m.Groups[2].Value, NumberStyles.HexNumber);
+                bts[1] = (byte)int.Parse(m.Groups[1].Value, NumberStyles.HexNumber);
+                str = str.Replace(m.ToString(), Encoding.Unicode.GetString(bts));
+            }
+            return str;
+        }
 
 
         public static string EscapeString(this string text)

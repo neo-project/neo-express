@@ -152,7 +152,7 @@ export default class NeoExpressInstanceManager {
           }
         }
       }
-    } catch (e) {
+    } catch (e : any) {
       Log.warn(
         LOG_PREFIX,
         "Could not stop",

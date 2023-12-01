@@ -294,7 +294,7 @@ namespace NeoExpress
                     case Neo.VM.Types.ByteString byteString:
                         if (byteString.GetSpan().TryGetUtf8String(out var text))
                         {
-                            await WriteLineAsync($"{Neo.Helper.ToHexString(byteString.GetSpan())}({text})").ConfigureAwait(false);
+                            await WriteLineAsync($"{Neo.Helper.ToHexString(byteString.GetSpan())}({text.EscapeString()})").ConfigureAwait(false);
                         }
                         else
                         {
@@ -452,10 +452,16 @@ namespace NeoExpress
                 throw new Exception($"{sender} sender not found.");
             }
 
-            var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, receiver).ConfigureAwait(false);
-            if (getHashResult.TryPickT1(out _, out var receiverHash))
+            if (!UInt160.TryParse(receiver, out var receiverHash)) //script hash
             {
-                throw new Exception($"{receiver} account not found.");
+                if (!chainManager.Chain.TryParseScriptHash(receiver, out receiverHash)) //address
+                {
+                    var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, receiver).ConfigureAwait(false); //wallet name
+                    if (getHashResult.TryPickT1(out _, out receiverHash))
+                    {
+                        throw new Exception($"{receiver} account not found.");
+                    }
+                }
             }
 
             ContractParameter? dataParam = null;
@@ -464,8 +470,12 @@ namespace NeoExpress
                 var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
                 dataParam = parser.ParseParameter(data);
             }
-
-            var assetHash = await expressNode.ParseAssetAsync(contract).ConfigureAwait(false);
+            var parser2 = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
+            var assetHash = parser2.TryLoadScriptHash(contract, out var value)
+                ? value
+                : UInt160.TryParse(contract, out var uint160)
+                    ? uint160
+                    : throw new InvalidOperationException($"contract \"{contract}\" not found");
             var txHash = await expressNode.TransferNFTAsync(assetHash, tokenId, senderWallet, senderAccountHash, receiverHash, dataParam);
             await writer.WriteTxHashAsync(txHash, "TransferNFT", json).ConfigureAwait(false);
         }

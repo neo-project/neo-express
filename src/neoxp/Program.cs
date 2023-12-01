@@ -57,7 +57,13 @@ namespace NeoExpress
 
             try
             {
-                return await app.ExecuteAsync(args);
+                var result = await app.ExecuteAsync(args);
+                if (args.Length == 0)
+                {
+                    Console.WriteLine("Please start from the terminal.");
+                    Console.ReadKey();
+                }
+                return result;
             }
             catch (CommandParsingException ex)
             {

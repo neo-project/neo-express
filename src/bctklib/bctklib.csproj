@@ -4,7 +4,7 @@
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <PackageId>Neo.BlockchainToolkit</PackageId>
         <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
-        <DebugType>Embedded</DebugType>
+        <DebugType>portable</DebugType>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(CI)' == 'true'">

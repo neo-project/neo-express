@@ -551,8 +551,7 @@ namespace NeoExpress
                     for (var i = 0; i < array.Count; i++)
                     {
                         var value = (Neo.VM.Types.Array)array[i];
-                        Console.Write(((Neo.VM.Types.ByteString)value?[0])?.GetSpan().ToHexString() + "\t");
-                        Console.WriteLine(((Neo.VM.Types.Integer)value?[1]).GetInteger());
+                        list.Add(((Neo.VM.Types.ByteString)value?[0])?.GetSpan().ToHexString() + "\t" + ((Neo.VM.Types.Integer)value?[1]).GetInteger());
                     }
                 }
             }

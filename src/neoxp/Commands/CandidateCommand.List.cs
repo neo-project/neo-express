@@ -42,7 +42,8 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.ListCandidatesAsync().ConfigureAwait(false);
+                    var list = await txExec.ListCandidatesAsync().ConfigureAwait(false);
+                    list.ForEach(x => console.Out.WriteLine(x));
                     return 0;
                 }
                 catch (Exception ex)

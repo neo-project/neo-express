@@ -120,8 +120,14 @@ namespace NeoExpress
             return false;
         }
 
+        /// <summary>
+        /// Convert Unicode Characters to AscII Characters by Regular Expressions.
+        /// </summary>
+        /// <param name="str">Base64 string with Unicode escaping. e.g. DCECbzTesnBofh/Xng1SofChKkBC7jhVmLxCN1vk\u002B49xa2pBVuezJw==</param>
+        /// <returns>Base64 strings without Unicode escaping. e.g. DCECbzTesnBofh/Xng1SofChKkBC7jhVmLxCN1vk+49xa2pBVuezJw==</returns>
         public static string Base64Fixed(string str)
         {
+            //Unicode e.g. \u002B
             MatchCollection mc = Regex.Matches(str, @"\\u([\w]{2})([\w]{2})", RegexOptions.Compiled | RegexOptions.IgnoreCase);
             byte[] bts = new byte[2];
             foreach (Match m in mc)

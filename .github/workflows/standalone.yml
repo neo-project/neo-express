@@ -220,7 +220,7 @@ jobs:
     - name: Debian Package (amd64)
       working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-x64
       env:
-        DEB_DIR: ${{ format('neoxp_{1}_amd64', steps.nbgv.outputs.NuGetPackageVersion) }}
+        DEB_DIR: ${{ format('neoxp_{0}_amd64', steps.nbgv.outputs.NuGetPackageVersion) }}
       run: |
         mkdir -p ${{ env.DEB_DIR }}/DEBIAN
         mkdir -p ${{ env.DEB_DIR }}/usr/bin

@@ -6,7 +6,7 @@
         <PackageId>Neo.Assertions</PackageId>
         <RootNamespace>Neo.Assertions</RootNamespace>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <DebugType>Embedded</DebugType>
+        <DebugType>portable</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

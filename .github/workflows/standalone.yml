@@ -240,6 +240,29 @@ jobs:
         dpkg-deb --build ${{ env.DEB_DIR }}
         mv ${{ env.DEB_DIR }}.deb ${{ env.UNIX_DIST_DIR }}
 
+    - name: Debian Package (arm64)
+      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-arm64
+      env:
+        DEB_DIR: ${{ format('neoxp_{0}_arm64', steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: |
+        mkdir -p ${{ env.DEB_DIR }}/DEBIAN
+        mkdir -p ${{ env.DEB_DIR }}/usr/bin
+        chmod 755 neoxp
+        mv neoxp ${{ env.DEB_DIR }}/usr/bin
+        cd ${{ env.DEB_DIR }}/DEBIAN
+        echo -e 'Package: neoxp' >> control
+        echo -e 'Version: ${{ steps.nbgv.outputs.NuGetPackageVersion }}' >> control
+        echo -e 'Architecture: arm64' >> control
+        echo -e 'Essential: no' >> control
+        echo -e 'Priority: optional' >> control
+        echo -e 'Depends: librocksdb-dev' >> control
+        echo -e 'Maintainer: neo-project' >> control
+        echo -e 'Description: Neo-Express is a privatenet optimized for development scenarios. It is built on the same neo platform core as neo-cli and neo-gui to maximize compatibility between local development and public chain environments.' >> control
+        echo -e '' >> control
+        cd ../../
+        dpkg-deb --build ${{ env.DEB_DIR }}
+        mv ${{ env.DEB_DIR }}.deb ${{ env.UNIX_DIST_DIR }}
+
     - name: Generate SHA256 File (linux-x64)
       working-directory: ${{ env.UNIX_DIST_DIR }}
       env:

@@ -236,6 +236,7 @@ jobs:
         echo -e 'Maintainer: neo-project' >> control
         echo -e 'Description: Neo-Express is a privatenet optimized for development scenarios. It is built on the same neo platform core as neo-cli and neo-gui to maximize compatibility between local development and public chain environments.' >> control
         echo -e '' >> control
+        cd ../../
         dpkg-deb --build ${{ env.DEB_DIR }}
         mv ${{ env.DEB_DIR }}.deb ${{ env.UNIX_DIST_DIR }}
 

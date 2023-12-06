@@ -6,10 +6,12 @@ on:
       - master
       - development
       - release/*
-    paths-ignore:
+    paths:
       - '**.cs'
       - '**.csproj'
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
   pack:
     uses: ./.github/workflows/pack.yml

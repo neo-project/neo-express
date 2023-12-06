@@ -1,4 +1,4 @@
-name: Run Publish
+name: Run Publish (MyGet.org)
 
 on:
   workflow_call:

@@ -9,26 +9,38 @@
 > The `master-2.x` branch contains Neo Legacy version of Neo-Express.
 > There is no Neo Legacy version of Neo-Trace.
 
-## Requirements
-
-As of Neo v3.1, Neo-Express and Neo-Trace require 
-[version 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) 
-of [the .NET developer platform](https://dot.net) to be installed. 
-
-> Note: Neo-Express has additional, platform-specific requirements beyond .NET 6.
-> These requirements are detailed below.
-> Neo-Trace has no additional dependencies beyond .NET 6.
-
-> Note: the Neo v3.0 version of Neo-Express and Neo-Trace used .NET 5.
-> .NET 5 is [no longer supported](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) by Microsoft.
-> We strongly recommend using .NET 6 and the latest version of Neo-Express and Neo-Trace.
-
 ## Installation
+
+Developers can choose installing Neo-Express from release packages or using .NET tool.
+
+### Installing release package
+
+Download the latest release package from [neo-express releases](https://github.com/neo-project/neo-express/releases) for your operation system, and unzip it in your local computer.
+
+Configure the path of neoxp.exe to the environment variable in your computer. 
+
+### Installing using .NET Tool
 
 Neo-Express and Neo-Trace are distributed as
 [.NET Tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
 .NET tools are [NuGet](https://nuget.org) packages containing console applications
 that can be installed on a developer's machine via the `dotnet tool` command.
+
+#### Requirements
+
+As of Neo v3.6, Neo-Express and Neo-Trace require 
+[version 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) 
+of [the .NET developer platform](https://dot.net) to be installed. 
+
+> Note: Neo-Express has additional, platform-specific requirements beyond .NET 7.
+> These requirements are detailed below.
+> Neo-Trace has no additional dependencies beyond .NET 7.
+
+> Note: the Neo v3.0 version of Neo-Express and Neo-Trace used .NET 5.
+> .NET 5 is [no longer supported](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) by Microsoft.
+> We strongly recommend using .NET 7 and the latest version of Neo-Express and Neo-Trace.
+
+#### Installation
 
 To install the latest version of Neo-Express as a global tool, run the
 `dotnet tool install` command in a terminal window.
@@ -37,7 +49,7 @@ To install the latest version of Neo-Express as a global tool, run the
 > dotnet tool install Neo.Express -g
 ```
 
-To update Neo-Express to the laest version, run the `dotnet tool update`
+To update Neo-Express to the latest version, run the `dotnet tool update`
 command in a terminal window.
 
 ``` shell
@@ -64,7 +76,7 @@ option to specify the Neo Blockchain Toolkit package feed.
 For example, to update to the latest release branch version of Neo-Express, you would run this command:
 
 ``` shell
-> dotnet tool update Neo.Express -g --add-source https://pkgs.dev.azure.com/ngdenterprise/Build/_packaging/public/nuget/v3/index.json
+> dotnet tool update Neo.Express -g --add-source https://www.myget.org/F/neo/api/v3/index.json
 ```
 
 You can also install master branch releases of these tools by using the `--version`
@@ -93,10 +105,6 @@ Neo-Express provides the following features:
 - Asset management
 - Smart contract management
 - Blockchain checkpoint and rollback
-
-Docs are somewhat limited at this point. Please review the
-[Command Reference](docs/command-reference.md) to get an understanding of
-Neo-Express capabilities.
 
 ### Additional Neo-Express Requirements
 
@@ -138,12 +146,12 @@ Neo Legacy versions of Neo-Express used older versions of .NET Core.
 > version of Neo-Express. Pre-release versions of the Neo Legacy version of
 > Neo-Express ran on versions of .NET Core that no longer supported by Microsoft.
 
-|Neo-Express Version|.NET Core Version|
-|-------------------|-----------------|
-| v1.1 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
-| v1.0 | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
-| v0.9 | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
-| v0.8 | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
+| Neo-Express Version | .NET Core Version                                            |
+| ------------------- | ------------------------------------------------------------ |
+| v1.1                | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
+| v1.0                | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
+| v0.9                | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
+| v0.8                | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
 
 ## Neo-Trace
 
@@ -164,28 +172,16 @@ running with `FullState` enabled. The official JSON-RPC nodes for MainNet and Te
 (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to
 run the StateService plugin with `FullState` enabled.
 
-## A Message from the Engineer
+## Documentation
 
-Thanks for checking out Neo-Express and Neo-Trace! I am eager to hear your opinion of the product.
+Docs are somewhat limited at this point. Please review the
+[Command Reference](docs/command-reference.md) to get an understanding of
+Neo-Express capabilities.
 
-If you like these tools, please let me know on [Twitter](https://twitter.com/devhawk),
-[email](mailto:devhawk@outlook.com) or the [Neo Discord server](https://discord.gg/G5WEPwC).
+## New Features or issues
 
-If there are things about these tools you don't like, please file issues in our
-[GitHub repo](https://github.com/neo-project/neo-express/issues). You can hit me up on
-Twitter, Discord or email as well, but GitHub issues are how we track improvements
-we make. So don't be shy - file an issue if there is anything you'd like to see changed in the product.
+Thanks for checking out Neo-Express and Neo-Trace!  We are eager to hear your opinion to make these tools more accessible, intuitive, easier to use or just flat-out better.
 
-Most software is built by teams of people. However, Neo-Express and Neo-Trace so far have been
-mostly a solo effort. I'm looking forward to having other folks contribute in the future,
-but so far it's just been me. That means that these tools have been designed around
-my experiences and my perspective. I can't help it, my perspective is the only
-one I have! :) So while I find these tools intuitive, I realize that you may not
-feel the same. Please let me know if this is the case! I didn't build these tools
-for me, I built it for the Neo developer community at large. So if there are
-changes we can make to make these tools more accessible, intuitive, easier to
-use or just flat-out better - I want to hear about them.
+GitHub issues are how we track improvements we make. If you found a problem when using these tools, or there is anything you'd like to see changed in the product, check the [issues page](https://github.com/neo-project/neo-express/issues) to see if the bug or change was already reported, if not just file an issue.
 
-Thanks again for checking out these tools. I look forward to hearing from you.
-
-\- Harry Pierson (aka [DevHawk](http://devhawk.net)), Chief Architect NGD Seattle
+When creating a new issue, try to keep the title and description concise, and give some context of the issue, like a snippet of the code where the problem is happening or a example of a feature, and its expected behavior.

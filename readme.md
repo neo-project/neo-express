@@ -29,7 +29,7 @@ that can be installed on a developer's machine via the `dotnet tool` command.
 #### Requirements
 
 As of Neo v3.6, Neo-Express and Neo-Trace require 
-[version 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) 
+[version 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) 
 of [the .NET developer platform](https://dot.net) to be installed. 
 
 > Note: Neo-Express has additional, platform-specific requirements beyond .NET 7.

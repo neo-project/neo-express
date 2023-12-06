@@ -10,12 +10,8 @@ on:
       - '**.cs'
       - '**.csproj'
 
-env:
-  DOTNET_VERSION: '7.0.x'
-
 jobs:
   test:
-    if: endsWith(github.event.pull_request.changes.*.filename, '.csproj') || endsWith(github.event.pull_request.changes.*.filename, '.cs')
     name: Test Application
     uses: ./.github/workflows/test.yml
   publish:

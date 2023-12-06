@@ -31,6 +31,7 @@ namespace NeoTestHarness
         public static VMState ExecuteScript<T>(this ApplicationEngine engine, params Expression<Action<T>>[] expressions)
             where T : class
         {
+            Console.WriteLine("Test");
             engine.LoadScript<T>(expressions);
             return engine.Execute();
         }

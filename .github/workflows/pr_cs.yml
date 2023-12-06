@@ -1,4 +1,4 @@
-name: On Pull Request
+name: On Pull Request (*.cs/ *.csproj Files)
 
 on:
   pull_request:

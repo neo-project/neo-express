@@ -6,9 +6,6 @@ on:
       - master
       - development
       - release/*
-    paths-ignore:
-      - '**.cs'
-      - '**.csproj'
 
 jobs:
   pack:

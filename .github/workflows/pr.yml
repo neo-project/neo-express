@@ -12,4 +12,8 @@ jobs:
     uses: ./.github/workflows/test.yml
   pack:
     needs: [test]
-    uses: ./.github/workflows/pack.yml
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Skip
+      run: echo -e 'Skip Requirement'

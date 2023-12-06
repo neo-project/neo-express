@@ -9,11 +9,7 @@ on:
 
 jobs:
   test:
+    if: endsWith(github.event.pull_request.changes.*.filename, '.csproj') || endsWith(github.event.pull_request.changes.*.filename, '.cs')
     uses: ./.github/workflows/test.yml
   pack:
-    needs: [test]
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Skip
-      run: echo -e 'Skip Requirement'
+    uses: ./.github/workflows/pack.yml

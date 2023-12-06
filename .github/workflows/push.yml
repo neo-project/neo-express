@@ -17,6 +17,6 @@ jobs:
   test:
     name: Test Application
     uses: ./.github/workflows/test.yml
-  pack:
+  publish:
     needs: [test]
-    uses: ./.github/workflows/pack.yml
+    uses: ./.github/workflows/publish.yml

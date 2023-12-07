@@ -8,8 +8,5 @@ on:
       - release/*
 
 jobs:
-  test:
-    uses: ./.github/workflows/test.yml
   pack:
-    needs: [test]
     uses: ./.github/workflows/pack.yml

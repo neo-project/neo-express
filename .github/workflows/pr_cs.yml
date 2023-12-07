@@ -1,7 +1,7 @@
-name: On Push
+name: On Pull Request (*.cs/ *.csproj Files)
 
 on:
-  push:
+  pull_request:
     branches:
       - master
       - development
@@ -12,8 +12,4 @@ on:
 
 jobs:
   test:
-    name: Test Application
     uses: ./.github/workflows/test.yml
-  publish:
-    needs: [test]
-    uses: ./.github/workflows/publish.yml

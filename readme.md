@@ -4,10 +4,8 @@
 [![Nuget](https://img.shields.io/nuget/v/Neo.Express)](https://www.nuget.org/packages/Neo.Express/)
 [![Build Status](https://dev.azure.com/ngdenterprise/Build/_apis/build/status/neo-project.neo-express?branchName=master)](https://dev.azure.com/ngdenterprise/Build/_build/latest?definitionId=2&branchName=master)
 
-> Note, This repo uses a branch structure similar to other repos in the Neo project.
+> Note: This repo uses a branch structure similar to other repos in the Neo project.
 > The `master` branch contains Neo N3 version of Neo-Express and Neo-Trace.
-> The `master-2.x` branch contains Neo Legacy version of Neo-Express.
-> There is no Neo Legacy version of Neo-Trace.
 
 ## Installation
 
@@ -110,7 +108,7 @@ Neo-Express provides the following features:
 
 #### Ubuntu Installation
 
-> Note, while Microsoft has instructions for 
+> Note：While Microsoft has instructions for 
 > [installing .NET via Snap](https://docs.microsoft.com/en-us/dotnet/core/install/linux-snap),
 > there is a [known issue](https://github.com/dotnet/runtime/issues/3775#issuecomment-534263315)
 > with this approach that leads to a segmentation fault in Neo Express.
@@ -133,25 +131,9 @@ Installing on MacOS requires installing rocksdb via [Homebrew](https://brew.sh/)
 > brew install rocksdb
 ```
 
-> Note, .NET 6 Arm64 has [full support for Apple Silicon](https://devblogs.microsoft.com/dotnet/announcing-net-6/#arm64).
+> Note: .NET 6 Arm64 has [full support for Apple Silicon](https://devblogs.microsoft.com/dotnet/announcing-net-6/#arm64).
 > Homebrew likewise also supports Apple Silicon. If you have any issues running Neo-Express on Apple Silicon hardware,
 > please [open an issue](https://github.com/neo-project/neo-express/issues) in the Neo-Express repo.
-
-#### Neo Legacy Version Support
-
-Neo Legacy versions of Neo-Express used older versions of .NET Core.
-
-> Note, if you need a Neo Legacy version of Neo-Express because you are still
-> developing for the Legacy Neo Blockchain, we highly advise using the v1.1
-> version of Neo-Express. Pre-release versions of the Neo Legacy version of
-> Neo-Express ran on versions of .NET Core that no longer supported by Microsoft.
-
-| Neo-Express Version | .NET Core Version                                            |
-| ------------------- | ------------------------------------------------------------ |
-| v1.1                | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
-| v1.0                | [v3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) |
-| v0.9                | [v3.0](https://dotnet.microsoft.com/download/dotnet-core/3.0) |
-| v0.8                | [v2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2) |
 
 ## Neo-Trace
 

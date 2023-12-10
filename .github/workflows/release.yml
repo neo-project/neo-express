@@ -41,43 +41,57 @@ jobs:
     #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
     #     path: ./out
 
-    - name: Get Cache Files (MacOS)
+    - name: Get Cache Files (osx-x64)
       uses: actions/cache@v3
       with:
-        path: |
-          /tmp/dist/*
-        key: cache-build-mac
-        enableCrossOsArchive: true
-        fail-on-cache-miss: true
+        path: /tmp/dist/*
+        key: osx-x64
 
-    - name: Get Cache Files (Linux)
+    - name: Get Cache Files (osx-arm64)
       uses: actions/cache@v3
       with:
-        path: |
-          /tmp/dist/*
-        key: cache-build-linux
-        enableCrossOsArchive: true
-        fail-on-cache-miss: true
+        path: /tmp/dist/*
+        key: osx-arm64
 
-    - name: Get Cache Files (Windows)
+    - name: Get Cache Files (linux-x64)
       uses: actions/cache@v3
       with:
-        path: |
-          c:/tmp/dist/*
-        key: cache-build-windows
-        enableCrossOsArchive: true
-        fail-on-cache-miss: true
+        path: /tmp/dist/*
+        key: linux-x64
+
+    - name: Get Cache Files (linux-arm64)
+      uses: actions/cache@v3
+      with:
+        path: /tmp/dist/*
+        key: linux-arm64
+
+    - name: Get Cache Files (linux-musl-arm64)
+      uses: actions/cache@v3
+      with:
+        path: /tmp/dist/*
+        key: linux-musl-arm64
+
+    - name: Get Cache Files (win-x64)
+      uses: actions/cache@v3
+      with:
+        path: /tmp/dist/*
+        key: win-x64
+
+    - name: Get Cache Files (win-arm64)
+      uses: actions/cache@v3
+      with:
+        path: /tmp/dist/*
+        key: win-arm64
 
     - name: Create Release
       uses: marvinpinto/action-automatic-releases@latest
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: ${{ steps.nbgv.outputs.PrereleaseVersion != '' }}
-        title: Release ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+        title: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         automatic_release_tag: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         files: |
           /tmp/dist/*
-          c:/tmp/dist/*
 
     - name: Push Neo.Express Nuget.org
       run: dotnet nuget push ${{ format('./dist/Neo.Express.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json

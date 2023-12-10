@@ -78,18 +78,9 @@ jobs:
         ZIP_FILE: ${{ format('{0}/Neo.Express-{1}-{2}.zip', env.DIST_PATH, matrix.runtime, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: zip ${{ env.ZIP_FILE }} -r *
 
-    # - name: Cache Files
-    #   id: cache
-    #   uses: actions/cache/save@v3
-    #   with:
-    #     path: ${{ env.DIST_PATH }}/*
-    #     key: ${{ matrix.runtime }}
-
-    - name: Create Release
-      uses: marvinpinto/action-automatic-releases@latest
+    - name: Cache Files
+      id: cache
+      uses: actions/cache/save@v3
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        prerelease: ${{ steps.nbgv.outputs.PrereleaseVersion != '' }}
-        automatic_release_tag: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-        files: |
-          ${{ env.DIST_PATH }}/*
+        path: ${{ env.DIST_PATH }}/*
+        key: ${{ matrix.runtime }}

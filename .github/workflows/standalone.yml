@@ -90,5 +90,6 @@ jobs:
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: ${{ steps.nbgv.outputs.PrereleaseVersion != '' }}
+        automatic_release_tag: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
         files: |
           ${{ env.DIST_PATH }}/*

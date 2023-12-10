@@ -48,7 +48,8 @@ jobs:
         -p:PublishReadyToRunComposite=true \
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true
+        -p:ServerGarbageCollection=true \
+        -p:PublicRelease=true
 
     - name: Build (osx-arm64)
       run: |
@@ -68,7 +69,8 @@ jobs:
         -p:PublishReadyToRunComposite=true \
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true
+        -p:ServerGarbageCollection=true \
+        -p:PublicRelease=true
 
     - name: Create Distribution Directory
       run: |
@@ -152,7 +154,8 @@ jobs:
         -p:PublishReadyToRun=true \
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true
+        -p:ServerGarbageCollection=true \
+        -p:PublicRelease=true
 
     - name: Build (linux-arm64)
       run: |
@@ -171,7 +174,8 @@ jobs:
         -p:PublishReadyToRun=true \
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true
+        -p:ServerGarbageCollection=true \
+        -p:PublicRelease=true
 
     - name: Build (linux-musl-arm64)
       run: |
@@ -190,7 +194,8 @@ jobs:
         -p:PublishReadyToRun=true \
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true
+        -p:ServerGarbageCollection=true \
+        -p:PublicRelease=true
 
     - name: Create Distribution Directory
       run: |
@@ -334,7 +339,8 @@ jobs:
         -p:PublishReadyToRun=true `
         -p:EnableCompressionInSingleFile=true `
         -p:DebugType=embedded `
-        -p:ServerGarbageCollection=true
+        -p:ServerGarbageCollection=true `
+        -p:PublicRelease=true
 
     - name: Build (win-arm64)
       run: |
@@ -353,7 +359,8 @@ jobs:
         -p:PublishReadyToRun=true `
         -p:EnableCompressionInSingleFile=true `
         -p:DebugType=embedded `
-        -p:ServerGarbageCollection=true
+        -p:ServerGarbageCollection=true `
+        -p:PublicRelease=true
 
     - name: Build (portable)
       run: |
@@ -361,7 +368,8 @@ jobs:
         --framework net7.0 `
         --configuration Release `
         --output ${{ env.WIN_OUTPUT_DIR }}/portable `
-        --verbosity normal
+        --verbosity normal `
+        -p:PublicRelease=true
 
     - name: Create Distribution Directory
       run: |

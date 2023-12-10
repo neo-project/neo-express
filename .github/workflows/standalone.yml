@@ -5,131 +5,26 @@ on:
 
 env:
   DOTNET_VERSION: 7.0.x
-  UNIX_DIST_DIR: /tmp/dist
-  UNIX_OUTPUT_DIR: /tmp/out
-  WIN_DIST_DIR: c:/tmp/dist
-  WIN_OUTPUT_DIR: c:/tmp/out
+  CONFIGURATION: Release
+  DIST_PATH: /tmp/dist
+  OUTPUT_PATH: /tmp/out
 
 jobs:
-  osx-pack:
-    name: MacOS x64/arm64
-    runs-on: macos-latest
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.4.1
-      id: nbgv
-
-    - name: Build (osx-x64)
-      run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime osx-x64 \
-        --self-contained true \
-        --output ${{ env.UNIX_OUTPUT_DIR }}/osx-x64 \
-        --verbosity normal \
-        -p:RuntimeIdentifier=osx-x64 \
-        -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=false \
-        -p:PublishTrimmed=false \
-        -p:PublishSingleFile=true \
-        -p:PublishReadyToRun=true \
-        -p:PublishReadyToRunComposite=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true \
-        -p:PublicRelease=true
-
-    - name: Build (osx-arm64)
-      run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime osx-arm64 \
-        --self-contained true \
-        --output ${{ env.UNIX_OUTPUT_DIR }}/osx-arm64 \
-        --verbosity normal \
-        -p:RuntimeIdentifier=osx-arm64 \
-        -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=false \
-        -p:PublishTrimmed=false \
-        -p:PublishSingleFile=true \
-        -p:PublishReadyToRun=true \
-        -p:PublishReadyToRunComposite=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true \
-        -p:PublicRelease=true
-
-    - name: Create Distribution Directory
-      run: |
-        mkdir -p ${{ env.UNIX_DIST_DIR }}
-
-    - name: Tarball (osx-x64)
-      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/osx-x64
-      env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-osx-x64.{1}.tar.xz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        tar cJf ${{ env.TAR_FILE }} .
-
-    - name: Tarball (osx-arm64)
-      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/osx-arm64
-      env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-osx-arm64.{1}.tar.xz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        tar cJf ${{ env.TAR_FILE }} .
-
-    - name: Generate SHA256 File (osx-x64)
-      working-directory: ${{ env.UNIX_DIST_DIR }}
-      env:
-        TAR_FILE: ${{ format('Neo.Express-osx-x64.{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        shasum --algorithm 256 ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
-
-    - name: Generate SHA256 File (osx-arm64)
-      working-directory: ${{ env.UNIX_DIST_DIR }}
-      env:
-        TAR_FILE: ${{ format('Neo.Express-osx-arm64.{0}.tar.xz', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        shasum --algorithm 256 ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
-
-    # - name: Upload Tarballs (Standalone)
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-    #     path: |
-    #       ${{ env.UNIX_DIST_DIR }}/*
-
-    - name: Cache Files
-      id: cache
-      uses: actions/cache/save@v3
-      with:
-        path: ${{ env.UNIX_DIST_DIR }}/*
-        key: cache-build-mac
-        enableCrossOsArchive: true
-
-  linux-pack:
-    name: Linux x64/arm64
+  standalone:
+    name: Build ${{ matrix.runtime }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [linux-x64, linux-arm64, linux-musl-arm64, osx-x64, osx-arm64, win-x64, win-arm64]
+
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -137,61 +32,22 @@ jobs:
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
 
-    - name: Build (linux-x64)
+    - name: Build (${{ matrix.runtime }})
       run: |
         dotnet publish ./src/neoxp \
         --framework net7.0 \
-        --configuration Release \
-        --runtime linux-x64 \
+        --configuration ${{ env.CONFIGURATION }} \
+        --runtime ${{ matrix.runtime }} \
         --self-contained true \
-        --output ${{ env.UNIX_OUTPUT_DIR }}/linux-x64 \
+        --output ${{ env.OUTPUT_PATH }}/${{ matrix.runtime }} \
         --verbosity normal \
-        -p:RuntimeIdentifier=linux-x64 \
+        -p:RuntimeIdentifier=${{ matrix.runtime }} \
         -p:SelfContained=true \
         -p:IncludeNativeLibrariesForSelfExtract=false \
         -p:PublishTrimmed=false \
         -p:PublishSingleFile=true \
         -p:PublishReadyToRun=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true \
-        -p:PublicRelease=true
-
-    - name: Build (linux-arm64)
-      run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime linux-arm64 \
-        --self-contained true \
-        --output ${{ env.UNIX_OUTPUT_DIR }}/linux-arm64 \
-        --verbosity normal \
-        -p:RuntimeIdentifier=linux-arm64 \
-        -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=false \
-        -p:PublishTrimmed=false \
-        -p:PublishSingleFile=true \
-        -p:PublishReadyToRun=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:DebugType=embedded \
-        -p:ServerGarbageCollection=true \
-        -p:PublicRelease=true
-
-    - name: Build (linux-musl-arm64)
-      run: |
-        dotnet publish ./src/neoxp \
-        --framework net7.0 \
-        --configuration Release \
-        --runtime linux-musl-arm64 \
-        --self-contained true \
-        --output ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64 \
-        --verbosity normal \
-        -p:RuntimeIdentifier=linux-musl-arm64 \
-        -p:SelfContained=true \
-        -p:IncludeNativeLibrariesForSelfExtract=false \
-        -p:PublishTrimmed=false \
-        -p:PublishSingleFile=true \
-        -p:PublishReadyToRun=true \
+        -p:PublishReadyToRunComposite=true \
         -p:EnableCompressionInSingleFile=true \
         -p:DebugType=embedded \
         -p:ServerGarbageCollection=true \
@@ -199,238 +55,40 @@ jobs:
 
     - name: Create Distribution Directory
       run: |
-        mkdir -p ${{ env.UNIX_DIST_DIR }}
+        mkdir -p ${{ env.DIST_PATH }}
 
-    - name: Tarball (linux-x64)
-      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-x64
+    - name: Tarball (osx)
+      if: ${{ startsWith(matrix.runtime, 'osx') }}
+      working-directory: ${{ env.OUTPUT_PATH }}/${{ matrix.runtime }}
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-linux-x64.{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        tar -czvf ${{ env.TAR_FILE }} .
+        TAR_FILE: ${{ format('{0}/Neo.Express-{1}-{2}.tar.xz', env.DIST_PATH, matrix.runtime, steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: tar -cJf ${{ env.TAR_FILE }} .
 
-    - name: Tarball (linux-arm64)
-      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-arm64
+    - name: Tarball (linux)
+      if: ${{ startsWith(matrix.runtime, 'linux') }}
+      working-directory: ${{ env.OUTPUT_PATH }}/${{ matrix.runtime }}
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-linux-arm64.{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        tar -czvf ${{ env.TAR_FILE }} .
+        TAR_FILE: ${{ format('{0}/Neo.Express-{1}-{2}.tar.gz', env.DIST_PATH, matrix.runtime, steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: tar -czvf ${{ env.TAR_FILE }} .
 
-    - name: Tarball (linux-musl-arm64)
-      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-musl-arm64
+    - name: Zipball (win)
+      if: ${{ startsWith(matrix.runtime, 'win') }}
+      working-directory: ${{ env.OUTPUT_PATH }}/${{ matrix.runtime }}
       env:
-        TAR_FILE: ${{ format('{0}/Neo.Express-linux-musl-arm64.{1}.tar.gz', env.UNIX_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        tar -czvf ${{ env.TAR_FILE }} .
+        ZIP_FILE: ${{ format('{0}/Neo.Express-{1}-{2}.zip', env.DIST_PATH, matrix.runtime, steps.nbgv.outputs.NuGetPackageVersion) }}
+      run: zip ${{ env.ZIP_FILE }} -r *
 
-    - name: Debian Package (amd64)
-      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-x64
-      env:
-        DEB_DIR: ${{ format('neoxp_{0}_amd64', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        mkdir -p ${{ env.DEB_DIR }}/DEBIAN
-        mkdir -p ${{ env.DEB_DIR }}/usr/bin
-        chmod 755 neoxp
-        mv neoxp ${{ env.DEB_DIR }}/usr/bin
-        cd ${{ env.DEB_DIR }}/DEBIAN
-        echo -e 'Package: neoxp' >> control
-        echo -e 'Version: ${{ steps.nbgv.outputs.NuGetPackageVersion }}' >> control
-        echo -e 'Architecture: amd64' >> control
-        echo -e 'Essential: no' >> control
-        echo -e 'Priority: optional' >> control
-        echo -e 'Depends: librocksdb-dev' >> control
-        echo -e 'Maintainer: neo-project' >> control
-        echo -e 'Description: Neo-Express is a privatenet optimized for development scenarios. It is built on the same neo platform core as neo-cli and neo-gui to maximize compatibility between local development and public chain environments.' >> control
-        echo -e '' >> control
-        cd ../../
-        dpkg-deb --build ${{ env.DEB_DIR }}
-        mv ${{ env.DEB_DIR }}.deb ${{ env.UNIX_DIST_DIR }}
-
-    - name: Debian Package (arm64)
-      working-directory: ${{ env.UNIX_OUTPUT_DIR }}/linux-arm64
-      env:
-        DEB_DIR: ${{ format('neoxp_{0}_arm64', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        mkdir -p ${{ env.DEB_DIR }}/DEBIAN
-        mkdir -p ${{ env.DEB_DIR }}/usr/bin
-        chmod 755 neoxp
-        mv neoxp ${{ env.DEB_DIR }}/usr/bin
-        cd ${{ env.DEB_DIR }}/DEBIAN
-        echo -e 'Package: neoxp' >> control
-        echo -e 'Version: ${{ steps.nbgv.outputs.NuGetPackageVersion }}' >> control
-        echo -e 'Architecture: arm64' >> control
-        echo -e 'Essential: no' >> control
-        echo -e 'Priority: optional' >> control
-        echo -e 'Depends: librocksdb-dev' >> control
-        echo -e 'Maintainer: neo-project' >> control
-        echo -e 'Description: Neo-Express is a privatenet optimized for development scenarios. It is built on the same neo platform core as neo-cli and neo-gui to maximize compatibility between local development and public chain environments.' >> control
-        echo -e '' >> control
-        cd ../../
-        dpkg-deb --build ${{ env.DEB_DIR }}
-        mv ${{ env.DEB_DIR }}.deb ${{ env.UNIX_DIST_DIR }}
-
-    - name: Generate SHA256 File (linux-x64)
-      working-directory: ${{ env.UNIX_DIST_DIR }}
-      env:
-        TAR_FILE: ${{ format('Neo.Express-linux-x64.{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
-
-    - name: Generate SHA256 File (linux-arm64)
-      working-directory: ${{ env.UNIX_DIST_DIR }}
-      env:
-        TAR_FILE: ${{ format('Neo.Express-linux-arm64.{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
-
-    - name: Generate SHA256 File (linux-musl-arm64)
-      working-directory: ${{ env.UNIX_DIST_DIR }}
-      env:
-        TAR_FILE: ${{ format('Neo.Express-linux-musl-arm64.{0}.tar.gz', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        sha256sum ${{ env.TAR_FILE }} > ${{ env.TAR_FILE }}.sha256
-
-    # - name: Upload Tarballs (Standalone)
-    #   uses: actions/upload-artifact@v3
+    # - name: Cache Files
+    #   id: cache
+    #   uses: actions/cache/save@v3
     #   with:
-    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-    #     path: |
-    #       ${{ env.UNIX_DIST_DIR }}/*
+    #     path: ${{ env.DIST_PATH }}/*
+    #     key: ${{ matrix.runtime }}
 
-    - name: Cache Files
-      id: cache
-      uses: actions/cache/save@v3
+    - name: Create Release
+      uses: marvinpinto/action-automatic-releases@latest
       with:
-        path: ${{ env.UNIX_DIST_DIR }}/*
-        key: cache-build-linux
-        enableCrossOsArchive: true
-
-  win-pack:
-    name: Windows x64/arm64
-    runs-on: windows-latest
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.4.1
-      id: nbgv
-
-    - name: Build (win-x64)
-      run: |
-        dotnet publish ./src/neoxp `
-        --framework net7.0 `
-        --configuration Release `
-        --runtime win-x64 `
-        --self-contained true `
-        --output ${{ env.WIN_OUTPUT_DIR }}/win-x64 `
-        --verbosity normal `
-        -p:RuntimeIdentifier=win-x64 `
-        -p:SelfContained=true `
-        -p:IncludeNativeLibrariesForSelfExtract=false `
-        -p:PublishTrimmed=false `
-        -p:PublishSingleFile=true `
-        -p:PublishReadyToRun=true `
-        -p:EnableCompressionInSingleFile=true `
-        -p:DebugType=embedded `
-        -p:ServerGarbageCollection=true `
-        -p:PublicRelease=true
-
-    - name: Build (win-arm64)
-      run: |
-        dotnet publish ./src/neoxp `
-        --framework net7.0 `
-        --configuration Release `
-        --runtime win-arm64 `
-        --self-contained true `
-        --output ${{ env.WIN_OUTPUT_DIR }}/win-arm64 `
-        --verbosity normal `
-        -p:RuntimeIdentifier=win-arm64 `
-        -p:SelfContained=true `
-        -p:IncludeNativeLibrariesForSelfExtract=false `
-        -p:PublishTrimmed=false `
-        -p:PublishSingleFile=true `
-        -p:PublishReadyToRun=true `
-        -p:EnableCompressionInSingleFile=true `
-        -p:DebugType=embedded `
-        -p:ServerGarbageCollection=true `
-        -p:PublicRelease=true
-
-    - name: Build (portable)
-      run: |
-        dotnet publish ./src/neoxp `
-        --framework net7.0 `
-        --configuration Release `
-        --output ${{ env.WIN_OUTPUT_DIR }}/portable `
-        --verbosity normal `
-        -p:PublicRelease=true
-
-    - name: Create Distribution Directory
-      run: |
-        mkdir -p ${{ env.WIN_DIST_DIR }}
-
-    - name: Zip (win-x64)
-      working-directory: ${{ env.WIN_OUTPUT_DIR }}/win-x64
-      env:
-        ZIP_FILE: ${{ format('{0}/Neo.Express-win-x64.{1}.zip', env.WIN_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
-
-    - name: Zip (win-arm64)
-      working-directory: ${{ env.WIN_OUTPUT_DIR }}/win-arm64
-      env:
-        ZIP_FILE: ${{ format('{0}/Neo.Express-win-arm64.{1}.zip', env.WIN_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
-
-    - name: Zip (portable)
-      working-directory: ${{ env.WIN_OUTPUT_DIR }}/portable
-      env:
-        ZIP_FILE: ${{ format('{0}/Neo.Express-portable.{1}.zip', env.WIN_DIST_DIR, steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        Compress-Archive -Path * -Destination ${{ env.ZIP_FILE }}
-
-    - name: Generate SHA256 File (win-x64)
-      working-directory: ${{ env.WIN_DIST_DIR }}
-      env:
-        ZIP_FILE: ${{ format('Neo.Express-win-x64.{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
-        $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
-
-    - name: Generate SHA256 File (win-arm64)
-      working-directory: ${{ env.WIN_DIST_DIR }}
-      env:
-        ZIP_FILE: ${{ format('Neo.Express-win-arm64.{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
-        $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
-
-    - name: Generate SHA256 File (portable)
-      working-directory: ${{ env.WIN_DIST_DIR }}
-      env:
-        ZIP_FILE: ${{ format('Neo.Express-portable.{0}.zip', steps.nbgv.outputs.NuGetPackageVersion) }}
-      run: |
-        $zipHash = Get-FileHash -Path ${{ env.ZIP_FILE }} -Algorithm SHA256
-        $zipHash.Hash | Out-File -Encoding UTF8 ${{ env.ZIP_FILE }}.sha256
-
-    # - name: Upload Zips (Standalone)
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-    #     path: |
-    #       ${{ env.WIN_DIST_DIR }}/*
-
-    - name: Cache Files
-      id: cache
-      uses: actions/cache/save@v3
-      with:
-        path: ${{ env.WIN_DIST_DIR }}/*
-        key: cache-build-windows
-        enableCrossOsArchive: true
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: ${{ steps.nbgv.outputs.PrereleaseVersion != '' }}
+        files: |
+          ${{ env.DIST_PATH }}/*

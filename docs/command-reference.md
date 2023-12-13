@@ -2,10 +2,8 @@
 # Neo-Express N3 Command Reference
 
 > Note: This is the command reference for Neo-Express 3.6, targeting N3.
-> The [Command Reference](legacy-command-reference.md) for the Neo Legacy 
-> compatible version of Neo-Express is also available.
-
-> Note: You can pass -?|-h|--help to show a list of supported commands or to show
+>
+> You can pass -?|-h|--help to show a list of supported commands or to show
 > help information about a specific command.
 
 ## Specifying Signing and Non-Signing Accounts
@@ -362,9 +360,7 @@ Arguments:
 <Account>: Account to pay contract invocation GAS fee
 ```
 
-The `contract invoke` command generates a script from an
-[invocation file](https://github.com/ngdenterprise/design-notes/blob/master/NDX-DN12%20-%20Neo%20Express%20Invoke%20Files.md)
-and submits it to the Neo-Express blockchain network as a transaction.
+The `contract invoke` command generates a script from an [invocation file](Neo Express Invocation File.md) and submits it to the Neo-Express blockchain network as a transaction.
 
 A script can be invoked either for results (specified via the `--results` option) or to make changes
 (specified via the signed account argument). If a script is submitted for results, it may read information
@@ -406,8 +402,7 @@ but saves the developer from needing to create an invocation file for simple con
 
 Instead of a path to an invocation file, The `contract run` command takes arguments specifying the contract
 (either by name or hash) and the method to invoke, plus zero or more contract arguments. These contract
-arguments are string encoded values, following similar rules to 
-[string arguments in an invocation file](https://github.com/ngdenterprise/design-notes/blob/master/NDX-DN12%20-%20Neo%20Express%20Invoke%20Files.md#args-property).
+arguments are string encoded values, following similar rules to [string arguments in an invocation file](Neo Express Invocation File.md#args-property).
 
 ### neoxp contract get
 
@@ -614,7 +609,7 @@ Options:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
-The `show nft` displays the content of an NFT contract for a specified account.
+The `show nft` displays the content of an NFT contract for a specified account. The output consists of TokenId in Base64 and big-endian Hex string formats.
 
 ### neoxp show notifications
 
@@ -661,7 +656,7 @@ Options:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
-This command lists candidates
+This command lists candidates, including the candidate public key and the number of votes received.
 
 ### neoxp candidate register
 
@@ -849,6 +844,7 @@ The commands supported in a batch file include:
 * `policy sync`
 * `policy unblock`
 * `transfer`
+* `transfernft`
 
 ## neoxp execute
 
@@ -856,11 +852,11 @@ The commands supported in a batch file include:
 Usage: neoxp execute [options] <InputText>
 
 Arguments:
-  InputText                           A neo-vm script (Format: HEX,                                      BASE64, Filename)
+  InputText            A neo-vm script (Format: HEX,BASE64,Filename)
 
 Options:
-  -a|--account <ACCOUNT>              Account to pay invocation GAS                                      fee
-  -w|--witness-scope <WITNESS_SCOPE>  Witness Scope for transaction                                      signer(s) (Allowed: None,
+  -a|--account <ACCOUNT>              Account to pay invocation GAS fee
+  -w|--witness-scope <WITNESS_SCOPE>  Witness Scope for transaction                                                             signer(s) (Allowed: None,
                                       CalledByEntry, Global)
                                       Allowed values are: None,
                                       CalledByEntry, Global.

@@ -158,9 +158,8 @@ Arguments:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
-The `export` command saves the wallet and settings of each consensus node in a standard format. This
-allows for standard Neo node implementations such as Neo-CLI to connect to a running Neo-Express
-blockchain network.
+The `export` command saves the wallet and settings of each consensus node in a standard format. The exported files can be found under the root directory of neoxp.exe. This allows for standard Neo node implementations such as Neo-CLI to connect to a running Neo-Express blockchain network.
+
 
 > Note, the standard [NEP-6 wallet format](https://github.com/neo-project/proposals/blob/master/nep-6.mediawiki)
 > encrypts wallet information, so the user has to provide a password. However, since this same information

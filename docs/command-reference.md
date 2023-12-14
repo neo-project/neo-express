@@ -1,11 +1,9 @@
 <!-- markdownlint-enable -->
 # Neo-Express N3 Command Reference
 
-> Note, this is the command reference for Neo-Express 3.0, targeting N3.
-> The [Command Reference](legacy-command-reference.md) for the Neo Legacy 
-> compatible version of Neo-Express is also available.
-
-> Note, you can pass -?|-h|--help to show a list of supported commands or to show
+> Note: This is the command reference for Neo-Express 3.6, targeting N3.
+>
+> You can pass -?|-h|--help to show a list of supported commands or to show
 > help information about a specific command.
 
 ## Specifying Signing and Non-Signing Accounts
@@ -160,9 +158,8 @@ Arguments:
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
-The `export` command saves the wallet and settings of each consensus node in a standard format. This
-allows for standard Neo node implementations such as Neo-CLI to connect to a running Neo-Express
-blockchain network.
+The `export` command saves the wallet and settings of each consensus node in a standard format. The exported files can be found under the root directory of neoxp.exe. This allows for standard Neo node implementations such as Neo-CLI to connect to a running Neo-Express blockchain network.
+
 
 > Note, the standard [NEP-6 wallet format](https://github.com/neo-project/proposals/blob/master/nep-6.mediawiki)
 > encrypts wallet information, so the user has to provide a password. However, since this same information
@@ -224,6 +221,8 @@ Arguments:
 The `wallet delete` command removes a wallet and its accounts from the blockchain network file. This
 command does not modify the blockchain data, so any assets associated with that wallet are not changed.
 
+To delete a private net wallet, the `--force` option must be specified.
+
 ### neoxp wallet export
 
 ```
@@ -237,7 +236,7 @@ Arguments:
 <Name>: Wallet name
 ```
 
-Similar the top-level `export` command described above, `wallet export` saves an existing Neo-Express
+Similar to the top-level `export` command described above, `wallet export` saves an existing Neo-Express
 wallet in the [NEP-6 wallet format](https://github.com/neo-project/proposals/blob/master/nep-6.mediawiki)
 that can be read by standard Neo tools.
 
@@ -264,14 +263,46 @@ Arguments:
 ```
 
 The `transfer` command is used to transfer assets between accounts in a Neo-Express
-blockchain network. The transfer command has four required arguments
+blockchain network. The transfer command has four required arguments:
 
 - the quantity to transfer as an integer or `all` to transfer all assets of the specified type 
+
+  > Note, You cannot transfer all GAS tokens in an account as you have to reserve some GAS tokens to cover the transaction fee.
+
 - The asset to transfer. This can be specified as contract hash or
   [NEP-17](https://github.com/neo-project/proposals/blob/master/nep-17.mediawiki)
   token symbol such as `neo` or `gas`
+  
 - Signing account that is sending the asset
+
 - Non-signing account that is receiving the asset
+
+## neoxp transfernft
+
+```
+Usage: neoxp transfernft [options] <Contract> <TokenId> <Sender> <Receiver>
+
+Arguments:
+  Contract                  NFT Contract (Symbol or Script Hash)
+  TokenId                   TokenId of NFT (Format: HEX, BASE64)
+  Sender                    Account to send NFT from (Format: Wallet name, WIF)
+  Receiver                  Account to send NFT to (Format: Script Hash, Address, Wallet name)
+
+Options:
+  -d|--data <DATA>          Optional data parameter to pass to transfer operation
+  -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
+  -i|--input <INPUT>        Path to neo-express data file
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+```
+
+The `transfernft` command is used to transfer NFT assets between accounts in a Neo-Express
+blockchain network. The transfer command has the following required arguments:
+
+- The contract hash or NEP-11 token symbol of the NFT asset to transfer. 
+- The TokenID in the HEX or BASE64 format of the NFT asset to transfer.
+- Signing account that is sending the NFT asset.
+- Non-signing account that is receiving the NFT asset.
 
 ## neoxp contract
 
@@ -328,9 +359,7 @@ Arguments:
 <Account>: Account to pay contract invocation GAS fee
 ```
 
-The `contract invoke` command generates a script from an
-[invocation file](https://github.com/ngdenterprise/design-notes/blob/master/NDX-DN12%20-%20Neo%20Express%20Invoke%20Files.md)
-and submits it to the Neo-Express blockchain network as a transaction.
+The `contract invoke` command generates a script from an [invocation file](Neo Express Invocation File.md) and submits it to the Neo-Express blockchain network as a transaction.
 
 A script can be invoked either for results (specified via the `--results` option) or to make changes
 (specified via the signed account argument). If a script is submitted for results, it may read information
@@ -372,8 +401,7 @@ but saves the developer from needing to create an invocation file for simple con
 
 Instead of a path to an invocation file, The `contract run` command takes arguments specifying the contract
 (either by name or hash) and the method to invoke, plus zero or more contract arguments. These contract
-arguments are string encoded values, following similar rules to 
-[string arguments in an invocation file](https://github.com/ngdenterprise/design-notes/blob/master/NDX-DN12%20-%20Neo%20Express%20Invoke%20Files.md#args-property).
+arguments are string encoded values, following similar rules to [string arguments in an invocation file](Neo Express Invocation File.md#args-property).
 
 ### neoxp contract get
 
@@ -384,7 +412,7 @@ Arguments:
 [Options]:
   -i|--input <INPUT>  Path to neo-express data file
 <Contract>: Contract name or invocation hash
-```  
+```
 
 The `contract get` command retrieves the manifest of a deployed contract.
 
@@ -458,11 +486,11 @@ Arguments:
 ```
 
 > Note, The smart contract will need to have a method with this signature: e.g.
-> 
+>
 > C#: `public static bool Update(ByteString nefFile, string manifest)`
-> 
+>
 > Python: `def update(nef: bytes, manifest: str):`
-> 
+>
 
 ### neoxp contract download
 
@@ -486,17 +514,217 @@ Arguments:
   -?|--help             Show help information.
 ```
 
+### neoxp contract validate
+
+The `neoxp contract validate` checks a given contract for compliance with proposal specification. It has two subcommands.
+
+#### nepxp contract validate nep11
+
+```
+Usage: neoxp contract validate nep11 [options] <ContractHash>
+
+Arguments:
+  ContractHash        Path to contract .nef file
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+This command checks if the specified contract is NEP-11 compliant.
+
+#### nepxp contract validate nep17
+
+```
+Usage: neoxp contract validate nep17 [options] <ContractHash>
+
+Arguments:
+  ContractHash        Path to contract .nef file
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+This command checks if the specified contract is NEP-17 compliant.
 
 ## neoxp show
 
-The `show` command will display information from the blockchain. There are multiple subcommands 
-representing the different  information that is available:
+The `show` command displays information from the blockchain. There are multiple subcommands 
+representing the different  information that is available.
 
-- `show balance` will display the balance of a single NEP-17 asset (including NEO and GAS) of a specific account
-- `show balances` will display the balance of all NEP-17 asset (including NEO and GAS) owned by a specific account
-- `show block` with display the contents of a single block, specified by index or hash
-- `show transaction` with display the contents of a transaction specified by hash and its execution results if available
-  - `show tx` is an alias for `show transaction`
+### neoxp show balance
+
+```
+Usage: neoxp show balance [options] <Asset> <Account>
+
+Arguments:
+  Asset               Asset to show balance of (symbol or script hash)
+  Account             Account to show asset balance for
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `show balance` displays the balance of a single NEP-17 asset (including NEO and GAS) of a specific account.
+
+### neoxp show balances
+
+```
+Usage: neoxp show balances [options] <Account>
+
+Arguments:
+  Account             Account to show asset balances for
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `show balances` displays the balance of all NEP-17 asset (including NEO and GAS) owned by a specific account.
+
+### neoxp show block
+
+```
+Usage: neoxp show block [options] <BlockHash>
+
+Arguments:
+  BlockHash           Optional block hash or index. Show most recent block if
+                      unspecified
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `show block` displays the contents of a single block, specified by index or hash.
+
+### neoxp show nft
+
+```
+Usage: neoxp show nft [options] <Contract> <Account>
+
+Arguments:
+  Contract            NFT Contract (Symbol or Script Hash)
+  Account             Account to show NFT (Format: Script Hash, Address, Wallet name)
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `show nft` displays the content of an NFT contract for a specified account. The output consists of TokenId in Base64 and big-endian Hex string formats.
+
+### neoxp show notifications
+
+```
+Usage: neoxp show notifications [options]
+
+Options:
+  -c|--contract <CONTRACT>      Limit shown notifications to the specified contract
+  -n|--count                    Limit number of shown notifications
+  -e|--event-name <EVENT_NAME>  Limit shown notifications to specified event name
+  -i|--input <INPUT>            Path to neo-express data file
+```
+
+The `show notifications` displays contract notifications in JSON format.
+
+### neoxp show transaction
+
+```
+Usage: neoxp show transaction [options] <TransactionHash>
+
+Arguments:
+  TransactionHash     Transaction hash
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+The `show transaction` displays the contents of a transaction specified by hash and its execution results if available.
+
+`show tx` is an alias for `show transaction`
+
+## neoxp candidate
+
+The `candidate` command has a series of subcommands for managing candidates election in the Neo-Express blockchain.
+
+### neoxp candidate list
+
+```
+Usage: neoxp candidate list [options]
+
+Options:
+  -t|--trace          Enable contract execution tracing
+  -j|--json           Output as JSON
+  -i|--input <INPUT>  Path to neo-express data file
+```
+
+This command lists candidates, including the candidate public key and the number of votes received.
+
+### neoxp candidate register
+
+```
+Usage: neoxp candidate register [options] <Account>
+
+Arguments:
+  Account                   Account to register candidate
+
+Options:
+  -p|--password <PASSWORD>  Password to use for NEP-2/NEP-6 account
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+  -i|--input <INPUT>        Path to neo-express data file
+```
+
+This command registers a specified account as candidate.
+
+### neoxp candidate unregister
+
+```
+Usage: neoxp candidate unregister [options] <Account>
+
+Arguments:
+  Account                   Account to unregister candidate
+
+Options:
+  -p|--password <PASSWORD>  Password to use for NEP-2/NEP-6 account
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+  -i|--input <INPUT>        Path to neo-express data file
+```
+
+This command unregisters a specified candidate account.
+
+### neoxp candidate vote
+
+```
+Usage: neoxp candidate vote [options] <Account> <PublicKey>
+
+Arguments:
+  Account                   Account to vote
+  PublicKey                 Candidate publickey
+
+Options:
+  -p|--password <PASSWORD>  Password to use for NEP-2/NEP-6 account
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+  -i|--input <INPUT>        Path to neo-express data file
+```
+
+This command votes for a specified account with public key.
+
+### neoxp candidate unvote
+
+```
+Usage: neoxp candidate unvote [options] <Account>
+
+Arguments:
+  Account                   Account to unvote
+
+Options:
+  -p|--password <PASSWORD>  Password to use for NEP-2/NEP-6 account
+  -t|--trace                Enable contract execution tracing
+  -j|--json                 Output as JSON
+  -i|--input <INPUT>        Path to neo-express data file
+```
+
+This command cancels the voting for a specified account with public key.
 
 ## neoxp checkpoint
 
@@ -615,6 +843,36 @@ The commands supported in a batch file include:
 * `policy sync`
 * `policy unblock`
 * `transfer`
+* `transfernft`
+
+## neoxp execute
+
+```
+Usage: neoxp execute [options] <InputText>
+
+Arguments:
+  InputText            A neo-vm script (Format: HEX,BASE64,Filename)
+
+Options:
+  -a|--account <ACCOUNT>              Account to pay invocation GAS fee
+  -w|--witness-scope <WITNESS_SCOPE>  Witness Scope for transaction                                                             signer(s) (Allowed: None,
+                                      CalledByEntry, Global)
+                                      Allowed values are: None,
+                                      CalledByEntry, Global.
+                                      Default value is:
+                                      CalledByEntry.
+  -r|--results                        Invoke contract for results
+                                      (does not cost GAS)
+  -g|--gas                            Additional GAS to apply to
+                                      the contract invocation
+                                      Default value is: 0.
+  -p|--password <PASSWORD>            password to use for
+                                      NEP-2/NEP-6 account
+  -t|--trace                          Enable contract execution
+                                      tracing
+```
+
+This command invokes a custom script, the input text will be converted to script with a priority: hex, base64, file path.
 
 ## neoxp fastfwd
 

@@ -51,12 +51,38 @@ The following JSON types are treated as the corresponding Contract parameter typ
 - Array
 
 Additionally, direct encoded strings can use special prefixes to indicate other contract
-parameter types
+parameter types:
 
-- Direct encoded strings with a '0x' prefix are treated as a hex encoded ByteArray
-- Direct encoded strings with a '@N' prefix are treated as a base58 encoded Hash160
-  value (i.e. Neo wallet addresses)
+- Direct encoded strings with a '@' prefix are treated as a wallet address. Available inputs are:
 
+  - @+wallet name - the default address in the wallet will be read and converted to Uint160 as the contract parameter
+  - @+address - the Base58 encoded address will be converted to Uint160 as the contract parameter
+
+  For example:
+
+  @genesis 
+
+  @node1
+
+  @NZg1gGbZ4VrAFnjmxLxWn2MHbsBXM2s8hY
+
+- Direct encoded strings with a '#' prefix are treated as a contract hash. Available inputs are:
+
+  - #+script hash - the script hash will be converted into Uint160 as the contract parameter
+  - #+transaction hash - the transaction hash will be converted into Uint256 as the contract parameter
+  - #+block hash - the block hash will be converted into Uint256 as the contract parameter
+  - #+contract name - the corresponding contract will be queried and related contract hash will be converted into Uint160 as the contract parameter
+
+  For example:
+
+  #0x558a35116215a65a03eeb156704f34a07404ee96
+  
+  #0xc401a47c96711a6cf99cc2cbc185c249a935dab0df43bf6886093eacec2010b2
+  
+  #neo
+  
+  #test-contract 
+  
 ## Example
 
 Following is an example of invocation file:

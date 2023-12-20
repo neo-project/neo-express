@@ -41,6 +41,9 @@ namespace NeoExpress.Commands
             [Required]
             internal string Account { get; init; } = string.Empty;
 
+            [Option(Description = "Data parameter for update method on contract (Format: JSON)")]
+            internal string Data { get; init; } = string.Empty;
+
             [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
             [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
             internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
@@ -64,7 +67,8 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.ContractUpdateAsync(Contract, NefFile, Account, password, WitnessScope).ConfigureAwait(false);
+                    var data = txExec.ContractParameterParser(Data);
+                    await txExec.ContractUpdateAsync(Contract, NefFile, Account, password, WitnessScope, data).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

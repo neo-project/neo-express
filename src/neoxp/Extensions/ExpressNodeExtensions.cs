@@ -278,14 +278,22 @@ namespace NeoExpress
                                                       ContractManifest manifest,
                                                       Wallet wallet,
                                                       UInt160 accountHash,
-                                                      WitnessScope witnessScope)
+                                                      WitnessScope witnessScope,
+                                                      object? data = null)
         {
             CheckNefFile(nefFile);
             using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(contractHash,
-                "update",
-                nefFile.ToArray(),
-                manifest.ToJson().ToString());
+            if (data == null)
+                sb.EmitDynamicCall(contractHash,
+                    "update",
+                    nefFile.ToArray(),
+                    manifest.ToJson().ToString());
+            else
+                sb.EmitDynamicCall(contractHash,
+                    "update",
+                    nefFile.ToArray(),
+                    manifest.ToJson().ToString(),
+                    data);
 
             return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
         }

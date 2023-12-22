@@ -56,7 +56,7 @@ namespace NeoExpress
 
         public IExpressNode ExpressNode => expressNode;
 
-        public async Task ContractUpdateAsync(string contract, string nefFilePath, string accountName, string password, WitnessScope witnessScope)
+        public async Task ContractUpdateAsync(string contract, string nefFilePath, string accountName, string password, WitnessScope witnessScope, object? data = null)
         {
             if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
@@ -71,20 +71,21 @@ namespace NeoExpress
                     : throw new InvalidOperationException($"contract \"{contract}\" not found");
 
             var originalManifest = await expressNode.GetContractAsync(scriptHash).ConfigureAwait(false);
-            var updateMethod = originalManifest.Abi.GetMethod("update", 2);
-            if (updateMethod == null)
+            var updateMethod1 = originalManifest.Abi.GetMethod("update", 2);
+            var updateMethod2 = originalManifest.Abi.GetMethod("update", 3);
+            if (updateMethod1 == null && updateMethod2 == null)
             {
                 throw new Exception($"update method on {contract} contract not found.");
             }
-            if (updateMethod.Parameters[0].Type != ContractParameterType.ByteArray
-                || updateMethod.Parameters[1].Type != ContractParameterType.String)
+            if ((updateMethod1?.Parameters[0].Type != ContractParameterType.ByteArray || updateMethod1?.Parameters[1].Type != ContractParameterType.String) &&
+                (updateMethod2?.Parameters[0].Type != ContractParameterType.ByteArray || updateMethod2?.Parameters[1].Type != ContractParameterType.String))
             {
                 throw new Exception($"update method on {contract} contract has unexpected signature.");
             }
 
             var (nefFile, manifest) = await fileSystem.LoadContractAsync(nefFilePath).ConfigureAwait(false);
             var txHash = await expressNode
-                .UpdateAsync(scriptHash, nefFile, manifest, wallet, accountHash, witnessScope)
+                .UpdateAsync(scriptHash, nefFile, manifest, wallet, accountHash, witnessScope, data)
                 .ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, "Update", json).ConfigureAwait(false);
         }
@@ -176,6 +177,12 @@ namespace NeoExpress
 
             var parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
             return await parser.LoadInvocationScriptAsync(invocationFile).ConfigureAwait(false);
+        }
+
+        public ContractParameter ContractParameterParser(string parameterJson)
+        {
+            var parser = new ContractParameterParser(expressNode.ProtocolSettings, chainManager.Chain.TryGetAccountHash);
+            return parser.ParseParameter(parameterJson);
         }
 
         public async Task<Script> BuildInvocationScriptAsync(string contract, string operation, IReadOnlyList<string>? arguments = null)

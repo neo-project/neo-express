@@ -116,7 +116,7 @@ internal static class ContractManifestExtensions
                 transferMethod.Parameters[2].Type == ContractParameterType.Integer &&
                 transferMethod.Parameters[3].Type == ContractParameterType.Any;
             var transferEvent = manifest.Abi.Events.SingleOrDefault(s =>
-                s.Name == "transfer" &&
+                s.Name == "Transfer" &&
                 s.Parameters.Length == 3 &&
                 s.Parameters[0].Type == ContractParameterType.Hash160 &&
                 s.Parameters[1].Type == ContractParameterType.Hash160 &&

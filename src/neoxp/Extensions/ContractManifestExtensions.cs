@@ -64,16 +64,15 @@ internal static class ContractManifestExtensions
                 transferMethod2?.Parameters[2].Type == ContractParameterType.Integer &&
                 transferMethod2?.Parameters[3].Type == ContractParameterType.ByteArray &&
                 transferMethod2?.Parameters[4].Type == ContractParameterType.Any;
-            var transferEvent = manifest.Abi.Events.SingleOrDefault(s =>
-                s.Name == "transfer" &&
-                s.Parameters.Length == 3 &&
-                s.Parameters[0].Type == ContractParameterType.Hash160 &&
-                s.Parameters[1].Type == ContractParameterType.Hash160 &&
-                s.Parameters[2].Type == ContractParameterType.Integer &&
-                s.Parameters[3].Type == ContractParameterType.ByteArray) != null;
+            var transferEvent = manifest.Abi.Events.Any(a =>
+                a.Name == "Transfer" &&
+                a.Parameters.Length == 4 &&
+                a.Parameters[0].Type == ContractParameterType.Hash160 &&
+                a.Parameters[1].Type == ContractParameterType.Hash160 &&
+                a.Parameters[2].Type == ContractParameterType.Integer &&
+                a.Parameters[3].Type == ContractParameterType.ByteArray);
 
             // Waiting on issue https://github.com/neo-project/neo-devpack-dotnet/issues/812
-            // decimals is being set to safe for Nep11Token in the neo compiler
 
             return (symbolValid &&
                 decimalsValid &&
@@ -115,12 +114,12 @@ internal static class ContractManifestExtensions
                 transferMethod.Parameters[1].Type == ContractParameterType.Hash160 &&
                 transferMethod.Parameters[2].Type == ContractParameterType.Integer &&
                 transferMethod.Parameters[3].Type == ContractParameterType.Any;
-            var transferEvent = manifest.Abi.Events.SingleOrDefault(s =>
+            var transferEvent = manifest.Abi.Events.Any(s =>
                 s.Name == "Transfer" &&
                 s.Parameters.Length == 3 &&
                 s.Parameters[0].Type == ContractParameterType.Hash160 &&
                 s.Parameters[1].Type == ContractParameterType.Hash160 &&
-                s.Parameters[2].Type == ContractParameterType.Integer) != null;
+                s.Parameters[2].Type == ContractParameterType.Integer);
 
             return (symbolValid &&
                 decimalsValid &&

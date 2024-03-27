@@ -617,6 +617,28 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
+        public JToken ExpressPersistStorage(JArray @params)
+        {
+            if (neoSystem is null)
+                throw new NullReferenceException(nameof(neoSystem));
+            var state = RpcClient.ContractStateFromJson((JObject)@params[0]!["state"]!);
+            var storagePairs = ((JArray)@params[0]!["storage"]!)
+                .Select(s => (
+                    s!["key"]!.AsString(),
+                    s!["value"]!.AsString())
+                ).ToArray();
+
+            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]!["force"]!.AsString());
+
+            JToken result = 0;
+            foreach (var pair in storagePairs)
+            {
+                result = NodeUtility.PersistStorageKeyValuePair(neoSystem, state, pair, force);
+            }
+            return result;
+        }
+
+        [RpcMethod]
         public JToken ExpressIsNep11Compliant(JToken @param)
         {
             if (neoSystem is null)

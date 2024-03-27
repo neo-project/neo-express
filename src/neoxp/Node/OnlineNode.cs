@@ -272,6 +272,30 @@ namespace NeoExpress.Node
             return (int)response.AsNumber();
         }
 
+        public async Task<int> PersistStorageKeyValue(UInt160 scripthash, (string key, string value) storagePair)
+        {
+            if (chain.ConsensusNodes.Count != 1)
+            {
+                throw new ArgumentException("Contract storage update is only supported for single-node consensus");
+            }
+
+            var state = await rpcClient.GetContractStateAsync(scripthash.ToString()).ConfigureAwait(false);
+
+            JObject o = new JObject();
+            o["state"] = state.ToJson();
+
+            JArray storage = new JArray();
+            JObject kv = new JObject();
+            kv["key"] = storagePair.key;
+            kv["value"] = storagePair.value;
+            storage.Add(kv);
+
+            o["storage"] = storage;
+
+            var response = await rpcClient.RpcSendAsync("expresspersiststorage", o).ConfigureAwait(false);
+            return (int)response.AsNumber();
+        }
+
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)
         {
             var contractsArg = new JArray((contractFilter ?? Enumerable.Empty<UInt160>())

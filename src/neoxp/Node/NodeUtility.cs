@@ -472,6 +472,70 @@ namespace NeoExpress.Node
             }
         }
 
+        public static int PersistStorageKeyValuePair(NeoSystem neoSystem, ContractState state,
+            (string key, string value) storagePair, ContractCommand.OverwriteForce force)
+        {
+            if (state.Id < 0)
+                throw new ArgumentException("PersistStorage not supported for native contracts", nameof(state));
+
+            using var snapshot = neoSystem.GetSnapshot();
+
+            StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
+            var localContract = snapshot.GetAndChange(key)?.GetInteroperable<ContractState>();
+            if (localContract is null)
+            {
+                // if localContract is null, the contract does not exist in the local Express chain
+                throw new Exception("Contract not found");
+            }
+
+            var overwriteStorage = force switch
+            {
+                ContractCommand.OverwriteForce.All => true,
+                ContractCommand.OverwriteForce.ContractOnly => false,
+                ContractCommand.OverwriteForce.None => false,
+                ContractCommand.OverwriteForce.StorageOnly => true,
+                _ => throw new NotSupportedException($"Invalid OverwriteForce value {force}"),
+            };
+
+            var dirty = false;
+
+            if (overwriteStorage)
+            {
+                byte[] prefix_key = StorageKey.CreateSearchPrefix(localContract.Id, default);
+                foreach (var (k, v) in snapshot.Find(prefix_key))
+                {
+                    snapshot.Delete(k);
+                }
+
+                PersistStoragePair(snapshot, localContract.Id, storagePair);
+                dirty = true;
+            }
+            else
+            {
+                dirty = PersistStoragePair(snapshot, localContract.Id, storagePair);
+            }
+
+            if (dirty)
+                snapshot.Commit();
+            return localContract.Id;
+
+            static bool PersistStoragePair(DataCache snapshot, int contractId, (string key, string value) storagePair)
+            {
+                try
+                {
+                    snapshot.Add(
+                        new StorageKey { Id = contractId, Key = Convert.FromBase64String(storagePair.key) },
+                        new StorageItem(Convert.FromBase64String(storagePair.value)));
+
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
         // depend on the DataCache snapshot parameter in order to create a 
         // ContractParametersContext without direct access to node data.

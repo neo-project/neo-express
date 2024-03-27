@@ -277,7 +277,7 @@ namespace Neo.BlockchainToolkit
             };
         }
 
-        internal ContractParameter ParseStringParameter(string value)
+        public ContractParameter ParseStringParameter(string value)
         {
             if (value.Length >= 1)
             {

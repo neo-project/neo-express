@@ -176,7 +176,7 @@ namespace NeoExpress.Commands
                         ConvertArg(parser, key),
                         ConvertArg(parser, value)
                         );
-                    await expressNode.PersistStorageKeyValue(scriptHash, internalPair);
+                    await expressNode.PersistStorageKeyValueAsync(scriptHash, internalPair);
 
                     static string ConvertArg(ContractParameterParser parser, string arg)
                     {

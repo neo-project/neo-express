@@ -272,7 +272,7 @@ namespace NeoExpress.Node
             return (int)response.AsNumber();
         }
 
-        public async Task<int> PersistStorageKeyValue(UInt160 scripthash, (string key, string value) storagePair)
+        public async Task<int> PersistStorageKeyValueAsync(UInt160 scripthash, (string key, string value) storagePair)
         {
             if (chain.ConsensusNodes.Count != 1)
             {

@@ -383,7 +383,7 @@ namespace NeoExpress.Node
                 return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
             });
 
-        public Task<int> PersistStorageKeyValue(UInt160 scripthash, (string key, string value) storagePair)
+        public Task<int> PersistStorageKeyValueAsync(UInt160 scripthash, (string key, string value) storagePair)
             => MakeAsync(() =>
             {
                 var state = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scripthash);

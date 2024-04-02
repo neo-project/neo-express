@@ -22,7 +22,7 @@ namespace NeoExpress.Commands
 {
     partial class ContractCommand
     {
-        [Command(Name = "storage", Description = "Display storage for specified contract")]
+        [Command(Name = "storage", Description = "Manage smart contracts storages")]
         [Subcommand(
         typeof(StorageGet),
         typeof(StorageUpdateKeyValue))]

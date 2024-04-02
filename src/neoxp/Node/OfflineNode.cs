@@ -383,6 +383,18 @@ namespace NeoExpress.Node
                 return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
             });
 
+        public Task<int> PersistStorageKeyValueAsync(UInt160 scripthash, (string key, string value) storagePair)
+            => MakeAsync(() =>
+            {
+                var state = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scripthash);
+                if (chain.ConsensusNodes.Count != 1)
+                {
+                    throw new ArgumentException("Contract storage update is only supported for single-node consensus");
+                }
+
+                return NodeUtility.PersistStorageKeyValuePair(neoSystem, state, storagePair, ContractCommand.OverwriteForce.None);
+            });
+
         // warning CS1998: This async method lacks 'await' operators and will run synchronously.
         // EnumerateNotificationsAsync has to be async in order to be polymorphic with OnlineNode's implementation
 #pragma warning disable 1998

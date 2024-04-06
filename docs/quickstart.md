@@ -215,7 +215,7 @@ testWallet
     Note: The private keys for the accounts in this wallet are *not* encrypted.
           Do not use these accounts on MainNet or in any other system where security is a concern.
 
-$ neo-express transfer neo 100000000 genesis testWallet
+$ neo-express transfer 100000000 neo genesis testWallet
 {
   "contract-context": {
     "type": "Neo.Network.P2P.Payloads.ContractTransaction",
@@ -285,7 +285,7 @@ access the GAS, we need to execute another transfer, this time from and to the
 testWallet account.
 
 ``` shell
-$ neo-express transfer neo 100000000 testWallet testWallet
+$ neo-express transfer 100000000 neo testWallet testWallet
 < transfer output omitted for clarity >
 
 $ neo-express show gas testWallet

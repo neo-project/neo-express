@@ -26,25 +26,13 @@ namespace NeoExpress
                 fileName = getDefaultFileName();
             }
 
-            if (extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.InvariantCultureIgnoreCase) == false)
-                fileName = $"{fileName}{extension}";
-
-            if (fileSystem.Path.IsPathFullyQualified(fileName) == false)
+            if (!fileSystem.Path.IsPathFullyQualified(fileName))
             {
-                var defaultFileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
-                if (fileSystem.File.Exists(defaultFileName) == false)
-                {
-                    var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
-                    var folder = fileSystem.Path.Combine(homeDir, ".neo-express");
-                    if (fileSystem.Path.Exists(folder) == false)
-                        fileSystem.Directory.CreateDirectory(folder);
-                    fileName = fileSystem.Path.Combine(folder, fileName);
-                }
-                else
-                    fileName = defaultFileName;
+                fileName = fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), fileName);
             }
 
-            return fileName;
+            return extension.Equals(fileSystem.Path.GetExtension(fileName), StringComparison.OrdinalIgnoreCase)
+                ? fileName : fileName + extension;
         }
 
         public static string GetTempFolder(this IFileSystem fileSystem)

@@ -29,7 +29,19 @@ namespace NeoExpress
             this.fileSystem = fileSystem;
         }
 
-        string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () => DEFAULT_EXPRESS_FILENAME);
+        string ResolveChainFileName(string path) => fileSystem.ResolveFileName(path, EXPRESS_EXTENSION, () =>
+        {
+
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+            var folder = fileSystem.Path.Combine(homeDir, ".neo-express");
+
+            if (!fileSystem.Path.Exists(folder))
+                fileSystem.Directory.CreateDirectory(folder);
+
+            var fileName = fileSystem.Path.Combine(folder, DEFAULT_EXPRESS_FILENAME);
+
+            return fileName;
+        });
 
         internal static ExpressChain CreateChain(int nodeCount, byte? addressVersion, byte[]? privateKey = null)
         {

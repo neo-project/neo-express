@@ -362,7 +362,7 @@
     "extract-zip": "^2.0.1",
     "file-loader": "^6.2.0",
     "glob": "^7.1.6",
-    "gulp": "^4.0.2",
+    "gulp": "^5.0.0",
     "jsonc-parser": "^3.0.0",
     "nerdbank-gitversioning": "^3.4.244",
     "react": "^17.0.2",

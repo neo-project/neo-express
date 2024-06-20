@@ -23,7 +23,7 @@ namespace build_tasks
             var manifest = Neo.BuildTasks.NeoManifest.FromManifestJson(json);
             Assert.Equal("DevHawk.Contracts.ApocToken", manifest.Name);
             Assert.Equal(13, manifest.Methods.Count);
-            Assert.Equal(1, manifest.Events.Count);
+            Assert.Single(manifest.Events);
         }
 
         const string MANIFEST = @"{

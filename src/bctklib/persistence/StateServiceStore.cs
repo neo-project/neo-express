@@ -167,7 +167,7 @@ namespace Neo.BlockchainToolkit.Persistence
                               TaskContinuationOptions.OnlyOnRanToCompletion,
                               TaskScheduler.Default);
             var stateRoot = await rpcClient.GetStateRootAsync(index).ConfigureAwait(false);
-            var contractsTask = GetContracts(rpcClient, stateRoot.RootHash);
+            var contractsTask = GetContractsAsync(rpcClient, stateRoot.RootHash);
 
             await Task.WhenAll(versionTask, blockHashTask, contractsTask).ConfigureAwait(false);
 
@@ -183,7 +183,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 stateRoot.RootHash,
                 contracts);
 
-            static async Task<IReadOnlyList<ContractInfo>> GetContracts(RpcClient rpcClient, UInt256 rootHash)
+            static async Task<IReadOnlyList<ContractInfo>> GetContractsAsync(RpcClient rpcClient, UInt256 rootHash)
             {
                 const byte ContractManagement_Prefix_Contract = 8;
 

@@ -12,13 +12,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Nito.Disposables" Version="2.4.0" />
-        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.0" />
+        <PackageReference Include="Nito.Disposables" Version="2.5.0" />
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
         <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
         <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\bctklib\bctklib.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.6.139" />
     </ItemGroup>
 </Project>

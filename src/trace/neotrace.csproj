@@ -10,9 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.0" />
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\bctklib\bctklib.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.6.139" />
     </ItemGroup>
 </Project>

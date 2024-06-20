@@ -95,8 +95,7 @@ partial class RunCommand
 
                 neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                 {
-                    Tcp = new IPEndPoint(IPAddress.Loopback, 30333),
-                    WebSocket = new IPEndPoint(IPAddress.Loopback, 30334),
+                    Tcp = new IPEndPoint(IPAddress.Loopback, 30333)
                 });
                 dbftPlugin.Start(worknet.ConsensusWallet);
 

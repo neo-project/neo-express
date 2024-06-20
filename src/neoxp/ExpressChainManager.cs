@@ -233,8 +233,7 @@ namespace NeoExpress
 
                     neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {
-                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
-                        WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
+                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort)
                     });
                     dbftPlugin.Start(wallet);
 

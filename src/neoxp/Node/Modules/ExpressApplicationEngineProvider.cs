@@ -73,5 +73,7 @@ namespace NeoExpress.Node
                 yield return Instruction.RET;
             }
         }
+
+        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic diagnostic, JumpTable jumpTable) => throw new NotImplementedException();
     }
 }

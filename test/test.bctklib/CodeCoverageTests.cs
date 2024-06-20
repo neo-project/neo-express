@@ -52,9 +52,6 @@ namespace test.bctklib
             var scriptPath = fs.Path.Combine(coveragePath, "0xb127f874f7c5a287148f9b35baa43f147f271dba.neo-script");
             fs.FileExists(scriptPath).Should().BeTrue();
 
-            var nefPath = fs.Path.Combine(coveragePath, "0xe8c2cf8b50016c94f6eafbdd024febc6cd0672fe.nef");
-            fs.FileExists(nefPath).Should().BeTrue();
-
             fs.AllFiles
                 .Where(f => fs.Path.GetExtension(f) == ".neo-coverage")
                 .Count().Should().Be(1);

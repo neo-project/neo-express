@@ -163,7 +163,7 @@ namespace NeoExpress.Node
                     if (id == native.Id)
                     {
                         var contract = NativeContract.ContractManagement.GetContract(snapshot, native.Hash);
-                        return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
+                        return contract?.ToJson() ?? throw new RpcException(new RpcError(-100, "Unknown contract"));
                     }
                 }
             }
@@ -173,7 +173,7 @@ namespace NeoExpress.Node
             if (UInt160.TryParse(param, out var scriptHash))
             {
                 var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
-                return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
+                return contract?.ToJson() ?? throw new RpcException(new RpcError(-100, "Unknown contract"));
             }
 
             var contracts = new JArray();
@@ -349,7 +349,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0]!.AsString());
-            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction/blockhash");
+            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(new RpcError(-100, "Unknown transaction/blockhash"));
         }
 
         // Neo-Express uses a custom implementation of TokenTracker RPC methods. Originally, this was
@@ -690,7 +690,7 @@ namespace NeoExpress.Node
                 : DateTime.UtcNow.ToTimestampMS();
 
             if (endTime < startTime)
-                throw new RpcException(-32602, "Invalid params");
+                throw new RpcException(new RpcError(-32602, "Invalid params"));
 
             // iterate over the notifications to populate the send and receive arrays
             var sent = new JArray();

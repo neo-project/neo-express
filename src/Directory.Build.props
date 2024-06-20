@@ -4,7 +4,7 @@
         <Authors>The Neo Project</Authors>
         <Company>The Neo Project</Company>
         <Copyright>2015-2024 The Neo Project</Copyright>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
@@ -19,7 +19,7 @@
         <ApplicationIcon>../neo-cli.ico</ApplicationIcon>
     </PropertyGroup>
     <PropertyGroup>
-        <NeoVersion>3.6.2</NeoVersion>
+        <NeoVersion>3.7.5</NeoVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>

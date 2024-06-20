@@ -77,7 +77,6 @@ namespace NeoExpress
             var nodes = wallets.Select((w, i) => new ExpressConsensusNode
             {
                 TcpPort = GetPortNumber(i, 3),
-                WebSocketPort = GetPortNumber(i, 4),
                 RpcPort = GetPortNumber(i, 2),
                 Wallet = w.wallet.ToExpressWallet()
             });

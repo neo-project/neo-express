@@ -94,8 +94,6 @@ namespace NeoExpress.Commands
             writer.WriteStartObject();
             writer.WritePropertyName("Port");
             writer.WriteValue(node.TcpPort);
-            writer.WritePropertyName("WsPort");
-            writer.WriteValue(node.WebSocketPort);
             writer.WriteEndObject();
 
             writer.WritePropertyName("UnlockWallet");

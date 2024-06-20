@@ -6,7 +6,6 @@
     <RootNamespace>NeoTestHarness</RootNamespace>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>portable</DebugType>
-    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

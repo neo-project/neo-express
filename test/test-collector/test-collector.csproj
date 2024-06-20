@@ -4,7 +4,7 @@
         <IsPackable>false</IsPackable>
         <Nullable>enable</Nullable>
         <RootNamespace>test_collector</RootNamespace>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

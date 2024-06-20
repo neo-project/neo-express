@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
         internal string Account { get; init; } = string.Empty;
 
         [Option(Description = "Witness Scope for transaction signer(s) (Allowed: None, CalledByEntry, Global)")]
-        [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+        [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
         internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
         [Option(Description = "Invoke contract for results (does not cost GAS)")]

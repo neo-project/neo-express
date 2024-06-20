@@ -9,6 +9,7 @@
         <PackAsTool>true</PackAsTool>
         <RootNamespace>Neo.Test.Runner</RootNamespace>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

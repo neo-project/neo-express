@@ -33,7 +33,7 @@ namespace NeoExpress.Commands
         internal string Output { get; set; } = string.Empty;
 
         [Option(Description = "Number of consensus nodes to create (Default: 1)")]
-        [AllowedValues("1", "4", "7")]
+        [McMaster.Extensions.CommandLineUtils.AllowedValues("1", "4", "7")]
         internal int Count { get; set; } = 1;
 
         [Option(Description = "Version to use for addresses in this blockchain instance (Default: 53)")]

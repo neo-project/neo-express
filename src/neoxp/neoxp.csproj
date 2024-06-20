@@ -8,6 +8,7 @@
         <RootNamespace>NeoExpress</RootNamespace>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <ApplicationIcon>neo-express.ico</ApplicationIcon>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

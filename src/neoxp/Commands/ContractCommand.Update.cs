@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
             internal string Data { get; init; } = string.Empty;
 
             [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
-            [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+            [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
             internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
             [Option(Description = "Password to use for NEP-2/NEP-6 account")]

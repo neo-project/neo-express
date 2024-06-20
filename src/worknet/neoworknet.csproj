@@ -7,6 +7,7 @@
         <PackAsTool>true</PackAsTool>
         <RootNamespace>NeoWorkNet</RootNamespace>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

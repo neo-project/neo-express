@@ -5,6 +5,7 @@
         <PackageId>Neo.BlockchainToolkit</PackageId>
         <RootNamespace>Neo.BlockchainToolkit</RootNamespace>
         <DebugType>portable</DebugType>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(CI)' == 'true'">

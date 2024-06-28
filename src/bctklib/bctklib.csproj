@@ -23,4 +23,7 @@
         <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
         <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\neo\src\Neo\Neo.csproj" />
+    </ItemGroup>
 </Project>

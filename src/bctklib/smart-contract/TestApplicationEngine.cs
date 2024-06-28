@@ -200,6 +200,19 @@ namespace Neo.BlockchainToolkit.SmartContract
             return base.Execute();
         }
 
+        public override void LoadContext(ExecutionContext context)
+        {
+            base.LoadContext(context);
+            coverageWriter?.WriteContext(context);
+
+            var ecs = context.GetState<ExecutionContextState>();
+            if (ecs.ScriptHash != null
+                && !executedScripts.ContainsKey(ecs.ScriptHash))
+            {
+                executedScripts.Add(ecs.ScriptHash, ecs.Contract is null ? context.Script : ecs.Contract);
+            }
+        }
+
         protected override void PreExecuteInstruction(Instruction instruction)
         {
             branchInstructionInfo = null;

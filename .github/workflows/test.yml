@@ -21,6 +21,10 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Update submodule
+      run: |
+        git submodule update --init --recursive --remote 
 
     - name: Restore
       run: dotnet restore neo-express.sln

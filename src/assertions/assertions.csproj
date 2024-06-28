@@ -18,9 +18,4 @@
         <ProjectReference Include="..\bctklib\bctklib.csproj" />
     </ItemGroup>
 
-
-    <ItemGroup>
-        <PackageReference Include="Neo" Version="$(NeoVersion)" />
-    </ItemGroup>
-
 </Project>

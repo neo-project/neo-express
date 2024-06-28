@@ -19,7 +19,7 @@
         <PackageReference Include="Nerdbank.Streams" Version="2.11.74" />
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="8.11.3.46984" />
-        <PackageReference Include="System.IO.Abstractions" Version="21.0.2" />
+        <PackageReference Include="System.IO.Abstractions" Version="21.0.22" />
         <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
         <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     </ItemGroup>

@@ -9,12 +9,13 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using McMaster.Extensions.CommandLineUtils;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress.Commands
 {
+    using McMaster.Extensions.CommandLineUtils;
+
     [Command("create", Description = "Create new neo-express instance")]
     internal class CreateCommand
     {
@@ -33,7 +34,7 @@ namespace NeoExpress.Commands
         internal string Output { get; set; } = string.Empty;
 
         [Option(Description = "Number of consensus nodes to create (Default: 1)")]
-        [McMaster.Extensions.CommandLineUtils.AllowedValues("1", "4", "7")]
+        [AllowedValues("1", "4", "7")]
         internal int Count { get; set; } = 1;
 
         [Option(Description = "Version to use for addresses in this blockchain instance (Default: 53)")]

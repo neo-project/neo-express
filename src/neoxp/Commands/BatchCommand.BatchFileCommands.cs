@@ -9,13 +9,13 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
 using NeoExpress.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
 {
+    using McMaster.Extensions.CommandLineUtils;
     partial class BatchCommand
     {
         [Command]
@@ -57,7 +57,7 @@ namespace NeoExpress.Commands
                     internal string Password { get; init; } = string.Empty;
 
                     [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
-                    [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
                     [Option(Description = "Optional data parameter to pass to _deploy operation")]
@@ -102,7 +102,7 @@ namespace NeoExpress.Commands
                     internal string Password { get; init; } = string.Empty;
 
                     [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
-                    [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
                 }
 
@@ -128,7 +128,7 @@ namespace NeoExpress.Commands
                     internal string Password { get; init; } = string.Empty;
 
                     [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
-                    [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
                 }
 
@@ -148,7 +148,7 @@ namespace NeoExpress.Commands
                     internal string Account { get; init; } = string.Empty;
 
                     [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
-                    [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                    [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
                     internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
                     [Option(Description = "Password to use for NEP-2/NEP-6 account")]

@@ -9,12 +9,13 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
 {
+    using McMaster.Extensions.CommandLineUtils;
+
     partial class ContractCommand
     {
         [Command("deploy", Description = "Deploy contract to a neo-express instance")]
@@ -38,7 +39,7 @@ namespace NeoExpress.Commands
             internal string Account { get; init; } = string.Empty;
 
             [Option(Description = "Witness Scope to use for transaction signer (Default: CalledByEntry)")]
-            [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+            [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
             internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
             [Option(Description = "Optional data parameter to pass to _deploy operation")]

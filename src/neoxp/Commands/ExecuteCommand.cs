@@ -9,8 +9,6 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using Akka.Util.Internal;
-using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.IO;
@@ -23,6 +21,8 @@ using System.Text;
 
 namespace NeoExpress.Commands
 {
+    using McMaster.Extensions.CommandLineUtils;
+
     [Command(Name = "execute", Description = "Invoke a custom script, the input text will be converted to script with a priority: hex, base64, file path.")]
     class ExecuteCommand
     {
@@ -44,7 +44,7 @@ namespace NeoExpress.Commands
         internal string Account { get; init; } = string.Empty;
 
         [Option(Description = "Witness Scope for transaction signer(s) (Allowed: None, CalledByEntry, Global)")]
-        [McMaster.Extensions.CommandLineUtils.AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+        [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
         internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
 
         [Option(Description = "Invoke contract for results (does not cost GAS)")]
@@ -144,7 +144,7 @@ namespace NeoExpress.Commands
         }
 
 
-        private static bool TryConvertBytesToScript(Span<byte> bytes, out Script script)
+        private static bool TryConvertBytesToScript(Span<byte> bytes, out Script? script)
         {
             try
             {

@@ -191,7 +191,7 @@ namespace NeoExpress.Node
             engine.LoadContract(oracleContract, md, CallFlags.None);
             if (engine.Execute() != Neo.VM.VMState.HALT)
                 return null;
-            tx.NetworkFee += engine.GasConsumed;
+            tx.NetworkFee += engine.FeeConsumed;
 
             var executionFactor = NativeContract.Policy.GetExecFeeFactor(snapshot);
             var networkFee = executionFactor * Neo.SmartContract.Helper.MultiSignatureContractCost(m, n);

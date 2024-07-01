@@ -309,5 +309,17 @@ namespace Neo.BlockchainToolkit.SmartContract
         }
 
         bool CheckWitnessOverride(byte[] hashOrPubkey) => witnessChecker(hashOrPubkey);
+
+        protected override void OnSysCall(InteropDescriptor descriptor)
+        {
+            if (overriddenServices.TryGetValue(descriptor, out var overrideDescriptor))
+            {
+                base.OnSysCall(overrideDescriptor);
+            }
+            else
+            {
+                base.OnSysCall(descriptor);
+            }
+        }
     }
 }

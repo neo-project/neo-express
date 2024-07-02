@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // TestApplicationEngine.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -200,7 +200,7 @@ namespace Neo.BlockchainToolkit.SmartContract
             return base.Execute();
         }
 
-        protected override void LoadContext(ExecutionContext context)
+        public override void LoadContext(ExecutionContext context)
         {
             base.LoadContext(context);
             coverageWriter?.WriteContext(context);
@@ -310,15 +310,15 @@ namespace Neo.BlockchainToolkit.SmartContract
 
         bool CheckWitnessOverride(byte[] hashOrPubkey) => witnessChecker(hashOrPubkey);
 
-        protected override void OnSysCall(uint methodHash)
+        protected override void OnSysCall(InteropDescriptor descriptor)
         {
-            if (overriddenServices.TryGetValue(methodHash, out var descriptor))
+            if (overriddenServices.TryGetValue(descriptor, out var overrideDescriptor))
             {
-                base.OnSysCall(descriptor);
+                base.OnSysCall(overrideDescriptor);
             }
             else
             {
-                base.OnSysCall(methodHash);
+                base.OnSysCall(descriptor);
             }
         }
     }

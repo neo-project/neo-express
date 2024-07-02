@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ContractCommand.Run.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -9,12 +9,12 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using McMaster.Extensions.CommandLineUtils;
 using Neo.Network.P2P.Payloads;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
 {
+    using McMaster.Extensions.CommandLineUtils;
     partial class ContractCommand
     {
         [Command(Name = "run", Description = "Invoke a contract using parameters passed on command line")]

@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ExecuteCommand.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -9,8 +9,6 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using Akka.Util.Internal;
-using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.IO;
@@ -23,6 +21,8 @@ using System.Text;
 
 namespace NeoExpress.Commands
 {
+    using McMaster.Extensions.CommandLineUtils;
+
     [Command(Name = "execute", Description = "Invoke a custom script, the input text will be converted to script with a priority: hex, base64, file path.")]
     class ExecuteCommand
     {
@@ -144,7 +144,7 @@ namespace NeoExpress.Commands
         }
 
 
-        private static bool TryConvertBytesToScript(Span<byte> bytes, out Script script)
+        private static bool TryConvertBytesToScript(Span<byte> bytes, out Script? script)
         {
             try
             {

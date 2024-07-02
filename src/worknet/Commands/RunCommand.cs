@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // RunCommand.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -95,8 +95,7 @@ partial class RunCommand
 
                 neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                 {
-                    Tcp = new IPEndPoint(IPAddress.Loopback, 30333),
-                    WebSocket = new IPEndPoint(IPAddress.Loopback, 30334),
+                    Tcp = new IPEndPoint(IPAddress.Loopback, 30333)
                 });
                 dbftPlugin.Start(worknet.ConsensusWallet);
 

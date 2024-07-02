@@ -33,6 +33,10 @@ jobs:
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
+        
+    - name: Update submodule
+      run: |
+        git submodule update --init --recursive --remote 
 
     - name: Restore
       run: dotnet restore neo-express.sln

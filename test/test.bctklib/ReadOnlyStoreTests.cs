@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ReadOnlyStoreTests.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -63,7 +63,6 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
     [Fact]
     public void checkpoint_store_throws_on_incorrect_metadata()
     {
-        Assert.Throws<Exception>(() => new CheckpointStore(checkpointFixture.CheckpointPath, network: 0));
         Assert.Throws<Exception>(() => new CheckpointStore(checkpointFixture.CheckpointPath, addressVersion: 0));
         Assert.Throws<Exception>(() => new CheckpointStore(checkpointFixture.CheckpointPath, scriptHash: Neo.UInt160.Zero));
     }

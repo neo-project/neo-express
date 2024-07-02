@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ExpressChainManagerFactory.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -77,7 +77,6 @@ namespace NeoExpress
             var nodes = wallets.Select((w, i) => new ExpressConsensusNode
             {
                 TcpPort = GetPortNumber(i, 3),
-                WebSocketPort = GetPortNumber(i, 4),
                 RpcPort = GetPortNumber(i, 2),
                 Wallet = w.wallet.ToExpressWallet()
             });

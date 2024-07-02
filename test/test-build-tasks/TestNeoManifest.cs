@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // TestNeoManifest.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -23,7 +23,7 @@ namespace build_tasks
             var manifest = Neo.BuildTasks.NeoManifest.FromManifestJson(json);
             Assert.Equal("DevHawk.Contracts.ApocToken", manifest.Name);
             Assert.Equal(13, manifest.Methods.Count);
-            Assert.Equal(1, manifest.Events.Count);
+            Assert.Single(manifest.Events);
         }
 
         const string MANIFEST = @"{

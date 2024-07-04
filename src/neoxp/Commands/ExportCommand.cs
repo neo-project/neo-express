@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ExportCommand.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -94,8 +94,6 @@ namespace NeoExpress.Commands
             writer.WriteStartObject();
             writer.WritePropertyName("Port");
             writer.WriteValue(node.TcpPort);
-            writer.WritePropertyName("WsPort");
-            writer.WriteValue(node.WebSocketPort);
             writer.WriteEndObject();
 
             writer.WritePropertyName("UnlockWallet");

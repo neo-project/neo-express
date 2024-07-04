@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ExpressConsensusNode.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -17,9 +17,6 @@ namespace Neo.BlockchainToolkit.Models
     {
         [JsonProperty("tcp-port")]
         public ushort TcpPort { get; set; }
-
-        [JsonProperty("ws-port")]
-        public ushort WebSocketPort { get; set; }
 
         [JsonProperty("rpc-port")]
         public ushort RpcPort { get; set; }

@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // WorknetRpcServerPlugin.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -14,6 +14,7 @@ using Neo.BlockchainToolkit.Plugins;
 using Neo.Json;
 using Neo.Network.RPC;
 using Neo.Plugins;
+using Neo.Plugins.RpcServer;
 using Neo.SmartContract.Native;
 
 namespace NeoWorkNet.Commands;

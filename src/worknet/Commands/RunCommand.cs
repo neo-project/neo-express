@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // RunCommand.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -16,7 +16,7 @@ using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.Plugins;
 using Neo.Cryptography.ECC;
 using Neo.Persistence;
-using Neo.Plugins;
+using Neo.Plugins.RpcServer;
 using NeoWorkNet.Models;
 using System.IO.Abstractions;
 using System.Net;
@@ -89,14 +89,13 @@ partial class RunCommand
 
                 using var persistencePlugin = new ToolkitPersistencePlugin(db);
                 using var logPlugin = new WorkNetLogPlugin(console, Utility.GetDiagnosticWriter(console));
-                using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(worknet));
+                using var dbftPlugin = new Neo.Plugins.DBFTPlugin.DBFTPlugin(GetConsensusSettings(worknet));
                 using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet), persistencePlugin, worknet.Uri);
                 using var neoSystem = new NeoSystem(protocolSettings, storeProvider.Name);
 
                 neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                 {
-                    Tcp = new IPEndPoint(IPAddress.Loopback, 30333),
-                    WebSocket = new IPEndPoint(IPAddress.Loopback, 30334),
+                    Tcp = new IPEndPoint(IPAddress.Loopback, 30333)
                 });
                 dbftPlugin.Start(worknet.ConsensusWallet);
 
@@ -118,7 +117,7 @@ partial class RunCommand
         }, CancellationToken.None);
         await tcs.Task.ConfigureAwait(false);
 
-        static Neo.Consensus.Settings GetConsensusSettings(WorknetFile worknet)
+        static Neo.Plugins.DBFTPlugin.Settings GetConsensusSettings(WorknetFile worknet)
         {
             var settings = new Dictionary<string, string>()
             {
@@ -128,7 +127,7 @@ partial class RunCommand
             };
 
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-            return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
+            return new Neo.Plugins.DBFTPlugin.Settings(config.GetSection("PluginConfiguration"));
         }
 
         static RpcServerSettings GetRpcServerSettings(WorknetFile worknet)

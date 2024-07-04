@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ExpressChainManager.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -15,7 +15,7 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.Plugins;
+using Neo.Plugins.RpcServer;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
@@ -226,15 +226,14 @@ namespace NeoExpress
 
                     using var persistencePlugin = new ExpressPersistencePlugin();
                     using var logPlugin = new ExpressLogPlugin(console);
-                    using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
+                    using var dbftPlugin = new Neo.Plugins.DBFTPlugin.DBFTPlugin(GetConsensusSettings(chain));
                     using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
                         expressStorage, multiSigAccount.ScriptHash);
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 
                     neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                     {
-                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort),
-                        WebSocket = new IPEndPoint(IPAddress.Loopback, node.WebSocketPort),
+                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort)
                     });
                     dbftPlugin.Start(wallet);
 
@@ -256,7 +255,7 @@ namespace NeoExpress
             });
             await tcs.Task.ConfigureAwait(false);
 
-            static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
+            static Neo.Plugins.DBFTPlugin.Settings GetConsensusSettings(ExpressChain chain)
             {
                 var settings = new Dictionary<string, string>()
                 {
@@ -265,7 +264,7 @@ namespace NeoExpress
                 };
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-                return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
+                return new Neo.Plugins.DBFTPlugin.Settings(config.GetSection("PluginConfiguration"));
             }
 
             static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)

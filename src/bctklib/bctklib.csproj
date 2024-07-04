@@ -20,10 +20,10 @@
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="8.11.3.46984" />
         <PackageReference Include="System.IO.Abstractions" Version="21.0.22" />
-        <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
-        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\neo\src\Neo\Neo.csproj" />
+        <ProjectReference Include="..\neo\src\Plugins\MPTTrie\MPTTrie.csproj" />
+        <ProjectReference Include="..\neo\src\Plugins\RpcClient\RpcClient.csproj" />
     </ItemGroup>
 </Project>

@@ -17,6 +17,7 @@ using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.Plugins;
+using Neo.Plugins.RpcServer;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -26,7 +27,7 @@ using NeoExpress.Models;
 using NeoExpress.Validators;
 using System.Collections.Immutable;
 using System.Numerics;
-using RpcException = Neo.Plugins.RpcException;
+using RpcException = Neo.Plugins.RpcServer.RpcException;
 using Utility = Neo.Utility;
 
 namespace NeoExpress.Node

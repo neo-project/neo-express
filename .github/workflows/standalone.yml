@@ -32,6 +32,10 @@ jobs:
       uses: dotnet/nbgv@v0.4.1
       id: nbgv
 
+    - name: Update submodule
+      run: |
+        git submodule update --init --recursive --remote
+
     - name: Build (${{ matrix.runtime }})
       run: |
         dotnet publish ./src/neoxp \

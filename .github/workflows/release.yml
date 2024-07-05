@@ -16,14 +16,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '7.0.x'
 
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.4.1
@@ -31,7 +31,7 @@ jobs:
         
     - name: Update submodule
       run: |
-        git submodule update --init --recursive --remote
+        git submodule update --init --recursive --remote 
 
     - name: Install dependencies
       run: dotnet restore neo-express.sln

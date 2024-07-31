@@ -10,6 +10,8 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.Wallets;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
@@ -47,7 +49,8 @@ namespace NeoExpress.Commands
                     }
 
                     var isBlocked = await expressNode.GetIsBlockedAsync(scriptHash.AsT0).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
+                    var address = UInt160.Parse(ScriptHash).ToAddress(ProtocolSettings.Default.AddressVersion);
+                    await console.Out.WriteLineAsync($"Account is {(isBlocked ? "" : "not ")}blocked. Address: {address}, scripthash: {scriptHash}");
                     return 0;
                 }
                 catch (Exception ex)

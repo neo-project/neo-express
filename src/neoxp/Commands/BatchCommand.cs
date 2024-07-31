@@ -10,6 +10,8 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.Wallets;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 
@@ -287,7 +289,10 @@ namespace NeoExpress.Commands
                             chainManager.SaveChain(chainFilename!);
                             await writer.WriteLineAsync($"Created Wallet {cmd.Model.Name}");
                             for (int x = 0; x < wallet.Accounts.Count; x++)
-                                await writer.WriteLineAsync($"    Address: {wallet.Accounts[x].ScriptHash}");
+                            {
+                                var address = UInt160.Parse(wallet.Accounts[x].ScriptHash).ToAddress(ProtocolSettings.Default.AddressVersion);
+                                await writer.WriteLineAsync($"    Address: {address}");
+                            }
                             break;
                         }
                     default:

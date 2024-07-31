@@ -10,6 +10,8 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.Wallets;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
@@ -50,7 +52,10 @@ namespace NeoExpress.Commands
                     console.WriteLine($"Created Wallet {Name}");
 
                     for (int i = 0; i < wallet.Accounts.Count; i++)
-                        console.WriteLine($"    Address: {wallet.Accounts[i].ScriptHash}");
+                    {
+                        var address = UInt160.Parse(wallet.Accounts[i].ScriptHash).ToAddress(ProtocolSettings.Default.AddressVersion);
+                        console.WriteLine($"    Address: {address}");
+                    }
 
                     console.WriteLine("\n\x1b[33mNote: The private keys for the accounts in this wallet are *not* encrypted.\x1b[0m");
 

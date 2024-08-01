@@ -11,6 +11,7 @@
 
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Extensions;
 using Neo.SmartContract;
 using Neo.Wallets;
 

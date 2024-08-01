@@ -289,9 +289,7 @@ namespace NeoExpress.Commands
                             chainManager.SaveChain(chainFilename!);
                             await writer.WriteLineAsync($"Created Wallet {cmd.Model.Name}");
                             for (int x = 0; x < wallet.Accounts.Count; x++)
-                            {
                                 await writer.WriteLineAsync($"    Address: {wallet.Accounts[x].ScriptHash}");
-                            }
                             break;
                         }
                     default:

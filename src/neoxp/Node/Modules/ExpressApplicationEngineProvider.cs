@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // ExpressApplicationEngineProvider.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -73,5 +73,7 @@ namespace NeoExpress.Node
                 yield return Instruction.RET;
             }
         }
+
+        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic diagnostic, JumpTable jumpTable) => throw new NotImplementedException();
     }
 }

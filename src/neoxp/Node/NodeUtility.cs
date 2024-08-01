@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // NodeUtility.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -191,7 +191,7 @@ namespace NeoExpress.Node
             engine.LoadContract(oracleContract, md, CallFlags.None);
             if (engine.Execute() != Neo.VM.VMState.HALT)
                 return null;
-            tx.NetworkFee += engine.GasConsumed;
+            tx.NetworkFee += engine.FeeConsumed;
 
             var executionFactor = NativeContract.Policy.GetExecFeeFactor(snapshot);
             var networkFee = executionFactor * Neo.SmartContract.Helper.MultiSignatureContractCost(m, n);

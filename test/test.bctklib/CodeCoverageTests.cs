@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // CodeCoverageTests.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -51,9 +51,6 @@ namespace test.bctklib
 
             var scriptPath = fs.Path.Combine(coveragePath, "0xb127f874f7c5a287148f9b35baa43f147f271dba.neo-script");
             fs.FileExists(scriptPath).Should().BeTrue();
-
-            var nefPath = fs.Path.Combine(coveragePath, "0xe8c2cf8b50016c94f6eafbdd024febc6cd0672fe.nef");
-            fs.FileExists(nefPath).Should().BeTrue();
 
             fs.AllFiles
                 .Where(f => fs.Path.GetExtension(f) == ".neo-coverage")

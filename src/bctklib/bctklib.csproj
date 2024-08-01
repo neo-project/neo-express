@@ -14,13 +14,16 @@
         <InternalsVisibleTo Include="test.bctklib" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="MessagePack" Version="2.5.129" />
+        <PackageReference Include="MessagePack" Version="2.5.171" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
-        <PackageReference Include="Nerdbank.Streams" Version="2.10.72" />
-        <PackageReference Include="OneOf" Version="3.0.263" />
-        <PackageReference Include="rocksdb" Version="8.6.7.43630" />
-        <PackageReference Include="System.IO.Abstractions" Version="19.2.87" />
-        <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
-        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
+        <PackageReference Include="Nerdbank.Streams" Version="2.11.74" />
+        <PackageReference Include="OneOf" Version="3.0.271" />
+        <PackageReference Include="rocksdb" Version="9.4.0.50294" />
+        <PackageReference Include="System.IO.Abstractions" Version="21.0.26" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\neo\src\Neo\Neo.csproj" />
+        <ProjectReference Include="..\neo\src\Plugins\MPTTrie\MPTTrie.csproj" />
+        <ProjectReference Include="..\neo\src\Plugins\RpcClient\RpcClient.csproj" />
     </ItemGroup>
 </Project>

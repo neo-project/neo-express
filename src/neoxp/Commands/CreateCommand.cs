@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // CreateCommand.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -9,12 +9,13 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using McMaster.Extensions.CommandLineUtils;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 
 namespace NeoExpress.Commands
 {
+    using McMaster.Extensions.CommandLineUtils;
+
     [Command("create", Description = "Create new neo-express instance")]
     internal class CreateCommand
     {

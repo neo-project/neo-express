@@ -1,4 +1,4 @@
-// Copyright (C) 2015-2023 The Neo Project.
+// Copyright (C) 2015-2024 The Neo Project.
 //
 // TraceApplicationEngine.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
@@ -70,7 +70,7 @@ namespace Neo.BlockchainToolkit.SmartContract
         {
             traceDebugSink.ProtocolSettings(ProtocolSettings.Network, ProtocolSettings.AddressVersion);
             traceDebugSink.Script(CurrentContext?.Script ?? Array.Empty<byte>());
-            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
+            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
 
             return base.Execute();
@@ -82,9 +82,9 @@ namespace Neo.BlockchainToolkit.SmartContract
 
             if (State == VMState.HALT)
             {
-                traceDebugSink.Results(State, GasConsumed, ResultStack);
+                traceDebugSink.Results(State, FeeConsumed, ResultStack);
             }
-            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
+            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
         }
 
@@ -92,7 +92,7 @@ namespace Neo.BlockchainToolkit.SmartContract
         {
             base.OnFault(e);
             traceDebugSink.Fault(e);
-            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
+            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
         }
 
         private void WriteStorages(UInt160 scriptHash)

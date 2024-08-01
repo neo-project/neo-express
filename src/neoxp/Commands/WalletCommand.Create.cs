@@ -53,8 +53,7 @@ namespace NeoExpress.Commands
 
                     for (int i = 0; i < wallet.Accounts.Count; i++)
                     {
-                        var address = UInt160.Parse(wallet.Accounts[i].ScriptHash).ToAddress(ProtocolSettings.Default.AddressVersion);
-                        console.WriteLine($"    Address: {address}");
+                        console.WriteLine($"    Address: {wallet.Accounts[i].ScriptHash}");
                     }
 
                     console.WriteLine("\n\x1b[33mNote: The private keys for the accounts in this wallet are *not* encrypted.\x1b[0m");

@@ -290,8 +290,7 @@ namespace NeoExpress.Commands
                             await writer.WriteLineAsync($"Created Wallet {cmd.Model.Name}");
                             for (int x = 0; x < wallet.Accounts.Count; x++)
                             {
-                                var address = UInt160.Parse(wallet.Accounts[x].ScriptHash).ToAddress(ProtocolSettings.Default.AddressVersion);
-                                await writer.WriteLineAsync($"    Address: {address}");
+                                await writer.WriteLineAsync($"    Address: {wallet.Accounts[x].ScriptHash}");
                             }
                             break;
                         }

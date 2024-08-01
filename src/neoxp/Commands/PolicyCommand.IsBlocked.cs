@@ -49,8 +49,7 @@ namespace NeoExpress.Commands
                     }
 
                     var isBlocked = await expressNode.GetIsBlockedAsync(scriptHash.AsT0).ConfigureAwait(false);
-                    var address = UInt160.Parse(ScriptHash).ToAddress(ProtocolSettings.Default.AddressVersion);
-                    await console.Out.WriteLineAsync($"Account is {(isBlocked ? "" : "not ")}blocked. Address: {address}, scripthash: {scriptHash}");
+                    await console.Out.WriteLineAsync($"{ScriptHash} account is {(isBlocked ? "" : "not ")}blocked");
                     return 0;
                 }
                 catch (Exception ex)

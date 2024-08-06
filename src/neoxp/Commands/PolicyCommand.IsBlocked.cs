@@ -10,6 +10,8 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
+using Neo.Wallets;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands

@@ -12,6 +12,7 @@
 using FluentAssertions;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.Extensions;
 using Neo.SmartContract;
 using Newtonsoft.Json.Linq;
 using System;

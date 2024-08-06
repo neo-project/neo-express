@@ -11,6 +11,8 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.Extensions;
+using Neo.Wallets;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
@@ -63,7 +65,7 @@ namespace NeoExpress.Commands
                             : throw new InvalidOperationException($"contract \"{Contract}\" not found");
                     var list = await expressNode.GetNFTAsync(accountHash, scriptHash).ConfigureAwait(false);
                     if (list.Count == 0)
-                        await console.Out.WriteLineAsync($"No NFT yet. (Contract:{scriptHash}, Account:{accountHash})");
+                        await console.Out.WriteLineAsync($"No NFT yet. (Contract:{scriptHash}, Account:{accountHash.ToAddress(ProtocolSettings.Default.AddressVersion)})");
                     else
                         list.ForEach(p => console.Out.WriteLine($"TokenId(Base64): {p}, TokenId(Hex): 0x{Convert.FromBase64String(p).Reverse().ToArray().ToHexString()}"));
                     return 0;

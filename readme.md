@@ -26,17 +26,17 @@ that can be installed on a developer's machine via the `dotnet tool` command.
 
 #### Requirements
 
-As of Neo v3.6, Neo-Express and Neo-Trace require 
-[version 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) 
-of [the .NET developer platform](https://dot.net) to be installed. 
+As of Neo v3.7.5, Neo-Express and Neo-Trace require
+[.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) to be installed. 
 
-> Note: Neo-Express has additional, platform-specific requirements beyond .NET 7.
+> Note: Neo-Express has additional, platform-specific requirements beyond .NET 8.
 > These requirements are detailed below.
-> Neo-Trace has no additional dependencies beyond .NET 7.
+> Neo-Trace has no additional dependencies beyond .NET 8.
 
-> Note: the Neo v3.0 version of Neo-Express and Neo-Trace used .NET 5.
-> .NET 5 is [no longer supported](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) by Microsoft.
-> We strongly recommend using .NET 7 and the latest version of Neo-Express and Neo-Trace.
+> Note: The Neo v3.6 version of Neo-Express and Neo-Trace used .NET 7.
+> The Neo v3.0 version of Neo-Express and Neo-Trace used .NET 5.
+> .NET 7 and .NET 5 is [no longer supported](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) by Microsoft.
+> We strongly recommend using .NET 8 and the latest version of Neo-Express and Neo-Trace.
 
 #### Installation
 

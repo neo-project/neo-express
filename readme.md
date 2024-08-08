@@ -4,166 +4,153 @@
 [![Nuget](https://img.shields.io/nuget/v/Neo.Express)](https://www.nuget.org/packages/Neo.Express/)
 [![Build Status](https://dev.azure.com/ngdenterprise/Build/_apis/build/status/neo-project.neo-express?branchName=master)](https://dev.azure.com/ngdenterprise/Build/_build/latest?definitionId=2&branchName=master)
 
-> Note: This repo uses a branch structure similar to other repos in the Neo project.
-> The `master` branch contains Neo N3 version of Neo-Express and Neo-Trace.
+[Neo-Express and Neo-Trace](#neo-express-and-neo-trace)
 
-## Installation
+- [Overview](#overview)
+- [Download Links](#download-links)
+- [Installation Guide](#installation-guide)
+- [Usage Guide](#usage-guide)
+- [New Features or issues](#new-features-or-issues)
+- [License](#license)
 
-Developers can choose installing Neo-Express from release packages or using .NET tool.
+## Overview
 
-### Installing release package
+Neo-Express is a private net optimized for development scenarios, built on the same Neo platform core as [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) to maximize compatibility between local development and public chain environments. Neo-Trace is a tool for generating trace files for the Neo Smart Contract Debugger.
 
-Download the latest release package from [neo-express releases](https://github.com/neo-project/neo-express/releases) for your operation system, and unzip it in your local computer.
+- ### Key Features
 
-Configure the path of neoxp.exe to the environment variable in your computer. 
+  **Neo-Express**:
 
-### Installing using .NET Tool
+  - Blockchain instance management
+  - Wallet management
+  - Asset management
+  - Smart contract management
+  - Blockchain checkpoint and rollback
 
-Neo-Express and Neo-Trace are distributed as
-[.NET Tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
-.NET tools are [NuGet](https://nuget.org) packages containing console applications
-that can be installed on a developer's machine via the `dotnet tool` command.
+  **Neo-Trace**:
+
+  - Generate trace files for Neo Smart Contract Debugger
+  - Support specifying blocks by index or hash and transactions by hash
+
+## Download Links
+
+| Platform | Download Link                                                |
+| -------- | ------------------------------------------------------------ |
+| Windows  | [win-x64-3.7.6.zip](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-win-x64-3.7.6.zip) <br/>[win-arm64-3.7.6.zip](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-win-arm64-3.7.6.zip) |
+| macOS    | [osx-x64-3.7.6.tar.xz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-osx-x64-3.7.6.tar.xz) <br/>[osx-arm64-3.7.6.tar.xz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-osx-arm64-3.7.6.tar.xz) |
+| Linux    | [linux-x64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-x64-3.7.6.tar.gz) <br/>[linux-musl-arm64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-musl-arm64-3.7.6.tar.gz) <br/>[linux-arm64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-arm64-3.7.6.tar.gz) |
+
+## Installation Guide
+
+### Install via Release Package
+
+1. Download the latest release package from [neo-express releases](https://github.com/neo-project/neo-express/releases) for your operating system.
+2. Unzip the package on your local machine.
+3. Run the `neoxp.exe` command in the terminal from the directory where you unzipped the package.
+
+### Install via .NET Tool
 
 #### Requirements
 
-As of Neo v3.7.5, Neo-Express and Neo-Trace require
-[.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) to be installed. 
+- [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or higher
 
-> Note: Neo-Express has additional, platform-specific requirements beyond .NET 8.
-> These requirements are detailed below.
-> Neo-Trace has no additional dependencies beyond .NET 8.
+#### Installation Steps
 
-> Note: The Neo v3.6 version of Neo-Express and Neo-Trace used .NET 7.
-> The Neo v3.0 version of Neo-Express and Neo-Trace used .NET 5.
-> .NET 7 and .NET 5 is [no longer supported](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) by Microsoft.
-> We strongly recommend using .NET 8 and the latest version of Neo-Express and Neo-Trace.
+To install the latest version of Neo-Express as a global tool, run the following command in a terminal window:
 
-#### Installation
-
-To install the latest version of Neo-Express as a global tool, run the
-`dotnet tool install` command in a terminal window.
-
-``` shell
-> dotnet tool install Neo.Express -g
+```shell
+dotnet tool install Neo.Express -g
 ```
 
-To update Neo-Express to the latest version, run the `dotnet tool update`
-command in a terminal window.
+To update Neo-Express to the latest version, run the following command:
 
-``` shell
-> dotnet tool update Neo.Express -g
+```shell
+dotnet tool update Neo.Express -g
 ```
 
-> Note: The process for installing and updating Neo-Trace is identical to Neo-Express
-> except the Neo-Trace NuGet package is `Neo.Trace`.
+The installation and update process for Neo-Trace is identical:
 
-.NET tools also supports "local tool" installation. This allows for different
-versions of a .NET tool to be installed in different directories.
-Full details on installing and updating .NET tools are available in the
-[official documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
-
-### Installing Preview Releases
-
-The Neo Blockchain Toolkit has a public
-[build server](https://dev.azure.com/ngdenterprise/Build/_build) and
-[package feed](https://dev.azure.com/ngdenterprise/Build/_artifacts).
-The public package feed contains unreleased builds of Neo-Express and Neo-Trace.
-
-You can install preview builds of Neo-Express or Neo-Trace by using the `--add-source`
-option to specify the Neo Blockchain Toolkit package feed.
-For example, to update to the latest release branch version of Neo-Express, you would run this command:
-
-``` shell
-> dotnet tool update Neo.Express -g --add-source https://www.myget.org/F/neo/api/v3/index.json
+```shell
+dotnet tool install Neo.Trace -g
+dotnet tool update Neo.Trace -g
 ```
-
-You can also install master branch releases of these tools by using the `--version`
-and/or `--prerelease` command line options. For more details, please see the
-[official dotnet tool documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools#install-a-specific-tool-version).
-
-If you regularly use unreleased versions of these tools in a given project,
-you can specify the Neo Blockchain Toolkit package feed in a 
-[NuGet.config file](https://docs.microsoft.com/en-us/nuget/consume-packages/configuring-nuget-behavior#changing-config-settings).
-Several Neo sample projects like 
-[NeoContributorToken](https://github.com/ngdenterprise/neo-contrib-token)
-use a NuGet.config file.
-
-## Neo-Express
-
-Neo-Express is a privatenet optimized for development scenarios. 
-It is built on the same Neo platform core as
-[neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and
-[neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html)
-to maximize compatibility between local development and public chain environments.
-
-Neo-Express provides the following features:
-
-- Blockchain instance management
-- Wallet management
-- Asset management
-- Smart contract management
-- Blockchain checkpoint and rollback
 
 ### Additional Neo-Express Requirements
 
 #### Ubuntu Installation
 
-> Note：While Microsoft has instructions for 
-> [installing .NET via Snap](https://docs.microsoft.com/en-us/dotnet/core/install/linux-snap),
-> there is a [known issue](https://github.com/dotnet/runtime/issues/3775#issuecomment-534263315)
-> with this approach that leads to a segmentation fault in Neo Express.
-> Unfortunately, this issue with the .NET snap installer
-> [has been closed and will not be fixed](https://github.com/dotnet/runtime/issues/3775#issuecomment-888676286).
-> As such, we recommend [using APT](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu)
-> to install .NET on Ubuntu instead.
+> **Note**: While Microsoft has instructions for [installing .NET via Snap](https://docs.microsoft.com/en-us/dotnet/core/install/linux-snap), there is a [known issue](https://github.com/dotnet/runtime/issues/3775#issuecomment-534263315) with this approach that leads to a segmentation fault in Neo Express. Unfortunately, this issue with the .NET snap installer [has been closed and will not be fixed](https://github.com/dotnet/runtime/issues/3775#issuecomment-888676286). As such, we recommend [using APT](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu) to install .NET on Ubuntu instead.
 
-Installing on Ubuntu requires installing libsnappy-dev, libc6-dev and librocksdb-dev via apt-get
+Installing on Ubuntu requires installing `libsnappy-dev`, `libc6-dev`, and `librocksdb-dev` via apt-get:
 
-``` shell
-> sudo apt install libsnappy-dev libc6-dev librocksdb-dev -y
+```shell
+sudo apt install libsnappy-dev libc6-dev librocksdb-dev -y
 ```
 
-#### MacOS Installation
+#### macOS Installation
 
-Installing on MacOS requires installing rocksdb via [Homebrew](https://brew.sh/)
+Installing on macOS requires installing rocksdb via [Homebrew](https://brew.sh/):
 
-``` shell
-> brew install rocksdb
+```shell
+brew install rocksdb
 ```
 
-> Note: .NET 6 Arm64 has [full support for Apple Silicon](https://devblogs.microsoft.com/dotnet/announcing-net-6/#arm64).
-> Homebrew likewise also supports Apple Silicon. If you have any issues running Neo-Express on Apple Silicon hardware,
-> please [open an issue](https://github.com/neo-project/neo-express/issues) in the Neo-Express repo.
+> **Note**: .NET 6 Arm64 has [full support for Apple Silicon](https://devblogs.microsoft.com/dotnet/announcing-net-6/#arm64). Homebrew likewise also supports Apple Silicon. If you have any issues running Neo-Express on Apple Silicon hardware, please [open an issue](https://github.com/neo-project/neo-express/issues) in the Neo-Express repo.
 
-## Neo-Trace
+## Usage Guide
 
-Neo-Trace is a tool to generate
-[Neo Smart Contract Debugger](https://github.com/neo-project/neo-debugger)
-trace files for existing blocks or transactions. You can specify a block by index or hash
-or a transaction by hash.
+### Neo-Express
 
-```
-> neotrace block 365110 --rpc-uri testnet
-> neotrace block 0xd2421d88919dccc1ac73647bf06089bae78ce02060302eff861a04e381bc91ad --rpc-uri testnet
-> neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005--rpc-uri testnet
-```
+- Create a new local Neo network:
 
-Neo-Trace depends on the  
-[StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService)
-running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet
-(such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to
-run the StateService plugin with `FullState` enabled.
+  ```shell
+  neoxp create
+  ```
 
-## Documentation
+- List all wallets:
 
-Docs are somewhat limited at this point. Please review the
-[Command Reference](docs/command-reference.md) to get an understanding of
-Neo-Express capabilities.
+  ```shell
+  neoxp wallet list
+  ```
+
+- Show genesis account balance:
+
+  `genesis` to use the consensus node multi-sig account which holds the genesis NEO and GAS.
+  
+  ```shell
+  neoxp show balances genesis
+  ```
+
+- Send 1 gas from genesis account to node1 account:
+
+  ```shell
+  neoxp transfer 1 gas genesis node1
+  ```
+
+Please review the [Command Reference](docs/command-reference.md) to get an understanding of Neo-Express capabilities.
+
+### Neo-Trace
+
+- Generate a trace file for a block:
+
+  ```shell
+  neotrace block 365110 --rpc-uri testnet
+  ```
+
+- Generate a trace file for a transaction:
+  
+  ```shell
+  neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-uri testnet
+  ```
+
+> Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled.
 
 ## New Features or issues
 
-Thanks for checking out Neo-Express and Neo-Trace!  We are eager to hear your opinion to make these tools more accessible, intuitive, easier to use or just flat-out better.
+Thank you for using Neo-Express and Neo-Trace! We welcome your feedback to make these tools more accessible, intuitive, and powerful.
 
-GitHub issues are how we track improvements we make. If you found a problem when using these tools, or there is anything you'd like to see changed in the product, check the [issues page](https://github.com/neo-project/neo-express/issues) to see if the bug or change was already reported, if not just file an issue.
+Please visit the [issues page](https://github.com/neo-project/neo-express/issues) to report problems or suggest new features. When creating a new issue, try to keep the title and description concise and provide context, such as a code snippet or an example of a feature and its expected behavior.
 
-When creating a new issue, try to keep the title and description concise, and give some context of the issue, like a snippet of the code where the problem is happening or a example of a feature, and its expected behavior.
+## License
+
+Neo-Express and Neo-Trace are licensed under the [MIT License](https://github.com/neo-project/neo-express#MIT-1-ov-file).

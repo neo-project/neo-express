@@ -640,6 +640,20 @@ The `show transaction` displays the contents of a transaction specified by hash 
 
 `show tx` is an alias for `show transaction`
 
+### neoxp show state
+
+``` 
+Usage: neoxp show state
+```
+
+Outputs the current block height, running status, and configuration file location. Example:
+
+```
+Block height: 111
+IsRunning: False
+Config file: C:\Users\bitco\.neo-express\default.neo-express
+```
+
 ## neoxp candidate
 
 The `candidate` command has a series of subcommands for managing candidates election in the Neo-Express blockchain.

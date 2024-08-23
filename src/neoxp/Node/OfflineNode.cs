@@ -118,7 +118,7 @@ namespace NeoExpress.Node
             {
                 State = engine.State,
                 Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
-                GasConsumed = engine.FeeConsumed,
+                GasConsumed = engine.GasConsumed,
                 Stack = engine.ResultStack.ToArray(),
                 Script = string.Empty,
                 Tx = string.Empty

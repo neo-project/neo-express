@@ -11,7 +11,6 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
-using Neo.Extensions;
 using Neo.Wallets;
 using System.ComponentModel.DataAnnotations;
 

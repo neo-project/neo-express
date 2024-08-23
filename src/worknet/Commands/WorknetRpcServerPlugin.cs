@@ -14,7 +14,6 @@ using Neo.BlockchainToolkit.Plugins;
 using Neo.Json;
 using Neo.Network.RPC;
 using Neo.Plugins;
-using Neo.Plugins.RpcServer;
 using Neo.SmartContract.Native;
 
 namespace NeoWorkNet.Commands;

@@ -15,7 +15,7 @@ using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
-using Neo.Plugins.RpcServer;
+using Neo.Plugins;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
@@ -26,11 +26,11 @@ namespace NeoExpress
 {
     internal class ExpressChainManager
     {
-        const string GLOBAL_PREFIX = "Global\\";
-        const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";
+        private const string GLOBAL_PREFIX = "Global\\";
+        private const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";
 
-        readonly IFileSystem fileSystem;
-        readonly ExpressChain chain;
+        private readonly IFileSystem fileSystem;
+        private readonly ExpressChain chain;
         public ProtocolSettings ProtocolSettings { get; }
 
         public ExpressChainManager(IFileSystem fileSystem, ExpressChain chain, uint? secondsPerBlock = null)
@@ -49,9 +49,9 @@ namespace NeoExpress
 
         public ExpressChain Chain => chain;
 
-        string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
+        private string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
 
-        static bool IsNodeRunning(ExpressConsensusNode node)
+        private static bool IsNodeRunning(ExpressConsensusNode node)
         {
             // Check to see if there's a neo-express blockchain currently running by
             // attempting to open a mutex with the multisig account address for a name
@@ -226,7 +226,7 @@ namespace NeoExpress
 
                     using var persistencePlugin = new ExpressPersistencePlugin();
                     using var logPlugin = new ExpressLogPlugin(console);
-                    using var dbftPlugin = new Neo.Plugins.DBFTPlugin.DBFTPlugin(GetConsensusSettings(chain));
+                    using var dbftPlugin = new Neo.Consensus.DBFTPlugin(GetConsensusSettings(chain));
                     using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
                         expressStorage, multiSigAccount.ScriptHash);
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
@@ -255,7 +255,7 @@ namespace NeoExpress
             });
             await tcs.Task.ConfigureAwait(false);
 
-            static Neo.Plugins.DBFTPlugin.Settings GetConsensusSettings(ExpressChain chain)
+            static Neo.Consensus.Settings GetConsensusSettings(ExpressChain chain)
             {
                 var settings = new Dictionary<string, string>()
                 {
@@ -264,7 +264,7 @@ namespace NeoExpress
                 };
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-                return new Neo.Plugins.DBFTPlugin.Settings(config.GetSection("PluginConfiguration"));
+                return new Neo.Consensus.Settings(config.GetSection("PluginConfiguration"));
             }
 
             static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
@@ -336,7 +336,7 @@ namespace NeoExpress
             return CheckpointExpressStorage.OpenCheckpoint(checkPointPath, scriptHash: multiSigAccount.ScriptHash);
         }
 
-        OfflineNode GetOfflineNode(bool offlineTrace = false)
+        private OfflineNode GetOfflineNode(bool offlineTrace = false)
         {
             if (IsRunning())
                 throw new NotSupportedException("Cannot get offline node while chain is running");

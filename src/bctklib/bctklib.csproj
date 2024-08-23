@@ -16,14 +16,13 @@
     <ItemGroup>
         <PackageReference Include="MessagePack" Version="2.5.171" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+        <PackageReference Include="Neo" Version="3.7.6" />
+        <PackageReference Include="Neo.Extensions" Version="3.7.6" />
         <PackageReference Include="Nerdbank.Streams" Version="2.11.74" />
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="9.4.0.50294" />
         <PackageReference Include="System.IO.Abstractions" Version="21.0.26" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\neo\src\Neo\Neo.csproj" />
-        <ProjectReference Include="..\neo\src\Plugins\MPTTrie\MPTTrie.csproj" />
-        <ProjectReference Include="..\neo\src\Plugins\RpcClient\RpcClient.csproj" />
+        <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     </ItemGroup>
 </Project>

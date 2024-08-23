@@ -12,7 +12,6 @@
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Cryptography.ECC;
-using Neo.Extensions;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
@@ -298,16 +297,16 @@ namespace NeoExpress
                         await WriteLineAsync(@int.GetInteger().ToString()).ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.Buffer buffer:
-                        await WriteLineAsync(Neo.Extensions.ByteExtensions.ToHexString(buffer.GetSpan())).ConfigureAwait(false);
+                        await WriteLineAsync(Neo.Helper.ToHexString(buffer.GetSpan())).ConfigureAwait(false);
                         break;
                     case Neo.VM.Types.ByteString byteString:
                         if (byteString.GetSpan().TryGetUtf8String(out var text))
                         {
-                            await WriteLineAsync($"{Neo.Extensions.ByteExtensions.ToHexString(byteString.GetSpan())}({text.EscapeString()})").ConfigureAwait(false);
+                            await WriteLineAsync($"{Neo.Helper.ToHexString(byteString.GetSpan())}({text.EscapeString()})").ConfigureAwait(false);
                         }
                         else
                         {
-                            await WriteLineAsync(Neo.Extensions.ByteExtensions.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
+                            await WriteLineAsync(Neo.Helper.ToHexString(byteString.GetSpan())).ConfigureAwait(false);
                         }
                         break;
                     case Neo.VM.Types.Null _:

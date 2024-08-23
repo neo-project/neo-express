@@ -22,7 +22,6 @@ using System.Text;
 namespace NeoExpress.Commands
 {
     using McMaster.Extensions.CommandLineUtils;
-    using Neo.Extensions;
 
     [Command(Name = "execute", Description = "Invoke a custom script, the input text will be converted to script with a priority: hex, base64, file path.")]
     class ExecuteCommand

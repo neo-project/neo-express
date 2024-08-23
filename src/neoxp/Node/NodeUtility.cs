@@ -30,7 +30,7 @@ using static Neo.BlockchainToolkit.Utility;
 
 namespace NeoExpress.Node
 {
-    class NodeUtility
+    internal class NodeUtility
     {
         public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
         {
@@ -191,7 +191,7 @@ namespace NeoExpress.Node
             engine.LoadContract(oracleContract, md, CallFlags.None);
             if (engine.Execute() != Neo.VM.VMState.HALT)
                 return null;
-            tx.NetworkFee += engine.FeeConsumed;
+            tx.NetworkFee += engine.GasConsumed;
 
             var executionFactor = NativeContract.Policy.GetExecFeeFactor(snapshot);
             var networkFee = executionFactor * Neo.SmartContract.Helper.MultiSignatureContractCost(m, n);
@@ -226,8 +226,9 @@ namespace NeoExpress.Node
         }
 
         // constants from ContractManagement native contracts
-        const byte Prefix_Contract = 8;
-        const byte Prefix_NextAvailableId = 15;
+        private const byte Prefix_Contract = 8;
+
+        private const byte Prefix_NextAvailableId = 15;
 
         public static async Task<(ContractState contractState, IReadOnlyList<(string key, string value)> storagePairs)> DownloadContractStateAsync(
                 string contractHash, string rpcUri, uint stateHeight)
@@ -537,11 +538,11 @@ namespace NeoExpress.Node
         }
 
         // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
-        // depend on the DataCache snapshot parameter in order to create a 
+        // depend on the DataCache snapshot parameter in order to create a
         // ContractParametersContext without direct access to node data.
-        class BlockScriptHashes : IVerifiable
+        private class BlockScriptHashes : IVerifiable
         {
-            readonly UInt160[] hashes;
+            private readonly UInt160[] hashes;
 
             public BlockScriptHashes(UInt160 scriptHash)
             {
@@ -557,9 +558,13 @@ namespace NeoExpress.Node
             }
 
             int ISerializable.Size => throw new NotImplementedException();
+
             void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
+
             void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
+
             void ISerializable.Deserialize(ref MemoryReader reader) => throw new NotImplementedException();
+
             void IVerifiable.DeserializeUnsigned(ref MemoryReader reader) => throw new NotImplementedException();
         }
     }

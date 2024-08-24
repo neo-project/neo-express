@@ -70,7 +70,7 @@ namespace Neo.BlockchainToolkit.SmartContract
         {
             traceDebugSink.ProtocolSettings(ProtocolSettings.Network, ProtocolSettings.AddressVersion);
             traceDebugSink.Script(CurrentContext?.Script ?? Array.Empty<byte>());
-            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
+            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
 
             return base.Execute();
@@ -82,9 +82,9 @@ namespace Neo.BlockchainToolkit.SmartContract
 
             if (State == VMState.HALT)
             {
-                traceDebugSink.Results(State, FeeConsumed, ResultStack);
+                traceDebugSink.Results(State, GasConsumed, ResultStack);
             }
-            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
+            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
         }
 
@@ -92,7 +92,7 @@ namespace Neo.BlockchainToolkit.SmartContract
         {
             base.OnFault(e);
             traceDebugSink.Fault(e);
-            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
+            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
         }
 
         private void WriteStorages(UInt160 scriptHash)

@@ -12,7 +12,6 @@
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit.Models;
-using Neo.Extensions;
 using NeoExpress.Models;
 using Newtonsoft.Json;
 using System.IO.Abstractions;

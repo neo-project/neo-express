@@ -16,7 +16,7 @@
     <ItemGroup>
         <PackageReference Include="MessagePack" Version="2.5.171" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
-        <PackageReference Include="Neo" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo" Version="3.7.6" />
         <PackageReference Include="Nerdbank.Streams" Version="2.11.74" />
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="9.4.0.50294" />

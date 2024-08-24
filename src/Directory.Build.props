@@ -18,7 +18,7 @@
         <ApplicationIcon>../neo-cli.ico</ApplicationIcon>
     </PropertyGroup>
     <PropertyGroup>
-        <NeoVersion>3.7.5</NeoVersion>
+        <NeoVersion>3.7.6</NeoVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>

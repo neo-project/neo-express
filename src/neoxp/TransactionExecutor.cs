@@ -107,30 +107,74 @@ namespace NeoExpress
                     throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
                 }
 
-                var nep11 = false;
-                var nep17 = false;
-                var standards = manifest.SupportedStandards;
-                for (var i = 0; i < standards.Length; i++)
-                {
-                    if (standards[i] == "NEP-11")
-                        nep11 = true;
-                    if (standards[i] == "NEP-17")
-                        nep17 = true;
-                }
-
-                if (nep11 && nep17)
+                if (manifest.SupportedStandards.Contains("NEP-11") && manifest.SupportedStandards.Contains("NEP-17"))
                 {
                     throw new Exception($"{manifest.Name} Contract declares support for both NEP-11 and NEP-17 standards. Use --force to deploy contract with invalid supported standards declarations.");
                 }
 
-                if (nep17 && manifest.IsNep17Compliant() == false)
+                if (manifest.SupportedStandards.Contains("NEP-17"))
                 {
-                    throw new Exception($"{manifest.Name} Contract declares support for NEP-17 standards. However is not NEP-17 compliant. Invalid methods/events.");
+                    var nep17CompliantErrors = manifest.Nep17CompliantErrors();
+                    if (nep17CompliantErrors.Count > 0)
+                    {
+                        foreach (var error in nep17CompliantErrors)
+                        {
+                            Console.WriteLine(error);
+                        }
+                        throw new Exception($"{manifest.Name} Contract declares support for NEP-17 standards. However is not NEP-17 compliant. Invalid methods/events.");
+                    }
                 }
 
-                if (nep11 && manifest.IsNep11Compliant() == false)
+                if (manifest.SupportedStandards.Contains("NEP-11"))
                 {
-                    throw new Exception($"{manifest.Name} Contract declares support for NEP-11 standards. However is not NEP-11 compliant. Invalid methods/events.");
+                    var nep11CompliantErrors = manifest.Nep11CompliantErrors();
+                    if (nep11CompliantErrors.Count() > 0)
+                    {
+                        foreach (var error in nep11CompliantErrors)
+                        {
+                            Console.WriteLine(error);
+                        }
+                        throw new Exception($"{manifest.Name} Contract declares support for NEP-11 standards. However is not NEP-11 compliant. Invalid methods/events.");
+                    }
+                }
+
+                if (manifest.SupportedStandards.Contains("NEP-24"))
+                {
+                    var nep24CompliantErrors = manifest.Nep24CompliantErrors();
+                    if (nep24CompliantErrors.Count() > 0)
+                    {
+                        foreach (var error in nep24CompliantErrors)
+                        {
+                            Console.WriteLine(error);
+                        }
+                        throw new Exception($"{manifest.Name} Contract declares support for NEP-24 standards. However is not NEP-24 compliant. Invalid methods/events.");
+                    }
+                }
+
+                if (manifest.SupportedStandards.Contains("NEP-26"))
+                {
+                    var nep26CompliantErrors = manifest.Nep26CompliantErrors();
+                    if (nep26CompliantErrors.Count() > 0)
+                    {
+                        foreach (var error in nep26CompliantErrors)
+                        {
+                            Console.WriteLine(error);
+                        }
+                        throw new Exception($"{manifest.Name} Contract declares support for NEP-26 standards. However is not NEP-26 compliant. Invalid methods/events.");
+                    }
+                }
+
+                if (manifest.SupportedStandards.Contains("NEP-27"))
+                {
+                    var nep27CompliantErrors = manifest.Nep27CompliantErrors();
+                    if (nep27CompliantErrors.Count() > 0)
+                    {
+                        foreach (var error in nep27CompliantErrors)
+                        {
+                            Console.WriteLine(error);
+                        }
+                        throw new Exception($"{manifest.Name} Contract declares support for NEP-27 standards. However is not NEP-27 compliant. Invalid methods/events.");
+                    }
                 }
             }
 

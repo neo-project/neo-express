@@ -95,7 +95,7 @@ These default templates are available after installing [Neo.SmartContract.Templa
 - neocontractoracle - A contract template using OracleRequest.
 - neocontractnep17 - NEP-17 contract template, including the Mint and Burn methods.
 
-More Neo.SmartContract.Template information can be found [here](https://developers.neo.org/docs/n3/develop/write/dotnet#neosmartcontracttemplate).
+More Neo.SmartContract.Template information can be found [here](https://docs.neo.org/docs/n3/develop/write/1_dotnet.html#neosmartcontracttemplate).
 
 ### Create a project using templates with Terminal
 
@@ -131,7 +131,7 @@ nccs
 
 Related contract files are outputted under `bin\sc` path in the contract project directory.
 
-More Neo.Compiler.CSharp information can be found [here](https://developers.neo.org/docs/n3/develop/write/dotnet#neocompilercsharp).
+More Neo.Compiler.CSharp information can be found [here](https://docs.neo.org/docs/n3/develop/write/1_dotnet.html#neocompilercsharp).
 
 ## Deploying and invoking smart contracts using NeoExpress
 

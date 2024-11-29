@@ -63,7 +63,7 @@ We have completed setting up the private chain and configuring the node. In this
 
 Download and install [Visual Studio Code](https://code.visualstudio.com/Download)
 
-1. Download and install [.NET 8.0 SDK](https://dotnet.microsoft.com/download)
+1. Download and install [.NET 9.0 SDK](https://dotnet.microsoft.com/download)
 
 2. Run the command line and enter the following command to check if you have installed SDK successfully.
 

@@ -52,7 +52,7 @@ Neo-Express is a private net optimized for development scenarios, built on the s
 
 #### Requirements
 
-- [.NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) or higher
+- [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or higher
 
 #### Installation Steps
 

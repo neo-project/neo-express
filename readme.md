@@ -101,6 +101,24 @@ brew install rocksdb
 
 ## Usage Guide
 
+### Quick Start
+
+Get started with Neo-Express in just a few commands:
+
+```shell
+# Install Neo-Express
+dotnet tool install Neo.Express -g
+
+# Create a new blockchain
+neoxp create
+
+# Start the blockchain
+neoxp run
+
+# Check wallet balances
+neoxp show balances genesis
+```
+
 ### Neo-Express
 
 - Create a new local Neo network:

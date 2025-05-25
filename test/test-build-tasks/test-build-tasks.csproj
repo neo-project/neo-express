@@ -33,13 +33,13 @@
       test project takes a dependency on Microsoft.Build.Utilities.Core package, v15.1.548.    
     -->
         <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.12.6" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
         <PackageReference Include="Microsoft.VisualStudio.TestPlatform.ObjectModel" Version="14.0.0" />
         <PackageReference Include="Moq" Version="4.20.72" />
         <!-- <PackageReference Include="MSBuild.ProjectCreation" Version="2.0.1" /> -->
-        <PackageReference Include="xunit" Version="2.9.2" />
+        <PackageReference Include="xunit" Version="2.9.3" />
         <PackageReference Include="Xunit.Combinatorial" Version="1.6.24" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

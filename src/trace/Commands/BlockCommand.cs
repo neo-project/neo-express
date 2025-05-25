@@ -55,6 +55,7 @@ namespace NeoTrace.Commands
                     throw new ArgumentException("Cannot trace genesis block");
                 return index;
             }
+            
             if (UInt256.TryParse(BlockIdentifier, out var hash))
                 return hash;
 

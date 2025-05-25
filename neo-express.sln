@@ -36,6 +36,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "test-build-tasks", "test\te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "test-collector", "test\test-collector\test-collector.csproj", "{A2003459-18D0-43BD-8CB9-CE3FA497A66B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test.workflowvalidation", "test\test.workflowvalidation\test.workflowvalidation.csproj", "{D53F655A-D885-44FE-B3FA-58D2BED980BB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{A2003459-18D0-43BD-8CB9-CE3FA497A66B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2003459-18D0-43BD-8CB9-CE3FA497A66B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A2003459-18D0-43BD-8CB9-CE3FA497A66B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D53F655A-D885-44FE-B3FA-58D2BED980BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D53F655A-D885-44FE-B3FA-58D2BED980BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D53F655A-D885-44FE-B3FA-58D2BED980BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D53F655A-D885-44FE-B3FA-58D2BED980BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -107,6 +113,7 @@ Global
 		{8855D899-DA70-40E5-BA0B-DF5BC36D9D37} = {BCED0811-9E4F-4034-B297-D21311F81F98}
 		{366648BC-0003-419F-9C20-2FCD63FF4A77} = {24ECF210-FA12-4121-98DA-A18BE75219C6}
 		{A2003459-18D0-43BD-8CB9-CE3FA497A66B} = {24ECF210-FA12-4121-98DA-A18BE75219C6}
+		{D53F655A-D885-44FE-B3FA-58D2BED980BB} = {24ECF210-FA12-4121-98DA-A18BE75219C6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {14A0ACFA-EDC0-48D6-9C28-1EBCC3D544A5}

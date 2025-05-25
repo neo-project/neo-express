@@ -17,6 +17,8 @@
 
 Neo-Express is a private net optimized for development scenarios, built on the same Neo platform core as [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) to maximize compatibility between local development and public chain environments. Neo-Trace is a tool for generating trace files for the Neo Smart Contract Debugger.
 
+These tools provide developers with a complete local development environment for building, testing, and debugging Neo smart contracts efficiently.
+
 - ### Key Features
 
   **Neo-Express**:
@@ -116,7 +118,7 @@ brew install rocksdb
 - Show genesis account balance:
 
   `genesis` to use the consensus node multi-sig account which holds the genesis NEO and GAS.
-  
+
   ```shell
   neoxp show balances genesis
   ```
@@ -138,7 +140,7 @@ Please review the [Command Reference](docs/command-reference.md) to get an under
   ```
 
 - Generate a trace file for a transaction:
-  
+
   ```shell
   neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-uri testnet
   ```

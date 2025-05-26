@@ -291,6 +291,9 @@ public class NeoxpToolIntegrationTests : IDisposable
 
         _output.WriteLine("=== Testing neoxp checkpoint create command ===");
 
+        // Clean up any existing RocksDB lock files before starting
+        await CleanupRocksDbLockFiles();
+
         var originalDir = Directory.GetCurrentDirectory();
         try
         {
@@ -299,6 +302,11 @@ public class NeoxpToolIntegrationTests : IDisposable
             // Create checkpoints directory
             var checkpointsDir = Path.Combine(_tempDirectory, "checkpoints");
             Directory.CreateDirectory(checkpointsDir);
+
+            // Stop any running nodes first to release locks
+            _output.WriteLine("Stopping any running nodes to release RocksDB locks...");
+            await RunNeoxpCommand("stop --all");
+            await Task.Delay(2000); // Wait for processes to fully stop
 
             // Equivalent to: neoxp checkpoint create checkpoints/init --force
             var checkpointResult = await RunNeoxpCommand("checkpoint create checkpoints/init --force");
@@ -415,8 +423,47 @@ public class NeoxpToolIntegrationTests : IDisposable
         return (process.ExitCode, output, error);
     }
 
+    private async Task CleanupRocksDbLockFiles()
+    {
+        try
+        {
+            _output.WriteLine("Cleaning up RocksDB lock files...");
+
+            // Stop any running neoxp processes first
+            await RunNeoxpCommand("stop --all");
+            await Task.Delay(1000); // Wait for processes to stop
+
+            // Clean up the neo-express directory which contains RocksDB files
+            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
+            if (Directory.Exists(neoExpressDir))
+            {
+                var blockchainNodesDir = Path.Combine(neoExpressDir, "blockchain-nodes");
+                if (Directory.Exists(blockchainNodesDir))
+                {
+                    _output.WriteLine($"Removing blockchain nodes directory: {blockchainNodesDir}");
+                    Directory.Delete(blockchainNodesDir, true);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine($"Warning: Could not clean up RocksDB lock files: {ex.Message}");
+        }
+    }
+
     public void Dispose()
     {
+        // Stop any running neoxp processes first
+        try
+        {
+            var stopTask = RunNeoxpCommand("stop --all");
+            stopTask.Wait(5000); // Wait up to 5 seconds
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine($"Warning: Could not stop neoxp processes: {ex.Message}");
+        }
+
         // Clean up any running processes
         foreach (var process in _runningProcesses)
         {
@@ -433,6 +480,25 @@ public class NeoxpToolIntegrationTests : IDisposable
             {
                 _output.WriteLine($"Error disposing process: {ex.Message}");
             }
+        }
+
+        // Clean up RocksDB files
+        try
+        {
+            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
+            if (Directory.Exists(neoExpressDir))
+            {
+                var blockchainNodesDir = Path.Combine(neoExpressDir, "blockchain-nodes");
+                if (Directory.Exists(blockchainNodesDir))
+                {
+                    _output.WriteLine($"Cleaning up blockchain nodes directory: {blockchainNodesDir}");
+                    Directory.Delete(blockchainNodesDir, true);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine($"Warning: Could not clean up RocksDB files: {ex.Message}");
         }
 
         // Clean up temp directory

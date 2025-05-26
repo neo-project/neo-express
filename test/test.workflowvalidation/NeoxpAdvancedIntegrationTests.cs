@@ -51,6 +51,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
 
     private static string FindSolutionDirectory(string startPath)
     {
+        // First try the standard approach - walk up the directory tree
         var current = new DirectoryInfo(startPath);
         while (current != null)
         {
@@ -59,15 +60,30 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             current = current.Parent;
         }
 
-        // Try alternative paths if not found
+        // If running from a temp directory (like when dotnet test runs), try to find the solution
+        // by looking for common development paths
         var alternatives = new[]
         {
+            // Try relative paths from start path
             Path.Combine(startPath, "..", "..", ".."),
             Path.Combine(startPath, "..", "..", "..", ".."),
             Path.Combine(startPath, "..", "..", "..", "..", ".."),
+
+            // Try from current directory
             Environment.CurrentDirectory,
             Path.Combine(Environment.CurrentDirectory, "..", ".."),
-            Path.Combine(Environment.CurrentDirectory, "..", "..", "..")
+            Path.Combine(Environment.CurrentDirectory, "..", "..", ".."),
+
+            // Try common development paths
+            @"C:\Users\liaoj\git\neo-express",
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "git", "neo-express"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "neo-express"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "repos", "neo-express"),
+
+            // Try to find any neo-express.sln on the system by searching common locations
+            @"C:\git\neo-express",
+            @"C:\source\neo-express",
+            @"C:\repos\neo-express"
         };
 
         foreach (var alt in alternatives)
@@ -81,6 +97,27 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             catch
             {
                 // Ignore path errors
+            }
+        }
+
+        // Last resort: search for neo-express.sln in common drive locations
+        var drives = new[] { "C:", "D:", "E:" };
+        var commonPaths = new[] { "git", "source", "repos", "dev", "projects" };
+
+        foreach (var drive in drives)
+        {
+            foreach (var commonPath in commonPaths)
+            {
+                try
+                {
+                    var searchPath = Path.Combine(drive, commonPath, "neo-express");
+                    if (Directory.Exists(searchPath) && File.Exists(Path.Combine(searchPath, "neo-express.sln")))
+                        return searchPath;
+                }
+                catch
+                {
+                    // Ignore path errors
+                }
             }
         }
 
@@ -265,7 +302,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         try
         {
             Directory.SetCurrentDirectory(_tempDirectory);
-            await RunNeoxpCommand("create");
+            await RunNeoxpCommand("create --force");
             _projectCreated = true;
         }
         finally
@@ -282,11 +319,22 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Create bob wallet if it doesn't exist
-            var configFile = Path.Combine(_tempDirectory, "default.neo-express.json");
-            var configContent = await File.ReadAllTextAsync(configFile);
-            if (!configContent.Contains("bob"))
+            // neoxp creates the config file in ~/.neo-express/ directory
+            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
+            var configFile = Path.Combine(neoExpressDir, "default.neo-express");
+
+            if (File.Exists(configFile))
             {
-                await RunNeoxpCommand("wallet create bob");
+                var configContent = await File.ReadAllTextAsync(configFile);
+                if (!configContent.Contains("bob"))
+                {
+                    await RunNeoxpCommand("wallet create bob --force");
+                }
+            }
+            else
+            {
+                // If config doesn't exist, create wallet anyway
+                await RunNeoxpCommand("wallet create bob --force");
             }
         }
         finally

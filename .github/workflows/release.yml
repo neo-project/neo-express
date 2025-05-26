@@ -3,6 +3,11 @@ name: Release
 on:
   workflow_dispatch:
 
+# Cancel old actions when new commits are made
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   standalone:
     name: Standalone Build
@@ -14,6 +19,7 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/release/')
     needs: [standalone]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4

@@ -3,6 +3,11 @@ name: Run Test
 on:
   workflow_call:
 
+# Cancel old actions when new commits are made
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CONFIGURATION: 'Release'
   DOTNET_VERSION: '9.0.x'
@@ -10,6 +15,7 @@ env:
 jobs:
   format:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - name: Checkout Code
@@ -32,6 +38,7 @@ jobs:
   build:
     needs: [format]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]

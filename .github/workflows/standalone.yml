@@ -3,6 +3,11 @@ name: Standalone Build
 on:
   workflow_call:
 
+# Cancel old actions when new commits are made
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DOTNET_VERSION: 9.0.x
   CONFIGURATION: Release
@@ -13,6 +18,7 @@ jobs:
   standalone:
     name: Build ${{ matrix.runtime }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         runtime: [linux-x64, linux-arm64, linux-musl-arm64, osx-x64, osx-arm64, win-x64, win-arm64]

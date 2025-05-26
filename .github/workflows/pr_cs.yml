@@ -10,6 +10,11 @@ on:
       - '**.cs'
       - '**.csproj'
 
+# Cancel old actions when new commits are made
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     uses: ./.github/workflows/test.yml

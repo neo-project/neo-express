@@ -18,9 +18,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
-    <PackageReference Include="Neo.Assertions" Version="3.5.15" />
-    <PackageReference Include="Neo.BuildTasks" Version="3.5.15" PrivateAssets="all" />
-    <PackageReference Include="Neo.Test.Harness" Version="3.5.15" />
+    <PackageReference Include="Neo.Assertions" Version="3.8.1" />
+    <PackageReference Include="Neo.BuildTasks" Version="3.8.1" PrivateAssets="all" />
+    <PackageReference Include="Neo.Test.Harness" Version="3.8.1" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -28,7 +28,7 @@
     </PackageReference>
   </ItemGroup>
 
-  <Target Name="ExecuteCreateNeoExpressInstance" Condition="!Exists($(NeoExpressBatchInputFile))" 
+  <Target Name="ExecuteCreateNeoExpressInstance" Condition="!Exists($(NeoExpressBatchInputFile))"
           AfterTargets="Build" BeforeTargets="ExecuteNeoExpressBatch">
     <Exec WorkingDirectory="$(ProjectDir)" Command="dotnet neoxp create" />
     <Exec WorkingDirectory="$(ProjectDir)" Command="dotnet neoxp wallet create owner" />

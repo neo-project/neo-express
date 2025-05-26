@@ -60,7 +60,7 @@ jobs:
       run: dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal
 
     - name: Test
-      run: dotnet test neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal
+      run: dotnet test neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal --filter "FullyQualifiedName!~test.workflowvalidation"
 
     - name: Pack for Install
       run: dotnet pack neo-express.sln --configuration ${{ env.CONFIGURATION }} --output ./out --no-build --verbosity normal

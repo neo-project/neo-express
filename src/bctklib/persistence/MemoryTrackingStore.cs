@@ -37,6 +37,16 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public ISnapshot GetSnapshot() => new Snapshot(store, trackingMap, this.CommitSnapshot);
 
+        /// <summary>
+        /// Gets a Neo 3.8.2 compatible snapshot of the store.
+        /// </summary>
+        /// <returns>A Neo 3.8.2 compatible IStoreSnapshot.</returns>
+        public IStoreSnapshot GetStoreSnapshot()
+        {
+            var legacySnapshot = GetSnapshot();
+            return new Neo382StoreSnapshot(legacySnapshot, this);
+        }
+
         [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? key) => TryGet(key, trackingMap, store);
 

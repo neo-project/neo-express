@@ -138,5 +138,15 @@ namespace Neo.BlockchainToolkit.Persistence
                 throw new InvalidOperationException("read only");
             return new Snapshot(db, columnFamily);
         }
+
+        /// <summary>
+        /// Gets a Neo 3.8.2 compatible snapshot of the store.
+        /// </summary>
+        /// <returns>A Neo 3.8.2 compatible IStoreSnapshot.</returns>
+        public IStoreSnapshot GetStoreSnapshot()
+        {
+            var legacySnapshot = GetSnapshot();
+            return new Neo382StoreSnapshot(legacySnapshot, this);
+        }
     }
 }

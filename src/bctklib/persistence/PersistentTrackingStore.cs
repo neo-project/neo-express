@@ -214,5 +214,15 @@ namespace Neo.BlockchainToolkit.Persistence
         {
             return new Snapshot(db, columnFamily, store);
         }
+
+        /// <summary>
+        /// Gets a Neo 3.8.2 compatible snapshot of the store.
+        /// </summary>
+        /// <returns>A Neo 3.8.2 compatible IStoreSnapshot.</returns>
+        public IStoreSnapshot GetStoreSnapshot()
+        {
+            var legacySnapshot = GetSnapshot();
+            return new Neo382StoreSnapshot(legacySnapshot, this);
+        }
     }
 }

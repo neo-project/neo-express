@@ -184,7 +184,7 @@ export default class NeoExpress {
       ok =
         parseInt(
           childProcess.execFileSync(this.dotnetPath, ["--version"]).toString()
-        ) >= 5;
+        ) >= 6;
     } catch (e : any) {
       Log.error(LOG_PREFIX, "checkForDotNet error:", e.message);
       ok = false;
@@ -193,7 +193,7 @@ export default class NeoExpress {
       this.checkForDotNetPassedAt = now;
     } else {
       const response = await vscode.window.showErrorMessage(
-        ".NET 5 or higher is required to use this functionality.",
+        ".NET 6 or higher is required to use this functionality.",
         "Dismiss",
         "More info"
       );

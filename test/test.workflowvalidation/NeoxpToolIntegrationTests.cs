@@ -178,19 +178,35 @@ public class NeoxpToolIntegrationTests : IDisposable
         var packages = Directory.GetFiles(_outDirectory, "neo.express*.nupkg");
         packages.Should().NotBeEmpty("neo.express package should be created");
 
+        // Try to uninstall any existing tool first to avoid conflicts
+        _output.WriteLine("Uninstalling any existing neo.express tool...");
+        await RunDotNetCommand("tool", "uninstall --global neo.express");
+
         // Install neoxp tool (equivalent to: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express)
         var installResult = await RunDotNetCommand("tool", $"install --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
 
-        // Tool might already be installed, so we accept both success and "already installed" scenarios
-        if (installResult.ExitCode != 0 && installResult.Error.Contains("already installed"))
+        // Handle various installation scenarios
+        if (installResult.ExitCode != 0)
         {
-            _output.WriteLine("Tool already installed, updating...");
-            var updateResult = await RunDotNetCommand("tool", $"update --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
-            updateResult.ExitCode.Should().Be(0, "tool update should succeed");
-        }
-        else
-        {
-            installResult.ExitCode.Should().Be(0, "tool install should succeed");
+            if (installResult.Error.Contains("already installed") ||
+                installResult.Error.Contains("already exists") ||
+                installResult.Error.Contains("file or directory with the same name already exists"))
+            {
+                _output.WriteLine("Tool already exists, trying to update...");
+                var updateResult = await RunDotNetCommand("tool", $"update --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
+                if (updateResult.ExitCode != 0)
+                {
+                    _output.WriteLine("Update failed, trying uninstall and reinstall...");
+                    await RunDotNetCommand("tool", "uninstall --global neo.express");
+                    await Task.Delay(1000); // Wait for cleanup
+                    var reinstallResult = await RunDotNetCommand("tool", $"install --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
+                    reinstallResult.ExitCode.Should().Be(0, "tool reinstall should succeed");
+                }
+            }
+            else
+            {
+                installResult.ExitCode.Should().Be(0, "tool install should succeed");
+            }
         }
 
         _toolInstalled = true;

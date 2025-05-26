@@ -130,23 +130,15 @@ namespace Neo.BlockchainToolkit.Persistence
             db.Remove(key ?? Array.Empty<byte>(), columnFamily);
         }
 
-        public ISnapshot GetSnapshot()
+        public IStoreSnapshot GetSnapshot()
         {
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
             if (readOnly)
                 throw new InvalidOperationException("read only");
-            return new Snapshot(db, columnFamily);
+            return new Snapshot(db, columnFamily, this);
         }
 
-        /// <summary>
-        /// Gets a Neo 3.8.2 compatible snapshot of the store.
-        /// </summary>
-        /// <returns>A Neo 3.8.2 compatible IStoreSnapshot.</returns>
-        public IStoreSnapshot GetStoreSnapshot()
-        {
-            var legacySnapshot = GetSnapshot();
-            return new Neo382StoreSnapshot(legacySnapshot, this);
-        }
+
     }
 }

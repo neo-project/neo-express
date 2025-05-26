@@ -13,7 +13,7 @@ using Neo.Persistence;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
-    public class NullStore : IReadOnlyStore
+    public class NullStore : IReadOnlyStore<byte[], byte[]>
     {
         public static readonly NullStore Instance = new NullStore();
 

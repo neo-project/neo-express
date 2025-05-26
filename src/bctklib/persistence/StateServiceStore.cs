@@ -11,6 +11,7 @@
 
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Utilities;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
@@ -27,7 +28,7 @@ using System.Diagnostics;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
-    public sealed partial class StateServiceStore : IReadOnlyStore, IDisposable
+    public sealed partial class StateServiceStore : IReadOnlyStore<StorageKey, StorageItem>, IReadOnlyStore<byte[], byte[]>, IDisposable
     {
         internal interface ICacheClient : IDisposable
         {
@@ -243,7 +244,6 @@ namespace Neo.BlockchainToolkit.Persistence
             }
         }
 
-        [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? _key)
         {
             if (disposed)
@@ -376,7 +376,6 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public bool Contains(byte[]? key) => TryGet(key) is not null;
 
-        [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? _key, SeekDirection direction)
         {
             if (disposed)
@@ -478,6 +477,52 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
             => Seek(key_prefix, direction);
+
+        // IReadOnlyStore<StorageKey, StorageItem> implementation
+        public StorageItem this[StorageKey key]
+        {
+            get
+            {
+                if (TryGet(key, out var value))
+                    return value;
+                throw new KeyNotFoundException($"Key not found: {Convert.ToHexString(key.ToArray())}");
+            }
+        }
+
+        [Obsolete("use TryGet(StorageKey key, out StorageItem? value) instead.")]
+        public StorageItem? TryGet(StorageKey key)
+        {
+            var keyBytes = key.ToArray();
+            var valueBytes = TryGet(keyBytes);
+            return valueBytes != null ? new StorageItem(valueBytes) : null;
+        }
+
+        public bool TryGet(StorageKey key, out StorageItem? value)
+        {
+            var keyBytes = key.ToArray();
+            if (TryGet(keyBytes, out var valueBytes))
+            {
+                value = new StorageItem(valueBytes);
+                return true;
+            }
+            value = null;
+            return false;
+        }
+
+        public bool Contains(StorageKey key)
+        {
+            var keyBytes = key.ToArray();
+            return Contains(keyBytes);
+        }
+
+        public IEnumerable<(StorageKey Key, StorageItem Value)> Find(StorageKey? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+        {
+            var prefixBytes = key_prefix?.ToArray();
+            foreach (var (keyBytes, valueBytes) in Find(prefixBytes, direction))
+            {
+                yield return ((StorageKey)keyBytes, new StorageItem(valueBytes));
+            }
+        }
 
         IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> FindStates(UInt160 contractHash, byte? prefix)
         {

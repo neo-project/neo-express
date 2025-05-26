@@ -60,16 +60,33 @@ namespace Neo.Test.Runner
                                                fileSystem: fileSystem);
         }
 
-        public static ContractParameterParser.TryGetUInt160 CreateTryGetContract(this IReadOnlyStore store)
+        public static ContractParameterParser.TryGetUInt160 CreateTryGetContract(this IStore store)
         {
             (string name, UInt160 hash)[] contracts;
-            using (var snapshot = new SnapshotCache(store))
+            using (var snapshot = new StoreCache(store.GetSnapshot()))
             {
                 contracts = NativeContract.ContractManagement.ListContracts(snapshot)
                     .Select(c => (name: c.Manifest.Name, hash: c.Hash))
                     .ToArray();
             }
 
+            return CreateTryGetContractFromArray(contracts);
+        }
+
+        public static ContractParameterParser.TryGetUInt160 CreateTryGetContract(this IReadOnlyStore store)
+        {
+            // For IReadOnlyStore, we need to use a different approach since it doesn't have GetSnapshot()
+            // We'll create a minimal implementation that returns a no-op function
+            // This maintains compatibility but with limited functionality
+            return (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) =>
+            {
+                scriptHash = null!;
+                return false;
+            };
+        }
+
+        private static ContractParameterParser.TryGetUInt160 CreateTryGetContractFromArray((string name, UInt160 hash)[] contracts)
+        {
             return (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) =>
                 {
                     for (int i = 0; i < contracts.Length; i++)

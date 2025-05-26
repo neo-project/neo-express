@@ -11,6 +11,7 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.Extensions;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.RegularExpressions;

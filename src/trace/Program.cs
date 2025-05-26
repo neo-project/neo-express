@@ -14,11 +14,14 @@ using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.BlockchainToolkit.TraceDebug;
+using Neo.Extensions;
 using Neo.IO;
+using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoTrace.Commands;
 using OneOf;
@@ -67,7 +70,7 @@ namespace NeoTrace
 
         static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
         {
-            IReadOnlyStore roStore;
+            IReadOnlyStore<byte[], byte[]> roStore;
             if (block.Index == 0)
             {
                 roStore = NullStore.Instance;
@@ -79,7 +82,9 @@ namespace NeoTrace
             }
 
             using var store = new MemoryTrackingStore(roStore);
-            using var snapshot = new SnapshotCache(store.GetSnapshot());
+            // Create a DataCache using the store's snapshot
+            using var storeSnapshot = store.GetSnapshot();
+            var snapshot = CreateDataCacheFromSnapshot(storeSnapshot);
 
             using (var engine = ApplicationEngine.Create(TriggerType.OnPersist, null, snapshot, block, settings, 0))
             {
@@ -90,7 +95,7 @@ namespace NeoTrace
                     throw new InvalidOperationException("NativeOnPersist operation failed", engine.FaultException);
             }
 
-            var clonedSnapshot = snapshot.CreateSnapshot();
+            var clonedSnapshot = snapshot.CloneCache();
             for (int i = 0; i < block.Transactions.Length; i++)
             {
                 Transaction tx = block.Transactions[i];
@@ -121,7 +126,7 @@ namespace NeoTrace
                 }
                 else
                 {
-                    clonedSnapshot = snapshot.CreateSnapshot();
+                    clonedSnapshot = snapshot.CloneCache();
                 }
             }
 
@@ -163,6 +168,12 @@ namespace NeoTrace
                 MillisecondsPerBlock = version.Protocol.MillisecondsPerBlock,
                 Network = version.Protocol.Network,
             };
+        }
+
+        static DataCache CreateDataCacheFromSnapshot(IStoreSnapshot storeSnapshot)
+        {
+            // In Neo 3.8.2, SnapshotCache has been replaced by StoreCache
+            return new StoreCache(storeSnapshot);
         }
     }
 }

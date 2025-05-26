@@ -40,7 +40,9 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
 
         public void Serialize(ref MessagePackWriter writer, UInt160 value, MessagePackSerializerOptions options)
         {
-            writer.Write(value.ToArray());
+            var buffer = new byte[UInt160.Length];
+            value.Serialize(buffer);
+            writer.Write(buffer);
         }
     }
 }

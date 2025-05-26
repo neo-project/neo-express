@@ -24,16 +24,16 @@ namespace Neo.BlockchainToolkit.Persistence
 
         readonly RocksDb db;
         readonly ColumnFamilyHandle columnFamily;
-        readonly IReadOnlyStore store;
+        readonly IReadOnlyStore<byte[], byte[]> store;
         readonly bool shared;
         bool disposed;
 
-        public PersistentTrackingStore(RocksDb db, IReadOnlyStore store, bool shared = false, string familyName = nameof(PersistentTrackingStore))
+        public PersistentTrackingStore(RocksDb db, IReadOnlyStore<byte[], byte[]> store, bool shared = false, string familyName = nameof(PersistentTrackingStore))
             : this(db, db.GetOrCreateColumnFamily(familyName), store, shared)
         {
         }
 
-        internal PersistentTrackingStore(RocksDb db, ColumnFamilyHandle columnFamily, IReadOnlyStore store, bool shared = false)
+        internal PersistentTrackingStore(RocksDb db, ColumnFamilyHandle columnFamily, IReadOnlyStore<byte[], byte[]> store, bool shared = false)
         {
             this.db = db;
             this.columnFamily = columnFamily;
@@ -78,11 +78,14 @@ namespace Neo.BlockchainToolkit.Persistence
             return value != null;
         }
 
-        static byte[]? TryGet(byte[]? key, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore store)
+        static byte[]? TryGet(byte[]? key, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore<byte[], byte[]> store)
         {
             using var slice = db.GetSlice(key, columnFamily, readOptions);
             if (!slice.Valid)
-                return store.TryGet(key);
+            {
+                store.TryGet(key, out var storeValue);
+                return storeValue;
+            }
             var value = slice.GetValue();
             if (value[0] == DELETED_KEY)
                 return null;
@@ -98,7 +101,7 @@ namespace Neo.BlockchainToolkit.Persistence
             return Contains(key, db, columnFamily, null, store);
         }
 
-        static bool Contains(byte[]? key, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore store)
+        static bool Contains(byte[]? key, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore<byte[], byte[]> store)
         {
             using var slice = db.GetSlice(key, columnFamily, readOptions);
             if (slice.Valid)
@@ -127,10 +130,10 @@ namespace Neo.BlockchainToolkit.Persistence
             return Seek(key_prefix, direction, db, columnFamily, null, store);
         }
 
-        public static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore store)
+        public static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore<byte[], byte[]> store)
         {
             var trackedItems = SeekTracked(key, direction, db, columnFamily);
-            var storeItems = store.Seek(key, direction).Where(KeyUntracked);
+            var storeItems = store.Find(key, direction).Where(KeyUntracked);
 
             var comparer = direction == SeekDirection.Forward
                 ? MemorySequenceComparer.Default
@@ -210,19 +213,11 @@ namespace Neo.BlockchainToolkit.Persistence
             }
         }
 
-        public ISnapshot GetSnapshot()
+        public IStoreSnapshot GetSnapshot()
         {
-            return new Snapshot(db, columnFamily, store);
+            return new Snapshot(db, columnFamily, store, this);
         }
 
-        /// <summary>
-        /// Gets a Neo 3.8.2 compatible snapshot of the store.
-        /// </summary>
-        /// <returns>A Neo 3.8.2 compatible IStoreSnapshot.</returns>
-        public IStoreSnapshot GetStoreSnapshot()
-        {
-            var legacySnapshot = GetSnapshot();
-            return new Neo382StoreSnapshot(legacySnapshot, this);
-        }
+
     }
 }

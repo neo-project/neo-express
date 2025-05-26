@@ -9,27 +9,36 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using Neo.BlockchainToolkit.Utilities;
 using Neo.Persistence;
+using OneOf;
 using RocksDbSharp;
+using System.Collections.Immutable;
+using None = OneOf.Types.None;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
+    using TrackingMap = ImmutableDictionary<ReadOnlyMemory<byte>, OneOf<ReadOnlyMemory<byte>, None>>;
+
     public partial class PersistentTrackingStore
     {
-        class Snapshot : ISnapshot
+        class Snapshot : IStoreSnapshot
         {
             readonly RocksDb db;
             readonly ColumnFamilyHandle columnFamily;
-            readonly IReadOnlyStore store;
+            readonly IReadOnlyStore<byte[], byte[]> store;
             readonly RocksDbSharp.Snapshot snapshot;
             readonly ReadOptions readOptions;
             readonly WriteBatch writeBatch;
+            readonly IStore storeRef;
+            TrackingMap uncommittedChanges = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
 
-            public Snapshot(RocksDb db, ColumnFamilyHandle columnFamily, IReadOnlyStore store)
+            public Snapshot(RocksDb db, ColumnFamilyHandle columnFamily, IReadOnlyStore<byte[], byte[]> store, IStore storeRef)
             {
                 this.db = db;
                 this.columnFamily = columnFamily;
                 this.store = store;
+                this.storeRef = storeRef;
 
                 snapshot = db.CreateSnapshot();
                 readOptions = new ReadOptions()
@@ -37,6 +46,8 @@ namespace Neo.BlockchainToolkit.Persistence
                     .SetFillCache(false);
                 writeBatch = new WriteBatch();
             }
+
+            public IStore Store => storeRef;
 
             public void Dispose()
             {
@@ -56,6 +67,25 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
+
+                // First check if the key is in uncommitted changes
+                key ??= Array.Empty<byte>();
+                if (uncommittedChanges.TryGetValue(key, out var changeValue))
+                {
+                    if (changeValue.TryPickT0(out var changeValueData, out var _))
+                    {
+                        value = changeValueData.ToArray();
+                        return true;
+                    }
+                    else
+                    {
+                        // Key was deleted in uncommitted changes
+                        value = null;
+                        return false;
+                    }
+                }
+
+                // If not in uncommitted changes, check the snapshot and store
                 value = PersistentTrackingStore.TryGet(key, db, columnFamily, readOptions, store);
                 return value != null;
             }
@@ -64,6 +94,15 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
+
+                // First check if the key is in uncommitted changes
+                key ??= Array.Empty<byte>();
+                if (uncommittedChanges.TryGetValue(key, out var changeValue))
+                {
+                    return changeValue.IsT0; // True if it's a value, false if it's a deletion
+                }
+
+                // If not in uncommitted changes, check the snapshot and store
                 return PersistentTrackingStore.Contains(key, db, columnFamily, readOptions, store);
             }
 
@@ -90,6 +129,10 @@ namespace Neo.BlockchainToolkit.Persistence
                     throw new NullReferenceException(nameof(value));
 
                 key ??= Array.Empty<byte>();
+
+                // Track the change in uncommitted changes
+                uncommittedChanges = uncommittedChanges.SetItem(key, (ReadOnlyMemory<byte>)value);
+
                 writeBatch.PutVector(columnFamily, key, UPDATED_PREFIX, value);
             }
 
@@ -98,6 +141,10 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
                 key ??= Array.Empty<byte>();
+
+                // Track the deletion in uncommitted changes
+                uncommittedChanges = uncommittedChanges.SetItem(key, default(None));
+
                 if (store.Contains(key))
                 {
                     writeBatch.Put(key.AsSpan(), DELETED_PREFIX.Span, columnFamily);

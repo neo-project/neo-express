@@ -13,6 +13,7 @@ using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Json;
 using Neo.Network.P2P.Payloads;
@@ -46,7 +47,7 @@ namespace NeoExpress.Node
                     MerkleRoot = MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
                     Timestamp = timestamp > prevHeader.Timestamp
                         ? timestamp
-                        : Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1),
+                        : Math.Max(DateTime.UtcNow.ToTimestampMS(), prevHeader.Timestamp + 1),
                     Index = blockHeight,
                     PrimaryIndex = 0,
                     NextConsensus = prevHeader.NextConsensus
@@ -79,7 +80,7 @@ namespace NeoExpress.Node
             if (blockCount == 0)
                 return;
 
-            var timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevHeader.Timestamp + 1);
+            var timestamp = Math.Max(DateTime.UtcNow.ToTimestampMS(), prevHeader.Timestamp + 1);
             var delta = (ulong)timestampDelta.TotalMilliseconds;
 
             if (blockCount == 1)
@@ -201,8 +202,8 @@ namespace NeoExpress.Node
 
             int size_inv = 66 * m;
             int size = Transaction.HeaderSize + tx.Signers.GetVarSize() + tx.Script.GetVarSize()
-                + Neo.IO.Helper.GetVarSize(hashes.Length) + witnessDict[NativeContract.Oracle.Hash].Size
-                + Neo.IO.Helper.GetVarSize(size_inv) + size_inv + oracleSignContract.Script.GetVarSize();
+                + hashes.Length.GetVarSize() + witnessDict[NativeContract.Oracle.Hash].Size
+                + size_inv.GetVarSize() + size_inv + oracleSignContract.Script.GetVarSize();
 
             var feePerByte = NativeContract.Policy.GetFeePerByte(snapshot);
             if (response.Result.Length > OracleResponse.MaxResultSize)

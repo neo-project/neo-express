@@ -12,9 +12,11 @@
 using Neo;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography.ECC;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.Persistence.Providers;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
@@ -31,7 +33,7 @@ public class DeployedContractFixture : IDisposable
 {
     readonly IStore store;
     readonly ContractState state;
-    public IReadOnlyStore Store => store;
+    public IStore Store => store;
     public UInt160 ContractHash => state.Hash;
 
     public static readonly ProtocolSettings Default = new()
@@ -85,7 +87,7 @@ public class DeployedContractFixture : IDisposable
 
         EnsureLedgerInitialized(store, Default);
 
-        using (var snapshot = new SnapshotCache(store.GetSnapshot()))
+        using (var snapshot = new StoreCache(store.GetSnapshot()))
         {
             this.state = Deploy(snapshot, signer, nefFile, manifest, ProtocolSettings.Default);
             snapshot.Commit();
@@ -108,9 +110,9 @@ public class DeployedContractFixture : IDisposable
             return ContractManifest.Parse(json);
         }
 
-        static void EnsureLedgerInitialized(IStore store, ProtocolSettings settings)
+        void EnsureLedgerInitialized(IStore store, ProtocolSettings settings)
         {
-            using SnapshotCache snapshotCache = new(store.GetSnapshot());
+            using StoreCache snapshotCache = new(store.GetSnapshot());
 
             if (LedgerInitialized(snapshotCache))
             {

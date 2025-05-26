@@ -11,6 +11,7 @@
 
 using FluentAssertions;
 using Neo.BlockchainToolkit.SmartContract;
+using Neo.Extensions;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.VM;
@@ -43,7 +44,7 @@ namespace test.bctklib
             var coveragePath = fs.Path.Combine(fs.Path.GetTempPath(), fs.Path.GetRandomFileName());
             System.Environment.SetEnvironmentVariable(COVERAGE_ENV_NAME, coveragePath);
 
-            using var snapshot = new SnapshotCache(deployedContractFixture.Store);
+            using var snapshot = new StoreCache(deployedContractFixture.Store.GetSnapshot());
             using var engine = new TestApplicationEngine(snapshot, fileSystem: fs);
 
             engine.LoadScript(script);

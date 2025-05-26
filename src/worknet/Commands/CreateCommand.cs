@@ -14,6 +14,7 @@ using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Cryptography;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
@@ -142,17 +143,17 @@ class CreateCommand
         var signerCount = (keys.Length * 2 / 3) + 1;
         var consensusContract = Contract.CreateMultiSigContract(signerCount, keys);
 
-        using var snapshot = new SnapshotCache(store.GetSnapshot());
+        using var snapshot = new StoreCache(store.GetSnapshot());
 
         // replace the Neo Committee with express consensus nodes
-        // Prefix_Committee stores array of structs containing PublicKey / vote count 
+        // Prefix_Committee stores array of structs containing PublicKey / vote count
         var members = consensusAccounts.Select(a => new NeoStruct { a.GetKey().PublicKey.ToArray(), 0 });
         var committee = new NeoArray(members);
         var committeeKeyBuilder = new KeyBuilder(NativeContract.NEO.Id, Prefix_Committee);
         var committeeItem = snapshot.GetAndChange(committeeKeyBuilder);
         committeeItem.Value = BinarySerializer.Serialize(committee, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
-        // remove existing candidates (Prefix_Candidate) to ensure that 
+        // remove existing candidates (Prefix_Candidate) to ensure that
         // worknet node account doesn't get outvoted
         var candidateKeyBuilder = new KeyBuilder(NativeContract.NEO.Id, Prefix_Candidate);
         foreach (var (key, value) in snapshot.Find(candidateKeyBuilder.ToArray()))
@@ -160,7 +161,7 @@ class CreateCommand
             snapshot.Delete(key);
         }
 
-        // create an *UNSIGNED* block that will be appended to the chain 
+        // create an *UNSIGNED* block that will be appended to the chain
         // with updated NextConsensus field.
         var prevHash = NativeContract.Ledger.CurrentHash(snapshot);
         var prevBlock = NativeContract.Ledger.GetHeader(snapshot, prevHash);
@@ -172,7 +173,7 @@ class CreateCommand
                 Version = 0,
                 PrevHash = prevBlock.Hash,
                 MerkleRoot = MerkleTree.ComputeRoot(Array.Empty<UInt256>()),
-                Timestamp = Math.Max(Neo.Helper.ToTimestampMS(DateTime.UtcNow), prevBlock.Timestamp + 1),
+                Timestamp = Math.Max(DateTime.UtcNow.ToTimestampMS(), prevBlock.Timestamp + 1),
                 Index = prevBlock.Index + 1,
                 PrimaryIndex = 0,
                 NextConsensus = consensusContract.ScriptHash,

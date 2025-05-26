@@ -38,9 +38,9 @@ These tools provide developers with a complete local development environment for
 
 | Platform | Download Link                                                |
 | -------- | ------------------------------------------------------------ |
-| Windows  | [win-x64-3.7.6.zip](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-win-x64-3.7.6.zip) <br/>[win-arm64-3.7.6.zip](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-win-arm64-3.7.6.zip) |
-| macOS    | [osx-x64-3.7.6.tar.xz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-osx-x64-3.7.6.tar.xz) <br/>[osx-arm64-3.7.6.tar.xz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-osx-arm64-3.7.6.tar.xz) |
-| Linux    | [linux-x64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-x64-3.7.6.tar.gz) <br/>[linux-musl-arm64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-musl-arm64-3.7.6.tar.gz) <br/>[linux-arm64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-arm64-3.7.6.tar.gz) |
+| Windows  | [Latest Windows Release](https://github.com/neo-project/neo-express/releases/latest) |
+| macOS    | [Latest macOS Release](https://github.com/neo-project/neo-express/releases/latest) |
+| Linux    | [Latest Linux Release](https://github.com/neo-project/neo-express/releases/latest) |
 
 ## Installation Guide
 

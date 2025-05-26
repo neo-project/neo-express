@@ -27,7 +27,9 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
 
         public void Serialize(ref MessagePackWriter writer, UInt256 value, MessagePackSerializerOptions options)
         {
-            writer.Write(value.ToArray());
+            var buffer = new byte[UInt256.Length];
+            value.Serialize(buffer);
+            writer.Write(buffer);
         }
     }
 }

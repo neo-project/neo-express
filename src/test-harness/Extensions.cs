@@ -11,7 +11,9 @@
 
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.Utilities;
+using Neo.Extensions;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
@@ -21,6 +23,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using static Neo.Utility;
+using IReadOnlyStore = Neo.Persistence.IReadOnlyStore<byte[], byte[]>;
 
 namespace NeoTestHarness
 {
@@ -44,13 +47,13 @@ namespace NeoTestHarness
         public static void LoadScript<T>(this ApplicationEngine engine, params Expression<Action<T>>[] expressions)
             where T : class
         {
-            var script = engine.Snapshot.CreateScript<T>(expressions);
+            var script = engine.SnapshotCache.CreateScript<T>(expressions);
             engine.LoadScript(script);
         }
 
         public static Script CreateScript<T>(this ApplicationEngine engine, params Expression<Action<T>>[] expressions)
             where T : class
-            => CreateScript<T>(engine.Snapshot, expressions);
+            => CreateScript<T>(engine.SnapshotCache, expressions);
 
         public static Script CreateScript<T>(this DataCache snapshot, params Expression<Action<T>>[] expressions)
             where T : class
@@ -66,7 +69,7 @@ namespace NeoTestHarness
 
         public static void EmitContractCall<T>(this ScriptBuilder builder, ApplicationEngine engine, Expression<Action<T>> expression)
             where T : class
-            => EmitContractCall<T>(builder, engine.Snapshot, expression);
+            => EmitContractCall<T>(builder, engine.SnapshotCache, expression);
 
         public static void EmitContractCall<T>(this ScriptBuilder builder, DataCache snapshot, Expression<Action<T>> expression)
             where T : class
@@ -95,7 +98,7 @@ namespace NeoTestHarness
         }
 
         public static NeoStorage GetContractStorages<T>(this ApplicationEngine engine) where T : class
-            => GetContractStorages<T>(engine.Snapshot);
+            => GetContractStorages<T>(engine.SnapshotCache);
 
         public static NeoStorage GetContractStorages<T>(this DataCache snapshot)
             where T : class
@@ -179,14 +182,14 @@ namespace NeoTestHarness
         }
 
         public static bool TryGetValue(this NeoStorage storage, UInt160 key, [MaybeNullWhen(false)] out StorageItem item)
-            => storage.TryGetValue(Neo.IO.Helper.ToArray(key), out item);
+            => storage.TryGetValue(key.ToArray(), out item);
 
         public static bool TryGetValue(this NeoStorage storage, UInt256 key, [MaybeNullWhen(false)] out StorageItem item)
-            => storage.TryGetValue(Neo.IO.Helper.ToArray(key), out item);
+            => storage.TryGetValue(key.ToArray(), out item);
 
         public static UInt160 GetContractScriptHash<T>(this ApplicationEngine engine)
             where T : class
-            => GetContractScriptHash<T>(engine.Snapshot);
+            => GetContractScriptHash<T>(engine.SnapshotCache);
 
         public static UInt160 GetContractScriptHash<T>(this DataCache snapshot)
             where T : class
@@ -194,7 +197,7 @@ namespace NeoTestHarness
 
         public static ContractState GetContract<T>(this ApplicationEngine engine)
             where T : class
-            => GetContract<T>(engine.Snapshot);
+            => GetContract<T>(engine.SnapshotCache);
 
         public static ContractState GetContract<T>(this DataCache snapshot)
             where T : class
@@ -222,7 +225,7 @@ namespace NeoTestHarness
         }
 
         public static ContractState GetContract(this ApplicationEngine engine, string contractName)
-            => GetContract(engine.Snapshot, contractName);
+            => GetContract(engine.SnapshotCache, contractName);
 
         public static ContractState GetContract(this DataCache snapshot, string contractName)
         {
@@ -238,9 +241,13 @@ namespace NeoTestHarness
             throw new Exception($"couldn't find {contractName} contract");
         }
 
-        public static SnapshotCache GetSnapshot(this CheckpointFixture fixture)
+        public static StoreCache GetSnapshot(this CheckpointFixture fixture)
         {
-            return new SnapshotCache(fixture.CheckpointStore);
+            // Follow the same pattern as runner: ICheckpointStore -> MemoryTrackingStore -> StoreCache
+            // CheckpointStore implements both IReadOnlyStore<StorageKey, StorageItem> and IReadOnlyStore<byte[], byte[]>
+            var byteStore = (IReadOnlyStore)fixture.CheckpointStore;
+            var store = new MemoryTrackingStore(byteStore);
+            return new StoreCache(store.GetSnapshot());
         }
     }
 }

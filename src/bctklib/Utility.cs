@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Neo.Cryptography.MPTTrie;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.SmartContract;
 using System.Buffers.Binary;

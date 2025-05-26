@@ -11,6 +11,7 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.Extensions;
 using Newtonsoft.Json;
 
 namespace NeoExpress.Commands
@@ -94,7 +95,7 @@ namespace NeoExpress.Commands
                         writer.WritePropertyName("event-name");
                         writer.WriteValue(notification.EventName);
                         writer.WritePropertyName("state");
-                        writer.WriteJson(Neo.VM.Helper.ToJson(notification.State)["value"]);
+                        writer.WriteJson(notification.State.ToJson()["value"]);
                         writer.WriteEndObject();
                     }
                     writer.WriteEndArray();

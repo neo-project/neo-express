@@ -69,7 +69,7 @@ jobs:
       run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
 
     - name: Test Create Command (neoxp)
-      run: neoxp create
+      run: neoxp create --force
 
     - name: Test Checkpoint Command (offline) (neoxp)
       run: neoxp checkpoint create checkpoints/init --force
@@ -81,7 +81,7 @@ jobs:
 
     - name: Test Wallet Command (neoxp)
       run: |
-        neoxp wallet create bob
+        neoxp wallet create bob --force
 
     - name: Test Transfer Command (offline) (neoxp)
       run: |

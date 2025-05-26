@@ -46,11 +46,20 @@ namespace Neo.BlockchainToolkit.Persistence
             disposed = true;
         }
 
+        [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? key)
         {
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
             return db.Get(key ?? Array.Empty<byte>(), columnFamily);
+        }
+
+        public bool TryGet(byte[]? key, out byte[]? value)
+        {
+            if (disposed || db.Handle == IntPtr.Zero)
+                throw new ObjectDisposedException(nameof(RocksDbStore));
+            value = db.Get(key ?? Array.Empty<byte>(), columnFamily);
+            return value != null;
         }
 
         public bool Contains(byte[]? key)
@@ -61,11 +70,19 @@ namespace Neo.BlockchainToolkit.Persistence
             return slice.Valid;
         }
 
+        [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction)
         {
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
             return Seek(key, direction, db, columnFamily);
+        }
+
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+        {
+            if (disposed || db.Handle == IntPtr.Zero)
+                throw new ObjectDisposedException(nameof(RocksDbStore));
+            return Seek(key_prefix, direction, db, columnFamily);
         }
 
         public static IEnumerable<(byte[] Key, byte[] Value)> Seek(

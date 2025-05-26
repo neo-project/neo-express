@@ -62,11 +62,20 @@ namespace Neo.BlockchainToolkit.Persistence
             using var iterator = db.NewIterator(columnFamily);
         }
 
+        [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? key)
         {
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
             return TryGet(key, db, columnFamily, null, store);
+        }
+
+        public bool TryGet(byte[]? key, out byte[]? value)
+        {
+            if (disposed || db.Handle == IntPtr.Zero)
+                throw new ObjectDisposedException(nameof(RocksDbStore));
+            value = TryGet(key, db, columnFamily, null, store);
+            return value != null;
         }
 
         static byte[]? TryGet(byte[]? key, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore store)
@@ -103,11 +112,19 @@ namespace Neo.BlockchainToolkit.Persistence
             }
         }
 
+        [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction)
         {
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
             return Seek(key, direction, db, columnFamily, null, store);
+        }
+
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+        {
+            if (disposed || db.Handle == IntPtr.Zero)
+                throw new ObjectDisposedException(nameof(RocksDbStore));
+            return Seek(key_prefix, direction, db, columnFamily, null, store);
         }
 
         public static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore store)

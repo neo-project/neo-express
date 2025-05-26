@@ -37,7 +37,14 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public ISnapshot GetSnapshot() => new Snapshot(store, trackingMap, this.CommitSnapshot);
 
+        [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? key) => TryGet(key, trackingMap, store);
+
+        public bool TryGet(byte[]? key, out byte[]? value)
+        {
+            value = TryGet(key, trackingMap, store);
+            return value != null;
+        }
 
         static byte[]? TryGet(byte[]? key, TrackingMap trackingMap, IReadOnlyStore store)
         {
@@ -62,8 +69,12 @@ namespace Neo.BlockchainToolkit.Persistence
                 : store.Contains(key);
         }
 
+        [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction)
             => Seek(key, direction, trackingMap, store);
+
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+            => Seek(key_prefix, direction, trackingMap, store);
 
         static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, TrackingMap trackingMap, IReadOnlyStore store)
         {

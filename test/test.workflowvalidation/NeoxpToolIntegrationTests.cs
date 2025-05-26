@@ -74,16 +74,25 @@ public class NeoxpToolIntegrationTests : IDisposable
             Path.Combine(Environment.CurrentDirectory, "..", ".."),
             Path.Combine(Environment.CurrentDirectory, "..", "..", ".."),
 
-            // Try common development paths
+            // Try common development paths (Windows)
             @"C:\Users\liaoj\git\neo-express",
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "git", "neo-express"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "neo-express"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "repos", "neo-express"),
 
-            // Try to find any neo-express.sln on the system by searching common locations
+            // Try to find any neo-express.sln on the system by searching common locations (Windows)
             @"C:\git\neo-express",
             @"C:\source\neo-express",
-            @"C:\repos\neo-express"
+            @"C:\repos\neo-express",
+
+            // GitHub Actions runner paths (macOS/Linux)
+            "/Users/runner/work/neo-express/neo-express",
+            "/home/runner/work/neo-express/neo-express",
+
+            // Common macOS/Linux development paths
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "work", "neo-express", "neo-express"),
+            "/opt/neo-express",
+            "/usr/local/src/neo-express"
         };
 
         foreach (var alt in alternatives)
@@ -100,23 +109,48 @@ public class NeoxpToolIntegrationTests : IDisposable
             }
         }
 
-        // Last resort: search for neo-express.sln in common drive locations
-        var drives = new[] { "C:", "D:", "E:" };
-        var commonPaths = new[] { "git", "source", "repos", "dev", "projects" };
+        // Last resort: search for neo-express.sln in common drive/root locations
+        var commonPaths = new[] { "git", "source", "repos", "dev", "projects", "work" };
 
-        foreach (var drive in drives)
+        // Windows drive search
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
         {
-            foreach (var commonPath in commonPaths)
+            var drives = new[] { "C:", "D:", "E:" };
+            foreach (var drive in drives)
             {
-                try
+                foreach (var commonPath in commonPaths)
                 {
-                    var searchPath = Path.Combine(drive, commonPath, "neo-express");
-                    if (Directory.Exists(searchPath) && File.Exists(Path.Combine(searchPath, "neo-express.sln")))
-                        return searchPath;
+                    try
+                    {
+                        var searchPath = Path.Combine(drive, commonPath, "neo-express");
+                        if (Directory.Exists(searchPath) && File.Exists(Path.Combine(searchPath, "neo-express.sln")))
+                            return searchPath;
+                    }
+                    catch
+                    {
+                        // Ignore path errors
+                    }
                 }
-                catch
+            }
+        }
+        else
+        {
+            // macOS/Linux root search
+            var rootPaths = new[] { "/", "/opt", "/usr/local", "/home", "/Users" };
+            foreach (var rootPath in rootPaths)
+            {
+                foreach (var commonPath in commonPaths)
                 {
-                    // Ignore path errors
+                    try
+                    {
+                        var searchPath = Path.Combine(rootPath, commonPath, "neo-express");
+                        if (Directory.Exists(searchPath) && File.Exists(Path.Combine(searchPath, "neo-express.sln")))
+                            return searchPath;
+                    }
+                    catch
+                    {
+                        // Ignore path errors
+                    }
                 }
             }
         }

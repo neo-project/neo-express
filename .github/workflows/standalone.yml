@@ -3,11 +3,6 @@ name: Standalone Build
 on:
   workflow_call:
 
-# Cancel old actions when new commits are made
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   DOTNET_VERSION: 9.0.x
   CONFIGURATION: Release

@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Neo.BlockchainToolkit.Persistence;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Json;
 using Neo.Ledger;

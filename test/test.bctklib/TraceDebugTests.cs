@@ -13,6 +13,7 @@ using MessagePack;
 using MessagePack.Resolvers;
 using Neo;
 using Neo.BlockchainToolkit.TraceDebug;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.SmartContract;
 using Neo.VM;

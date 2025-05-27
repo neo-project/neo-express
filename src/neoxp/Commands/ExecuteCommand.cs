@@ -11,6 +11,7 @@
 
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;

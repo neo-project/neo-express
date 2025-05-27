@@ -9,6 +9,7 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
@@ -199,7 +200,7 @@ namespace Neo.BlockchainToolkit.Plugins
                         if (from != address && to != address)
                             continue;
                         // if the specified account was the sender or receiver of the current transfer,
-                        // record the update index. Stop the iteration if indexes for all the assets are 
+                        // record the update index. Stop the iteration if indexes for all the assets are
                         // have been recorded
                         updateIndexes.Add(notification.ScriptHash, blockIndex);
                         if (updateIndexes.Count == addressBalances.Count)

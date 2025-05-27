@@ -12,6 +12,8 @@
 using FluentAssertions;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Persistence;
+using Neo.Persistence.Providers;
+using Neo.SmartContract;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -215,7 +217,7 @@ public class TrackingStoreTests : IDisposable
     internal IStore GetStore(StoreType type)
     {
         var memoryStore = new MemoryStore();
-        var trackingStore = GetTrackingStore(type, memoryStore);
+        var trackingStore = GetTrackingStore(type, (IReadOnlyStore<byte[], byte[]>)memoryStore);
         var array = TestData.ToArray();
         var overwritten = Bytes("overwritten");
 
@@ -233,7 +235,7 @@ public class TrackingStoreTests : IDisposable
         return trackingStore;
     }
 
-    IStore GetTrackingStore(StoreType storeType, IReadOnlyStore store)
+    IStore GetTrackingStore(StoreType storeType, IReadOnlyStore<byte[], byte[]> store)
         => storeType switch
         {
             StoreType.MemoryTracking => new MemoryTrackingStore(store),
@@ -242,7 +244,7 @@ public class TrackingStoreTests : IDisposable
             _ => throw new ArgumentException("Unknown StoreType", nameof(storeType)),
         };
 
-    class DisposableStore : IReadOnlyStore, IDisposable
+    class DisposableStore : IReadOnlyStore<byte[], byte[]>, IDisposable
     {
         public bool Disposed { get; private set; } = false;
 
@@ -251,9 +253,20 @@ public class TrackingStoreTests : IDisposable
             Disposed = true;
         }
 
-        byte[]? IReadOnlyStore.TryGet(byte[]? key) => null;
-        bool IReadOnlyStore.Contains(byte[]? key) => false;
-        IEnumerable<(byte[] Key, byte[] Value)> IReadOnlyStore.Seek(byte[]? key, SeekDirection direction)
+        public byte[] this[byte[] key] => throw new KeyNotFoundException();
+
+        [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
+        public byte[]? TryGet(byte[] key) => null;
+
+        public bool TryGet(byte[] key, out byte[]? value)
+        {
+            value = null;
+            return false;
+        }
+
+        public bool Contains(byte[] key) => false;
+
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
             => Enumerable.Empty<(byte[], byte[])>();
     }
 }

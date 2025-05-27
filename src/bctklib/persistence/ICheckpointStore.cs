@@ -10,10 +10,11 @@
 // modifications are permitted.
 
 using Neo.Persistence;
+using Neo.SmartContract;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
-    public interface ICheckpointStore : IReadOnlyStore
+    public interface ICheckpointStore : IReadOnlyStore<StorageKey, StorageItem>
     {
         ProtocolSettings Settings { get; }
     }

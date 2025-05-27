@@ -11,12 +11,14 @@
 
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Json;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.Plugins;
+using Neo.Plugins.RpcServer;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -26,7 +28,7 @@ using NeoExpress.Models;
 using NeoExpress.Validators;
 using System.Collections.Immutable;
 using System.Numerics;
-using RpcException = Neo.Plugins.RpcException;
+using RpcException = Neo.Network.RPC.RpcException;
 using Utility = Neo.Utility;
 
 namespace NeoExpress.Node
@@ -163,7 +165,7 @@ namespace NeoExpress.Node
                     if (id == native.Id)
                     {
                         var contract = NativeContract.ContractManagement.GetContract(snapshot, native.Hash);
-                        return contract?.ToJson() ?? throw new RpcException(new RpcError(-100, "Unknown contract"));
+                        return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
                     }
                 }
             }
@@ -173,7 +175,7 @@ namespace NeoExpress.Node
             if (UInt160.TryParse(param, out var scriptHash))
             {
                 var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
-                return contract?.ToJson() ?? throw new RpcException(new RpcError(-100, "Unknown contract"));
+                return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
             }
 
             var contracts = new JArray();
@@ -331,7 +333,7 @@ namespace NeoExpress.Node
                     ["event-name"] = notification.EventName,
                     ["inventory-type"] = (byte)notification.InventoryType,
                     ["inventory-hash"] = notification.InventoryHash.ToString(),
-                    ["state"] = Neo.VM.Helper.ToJson(notification.State),
+                    ["state"] = notification.State.ToJson(),
                 };
                 jsonNotifications.Add(jNotification);
             }
@@ -349,7 +351,7 @@ namespace NeoExpress.Node
         public JObject GetApplicationLog(JArray _params)
         {
             UInt256 hash = UInt256.Parse(_params[0]!.AsString());
-            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(new RpcError(-100, "Unknown transaction/blockhash"));
+            return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction/blockhash");
         }
 
         // Neo-Express uses a custom implementation of TokenTracker RPC methods. Originally, this was
@@ -398,7 +400,7 @@ namespace NeoExpress.Node
                             && (transfer.From == address || transfer.To == address))
                         {
                             // if the specified account was the sender or receiver of the current transfer,
-                            // record the update index. Stop the iteration if indexes for all the assets are 
+                            // record the update index. Stop the iteration if indexes for all the assets are
                             // have been recorded
                             updateIndexes.Add(notification.ScriptHash, blockIndex);
                             if (updateIndexes.Count == addressBalances.Count)
@@ -567,7 +569,7 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            // logic replicated from TokenTracker.GetNep11Properties. 
+            // logic replicated from TokenTracker.GetNep11Properties.
             var nep11Hash = AsScriptHash(@params[0]!);
             var tokenId = @params[1]!.AsString().HexToBytes();
 
@@ -690,7 +692,7 @@ namespace NeoExpress.Node
                 : DateTime.UtcNow.ToTimestampMS();
 
             if (endTime < startTime)
-                throw new RpcException(new RpcError(-32602, "Invalid params"));
+                throw new RpcException(-32602, "Invalid params");
 
             // iterate over the notifications to populate the send and receive arrays
             var sent = new JArray();

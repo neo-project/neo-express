@@ -128,7 +128,7 @@ namespace Neo.BuildTasks
                     return "void";
                 default:
                     throw new FormatException($"Invalid parameter type {parameterType}");
-            };
+            }
         }
     }
 }

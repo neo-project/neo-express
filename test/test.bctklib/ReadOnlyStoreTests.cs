@@ -13,6 +13,7 @@ using FluentAssertions;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.Utilities;
 using Neo.Persistence;
+using Neo.Persistence.Providers;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -117,11 +118,21 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
         test_tryget_value_for_valid_key(store);
     }
 
-    internal static void test_tryget_value_for_valid_key(IReadOnlyStore store, int index = 0)
+    internal static void test_tryget_value_for_valid_key(object store, int index = 0)
     {
         using var _ = store as IDisposable;
         var (key, value) = TestData.ElementAt(index);
-        store.TryGet(key).Should().BeEquivalentTo(value);
+
+        // Use the new TryGet signature for Neo 3.8.2 compatibility
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.TryGet(key, out var retrievedValue).Should().BeTrue();
+            retrievedValue.Should().BeEquivalentTo(value);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
     [Theory, CombinatorialData]
@@ -131,10 +142,20 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
         test_tryget_null_for_missing_value(store);
     }
 
-    internal static void test_tryget_null_for_missing_value(IReadOnlyStore store)
+    internal static void test_tryget_null_for_missing_value(object store)
     {
         using var _ = store as IDisposable;
-        store.TryGet(Bytes(0)).Should().BeNull();
+
+        // Use the new TryGet signature for Neo 3.8.2 compatibility
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.TryGet(Bytes(0), out var retrievedValue).Should().BeFalse();
+            retrievedValue.Should().BeNull();
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
     [Theory, CombinatorialData]
@@ -144,11 +165,19 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
         test_contains_true_for_valid_key(store);
     }
 
-    internal static void test_contains_true_for_valid_key(IReadOnlyStore store, int index = 0)
+    internal static void test_contains_true_for_valid_key(object store, int index = 0)
     {
         using var _ = store as IDisposable;
         var (key, value) = TestData.ElementAt(index);
-        store.Contains(key).Should().BeTrue();
+
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.Contains(key).Should().BeTrue();
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
     [Theory, CombinatorialData]
@@ -159,10 +188,18 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
     }
 
 
-    internal static void test_contains_false_for_missing_key(IReadOnlyStore store)
+    internal static void test_contains_false_for_missing_key(object store)
     {
         using var _ = store as IDisposable;
-        store.Contains(Bytes(0)).Should().BeFalse();
+
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.Contains(Bytes(0)).Should().BeFalse();
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
     [Theory, CombinatorialData]
@@ -172,11 +209,19 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
         test_can_seek_forward_no_prefix(store);
     }
 
-    internal static void test_can_seek_forward_no_prefix(IReadOnlyStore store)
+    internal static void test_can_seek_forward_no_prefix(object store)
     {
         using var _ = store as IDisposable;
-        store.Seek(Array.Empty<byte>(), SeekDirection.Forward)
-            .Should().BeEquivalentTo(TestData);
+
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.Find(Array.Empty<byte>(), SeekDirection.Forward)
+                .Should().BeEquivalentTo(TestData);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
     [Theory, CombinatorialData]
@@ -186,10 +231,18 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
         test_can_seek_backwards_no_prefix(store);
     }
 
-    internal static void test_can_seek_backwards_no_prefix(IReadOnlyStore store)
+    internal static void test_can_seek_backwards_no_prefix(object store)
     {
         using var _ = store as IDisposable;
-        store.Seek(Array.Empty<byte>(), SeekDirection.Backward).Should().BeEmpty();
+
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.Find(Array.Empty<byte>(), SeekDirection.Backward).Should().BeEmpty();
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
     [Theory, CombinatorialData]
@@ -199,13 +252,21 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
         test_seek_forwards_with_prefix(store);
     }
 
-    internal static void test_seek_forwards_with_prefix(IReadOnlyStore store)
+    internal static void test_seek_forwards_with_prefix(object store)
     {
         using var _ = store as IDisposable;
         var key = new byte[] { 1, 0 };
         var expected = TestData
             .Where(kvp => MemorySequenceComparer.Default.Compare(kvp.key, key) >= 0);
-        store.Seek(key, SeekDirection.Forward).Should().BeEquivalentTo(expected);
+
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.Find(key, SeekDirection.Forward).Should().BeEquivalentTo(expected);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
     [Theory, CombinatorialData]
@@ -215,17 +276,25 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
         test_seek_backwards_with_prefix(store);
     }
 
-    internal static void test_seek_backwards_with_prefix(IReadOnlyStore store)
+    internal static void test_seek_backwards_with_prefix(object store)
     {
         using var _ = store as IDisposable;
         var key = new byte[] { 2, 0 };
         var expected = TestData
             .Where(kvp => MemorySequenceComparer.Reverse.Compare(kvp.key, key) >= 0)
             .Reverse();
-        store.Seek(key, SeekDirection.Backward).Should().BeEquivalentTo(expected);
+
+        if (store is IReadOnlyStore<byte[], byte[]> readOnlyStore)
+        {
+            readOnlyStore.Find(key, SeekDirection.Backward).Should().BeEquivalentTo(expected);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Store type {store.GetType()} does not implement IReadOnlyStore<byte[], byte[]>");
+        }
     }
 
-    IReadOnlyStore GetStore(StoreType type) => type switch
+    object GetStore(StoreType type) => type switch
     {
         StoreType.Checkpoint => new CheckpointStore(checkpointFixture.CheckpointPath),
         StoreType.Memory => GetPopulatedMemoryStore(),
@@ -250,18 +319,20 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
 
         // create shared, doesn't dispose underlying rocksDB when store disposed
         var store1 = storeFactory(true);
-        store1.TryGet(key).Should().BeEquivalentTo(value);
+        store1.TryGet(key, out var retrievedValue1).Should().BeTrue();
+        retrievedValue1.Should().BeEquivalentTo(value);
         store1.Dispose();
 
         // create unshared, disposes underlying rocksDB when store disposed
         var store2 = storeFactory(false);
-        store2.TryGet(key).Should().BeEquivalentTo(value);
+        store2.TryGet(key, out var retrievedValue2).Should().BeTrue();
+        retrievedValue2.Should().BeEquivalentTo(value);
         store2.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => store2.TryGet(key));
+        Assert.Throws<ObjectDisposedException>(() => store2.TryGet(key, out _));
 
         // since underlying rocksDB is disposed, attempting to call methods
         // on a new instance will throw
         using var store3 = storeFactory(true);
-        Assert.Throws<ObjectDisposedException>(() => store3.TryGet(key));
+        Assert.Throws<ObjectDisposedException>(() => store3.TryGet(key, out _));
     }
 }

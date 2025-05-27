@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Neo.BlockchainToolkit.Models;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;

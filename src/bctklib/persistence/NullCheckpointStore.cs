@@ -11,6 +11,7 @@
 
 using Neo.BlockchainToolkit.Models;
 using Neo.Persistence;
+using Neo.SmartContract;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
@@ -36,5 +37,25 @@ namespace Neo.BlockchainToolkit.Persistence
             => Enumerable.Empty<(byte[], byte[]?)>();
         public byte[]? TryGet(byte[] key) => null;
         public bool Contains(byte[] key) => false;
+
+        // IReadOnlyStore<StorageKey, StorageItem> implementation
+        public StorageItem this[StorageKey key]
+        {
+            get => throw new KeyNotFoundException($"Key not found: {Convert.ToHexString(key.ToArray())}");
+        }
+
+        [Obsolete("use TryGet(StorageKey key, out StorageItem? value) instead.")]
+        public StorageItem? TryGet(StorageKey key) => null;
+
+        public bool TryGet(StorageKey key, out StorageItem? value)
+        {
+            value = null;
+            return false;
+        }
+
+        public bool Contains(StorageKey key) => false;
+
+        public IEnumerable<(StorageKey Key, StorageItem Value)> Find(StorageKey? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+            => Enumerable.Empty<(StorageKey, StorageItem)>();
     }
 }

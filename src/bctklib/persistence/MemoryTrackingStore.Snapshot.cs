@@ -20,28 +20,72 @@ namespace Neo.BlockchainToolkit.Persistence
 
     public partial class MemoryTrackingStore
     {
-        class Snapshot : ISnapshot
+        class Snapshot : IStoreSnapshot
         {
-            readonly IReadOnlyStore store;
+            readonly IReadOnlyStore<byte[], byte[]> store;
             readonly TrackingMap trackingMap;
             readonly Action<TrackingMap> commitAction;
+            readonly IStore storeRef;
             TrackingMap writeBatchMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
 
-            public Snapshot(IReadOnlyStore store, TrackingMap trackingMap, Action<TrackingMap> commitAction)
+            public Snapshot(IReadOnlyStore<byte[], byte[]> store, TrackingMap trackingMap, Action<TrackingMap> commitAction, IStore storeRef)
             {
                 this.store = store;
                 this.trackingMap = trackingMap;
                 this.commitAction = commitAction;
+                this.storeRef = storeRef;
             }
+
+            public IStore Store => storeRef;
 
             public void Dispose() { }
 
+            [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
             public byte[]? TryGet(byte[]? key) => MemoryTrackingStore.TryGet(key, trackingMap, store);
 
-            public bool Contains(byte[]? key) => MemoryTrackingStore.Contains(key, trackingMap, store);
+            public bool TryGet(byte[]? key, out byte[]? value)
+            {
+                // First check if the key is in the write batch
+                key ??= Array.Empty<byte>();
+                if (writeBatchMap.TryGetValue(key, out var batchValue))
+                {
+                    if (batchValue.TryPickT0(out var batchValueData, out var _))
+                    {
+                        value = batchValueData.ToArray();
+                        return true;
+                    }
+                    else
+                    {
+                        // Key was deleted in write batch
+                        value = null;
+                        return false;
+                    }
+                }
 
+                // If not in write batch, check the original tracking map and store
+                value = MemoryTrackingStore.TryGet(key, trackingMap, store);
+                return value != null;
+            }
+
+            public bool Contains(byte[]? key)
+            {
+                // First check if the key is in the write batch
+                key ??= Array.Empty<byte>();
+                if (writeBatchMap.TryGetValue(key, out var batchValue))
+                {
+                    return batchValue.IsT0; // True if it's a value, false if it's a deletion
+                }
+
+                // If not in write batch, check the original tracking map and store
+                return MemoryTrackingStore.Contains(key, trackingMap, store);
+            }
+
+            [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
             public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction)
                 => MemoryTrackingStore.Seek(key, direction, trackingMap, store);
+
+            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+                => MemoryTrackingStore.Seek(key_prefix, direction, trackingMap, store);
 
             public void Put(byte[]? key, byte[]? value)
             {

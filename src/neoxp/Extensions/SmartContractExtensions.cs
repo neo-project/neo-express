@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Persistence;
 using Neo.SmartContract.Iterators;

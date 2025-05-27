@@ -10,6 +10,11 @@ on:
       - '**.cs'
       - '**.csproj'
 
+# Cancel old test actions when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     uses: ./.github/workflows/test.yml

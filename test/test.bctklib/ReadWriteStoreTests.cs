@@ -44,9 +44,11 @@ public class ReadWriteStoreTests : IDisposable
     {
         var key = Bytes(0);
         var value = Bytes("test-value");
-        store.TryGet(key).Should().BeNull();
+        store.TryGet(key, out var initialValue).Should().BeFalse();
+        initialValue.Should().BeNull();
         store.Put(key, value);
-        store.TryGet(key).Should().BeEquivalentTo(value);
+        store.TryGet(key, out var retrievedValue).Should().BeTrue();
+        retrievedValue.Should().BeEquivalentTo(value);
     }
 
     [Theory, CombinatorialData]
@@ -60,9 +62,11 @@ public class ReadWriteStoreTests : IDisposable
     {
         var (key, value) = TestData.ElementAt(index);
         var newValue = Bytes("test-value");
-        store.TryGet(key).Should().BeEquivalentTo(value);
+        store.TryGet(key, out var initialValue).Should().BeTrue();
+        initialValue.Should().BeEquivalentTo(value);
         store.Put(key, newValue);
-        store.TryGet(key).Should().BeEquivalentTo(newValue);
+        store.TryGet(key, out var retrievedValue).Should().BeTrue();
+        retrievedValue.Should().BeEquivalentTo(newValue);
     }
 
     [Theory, CombinatorialData]
@@ -75,9 +79,11 @@ public class ReadWriteStoreTests : IDisposable
     internal static void test_tryget_return_null_for_deleted_key(IStore store, int index = 0)
     {
         var (key, value) = TestData.ElementAt(index);
-        store.TryGet(key).Should().BeEquivalentTo(value);
+        store.TryGet(key, out var initialValue).Should().BeTrue();
+        initialValue.Should().BeEquivalentTo(value);
         store.Delete(key);
-        store.TryGet(key).Should().BeNull();
+        store.TryGet(key, out var deletedValue).Should().BeFalse();
+        deletedValue.Should().BeNull();
     }
 
     [Theory, CombinatorialData]
@@ -110,9 +116,11 @@ public class ReadWriteStoreTests : IDisposable
         using var snapshot = store.GetSnapshot();
         snapshot.Put(key, value);
 
-        store.TryGet(key).Should().BeNull();
+        store.TryGet(key, out var beforeCommit).Should().BeFalse();
+        beforeCommit.Should().BeNull();
         snapshot.Commit();
-        store.TryGet(key).Should().BeEquivalentTo(value);
+        store.TryGet(key, out var afterCommit).Should().BeTrue();
+        afterCommit.Should().BeEquivalentTo(value);
     }
 
     [Theory, CombinatorialData]
@@ -130,9 +138,11 @@ public class ReadWriteStoreTests : IDisposable
         using var snapshot = store.GetSnapshot();
         snapshot.Put(key, newValue);
 
-        store.TryGet(key).Should().BeEquivalentTo(value);
+        store.TryGet(key, out var beforeCommit).Should().BeTrue();
+        beforeCommit.Should().BeEquivalentTo(value);
         snapshot.Commit();
-        store.TryGet(key).Should().BeEquivalentTo(newValue);
+        store.TryGet(key, out var afterCommit).Should().BeTrue();
+        afterCommit.Should().BeEquivalentTo(newValue);
     }
 
     [Theory, CombinatorialData]
@@ -148,9 +158,11 @@ public class ReadWriteStoreTests : IDisposable
         using var snapshot = store.GetSnapshot();
         snapshot.Delete(key);
 
-        store.TryGet(key).Should().BeEquivalentTo(value);
+        store.TryGet(key, out var beforeCommit).Should().BeTrue();
+        beforeCommit.Should().BeEquivalentTo(value);
         snapshot.Commit();
-        store.TryGet(key).Should().BeNull();
+        store.TryGet(key, out var afterCommit).Should().BeFalse();
+        afterCommit.Should().BeNull();
     }
 
     [Theory, CombinatorialData]
@@ -167,7 +179,8 @@ public class ReadWriteStoreTests : IDisposable
         var newValue = Bytes("test-value");
         store.Put(key, newValue);
         snapshot.Contains(key).Should().BeFalse();
-        snapshot.TryGet(key).Should().BeNull();
+        snapshot.TryGet(key, out var snapshotValue).Should().BeFalse();
+        snapshotValue.Should().BeNull();
     }
 
     [Theory, CombinatorialData]
@@ -184,7 +197,8 @@ public class ReadWriteStoreTests : IDisposable
         var newValue = Bytes("test-value");
         store.Put(key, newValue);
         snapshot.Contains(key).Should().BeTrue();
-        snapshot.TryGet(key).Should().BeEquivalentTo(value);
+        snapshot.TryGet(key, out var snapshotValue).Should().BeTrue();
+        snapshotValue.Should().BeEquivalentTo(value);
     }
 
     [Theory, CombinatorialData]
@@ -200,7 +214,8 @@ public class ReadWriteStoreTests : IDisposable
         var (key, value) = TestData.ElementAt(index);
         store.Delete(key);
         snapshot.Contains(key).Should().BeTrue();
-        snapshot.TryGet(key).Should().BeEquivalentTo(value);
+        snapshot.TryGet(key, out var snapshotValue).Should().BeTrue();
+        snapshotValue.Should().BeEquivalentTo(value);
     }
 
     [Theory, CombinatorialData]
@@ -217,8 +232,10 @@ public class ReadWriteStoreTests : IDisposable
         store.Put(key, value);
 
         key[0] = 0xff;
-        store.TryGet(Bytes(0)).Should().BeEquivalentTo(value);
-        store.TryGet(key).Should().BeNull();
+        store.TryGet(Bytes(0), out var originalValue).Should().BeTrue();
+        originalValue.Should().BeEquivalentTo(value);
+        store.TryGet(key, out var modifiedValue).Should().BeFalse();
+        modifiedValue.Should().BeNull();
     }
 
     [Theory, CombinatorialData]
@@ -235,7 +252,8 @@ public class ReadWriteStoreTests : IDisposable
         store.Put(key, value);
 
         value[0] = 0xff;
-        store.TryGet(key).Should().BeEquivalentTo(Bytes("test-value"));
+        store.TryGet(key, out var retrievedValue).Should().BeTrue();
+        retrievedValue.Should().BeEquivalentTo(Bytes("test-value"));
     }
 
     [Theory, CombinatorialData]
@@ -285,9 +303,11 @@ public class ReadWriteStoreTests : IDisposable
     internal static void test_delete_missing_value_no_effect(IStore store)
     {
         var key = Bytes(0);
-        store.TryGet(key).Should().BeNull();
+        store.TryGet(key, out var initialValue).Should().BeFalse();
+        initialValue.Should().BeNull();
         store.Delete(key);
-        store.TryGet(key).Should().BeNull();
+        store.TryGet(key, out var afterDelete).Should().BeFalse();
+        afterDelete.Should().BeNull();
     }
 
     IStore GetStore(StoreType type) => type switch

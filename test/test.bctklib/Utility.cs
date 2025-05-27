@@ -11,6 +11,7 @@
 
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Cryptography.MPTTrie;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Persistence;
 using Newtonsoft.Json;

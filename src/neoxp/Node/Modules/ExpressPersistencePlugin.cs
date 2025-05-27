@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Json;
 using Neo.Ledger;
@@ -30,8 +31,8 @@ namespace NeoExpress.Node
 
         IStore? appLogsStore;
         IStore? notificationsStore;
-        ISnapshot? appLogsSnapshot;
-        ISnapshot? notificationsSnapshot;
+        IStoreSnapshot? appLogsSnapshot;
+        IStoreSnapshot? notificationsSnapshot;
 
         public ExpressPersistencePlugin()
         {
@@ -66,10 +67,11 @@ namespace NeoExpress.Node
         {
             if (appLogsStore is null)
                 throw new NullReferenceException(nameof(appLogsStore));
-            var value = appLogsStore.TryGet(hash.ToArray());
-            return value is not null && value.Length != 0
-                ? JToken.Parse(Neo.Utility.StrictUTF8.GetString(value)) as JObject
-                : null;
+            if (appLogsStore.TryGet(hash.ToArray(), out var value) && value is not null && value.Length != 0)
+            {
+                return JToken.Parse(Neo.Utility.StrictUTF8.GetString(value)) as JObject;
+            }
+            return null;
         }
 
         static Lazy<byte[]> backwardsNotificationsPrefix = new Lazy<byte[]>(() =>
@@ -100,7 +102,7 @@ namespace NeoExpress.Node
                 ? Array.Empty<byte>()
                 : backwardsNotificationsPrefix.Value;
 
-            return notificationsStore.Seek(prefix, direction)
+            return notificationsStore.Find(prefix, direction)
                 .Select(t => ParseNotification(t.Key, t.Value))
                 .Where(t => contracts is null || contracts.Contains(t.notification.ScriptHash))
                 .Where(t => eventNames is null || eventNames.Contains(t.notification.EventName));

@@ -86,7 +86,7 @@ namespace NeoExpress.Node
                 key => new MemoryTrackingStore(GetUnderlyingStore(key)));
         }
 
-        IReadOnlyStore GetUnderlyingStore(string? path)
+        IReadOnlyStore<byte[], byte[]> GetUnderlyingStore(string? path)
         {
             if (db is null)
                 return NullStore.Instance;

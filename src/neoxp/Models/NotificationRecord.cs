@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
@@ -97,7 +98,7 @@ namespace NeoExpress.Models
                     case Neo.VM.Types.Buffer _:
                         {
                             var span = item.GetSpan();
-                            size += Neo.IO.Helper.GetVarSize(span.Length);
+                            size += span.Length.GetVarSize();
                             size += span.Length;
                         }
                         break;
@@ -105,7 +106,7 @@ namespace NeoExpress.Models
                         if (serialized.Any(p => ReferenceEquals(p, array)))
                             throw new NotSupportedException();
                         serialized.Add(array);
-                        size += Neo.IO.Helper.GetVarSize(array.Count);
+                        size += array.Count.GetVarSize();
                         for (int i = array.Count - 1; i >= 0; i--)
                             unserialized.Push(array[i]);
                         break;
@@ -113,7 +114,7 @@ namespace NeoExpress.Models
                         if (serialized.Any(p => ReferenceEquals(p, map)))
                             throw new NotSupportedException();
                         serialized.Add(map);
-                        size += Neo.IO.Helper.GetVarSize(map.Count);
+                        size += map.Count.GetVarSize();
                         foreach (var pair in map.Reverse())
                         {
                             unserialized.Push(pair.Value);

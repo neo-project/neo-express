@@ -17,6 +17,8 @@
 
 Neo-Express is a private net optimized for development scenarios, built on the same Neo platform core as [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) to maximize compatibility between local development and public chain environments. Neo-Trace is a tool for generating trace files for the Neo Smart Contract Debugger.
 
+These tools provide developers with a complete local development environment for building, testing, and debugging Neo smart contracts efficiently.
+
 - ### Key Features
 
   **Neo-Express**:
@@ -36,9 +38,9 @@ Neo-Express is a private net optimized for development scenarios, built on the s
 
 | Platform | Download Link                                                |
 | -------- | ------------------------------------------------------------ |
-| Windows  | [win-x64-3.7.6.zip](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-win-x64-3.7.6.zip) <br/>[win-arm64-3.7.6.zip](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-win-arm64-3.7.6.zip) |
-| macOS    | [osx-x64-3.7.6.tar.xz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-osx-x64-3.7.6.tar.xz) <br/>[osx-arm64-3.7.6.tar.xz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-osx-arm64-3.7.6.tar.xz) |
-| Linux    | [linux-x64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-x64-3.7.6.tar.gz) <br/>[linux-musl-arm64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-musl-arm64-3.7.6.tar.gz) <br/>[linux-arm64-3.7.6.tar.gz](https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express-linux-arm64-3.7.6.tar.gz) |
+| Windows  | [Latest Windows Release](https://github.com/neo-project/neo-express/releases/latest) |
+| macOS    | [Latest macOS Release](https://github.com/neo-project/neo-express/releases/latest) |
+| Linux    | [Latest Linux Release](https://github.com/neo-project/neo-express/releases/latest) |
 
 ## Installation Guide
 
@@ -99,6 +101,24 @@ brew install rocksdb
 
 ## Usage Guide
 
+### Quick Start
+
+Get started with Neo-Express in just a few commands:
+
+```shell
+# Install Neo-Express
+dotnet tool install Neo.Express -g
+
+# Create a new blockchain
+neoxp create
+
+# Start the blockchain
+neoxp run
+
+# Check wallet balances
+neoxp show balances genesis
+```
+
 ### Neo-Express
 
 - Create a new local Neo network:
@@ -116,7 +136,7 @@ brew install rocksdb
 - Show genesis account balance:
 
   `genesis` to use the consensus node multi-sig account which holds the genesis NEO and GAS.
-  
+
   ```shell
   neoxp show balances genesis
   ```
@@ -138,7 +158,7 @@ Please review the [Command Reference](docs/command-reference.md) to get an under
   ```
 
 - Generate a trace file for a transaction:
-  
+
   ```shell
   neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-uri testnet
   ```

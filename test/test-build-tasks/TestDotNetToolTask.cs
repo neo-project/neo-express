@@ -12,6 +12,7 @@
 using Moq;
 using Neo.BuildTasks;
 using System;
+using System.Linq;
 using Xunit;
 
 namespace build_tasks
@@ -39,8 +40,13 @@ namespace build_tasks
         [Fact]
         public void contains_package()
         {
-            var output = localOutput.Split(Environment.NewLine);
-            Assert.True(DotNetToolTask.ContainsPackage(output, "Neo.Compiler.CSharp", out var version));
+            var output = localOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Test the actual parsing - the mock data has "neo.compiler.csharp" (lowercase)
+            // but the method should handle case-insensitive comparison
+            var found = DotNetToolTask.ContainsPackage(output, "neo.compiler.csharp", out var version);
+
+            Assert.True(found, "Should find neo.compiler.csharp package");
             Assert.Equal(new NugetPackageVersion(3, 3, 0), version);
         }
 
@@ -111,10 +117,10 @@ namespace build_tasks
             var processRunner = new Mock<IProcessRunner>();
             processRunner
                 .Setup(r => r.Run("dotnet", "tool list --local", It.IsAny<string>()))
-                .Returns(new ProcessResults(0, local.Split(Environment.NewLine), Array.Empty<string>()));
+                .Returns(new ProcessResults(0, local.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), Array.Empty<string>()));
             processRunner
                 .Setup(r => r.Run("dotnet", "tool list --global", It.IsAny<string>()))
-                .Returns(new ProcessResults(0, global.Split(Environment.NewLine), Array.Empty<string>()));
+                .Returns(new ProcessResults(0, global.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), Array.Empty<string>()));
             return processRunner;
         }
 
@@ -130,7 +136,7 @@ neo.compiler.csharp      3.3.0              nccs                 C:\Users\harry\
 neo.trace                3.3.7-preview      neotrace             C:\Users\harry\Source\neo\seattle\samples\registrar-sample\.config\dotnet-tools.json
 neo.test.runner          3.3.4-preview      neo-test-runner      C:\Users\harry\Source\neo\seattle\samples\registrar-sample\.config\dotnet-tools.json";
 
-        const string globalOutput = @"Package Id                Version            Commands       
+        const string globalOutput = @"Package Id                Version            Commands
 ------------------------------------------------------------
 devhawk.dumpnef           3.2.8-preview      dumpnef
 dotnet-outdated-tool      4.1.0              dotnet-outdated

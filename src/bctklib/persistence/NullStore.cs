@@ -13,15 +13,28 @@ using Neo.Persistence;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
-    public class NullStore : IReadOnlyStore
+    public class NullStore : IReadOnlyStore<byte[], byte[]>
     {
         public static readonly NullStore Instance = new NullStore();
 
         NullStore() { }
 
         public bool Contains(byte[]? key) => false;
+
+        [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? key) => null;
+
+        public bool TryGet(byte[]? key, out byte[]? value)
+        {
+            value = null;
+            return false;
+        }
+
+        [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
         public IEnumerable<(byte[] Key, byte[]? Value)> Seek(byte[] key, SeekDirection direction)
+            => Enumerable.Empty<(byte[], byte[]?)>();
+
+        public IEnumerable<(byte[] Key, byte[]? Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
             => Enumerable.Empty<(byte[], byte[]?)>();
     }
 }

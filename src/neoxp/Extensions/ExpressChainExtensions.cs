@@ -12,6 +12,7 @@
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.Extensions;
 using Neo.Wallets;
 using NeoExpress.Models;
 using System.Collections.Immutable;

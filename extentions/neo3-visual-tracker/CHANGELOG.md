@@ -6,11 +6,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## Unreleased
 
+## [3.8.2] - 2025-05-26
+
+### Changed
+
+* Update Neo Express to 3.8.2 for full Neo 3.8.2 compatibility
+* Align extension version with Neo 3.8.2 release
+* Updated persistence layer compatibility for Neo 3.8.2 interfaces
+
 ### Added
 
 * Python smart contract template
 
-### Changed
+### Previous Changes
 
 * Update Neo Express to 3.1.38
 

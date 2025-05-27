@@ -23,7 +23,7 @@ namespace NeoTestHarness
         readonly static Lazy<IFileSystem> defaultFileSystem = new Lazy<IFileSystem>(() => new FileSystem());
         readonly CheckpointStore checkpointStore;
 
-        public IReadOnlyStore CheckpointStore => checkpointStore;
+        public ICheckpointStore CheckpointStore => checkpointStore;
         public ProtocolSettings ProtocolSettings => checkpointStore.Settings;
 
         public CheckpointFixture(string checkpointPath)

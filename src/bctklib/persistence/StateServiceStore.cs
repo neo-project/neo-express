@@ -11,6 +11,7 @@
 
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Utilities;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
@@ -27,7 +28,7 @@ using System.Diagnostics;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
-    public sealed partial class StateServiceStore : IReadOnlyStore, IDisposable
+    public sealed partial class StateServiceStore : IReadOnlyStore<StorageKey, StorageItem>, IReadOnlyStore<byte[], byte[]>, IDisposable
     {
         internal interface ICacheClient : IDisposable
         {
@@ -291,7 +292,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 // as of Neo 3.4, the NeoToken contract only seeks over VoterRewardPerCommittee data.
                 // This exception will never be triggered unless a future NeoToken contract update uses does a keyed read
-                // for a record with this prefix 
+                // for a record with this prefix
                 throw new NotSupportedException(
                     $"{nameof(StateServiceStore)} does not support TryGet method for {nameof(NeoToken)} with {Convert.ToHexString(key.Span)} key");
             }
@@ -317,7 +318,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     }
                 }
 
-                // otherwise, retrieve and cache the keyed value 
+                // otherwise, retrieve and cache the keyed value
                 return GetStorage(contractHash, key,
                     () => rpcClient.GetProvenState(branchInfo.RootHash, contractHash, key.Span));
             }
@@ -355,8 +356,8 @@ namespace Neo.BlockchainToolkit.Persistence
             }
             catch (RpcException ex) when (ex.HResult == -100)
             {
-                // if the getstorage method throws an RPC Exception w/ HResult == -100, it means the 
-                // storage key could not be found. At the storage layer, this means returning a null byte arrray. 
+                // if the getstorage method throws an RPC Exception w/ HResult == -100, it means the
+                // storage key could not be found. At the storage layer, this means returning a null byte arrray.
                 return null;
             }
             finally
@@ -365,6 +366,12 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (activity is not null)
                     logger.StopActivity(activity, new GetStorageStop(stopwatch.Elapsed));
             }
+        }
+
+        public bool TryGet(byte[]? key, out byte[]? value)
+        {
+            value = TryGet(key);
+            return value != null;
         }
 
         public bool Contains(byte[]? key) => TryGet(key) is not null;
@@ -381,7 +388,7 @@ namespace Neo.BlockchainToolkit.Persistence
             if (contractId == NativeContract.Ledger.Id)
             {
                 // Because the state service does not store ledger contract data, the seek method cannot
-                // be implemented for the ledger contract. As of Neo 3.4, the Ledger contract only 
+                // be implemented for the ledger contract. As of Neo 3.4, the Ledger contract only
                 // uses Seek in the Initialized method to check for the existence of any value with a
                 // Prefix_Block prefix. In order to support this single scenario, return a single empty
                 // byte array enumerable. This will enable .Any() LINQ method to return true, but will
@@ -401,11 +408,11 @@ namespace Neo.BlockchainToolkit.Persistence
                 && key.Span[0] == NEO_Prefix_VoterRewardPerCommittee)
             {
                 // For committee members, a new VoterRewardPerCommittee record is created every epoch
-                // (21 blocks / 5 minutes). Since the number of committee members == the number of 
-                // blocks in an epoch, this averages one record per block. Given that mainnet is 2.2 
+                // (21 blocks / 5 minutes). Since the number of committee members == the number of
+                // blocks in an epoch, this averages one record per block. Given that mainnet is 2.2
                 // million blocks as of Sept 2022, downloading all these records is not feasible.
 
-                // VoterRewardPerCommittee records are used to determine GAS token rewards for committee 
+                // VoterRewardPerCommittee records are used to determine GAS token rewards for committee
                 // members. Since GAS reward calculation for committee members is not a relevant scenario
                 // for Neo contract developers, StateServiceStore simply returns an empty array
 
@@ -465,6 +472,55 @@ namespace Neo.BlockchainToolkit.Persistence
                         return (key: k, kvp.value);
                     })
                     .OrderBy(kvp => kvp.key, comparer);
+            }
+        }
+
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+            => Seek(key_prefix, direction);
+
+        // IReadOnlyStore<StorageKey, StorageItem> implementation
+        public StorageItem this[StorageKey key]
+        {
+            get
+            {
+                if (TryGet(key, out var value))
+                    return value;
+                throw new KeyNotFoundException($"Key not found: {Convert.ToHexString(key.ToArray())}");
+            }
+        }
+
+        [Obsolete("use TryGet(StorageKey key, out StorageItem? value) instead.")]
+        public StorageItem? TryGet(StorageKey key)
+        {
+            var keyBytes = key.ToArray();
+            var valueBytes = TryGet(keyBytes);
+            return valueBytes != null ? new StorageItem(valueBytes) : null;
+        }
+
+        public bool TryGet(StorageKey key, out StorageItem? value)
+        {
+            var keyBytes = key.ToArray();
+            if (TryGet(keyBytes, out var valueBytes))
+            {
+                value = new StorageItem(valueBytes);
+                return true;
+            }
+            value = null;
+            return false;
+        }
+
+        public bool Contains(StorageKey key)
+        {
+            var keyBytes = key.ToArray();
+            return Contains(keyBytes);
+        }
+
+        public IEnumerable<(StorageKey Key, StorageItem Value)> Find(StorageKey? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+        {
+            var prefixBytes = key_prefix?.ToArray();
+            foreach (var (keyBytes, valueBytes) in Find(prefixBytes, direction))
+            {
+                yield return ((StorageKey)keyBytes, new StorageItem(valueBytes));
             }
         }
 

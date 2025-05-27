@@ -10,6 +10,8 @@
 
     <ItemGroup>
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
+        <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\bctklib\bctklib.csproj" />

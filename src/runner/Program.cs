@@ -87,7 +87,7 @@ namespace Neo.Test.Runner
                     : new CheckpointStore(CheckpointFile, chain);
 
                 using var _ = checkpoint as IDisposable ?? NoopDisposable.Instance;
-                using var store = new MemoryTrackingStore(checkpoint);
+                using var store = new MemoryTrackingStore((IReadOnlyStore<byte[], byte[]>)checkpoint);
                 store.EnsureLedgerInitialized(checkpoint.Settings);
 
                 var tryGetContract = store.CreateTryGetContract();
@@ -103,7 +103,7 @@ namespace Neo.Test.Runner
 
                 var script = await parser.LoadInvocationScriptAsync(NeoInvokeFile);
 
-                using var snapshot = new SnapshotCache(store);
+                using var snapshot = new StoreCache(store.GetSnapshot());
                 using var engine = new TestApplicationEngine(snapshot, checkpoint.Settings, signer);
 
                 List<LogEventArgs> logEvents = new();

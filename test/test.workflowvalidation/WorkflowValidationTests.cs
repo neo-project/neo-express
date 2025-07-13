@@ -164,12 +164,12 @@ public class WorkflowValidationTests : IDisposable
         _output.WriteLine("=== Testing Format Validation ===");
 
         // Equivalent to: dotnet restore neo-express.sln
-        var restoreResult = await RunDotNetCommand("restore", _solutionPath);
-        restoreResult.ExitCode.Should().Be(0, "restore should succeed");
+        var (restoreExitCode, _, _) = await RunDotNetCommand("restore", _solutionPath);
+        restoreExitCode.Should().Be(0, "restore should succeed");
 
         // Equivalent to: dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
-        var formatResult = await RunDotNetCommand("format", $"{_solutionPath} --verify-no-changes --no-restore --verbosity diagnostic");
-        formatResult.ExitCode.Should().Be(0, "format verification should pass");
+        var (formatExitCode, _, _) = await RunDotNetCommand("format", _solutionPath, "--verify-no-changes", "--no-restore", "--verbosity", "diagnostic");
+        formatExitCode.Should().Be(0, "format verification should pass");
 
         _output.WriteLine("✅ Format validation passed");
     }
@@ -183,13 +183,13 @@ public class WorkflowValidationTests : IDisposable
         _output.WriteLine("=== Testing Build Validation ===");
 
         // Equivalent to: dotnet restore neo-express.sln
-        var restoreResult = await RunDotNetCommand("restore", _solutionPath);
-        restoreResult.ExitCode.Should().Be(0, "restore should succeed");
+        var (restoreExitCode, _, _) = await RunDotNetCommand("restore", _solutionPath);
+        restoreExitCode.Should().Be(0, "restore should succeed");
 
         // Equivalent to: dotnet build neo-express.sln --configuration Release --no-restore --verbosity normal
-        var buildResult = await RunDotNetCommand("build", $"{_solutionPath} --configuration {_configuration} --no-restore --verbosity normal");
-        buildResult.ExitCode.Should().Be(0, "build should succeed");
-        buildResult.Output.Should().Contain("Build succeeded", "build should complete successfully");
+        var (buildExitCode, buildOutput, _) = await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore", "--verbosity", "normal");
+        buildExitCode.Should().Be(0, "build should succeed");
+        buildOutput.Should().Contain("Build succeeded", "build should complete successfully");
 
         _output.WriteLine("✅ Build validation passed");
     }
@@ -206,7 +206,7 @@ public class WorkflowValidationTests : IDisposable
 
         // Build first
         await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", $"{_solutionPath} --configuration {_configuration} --no-restore");
+        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Run tests exactly like test.yml does, but exclude this test project to avoid circular dependency
         // Equivalent to: dotnet test neo-express.sln --configuration Release --no-build --verbosity normal
@@ -226,7 +226,7 @@ public class WorkflowValidationTests : IDisposable
         foreach (var project in testProjects)
         {
             _output.WriteLine($"Running tests for {project}...");
-            var result = await RunDotNetCommand("test", $"{project} --configuration {_configuration} --no-build --verbosity normal");
+            var result = await RunDotNetCommand("test", project, "--configuration", _configuration, "--no-build", "--verbosity", "normal");
             allResults.Add((project, result));
 
             if (result.ExitCode != 0)
@@ -358,11 +358,11 @@ public class WorkflowValidationTests : IDisposable
 
         // Build first
         await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", $"{_solutionPath} --configuration {_configuration} --no-restore");
+        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build --verbosity normal
-        var packResult = await RunDotNetCommand("pack", $"{_solutionPath} --configuration {_configuration} --output {outDir} --no-build --verbosity normal");
-        packResult.ExitCode.Should().Be(0, "pack should succeed");
+        var (packExitCode, _, _) = await RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", outDir, "--no-build", "--verbosity", "normal");
+        packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify packages were created
         var packages = Directory.GetFiles(outDir, "*.nupkg");
@@ -372,12 +372,11 @@ public class WorkflowValidationTests : IDisposable
         _output.WriteLine($"✅ Pack validation passed - created {packages.Length} packages");
     }
 
-    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, string arguments)
+    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, params string[] args)
     {
-        var startInfo = new ProcessStartInfo
+        var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"{command} {arguments}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -385,9 +384,19 @@ public class WorkflowValidationTests : IDisposable
             WorkingDirectory = Path.GetDirectoryName(_solutionPath)
         };
 
-        _output.WriteLine($"Running: dotnet {command} {arguments}");
+        // Add main command
+        psi.ArgumentList.Add(command);
 
-        using var process = new Process { StartInfo = startInfo };
+        // Adding args to the list
+        foreach (var arg in args)
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        _output.WriteLine($"Running: dotnet {command} {string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
+
+        using var process = new Process { StartInfo = psi };
+
         process.Start();
 
         var outputTask = process.StandardOutput.ReadToEndAsync();
@@ -398,10 +407,10 @@ public class WorkflowValidationTests : IDisposable
         var output = await outputTask;
         var error = await errorTask;
 
-        _output.WriteLine($"Exit code: {process.ExitCode}");
-        if (!string.IsNullOrEmpty(output))
+        _output.WriteLine($"Exit Code: {process.ExitCode}");
+        if (!string.IsNullOrWhiteSpace(output))
             _output.WriteLine($"Output: {output}");
-        if (!string.IsNullOrEmpty(error))
+        if (!string.IsNullOrWhiteSpace(error))
             _output.WriteLine($"Error: {error}");
 
         return (process.ExitCode, output, error);

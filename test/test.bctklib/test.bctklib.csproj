@@ -14,17 +14,20 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="FluentAssertions" Version="6.12.2" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
+        <PackageReference Include="FluentAssertions" Version="7.2.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
         <PackageReference Include="Neo.Plugins.Storage.RocksDBStore" Version="3.8.2" />
-        <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.14" />
+        <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.15" />
         <PackageReference Include="System.Net.Http" Version="4.3.4" />
         <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-        <PackageReference Include="xunit" Version="2.9.3" />
-        <PackageReference Include="Xunit.Combinatorial" Version="1.6.24" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+        <PackageReference Include="Xunit.Combinatorial" Version="2.0.24" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.2">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="xunit.v3" Version="3.0.0" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
     </ItemGroup>
 </Project>

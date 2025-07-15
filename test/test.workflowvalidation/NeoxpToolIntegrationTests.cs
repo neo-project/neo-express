@@ -168,11 +168,11 @@ public class NeoxpToolIntegrationTests : IDisposable
 
         // Restore and build
         await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", $"{_solutionPath} --configuration {_configuration} --no-restore");
+        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Pack for install (equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build)
-        var packResult = await RunDotNetCommand("pack", $"{_solutionPath} --configuration {_configuration} --output {_outDirectory} --no-build --verbosity normal");
-        packResult.ExitCode.Should().Be(0, "pack should succeed");
+        var (packExitCode, _, _) = await RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
+        packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify neo.express package exists
         var packages = Directory.GetFiles(_outDirectory, "neo.express*.nupkg");
@@ -180,32 +180,32 @@ public class NeoxpToolIntegrationTests : IDisposable
 
         // Try to uninstall any existing tool first to avoid conflicts
         _output.WriteLine("Uninstalling any existing neo.express tool...");
-        await RunDotNetCommand("tool", "uninstall --global neo.express");
+        await RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
 
         // Install neoxp tool (equivalent to: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express)
-        var installResult = await RunDotNetCommand("tool", $"install --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
+        var (toolInstallExitCode, _, toolInstallError) = await RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
 
         // Handle various installation scenarios
-        if (installResult.ExitCode != 0)
+        if (toolInstallExitCode != 0)
         {
-            if (installResult.Error.Contains("already installed") ||
-                installResult.Error.Contains("already exists") ||
-                installResult.Error.Contains("file or directory with the same name already exists"))
+            if (toolInstallError.Contains("already installed") ||
+                toolInstallError.Contains("already exists") ||
+                toolInstallError.Contains("file or directory with the same name already exists"))
             {
                 _output.WriteLine("Tool already exists, trying to update...");
-                var updateResult = await RunDotNetCommand("tool", $"update --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
-                if (updateResult.ExitCode != 0)
+                var (toolUpdateExitCode, _, _) = await RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+                if (toolUpdateExitCode != 0)
                 {
                     _output.WriteLine("Update failed, trying uninstall and reinstall...");
-                    await RunDotNetCommand("tool", "uninstall --global neo.express");
+                    await RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
                     await Task.Delay(1000); // Wait for cleanup
-                    var reinstallResult = await RunDotNetCommand("tool", $"install --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
-                    reinstallResult.ExitCode.Should().Be(0, "tool reinstall should succeed");
+                    var (toolReinstallExitCode, _, _) = await RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+                    toolReinstallExitCode.Should().Be(0, "tool reinstall should succeed");
                 }
             }
             else
             {
-                installResult.ExitCode.Should().Be(0, "tool install should succeed");
+                toolInstallExitCode.Should().Be(0, "tool install should succeed");
             }
         }
 
@@ -369,12 +369,11 @@ public class NeoxpToolIntegrationTests : IDisposable
         }
     }
 
-    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, string arguments)
+    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, params string[] args)
     {
-        var startInfo = new ProcessStartInfo
+        var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"{command} {arguments}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -382,9 +381,19 @@ public class NeoxpToolIntegrationTests : IDisposable
             WorkingDirectory = Path.GetDirectoryName(_solutionPath)
         };
 
-        _output.WriteLine($"Running: dotnet {command} {arguments}");
+        // Add main command
+        psi.ArgumentList.Add(command);
 
-        using var process = new Process { StartInfo = startInfo };
+        // Adding args to the list
+        foreach (var arg in args)
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        _output.WriteLine($"Running: dotnet {command} {string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
+
+        using var process = new Process { StartInfo = psi };
+
         process.Start();
 
         var outputTask = process.StandardOutput.ReadToEndAsync();
@@ -395,10 +404,10 @@ public class NeoxpToolIntegrationTests : IDisposable
         var output = await outputTask;
         var error = await errorTask;
 
-        _output.WriteLine($"Exit code: {process.ExitCode}");
-        if (!string.IsNullOrEmpty(output))
+        _output.WriteLine($"Exit Code: {process.ExitCode}");
+        if (!string.IsNullOrWhiteSpace(output))
             _output.WriteLine($"Output: {output}");
-        if (!string.IsNullOrEmpty(error))
+        if (!string.IsNullOrWhiteSpace(error))
             _output.WriteLine($"Error: {error}");
 
         return (process.ExitCode, output, error);

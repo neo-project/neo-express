@@ -283,21 +283,21 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
     {
         // Build and pack
         await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", $"{_solutionPath} --configuration {_configuration} --no-restore");
-        await RunDotNetCommand("pack", $"{_solutionPath} --configuration {_configuration} --output {_outDirectory} --no-build");
+        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
+        await RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
 
         // Uninstall existing tool first (ignore errors if not installed)
-        await RunDotNetCommand("tool", "uninstall --global neo.express");
+        await RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
 
         // Try to install the tool, if it fails try to update instead
-        var installResult = await RunDotNetCommand("tool", $"install --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
-        if (installResult.ExitCode != 0)
+        var (toolInstallExitCode, _, toolInstallError) = await RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+        if (toolInstallExitCode != 0)
         {
             // If install failed, try update instead
-            var updateResult = await RunDotNetCommand("tool", $"update --add-source {_outDirectory} --verbosity normal --global --prerelease neo.express");
-            if (updateResult.ExitCode != 0)
+            var (toolUpdateExitCode, _, toolUpdateError) = await RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+            if (toolUpdateExitCode != 0)
             {
-                throw new InvalidOperationException($"Failed to install or update neo.express tool. Install error: {installResult.Error}. Update error: {updateResult.Error}");
+                throw new InvalidOperationException($"Failed to install or update neo.express tool. Install error: {toolInstallError}. Update error: {toolUpdateError}");
             }
         }
 
@@ -351,12 +351,11 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         }
     }
 
-    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, string arguments)
+    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, params string[] args)
     {
-        var startInfo = new ProcessStartInfo
+        var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"{command} {arguments}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -364,7 +363,19 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             WorkingDirectory = Path.GetDirectoryName(_solutionPath)
         };
 
-        using var process = new Process { StartInfo = startInfo };
+        // Add main command
+        psi.ArgumentList.Add(command);
+
+        // Adding args to the list
+        foreach (var arg in args)
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        _output.WriteLine($"Running: dotnet {command} {string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
+
+        using var process = new Process { StartInfo = psi };
+
         process.Start();
 
         var outputTask = process.StandardOutput.ReadToEndAsync();
@@ -374,6 +385,12 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
 
         var output = await outputTask;
         var error = await errorTask;
+
+        _output.WriteLine($"Exit Code: {process.ExitCode}");
+        if (!string.IsNullOrWhiteSpace(output))
+            _output.WriteLine($"Output: {output}");
+        if (!string.IsNullOrWhiteSpace(error))
+            _output.WriteLine($"Error: {error}");
 
         return (process.ExitCode, output, error);
     }

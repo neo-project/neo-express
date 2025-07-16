@@ -13,7 +13,6 @@ using FluentAssertions;
 using System.Diagnostics;
 using System.Text.Json;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace test.workflowvalidation;
 
@@ -147,10 +146,10 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             {
                 // Save output to file as the original command does
                 var policyFile = Path.Combine(_tempDirectory, "mainnet-policy.json");
-                await File.WriteAllTextAsync(policyFile, policyGetResult.Output);
+                await File.WriteAllTextAsync(policyFile, policyGetResult.Output, TestContext.Current.CancellationToken);
 
                 // Verify it's valid JSON
-                var policyContent = await File.ReadAllTextAsync(policyFile);
+                var policyContent = await File.ReadAllTextAsync(policyFile, TestContext.Current.CancellationToken);
                 var policy = JsonDocument.Parse(policyContent);
                 policy.Should().NotBeNull("policy should be valid JSON");
 
@@ -224,7 +223,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             var runTask = RunNeoxpCommandWithTimeout("run --seconds-per-block 3 --discard", TimeSpan.FromMinutes(1));
 
             // Wait a bit to let it start
-            await Task.Delay(5000);
+            await Task.Delay(5000, TestContext.Current.CancellationToken);
 
             // Test that we can run commands while it's running
             // Equivalent to: neoxp transfer 10000 gas genesis node1 (online)

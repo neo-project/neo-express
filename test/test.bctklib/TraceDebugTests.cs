@@ -35,7 +35,7 @@ namespace test.bctklib
             var writer = new ArrayBufferWriter<byte>();
             TraceRecord_WriteWithoutGas(writer, options, VMState.BREAK, Array.Empty<Neo.VM.ExecutionContext>(), _ => UInt160.Zero);
 
-            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options);
+            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options, TestContext.Current.CancellationToken);
 
             Assert.IsType<TraceRecord>(record);
             if (record is TraceRecord traceRecord)
@@ -68,7 +68,7 @@ namespace test.bctklib
             var writer = new ArrayBufferWriter<byte>();
             TraceRecord.Write(writer, options, VMState.BREAK, 1000, Array.Empty<Neo.VM.ExecutionContext>(), _ => UInt160.Zero);
 
-            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options);
+            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options, TestContext.Current.CancellationToken);
 
             Assert.IsType<TraceRecord>(record);
             if (record is TraceRecord traceRecord)
@@ -90,7 +90,7 @@ namespace test.bctklib
             var writer = new ArrayBufferWriter<byte>();
             StorageRecord_WriteWithStorageItemArrayHeader(writer, options, scriptHash, storages);
 
-            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options);
+            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options, TestContext.Current.CancellationToken);
 
             Assert.IsType<StorageRecord>(record);
             if (record is StorageRecord storageRecord)
@@ -112,7 +112,7 @@ namespace test.bctklib
             var writer = new ArrayBufferWriter<byte>();
             StorageRecord.Write(writer, options, scriptHash, storages);
 
-            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options);
+            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(writer.WrittenMemory, options, TestContext.Current.CancellationToken);
 
             Assert.IsType<StorageRecord>(record);
             if (record is StorageRecord storageRecord)
@@ -160,7 +160,7 @@ namespace test.bctklib
                 mpWriter.Flush();
             }
 
-            var actual = MessagePackSerializer.Deserialize<UInt160>(writer.WrittenMemory, options);
+            var actual = MessagePackSerializer.Deserialize<UInt160>(writer.WrittenMemory, options, TestContext.Current.CancellationToken);
 
             Assert.Equal(scriptHash, actual);
         }
@@ -171,9 +171,9 @@ namespace test.bctklib
             var scriptHash = UInt160.Parse("0001020304050607080900010203040506070809");
 
             var writer = new ArrayBufferWriter<byte>();
-            MessagePackSerializer.Serialize<UInt160>(writer, scriptHash, options);
+            MessagePackSerializer.Serialize<UInt160>(writer, scriptHash, options, TestContext.Current.CancellationToken);
 
-            var actual = MessagePackSerializer.Deserialize<UInt160>(writer.WrittenMemory, options);
+            var actual = MessagePackSerializer.Deserialize<UInt160>(writer.WrittenMemory, options, TestContext.Current.CancellationToken);
 
             Assert.Equal(scriptHash, actual);
         }

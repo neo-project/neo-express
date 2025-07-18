@@ -13,7 +13,6 @@ using FluentAssertions;
 using System.Diagnostics;
 using System.Text.Json;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace test.workflowvalidation;
 
@@ -198,7 +197,7 @@ public class NeoxpToolIntegrationTests : IDisposable
                 {
                     _output.WriteLine("Update failed, trying uninstall and reinstall...");
                     await RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
-                    await Task.Delay(1000); // Wait for cleanup
+                    await Task.Delay(1000, TestContext.Current.CancellationToken); // Wait for cleanup
                     var (toolReinstallExitCode, _, _) = await RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
                     toolReinstallExitCode.Should().Be(0, "tool reinstall should succeed");
                 }
@@ -239,7 +238,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             File.Exists(configFile).Should().BeTrue("default.neo-express should be created in ~/.neo-express/");
 
             // Verify the config file is valid JSON
-            var configContent = await File.ReadAllTextAsync(configFile);
+            var configContent = await File.ReadAllTextAsync(configFile, TestContext.Current.CancellationToken);
             var config = JsonDocument.Parse(configContent);
             config.RootElement.TryGetProperty("magic", out _).Should().BeTrue("config should have magic property");
 
@@ -279,7 +278,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             // Check if config file exists and contains the wallet
             if (File.Exists(configFile))
             {
-                var configContent = await File.ReadAllTextAsync(configFile);
+                var configContent = await File.ReadAllTextAsync(configFile, TestContext.Current.CancellationToken);
                 configContent.Should().Contain("bob", "wallet 'bob' should be added to config");
             }
             else
@@ -322,7 +321,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             // Stop any running nodes first to release locks
             _output.WriteLine("Stopping any running nodes to release RocksDB locks...");
             await RunNeoxpCommand("stop --all");
-            await Task.Delay(2000); // Wait for processes to fully stop
+            await Task.Delay(2000, TestContext.Current.CancellationToken); // Wait for processes to fully stop
 
             // Equivalent to: neoxp checkpoint create checkpoints/init --force
             var checkpointResult = await RunNeoxpCommand("checkpoint create checkpoints/init --force");

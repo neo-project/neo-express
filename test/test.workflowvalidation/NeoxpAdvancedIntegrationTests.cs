@@ -26,10 +26,10 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
     private readonly string _tempDirectory;
     private readonly string _solutionPath;
     private readonly string _configuration = "Release";
-    private readonly List<Process> _runningProcesses = new();
     private readonly string _outDirectory;
     private bool _toolInstalled = false;
     private bool _projectCreated = false;
+    private readonly RunCommand _runCommand;
 
     public NeoxpAdvancedIntegrationTests(ITestOutputHelper output)
     {
@@ -43,6 +43,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _outDirectory = Path.Combine(_tempDirectory, "out");
         Directory.CreateDirectory(_outDirectory);
+        _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
 
         _output.WriteLine($"Test temp directory: {_tempDirectory}");
         _output.WriteLine($"Solution path: {_solutionPath}");
@@ -54,7 +55,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         var current = new DirectoryInfo(startPath);
         while (current != null)
         {
-            if (current.GetFiles("neo-express.sln").Any())
+            if (current.GetFiles("neo-express.sln").Length != 0)
                 return current.FullName;
             current = current.Parent;
         }
@@ -139,14 +140,14 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
-            var policyGetResult = await RunNeoxpCommand("policy get --rpc-uri mainnet --json");
+            var (policyGetExitCode, policyGetOutput, _) = await _runCommand.RunNeoxpCommand("policy", "get", "--rpc-uri", "mainnet", "--json");
 
             // Note: This might fail if mainnet is not accessible, so we'll be more lenient
-            if (policyGetResult.ExitCode == 0)
+            if (policyGetExitCode == 0)
             {
                 // Save output to file as the original command does
                 var policyFile = Path.Combine(_tempDirectory, "mainnet-policy.json");
-                await File.WriteAllTextAsync(policyFile, policyGetResult.Output, TestContext.Current.CancellationToken);
+                await File.WriteAllTextAsync(policyFile, policyGetOutput, TestContext.Current.CancellationToken);
 
                 // Verify it's valid JSON
                 var policyContent = await File.ReadAllTextAsync(policyFile, TestContext.Current.CancellationToken);
@@ -154,7 +155,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
                 policy.Should().NotBeNull("policy should be valid JSON");
 
                 // Equivalent to: neoxp policy sync mainnet-policy --account genesis
-                var policySyncResult = await RunNeoxpCommand("policy sync mainnet-policy --account genesis");
+                await _runCommand.RunNeoxpCommand("policy", "sync", "mainnet-policy", "--account", "genesis");
                 // This might fail if genesis account doesn't exist yet, which is expected
 
                 _output.WriteLine("✅ neoxp policy commands completed");
@@ -188,11 +189,11 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp transfer 10000 gas genesis node1
-            var transfer1Result = await RunNeoxpCommand("transfer 10000 gas genesis node1");
+            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
             // Note: Transfer commands may fail in offline mode, which is expected behavior
 
             // Equivalent to: neoxp transfer 10000 gas genesis bob
-            var transfer2Result = await RunNeoxpCommand("transfer 10000 gas genesis bob");
+            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
             // Note: Transfer commands may fail in offline mode, which is expected behavior
 
             _output.WriteLine("✅ neoxp transfer commands (offline) passed");
@@ -220,21 +221,21 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
 
             // Equivalent to: neoxp run --seconds-per-block 3 --discard &
             // We'll run this with a timeout to simulate the GitHub Actions timeout-minutes: 1
-            var runTask = RunNeoxpCommandWithTimeout("run --seconds-per-block 3 --discard", TimeSpan.FromMinutes(1));
+            var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(1), "run", "--seconds-per-block", "3", "--discard");
 
             // Wait a bit to let it start
             await Task.Delay(5000, TestContext.Current.CancellationToken);
 
             // Test that we can run commands while it's running
             // Equivalent to: neoxp transfer 10000 gas genesis node1 (online)
-            var onlineTransfer1 = await RunNeoxpCommand("transfer 10000 gas genesis node1");
+            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
             // Note: This might fail if the blockchain isn't fully started yet
 
             // Equivalent to: neoxp transfer 10000 gas genesis bob (online)
-            var onlineTransfer2 = await RunNeoxpCommand("transfer 10000 gas genesis bob");
+            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
 
             // Equivalent to: neoxp stop --all
-            var stopResult = await RunNeoxpCommand("stop --all");
+            await _runCommand.RunNeoxpCommand("stop", "--all");
             // Note: Stop command may fail if no blockchain is running, which is expected
 
             // Wait for the run task to complete
@@ -256,7 +257,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             // Ensure we stop any running instances
             try
             {
-                await RunNeoxpCommand("stop --all");
+                await _runCommand.RunNeoxpCommand("stop", "--all");
             }
             catch
             {
@@ -281,19 +282,19 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
     private async Task BuildAndInstallTool()
     {
         // Build and pack
-        await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
-        await RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
+        await _runCommand.RunDotNetCommand("restore", _solutionPath);
+        await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
+        await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
 
         // Uninstall existing tool first (ignore errors if not installed)
-        await RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
+        await _runCommand.RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
 
         // Try to install the tool, if it fails try to update instead
-        var (toolInstallExitCode, _, toolInstallError) = await RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
         if (toolInstallExitCode != 0)
         {
             // If install failed, try update instead
-            var (toolUpdateExitCode, _, toolUpdateError) = await RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+            var (toolUpdateExitCode, _, toolUpdateError) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
             if (toolUpdateExitCode != 0)
             {
                 throw new InvalidOperationException($"Failed to install or update neo.express tool. Install error: {toolInstallError}. Update error: {toolUpdateError}");
@@ -309,7 +310,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         try
         {
             Directory.SetCurrentDirectory(_tempDirectory);
-            await RunNeoxpCommand("create --force");
+            await _runCommand.RunNeoxpCommand("create", "--force");
             _projectCreated = true;
         }
         finally
@@ -335,13 +336,13 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
                 var configContent = await File.ReadAllTextAsync(configFile);
                 if (!configContent.Contains("bob"))
                 {
-                    await RunNeoxpCommand("wallet create bob --force");
+                    await _runCommand.RunNeoxpCommand("wallet", "create", "bob", "--force");
                 }
             }
             else
             {
                 // If config doesn't exist, create wallet anyway
-                await RunNeoxpCommand("wallet create bob --force");
+                await _runCommand.RunNeoxpCommand("wallet", "create", "bob", "--force");
             }
         }
         finally
@@ -350,134 +351,10 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         }
     }
 
-    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, params string[] args)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = Path.GetDirectoryName(_solutionPath)
-        };
-
-        // Add main command
-        psi.ArgumentList.Add(command);
-
-        // Adding args to the list
-        foreach (var arg in args)
-        {
-            psi.ArgumentList.Add(arg);
-        }
-
-        _output.WriteLine($"Running: dotnet {command} {string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
-
-        using var process = new Process { StartInfo = psi };
-
-        process.Start();
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-
-        await process.WaitForExitAsync();
-
-        var output = await outputTask;
-        var error = await errorTask;
-
-        _output.WriteLine($"Exit Code: {process.ExitCode}");
-        if (!string.IsNullOrWhiteSpace(output))
-            _output.WriteLine($"Output: {output}");
-        if (!string.IsNullOrWhiteSpace(error))
-            _output.WriteLine($"Error: {error}");
-
-        return (process.ExitCode, output, error);
-    }
-
-    private async Task<(int ExitCode, string Output, string Error)> RunNeoxpCommand(string arguments)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "neoxp",
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = _tempDirectory
-        };
-
-        using var process = new Process { StartInfo = startInfo };
-        process.Start();
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-
-        await process.WaitForExitAsync();
-
-        var output = await outputTask;
-        var error = await errorTask;
-
-        return (process.ExitCode, output, error);
-    }
-
-    private async Task<(int ExitCode, string Output, string Error)> RunNeoxpCommandWithTimeout(string arguments, TimeSpan timeout)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "neoxp",
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = _tempDirectory
-        };
-
-        using var process = new Process { StartInfo = startInfo };
-        _runningProcesses.Add(process);
-
-        process.Start();
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-
-        using var cts = new CancellationTokenSource(timeout);
-        try
-        {
-            await process.WaitForExitAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            process.Kill();
-            throw new TimeoutException($"Command 'neoxp {arguments}' timed out after {timeout}");
-        }
-
-        var output = await outputTask;
-        var error = await errorTask;
-
-        return (process.ExitCode, output, error);
-    }
-
     public void Dispose()
     {
-        // Clean up any running processes
-        foreach (var process in _runningProcesses)
-        {
-            try
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                    process.WaitForExit(5000);
-                }
-                process.Dispose();
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"Error disposing process: {ex.Message}");
-            }
-        }
+        //// Clean up any running processes
+        _runCommand.Dispose();
 
         // Ensure neoxp is stopped
         try

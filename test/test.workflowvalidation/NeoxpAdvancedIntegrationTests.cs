@@ -353,7 +353,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
 
     public void Dispose()
     {
-        //// Clean up any running processes
+        // Clean up any running processes
         _runCommand.Dispose();
 
         // Ensure neoxp is stopped

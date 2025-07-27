@@ -13,6 +13,7 @@ using System.Diagnostics;
 using Xunit;
 
 namespace test.workflowvalidation;
+
 public sealed class RunCommand(ITestOutputHelper output, string solutionPath, string tempDirectory) : IDisposable
 {
     private const string COMMAND_DOTNET = "dotnet";

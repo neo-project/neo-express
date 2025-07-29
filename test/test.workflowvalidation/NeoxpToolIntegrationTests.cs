@@ -26,7 +26,7 @@ public class NeoxpToolIntegrationTests : IDisposable
     private readonly string _tempDirectory;
     private readonly string _solutionPath;
     private readonly string _configuration = "Release";
-    private readonly List<Process> _runningProcesses = new();
+    private readonly RunCommand _runCommand;
     private readonly string _outDirectory;
     private bool _toolInstalled = false;
 
@@ -42,6 +42,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _outDirectory = Path.Combine(_tempDirectory, "out");
         Directory.CreateDirectory(_outDirectory);
+        _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
 
         _output.WriteLine($"Test temp directory: {_tempDirectory}");
         _output.WriteLine($"Solution path: {_solutionPath}");
@@ -166,11 +167,11 @@ public class NeoxpToolIntegrationTests : IDisposable
         _output.WriteLine("=== Building and Installing neoxp Tool ===");
 
         // Restore and build
-        await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
+        await _runCommand.RunDotNetCommand("restore", _solutionPath);
+        await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Pack for install (equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build)
-        var (packExitCode, _, _) = await RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
+        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify neo.express package exists
@@ -179,10 +180,10 @@ public class NeoxpToolIntegrationTests : IDisposable
 
         // Try to uninstall any existing tool first to avoid conflicts
         _output.WriteLine("Uninstalling any existing neo.express tool...");
-        await RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
+        await _runCommand.RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
 
         // Install neoxp tool (equivalent to: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express)
-        var (toolInstallExitCode, _, toolInstallError) = await RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
 
         // Handle various installation scenarios
         if (toolInstallExitCode != 0)
@@ -192,13 +193,13 @@ public class NeoxpToolIntegrationTests : IDisposable
                 toolInstallError.Contains("file or directory with the same name already exists"))
             {
                 _output.WriteLine("Tool already exists, trying to update...");
-                var (toolUpdateExitCode, _, _) = await RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+                var (toolUpdateExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
                 if (toolUpdateExitCode != 0)
                 {
                     _output.WriteLine("Update failed, trying uninstall and reinstall...");
-                    await RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
+                    await _runCommand.RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
                     await Task.Delay(1000, TestContext.Current.CancellationToken); // Wait for cleanup
-                    var (toolReinstallExitCode, _, _) = await RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+                    var (toolReinstallExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
                     toolReinstallExitCode.Should().Be(0, "tool reinstall should succeed");
                 }
             }
@@ -229,8 +230,8 @@ public class NeoxpToolIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp create --force
-            var createResult = await RunNeoxpCommand("create --force");
-            createResult.ExitCode.Should().Be(0, "neoxp create should succeed");
+            var (createExitCode, _, _) = await _runCommand.RunNeoxpCommand("create", "--force");
+            createExitCode.Should().Be(0, "neoxp create should succeed");
 
             // Verify that default.neo-express was created in ~/.neo-express/ directory
             var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
@@ -267,8 +268,8 @@ public class NeoxpToolIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp wallet create bob --force
-            var walletResult = await RunNeoxpCommand("wallet create bob --force");
-            walletResult.ExitCode.Should().Be(0, "neoxp wallet create should succeed");
+            var (walletCreateExitCode, walletCreateOutput, _) = await _runCommand.RunNeoxpCommand("wallet", "create", "bob", "--force");
+            walletCreateExitCode.Should().Be(0, "neoxp wallet create should succeed");
 
             // Verify wallet was created (check for wallet file or in config)
             // neoxp creates the config file in ~/.neo-express/ directory
@@ -284,7 +285,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             else
             {
                 // Alternative: check if the wallet was created successfully by parsing the command output
-                walletResult.Output.Should().Contain("Created Wallet bob", "wallet creation should be confirmed in output");
+                walletCreateOutput.Should().Contain("Created Wallet bob", "wallet creation should be confirmed in output");
             }
 
             _output.WriteLine("✅ neoxp wallet create command passed");
@@ -320,12 +321,12 @@ public class NeoxpToolIntegrationTests : IDisposable
 
             // Stop any running nodes first to release locks
             _output.WriteLine("Stopping any running nodes to release RocksDB locks...");
-            await RunNeoxpCommand("stop --all");
+            await _runCommand.RunNeoxpCommand("stop", "--all");
             await Task.Delay(2000, TestContext.Current.CancellationToken); // Wait for processes to fully stop
 
             // Equivalent to: neoxp checkpoint create checkpoints/init --force
-            var checkpointResult = await RunNeoxpCommand("checkpoint create checkpoints/init --force");
-            checkpointResult.ExitCode.Should().Be(0, "neoxp checkpoint create should succeed");
+            var (checkpointCreateExitCode, _, _) = await _runCommand.RunNeoxpCommand("checkpoint", "create", "checkpoints/init", "--force");
+            checkpointCreateExitCode.Should().Be(0, "neoxp checkpoint create should succeed");
 
             // Verify checkpoint was created (neoxp creates a .neoxp-checkpoint file, not a directory)
             var checkpointFile = Path.Combine(checkpointsDir, "init.neoxp-checkpoint");
@@ -359,92 +360,13 @@ public class NeoxpToolIntegrationTests : IDisposable
             try
             {
                 Directory.SetCurrentDirectory(_tempDirectory);
-                await RunNeoxpCommand("create --force");
+                await _runCommand.RunNeoxpCommand("create --force");
             }
             finally
             {
                 Directory.SetCurrentDirectory(originalDir);
             }
         }
-    }
-
-    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, params string[] args)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = Path.GetDirectoryName(_solutionPath)
-        };
-
-        // Add main command
-        psi.ArgumentList.Add(command);
-
-        // Adding args to the list
-        foreach (var arg in args)
-        {
-            psi.ArgumentList.Add(arg);
-        }
-
-        _output.WriteLine($"Running: dotnet {command} {string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
-
-        using var process = new Process { StartInfo = psi };
-
-        process.Start();
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-
-        await process.WaitForExitAsync();
-
-        var output = await outputTask;
-        var error = await errorTask;
-
-        _output.WriteLine($"Exit Code: {process.ExitCode}");
-        if (!string.IsNullOrWhiteSpace(output))
-            _output.WriteLine($"Output: {output}");
-        if (!string.IsNullOrWhiteSpace(error))
-            _output.WriteLine($"Error: {error}");
-
-        return (process.ExitCode, output, error);
-    }
-
-    private async Task<(int ExitCode, string Output, string Error)> RunNeoxpCommand(string arguments)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "neoxp",
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = _tempDirectory
-        };
-
-        _output.WriteLine($"Running: neoxp {arguments}");
-
-        using var process = new Process { StartInfo = startInfo };
-        process.Start();
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-
-        await process.WaitForExitAsync();
-
-        var output = await outputTask;
-        var error = await errorTask;
-
-        _output.WriteLine($"Exit code: {process.ExitCode}");
-        if (!string.IsNullOrEmpty(output))
-            _output.WriteLine($"Output: {output}");
-        if (!string.IsNullOrEmpty(error))
-            _output.WriteLine($"Error: {error}");
-
-        return (process.ExitCode, output, error);
     }
 
     private async Task CleanupRocksDbLockFiles()
@@ -454,7 +376,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             _output.WriteLine("Cleaning up RocksDB lock files...");
 
             // Stop any running neoxp processes first
-            await RunNeoxpCommand("stop --all");
+            await _runCommand.RunNeoxpCommand("stop", "--all");
             await Task.Delay(1000); // Wait for processes to stop
 
             // Clean up the neo-express directory which contains RocksDB files
@@ -480,7 +402,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         // Stop any running neoxp processes first
         try
         {
-            var stopTask = RunNeoxpCommand("stop --all");
+            var stopTask = _runCommand.RunNeoxpCommand("stop --all");
             stopTask.Wait(5000); // Wait up to 5 seconds
         }
         catch (Exception ex)
@@ -489,22 +411,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         }
 
         // Clean up any running processes
-        foreach (var process in _runningProcesses)
-        {
-            try
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                    process.WaitForExit(5000);
-                }
-                process.Dispose();
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"Error disposing process: {ex.Message}");
-            }
-        }
+        _runCommand.Dispose();
 
         // Clean up RocksDB files
         try

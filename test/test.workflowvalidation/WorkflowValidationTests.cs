@@ -27,7 +27,7 @@ public class WorkflowValidationTests : IDisposable
     private readonly string _tempDirectory;
     private readonly string _solutionPath;
     private readonly string _configuration = "Release";
-    private readonly List<Process> _runningProcesses = new();
+    private readonly RunCommand _runCommand;
 
     public WorkflowValidationTests(ITestOutputHelper output)
     {
@@ -39,6 +39,7 @@ public class WorkflowValidationTests : IDisposable
         var currentDir = Directory.GetCurrentDirectory();
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
+        _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
 
         _output.WriteLine($"Test temp directory: {_tempDirectory}");
         _output.WriteLine($"Solution path: {_solutionPath}");
@@ -163,11 +164,11 @@ public class WorkflowValidationTests : IDisposable
         _output.WriteLine("=== Testing Format Validation ===");
 
         // Equivalent to: dotnet restore neo-express.sln
-        var (restoreExitCode, _, _) = await RunDotNetCommand("restore", _solutionPath);
+        var (restoreExitCode, _, _) = await _runCommand.RunDotNetCommand("restore", _solutionPath);
         restoreExitCode.Should().Be(0, "restore should succeed");
 
         // Equivalent to: dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
-        var (formatExitCode, _, _) = await RunDotNetCommand("format", _solutionPath, "--verify-no-changes", "--no-restore", "--verbosity", "diagnostic");
+        var (formatExitCode, _, _) = await _runCommand.RunDotNetCommand("format", _solutionPath, "--verify-no-changes", "--no-restore", "--verbosity", "diagnostic");
         formatExitCode.Should().Be(0, "format verification should pass");
 
         _output.WriteLine("✅ Format validation passed");
@@ -182,11 +183,11 @@ public class WorkflowValidationTests : IDisposable
         _output.WriteLine("=== Testing Build Validation ===");
 
         // Equivalent to: dotnet restore neo-express.sln
-        var (restoreExitCode, _, _) = await RunDotNetCommand("restore", _solutionPath);
+        var (restoreExitCode, _, _) = await _runCommand.RunDotNetCommand("restore", _solutionPath);
         restoreExitCode.Should().Be(0, "restore should succeed");
 
         // Equivalent to: dotnet build neo-express.sln --configuration Release --no-restore --verbosity normal
-        var (buildExitCode, buildOutput, _) = await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore", "--verbosity", "normal");
+        var (buildExitCode, buildOutput, _) = await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore", "--verbosity", "normal");
         buildExitCode.Should().Be(0, "build should succeed");
         buildOutput.Should().Contain("Build succeeded", "build should complete successfully");
 
@@ -204,8 +205,8 @@ public class WorkflowValidationTests : IDisposable
         _output.WriteLine("=== Testing Unit Test Validation ===");
 
         // Build first
-        await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
+        await _runCommand.RunDotNetCommand("restore", _solutionPath);
+        await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Run tests exactly like test.yml does, but exclude this test project to avoid circular dependency
         // Equivalent to: dotnet test neo-express.sln --configuration Release --no-build --verbosity normal
@@ -225,7 +226,7 @@ public class WorkflowValidationTests : IDisposable
         foreach (var project in testProjects)
         {
             _output.WriteLine($"Running tests for {project}...");
-            var result = await RunDotNetCommand("test", project, "--configuration", _configuration, "--no-build", "--verbosity", "normal");
+            var result = await _runCommand.RunDotNetCommand("test", project, "--configuration", _configuration, "--no-build", "--verbosity", "normal");
             allResults.Add((project, result));
 
             if (result.ExitCode != 0)
@@ -356,11 +357,11 @@ public class WorkflowValidationTests : IDisposable
         Directory.CreateDirectory(outDir);
 
         // Build first
-        await RunDotNetCommand("restore", _solutionPath);
-        await RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
+        await _runCommand.RunDotNetCommand("restore", _solutionPath);
+        await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build --verbosity normal
-        var (packExitCode, _, _) = await RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", outDir, "--no-build", "--verbosity", "normal");
+        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", outDir, "--no-build", "--verbosity", "normal");
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify packages were created
@@ -371,69 +372,10 @@ public class WorkflowValidationTests : IDisposable
         _output.WriteLine($"✅ Pack validation passed - created {packages.Length} packages");
     }
 
-    private async Task<(int ExitCode, string Output, string Error)> RunDotNetCommand(string command, params string[] args)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = Path.GetDirectoryName(_solutionPath)
-        };
-
-        // Add main command
-        psi.ArgumentList.Add(command);
-
-        // Adding args to the list
-        foreach (var arg in args)
-        {
-            psi.ArgumentList.Add(arg);
-        }
-
-        _output.WriteLine($"Running: dotnet {command} {string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
-
-        using var process = new Process { StartInfo = psi };
-
-        process.Start();
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-
-        await process.WaitForExitAsync();
-
-        var output = await outputTask;
-        var error = await errorTask;
-
-        _output.WriteLine($"Exit Code: {process.ExitCode}");
-        if (!string.IsNullOrWhiteSpace(output))
-            _output.WriteLine($"Output: {output}");
-        if (!string.IsNullOrWhiteSpace(error))
-            _output.WriteLine($"Error: {error}");
-
-        return (process.ExitCode, output, error);
-    }
-
     public void Dispose()
     {
         // Clean up any running processes
-        foreach (var process in _runningProcesses)
-        {
-            try
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                    process.WaitForExit(5000);
-                }
-                process.Dispose();
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"Error disposing process: {ex.Message}");
-            }
-        }
+        _runCommand.Dispose();
 
         // Clean up temp directory
         try

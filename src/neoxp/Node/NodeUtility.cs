@@ -187,12 +187,12 @@ namespace NeoExpress.Node
             // Calculate network fee
 
             var oracleContract = NativeContract.ContractManagement.GetContract(snapshot, NativeContract.Oracle.Hash);
-            var engine = ApplicationEngine.Create(TriggerType.Verification, tx, snapshot.CreateSnapshot(), settings: settings);
+            var engine = ApplicationEngine.Create(TriggerType.Verification, tx, snapshot.CloneCache(), settings: settings);
             ContractMethodDescriptor md = oracleContract.Manifest.Abi.GetMethod("verify", -1);
             engine.LoadContract(oracleContract, md, CallFlags.None);
             if (engine.Execute() != Neo.VM.VMState.HALT)
                 return null;
-            tx.NetworkFee += engine.GasConsumed;
+            tx.NetworkFee += engine.FeeConsumed;
 
             var executionFactor = NativeContract.Policy.GetExecFeeFactor(snapshot);
             var networkFee = executionFactor * Neo.SmartContract.Helper.MultiSignatureContractCost(m, n);
@@ -354,7 +354,7 @@ namespace NeoExpress.Node
             if (state.Id < 0)
                 throw new ArgumentException("PersistContract not supported for native contracts", nameof(state));
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
 
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
             var localContract = snapshot.GetAndChange(key)?.GetInteroperable<ContractState>();
@@ -480,7 +480,7 @@ namespace NeoExpress.Node
             if (state.Id < 0)
                 throw new ArgumentException("PersistStorage not supported for native contracts", nameof(state));
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
 
             StorageKey key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(state.Hash);
             var localContract = snapshot.GetAndChange(key)?.GetInteroperable<ContractState>();

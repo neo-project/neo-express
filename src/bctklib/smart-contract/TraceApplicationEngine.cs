@@ -47,7 +47,7 @@ namespace Neo.BlockchainToolkit.SmartContract
         private string GetContractName(UInt160 scriptId)
         {
             return ImmutableInterlocked.GetOrAdd(ref contractNameMap, scriptId,
-                k => NativeContract.ContractManagement.GetContract(Snapshot, k)?.Manifest.Name ?? string.Empty);
+                k => NativeContract.ContractManagement.GetContract(SnapshotCache, k)?.Manifest.Name ?? string.Empty);
         }
 
         private void OnNotify(object sender, NotifyEventArgs args)
@@ -70,7 +70,7 @@ namespace Neo.BlockchainToolkit.SmartContract
         {
             traceDebugSink.ProtocolSettings(ProtocolSettings.Network, ProtocolSettings.AddressVersion);
             traceDebugSink.Script(CurrentContext?.Script ?? Array.Empty<byte>());
-            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
+            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
 
             return base.Execute();
@@ -82,9 +82,9 @@ namespace Neo.BlockchainToolkit.SmartContract
 
             if (State == VMState.HALT)
             {
-                traceDebugSink.Results(State, GasConsumed, ResultStack);
+                traceDebugSink.Results(State, FeeConsumed, ResultStack);
             }
-            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
+            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
             WriteStorages(CurrentScriptHash);
         }
 
@@ -92,17 +92,17 @@ namespace Neo.BlockchainToolkit.SmartContract
         {
             base.OnFault(e);
             traceDebugSink.Fault(e);
-            traceDebugSink.Trace(State, GasConsumed, InvocationStack);
+            traceDebugSink.Trace(State, FeeConsumed, InvocationStack);
         }
 
         private void WriteStorages(UInt160 scriptHash)
         {
             if (scriptHash != null)
             {
-                var contractState = NativeContract.ContractManagement.GetContract(Snapshot, scriptHash);
+                var contractState = NativeContract.ContractManagement.GetContract(SnapshotCache, scriptHash);
                 if (contractState != null)
                 {
-                    var storages = Snapshot.Find(StorageKey.CreateSearchPrefix(contractState.Id, default));
+                    var storages = SnapshotCache.Find(StorageKey.CreateSearchPrefix(contractState.Id, default));
                     traceDebugSink.Storages(scriptHash, storages);
                 }
             }

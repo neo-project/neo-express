@@ -93,7 +93,7 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var height = NativeContract.Ledger.CurrentIndex(snapshot);
 
             var count = @params.Count >= 1 ? uint.Parse(@params[0]!.AsString()) : 20;
@@ -141,7 +141,7 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
 
             var jsonContracts = new JArray();
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             foreach (var contract in snapshot.EnumerateTokenContracts(neoSystem.Settings))
             {
                 var jsonContract = new JObject();
@@ -155,7 +155,7 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
 
             if (@params[0] is JNumber number)
             {
@@ -201,7 +201,7 @@ namespace NeoExpress.Node
 
             var storages = new JArray();
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             foreach (var (key, value) in snapshot.Find(prefix))
             {
                 var storage = new JObject();
@@ -287,7 +287,7 @@ namespace NeoExpress.Node
                 Result = Convert.FromBase64String(jsonResponse["result"]!.AsString())
             };
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
@@ -369,7 +369,7 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
             var address = AsScriptHash(@params[0]!);
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
 
             // collect the non-zero balances of all the deployed Nep17 contracts for the specified account
             var addressBalances = TokenContract.Enumerate(snapshot)
@@ -468,7 +468,7 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
             var address = AsScriptHash(@params[0]!);
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
 
             List<(UInt160 scriptHash, ReadOnlyMemory<byte> tokenId, BigInteger balance)> tokens = new();
             foreach (var contract in NativeContract.ContractManagement.ListContracts(snapshot))
@@ -576,7 +576,7 @@ namespace NeoExpress.Node
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(nep11Hash, "properties", CallFlags.ReadOnly, tokenId);
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             using var engine = ApplicationEngine.Run(builder.ToArray(), snapshot, settings: neoSystem.Settings);
 
             JObject json = new();
@@ -647,7 +647,7 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
             var nep11Hash = AsScriptHash(@param);
 
-            var nep11 = new Nep11Token(neoSystem.Settings, neoSystem.GetSnapshot(), nep11Hash);
+            var nep11 = new Nep11Token(neoSystem.Settings, neoSystem.GetSnapshotCache(), nep11Hash);
 
             return nep11.HasValidMethods() &&
                 nep11.IsSymbolValid() &&
@@ -662,7 +662,7 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
             var nep17Hash = AsScriptHash(@param);
 
-            var nep17 = new Nep17Token(neoSystem.Settings, neoSystem.GetSnapshot(), nep17Hash);
+            var nep17 = new Nep17Token(neoSystem.Settings, neoSystem.GetSnapshotCache(), nep17Hash);
 
             return nep17.HasValidMethods() &&
                 nep17.IsSymbolValid() &&
@@ -698,7 +698,7 @@ namespace NeoExpress.Node
             var sent = new JArray();
             var received = new JArray();
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
 
             var contracts = TokenContract.Enumerate(snapshot)
                 .Where(c => c.standard == standard)

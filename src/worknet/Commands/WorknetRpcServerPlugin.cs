@@ -104,7 +104,7 @@ class WorknetRpcServerPlugin : Plugin
         if (neoSystem is null)
             throw new NullReferenceException(nameof(neoSystem));
         var address = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
-        using var snapshot = neoSystem.GetSnapshot();
+        using var snapshot = neoSystem.GetSnapshotCache();
 
         var balances = ToolkitRpcServer.GetNep17Balances(snapshot, persistencePlugin, address, neoSystem.Settings);
 
@@ -135,7 +135,7 @@ class WorknetRpcServerPlugin : Plugin
         if (neoSystem is null)
             throw new NullReferenceException(nameof(neoSystem));
         var address = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
-        using var snapshot = neoSystem.GetSnapshot();
+        using var snapshot = neoSystem.GetSnapshotCache();
         var balances = ToolkitRpcServer.GetNep11Balances(snapshot, persistencePlugin, address, neoSystem.Settings);
 
         var jsonBalances = new JArray();
@@ -178,7 +178,7 @@ class WorknetRpcServerPlugin : Plugin
 
         var contractHash = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
         var tokenId = @params[1]!.AsString().HexToBytes();
-        using var snapshot = neoSystem.GetSnapshot();
+        using var snapshot = neoSystem.GetSnapshotCache();
 
         var properties = ToolkitRpcServer.GetNep11Properties(snapshot, contractHash, tokenId.AsMemory(), neoSystem.Settings);
         JObject json = new();

@@ -167,7 +167,7 @@ namespace Neo.Test.Runner
                 ? writer.WriteNullAsync()
                 : writer.WriteValueAsync(engine.FaultException.GetBaseException().Message));
             await writer.WritePropertyNameAsync("gasconsumed");
-            await writer.WriteValueAsync($"{new BigDecimal((BigInteger)engine.GasConsumed, NativeContract.GAS.Decimals)}");
+            await writer.WriteValueAsync($"{new BigDecimal((BigInteger)engine.FeeConsumed, NativeContract.GAS.Decimals)}");
 
             await writer.WritePropertyNameAsync("logs");
             await writer.WriteStartArrayAsync();
@@ -198,7 +198,7 @@ namespace Neo.Test.Runner
             await writer.WriteStartArrayAsync();
             foreach (var contractHash in storages)
             {
-                await writer.WriteStorageAsync(engine.Snapshot, contractHash);
+                await writer.WriteStorageAsync(engine.SnapshotCache, contractHash);
             }
             await writer.WriteEndArrayAsync();
 

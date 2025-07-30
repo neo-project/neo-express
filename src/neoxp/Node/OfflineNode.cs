@@ -119,7 +119,7 @@ namespace NeoExpress.Node
             {
                 State = engine.State,
                 Exception = engine.FaultException?.GetBaseException().Message ?? string.Empty,
-                GasConsumed = engine.GasConsumed,
+                GasConsumed = engine.FeeConsumed,
                 Stack = engine.ResultStack.ToArray(),
                 Script = string.Empty,
                 Tx = string.Empty
@@ -174,7 +174,7 @@ namespace NeoExpress.Node
             if (disposedValue)
                 throw new ObjectDisposedException(nameof(OfflineNode));
 
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, ProtocolSettings);
@@ -258,7 +258,7 @@ namespace NeoExpress.Node
 
         Block GetLatestBlock()
         {
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var hash = NativeContract.Ledger.CurrentHash(snapshot);
             return NativeContract.Ledger.GetBlock(snapshot, hash);
         }
@@ -293,7 +293,7 @@ namespace NeoExpress.Node
 
         IReadOnlyList<(TokenContract contract, BigInteger balance)> ListBalances(UInt160 address)
         {
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var contracts = TokenContract.Enumerate(snapshot)
                 .Where(c => c.standard == TokenStandard.Nep17)
                 .ToList();
@@ -349,7 +349,7 @@ namespace NeoExpress.Node
 
         IReadOnlyList<TokenContract> ListTokenContracts()
         {
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             return snapshot.EnumerateTokenContracts(neoSystem.Settings).ToList();
         }
 
@@ -358,7 +358,7 @@ namespace NeoExpress.Node
 
         IReadOnlyList<(string key, string value)> ListStorages(UInt160 scriptHash)
         {
-            using var snapshot = neoSystem.GetSnapshot();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var contract = NativeContract.ContractManagement.GetContract(snapshot, scriptHash);
 
             if (contract is null)
@@ -411,7 +411,7 @@ namespace NeoExpress.Node
 
         public Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
         {
-            var snapshot = neoSystem.GetSnapshot();
+            var snapshot = neoSystem.GetSnapshotCache();
             var validator = new Nep17Token(ProtocolSettings, snapshot, contractHash);
 
             return Task.FromResult(
@@ -423,7 +423,7 @@ namespace NeoExpress.Node
 
         public Task<bool> IsNep11CompliantAsync(UInt160 contractHash)
         {
-            var snapshot = neoSystem.GetSnapshot();
+            var snapshot = neoSystem.GetSnapshotCache();
             var validator = new Nep11Token(ProtocolSettings, snapshot, contractHash);
 
             return Task.FromResult(

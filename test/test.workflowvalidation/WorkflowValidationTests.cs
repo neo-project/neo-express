@@ -9,9 +9,6 @@
 // modifications are permitted.
 
 using FluentAssertions;
-using System.Diagnostics;
-using System.IO.Abstractions.TestingHelpers;
-using System.Text.Json;
 using Xunit;
 
 namespace test.workflowvalidation;
@@ -186,7 +183,9 @@ public class WorkflowValidationTests : IDisposable
         restoreExitCode.Should().Be(0, "restore should succeed");
 
         // Equivalent to: dotnet build neo-express.sln --configuration Release --no-restore --verbosity normal
+        _runCommand.SetLanguage("en");
         var (buildExitCode, buildOutput, _) = await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore", "--verbosity", "normal");
+
         buildExitCode.Should().Be(0, "build should succeed");
         buildOutput.Should().Contain("Build succeeded", "build should complete successfully");
 

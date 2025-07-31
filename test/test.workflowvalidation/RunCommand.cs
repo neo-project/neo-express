@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using System.Diagnostics;
+using System.Globalization;
 using Xunit;
 
 namespace test.workflowvalidation;
@@ -21,6 +22,12 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
     private readonly string _tempDirectory = tempDirectory;
     private readonly string _workingDirectory = Path.GetDirectoryName(solutionPath);
     private readonly List<Process> _runningProcesses = [];
+    private string LANGUAGE = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
+
+    public void SetLanguage(string language)
+    {
+        LANGUAGE = language;
+    }
 
     private async Task<(int ExitCode, string Output, string Error)> RunProcess(string fileName, string? command = null, TimeSpan? timeout = null, params string[] args)
     {
@@ -36,6 +43,8 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
             CreateNoWindow = true,
             WorkingDirectory = directory
         };
+
+        psi.Environment["DOTNET_CLI_UI_LANGUAGE"] = LANGUAGE;
 
         if (!string.IsNullOrWhiteSpace(command))
         {
@@ -81,6 +90,8 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
             _output.WriteLine($"Output: {output}");
         if (!string.IsNullOrWhiteSpace(error))
             _output.WriteLine($"Error: {error}");
+
+        psi.Environment["DOTNET_CLI_UI_LANGUAGE"] = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
 
         return (process.ExitCode, output, error);
     }

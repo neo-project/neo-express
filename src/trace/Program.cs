@@ -117,7 +117,7 @@ namespace NeoTrace
                 engine.LoadScript(tx.Script);
                 engine.Execute();
                 if (engine.State != execution.VMState)
-                    throw new Exception($"Unexpected script execution state. Expected {execution.VMState} got {engine.State}");
+                    throw new Exception($"Unexpected script execution state. Expected {execution.VMState} got {engine.State} reason: {engine.FaultException}");
 
                 if (engine.State == VMState.HALT)
                 {
@@ -166,6 +166,8 @@ namespace NeoTrace
                 MemoryPoolMaxTransactions = version.Protocol.MemoryPoolMaxTransactions,
                 MillisecondsPerBlock = version.Protocol.MillisecondsPerBlock,
                 Network = version.Protocol.Network,
+                StandbyCommittee = version.Protocol.StandbyCommittee,
+                ValidatorsCount = version.Protocol.ValidatorsCount
             };
         }
 

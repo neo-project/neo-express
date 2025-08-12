@@ -51,7 +51,9 @@ namespace Neo.BlockchainToolkit.Persistence
 
                 return null;
             }
-            catch (RpcException ex) when (ex.HResult == -100 && ex.Message == "Unknown value")
+            catch (RpcException ex) when (ex.HResult == -100 ||
+                                ex.Message?.IndexOf("Unknown value", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                ex.Message?.IndexOf("Unknown storage item", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 // Prior to Neo 3.3.0, StateService GetProof method threw a custom exception 
                 // instead of KeyNotFoundException like GetState. This catch clause detected

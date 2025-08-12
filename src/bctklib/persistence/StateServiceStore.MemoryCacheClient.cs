@@ -124,16 +124,17 @@ namespace Neo.BlockchainToolkit.Persistence
 
                 public void Add(ReadOnlyMemory<byte> key, byte[] value)
                 {
-                    if (disposed)
-                        throw new ObjectDisposedException(nameof(MemoryCacheClient.Snapshot));
+                    ObjectDisposedException.ThrowIf(disposed, nameof(MemoryCacheClient.Snapshot));
                     entries.Add((key, value));
                 }
 
                 public void Commit()
                 {
-                    if (disposed)
-                        throw new ObjectDisposedException(nameof(MemoryCacheClient.Snapshot));
-                    if (!foundStateMap.TryAdd(hash, entries))
+                    ObjectDisposedException.ThrowIf(disposed, nameof(MemoryCacheClient.Snapshot));
+
+                    var entriescopy = entries.Count == 0 ? Array.Empty<(ReadOnlyMemory<byte>, byte[])>() : entries.ToArray();
+
+                    if (!foundStateMap.TryAdd(hash, entriescopy))
                     {
                         throw new Exception("Failed to add cached entries");
                     }

@@ -21,6 +21,8 @@ namespace Neo.BlockchainToolkit.Persistence
         //     var result = await rpcClient.RpcSendAsync("getblockhash", index).ConfigureAwait(false);
         //     return UInt256.Parse(result.AsString());
         // }
+        private const int CODE_UNKNOWN_VALUE = -100;
+        private const int CODE_UNKNOWN_VALUE_STORAGE_ITEM = -104;
 
         internal static byte[] GetProof(this RpcClient rpcClient, UInt256 rootHash, UInt160 scriptHash, ReadOnlySpan<byte> key)
         {
@@ -51,7 +53,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
                 return null;
             }
-            catch (RpcException ex) when (ex.HResult == -100 && ex.Message == "Unknown value")
+            catch (RpcException ex) when (ex.HResult == CODE_UNKNOWN_VALUE || ex.HResult == CODE_UNKNOWN_VALUE_STORAGE_ITEM)
             {
                 // Prior to Neo 3.3.0, StateService GetProof method threw a custom exception 
                 // instead of KeyNotFoundException like GetState. This catch clause detected

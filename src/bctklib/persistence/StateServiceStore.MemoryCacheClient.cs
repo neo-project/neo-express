@@ -104,7 +104,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 readonly ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap;
                 readonly int hash;
-                readonly List<(ReadOnlyMemory<byte> key, byte[] value)> entries = new();
+                List<(ReadOnlyMemory<byte> key, byte[] value)> entries = new();
                 bool disposed = false;
 
                 public Snapshot(ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap, int hash)
@@ -124,19 +124,20 @@ namespace Neo.BlockchainToolkit.Persistence
 
                 public void Add(ReadOnlyMemory<byte> key, byte[] value)
                 {
-                    if (disposed)
-                        throw new ObjectDisposedException(nameof(MemoryCacheClient.Snapshot));
+                    ObjectDisposedException.ThrowIf(disposed, nameof(MemoryCacheClient.Snapshot));
                     entries.Add((key, value));
                 }
 
                 public void Commit()
                 {
-                    if (disposed)
-                        throw new ObjectDisposedException(nameof(MemoryCacheClient.Snapshot));
+                    ObjectDisposedException.ThrowIf(disposed, nameof(MemoryCacheClient.Snapshot));
+
                     if (!foundStateMap.TryAdd(hash, entries))
                     {
                         throw new Exception("Failed to add cached entries");
                     }
+                    // Just in case Add it's called after commit
+                    entries = new();
                 }
             }
         }

@@ -12,13 +12,15 @@ using Neo.BlockchainToolkit.Utilities;
 using Neo.Persistence;
 using OneOf;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using None = OneOf.Types.None;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
     using TrackingMap = ImmutableDictionary<ReadOnlyMemory<byte>, OneOf<ReadOnlyMemory<byte>, None>>;
 
-    public partial class MemoryTrackingStore : IStore
+    public sealed partial class MemoryTrackingStore : IStore
     {
         readonly IReadOnlyStore<byte[], byte[]> store;
         TrackingMap trackingMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
@@ -31,17 +33,14 @@ namespace Neo.BlockchainToolkit.Persistence
         public void Dispose()
         {
             (store as IDisposable)?.Dispose();
-            GC.SuppressFinalize(this);
         }
 
         public IStoreSnapshot GetSnapshot() => new Snapshot(store, trackingMap, this.CommitSnapshot, this);
 
-
-
         [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? key) => TryGet(key, trackingMap, store);
 
-        public bool TryGet(byte[]? key, out byte[]? value)
+        public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)
         {
             value = TryGet(key, trackingMap, store);
             return value != null;
@@ -49,26 +48,29 @@ namespace Neo.BlockchainToolkit.Persistence
 
         static byte[]? TryGet(byte[]? key, TrackingMap trackingMap, IReadOnlyStore<byte[], byte[]> store)
         {
-            key ??= Array.Empty<byte>();
-            if (trackingMap.TryGetValue(key, out var mapValue))
+            var normalizedKey = NormalizeKey(key);
+            if (trackingMap.TryGetValue(normalizedKey, out var mapValue))
             {
                 return mapValue.TryPickT0(out var value, out var _)
                     ? value.ToArray()
                     : null;
             }
-
-            return store.TryGet(key);
+            store.TryGet(normalizedKey.ToArray(), out var valueStore);
+            return valueStore;
         }
 
         public bool Contains(byte[]? key) => Contains(key, trackingMap, store);
 
         static bool Contains(byte[]? key, TrackingMap trackingMap, IReadOnlyStore<byte[], byte[]> store)
         {
-            key ??= Array.Empty<byte>();
-            return trackingMap.TryGetValue(key, out var mapValue)
+            var normalizedKey = NormalizeKey(key);
+            return trackingMap.TryGetValue(normalizedKey, out var mapValue)
                 ? mapValue.IsT0
-                : store.Contains(key);
+                : store.Contains(normalizedKey.ToArray());
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static ReadOnlyMemory<byte> NormalizeKey(byte[]? key) => key is null ? ReadOnlyMemory<byte>.Empty : new ReadOnlyMemory<byte>(key);
 
         [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction)
@@ -79,8 +81,8 @@ namespace Neo.BlockchainToolkit.Persistence
 
         static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, TrackingMap trackingMap, IReadOnlyStore<byte[], byte[]> store)
         {
-            key ??= Array.Empty<byte>();
-            if (key.Length == 0 && direction == SeekDirection.Backward)
+            var normalizedKey = NormalizeKey(key);
+            if (normalizedKey.Length == 0 && direction == SeekDirection.Backward)
             {
                 return Enumerable.Empty<(byte[] key, byte[] value)>();
             }
@@ -91,11 +93,11 @@ namespace Neo.BlockchainToolkit.Persistence
 
             var memoryItems = trackingMap
                 .Where(kvp => kvp.Value.IsT0)
-                .Where(kvp => key.Length == 0 || comparer.Compare(kvp.Key, key) >= 0)
+                .Where(kvp => normalizedKey.Length == 0 || comparer.Compare(kvp.Key, normalizedKey) >= 0)
                 .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value.AsT0.ToArray()));
 
             var storeItems = store
-                .Find(key, direction)
+                .Find(normalizedKey.ToArray(), direction)
                 .Where<(byte[] Key, byte[] Value)>(kvp => !trackingMap.ContainsKey(kvp.Key));
 
             return memoryItems.Concat(storeItems).OrderBy(kvp => kvp.Key, comparer);
@@ -122,7 +124,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 var updatedCollection = priorCollection.SetItem(key, value);
                 var interlockedResult = Interlocked.CompareExchange(ref trackingMap, updatedCollection, priorCollection);
-                if (object.ReferenceEquals(priorCollection, interlockedResult))
+                if (ReferenceEquals(priorCollection, interlockedResult))
                     break;
                 priorCollection = interlockedResult;
             }
@@ -141,7 +143,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 }
 
                 var interlockedResult = Interlocked.CompareExchange(ref trackingMap, updatedCollection, priorCollection);
-                if (object.ReferenceEquals(priorCollection, interlockedResult))
+                if (ReferenceEquals(priorCollection, interlockedResult))
                     break;
                 priorCollection = interlockedResult;
             }

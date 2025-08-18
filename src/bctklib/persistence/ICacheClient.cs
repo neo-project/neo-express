@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 namespace Neo.BlockchainToolkit.Persistence;
+
 internal interface ICacheClient : IDisposable
 {
     bool TryGetCachedStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, out byte[]? value);

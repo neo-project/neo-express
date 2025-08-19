@@ -105,8 +105,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public void Put(byte[]? key, byte[]? value)
         {
-            if (value is null)
-                throw new NullReferenceException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
             AtomicUpdate(ref trackingMap, key, (ReadOnlyMemory<byte>)value);
         }
 

@@ -46,7 +46,7 @@ namespace Neo.BlockchainToolkit.Persistence
         const byte RoleMgmt_Prefix_Oracle = (byte)Role.Oracle;
         const byte RoleMgmt_Prefix_StateValidator = (byte)Role.StateValidator;
 
-        private static readonly Dictionary<int, IReadOnlyList<byte>> contractSeekMap = new()
+        private static readonly IReadOnlyDictionary<int, IReadOnlyList<byte>> contractSeekMap = new Dictionary<int, IReadOnlyList<byte>>()
         {
             { NativeContract.ContractManagement.Id, new [] { ContractMgmt_Prefix_Contract, ContractMgmt_Prefix_ContractHash } },
             { NativeContract.NEO.Id, new [] { NEO_Prefix_Candidate, NEO_Prefix_GasPerBlock } },
@@ -57,8 +57,8 @@ namespace Neo.BlockchainToolkit.Persistence
         readonly RpcClient rpcClient;
         readonly ICacheClient cacheClient;
         readonly BranchInfo branchInfo;
-        readonly Dictionary<int, UInt160> contractMap;
-        readonly Dictionary<UInt160, string> contractNameMap;
+        readonly IReadOnlyDictionary<int, UInt160> contractMap;
+        readonly IReadOnlyDictionary<UInt160, string> contractNameMap;
         bool disposed = false;
 
         public ProtocolSettings Settings => branchInfo.ProtocolSettings;

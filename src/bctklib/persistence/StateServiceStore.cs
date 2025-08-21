@@ -11,7 +11,6 @@
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Utilities;
 using Neo.Extensions;
-using Neo.IO;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.Persistence;
@@ -24,26 +23,12 @@ using RocksDbSharp;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
     public sealed partial class StateServiceStore : IReadOnlyStore<StorageKey, StorageItem>, IReadOnlyStore<byte[], byte[]>, IDisposable
     {
-        internal interface ICacheClient : IDisposable
-        {
-            bool TryGetCachedStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, out byte[]? value);
-            void CacheStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, byte[]? value);
-            bool TryGetCachedFoundStates(UInt160 contractHash, byte? prefix, out IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> value);
-            void DropCachedFoundStates(UInt160 contractHash, byte? prefix);
-            ICacheSnapshot GetFoundStatesSnapshot(UInt160 contractHash, byte? prefix);
-        }
-
-        internal interface ICacheSnapshot : IDisposable
-        {
-            void Add(ReadOnlyMemory<byte> key, byte[] value);
-            void Commit();
-        }
-
         public const string LoggerCategory = "Neo.BlockchainToolkit.Persistence.StateServiceStore";
         readonly static DiagnosticSource logger = new DiagnosticListener(LoggerCategory);
 
@@ -61,7 +46,7 @@ namespace Neo.BlockchainToolkit.Persistence
         const byte RoleMgmt_Prefix_Oracle = (byte)Role.Oracle;
         const byte RoleMgmt_Prefix_StateValidator = (byte)Role.StateValidator;
 
-        static readonly IReadOnlyDictionary<int, IReadOnlyList<byte>> contractSeekMap = new Dictionary<int, IReadOnlyList<byte>>()
+        private static readonly IReadOnlyDictionary<int, IReadOnlyList<byte>> contractSeekMap = new Dictionary<int, IReadOnlyList<byte>>()
         {
             { NativeContract.ContractManagement.Id, new [] { ContractMgmt_Prefix_Contract, ContractMgmt_Prefix_ContractHash } },
             { NativeContract.NEO.Id, new [] { NEO_Prefix_Candidate, NEO_Prefix_GasPerBlock } },
@@ -126,7 +111,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 {
                     var anyPrefixDownloaded = false;
 
-                    for (int i = 0; i < prefixes.Count; i++)
+                    for (var i = 0; i < prefixes.Count; i++)
                     {
                         if (!cacheClient.TryGetCachedFoundStates(contractHash, prefixes[i], out var _))
                         {
@@ -197,7 +182,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 {
                     var found = await rpcClient.FindStatesAsync(rootHash, NativeContract.ContractManagement.Hash, prefix, from.AsMemory()).ConfigureAwait(false);
                     ValidateFoundStates(rootHash, found);
-                    for (int i = 0; i < found.Results.Length; i++)
+                    for (var i = 0; i < found.Results.Length; i++)
                     {
                         var (key, value) = found.Results[i];
                         if (key.AsSpan().StartsWith(prefix.Span))
@@ -245,8 +230,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public byte[]? TryGet(byte[]? _key)
         {
-            if (disposed)
-                throw new ObjectDisposedException(nameof(StateServiceStore));
+            ObjectDisposedException.ThrowIf(disposed, nameof(StateServiceStore));
 
             _key ??= Array.Empty<byte>();
             var contractId = BinaryPrimitives.ReadInt32LittleEndian(_key.AsSpan(0, 4));
@@ -367,7 +351,7 @@ namespace Neo.BlockchainToolkit.Persistence
             }
         }
 
-        public bool TryGet(byte[]? key, out byte[]? value)
+        public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)
         {
             value = TryGet(key);
             return value != null;
@@ -377,8 +361,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? _key, SeekDirection direction)
         {
-            if (disposed)
-                throw new ObjectDisposedException(nameof(StateServiceStore));
+            ObjectDisposedException.ThrowIf(disposed, nameof(StateServiceStore));
 
             _key ??= Array.Empty<byte>();
             var contractId = BinaryPrimitives.ReadInt32LittleEndian(_key.AsSpan(0, 4));
@@ -496,7 +479,7 @@ namespace Neo.BlockchainToolkit.Persistence
             return valueBytes != null ? new StorageItem(valueBytes) : null;
         }
 
-        public bool TryGet(StorageKey key, out StorageItem? value)
+        public bool TryGet(StorageKey key, [NotNullWhen(true)] out StorageItem? value)
         {
             var keyBytes = key.ToArray();
             if (TryGet(keyBytes, out var valueBytes))
@@ -525,8 +508,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
         IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> FindStates(UInt160 contractHash, byte? prefix)
         {
-            if (disposed)
-                throw new ObjectDisposedException(nameof(StateServiceStore));
+            ObjectDisposedException.ThrowIf(disposed, nameof(StateServiceStore));
 
             if (cacheClient.TryGetCachedFoundStates(contractHash, prefix, out var values))
             {
@@ -647,7 +629,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 logger.Write($"{loggerName}.Found", new DownloadStatesFound(count, found.Results.Length));
             }
-            for (int i = 0; i < found.Results.Length; i++)
+            for (var i = 0; i < found.Results.Length; i++)
             {
                 var (key, value) = found.Results[i];
                 snapshot.Add(key, value);

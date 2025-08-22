@@ -19,6 +19,7 @@ namespace test.workflowvalidation;
 /// Advanced integration tests for neoxp tool functionality including online tests
 /// These tests validate the more complex neoxp commands from test.yml
 /// </summary>
+[Collection("PackExclusive")]
 public class NeoxpAdvancedIntegrationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
@@ -37,7 +38,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
 
         // Get the solution path relative to the test project
-        var currentDir = Directory.GetCurrentDirectory();
+        var currentDir = AppContext.BaseDirectory;
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _outDirectory = Path.Combine(_tempDirectory, "out");

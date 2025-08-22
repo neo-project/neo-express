@@ -17,6 +17,7 @@ namespace test.workflowvalidation;
 /// Integration tests that replicate the GitHub Actions workflow in test.yml
 /// These tests validate the same functionality as the CI/CD pipeline
 /// </summary>
+[Collection("PackExclusive")]
 public class WorkflowValidationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
@@ -32,7 +33,7 @@ public class WorkflowValidationTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
 
         // Get the solution path relative to the test project
-        var currentDir = Directory.GetCurrentDirectory();
+        var currentDir = AppContext.BaseDirectory;
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);

@@ -9,7 +9,6 @@
 // modifications are permitted.
 
 using FluentAssertions;
-using System.Diagnostics;
 using System.Text.Json;
 using Xunit;
 
@@ -19,6 +18,7 @@ namespace test.workflowvalidation;
 /// Integration tests for neoxp tool functionality (equivalent to neoxp commands in test.yml)
 /// These tests validate the same neoxp tool commands as the CI/CD pipeline
 /// </summary>
+//[Collection("PackExclusive")]
 public class NeoxpToolIntegrationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
@@ -36,7 +36,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
 
         // Get the solution path relative to the test project
-        var currentDir = Directory.GetCurrentDirectory();
+        var currentDir = AppContext.BaseDirectory;
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _outDirectory = Path.Combine(_tempDirectory, "out");
@@ -170,7 +170,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Pack for install (equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build)
-        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
+        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal", "/m:1", "/nodeReuse:false");
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify neo.express package exists
@@ -359,7 +359,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             try
             {
                 Directory.SetCurrentDirectory(_tempDirectory);
-                await _runCommand.RunNeoxpCommand("create --force");
+                await _runCommand.RunNeoxpCommand("create", "--force");
             }
             finally
             {
@@ -401,7 +401,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         // Stop any running neoxp processes first
         try
         {
-            var stopTask = _runCommand.RunNeoxpCommand("stop --all");
+            var stopTask = _runCommand.RunNeoxpCommand("stop", "--all");
             stopTask.Wait(5000); // Wait up to 5 seconds
         }
         catch (Exception ex)

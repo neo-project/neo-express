@@ -17,6 +17,7 @@ namespace test.workflowvalidation;
 /// Integration tests that replicate the GitHub Actions workflow in test.yml
 /// These tests validate the same functionality as the CI/CD pipeline
 /// </summary>
+//[Collection("PackExclusive")]
 public class WorkflowValidationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
@@ -32,7 +33,7 @@ public class WorkflowValidationTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
 
         // Get the solution path relative to the test project
-        var currentDir = Directory.GetCurrentDirectory();
+        var currentDir = AppContext.BaseDirectory;
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
@@ -359,7 +360,7 @@ public class WorkflowValidationTests : IDisposable
         await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build --verbosity normal
-        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", outDir, "--no-build", "--verbosity", "normal");
+        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", outDir, "--no-build", "--verbosity", "normal", "/m:1", "/nodeReuse:false");
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify packages were created

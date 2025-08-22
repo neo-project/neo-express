@@ -17,7 +17,7 @@ namespace test.workflowvalidation;
 /// Integration tests that replicate the GitHub Actions workflow in test.yml
 /// These tests validate the same functionality as the CI/CD pipeline
 /// </summary>
-//[Collection("PackExclusive")]
+[Collection("PackExclusive")]
 public class WorkflowValidationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;

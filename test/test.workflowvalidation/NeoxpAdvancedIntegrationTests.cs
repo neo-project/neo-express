@@ -284,7 +284,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         // Build and pack
         await _runCommand.RunDotNetCommand("restore", _solutionPath);
         await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
-        await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "/m:1", "/nodeReuse:false");
+        await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
 
         // Uninstall existing tool first (ignore errors if not installed)
         await _runCommand.RunDotNetCommand("tool", "uninstall", "--global", "neo.express");

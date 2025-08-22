@@ -170,7 +170,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Pack for install (equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build)
-        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal", "/m:1", "/nodeReuse:false");
+        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify neo.express package exists

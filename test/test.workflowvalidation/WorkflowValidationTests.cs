@@ -360,7 +360,7 @@ public class WorkflowValidationTests : IDisposable
         await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
 
         // Equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build --verbosity normal
-        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", outDir, "--no-build", "--verbosity", "normal", "/m:1", "/nodeReuse:false");
+        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", outDir, "--no-build", "--verbosity", "normal");
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify packages were created

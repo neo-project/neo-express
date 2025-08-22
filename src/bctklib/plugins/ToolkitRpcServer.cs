@@ -9,7 +9,6 @@
 // modifications are permitted.
 
 using Neo.Extensions;
-using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
@@ -35,15 +34,13 @@ namespace Neo.BlockchainToolkit.Plugins
         const string NEP_11 = "NEP-11";
         const string NEP_17 = "NEP-17";
 
-        static readonly Lazy<IReadOnlyList<string>> nep11PropertyNames = new(() => new List<string>
+        public static IReadOnlyList<string> Nep11PropertyNames { get; } = new[]
         {
             "name",
             "description",
             "image",
             "tokenURI"
-        });
-
-        public static IReadOnlyList<string> Nep11PropertyNames => nep11PropertyNames.Value;
+        };
 
         public record Nep11Balance(
             UInt160 AssetHash,
@@ -95,11 +92,12 @@ namespace Neo.BlockchainToolkit.Plugins
 
                 foreach (var (blockIndex, _, _, notification) in notifications)
                 {
-                    var from = ParseAddress(notification.State[0]);
-                    if (from is null)
+                    if (notification.State.Count < 4)
                         continue;
+
+                    var from = ParseAddress(notification.State[0]);
                     var to = ParseAddress(notification.State[1]);
-                    if (to is null)
+                    if (from is null || to is null)
                         continue;
                     if (from != address && to != address)
                         continue;
@@ -208,7 +206,7 @@ namespace Neo.BlockchainToolkit.Plugins
                 }
             }
 
-            for (int i = 0; i < addressBalances.Count; i++)
+            for (var i = 0; i < addressBalances.Count; i++)
             {
                 var (scriptHash, balance) = addressBalances[i];
                 var lastUpdatedBlock = updateIndexes.TryGetValue(scriptHash, out var _index) ? _index : 0;
@@ -221,11 +219,11 @@ namespace Neo.BlockchainToolkit.Plugins
         public static IEnumerable<TransferRecord> GetNep17Transfers(DataCache snapshot, INotificationsProvider notificationProvider, UInt160 address, ulong startTime, ulong endTime)
             => GetTransfers(snapshot, NEP_17, notificationProvider, address, startTime, endTime);
 
-        static IEnumerable<TransferRecord> GetTransfers(DataCache snapshot, string standard, INotificationsProvider notificationProvider, UInt160 address, ulong startTime, ulong endTime)
+        public static IEnumerable<TransferRecord> GetTransfers(DataCache snapshot, string standard, INotificationsProvider notificationProvider, UInt160 address, ulong startTime, ulong endTime)
         {
             Debug.Assert(standard == NEP_11 || standard == NEP_17);
             if (endTime < startTime)
-                throw new ArgumentException("", nameof(startTime));
+                throw new ArgumentOutOfRangeException(nameof(endTime), "endTime must be greater than or equal to startTime.");
 
             var contracts = NativeContract.ContractManagement.ListContracts(snapshot)
                 .Where(c => c.Manifest.SupportedStandards.Contains(standard))
@@ -247,11 +245,10 @@ namespace Neo.BlockchainToolkit.Plugins
 
                 var asset = notification.ScriptHash;
                 var from = ParseAddress(notification.State[0]);
-                if (from is null)
+                var to = ParseAddress(notification.State[1]);
+                if (from is null || to is null)
                     continue;
-                var to = ParseAddress(notification.State[0]);
-                if (to is null)
-                    continue;
+
                 if (from != address && to != address)
                     continue;
 
@@ -311,7 +308,7 @@ namespace Neo.BlockchainToolkit.Plugins
         public static ApplicationEngine Invoke(this ScriptBuilder builder, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
             => Invoke(builder.ToArray(), settings, snapshot, container);
 
-        static public ApplicationEngine Invoke(this Script script, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
+        public static ApplicationEngine Invoke(this Script script, ProtocolSettings settings, DataCache snapshot, IVerifiable? container = null)
             => ApplicationEngine.Run(
                 script: script,
                 snapshot: snapshot,

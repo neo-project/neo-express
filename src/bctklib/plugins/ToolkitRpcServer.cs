@@ -34,7 +34,7 @@ namespace Neo.BlockchainToolkit.Plugins
         const string NEP_11 = "NEP-11";
         const string NEP_17 = "NEP-17";
 
-        public static IReadOnlyList<string> Nep11PropertyNames { get; } = new[]
+        private static IReadOnlyList<string> Nep11PropertyNames { get; } = new[]
         {
             "name",
             "description",

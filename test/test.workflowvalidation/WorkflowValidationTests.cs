@@ -33,7 +33,7 @@ public class WorkflowValidationTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
 
         // Get the solution path relative to the test project
-        var currentDir = AppContext.BaseDirectory;
+        var currentDir = Directory.GetCurrentDirectory();
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);

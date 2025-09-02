@@ -38,7 +38,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
 
         // Get the solution path relative to the test project
-        var currentDir = AppContext.BaseDirectory;
+        var currentDir = Directory.GetCurrentDirectory();
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
         _outDirectory = Path.Combine(_tempDirectory, "out");

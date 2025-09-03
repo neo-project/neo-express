@@ -519,7 +519,7 @@ namespace System.IO.Compression
 #if NOASYNC
                 this.ZipFileStream.Read(signature, 0, 4);
 #else
-            var resultReadSignature = await this.ZipFileStream.ReadAsync(signature, 0, 4);
+            _ = await this.ZipFileStream.ReadAsync(signature, 0, 4);
 #endif
 
             if (BitConverter.ToUInt32(signature, 0) != 0x04034b50)

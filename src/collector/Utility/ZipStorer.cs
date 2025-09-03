@@ -648,7 +648,7 @@ namespace System.IO.Compression
             byte[] buffer = new byte[2];
 
             this.ZipFileStream.Seek(_headerOffset + 26, SeekOrigin.Begin);
-            var resultReadFile = this.ZipFileStream.Read(buffer, 0, 2);
+            _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort filenameSize = BitConverter.ToUInt16(buffer, 0);
             _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort extraSize = BitConverter.ToUInt16(buffer, 0);

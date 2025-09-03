@@ -1109,7 +1109,7 @@ namespace System.IO.Compression
                         this.ExistingFiles = entries;
                         this.CentralDirImage = new byte[centralSize];
                         this.ZipFileStream.Seek(centralDirOffset, SeekOrigin.Begin);
-                        var resultRead = this.ZipFileStream.Read(this.CentralDirImage, 0, (int)centralSize);
+                        _ = this.ZipFileStream.Read(this.CentralDirImage, 0, (int)centralSize);
 
                         // Leave the pointer at the begining of central dir, to append new files
                         this.ZipFileStream.Seek(centralDirOffset, SeekOrigin.Begin);

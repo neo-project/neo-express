@@ -9,7 +9,6 @@
 // modifications are permitted.
 
 using FluentAssertions;
-using System.Diagnostics;
 using System.Text.Json;
 using Xunit;
 
@@ -19,6 +18,7 @@ namespace test.workflowvalidation;
 /// Integration tests for neoxp tool functionality (equivalent to neoxp commands in test.yml)
 /// These tests validate the same neoxp tool commands as the CI/CD pipeline
 /// </summary>
+[Collection("PackExclusive")]
 public class NeoxpToolIntegrationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
@@ -359,7 +359,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             try
             {
                 Directory.SetCurrentDirectory(_tempDirectory);
-                await _runCommand.RunNeoxpCommand("create --force");
+                await _runCommand.RunNeoxpCommand("create", "--force");
             }
             finally
             {
@@ -401,7 +401,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         // Stop any running neoxp processes first
         try
         {
-            var stopTask = _runCommand.RunNeoxpCommand("stop --all");
+            var stopTask = _runCommand.RunNeoxpCommand("stop", "--all");
             stopTask.Wait(5000); // Wait up to 5 seconds
         }
         catch (Exception ex)

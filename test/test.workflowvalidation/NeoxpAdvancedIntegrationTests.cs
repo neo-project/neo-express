@@ -19,6 +19,7 @@ namespace test.workflowvalidation;
 /// Advanced integration tests for neoxp tool functionality including online tests
 /// These tests validate the more complex neoxp commands from test.yml
 /// </summary>
+[Collection("PackExclusive")]
 public class NeoxpAdvancedIntegrationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;

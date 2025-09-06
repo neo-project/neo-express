@@ -21,7 +21,11 @@
         <Content Include="build\*" PackagePath="build\" />
         <Content Include="buildMultiTargeting\*" PackagePath="buildMultiTargeting\" />
     </ItemGroup>
-
+    <ItemGroup>
+        <None Include="$(OutputPath)$(AssemblyName).dll"
+              Pack="true"
+              PackagePath="tasks/$(TargetFramework)/" />
+    </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" PrivateAssets="All" />
         <PackageReference Include="PolySharp" Version="1.15.0">

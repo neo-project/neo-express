@@ -5,7 +5,9 @@
         <PackageId>Neo.BuildTasks</PackageId>
         <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
 
-        <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <PackBuildOutput>false</PackBuildOutput>
+        <BuildOutputTargetFolder></BuildOutputTargetFolder>
         <IsPackable>true</IsPackable>
 
         <DevelopmentDependency>true</DevelopmentDependency>
@@ -18,22 +20,53 @@
         <InternalsVisibleTo Include="test-build-tasks" />
     </ItemGroup>
 
+    <!-- Pack targets if exists -->
     <ItemGroup>
         <Content Include="build\*" Pack="true" PackagePath="build\" Condition="Exists('build')" />
         <Content Include="buildMultiTargeting\*" Pack="true" PackagePath="buildMultiTargeting\" Condition="Exists('buildMultiTargeting')" />
     </ItemGroup>
 
-    <Target Name="PackTaskBinaries"
-            DependsOnTargets="Build"
+    <ItemGroup>
+        <None Remove="$(MSBuildProjectDirectory)\bin\**" />
+        <Content Remove="$(MSBuildProjectDirectory)\bin\**" />
+        <TfmSpecificPackageFile Remove="$(MSBuildProjectDirectory)\bin\**" />
+    </ItemGroup>
+
+    <Target Name="EnsureTaskBinariesForPack"
             BeforeTargets="GetPackageContents">
-        <!-- $(TargetDir) == bin/$(Configuration)/$(TargetFramework)/ -->
         <ItemGroup>
-            <TfmSpecificPackageFile Include="$(TargetDir)$(AssemblyName).dll">
-                <PackagePath>tasks/$(TargetFramework)/</PackagePath>
+            <_Tfms Include="net9.0" />
+            <_Tfms Include="netstandard2.0" />
+        </ItemGroup>
+
+        <MSBuild Projects="$(MSBuildProjectFullPath)"
+                 Targets="Restore;Build"
+                 Properties="TargetFramework=%(_Tfms.Identity);Configuration=$(Configuration)"
+                 Condition="!Exists('$(MSBuildProjectDirectory)\bin\$(Configuration)\%(_Tfms.Identity)\$(AssemblyName).dll')"
+                 ContinueOnError="WarnAndContinue" />
+
+        <ItemGroup>
+            <_Candidate Include="$(MSBuildProjectDirectory)\bin\$(Configuration)\net9.0\$(AssemblyName).dll">
+                <Tfm>net9.0</Tfm>
+            </_Candidate>
+            <_Candidate Include="$(MSBuildProjectDirectory)\bin\$(Configuration)\netstandard2.0\$(AssemblyName).dll">
+                <Tfm>netstandard2.0</Tfm>
+            </_Candidate>
+        </ItemGroup>
+
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="%(_Candidate.Identity)"
+                                    Condition="Exists('%(_Candidate.Identity)')">
+                <PackagePath>tasks/%(_Candidate.Tfm)/</PackagePath>
             </TfmSpecificPackageFile>
         </ItemGroup>
+
         <Message Importance="High"
-                 Text="Empaquetando $(TargetFramework): $(TargetDir)$(AssemblyName).dll → tasks/$(TargetFramework)/" />
+                 Text="Pack: include %(_Candidate.Tfm) → %(_Candidate.Identity)"
+                 Condition="Exists('%(_Candidate.Identity)')" />
+        <Message Importance="High"
+                 Text="Pack: not exists %(_Tfms.Identity); trying to compile and continue without it."
+                 Condition="!Exists('$(MSBuildProjectDirectory)\bin\$(Configuration)\%(_Tfms.Identity)\$(AssemblyName).dll')" />
     </Target>
 
     <ItemGroup>
@@ -44,5 +77,8 @@
         </PackageReference>
         <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
     </ItemGroup>
-
+    <PropertyGroup>
+        <IncludeSymbols>false</IncludeSymbols>
+        <SymbolPackageFormat></SymbolPackageFormat>
+    </PropertyGroup>
 </Project>

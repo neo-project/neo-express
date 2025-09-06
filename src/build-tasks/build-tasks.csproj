@@ -10,7 +10,7 @@
         <Nullable>enable</Nullable>
         <PackageId>Neo.BuildTasks</PackageId>
         <ImplicitUsings>disable</ImplicitUsings>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>

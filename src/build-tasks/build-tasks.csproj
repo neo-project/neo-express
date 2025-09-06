@@ -1,16 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <AssemblyName>neo-build-tasks</AssemblyName>
-        <!-- Change the default location where NuGet will put the build output -->
+        <PackageId>Neo.BuildTasks</PackageId>
+        <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
+
         <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+        <IsPackable>true</IsPackable>
+
         <DevelopmentDependency>true</DevelopmentDependency>
-        <!-- Suppresses the warnings about the package not having assemblies in lib/*/.dll.-->
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <Nullable>enable</Nullable>
-        <PackageId>Neo.BuildTasks</PackageId>
         <ImplicitUsings>disable</ImplicitUsings>
-        <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,24 +19,30 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="build\*" PackagePath="build\" />
-        <Content Include="buildMultiTargeting\*" PackagePath="buildMultiTargeting\" />
+        <Content Include="build\*" Pack="true" PackagePath="build\" Condition="Exists('build')" />
+        <Content Include="buildMultiTargeting\*" Pack="true" PackagePath="buildMultiTargeting\" Condition="Exists('buildMultiTargeting')" />
     </ItemGroup>
-    <ItemGroup>
-        <None Include="$(OutputPath)$(AssemblyName).dll"
-              Pack="true"
-              PackagePath="tasks/$(TargetFramework)/" />
-    </ItemGroup>
+
+    <Target Name="PackTaskBinaries"
+            DependsOnTargets="Build"
+            BeforeTargets="GetPackageContents">
+        <!-- $(TargetDir) == bin/$(Configuration)/$(TargetFramework)/ -->
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="$(TargetDir)$(AssemblyName).dll">
+                <PackagePath>tasks/$(TargetFramework)/</PackagePath>
+            </TfmSpecificPackageFile>
+        </ItemGroup>
+        <Message Importance="High"
+                 Text="Empaquetando $(TargetFramework): $(TargetDir)$(AssemblyName).dll → tasks/$(TargetFramework)/" />
+    </Target>
+
     <ItemGroup>
         <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" PrivateAssets="All" />
         <PackageReference Include="PolySharp" Version="1.15.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
+        <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
     </ItemGroup>
 
 </Project>

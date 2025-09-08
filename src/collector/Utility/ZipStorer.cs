@@ -519,7 +519,7 @@ namespace System.IO.Compression
 #if NOASYNC
                 this.ZipFileStream.Read(signature, 0, 4);
 #else
-            await this.ZipFileStream.ReadAsync(signature, 0, 4);
+            _ = await this.ZipFileStream.ReadAsync(signature, 0, 4);
 #endif
 
             if (BitConverter.ToUInt32(signature, 0) != 0x04034b50)
@@ -648,9 +648,9 @@ namespace System.IO.Compression
             byte[] buffer = new byte[2];
 
             this.ZipFileStream.Seek(_headerOffset + 26, SeekOrigin.Begin);
-            this.ZipFileStream.Read(buffer, 0, 2);
+            _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort filenameSize = BitConverter.ToUInt16(buffer, 0);
-            this.ZipFileStream.Read(buffer, 0, 2);
+            _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort extraSize = BitConverter.ToUInt16(buffer, 0);
 
             return (uint)(30 + filenameSize + extraSize + _headerOffset);
@@ -1109,7 +1109,7 @@ namespace System.IO.Compression
                         this.ExistingFiles = entries;
                         this.CentralDirImage = new byte[centralSize];
                         this.ZipFileStream.Seek(centralDirOffset, SeekOrigin.Begin);
-                        this.ZipFileStream.Read(this.CentralDirImage, 0, (int)centralSize);
+                        _ = this.ZipFileStream.Read(this.CentralDirImage, 0, (int)centralSize);
 
                         // Leave the pointer at the begining of central dir, to append new files
                         this.ZipFileStream.Seek(centralDirOffset, SeekOrigin.Begin);

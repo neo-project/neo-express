@@ -327,7 +327,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile-prod && npm run bundle-nxp",
     "bundle-nxp": "npm run bundle-nxp-download && npm run bundle-nxp-extract",
-    "bundle-nxp-download": "shx rm -rf deps/nxp && shx mkdir -p deps/nxp && nwget \"https://github.com/neo-project/neo-express/releases/download/3.7.6/Neo.Express.3.7.6.nupkg\" -O deps/nxp/nxp.nupkg",
+    "bundle-nxp-download": "shx rm -rf deps/nxp && shx mkdir -p deps/nxp && curl -fL \"https://www.nuget.org/api/v2/package/Neo.Express/%npm_package_version%\" -o deps/nxp/nxp.nupkg",
     "bundle-nxp-extract": "cd deps/nxp && extract-zip nxp.nupkg",
     "compile": "npm run compile-ext && npm run compile-panel",
     "compile-ext": "webpack --config src/extension/webpack.config.js --mode development",

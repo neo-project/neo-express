@@ -13,6 +13,7 @@ using Neo.Persistence;
 using OneOf;
 using RocksDbSharp;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using None = OneOf.Types.None;
 
 namespace Neo.BlockchainToolkit.Persistence
@@ -62,7 +63,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 return PersistentTrackingStore.TryGet(key, db, columnFamily, readOptions, store);
             }
 
-            public bool TryGet(byte[]? key, out byte[]? value)
+            public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));

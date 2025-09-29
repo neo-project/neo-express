@@ -11,6 +11,7 @@
 using Neo.BlockchainToolkit.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
@@ -66,7 +67,7 @@ namespace Neo.BlockchainToolkit.Persistence
         [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[] key) => store.TryGet(key);
 
-        public bool TryGet(byte[] key, out byte[]? value) => store.TryGet(key, out value);
+        public bool TryGet(byte[] key, [NotNullWhen(true)] out byte[]? value) => store.TryGet(key, out value);
 
         public bool Contains(byte[] key) => store.Contains(key);
 
@@ -94,7 +95,7 @@ namespace Neo.BlockchainToolkit.Persistence
             return valueBytes != null ? new StorageItem(valueBytes) : null;
         }
 
-        public bool TryGet(StorageKey key, out StorageItem? value)
+        public bool TryGet(StorageKey key, [NotNullWhen(true)] out StorageItem? value)
         {
             var keyBytes = key.ToArray();
             if (store.TryGet(keyBytes, out var valueBytes))

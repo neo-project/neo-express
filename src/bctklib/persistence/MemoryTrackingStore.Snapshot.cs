@@ -12,6 +12,7 @@ using Neo.BlockchainToolkit.Utilities;
 using Neo.Persistence;
 using OneOf;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using None = OneOf.Types.None;
 namespace Neo.BlockchainToolkit.Persistence
 {
@@ -42,7 +43,7 @@ namespace Neo.BlockchainToolkit.Persistence
             [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
             public byte[]? TryGet(byte[]? key) => MemoryTrackingStore.TryGet(key, trackingMap, store);
 
-            public bool TryGet(byte[]? key, out byte[]? value)
+            public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)
             {
                 // First check if the key is in the write batch
                 key ??= Array.Empty<byte>();

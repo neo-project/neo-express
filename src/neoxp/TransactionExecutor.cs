@@ -570,7 +570,7 @@ namespace NeoExpress
             using var builder = new ScriptBuilder();
             if (!string.IsNullOrEmpty(publicKey))
             {
-                if (!ECPoint.TryParse(publicKey, ECCurve.Secp256r1, out ECPoint point))
+                if (!ECPoint.TryParse(publicKey, ECCurve.Secp256r1, out var point))
                 {
                     throw new Exception($"PublicKey is not valid.");
                 }

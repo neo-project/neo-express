@@ -29,9 +29,10 @@ namespace Neo.BuildTasks
                 {
                     var manifest = NeoManifest.Load(ManifestFile);
                     var source = ContractGenerator.GenerateContractInterface(manifest, ManifestFile, ContractNameOverride, RootNamespace);
-                    if (!string.IsNullOrEmpty(source))
+                    var pathFile = Path.GetDirectoryName(this.OutputFile);
+                    if (!string.IsNullOrEmpty(source) && !string.IsNullOrWhiteSpace(pathFile))
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(this.OutputFile));
+                        Directory.CreateDirectory(pathFile);
                         FileOperationWithRetry(() => File.WriteAllText(this.OutputFile, source));
                     }
                 }

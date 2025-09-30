@@ -86,10 +86,15 @@ namespace Neo.Collector
             {
                 foreach (var a in type.GetCustomAttributesData())
                 {
-                    if (a.AttributeType.Name == CONTRACT_ATTRIBUTE_NAME && a.AttributeType.Namespace == TEST_HARNESS_NAMESPACE)
+                    if (!(a.AttributeType.Name == CONTRACT_ATTRIBUTE_NAME && a.AttributeType.Namespace == TEST_HARNESS_NAMESPACE))
+                        continue;
+
+                    if (a.ConstructorArguments.Count > 2 &&
+                        a.ConstructorArguments[0].Value is string nameArg &&
+                        a.ConstructorArguments[1].Value is string manifestPathArg)
                     {
-                        name = (string)a.ConstructorArguments[0].Value;
-                        manifestPath = (string)a.ConstructorArguments[1].Value;
+                        name = nameArg;
+                        manifestPath = manifestPathArg;
                         return true;
                     }
                 }

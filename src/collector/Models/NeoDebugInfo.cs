@@ -62,8 +62,15 @@ namespace Neo.Collector.Models
                 return false;
             }
 
+            var manifestPathName = Path.GetDirectoryName(manifestPath);
+            if (string.IsNullOrEmpty(manifestPathName))
+            {
+                debugInfo = default;
+                return false;
+            }
+
             var basePath = Path.Combine(
-                Path.GetDirectoryName(manifestPath),
+                manifestPathName,
                 Utility.GetBaseName(manifestPath, MANIFEST_FILE_EXTENSION));
 
             var nefdbgnfoPath = Path.ChangeExtension(basePath, NEF_DBG_NFO_EXTENSION);

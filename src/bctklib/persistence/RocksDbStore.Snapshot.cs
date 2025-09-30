@@ -13,6 +13,7 @@ using Neo.Persistence;
 using RocksDbSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
@@ -56,7 +57,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 return db.Get(key ?? Array.Empty<byte>(), columnFamily, readOptions);
             }
 
-            public bool TryGet(byte[]? key, out byte[]? value)
+            public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));

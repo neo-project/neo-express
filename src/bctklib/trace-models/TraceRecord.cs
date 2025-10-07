@@ -13,9 +13,9 @@ using Neo.VM;
 using System.Buffers;
 using ExecutionContext = Neo.VM.ExecutionContext;
 
+#pragma warning disable MsgPack003 // TraceRecord use manual formatter (TraceRecordFormatter)
 namespace Neo.BlockchainToolkit.TraceDebug
 {
-    [MessagePackObject]
     public partial class TraceRecord : ITraceDebugRecord
     {
         public const int RecordKey = 0;
@@ -66,3 +66,4 @@ namespace Neo.BlockchainToolkit.TraceDebug
         }
     }
 }
+#pragma warning restore MsgPack003

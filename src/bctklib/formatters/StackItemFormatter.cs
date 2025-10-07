@@ -26,7 +26,7 @@ using TraceInteropInterface = Neo.BlockchainToolkit.TraceDebug.TraceInteropInter
 
 namespace MessagePack.Formatters.Neo.BlockchainToolkit
 {
-    public class StackItemFormatter : IMessagePackFormatter<StackItem>
+    public class StackItemFormatter : IMessagePackFormatter<StackItem?>
     {
         public static readonly StackItemFormatter Instance = new StackItemFormatter();
 
@@ -96,8 +96,10 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
             throw new MessagePackSerializationException($"Invalid StackItem {type}");
         }
 
-        public void Serialize(ref MessagePackWriter writer, StackItem value, MessagePackSerializerOptions options)
+        public void Serialize(ref MessagePackWriter writer, StackItem? value, MessagePackSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+
             var resolver = options.Resolver;
             var stackItemTypeResolver = resolver.GetFormatterWithVerify<StackItemType>();
 

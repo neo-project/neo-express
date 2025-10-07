@@ -12,7 +12,7 @@ using Neo.SmartContract;
 
 namespace MessagePack.Formatters.Neo.BlockchainToolkit
 {
-    public class StorageItemFormatter : IMessagePackFormatter<StorageItem>
+    public class StorageItemFormatter : IMessagePackFormatter<StorageItem?>
     {
         public readonly static StorageItemFormatter Instance = new StorageItemFormatter();
 
@@ -29,8 +29,10 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
             return new StorageItem(value);
         }
 
-        public void Serialize(ref MessagePackWriter writer, StorageItem value, MessagePackSerializerOptions options)
+        public void Serialize(ref MessagePackWriter writer, StorageItem? value, MessagePackSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+
             writer.Write(value.Value.Span);
         }
     }

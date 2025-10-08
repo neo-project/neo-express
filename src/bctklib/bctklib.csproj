@@ -14,7 +14,7 @@
         <InternalsVisibleTo Include="test.bctklib" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="MessagePack" Version="3.1.4" />
+        <PackageReference Include="MessagePack" Version="2.5.198" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
         <PackageReference Include="Neo" Version="3.8.2" />
         <PackageReference Include="Nerdbank.Streams" Version="2.13.16" />

@@ -14,7 +14,7 @@ using System.Buffers;
 
 namespace MessagePack.Formatters.Neo.BlockchainToolkit
 {
-    public class UInt256Formatter : IMessagePackFormatter<UInt256>
+    public class UInt256Formatter : IMessagePackFormatter<UInt256?>
     {
         public static readonly UInt256Formatter Instance = new UInt256Formatter();
 
@@ -24,8 +24,10 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
             return new UInt256(value);
         }
 
-        public void Serialize(ref MessagePackWriter writer, UInt256 value, MessagePackSerializerOptions options)
+        public void Serialize(ref MessagePackWriter writer, UInt256? value, MessagePackSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+
             var buffer = new byte[UInt256.Length];
             value.Serialize(buffer);
             writer.Write(buffer);

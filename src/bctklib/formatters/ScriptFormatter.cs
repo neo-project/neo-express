@@ -13,7 +13,7 @@ using Neo.VM;
 
 namespace MessagePack.Formatters.Neo.BlockchainToolkit
 {
-    public class ScriptFormatter : IMessagePackFormatter<Script>
+    public class ScriptFormatter : IMessagePackFormatter<Script?>
     {
         public static readonly ScriptFormatter Instance = new ScriptFormatter();
 
@@ -23,8 +23,10 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
             return new Script(bytes);
         }
 
-        public void Serialize(ref MessagePackWriter writer, Script value, MessagePackSerializerOptions options)
+        public void Serialize(ref MessagePackWriter writer, Script? value, MessagePackSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+
             writer.Write(value.AsSpan());
         }
     }

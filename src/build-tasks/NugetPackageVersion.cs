@@ -98,7 +98,7 @@ namespace Neo.BuildTasks
             return string.Compare(Suffix, other.Suffix, true);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is NugetPackageVersion version &&
                    Major == version.Major &&

@@ -13,7 +13,7 @@ using VMState = Neo.VM.VMState;
 
 namespace MessagePack.Formatters.Neo.BlockchainToolkit.TraceDebug
 {
-    public class TraceRecordFormatter : IMessagePackFormatter<TraceRecord>
+    public class TraceRecordFormatter : IMessagePackFormatter<TraceRecord?>
     {
         public static readonly TraceRecordFormatter Instance = new TraceRecordFormatter();
 
@@ -33,8 +33,10 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit.TraceDebug
             return new TraceRecord(state, gasConsumed, stackFrames);
         }
 
-        public void Serialize(ref MessagePackWriter writer, TraceRecord value, MessagePackSerializerOptions options)
+        public void Serialize(ref MessagePackWriter writer, TraceRecord? value, MessagePackSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+
             writer.WriteArrayHeader(3);
             options.Resolver.GetFormatterWithVerify<VMState>().Serialize(ref writer, value.State, options);
             writer.WriteInt64(value.GasConsumed);

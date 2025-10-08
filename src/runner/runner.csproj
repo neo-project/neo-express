@@ -13,7 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
         <PackageReference Include="Nito.Disposables" Version="2.5.0" />
     </ItemGroup>
@@ -23,6 +23,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
     </ItemGroup>
 </Project>

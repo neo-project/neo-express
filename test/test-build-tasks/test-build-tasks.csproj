@@ -32,7 +32,7 @@
       a copy of Microsoft.Build.Utilities.Core.dll v15.1.0.0. Tests that depend on types in that package fail unless the 
       test project takes a dependency on Microsoft.Build.Utilities.Core package, v15.1.548.    
     -->
-        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" />
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.28" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
         <PackageReference Include="Microsoft.VisualStudio.TestPlatform.ObjectModel" Version="14.0.0" />
         <PackageReference Include="Moq" Version="4.20.72" />

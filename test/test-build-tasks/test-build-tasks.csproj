@@ -25,7 +25,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Build.Locator" Version="1.9.1" />
+        <PackageReference Include="Microsoft.Build.Locator" Version="1.10.2" />
         <!-- 
       neo-build-tasks depends on Microsoft.Build.Utilities.Core, but has PrivateAssets = All. The test project must explicitly
       declare this dependency. However, for reasons I don't know, Microsoft.Build.Utilities.Core package v17.4.0 contains 
@@ -38,14 +38,14 @@
         <PackageReference Include="Moq" Version="4.20.72" />
         <!-- <PackageReference Include="MSBuild.ProjectCreation" Version="2.0.1" /> -->
         <PackageReference Include="Xunit.Combinatorial" Version="2.0.24" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.2">
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="xunit.v3" Version="3.0.0" />
+        <PackageReference Include="xunit.v3" Version="3.1.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
     </ItemGroup>
 </Project>

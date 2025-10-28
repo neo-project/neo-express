@@ -17,14 +17,14 @@
         <PackageReference Include="MessagePack" Version="2.5.198" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
         <PackageReference Include="Neo" Version="3.8.2" />
-        <PackageReference Include="Nerdbank.Streams" Version="2.12.87" />
+        <PackageReference Include="Nerdbank.Streams" Version="2.13.16" />
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="10.2.1.58549" />
-        <PackageReference Include="System.IO.Abstractions" Version="22.0.15" />
+        <PackageReference Include="System.IO.Abstractions" Version="22.0.16" />
         <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
         <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
     </ItemGroup>
 </Project>

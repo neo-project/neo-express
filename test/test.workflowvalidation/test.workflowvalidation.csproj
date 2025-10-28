@@ -15,14 +15,14 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="7.2.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.15" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.2">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.16" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Xunit.Combinatorial" Version="2.0.24" />
-    <PackageReference Include="xunit.v3" Version="3.0.0" />
+    <PackageReference Include="xunit.v3" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.115" />
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
   </ItemGroup>
 
 </Project>

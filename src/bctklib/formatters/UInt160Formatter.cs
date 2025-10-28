@@ -14,7 +14,7 @@ using System.Buffers;
 
 namespace MessagePack.Formatters.Neo.BlockchainToolkit
 {
-    public class UInt160Formatter : IMessagePackFormatter<UInt160>
+    public class UInt160Formatter : IMessagePackFormatter<UInt160?>
     {
         public static readonly UInt160Formatter Instance = new UInt160Formatter();
 
@@ -37,8 +37,10 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
             throw new MessagePackSerializationException($"Unexpected UInt160 MessagePack type {reader.NextMessagePackType}");
         }
 
-        public void Serialize(ref MessagePackWriter writer, UInt160 value, MessagePackSerializerOptions options)
+        public void Serialize(ref MessagePackWriter writer, UInt160? value, MessagePackSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+
             var buffer = new byte[UInt160.Length];
             value.Serialize(buffer);
             writer.Write(buffer);

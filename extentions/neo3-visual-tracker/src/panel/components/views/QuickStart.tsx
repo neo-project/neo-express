@@ -110,11 +110,6 @@ export default function QuickStart({ viewState, postMessage }: Props) {
         />
       );
     }
-    // TODO: Offer to create NEP-6 wallets if there is not one in the workspace
-    // TODO: Offer to create Neo Express wallets if only genesis exists
-    // TODO: Offter to transfer assets between Neo Express wallets if only genesis has funds but other wallets exist
-    // TODO: Offer to create a checkpoint if neo-express is running and sufficiently "interesting"
-    // TODO: Offer to restore a checkpoint if any are present in the workspace
   } else {
     actions.push(
       <CreateOrOpenWorkspace

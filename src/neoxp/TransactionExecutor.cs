@@ -528,7 +528,8 @@ namespace NeoExpress
                 : UInt160.TryParse(contract, out var uint160)
                     ? uint160
                     : throw new InvalidOperationException($"contract \"{contract}\" not found");
-            var txHash = await expressNode.TransferNFTAsync(assetHash, tokenId, senderWallet, senderAccountHash, receiverHash, dataParam);
+            var tokenBytes = TokenIdParser.Parse(tokenId);
+            var txHash = await expressNode.TransferNFTAsync(assetHash, tokenBytes, senderWallet, senderAccountHash, receiverHash, dataParam);
             await writer.WriteTxHashAsync(txHash, "TransferNFT", json).ConfigureAwait(false);
         }
 

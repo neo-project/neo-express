@@ -9,11 +9,7 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using Neo;
-using Neo.Extensions;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace NeoExpress.Commands
 {
@@ -67,25 +63,13 @@ namespace NeoExpress.Commands
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 var password = chainManager.Chain.ResolvePassword(Sender, Password);
                 using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                await txExec.TransferNFTAsync(Contract, HexOrBase64ToUTF8(TokenId), Sender, password, Receiver, Data).ConfigureAwait(false);
+                await txExec.TransferNFTAsync(Contract, TokenId, Sender, password, Receiver, Data).ConfigureAwait(false);
                 return 0;
             }
             catch (Exception ex)
             {
                 app.WriteException(ex);
                 return 1;
-            }
-
-            static string HexOrBase64ToUTF8(string input)
-            {
-                try
-                {
-                    return input.StartsWith("0x") ? Encoding.UTF8.GetString(input[2..].HexToBytes().Reverse().ToArray()) : Encoding.UTF8.GetString(Convert.FromBase64String(input));
-                }
-                catch (Exception)
-                {
-                    throw new ArgumentException($"Unknown Asset \"{input}\"", nameof(TokenId));
-                }
             }
         }
     }

@@ -20,11 +20,11 @@ type Props = {
 
 export default function QuickStart({ viewState, postMessage }: Props) {
   const actions: JSX.Element[] = [];
-  if (viewState.workspaceIsOpen) {
-    if (viewState.hasNeoExpressInstance) {
-      if (!viewState.neoExpressIsRunning) {
-        actions.push(
-          <StartNeoExpress
+    if (viewState.workspaceIsOpen) {
+      if (viewState.hasNeoExpressInstance) {
+        if (!viewState.neoExpressIsRunning) {
+          actions.push(
+            <StartNeoExpress
             key="startNeoExpress"
             onStart={() =>
               postMessage({ command: "neo3-visual-devtracker.express.run" })
@@ -32,11 +32,24 @@ export default function QuickStart({ viewState, postMessage }: Props) {
           />
         );
       }
-    } else {
-      actions.push(
-        <CreateNeoExpressInstance
-          key="createNeoExpressInstance"
-          onCreate={() =>
+        actions.push(
+          <NavButton
+            key="createExpressWallet"
+            style={{ margin: 10 }}
+            onClick={() =>
+              postMessage({
+                command: "neo3-visual-devtracker.express.walletCreate",
+              })
+            }
+          >
+            Create a Neo Express wallet
+          </NavButton>
+        );
+      } else {
+        actions.push(
+          <CreateNeoExpressInstance
+            key="createNeoExpressInstance"
+            onCreate={() =>
             postMessage({ command: "neo3-visual-devtracker.express.create" })
           }
         />

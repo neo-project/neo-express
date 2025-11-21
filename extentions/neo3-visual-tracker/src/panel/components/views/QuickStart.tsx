@@ -110,6 +110,20 @@ export default function QuickStart({ viewState, postMessage }: Props) {
           }
         />
       );
+    } else if (viewState.hasNeoExpressInstance) {
+      actions.push(
+        <NavButton
+          key="transferAssets"
+          style={{ margin: 10 }}
+          onClick={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.express.transfer",
+            })
+          }
+        >
+          Transfer assets between wallets
+        </NavButton>
+      );
     }
     if (viewState.hasNeoExpressInstance) {
       actions.push(

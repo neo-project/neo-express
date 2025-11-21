@@ -111,33 +111,35 @@ export default function QuickStart({ viewState, postMessage }: Props) {
         />
       );
     }
-    actions.push(
-      <NavButton
-        key="createCheckpoint"
-        style={{ margin: 10 }}
-        onClick={() =>
-          postMessage({
-            command: "neo3-visual-devtracker.express.createCheckpoint",
-          })
-        }
-      >
-        Create a checkpoint
-      </NavButton>
-    );
-    if (viewState.hasCheckpoints) {
+    if (viewState.hasNeoExpressInstance) {
       actions.push(
         <NavButton
-          key="restoreCheckpoint"
+          key="createCheckpoint"
           style={{ margin: 10 }}
           onClick={() =>
             postMessage({
-              command: "neo3-visual-devtracker.express.restoreCheckpoint",
+              command: "neo3-visual-devtracker.express.createCheckpoint",
             })
           }
         >
-          Restore a checkpoint
+          Create a checkpoint
         </NavButton>
       );
+      if (viewState.hasCheckpoints) {
+        actions.push(
+          <NavButton
+            key="restoreCheckpoint"
+            style={{ margin: 10 }}
+            onClick={() =>
+              postMessage({
+                command: "neo3-visual-devtracker.express.restoreCheckpoint",
+              })
+            }
+          >
+            Restore a checkpoint
+          </NavButton>
+        );
+      }
     }
   } else {
     actions.push(

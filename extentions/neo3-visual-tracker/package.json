@@ -340,7 +340,8 @@
     "vscode-start": "npm install && npm run bundle-nxp && npm run watch",
     "watch": "concurrently -r npm:watch-*",
     "watch-ext": "webpack --config src/extension/webpack.config.js --mode development --watch --stats-error-details",
-    "watch-panel": "webpack --config src/panel/webpack.config.js --mode development --watch --stats-error-details"
+    "watch-panel": "webpack --config src/panel/webpack.config.js --mode development --watch --stats-error-details",
+    "test:quickstart": "node --test -r ts-node/register src/panel/components/views/quickStartActions.test.ts"
   },
   "devDependencies": {
     "@cityofzion/neon-core": "^5.7.0",

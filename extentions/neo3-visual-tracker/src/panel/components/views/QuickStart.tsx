@@ -11,6 +11,7 @@ import QuickStartViewRequest from "../../../shared/messages/quickStartViewReques
 import QuickStartViewState from "../../../shared/viewState/quickStartViewState";
 import StartNeoExpress from "../quickStart/StartNeoExpress";
 import InvokeContract from "../quickStart/InvokeContract";
+import NavButton from "../NavButton";
 
 type Props = {
   viewState: QuickStartViewState;
@@ -108,6 +109,34 @@ export default function QuickStart({ viewState, postMessage }: Props) {
             })
           }
         />
+      );
+    }
+    actions.push(
+      <NavButton
+        key="createCheckpoint"
+        style={{ margin: 10 }}
+        onClick={() =>
+          postMessage({
+            command: "neo3-visual-devtracker.express.createCheckpoint",
+          })
+        }
+      >
+        Create a checkpoint
+      </NavButton>
+    );
+    if (viewState.hasCheckpoints) {
+      actions.push(
+        <NavButton
+          key="restoreCheckpoint"
+          style={{ margin: 10 }}
+          onClick={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.express.restoreCheckpoint",
+            })
+          }
+        >
+          Restore a checkpoint
+        </NavButton>
       );
     }
   } else {

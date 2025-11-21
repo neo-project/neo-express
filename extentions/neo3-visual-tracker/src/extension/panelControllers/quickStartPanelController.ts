@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import ActiveConnection from "../activeConnection";
 import BlockchainsTreeDataProvider from "../vscodeProviders/blockchainsTreeDataProvider";
 import ContractDetector from "../fileDetectors/contractDetector";
+import CheckpointDetector from "../fileDetectors/checkpointDetector";
 import NeoExpressInstanceManager from "../neoExpress/neoExpressInstanceManager";
 import PanelControllerBase from "./panelControllerBase";
 import QuickStartViewRequest from "../../shared/messages/quickStartViewRequest";
@@ -20,6 +21,7 @@ export default class QuickStartPanelController extends PanelControllerBase<
     panel: vscode.WebviewView,
     private readonly blockchainsTreeDataProvider: BlockchainsTreeDataProvider,
     private readonly neoExpressInstanceManager: NeoExpressInstanceManager,
+    private readonly checkpointDetector: CheckpointDetector,
     private readonly contractDetector: ContractDetector,
     private readonly activeConnection: ActiveConnection,
     private readonly walletDetector: WalletDetector
@@ -33,6 +35,7 @@ export default class QuickStartPanelController extends PanelControllerBase<
         hasDeployedContract: false,
         hasNeoExpressInstance: false,
         hasWallets: false,
+        hasCheckpoints: false,
         neoDeploymentRequired: false,
         neoExpressDeploymentRequired: false,
         neoExpressIsRunning: false,
@@ -44,6 +47,7 @@ export default class QuickStartPanelController extends PanelControllerBase<
     vscode.workspace.onDidChangeWorkspaceFolders(() => this.refresh());
     this.blockchainsTreeDataProvider.onDidChangeTreeData(() => this.refresh());
     this.neoExpressInstanceManager.onChange(() => this.refresh());
+    this.checkpointDetector.onDidChange(() => this.refresh());
     this.contractDetector.onChange(() => this.refresh());
     this.activeConnection.onChange(() => this.refresh());
     this.walletDetector.onChange(() => this.refresh());
@@ -92,6 +96,9 @@ export default class QuickStartPanelController extends PanelControllerBase<
       this.neoExpressInstanceManager.runningInstance?.blockchainType ===
       "express";
 
+    const hasCheckpoints =
+      this.checkpointDetector.checkpointFiles.length > 0;
+
     const workspaceIsOpen = !!vscode.workspace.workspaceFolders?.length;
 
     await this.updateViewState({
@@ -100,6 +107,7 @@ export default class QuickStartPanelController extends PanelControllerBase<
       hasDeployedContract,
       hasNeoExpressInstance,
       hasWallets,
+      hasCheckpoints,
       neoDeploymentRequired,
       neoExpressDeploymentRequired,
       neoExpressIsRunning,

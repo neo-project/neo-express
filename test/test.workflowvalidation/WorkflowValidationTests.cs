@@ -417,11 +417,13 @@ public class WorkflowValidationTests : IDisposable
 
     private async Task EnsureRestoreAsync()
     {
-        if (_restoreCompleted) return;
+        if (_restoreCompleted)
+            return;
         await _guard.WaitAsync();
         try
         {
-            if (_restoreCompleted) return;
+            if (_restoreCompleted)
+                return;
             var (restoreExitCode, _, _) = await _runCommand.RunDotNetCommand("restore", _solutionPath);
             restoreExitCode.Should().Be(0, "restore should succeed");
             _restoreCompleted = true;
@@ -434,12 +436,14 @@ public class WorkflowValidationTests : IDisposable
 
     private async Task EnsureBuildAsync()
     {
-        if (_buildCompleted) return;
+        if (_buildCompleted)
+            return;
         await EnsureRestoreAsync();
         await _guard.WaitAsync();
         try
         {
-            if (_buildCompleted) return;
+            if (_buildCompleted)
+                return;
             var (buildExitCode, _, _) = await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore", "--verbosity", "normal");
             buildExitCode.Should().Be(0, "build should succeed");
             _buildCompleted = true;

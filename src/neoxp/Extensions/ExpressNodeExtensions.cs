@@ -78,7 +78,7 @@ namespace NeoExpress
         static bool TryGetContractHashByName(IReadOnlyList<(UInt160 hash, ContractManifest manifest)> contracts, string name, out UInt160 scriptHash, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             UInt160? _scriptHash = null;
-            for (int i = contracts.Count - 1; i > 0; i--)
+            for (int i = contracts.Count - 1; i >= 0; i--)
             {
                 if (contracts[i].manifest.Name.Equals(name, comparison))
                 {
@@ -265,10 +265,10 @@ namespace NeoExpress
             }
         }
 
-        public static async Task<UInt256> TransferNFTAsync(this IExpressNode expressNode, UInt160 contractHash, string tokenId, Wallet sender, UInt160 senderHash, UInt160 receiverHash, ContractParameter? data)
+        public static async Task<UInt256> TransferNFTAsync(this IExpressNode expressNode, UInt160 contractHash, ReadOnlyMemory<byte> tokenId, Wallet sender, UInt160 senderHash, UInt160 receiverHash, ContractParameter? data)
         {
             data ??= new ContractParameter(ContractParameterType.Any);
-            var script = contractHash.MakeScript("transfer", receiverHash, tokenId, data);
+            var script = contractHash.MakeScript("transfer", receiverHash, tokenId.ToArray(), data);
             return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
         }
 
@@ -441,9 +441,9 @@ namespace NeoExpress
             var stack = result.Stack;
             if (stack.Length >= 3)
             {
-                var balance = stack[0].GetInteger();
+                var decimals = (byte)stack[0].GetInteger();
                 var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
-                var decimals = (byte)(stack[2].GetInteger());
+                var balance = stack[2].GetInteger();
 
                 return (
                     new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },

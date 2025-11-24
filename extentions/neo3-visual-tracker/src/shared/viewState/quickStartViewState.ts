@@ -6,6 +6,7 @@ type QuickStartViewState = {
   hasDeployedContract: boolean;
   hasNeoExpressInstance: boolean;
   hasWallets: boolean;
+  hasCheckpoints: boolean;
   neoDeploymentRequired: boolean;
   neoExpressDeploymentRequired: boolean;
   neoExpressIsRunning: boolean;

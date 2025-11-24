@@ -11,6 +11,11 @@ import QuickStartViewRequest from "../../../shared/messages/quickStartViewReques
 import QuickStartViewState from "../../../shared/viewState/quickStartViewState";
 import StartNeoExpress from "../quickStart/StartNeoExpress";
 import InvokeContract from "../quickStart/InvokeContract";
+import NavButton from "../NavButton";
+import {
+  getQuickStartActions,
+  QuickStartAction,
+} from "./quickStartActions";
 
 type Props = {
   viewState: QuickStartViewState;
@@ -19,118 +24,12 @@ type Props = {
 
 export default function QuickStart({ viewState, postMessage }: Props) {
   const actions: JSX.Element[] = [];
-  if (viewState.workspaceIsOpen) {
-    if (viewState.hasNeoExpressInstance) {
-      if (!viewState.neoExpressIsRunning) {
-        actions.push(
-          <StartNeoExpress
-            key="startNeoExpress"
-            onStart={() =>
-              postMessage({ command: "neo3-visual-devtracker.express.run" })
-            }
-          />
-        );
-      }
-    } else {
-      actions.push(
-        <CreateNeoExpressInstance
-          key="createNeoExpressInstance"
-          onCreate={() =>
-            postMessage({ command: "neo3-visual-devtracker.express.create" })
-          }
-        />
-      );
-    }
-    if (!viewState.hasContracts) {
-      actions.push(
-        <CreateContract
-          key="createContract"
-          onCreate={() =>
-            postMessage({ command: "neo3-visual-devtracker.neo.newContract" })
-          }
-        />
-      );
-    }
-    if (viewState.connectionName) {
-      if (viewState.neoExpressDeploymentRequired) {
-        actions.push(
-          <DeployContract
-            key="deployContractNeo"
-            connectionName={viewState.connectionName}
-            onDeploy={() =>
-              postMessage({
-                command: "neo3-visual-devtracker.express.contractDeploy",
-              })
-            }
-          />
-        );
-      } else if (viewState.neoDeploymentRequired) {
-        actions.push(
-          <DeployContract
-            key="deployContractNeoExpress"
-            connectionName={viewState.connectionName}
-            onDeploy={() =>
-              postMessage({
-                command: "neo3-visual-devtracker.neo.contractDeploy",
-              })
-            }
-          />
-        );
-      } else if (viewState.hasDeployedContract) {
-        actions.push(
-          <InvokeContract
-            key="invokeContract"
-            onInvoke={() =>
-              postMessage({
-                command: "neo3-visual-devtracker.neo.invokeContract",
-              })
-            }
-          />
-        );
-      }
-    } else {
-      actions.push(
-        <ConnectToBlockchain
-          key="connectToBlockchain"
-          onConnect={() =>
-            postMessage({ command: "neo3-visual-devtracker.connect" })
-          }
-        />
-      );
-    }
-    if (!viewState.hasWallets) {
-      actions.push(
-        <CreateWallet
-          key="createWallet"
-          onCreate={() =>
-            postMessage({
-              command: "neo3-visual-devtracker.neo.walletCreate",
-            })
-          }
-        />
-      );
-    }
-    // TODO: Offer to create NEP-6 wallets if there is not one in the workspace
-    // TODO: Offer to create Neo Express wallets if only genesis exists
-    // TODO: Offter to transfer assets between Neo Express wallets if only genesis has funds but other wallets exist
-    // TODO: Offer to create a checkpoint if neo-express is running and sufficiently "interesting"
-    // TODO: Offer to restore a checkpoint if any are present in the workspace
-  } else {
-    actions.push(
-      <CreateOrOpenWorkspace
-        key="createOrOpenWorkspace"
-        onOpen={() => postMessage({ command: "vscode.openFolder" })}
-      />
-    );
-  }
-  actions.push(
-    <OpenBlockchainExplorer
-      key="openBlockchainExplorer"
-      onOpen={() =>
-        postMessage({ command: "neo3-visual-devtracker.tracker.openTracker" })
-      }
-    />
-  );
+  const actionList = getQuickStartActions(viewState);
+
+  actionList.forEach((actionKey) => {
+    actions.push(renderAction(actionKey, viewState, postMessage));
+  });
+
   return (
     <div
       style={{
@@ -146,4 +45,169 @@ export default function QuickStart({ viewState, postMessage }: Props) {
       {actions}
     </div>
   );
+}
+
+function renderAction(
+  action: QuickStartAction,
+  viewState: QuickStartViewState,
+  postMessage: (message: QuickStartViewRequest) => void
+): JSX.Element {
+  switch (action) {
+    case "createExpressInstance":
+      return (
+        <CreateNeoExpressInstance
+          key="createNeoExpressInstance"
+          onCreate={() =>
+            postMessage({ command: "neo3-visual-devtracker.express.create" })
+          }
+        />
+      );
+    case "startExpress":
+      return (
+        <StartNeoExpress
+          key="startNeoExpress"
+          onStart={() =>
+            postMessage({ command: "neo3-visual-devtracker.express.run" })
+          }
+        />
+      );
+    case "createExpressWallet":
+      return (
+        <NavButton
+          key="createExpressWallet"
+          style={{ margin: 10 }}
+          onClick={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.express.walletCreate",
+            })
+          }
+        >
+          Create a Neo Express wallet
+        </NavButton>
+      );
+    case "createContract":
+      return (
+        <CreateContract
+          key="createContract"
+          onCreate={() =>
+            postMessage({ command: "neo3-visual-devtracker.neo.newContract" })
+          }
+        />
+      );
+    case "deployExpressContract":
+      return (
+        <DeployContract
+          key="deployContractNeo"
+          connectionName={viewState.connectionName || ""}
+          onDeploy={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.express.contractDeploy",
+            })
+          }
+        />
+      );
+    case "deployContract":
+      return (
+        <DeployContract
+          key="deployContractNeoExpress"
+          connectionName={viewState.connectionName || ""}
+          onDeploy={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.neo.contractDeploy",
+            })
+          }
+        />
+      );
+    case "invokeContract":
+      return (
+        <InvokeContract
+          key="invokeContract"
+          onInvoke={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.neo.invokeContract",
+            })
+          }
+        />
+      );
+    case "connect":
+      return (
+        <ConnectToBlockchain
+          key="connectToBlockchain"
+          onConnect={() =>
+            postMessage({ command: "neo3-visual-devtracker.connect" })
+          }
+        />
+      );
+    case "createWallet":
+      return (
+        <CreateWallet
+          key="createWallet"
+          onCreate={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.neo.walletCreate",
+            })
+          }
+        />
+      );
+    case "transfer":
+      return (
+        <NavButton
+          key="transferAssets"
+          style={{ margin: 10 }}
+          onClick={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.express.transfer",
+            })
+          }
+        >
+          Transfer assets between wallets
+        </NavButton>
+      );
+    case "createCheckpoint":
+      return (
+        <NavButton
+          key="createCheckpoint"
+          style={{ margin: 10 }}
+          onClick={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.express.createCheckpoint",
+            })
+          }
+        >
+          Create a checkpoint
+        </NavButton>
+      );
+    case "restoreCheckpoint":
+      return (
+        <NavButton
+          key="restoreCheckpoint"
+          style={{ margin: 10 }}
+          onClick={() =>
+            postMessage({
+              command: "neo3-visual-devtracker.express.restoreCheckpoint",
+            })
+          }
+        >
+          Restore a checkpoint
+        </NavButton>
+      );
+    case "createOrOpenWorkspace":
+      return (
+        <CreateOrOpenWorkspace
+          key="createOrOpenWorkspace"
+          onOpen={() => postMessage({ command: "vscode.openFolder" })}
+        />
+      );
+    case "openExplorer":
+      return (
+        <OpenBlockchainExplorer
+          key="openBlockchainExplorer"
+          onOpen={() =>
+            postMessage({ command: "neo3-visual-devtracker.tracker.openTracker" })
+          }
+        />
+      );
+    default:
+      return <></>;
+  }
 }

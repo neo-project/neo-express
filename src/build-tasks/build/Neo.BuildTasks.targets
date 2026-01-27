@@ -2,7 +2,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="NeoBuildTasksFolder;NeoBuildTasksAssembly">
 
   <PropertyGroup>
-    <NeoBuildTasksFolder Condition=" '$(MSBuildRuntimeType)' == 'Core' ">net9.0</NeoBuildTasksFolder>
+    <NeoBuildTasksFolder Condition=" '$(MSBuildRuntimeType)' == 'Core' ">net10.0</NeoBuildTasksFolder>
     <NeoBuildTasksFolder Condition=" '$(MSBuildRuntimeType)' != 'Core' ">netstandard2.0</NeoBuildTasksFolder>
     <_NeoBuildTasksAssemblyPath>$([MSBuild]::ValueOrDefault('$(NeoBuildTasksAssembly)', '$(MSBuildThisFileDirectory)..\tasks\$(NeoBuildTasksFolder)\neo-build-tasks.dll'))</_NeoBuildTasksAssemblyPath>
     <CleanDependsOn>$(CleanDependsOn);CleanNeoCsc;CleanNeoExpressBatch</CleanDependsOn>

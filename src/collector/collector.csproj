@@ -7,7 +7,7 @@
         <PackageId>Neo.Collector</PackageId>
         <RootNamespace>Neo.Collector</RootNamespace>
         <ImplicitUsings>disable</ImplicitUsings>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <DebugType>portable</DebugType>
     </PropertyGroup>

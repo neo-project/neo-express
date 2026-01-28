@@ -3,7 +3,7 @@
     <PropertyGroup>
         <AssemblyName>neo-build-tasks</AssemblyName>
         <PackageId>Neo.BuildTasks</PackageId>
-        <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
+        <TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>
 
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <PackBuildOutput>false</PackBuildOutput>
@@ -34,7 +34,7 @@
 
     <Target Name="EnsureTaskBinariesForPack" BeforeTargets="GetPackageContents">
         <ItemGroup>
-            <_Tfms Include="net9.0" />
+            <_Tfms Include="net10.0" />
             <_Tfms Include="netstandard2.0" />
         </ItemGroup>
 
@@ -42,7 +42,7 @@
 
         <ItemGroup>
             <_Candidate Include="$(MSBuildProjectDirectory)\bin\$(Configuration)\net9.0\$(AssemblyName).dll">
-                <Tfm>net9.0</Tfm>
+                <Tfm>net10.0</Tfm>
             </_Candidate>
             <_Candidate Include="$(MSBuildProjectDirectory)\bin\$(Configuration)\netstandard2.0\$(AssemblyName).dll">
                 <Tfm>netstandard2.0</Tfm>

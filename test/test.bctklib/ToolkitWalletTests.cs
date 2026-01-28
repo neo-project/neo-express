@@ -18,6 +18,7 @@ using System.Linq;
 using Xunit;
 
 namespace test.bctklib;
+
 using static Utility;
 
 public class ToolkitWalletTests

@@ -3,7 +3,7 @@
     <NeoContractName>$(AssemblyName)</NeoContractName>
     <NeoExpressBatchFile>../express.batch</NeoExpressBatchFile>
     <Nullable>enable</Nullable>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <NeoTestVersion>3.5.17</NeoTestVersion>
   </PropertyGroup>
   <ItemGroup>

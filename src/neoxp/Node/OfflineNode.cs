@@ -28,6 +28,7 @@ using Neo.Wallets;
 using NeoExpress.Commands;
 using NeoExpress.Models;
 using NeoExpress.Validators;
+using System.Collections.Generic;
 using System.Numerics;
 using static Neo.Ledger.Blockchain;
 
@@ -41,6 +42,8 @@ namespace NeoExpress.Node
         readonly RocksDbExpressStorage expressStorage;
         readonly ExpressPersistencePlugin persistencePlugin;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
+        readonly object engineLock = new();
+        readonly List<WeakReference<ApplicationEngine>> engineRefs = new();
         bool disposedValue;
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
@@ -60,24 +63,43 @@ namespace NeoExpress.Node
             persistencePlugin = new ExpressPersistencePlugin();
             neoSystem = new NeoSystem(settings, storeProvider.Name);
 
-            ApplicationEngine.Log += OnLog!;
+            ApplicationEngine.InstanceHandler += OnApplicationEngineCreated;
         }
 
         public void Dispose()
         {
             if (!disposedValue)
             {
-                ApplicationEngine.Log -= OnLog!;
+                ApplicationEngine.InstanceHandler -= OnApplicationEngineCreated;
+                lock (engineLock)
+                {
+                    foreach (var engineRef in engineRefs)
+                    {
+                        if (engineRef.TryGetTarget(out var engine))
+                        {
+                            engine.Log -= OnLog;
+                        }
+                    }
+                    engineRefs.Clear();
+                }
                 persistencePlugin.Dispose();
                 neoSystem.Dispose();
                 disposedValue = true;
             }
         }
 
-        private void OnLog(object sender, LogEventArgs args)
+        private void OnApplicationEngineCreated(ApplicationEngine engine)
         {
-            var engine = sender as ApplicationEngine;
-            var tx = engine?.ScriptContainer as Transaction;
+            lock (engineLock)
+            {
+                engineRefs.Add(new WeakReference<ApplicationEngine>(engine));
+            }
+            engine.Log += OnLog;
+        }
+
+        private void OnLog(ApplicationEngine engine, LogEventArgs args)
+        {
+            var tx = engine.ScriptContainer as Transaction;
             var colorCode = tx?.Witnesses?.Any() ?? false ? "96" : "93";
 
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, args.ScriptHash);
@@ -135,7 +157,10 @@ namespace NeoExpress.Node
 
             var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
             var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
-            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
+            // ApplicationEngine multiplies gas by 10,000; cap to prevent long overflow.
+            const long maxSafeGas = long.MaxValue / 10_000;
+            var maxGas = balance.Amount > maxSafeGas ? maxSafeGas : (long)balance.Amount;
+            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: maxGas);
             if (additionalGas > 0.0m)
             {
                 tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);

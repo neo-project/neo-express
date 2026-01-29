@@ -98,9 +98,6 @@ namespace Neo.BlockchainToolkit.SmartContract
 
         public IReadOnlyDictionary<UInt160, OneOf<ContractState, Script>> ExecutedScripts => executedScripts;
 
-        public new event EventHandler<LogEventArgs>? Log;
-        public new event EventHandler<NotifyEventArgs>? Notify;
-
         public TestApplicationEngine(DataCache snapshot, ProtocolSettings? settings = null)
             : this(snapshot, container: null, settings: settings)
         {
@@ -155,17 +152,15 @@ namespace Neo.BlockchainToolkit.SmartContract
         {
             this.witnessChecker = witnessChecker ?? CheckWitness;
             this.fileSystem = fileSystem;
-            ApplicationEngine.Log += OnLog;
-            ApplicationEngine.Notify += OnNotify;
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            coverageWriter?.Dispose();
-            ApplicationEngine.Log -= OnLog;
-            ApplicationEngine.Notify -= OnNotify;
-            base.Dispose();
-            GC.SuppressFinalize(this);
+            if (disposing)
+            {
+                coverageWriter?.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         public IReadOnlyDictionary<int, int> GetHitMap(UInt160 contractHash)
@@ -288,22 +283,6 @@ namespace Neo.BlockchainToolkit.SmartContract
             else if (currentIP == branchIP)
             {
                 branchMap[branchIP] = (branchCount, continueCount + 1);
-            }
-        }
-
-        private void OnLog(object? sender, LogEventArgs args)
-        {
-            if (ReferenceEquals(this, sender))
-            {
-                this.Log?.Invoke(sender, args);
-            }
-        }
-
-        private void OnNotify(object? sender, NotifyEventArgs args)
-        {
-            if (ReferenceEquals(this, sender))
-            {
-                this.Notify?.Invoke(sender, args);
             }
         }
 

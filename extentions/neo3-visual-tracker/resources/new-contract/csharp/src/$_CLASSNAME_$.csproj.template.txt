@@ -3,7 +3,7 @@
   <PropertyGroup>
     <NeoContractName>$(AssemblyName)</NeoContractName>
     <RootNamespace>$_CONTRACTNAME_$</RootNamespace>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

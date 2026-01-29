@@ -25,6 +25,7 @@ using Neo.VM;
 using Neo.VM.Types;
 using Neo.Wallets;
 using NeoExpress.Models;
+using NeoExpress.Utility;
 using OneOf;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -441,9 +442,9 @@ namespace NeoExpress
             var stack = result.Stack;
             if (stack.Length >= 3)
             {
-                var decimals = (byte)stack[0].GetInteger();
+                var balance = stack[0].GetInteger();
                 var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
-                var balance = stack[2].GetInteger();
+                var decimals = (byte)stack[2].GetInteger();
 
                 return (
                     new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },
@@ -526,8 +527,8 @@ namespace NeoExpress
                 CandidateRegistrationFee = new BigDecimal(result.Stack[2].GetInteger(), NativeContract.GAS.Decimals),
                 OracleRequestFee = new BigDecimal(result.Stack[3].GetInteger(), NativeContract.GAS.Decimals),
                 NetworkFeePerByte = new BigDecimal(result.Stack[4].GetInteger(), NativeContract.GAS.Decimals),
-                StorageFeeFactor = (uint)result.Stack[5].GetInteger(),
-                ExecutionFeeFactor = (uint)result.Stack[6].GetInteger(),
+                StorageFeeFactor = SafeCast.ToUInt32(result.Stack[5].GetInteger()),
+                ExecutionFeeFactor = SafeCast.ToUInt32(result.Stack[6].GetInteger()),
             };
         }
 

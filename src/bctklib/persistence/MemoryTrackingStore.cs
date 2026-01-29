@@ -25,6 +25,8 @@ namespace Neo.BlockchainToolkit.Persistence
         readonly IReadOnlyStore<byte[], byte[]> store;
         TrackingMap trackingMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
 
+        public event IStore.OnNewSnapshotDelegate? OnNewSnapshot;
+
         public MemoryTrackingStore(IReadOnlyStore<byte[], byte[]> store)
         {
             this.store = store;
@@ -35,7 +37,12 @@ namespace Neo.BlockchainToolkit.Persistence
             (store as IDisposable)?.Dispose();
         }
 
-        public IStoreSnapshot GetSnapshot() => new Snapshot(store, trackingMap, this.CommitSnapshot, this);
+        public IStoreSnapshot GetSnapshot()
+        {
+            var snapshot = new Snapshot(store, trackingMap, this.CommitSnapshot, this);
+            OnNewSnapshot?.Invoke(this, snapshot);
+            return snapshot;
+        }
 
         [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
         public byte[]? TryGet(byte[]? key) => TryGet(key, trackingMap, store);

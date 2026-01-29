@@ -3,7 +3,7 @@
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <RootNamespace>ContractTests</RootNamespace>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <NeoTestVersion>3.5.17</NeoTestVersion>
   </PropertyGroup>
   <ItemGroup>

@@ -16,11 +16,14 @@ using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using System.Collections.Generic;
 
 namespace NeoExpress.Node
 {
     class ExpressLogPlugin : Plugin
     {
+        readonly object engineLock = new();
+        readonly List<WeakReference<ApplicationEngine>> engineRefs = new();
         NeoSystem? neoSystem;
         readonly IConsole console;
 
@@ -29,15 +32,35 @@ namespace NeoExpress.Node
             this.console = console;
 
             Blockchain.Committing += OnCommitting;
-            ApplicationEngine.Log += OnAppEngineLog!;
+            ApplicationEngine.InstanceHandler += OnApplicationEngineCreated;
             Neo.Utility.Logging += OnNeoUtilityLog;
         }
 
         public override void Dispose()
         {
             Neo.Utility.Logging -= OnNeoUtilityLog;
-            ApplicationEngine.Log -= OnAppEngineLog!;
+            ApplicationEngine.InstanceHandler -= OnApplicationEngineCreated;
+            lock (engineLock)
+            {
+                foreach (var engineRef in engineRefs)
+                {
+                    if (engineRef.TryGetTarget(out var engine))
+                    {
+                        engine.Log -= OnAppEngineLog;
+                    }
+                }
+                engineRefs.Clear();
+            }
             Blockchain.Committing -= OnCommitting;
+        }
+
+        void OnApplicationEngineCreated(ApplicationEngine engine)
+        {
+            lock (engineLock)
+            {
+                engineRefs.Add(new WeakReference<ApplicationEngine>(engine));
+            }
+            engine.Log += OnAppEngineLog;
         }
 
         protected override void OnSystemLoaded(NeoSystem system)
@@ -62,7 +85,7 @@ namespace NeoExpress.Node
             return scriptHash.ToString();
         }
 
-        void OnAppEngineLog(object sender, LogEventArgs args)
+        void OnAppEngineLog(ApplicationEngine engine, LogEventArgs args)
         {
             var container = args.ScriptContainer is null
                 ? string.Empty

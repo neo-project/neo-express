@@ -17,7 +17,7 @@ Core workflow validation that mirrors the GitHub Actions jobs:
 ### 2. NeoxpToolIntegrationTests
 Tests the neoxp tool installation and basic commands:
 
-- **Test01_BuildAndInstallNeoxpTool**: Builds and installs neoxp tool globally
+- **Test01_BuildAndInstallNeoxpTool**: Builds and installs neoxp tool to a local tool path
 - **Test02_CreateCommand**: Tests `neoxp create` command
 - **Test03_WalletCreateCommand**: Tests `neoxp wallet create bob` command
 - **Test04_CheckpointCreateCommand**: Tests `neoxp checkpoint create` command
@@ -99,8 +99,8 @@ These tests replicate the **exact same commands** used in the GitHub Actions wor
 1. **Format Check**: `dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic`
 2. **Build**: `dotnet build neo-express.sln --configuration Release --no-restore --verbosity normal`
 3. **Test**: `dotnet test neo-express.sln --configuration Release --no-build --verbosity normal`
-4. **Pack**: `dotnet pack neo-express.sln --configuration Release --output ./out --no-build --verbosity normal`
-5. **Tool Install**: `dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express`
+4. **Pack**: `dotnet pack src/neoxp/neoxp.csproj --configuration Release --output ./out --no-build --verbosity normal`
+5. **Tool Install**: `dotnet tool install --add-source ./out --verbosity normal --tool-path <temp>/tools --prerelease neo.express`
 6. **Tool Commands**: All neoxp commands from the workflow
 
 ### ✅ Environment Validation

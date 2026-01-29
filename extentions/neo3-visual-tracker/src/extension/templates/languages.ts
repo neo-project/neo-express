@@ -115,7 +115,7 @@ const languages: { [code: string]: Language } = {
           // Attempt to get the latest neow3j from Maven Central (falling back to
           // a hard-coded version if Maven Central is not available or returns a
           // malformed response):
-          const FALLBACK = "3.8.0";
+          const FALLBACK = "3.9.0";
           const searchResults = await tryFetchJson(
             "https",
             "search.maven.org",

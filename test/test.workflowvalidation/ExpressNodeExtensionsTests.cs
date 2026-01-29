@@ -42,9 +42,9 @@ public class ExpressNodeExtensionsTests
             State = VMState.HALT,
             Stack = new StackItem[]
             {
-                new Integer(new BigInteger(8)), // decimals (top of stack)
-                new ByteString(Encoding.UTF8.GetBytes("GAS")),
                 new Integer(new BigInteger(123)), // balance (bottom of stack)
+                new ByteString(Encoding.UTF8.GetBytes("GAS")),
+                new Integer(new BigInteger(8)), // decimals (top of stack)
             }
         };
 

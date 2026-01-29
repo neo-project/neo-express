@@ -25,6 +25,7 @@ using Neo.VM;
 using Neo.VM.Types;
 using Neo.Wallets;
 using NeoExpress.Models;
+using NeoExpress.Utility;
 using OneOf;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -526,31 +527,9 @@ namespace NeoExpress
                 CandidateRegistrationFee = new BigDecimal(result.Stack[2].GetInteger(), NativeContract.GAS.Decimals),
                 OracleRequestFee = new BigDecimal(result.Stack[3].GetInteger(), NativeContract.GAS.Decimals),
                 NetworkFeePerByte = new BigDecimal(result.Stack[4].GetInteger(), NativeContract.GAS.Decimals),
-                StorageFeeFactor = SafeCastToUInt32(result.Stack[5].GetInteger()),
-                ExecutionFeeFactor = SafeCastToUInt32(result.Stack[6].GetInteger()),
+                StorageFeeFactor = SafeCast.ToUInt32(result.Stack[5].GetInteger()),
+                ExecutionFeeFactor = SafeCast.ToUInt32(result.Stack[6].GetInteger()),
             };
-        }
-
-        static uint SafeCastToUInt32(BigInteger value)
-        {
-            // Handle values that might be returned as negative due to VM encoding
-            // BigInteger to uint conversion handles the full uint range properly
-            if (value < 0)
-            {
-                // For negative values, we need to interpret them as unsigned 32-bit
-                // This handles cases where the VM returns a value > int.MaxValue as a negative number
-                if (value >= int.MinValue)
-                {
-                    // Value fits in int range, cast to int then to uint to reinterpret bits
-                    return unchecked((uint)(int)value);
-                }
-                throw new OverflowException($"Value {value} is too small for UInt32");
-            }
-
-            if (value > uint.MaxValue)
-                throw new OverflowException($"Value {value} is too large for UInt32");
-
-            return (uint)value;
         }
 
         public static Task<PolicyValues> GetPolicyAsync(this IExpressNode expressNode)

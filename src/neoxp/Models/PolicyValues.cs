@@ -11,6 +11,7 @@
 using Neo;
 using Neo.Json;
 using Neo.SmartContract.Native;
+using NeoExpress.Utility;
 using System.Numerics;
 
 namespace NeoExpress.Models
@@ -47,8 +48,8 @@ namespace NeoExpress.Models
             var candidateRegistrationFee = ParseGasValue(json[nameof(CandidateRegistrationFee)]!);
             var oracleRequestFee = ParseGasValue(json[nameof(OracleRequestFee)]!);
             var networkFeePerByte = ParseGasValue(json[nameof(NetworkFeePerByte)]!);
-            var storageFeeFactor = SafeCastToUInt32((BigInteger)json[nameof(StorageFeeFactor)]!.AsNumber());
-            var executionFeeFactor = SafeCastToUInt32((BigInteger)json[nameof(ExecutionFeeFactor)]!.AsNumber());
+            var storageFeeFactor = SafeCast.ToUInt32((BigInteger)json[nameof(StorageFeeFactor)]!.AsNumber());
+            var executionFeeFactor = SafeCast.ToUInt32((BigInteger)json[nameof(ExecutionFeeFactor)]!.AsNumber());
 
             return new PolicyValues
             {
@@ -62,20 +63,6 @@ namespace NeoExpress.Models
             };
 
             static BigDecimal ParseGasValue(JToken json) => new BigDecimal(BigInteger.Parse(json.AsString()), NativeContract.GAS.Decimals);
-
-            static uint SafeCastToUInt32(BigInteger value)
-            {
-                // Handle values that might be returned as negative due to VM encoding
-                if (value < 0)
-                {
-                    if (value >= int.MinValue)
-                        return unchecked((uint)(int)value);
-                    throw new OverflowException($"Value {value} is too small for UInt32");
-                }
-                if (value > uint.MaxValue)
-                    throw new OverflowException($"Value {value} is too large for UInt32");
-                return (uint)value;
-            }
         }
     }
 }

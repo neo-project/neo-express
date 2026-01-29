@@ -28,7 +28,6 @@ using NeoExpress.Validators;
 using System.Collections.Immutable;
 using System.Numerics;
 using RpcException = Neo.Network.RPC.RpcException;
-using Utility = Neo.Utility;
 
 namespace NeoExpress.Node
 {
@@ -82,7 +81,7 @@ namespace NeoExpress.Node
             var response = new JObject();
             response["process-id"] = proc.Id;
 
-            Utility.Log(nameof(ExpressRpcServerPlugin), LogLevel.Info, $"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds");
+            Log($"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds", LogLevel.Info);
             cancellationToken.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
             return response;
         }

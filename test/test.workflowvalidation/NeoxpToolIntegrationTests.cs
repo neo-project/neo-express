@@ -24,9 +24,11 @@ public class NeoxpToolIntegrationTests : IDisposable
     private readonly ITestOutputHelper _output;
     private readonly string _tempDirectory;
     private readonly string _solutionPath;
+    private readonly string _neoxpProjectPath;
     private readonly string _configuration = "Release";
     private readonly RunCommand _runCommand;
     private readonly string _outDirectory;
+    private readonly string _toolDirectory;
     private bool _toolInstalled = false;
 
     public NeoxpToolIntegrationTests(ITestOutputHelper output)
@@ -39,13 +41,18 @@ public class NeoxpToolIntegrationTests : IDisposable
         var currentDir = Directory.GetCurrentDirectory();
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
+        _neoxpProjectPath = Path.Combine(solutionDir, "src", "neoxp", "neoxp.csproj");
         _outDirectory = Path.Combine(_tempDirectory, "out");
+        _toolDirectory = Path.Combine(_tempDirectory, "tools");
         Directory.CreateDirectory(_outDirectory);
+        Directory.CreateDirectory(_toolDirectory);
         _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
 
         _output.WriteLine($"Test temp directory: {_tempDirectory}");
         _output.WriteLine($"Solution path: {_solutionPath}");
         _output.WriteLine($"Output directory: {_outDirectory}");
+        _output.WriteLine($"Tool directory: {_toolDirectory}");
+        _output.WriteLine($"Neoxp project path: {_neoxpProjectPath}");
     }
 
     private static string FindSolutionDirectory(string startPath)
@@ -157,6 +164,12 @@ public class NeoxpToolIntegrationTests : IDisposable
         throw new InvalidOperationException($"Could not find neo-express.sln starting from {startPath}. Current directory: {Environment.CurrentDirectory}");
     }
 
+    private static string GetNeoxpPath(string toolDirectory)
+    {
+        var toolName = OperatingSystem.IsWindows() ? "neoxp.exe" : "neoxp";
+        return Path.Combine(toolDirectory, toolName);
+    }
+
     /// <summary>
     /// Setup: Build and install neoxp tool (equivalent to pack and install steps in test.yml)
     /// </summary>
@@ -165,12 +178,8 @@ public class NeoxpToolIntegrationTests : IDisposable
     {
         _output.WriteLine("=== Building and Installing neoxp Tool ===");
 
-        // Restore and build
-        await _runCommand.RunDotNetCommand("restore", _solutionPath);
-        await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
-
-        // Pack for install (equivalent to: dotnet pack neo-express.sln --configuration Release --output ./out --no-build)
-        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
+        // Pack neoxp tool (build happens during test project build)
+        var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _neoxpProjectPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify neo.express package exists
@@ -179,12 +188,8 @@ public class NeoxpToolIntegrationTests : IDisposable
             .ToArray();
         packages.Should().NotBeEmpty("neo.express package should be created");
 
-        // Try to uninstall any existing tool first to avoid conflicts
-        _output.WriteLine("Uninstalling any existing neo.express tool...");
-        await _runCommand.RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
-
-        // Install neoxp tool (equivalent to: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express)
-        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+        // Install neoxp tool to a local tool path to avoid mutating global state
+        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
 
         // Handle various installation scenarios
         if (toolInstallExitCode != 0)
@@ -194,13 +199,11 @@ public class NeoxpToolIntegrationTests : IDisposable
                 toolInstallError.Contains("file or directory with the same name already exists"))
             {
                 _output.WriteLine("Tool already exists, trying to update...");
-                var (toolUpdateExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+                var (toolUpdateExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
                 if (toolUpdateExitCode != 0)
                 {
-                    _output.WriteLine("Update failed, trying uninstall and reinstall...");
-                    await _runCommand.RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
-                    await Task.Delay(1000, TestContext.Current.CancellationToken); // Wait for cleanup
-                    var (toolReinstallExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+                    _output.WriteLine("Update failed, trying reinstall...");
+                    var (toolReinstallExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
                     toolReinstallExitCode.Should().Be(0, "tool reinstall should succeed");
                 }
             }
@@ -211,6 +214,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         }
 
         _toolInstalled = true;
+        _runCommand.SetNeoxpPath(GetNeoxpPath(_toolDirectory));
         _output.WriteLine("✅ neoxp tool installed successfully");
     }
 

@@ -442,9 +442,9 @@ namespace NeoExpress
             var stack = result.Stack;
             if (stack.Length >= 3)
             {
-                var decimals = (byte)stack[0].GetInteger();
+                var balance = stack[0].GetInteger();
                 var symbol = Encoding.UTF8.GetString(stack[1].GetSpan());
-                var balance = stack[2].GetInteger();
+                var decimals = (byte)stack[2].GetInteger();
 
                 return (
                     new RpcNep17Balance() { Amount = balance, AssetHash = assetHash },

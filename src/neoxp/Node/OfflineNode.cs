@@ -157,7 +157,10 @@ namespace NeoExpress.Node
 
             var signer = new Signer() { Account = accountHash, Scopes = witnessScope };
             var (balance, _) = await this.GetBalanceAsync(accountHash, "GAS");
-            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: (long)balance.Amount);
+            // ApplicationEngine multiplies gas by 10,000; cap to prevent long overflow.
+            const long maxSafeGas = long.MaxValue / 10_000;
+            var maxGas = balance.Amount > maxSafeGas ? maxSafeGas : (long)balance.Amount;
+            var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: maxGas);
             if (additionalGas > 0.0m)
             {
                 tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);

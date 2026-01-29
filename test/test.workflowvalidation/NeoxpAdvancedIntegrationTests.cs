@@ -224,12 +224,12 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp transfer 10000 gas genesis node1
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
-            // Note: Transfer commands may fail in offline mode, which is expected behavior
+            var (transferExitCode1, _, _) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
+            transferExitCode1.Should().Be(0, "offline genesis transfer should succeed");
 
             // Equivalent to: neoxp transfer 10000 gas genesis bob
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
-            // Note: Transfer commands may fail in offline mode, which is expected behavior
+            var (transferExitCode2, _, _) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
+            transferExitCode2.Should().Be(0, "offline genesis transfer should succeed");
 
             _output.WriteLine("✅ neoxp transfer commands (offline) passed");
         }

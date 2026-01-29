@@ -25,22 +25,24 @@ namespace Neo.BlockchainToolkit.SmartContract
 
         public TraceApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container,
                                       DataCache snapshot, Block? persistingBlock, ProtocolSettings settings, long gas,
-                                      IDiagnostic? diagnostic = null)
-            : base(trigger, container, snapshot, persistingBlock, settings, gas, diagnostic)
+                                      IDiagnostic? diagnostic = null, JumpTable? jumpTable = null)
+            : base(trigger, container, snapshot, persistingBlock, settings, gas, diagnostic, jumpTable)
         {
             this.traceDebugSink = traceDebugSink;
 
-            Log += OnLog!;
-            Notify += OnNotify!;
+            Log += OnLog;
+            Notify += OnNotify;
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            Log -= OnLog!;
-            Notify -= OnNotify!;
-            traceDebugSink.Dispose();
-            base.Dispose();
-            GC.SuppressFinalize(this);
+            if (disposing)
+            {
+                Log -= OnLog;
+                Notify -= OnNotify;
+                traceDebugSink.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         private string GetContractName(UInt160 scriptId)
@@ -49,20 +51,14 @@ namespace Neo.BlockchainToolkit.SmartContract
                 k => NativeContract.ContractManagement.GetContract(SnapshotCache, k)?.Manifest.Name ?? string.Empty);
         }
 
-        private void OnNotify(object sender, NotifyEventArgs args)
+        private void OnNotify(ApplicationEngine engine, NotifyEventArgs args)
         {
-            if (ReferenceEquals(sender, this))
-            {
-                traceDebugSink.Notify(args, GetContractName(args.ScriptHash));
-            }
+            traceDebugSink.Notify(args, GetContractName(args.ScriptHash));
         }
 
-        private void OnLog(object sender, LogEventArgs args)
+        private void OnLog(ApplicationEngine engine, LogEventArgs args)
         {
-            if (ReferenceEquals(sender, this))
-            {
-                traceDebugSink.Log(args, GetContractName(args.ScriptHash));
-            }
+            traceDebugSink.Log(args, GetContractName(args.ScriptHash));
         }
 
         public override VMState Execute()

@@ -28,6 +28,8 @@ namespace Neo.BlockchainToolkit.Persistence
         readonly bool shared;
         bool disposed;
 
+        public event IStore.OnNewSnapshotDelegate? OnNewSnapshot;
+
         public PersistentTrackingStore(RocksDb db, IReadOnlyStore<byte[], byte[]> store, bool shared = false, string familyName = nameof(PersistentTrackingStore))
             : this(db, db.GetOrCreateColumnFamily(familyName), store, shared)
         {
@@ -215,9 +217,9 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public IStoreSnapshot GetSnapshot()
         {
-            return new Snapshot(db, columnFamily, store, this);
+            var snapshot = new Snapshot(db, columnFamily, store, this);
+            OnNewSnapshot?.Invoke(this, snapshot);
+            return snapshot;
         }
-
-
     }
 }

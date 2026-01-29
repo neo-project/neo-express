@@ -21,7 +21,7 @@ namespace NeoWorkNet.Commands;
 
 class WorknetRpcServerPlugin : Plugin
 {
-    readonly RpcServerSettings settings;
+    readonly RpcServersSettings settings;
     readonly ToolkitPersistencePlugin persistencePlugin;
     readonly RpcClient rpcClient;
     readonly CancellationTokenSource cancellationToken = new();
@@ -30,7 +30,7 @@ class WorknetRpcServerPlugin : Plugin
 
     public CancellationToken CancellationToken => cancellationToken.Token;
 
-    public WorknetRpcServerPlugin(RpcServerSettings settings, ToolkitPersistencePlugin persistencePlugin, Uri uri)
+    public WorknetRpcServerPlugin(RpcServersSettings settings, ToolkitPersistencePlugin persistencePlugin, Uri uri)
     {
         this.settings = settings;
         this.persistencePlugin = persistencePlugin;

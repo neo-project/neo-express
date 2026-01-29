@@ -37,7 +37,7 @@ namespace NeoExpress.Node
         NeoSystem? neoSystem;
         RpcServer? rpcServer;
         readonly IExpressStorage expressStorage;
-        readonly RpcServerSettings settings;
+        readonly RpcServersSettings settings;
         readonly UInt160 nodeAccountAddress;
         readonly Lazy<ExpressPersistencePlugin> persistencePlugin;
         readonly CancellationTokenSource cancellationToken = new();
@@ -45,7 +45,7 @@ namespace NeoExpress.Node
 
         public CancellationToken CancellationToken => cancellationToken.Token;
 
-        public ExpressRpcServerPlugin(RpcServerSettings settings, IExpressStorage expressStorage, UInt160 nodeAccountAddress)
+        public ExpressRpcServerPlugin(RpcServersSettings settings, IExpressStorage expressStorage, UInt160 nodeAccountAddress)
         {
             this.expressStorage = expressStorage;
             this.settings = settings;

@@ -174,7 +174,9 @@ public class NeoxpToolIntegrationTests : IDisposable
         packExitCode.Should().Be(0, "pack should succeed");
 
         // Verify neo.express package exists
-        var packages = Directory.GetFiles(_outDirectory, "neo.express*.nupkg");
+        var packages = Directory.GetFiles(_outDirectory, "*.nupkg")
+            .Where(file => Path.GetFileName(file).StartsWith("Neo.Express", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
         packages.Should().NotBeEmpty("neo.express package should be created");
 
         // Try to uninstall any existing tool first to avoid conflicts

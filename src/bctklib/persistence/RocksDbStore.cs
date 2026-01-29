@@ -22,6 +22,8 @@ namespace Neo.BlockchainToolkit.Persistence
         readonly bool shared;
         bool disposed;
 
+        public event IStore.OnNewSnapshotDelegate? OnNewSnapshot;
+
         public RocksDbStore(RocksDb db, string? columnFamilyName = null, bool readOnly = false, bool shared = false)
             : this(db, db.GetColumnFamilyOrDefault(columnFamilyName), readOnly, shared)
         {
@@ -136,9 +138,9 @@ namespace Neo.BlockchainToolkit.Persistence
                 throw new ObjectDisposedException(nameof(RocksDbStore));
             if (readOnly)
                 throw new InvalidOperationException("read only");
-            return new Snapshot(db, columnFamily, this);
+            var snapshot = new Snapshot(db, columnFamily, this);
+            OnNewSnapshot?.Invoke(this, snapshot);
+            return snapshot;
         }
-
-
     }
 }

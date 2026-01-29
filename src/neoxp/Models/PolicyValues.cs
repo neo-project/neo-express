@@ -35,8 +35,8 @@ namespace NeoExpress.Models
             json[nameof(CandidateRegistrationFee)] = $"{CandidateRegistrationFee.ChangeDecimals(decimals).Value}";
             json[nameof(OracleRequestFee)] = $"{OracleRequestFee.ChangeDecimals(decimals).Value}";
             json[nameof(NetworkFeePerByte)] = $"{NetworkFeePerByte.ChangeDecimals(decimals).Value}";
-            json[nameof(StorageFeeFactor)] = StorageFeeFactor;
-            json[nameof(ExecutionFeeFactor)] = ExecutionFeeFactor;
+            json[nameof(StorageFeeFactor)] = (long)StorageFeeFactor;
+            json[nameof(ExecutionFeeFactor)] = (long)ExecutionFeeFactor;
             return json;
         }
 
@@ -47,8 +47,8 @@ namespace NeoExpress.Models
             var candidateRegistrationFee = ParseGasValue(json[nameof(CandidateRegistrationFee)]!);
             var oracleRequestFee = ParseGasValue(json[nameof(OracleRequestFee)]!);
             var networkFeePerByte = ParseGasValue(json[nameof(NetworkFeePerByte)]!);
-            var storageFeeFactor = (uint)json[nameof(NetworkFeePerByte)]!.AsNumber();
-            var executionFeeFactor = (uint)json[nameof(ExecutionFeeFactor)]!.AsNumber();
+            var storageFeeFactor = SafeCastToUInt32((BigInteger)json[nameof(StorageFeeFactor)]!.AsNumber());
+            var executionFeeFactor = SafeCastToUInt32((BigInteger)json[nameof(ExecutionFeeFactor)]!.AsNumber());
 
             return new PolicyValues
             {
@@ -62,6 +62,20 @@ namespace NeoExpress.Models
             };
 
             static BigDecimal ParseGasValue(JToken json) => new BigDecimal(BigInteger.Parse(json.AsString()), NativeContract.GAS.Decimals);
+
+            static uint SafeCastToUInt32(BigInteger value)
+            {
+                // Handle values that might be returned as negative due to VM encoding
+                if (value < 0)
+                {
+                    if (value >= int.MinValue)
+                        return unchecked((uint)(int)value);
+                    throw new OverflowException($"Value {value} is too small for UInt32");
+                }
+                if (value > uint.MaxValue)
+                    throw new OverflowException($"Value {value} is too large for UInt32");
+                return (uint)value;
+            }
         }
     }
 }

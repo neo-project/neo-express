@@ -13,6 +13,14 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
+## [3.9.1] - 2026-01-29
+
+### Changed
+
+* Updated to Neo 3.9.1
+* Updated to .NET 10.0
+* Updated all dependencies to Neo 3.9.1 compatible versions
+
 ## [3.6] - Unreleased
 
 ### Added

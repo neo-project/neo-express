@@ -18,8 +18,6 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
         <PackageReference Include="Neo.Plugins.Storage.RocksDBStore" Version="3.9.1" />
         <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.16" />
-        <PackageReference Include="System.Net.Http" Version="4.3.4" />
-        <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
         <PackageReference Include="Xunit.Combinatorial" Version="2.0.24" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

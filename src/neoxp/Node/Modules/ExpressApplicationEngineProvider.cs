@@ -20,21 +20,6 @@ namespace NeoExpress.Node
 {
     class ExpressApplicationEngineProvider : IApplicationEngineProvider
     {
-        public ApplicationEngine? Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic? diagnostic)
-        {
-            if (trigger == TriggerType.Application
-                && container is Transaction tx
-                && tx.Witnesses is not null
-                && tx.Witnesses.Length > 0
-                && EnumerateContractCalls(tx.Script).Any())
-            {
-                var path = Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
-                var sink = new TraceDebugStream(File.OpenWrite(path));
-                return new TraceApplicationEngine(sink, trigger, container, snapshot, persistingBlock, settings, gas, diagnostic);
-            }
-
-            return null;
-        }
         public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic diagnostic, JumpTable jumpTable)
         {
             if (trigger == TriggerType.Application

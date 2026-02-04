@@ -35,7 +35,22 @@ namespace NeoExpress.Node
 
             return null;
         }
+        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic diagnostic, JumpTable jumpTable)
+        {
+            if (trigger == TriggerType.Application
+                    && container is Transaction tx
+                    && tx.Witnesses is not null
+                    && tx.Witnesses.Length > 0
+                    && EnumerateContractCalls(tx.Script).Any())
+            {
+                var path = Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
+                var sink = new TraceDebugStream(File.OpenWrite(path));
 
+                return new TraceApplicationEngine(sink, trigger, container, snapshot, persistingBlock, settings, gas, diagnostic, jumpTable);
+            }
+
+            return null!;
+        }
         static IEnumerable<UInt160> EnumerateContractCalls(Script script)
         {
             var scriptHash = UInt160.Zero;
@@ -72,7 +87,5 @@ namespace NeoExpress.Node
                 yield return Instruction.RET;
             }
         }
-
-        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic diagnostic, JumpTable jumpTable) => throw new NotImplementedException();
     }
 }

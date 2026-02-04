@@ -11,6 +11,7 @@
 using Neo;
 using Neo.Json;
 using Neo.SmartContract.Native;
+using NeoExpress.Utility;
 using System.Numerics;
 
 namespace NeoExpress.Models
@@ -35,8 +36,8 @@ namespace NeoExpress.Models
             json[nameof(CandidateRegistrationFee)] = $"{CandidateRegistrationFee.ChangeDecimals(decimals).Value}";
             json[nameof(OracleRequestFee)] = $"{OracleRequestFee.ChangeDecimals(decimals).Value}";
             json[nameof(NetworkFeePerByte)] = $"{NetworkFeePerByte.ChangeDecimals(decimals).Value}";
-            json[nameof(StorageFeeFactor)] = StorageFeeFactor;
-            json[nameof(ExecutionFeeFactor)] = ExecutionFeeFactor;
+            json[nameof(StorageFeeFactor)] = (long)StorageFeeFactor;
+            json[nameof(ExecutionFeeFactor)] = (long)ExecutionFeeFactor;
             return json;
         }
 
@@ -47,8 +48,8 @@ namespace NeoExpress.Models
             var candidateRegistrationFee = ParseGasValue(json[nameof(CandidateRegistrationFee)]!);
             var oracleRequestFee = ParseGasValue(json[nameof(OracleRequestFee)]!);
             var networkFeePerByte = ParseGasValue(json[nameof(NetworkFeePerByte)]!);
-            var storageFeeFactor = (uint)json[nameof(NetworkFeePerByte)]!.AsNumber();
-            var executionFeeFactor = (uint)json[nameof(ExecutionFeeFactor)]!.AsNumber();
+            var storageFeeFactor = SafeCast.ToUInt32((BigInteger)json[nameof(StorageFeeFactor)]!.AsNumber());
+            var executionFeeFactor = SafeCast.ToUInt32((BigInteger)json[nameof(ExecutionFeeFactor)]!.AsNumber());
 
             return new PolicyValues
             {

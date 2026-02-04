@@ -25,8 +25,10 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
     private readonly ITestOutputHelper _output;
     private readonly string _tempDirectory;
     private readonly string _solutionPath;
+    private readonly string _neoxpProjectPath;
     private readonly string _configuration = "Release";
     private readonly string _outDirectory;
+    private readonly string _toolDirectory;
     private bool _toolInstalled = false;
     private bool _projectCreated = false;
     private readonly RunCommand _runCommand;
@@ -41,12 +43,17 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         var currentDir = Directory.GetCurrentDirectory();
         var solutionDir = FindSolutionDirectory(currentDir);
         _solutionPath = Path.Combine(solutionDir, "neo-express.sln");
+        _neoxpProjectPath = Path.Combine(solutionDir, "src", "neoxp", "neoxp.csproj");
         _outDirectory = Path.Combine(_tempDirectory, "out");
+        _toolDirectory = Path.Combine(_tempDirectory, "tools");
         Directory.CreateDirectory(_outDirectory);
+        Directory.CreateDirectory(_toolDirectory);
         _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
 
         _output.WriteLine($"Test temp directory: {_tempDirectory}");
         _output.WriteLine($"Solution path: {_solutionPath}");
+        _output.WriteLine($"Tool directory: {_toolDirectory}");
+        _output.WriteLine($"Neoxp project path: {_neoxpProjectPath}");
     }
 
     private static string FindSolutionDirectory(string startPath)
@@ -124,6 +131,12 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         throw new InvalidOperationException($"Could not find neo-express.sln starting from {startPath}. Current directory: {Environment.CurrentDirectory}");
     }
 
+    private static string GetNeoxpPath(string toolDirectory)
+    {
+        var toolName = OperatingSystem.IsWindows() ? "neoxp.exe" : "neoxp";
+        return Path.Combine(toolDirectory, toolName);
+    }
+
     /// <summary>
     /// Test 1: Policy commands (equivalent to policy get and sync in test.yml)
     /// </summary>
@@ -140,7 +153,23 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
-            var (policyGetExitCode, policyGetOutput, _) = await _runCommand.RunNeoxpCommand("policy", "get", "--rpc-uri", "mainnet", "--json");
+            // Use a timeout to avoid hanging indefinitely if the RPC endpoint is slow/unreachable.
+            (int policyGetExitCode, string policyGetOutput, string _) = (-1, string.Empty, string.Empty);
+            try
+            {
+                (policyGetExitCode, policyGetOutput, _) = await _runCommand.RunNeoxpCommandWithTimeout(
+                    TimeSpan.FromSeconds(30),
+                    "policy",
+                    "get",
+                    "--rpc-uri",
+                    "mainnet",
+                    "--json");
+            }
+            catch (TimeoutException)
+            {
+                _output.WriteLine("⚠️ Policy get timed out (likely due to network), skipping policy sync test");
+                return;
+            }
 
             // Note: This might fail if mainnet is not accessible, so we'll be more lenient
             if (policyGetExitCode == 0)
@@ -155,7 +184,13 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
                 policy.Should().NotBeNull("policy should be valid JSON");
 
                 // Equivalent to: neoxp policy sync mainnet-policy --account genesis
-                await _runCommand.RunNeoxpCommand("policy", "sync", "mainnet-policy", "--account", "genesis");
+                await _runCommand.RunNeoxpCommandWithTimeout(
+                    TimeSpan.FromSeconds(30),
+                    "policy",
+                    "sync",
+                    "mainnet-policy",
+                    "--account",
+                    "genesis");
                 // This might fail if genesis account doesn't exist yet, which is expected
 
                 _output.WriteLine("✅ neoxp policy commands completed");
@@ -189,12 +224,12 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp transfer 10000 gas genesis node1
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
-            // Note: Transfer commands may fail in offline mode, which is expected behavior
+            var (transferExitCode1, _, _) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
+            transferExitCode1.Should().Be(0, "offline genesis transfer should succeed");
 
             // Equivalent to: neoxp transfer 10000 gas genesis bob
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
-            // Note: Transfer commands may fail in offline mode, which is expected behavior
+            var (transferExitCode2, _, _) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
+            transferExitCode2.Should().Be(0, "offline genesis transfer should succeed");
 
             _output.WriteLine("✅ neoxp transfer commands (offline) passed");
         }
@@ -268,33 +303,36 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
 
     private async Task EnsureSetup()
     {
+        _output.WriteLine("EnsureSetup: starting");
         if (!_toolInstalled)
         {
+            _output.WriteLine("EnsureSetup: build/install tool");
             await BuildAndInstallTool();
         }
 
         if (!_projectCreated)
         {
+            _output.WriteLine("EnsureSetup: create project");
             await CreateProject();
         }
+        _output.WriteLine("EnsureSetup: complete");
     }
 
     private async Task BuildAndInstallTool()
     {
-        // Build and pack
-        await _runCommand.RunDotNetCommand("restore", _solutionPath);
-        await _runCommand.RunDotNetCommand("build", _solutionPath, "--configuration", _configuration, "--no-restore");
-        await _runCommand.RunDotNetCommand("pack", _solutionPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
+        // Pack neoxp tool (build happens during test project build)
+        _output.WriteLine("BuildAndInstallTool: pack");
+        await _runCommand.RunDotNetCommand("pack", _neoxpProjectPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
 
         // Uninstall existing tool first (ignore errors if not installed)
-        await _runCommand.RunDotNetCommand("tool", "uninstall", "--global", "neo.express");
-
         // Try to install the tool, if it fails try to update instead
-        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+        _output.WriteLine("BuildAndInstallTool: install");
+        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
         if (toolInstallExitCode != 0)
         {
             // If install failed, try update instead
-            var (toolUpdateExitCode, _, toolUpdateError) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--global", "--prerelease", "neo.express");
+            _output.WriteLine("BuildAndInstallTool: update");
+            var (toolUpdateExitCode, _, toolUpdateError) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
             if (toolUpdateExitCode != 0)
             {
                 throw new InvalidOperationException($"Failed to install or update neo.express tool. Install error: {toolInstallError}. Update error: {toolUpdateError}");
@@ -302,6 +340,8 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         }
 
         _toolInstalled = true;
+        _runCommand.SetNeoxpPath(GetNeoxpPath(_toolDirectory));
+        _output.WriteLine("BuildAndInstallTool: complete");
     }
 
     private async Task CreateProject()
@@ -310,6 +350,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         try
         {
             Directory.SetCurrentDirectory(_tempDirectory);
+            _output.WriteLine("CreateProject: neoxp create --force");
             await _runCommand.RunNeoxpCommand("create", "--force");
             _projectCreated = true;
         }
@@ -363,7 +404,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "neoxp",
+                    FileName = _runCommand.NeoxpPath,
                     Arguments = "stop --all",
                     UseShellExecute = false,
                     CreateNoWindow = true,

@@ -3,7 +3,7 @@
     <PropertyGroup>
         <Authors>The Neo Project</Authors>
         <Company>The Neo Project</Company>
-        <Copyright>2015-2025 The Neo Project</Copyright>
+        <Copyright>2015-2026 The Neo Project</Copyright>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
@@ -18,7 +18,7 @@
         <ApplicationIcon>../neo-cli.ico</ApplicationIcon>
     </PropertyGroup>
     <PropertyGroup>
-        <NeoVersion>3.8.2</NeoVersion>
+        <NeoVersion>3.9.1</NeoVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>

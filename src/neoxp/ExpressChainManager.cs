@@ -15,6 +15,7 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.Plugins;
+using Neo.Plugins.DBFTPlugin;
 using Neo.Plugins.RpcServer;
 using NeoExpress.Models;
 using NeoExpress.Node;
@@ -226,7 +227,7 @@ namespace NeoExpress
 
                     using var persistencePlugin = new ExpressPersistencePlugin();
                     using var logPlugin = new ExpressLogPlugin(console);
-                    using var dbftPlugin = new Neo.Plugins.DBFTPlugin.DBFTPlugin(GetConsensusSettings(chain));
+                    using var dbftPlugin = new DBFTPlugin(GetConsensusSettings(chain));
                     using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
                         expressStorage, multiSigAccount.ScriptHash);
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
@@ -255,7 +256,7 @@ namespace NeoExpress
             });
             await tcs.Task.ConfigureAwait(false);
 
-            static Neo.Plugins.DBFTPlugin.Settings GetConsensusSettings(ExpressChain chain)
+            static DbftSettings GetConsensusSettings(ExpressChain chain)
             {
                 var settings = new Dictionary<string, string>()
                 {
@@ -264,10 +265,10 @@ namespace NeoExpress
                 };
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-                return new Neo.Plugins.DBFTPlugin.Settings(config.GetSection("PluginConfiguration"));
+                return new DbftSettings(config.GetSection("PluginConfiguration"));
             }
 
-            static RpcServerSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+            static RpcServersSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
             {
                 var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
                     ? bindAddress : IPAddress.Loopback;
@@ -299,7 +300,7 @@ namespace NeoExpress
                 settings.Add("PluginConfiguration:SessionEnabled", $"{sessionEnabled}");
 
                 var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-                return RpcServerSettings.Load(config.GetSection("PluginConfiguration"));
+                return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
             }
         }
 

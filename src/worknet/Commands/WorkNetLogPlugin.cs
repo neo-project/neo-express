@@ -17,6 +17,7 @@ using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using System.Collections.Generic;
 using System.Diagnostics;
 using static Crayon.Output;
 
@@ -24,6 +25,8 @@ namespace NeoWorkNet.Commands;
 
 class WorkNetLogPlugin : Plugin
 {
+    readonly object engineLock = new();
+    readonly List<WeakReference<ApplicationEngine>> engineRefs = new();
     NeoSystem? neoSystem;
     readonly IConsole console;
 
@@ -38,16 +41,36 @@ class WorkNetLogPlugin : Plugin
 
         this.console = console;
         Blockchain.Committing += OnCommitting;
-        ApplicationEngine.Log += OnAppEngineLog!;
+        ApplicationEngine.InstanceHandler += OnApplicationEngineCreated;
         Neo.Utility.Logging += OnNeoUtilityLog;
     }
 
     public override void Dispose()
     {
         Neo.Utility.Logging -= OnNeoUtilityLog;
-        ApplicationEngine.Log -= OnAppEngineLog!;
+        ApplicationEngine.InstanceHandler -= OnApplicationEngineCreated;
+        lock (engineLock)
+        {
+            foreach (var engineRef in engineRefs)
+            {
+                if (engineRef.TryGetTarget(out var engine))
+                {
+                    engine.Log -= OnAppEngineLog;
+                }
+            }
+            engineRefs.Clear();
+        }
         Blockchain.Committing -= OnCommitting;
         GC.SuppressFinalize(this);
+    }
+
+    void OnApplicationEngineCreated(ApplicationEngine engine)
+    {
+        lock (engineLock)
+        {
+            engineRefs.Add(new WeakReference<ApplicationEngine>(engine));
+        }
+        engine.Log += OnAppEngineLog;
     }
 
     protected override void OnSystemLoaded(NeoSystem system)
@@ -72,7 +95,7 @@ class WorkNetLogPlugin : Plugin
         return scriptHash.ToString();
     }
 
-    void OnAppEngineLog(object sender, LogEventArgs args)
+    void OnAppEngineLog(ApplicationEngine engine, LogEventArgs args)
     {
         var container = args.ScriptContainer is null
             ? string.Empty

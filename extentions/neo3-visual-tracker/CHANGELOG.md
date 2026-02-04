@@ -6,6 +6,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## Unreleased
 
+## [3.9.1] - 2026-01-29
+
+### Changed
+
+* Update Neo Express to 3.9.1 for full Neo 3.9.1 compatibility
+* Align extension version with Neo 3.9.1 release
+* Updated to .NET 10.0 SDK
+
 ## [3.8.2] - 2025-05-26
 
 ### Changed

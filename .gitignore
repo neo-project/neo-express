@@ -197,6 +197,8 @@ PublishScripts/
 
 # NuGet Packages
 *.nupkg
+# Allow local packages in deps folder until they are published on NuGet
+!deps/*.nupkg
 # NuGet Symbol Packages
 *.snupkg
 # The packages folder can be ignored because of Package Restore
@@ -420,3 +422,4 @@ src/trace/*.neo-trace
 src/worknet/default.neo-worknet
 src/worknet/data/*
 src/neoxp/Properties/launchSettings.json
+.worktrees/

@@ -47,7 +47,7 @@ internal class Nep11Token : TokenBase
         // You need to add this line for transaction
         // for ApplicationEngine not to crash
         // see https://github.com/neo-project/neo/issues/2952
-        var tx = new Transaction() { Signers = new[] { new Signer() { Account = UInt160.Zero } }, Attributes = Array.Empty<TransactionAttribute>() };
+        var tx = new Transaction() { Signers = new[] { new Signer() { Account = UInt160.Zero } }, Attributes = Array.Empty<TransactionAttribute>(), Witnesses = Array.Empty<Witness>() };
 
         using var engine = builder.Invoke(_protocolSettings, _snapshot, tx);
         if (engine.State == VMState.FAULT)

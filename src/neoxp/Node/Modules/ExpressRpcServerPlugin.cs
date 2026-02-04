@@ -28,7 +28,6 @@ using NeoExpress.Validators;
 using System.Collections.Immutable;
 using System.Numerics;
 using RpcException = Neo.Network.RPC.RpcException;
-using Utility = Neo.Utility;
 
 namespace NeoExpress.Node
 {
@@ -37,7 +36,7 @@ namespace NeoExpress.Node
         NeoSystem? neoSystem;
         RpcServer? rpcServer;
         readonly IExpressStorage expressStorage;
-        readonly RpcServerSettings settings;
+        readonly RpcServersSettings settings;
         readonly UInt160 nodeAccountAddress;
         readonly Lazy<ExpressPersistencePlugin> persistencePlugin;
         readonly CancellationTokenSource cancellationToken = new();
@@ -45,7 +44,7 @@ namespace NeoExpress.Node
 
         public CancellationToken CancellationToken => cancellationToken.Token;
 
-        public ExpressRpcServerPlugin(RpcServerSettings settings, IExpressStorage expressStorage, UInt160 nodeAccountAddress)
+        public ExpressRpcServerPlugin(RpcServersSettings settings, IExpressStorage expressStorage, UInt160 nodeAccountAddress)
         {
             this.expressStorage = expressStorage;
             this.settings = settings;
@@ -82,7 +81,7 @@ namespace NeoExpress.Node
             var response = new JObject();
             response["process-id"] = proc.Id;
 
-            Utility.Log(nameof(ExpressRpcServerPlugin), LogLevel.Info, $"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds");
+            Log($"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds", LogLevel.Info);
             cancellationToken.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
             return response;
         }

@@ -49,7 +49,8 @@ namespace NeoExpress.Node
                         : Math.Max(DateTime.UtcNow.ToTimestampMS(), prevHeader.Timestamp + 1),
                     Index = blockHeight,
                     PrimaryIndex = 0,
-                    NextConsensus = prevHeader.NextConsensus
+                    NextConsensus = prevHeader.NextConsensus,
+                    Witness = Witness.Empty
                 },
                 Transactions = transactions
             };
@@ -193,7 +194,7 @@ namespace NeoExpress.Node
                 return null;
             tx.NetworkFee += engine.FeeConsumed;
 
-            var executionFactor = NativeContract.Policy.GetExecFeeFactor(snapshot);
+            var executionFactor = NativeContract.Policy.GetExecFeeFactor(engine);
             var networkFee = executionFactor * Neo.SmartContract.Helper.MultiSignatureContractCost(m, n);
             tx.NetworkFee += networkFee;
 

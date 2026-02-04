@@ -22,12 +22,21 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
     private readonly string _tempDirectory = tempDirectory;
     private readonly string _workingDirectory = Path.GetDirectoryName(solutionPath);
     private readonly List<Process> _runningProcesses = [];
+    private string _neoxpPath = COMMAND_NEOXP;
     private string LANGUAGE = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
 
     public void SetLanguage(string language)
     {
         LANGUAGE = language;
     }
+
+    public void SetNeoxpPath(string neoxpPath)
+    {
+        if (!string.IsNullOrWhiteSpace(neoxpPath))
+            _neoxpPath = neoxpPath;
+    }
+
+    public string NeoxpPath => _neoxpPath;
 
     private async Task<(int ExitCode, string Output, string Error)> RunProcess(string fileName, string? command = null, TimeSpan? timeout = null, params string[] args)
     {
@@ -55,6 +64,11 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
         {
             psi.ArgumentList.Add(arg);
         }
+
+        var commandLine = string.Join(' ', new[] { fileName }.Concat(
+            string.IsNullOrWhiteSpace(command) ? Array.Empty<string>() : [command]).Concat(args));
+        _output.WriteLine($"Running: {commandLine}");
+        Console.WriteLine($"[RunCommand] {commandLine}");
 
         using var process = new Process { StartInfo = psi };
         _runningProcesses.Add(process);
@@ -86,6 +100,7 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
         var error = await errorTask;
 
         _output.WriteLine($"Exit Code: {process.ExitCode}");
+        Console.WriteLine($"[RunCommand] Exit Code: {process.ExitCode} ({commandLine})");
         if (!string.IsNullOrWhiteSpace(output))
             _output.WriteLine($"Output: {output}");
         if (!string.IsNullOrWhiteSpace(error))
@@ -104,13 +119,13 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
 
     internal async Task<(int ExitCode, string Output, string Error)> RunNeoxpCommand(params string[] arguments)
     {
-        var (exitCode, output, error) = await RunProcess(COMMAND_NEOXP, null, null, arguments);
+        var (exitCode, output, error) = await RunProcess(_neoxpPath, null, null, arguments);
         return (exitCode, output, error);
     }
 
     internal async Task<(int ExitCode, string Output, string Error)> RunNeoxpCommandWithTimeout(TimeSpan timeout, params string[] arguments)
     {
-        var (exitCode, output, error) = await RunProcess(COMMAND_NEOXP, null, timeout, arguments);
+        var (exitCode, output, error) = await RunProcess(_neoxpPath, null, timeout, arguments);
         return (exitCode, output, error);
     }
 

@@ -19,17 +19,17 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5.1.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.4.1
+      uses: dotnet/nbgv@v0.4.2
       id: nbgv
 
     - name: Build (${{ matrix.runtime }})
@@ -80,7 +80,7 @@ jobs:
 
     - name: Cache Files
       id: cache
-      uses: actions/cache/save@v3
+      uses: actions/cache@v5.0.3
       with:
         path: ${{ env.DIST_PATH }}/*
         key: ${{ matrix.runtime }}

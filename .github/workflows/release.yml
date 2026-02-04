@@ -16,17 +16,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5.1.0
       with:
         dotnet-version: '10.0.x'
 
     - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.4.1
+      uses: dotnet/nbgv@v0.4.2
       id: nbgv
 
     - name: Install dependencies
@@ -42,43 +42,43 @@ jobs:
     #     path: ./out
 
     - name: Get Cache Files (osx-x64)
-      uses: actions/cache@v3
+      uses: actions/cache@v5.0.3
       with:
         path: /tmp/dist/*
         key: osx-x64
 
     - name: Get Cache Files (osx-arm64)
-      uses: actions/cache@v3
+      uses: actions/cache@v5.0.3
       with:
         path: /tmp/dist/*
         key: osx-arm64
 
     - name: Get Cache Files (linux-x64)
-      uses: actions/cache@v3
+      uses: actions/cache@v5.0.3
       with:
         path: /tmp/dist/*
         key: linux-x64
 
     - name: Get Cache Files (linux-arm64)
-      uses: actions/cache@v3
+      uses: actions/cache@v5.0.3
       with:
         path: /tmp/dist/*
         key: linux-arm64
 
     - name: Get Cache Files (linux-musl-arm64)
-      uses: actions/cache@v3
+      uses: actions/cache@v5.0.3
       with:
         path: /tmp/dist/*
         key: linux-musl-arm64
 
     - name: Get Cache Files (win-x64)
-      uses: actions/cache@v3
+      uses: actions/cache@v5.0.3
       with:
         path: /tmp/dist/*
         key: win-x64
 
     - name: Get Cache Files (win-arm64)
-      uses: actions/cache@v3
+      uses: actions/cache@v5.0.3
       with:
         path: /tmp/dist/*
         key: win-arm64

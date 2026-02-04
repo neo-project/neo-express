@@ -50,13 +50,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v2.24.0
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
@@ -70,7 +70,7 @@ jobs:
       # If this step fails, then you should remove it and run the build manually (see below)
       - name: TypeScript and Javascript
         if: matrix.language == 'javascript-typescript'
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v2.24.0
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
@@ -84,12 +84,12 @@ jobs:
 
       - name: Setup .NET Core
         if: matrix.language == 'csharp'
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.1.0
         with:
           dotnet-version: "10.0.x"
 
       - name: Nerdbank.GitVersioning
-        uses: dotnet/nbgv@v0.4.1
+        uses: dotnet/nbgv@v0.4.2
         id: nbgv
 
       - name: Restore dependencies
@@ -101,6 +101,6 @@ jobs:
         run: dotnet build neo-express.sln --configuration Release --no-restore --verbosity normal
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v2.24.0
         with:
           category: "/language:${{matrix.language}}"

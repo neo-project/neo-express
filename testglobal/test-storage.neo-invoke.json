@@ -1,0 +1,10 @@
+﻿[
+  {
+    "contract": "StorageTest",
+    "operation": "put",
+    "args": [
+      { "type": "String", "value": "clave_final" },
+      { "type": "String", "value": "funciona" }
+    ]
+  }
+]

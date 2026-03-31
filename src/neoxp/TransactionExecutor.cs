@@ -644,12 +644,21 @@ namespace NeoExpress
             return new None();
         }
 
+        private async Task<bool> IsFaunHardforkEnabledForNextTxAsync()
+        {
+            var latest = await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
+            var nextBlockIndex = latest.Index + 1;
+            return expressNode.ProtocolSettings.IsHardforkEnabled(Hardfork.HF_Faun, nextBlockIndex);
+        }
+
         public async Task SetPolicyAsync(PolicyValues policyValues, string account, string password)
         {
             if (!chainManager.TryGetSigningAccount(account, password, out var wallet, out var accountHash))
             {
                 throw new Exception($"{account} account not found.");
             }
+
+            var faunExecFeeScale = await IsFaunHardforkEnabledForNextTxAsync().ConfigureAwait(false);
 
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(NativeContract.NEO.Hash, "setGasPerBlock", policyValues.GasPerBlock.Value);
@@ -658,7 +667,7 @@ namespace NeoExpress
             builder.EmitDynamicCall(NativeContract.Oracle.Hash, "setPrice", policyValues.OracleRequestFee.Value);
             builder.EmitDynamicCall(NativeContract.Policy.Hash, "setFeePerByte", policyValues.NetworkFeePerByte.Value);
             builder.EmitDynamicCall(NativeContract.Policy.Hash, "setStoragePrice", policyValues.StorageFeeFactor);
-            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.ExecutionFeeFactor);
+            builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.GetScaledExecFeeFactorArgument(faunExecFeeScale));
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
@@ -701,7 +710,10 @@ namespace NeoExpress
                     throw new InvalidOperationException($"{policy} policy requires a whole number value");
                 if (decimalValue.Value > uint.MaxValue)
                     throw new InvalidOperationException($"{policy} policy requires a value less than {uint.MaxValue}");
-                builder.EmitDynamicCall(hash, operation, (uint)decimalValue.Value);
+                var whole = (uint)decimalValue.Value;
+                var faunExecFeeScale = policy == PolicySettings.ExecutionFeeFactor
+                    && await IsFaunHardforkEnabledForNextTxAsync().ConfigureAwait(false);
+                builder.EmitDynamicCall(hash, operation, PolicyExecutionFeeExtensions.GetScaledExecFeeFactorArgument(whole, faunExecFeeScale));
             }
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);

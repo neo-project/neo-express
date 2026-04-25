@@ -47,7 +47,7 @@ export default class QuickStartPanelController extends PanelControllerBase<
     vscode.workspace.onDidChangeWorkspaceFolders(() => this.refresh());
     this.blockchainsTreeDataProvider.onDidChangeTreeData(() => this.refresh());
     this.neoExpressInstanceManager.onChange(() => this.refresh());
-    this.checkpointDetector.onDidChange(() => this.refresh());
+    this.checkpointDetector.onChange(() => this.refresh());
     this.contractDetector.onChange(() => this.refresh());
     this.activeConnection.onChange(() => this.refresh());
     this.walletDetector.onChange(() => this.refresh());

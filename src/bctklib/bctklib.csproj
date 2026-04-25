@@ -21,8 +21,8 @@
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="10.2.1.58549" />
         <PackageReference Include="System.IO.Abstractions" Version="22.0.16" />
-        <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoVersion)" />
-        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoModuleVersion)" />
+        <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoModuleVersion)" />
     </ItemGroup>
     <ItemGroup>
       <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />

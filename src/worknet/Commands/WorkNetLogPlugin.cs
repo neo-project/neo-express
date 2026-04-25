@@ -122,8 +122,9 @@ class WorkNetLogPlugin : Plugin
     {
         if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
         {
-            var logMessage = $"Tx FAULT: hash={applicationExecuted.Transaction.Hash}";
-            if (!string.IsNullOrEmpty(applicationExecuted.Exception.Message))
+            var txHash = applicationExecuted.Transaction?.Hash.ToString() ?? "<unknown>";
+            var logMessage = $"Tx FAULT: hash={txHash}";
+            if (!string.IsNullOrEmpty(applicationExecuted.Exception?.Message))
             {
                 logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
             }

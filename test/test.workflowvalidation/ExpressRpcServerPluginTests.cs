@@ -17,6 +17,7 @@ using NeoExpress.Node;
 using Xunit;
 
 using NeoArray = Neo.VM.Types.Array;
+using RpcException = Neo.Network.RPC.RpcException;
 
 namespace test.workflowvalidation;
 
@@ -40,6 +41,38 @@ public class ExpressRpcServerPluginTests
 
         response["truncated"]!.AsBoolean().Should().Be(expectedTruncated);
         ((JArray)response["notifications"]!).Count.Should().Be(expectedCount);
+    }
+
+    [Fact]
+    public void GetNotificationPaging_UsesDefaultsAndCapsTake()
+    {
+        ExpressRpcServerPlugin.GetNotificationPaging(CreateNotificationParams())
+            .Should().Be((0, 100));
+
+        ExpressRpcServerPlugin.GetNotificationPaging(CreateNotificationParams(skip: 7, take: 101))
+            .Should().Be((7, 100));
+    }
+
+    [Theory]
+    [InlineData(-1, 10)]
+    [InlineData(0, -1)]
+    public void GetNotificationPaging_RejectsNegativeValues(int skip, int take)
+    {
+        var exception = Assert.Throws<RpcException>(
+            () => ExpressRpcServerPlugin.GetNotificationPaging(CreateNotificationParams(skip, take)));
+
+        exception.Message.Should().Contain("Invalid params");
+    }
+
+    static JArray CreateNotificationParams(int? skip = null, int? take = null)
+    {
+        var @params = new JArray { new JArray(), new JArray() };
+        if (skip is not null)
+            @params.Add(skip.Value);
+        if (take is not null)
+            @params.Add(take.Value);
+
+        return @params;
     }
 
     static NotificationRecord CreateNotification(int index)

@@ -4,10 +4,10 @@
     <NeoExpressBatchFile>../express.batch</NeoExpressBatchFile>
     <Nullable>enable</Nullable>
     <TargetFramework>net10.0</TargetFramework>
-    <NeoTestVersion>3.5.17</NeoTestVersion>
+    <NeoTestVersion>3.8.2</NeoTestVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Neo.SmartContract.Framework" Version="3.8.1" />
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.9.1" />
     <PackageReference Include="Neo.BuildTasks" Version="$(NeoTestVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

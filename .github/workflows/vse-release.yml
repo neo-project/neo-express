@@ -7,6 +7,9 @@ jobs:
   build-and-publish:
     if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extentions/neo3-visual-tracker
 
     steps:
     - uses: actions/checkout@v6.0.2
@@ -40,8 +43,9 @@ jobs:
         title: Release ${{ steps.nbgv.outputs.NpmPackageVersion }}
         automatic_release_tag: ${{ steps.nbgv.outputs.NpmPackageVersion }}
         files: |
-          *.vsix
+          extentions/neo3-visual-tracker/*.vsix
 
     - name: Publish debug extension to VSCode Marketplace
       run: |
-        npx vsce publish -i ./$(ls *.vsix) -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
+        vsix="$(find . -maxdepth 1 -name '*.vsix' -print -quit)"
+        npx vsce publish -i "$vsix" -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}

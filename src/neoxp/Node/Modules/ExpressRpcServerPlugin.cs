@@ -313,10 +313,19 @@ namespace NeoExpress.Node
                     events.Count > 0 ? events : null)
                 .Skip(skip);
 
+            return CreateNotificationsResponse(
+                notifications.Select(n => (n.blockIndex, n.notification)),
+                take);
+        }
+
+        internal static JObject CreateNotificationsResponse(
+            IEnumerable<(uint blockIndex, NotificationRecord notification)> notifications,
+            int take)
+        {
             var count = 0;
             var jsonNotifications = new JArray();
             var truncated = false;
-            foreach (var (blockIndex, _, notification) in notifications)
+            foreach (var (blockIndex, notification) in notifications)
             {
                 if (count++ >= take)
                 {

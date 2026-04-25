@@ -318,7 +318,7 @@ namespace NeoExpress.Node
             var truncated = false;
             foreach (var (blockIndex, _, notification) in notifications)
             {
-                if (count++ > take)
+                if (count++ >= take)
                 {
                     truncated = true;
                     break;

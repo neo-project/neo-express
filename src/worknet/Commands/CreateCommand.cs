@@ -138,7 +138,9 @@ class CreateCommand
         const byte Prefix_Committee = 14;
         const byte Prefix_CurrentBlock = 12;
 
-        var keys = consensusAccounts.Select(a => a.GetKey().PublicKey).ToArray();
+        var keys = consensusAccounts
+            .Select(a => a.GetKey()?.PublicKey ?? throw new InvalidOperationException("Consensus account is missing a private key"))
+            .ToArray();
         var signerCount = (keys.Length * 2 / 3) + 1;
         var consensusContract = Contract.CreateMultiSigContract(signerCount, keys);
 
@@ -146,10 +148,11 @@ class CreateCommand
 
         // replace the Neo Committee with express consensus nodes
         // Prefix_Committee stores array of structs containing PublicKey / vote count
-        var members = consensusAccounts.Select(a => new NeoStruct { a.GetKey().PublicKey.ToArray(), 0 });
+        var members = keys.Select(key => new NeoStruct { key.ToArray(), 0 });
         var committee = new NeoArray(members);
         var committeeKeyBuilder = new KeyBuilder(NativeContract.NEO.Id, Prefix_Committee);
-        var committeeItem = snapshot.GetAndChange(committeeKeyBuilder);
+        var committeeItem = snapshot.GetAndChange(committeeKeyBuilder)
+            ?? throw new InvalidOperationException("Committee storage item is missing");
         committeeItem.Value = BinarySerializer.Serialize(committee, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         // remove existing candidates (Prefix_Candidate) to ensure that
@@ -163,7 +166,8 @@ class CreateCommand
         // create an *UNSIGNED* block that will be appended to the chain
         // with updated NextConsensus field.
         var prevHash = NativeContract.Ledger.CurrentHash(snapshot);
-        var prevBlock = NativeContract.Ledger.GetHeader(snapshot, prevHash);
+        var prevBlock = NativeContract.Ledger.GetHeader(snapshot, prevHash)
+            ?? throw new InvalidOperationException($"Block header {prevHash} is missing");
 
         var trimmedBlock = new TrimmedBlock
         {
@@ -196,7 +200,8 @@ class CreateCommand
         // update Prefix_CurrentBlock (struct containing current block hash + index)
         var curBlockKey = new KeyBuilder(NativeContract.Ledger.Id, Prefix_CurrentBlock);
         var currentBlock = new Neo.VM.Types.Struct() { trimmedBlock.Hash.ToArray(), trimmedBlock.Index };
-        var currentBlockItem = snapshot.GetAndChange(curBlockKey);
+        var currentBlockItem = snapshot.GetAndChange(curBlockKey)
+            ?? throw new InvalidOperationException("Current block storage item is missing");
         currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         snapshot.Commit();

@@ -25,7 +25,7 @@ class WorknetStorageProvider : IStoreProvider
 
     public string Name => nameof(WorknetStorageProvider);
 
-    public IStore GetStore(string path)
+    public IStore GetStore(string? path)
     {
         if (string.IsNullOrEmpty(path))
             return store;

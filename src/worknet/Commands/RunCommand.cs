@@ -136,7 +136,7 @@ partial class RunCommand
             var settings = new Dictionary<string, string>()
                 {
                     { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
-                    { "PluginConfiguration:BindAddress", $"{IPAddress.Any}" },
+                    { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
                     { "PluginConfiguration:Port", $"{30332}" },
                     { "PluginConfiguration:SessionEnabled", $"{true}"}
                 };

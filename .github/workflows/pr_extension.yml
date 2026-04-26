@@ -1,0 +1,42 @@
+name: On Pull Request (VS Code Extension)
+
+on:
+  pull_request:
+    branches:
+      - master
+      - development
+      - release/*
+    paths:
+      - '.github/workflows/pr_extension.yml'
+      - 'extentions/neo3-visual-tracker/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v6.0.2
+
+    - name: Setup Node
+      uses: actions/setup-node@v6.2.0
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: extentions/neo3-visual-tracker/package-lock.json
+
+    - name: Install dependencies
+      working-directory: extentions/neo3-visual-tracker
+      run: npm ci
+
+    - name: Compile
+      working-directory: extentions/neo3-visual-tracker
+      run: npm run compile
+
+    - name: Test Quick Start actions
+      working-directory: extentions/neo3-visual-tracker
+      run: npm run test:quickstart

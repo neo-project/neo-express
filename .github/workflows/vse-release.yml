@@ -7,6 +7,9 @@ jobs:
   build-and-publish:
     if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extentions/neo3-visual-tracker
 
     steps:
     - uses: actions/checkout@v6.0.2
@@ -33,15 +36,17 @@ jobs:
         EXTENSION_VERSION: ${{ steps.nbgv.outputs.NpmPackageVersion }}
 
     - name: Create Release
-      uses: marvinpinto/action-automatic-releases@latest
+      uses: softprops/action-gh-release@v2
       with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         prerelease: ${{ contains(steps.nbgv.outputs.NpmPackageVersion, '-preview') }}
-        title: Release ${{ steps.nbgv.outputs.NpmPackageVersion }}
-        automatic_release_tag: ${{ steps.nbgv.outputs.NpmPackageVersion }}
+        name: Release ${{ steps.nbgv.outputs.NpmPackageVersion }}
+        tag_name: ${{ steps.nbgv.outputs.NpmPackageVersion }}
         files: |
-          *.vsix
+          extentions/neo3-visual-tracker/*.vsix
 
     - name: Publish debug extension to VSCode Marketplace
       run: |
-        npx vsce publish -i ./$(ls *.vsix) -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
+        vsix="$(find . -maxdepth 1 -name '*.vsix' -print -quit)"
+        test -n "$vsix"
+        npx vsce publish -i "$vsix" -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}

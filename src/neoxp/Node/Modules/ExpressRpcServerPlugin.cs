@@ -301,10 +301,7 @@ namespace NeoExpress.Node
         {
             var contracts = ((JArray)@params[0]!).Select(j => UInt160.Parse(j!.AsString())).ToHashSet();
             var events = ((JArray)@params[1]!).Select(j => j!.AsString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            int skip = @params.Count >= 3 ? (int)@params[2]!.AsNumber() : 0;
-            int take = @params.Count >= 4 ? (int)@params[3]!.AsNumber() : MAX_NOTIFICATIONS;
-            if (take > MAX_NOTIFICATIONS)
-                take = MAX_NOTIFICATIONS;
+            var (skip, take) = GetNotificationPaging(@params);
 
             var notifications = persistencePlugin.Value
                 .GetNotifications(
@@ -313,12 +310,21 @@ namespace NeoExpress.Node
                     events.Count > 0 ? events : null)
                 .Skip(skip);
 
+            return CreateNotificationsResponse(
+                notifications.Select(n => (n.blockIndex, n.notification)),
+                take);
+        }
+
+        internal static JObject CreateNotificationsResponse(
+            IEnumerable<(uint blockIndex, NotificationRecord notification)> notifications,
+            int take)
+        {
             var count = 0;
             var jsonNotifications = new JArray();
             var truncated = false;
-            foreach (var (blockIndex, _, notification) in notifications)
+            foreach (var (blockIndex, notification) in notifications)
             {
-                if (count++ > take)
+                if (count++ >= take)
                 {
                     truncated = true;
                     break;
@@ -341,6 +347,18 @@ namespace NeoExpress.Node
                 ["truncated"] = truncated,
                 ["notifications"] = jsonNotifications,
             };
+        }
+
+        internal static (int skip, int take) GetNotificationPaging(JArray @params)
+        {
+            int skip = @params.Count >= 3 ? (int)@params[2]!.AsNumber() : 0;
+            int take = @params.Count >= 4 ? (int)@params[3]!.AsNumber() : MAX_NOTIFICATIONS;
+            if (skip < 0 || take < 0)
+                throw new RpcException(-32602, "Invalid params");
+            if (take > MAX_NOTIFICATIONS)
+                take = MAX_NOTIFICATIONS;
+
+            return (skip, take);
         }
 
         // Neo-express uses a custom implementation of GetApplicationLog due to

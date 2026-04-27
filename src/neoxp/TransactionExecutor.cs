@@ -425,7 +425,14 @@ namespace NeoExpress
                 using var stream = fileSystem.File.OpenRead(responsePath);
                 using var reader = new System.IO.StreamReader(stream);
                 using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
-                responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+                try
+                {
+                    responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+                }
+                catch (JsonException ex)
+                {
+                    throw new Exception($"Oracle response file {responsePath} is invalid JSON: {ex.Message}");
+                }
             }
 
             var txHashes = await expressNode.SubmitOracleResponseAsync(url, OracleResponseCode.Success, responseJson, requestId).ConfigureAwait(false);

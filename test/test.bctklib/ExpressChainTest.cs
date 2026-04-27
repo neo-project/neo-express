@@ -99,5 +99,17 @@ namespace test.bctklib
 
             chain.Settings.Should().Contain(TEST_SETTING, TEST_SETTING_VALUE);
         }
+
+        [Fact]
+        public void null_settings_load_as_empty_dictionary()
+        {
+            var fileSystem = new MockFileSystem();
+            var fileName = fileSystem.Path.Combine(fileSystem.AllDirectories.First(), FILENAME);
+            fileSystem.AddFile(fileName, new MockFileData("{'settings': null}"));
+
+            var chain = fileSystem.LoadChain(fileName);
+
+            chain.Settings.Should().BeEmpty();
+        }
     }
 }

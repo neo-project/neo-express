@@ -15,6 +15,8 @@ namespace Neo.BlockchainToolkit.Models
 {
     public class ExpressChain
     {
+        private Dictionary<string, string> settings = new Dictionary<string, string>();
+
         private readonly static ImmutableHashSet<uint> KNOWN_NETWORK_NUMBERS = ImmutableHashSet.Create<uint>(
             /* Neo 2 MainNet */ 7630401,
             /* Neo 2 TestNet */ 1953787457,
@@ -54,6 +56,10 @@ namespace Neo.BlockchainToolkit.Models
         public List<ExpressWallet> Wallets { get; set; } = new List<ExpressWallet>();
 
         [JsonProperty("settings")]
-        public Dictionary<string, string> Settings { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Settings
+        {
+            get => settings;
+            set => settings = value ?? new Dictionary<string, string>();
+        }
     }
 }

@@ -78,7 +78,14 @@ namespace NeoExpress
             static async Task<NefFile> LoadNefAsync(IFileSystem fileSystem, string contractPath)
             {
                 var buffer = await fileSystem.File.ReadAllBytesAsync(contractPath).ConfigureAwait(false);
-                return LoadNef(buffer);
+                try
+                {
+                    return LoadNef(buffer);
+                }
+                catch (Exception ex) when (ex is FormatException or ArgumentException)
+                {
+                    throw new Exception($"Contract file '{contractPath}' is not a valid NEF file: {ex.Message}");
+                }
 
             }
 

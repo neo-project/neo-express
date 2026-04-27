@@ -92,7 +92,14 @@ namespace NeoExpress
             {
                 var path = fileSystem.Path.ChangeExtension(contractPath, ".manifest.json");
                 var buffer = await fileSystem.File.ReadAllBytesAsync(path).ConfigureAwait(false);
-                return ContractManifest.Parse(buffer);
+                try
+                {
+                    return ContractManifest.Parse(buffer);
+                }
+                catch (Exception ex) when (ex is FormatException or InvalidCastException or NullReferenceException)
+                {
+                    throw new Exception($"Contract manifest '{path}' is invalid: {ex.Message}");
+                }
             }
         }
     }

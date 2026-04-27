@@ -87,34 +87,41 @@ namespace NeoExpress
                 throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
             }
 
-            checkpointPath = ResolveCheckpointFileName(checkpointPath);
-            if (fileSystem.File.Exists(checkpointPath))
+            try
             {
-                if (force)
+                checkpointPath = ResolveCheckpointFileName(checkpointPath);
+                if (fileSystem.File.Exists(checkpointPath))
                 {
-                    fileSystem.File.Delete(checkpointPath);
+                    if (force)
+                    {
+                        fileSystem.File.Delete(checkpointPath);
+                    }
+                    else
+                    {
+                        throw new Exception("You must specify --force to overwrite an existing file");
+                    }
                 }
-                else
+
+                var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath)
+                    ?? throw new InvalidOperationException($"GetDirectoryName({checkpointPath}) returned null");
+                if (!fileSystem.Directory.Exists(parentPath))
                 {
-                    throw new Exception("You must specify --force to overwrite an existing file");
+                    fileSystem.Directory.CreateDirectory(parentPath);
                 }
-            }
 
-            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath)
-                ?? throw new InvalidOperationException($"GetDirectoryName({checkpointPath}) returned null");
-            if (!fileSystem.Directory.Exists(parentPath))
+                var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+
+                if (writer is not null)
+                {
+                    await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
+                }
+
+                return (checkpointPath, mode);
+            }
+            catch (System.IO.PathTooLongException ex)
             {
-                fileSystem.Directory.CreateDirectory(parentPath);
+                throw new Exception($"Checkpoint path is too long: {ex.Message}");
             }
-
-            var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
-
-            if (writer is not null)
-            {
-                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
-            }
-
-            return (checkpointPath, mode);
         }
 
         public void RestoreCheckpoint(string checkPointArchive, bool force)

@@ -307,11 +307,12 @@ namespace NeoExpress
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
+            if (discard)
+                return CheckpointExpressStorage.OpenForDiscard(nodePath);
+
             if (!fileSystem.Directory.Exists(nodePath))
                 fileSystem.Directory.CreateDirectory(nodePath);
-            return discard
-                ? CheckpointExpressStorage.OpenForDiscard(nodePath)
-                : new RocksDbExpressStorage(nodePath);
+            return new RocksDbExpressStorage(nodePath);
         }
 
         public IExpressStorage GetCheckpointStorageProvider(string checkPointPath)

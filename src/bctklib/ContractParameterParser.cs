@@ -55,8 +55,15 @@ namespace Neo.BlockchainToolkit
 
             using var streamReader = fileSystem.File.OpenText(invokeFile);
             using var jsonReader = new JsonTextReader(streamReader);
-            var document = await JContainer.LoadAsync(jsonReader).ConfigureAwait(false);
-            return LoadInvocationScript(document);
+            try
+            {
+                var document = await JContainer.LoadAsync(jsonReader).ConfigureAwait(false);
+                return LoadInvocationScript(document);
+            }
+            catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException)
+            {
+                throw new Exception($"Invocation file {path} is invalid: {ex.Message}");
+            }
         }
 
         private Script LoadInvocationScript(JToken document)

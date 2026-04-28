@@ -20,6 +20,7 @@ using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Xunit;
 
 
@@ -270,6 +271,25 @@ namespace test.bctklib
             var exception = Assert.Throws<FileNotFoundException>(() => parser.ParseStringParameter($"file://{someFakePathFile}"));
 
             Assert.Equal(someFakePathFile, exception.FileName);
+        }
+
+        [Theory]
+        [InlineData("NaN")]
+        [InlineData("\"not an invocation\"")]
+        [InlineData("[\"not an invocation\"]")]
+        public async Task LoadInvocationScriptAsync_reports_invalid_invocation_file(string content)
+        {
+            var fileSystem = new MockFileSystem();
+            var rootPath = fileSystem.AllDirectories.First();
+            var invocationPath = fileSystem.Path.Combine(rootPath, "bad.neo-invoke.json");
+            fileSystem.AddFile(invocationPath, new MockFileData(content));
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION, fileSystem: fileSystem);
+            var action = () => parser.LoadInvocationScriptAsync(invocationPath);
+
+            var exception = await action.Should().ThrowAsync<Exception>();
+            exception.Which.Message.Should().StartWith($"Invocation file {invocationPath} is invalid:");
+            exception.Which.InnerException.Should().BeNull();
         }
 
         [Fact]

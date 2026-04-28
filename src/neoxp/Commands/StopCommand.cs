@@ -59,6 +59,11 @@ namespace NeoExpress.Commands
                         ? 0
                         : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
 
+                if (nodeIndex < 0 || nodeIndex >= chain.ConsensusNodes.Count)
+                {
+                    throw new ArgumentException($"node-index must be in [0, {chain.ConsensusNodes.Count - 1}]", nameof(NodeIndex));
+                }
+
                 var wasRunning = await chainManager.StopNodeAsync(chain.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"node {nodeIndex} {(wasRunning ? "stopped" : "was not running")}").ConfigureAwait(false);
             }

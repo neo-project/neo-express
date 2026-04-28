@@ -94,10 +94,10 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshotCache();
             var height = NativeContract.Ledger.CurrentIndex(snapshot);
 
-            var count = @params.Count >= 1 ? uint.Parse(@params[0]!.AsString()) : 20;
+            var count = OptionalUInt32Param(@params, 0, 20);
             count = count > 100 ? 100 : count;
 
-            var start = @params.Count >= 2 ? uint.Parse(@params[1]!.AsString()) : height;
+            var start = OptionalUInt32Param(@params, 1, height);
             start = start > height ? height : start;
 
             var populatedBlocks = new JArray();
@@ -155,7 +155,9 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
             using var snapshot = neoSystem.GetSnapshotCache();
 
-            if (@params[0] is JNumber number)
+            var contractParam = RequiredParam(@params, 0);
+
+            if (contractParam is JNumber number)
             {
                 var id = (int)number.AsNumber();
                 foreach (var native in NativeContract.Contracts)
@@ -168,7 +170,7 @@ namespace NeoExpress.Node
                 }
             }
 
-            var param = @params[0]!.AsString();
+            var param = ParseParam(() => contractParam.AsString());
 
             if (UInt160.TryParse(param, out var scriptHash))
             {
@@ -192,7 +194,7 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var scriptHash = UInt160.Parse(@params[0]!.AsString());
+            var scriptHash = ParseUInt160Param(@params, 0);
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
             if (contract is null)
                 return null;
@@ -234,7 +236,7 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            string filename = @params[0]!.AsString();
+            string filename = RequiredStringParam(@params, 0);
 
             if (neoSystem.Settings.ValidatorsCount > 1)
             {
@@ -243,7 +245,17 @@ namespace NeoExpress.Node
 
             if (expressStorage is RocksDbExpressStorage rocksDbExpressStorage)
             {
-                rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
+                try
+                {
+                    rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
+                }
+                catch (Exception ex) when (ex is ArgumentException
+                    or System.IO.IOException
+                    or NotSupportedException
+                    or UnauthorizedAccessException)
+                {
+                    throw InvalidParams(ex);
+                }
                 return new JString(filename);
             }
 
@@ -277,13 +289,13 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var jsonResponse = @params[0]!;
-            var response = new OracleResponse
+            var jsonResponse = RequiredObjectParam(@params, 0);
+            var response = ParseParam(() => new OracleResponse
             {
-                Id = (ulong)jsonResponse["id"]!.AsNumber(),
-                Code = (OracleResponseCode)jsonResponse["code"]!.AsNumber(),
-                Result = Convert.FromBase64String(jsonResponse["result"]!.AsString())
-            };
+                Id = (ulong)RequiredProperty(jsonResponse, "id").AsNumber(),
+                Code = (OracleResponseCode)RequiredProperty(jsonResponse, "code").AsNumber(),
+                Result = Convert.FromBase64String(RequiredStringProperty(jsonResponse, "result"))
+            });
 
             using var snapshot = neoSystem.GetSnapshotCache();
             var height = NativeContract.Ledger.CurrentIndex(snapshot) + 1;
@@ -299,8 +311,8 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject ExpressEnumNotifications(JArray @params)
         {
-            var contracts = ((JArray)@params[0]!).Select(j => UInt160.Parse(j!.AsString())).ToHashSet();
-            var events = ((JArray)@params[1]!).Select(j => j!.AsString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var contracts = RequiredArrayParam(@params, 0).Select(ParseUInt160Token).ToHashSet();
+            var events = RequiredArrayParam(@params, 1).Select(j => RequiredString(j, "event filter")).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var (skip, take) = GetNotificationPaging(@params);
 
             var notifications = persistencePlugin.Value
@@ -351,8 +363,8 @@ namespace NeoExpress.Node
 
         internal static (int skip, int take) GetNotificationPaging(JArray @params)
         {
-            int skip = @params.Count >= 3 ? (int)@params[2]!.AsNumber() : 0;
-            int take = @params.Count >= 4 ? (int)@params[3]!.AsNumber() : MAX_NOTIFICATIONS;
+            int skip = OptionalInt32NumberParam(@params, 2, 0);
+            int take = OptionalInt32NumberParam(@params, 3, MAX_NOTIFICATIONS);
             if (skip < 0 || take < 0)
                 throw new RpcException(-32602, "Invalid params");
             if (take > MAX_NOTIFICATIONS)
@@ -366,7 +378,7 @@ namespace NeoExpress.Node
         [RpcMethod]
         public JObject GetApplicationLog(JArray _params)
         {
-            UInt256 hash = UInt256.Parse(_params[0]!.AsString());
+            UInt256 hash = ParseUInt256Param(_params, 0);
             return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction/blockhash");
         }
 
@@ -383,7 +395,7 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var address = AsScriptHash(@params[0]!);
+            var address = AsScriptHash(RequiredParam(@params, 0));
 
             using var snapshot = neoSystem.GetSnapshotCache();
 
@@ -482,7 +494,7 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var address = AsScriptHash(@params[0]!);
+            var address = AsScriptHash(RequiredParam(@params, 0));
 
             using var snapshot = neoSystem.GetSnapshotCache();
 
@@ -586,8 +598,8 @@ namespace NeoExpress.Node
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
             // logic replicated from TokenTracker.GetNep11Properties.
-            var nep11Hash = AsScriptHash(@params[0]!);
-            var tokenId = @params[1]!.AsString().HexToBytes();
+            var nep11Hash = AsScriptHash(RequiredParam(@params, 0));
+            var tokenId = ParseParam(() => RequiredParam(@params, 1).AsString().HexToBytes());
 
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(nep11Hash, "properties", CallFlags.ReadOnly, tokenId);
@@ -622,14 +634,18 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var state = RpcClient.ContractStateFromJson((JObject)@params[0]!["state"]!);
-            var storagePairs = ((JArray)@params[0]!["storage"]!)
-                .Select(s => (
-                    s!["key"]!.AsString(),
-                    s!["value"]!.AsString())
-                ).ToArray();
+            var payload = RequiredObjectParam(@params, 0);
+            var state = ParseParam(() => RpcClient.ContractStateFromJson(RequiredObjectProperty(payload, "state")));
+            var storagePairs = RequiredArrayProperty(payload, "storage")
+                .Select(s =>
+                {
+                    var entry = RequiredObject(s, "storage entry");
+                    return (
+                        RequiredStringProperty(entry, "key"),
+                        RequiredStringProperty(entry, "value"));
+                }).ToArray();
 
-            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]!["force"]!.AsString());
+            var force = ParseParam(() => Enum.Parse<ContractCommand.OverwriteForce>(RequiredStringProperty(payload, "force")));
 
             return NodeUtility.PersistContract(neoSystem, state, storagePairs, force);
         }
@@ -639,14 +655,18 @@ namespace NeoExpress.Node
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var state = RpcClient.ContractStateFromJson((JObject)@params[0]!["state"]!);
-            var storagePairs = ((JArray)@params[0]!["storage"]!)
-                .Select(s => (
-                    s!["key"]!.AsString(),
-                    s!["value"]!.AsString())
-                ).ToArray();
+            var payload = RequiredObjectParam(@params, 0);
+            var state = ParseParam(() => RpcClient.ContractStateFromJson(RequiredObjectProperty(payload, "state")));
+            var storagePairs = RequiredArrayProperty(payload, "storage")
+                .Select(s =>
+                {
+                    var entry = RequiredObject(s, "storage entry");
+                    return (
+                        RequiredStringProperty(entry, "key"),
+                        RequiredStringProperty(entry, "value"));
+                }).ToArray();
 
-            var force = Enum.Parse<ContractCommand.OverwriteForce>(@params[0]!["force"]!.AsString());
+            var force = ParseParam(() => Enum.Parse<ContractCommand.OverwriteForce>(RequiredStringProperty(payload, "force")));
 
             JToken result = 0;
             foreach (var pair in storagePairs)
@@ -699,13 +719,9 @@ namespace NeoExpress.Node
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
             // parse parameters
-            var address = AsScriptHash(@params[0]!);
-            ulong startTime = @params.Count > 1
-                ? (ulong)@params[1]!.AsNumber()
-                : (DateTime.UtcNow - TimeSpan.FromDays(7)).ToTimestampMS();
-            ulong endTime = @params.Count > 2
-                ? (ulong)@params[2]!.AsNumber()
-                : DateTime.UtcNow.ToTimestampMS();
+            var address = AsScriptHash(RequiredParam(@params, 0));
+            ulong startTime = OptionalUInt64NumberParam(@params, 1, (DateTime.UtcNow - TimeSpan.FromDays(7)).ToTimestampMS());
+            ulong endTime = OptionalUInt64NumberParam(@params, 2, DateTime.UtcNow.ToTimestampMS());
 
             if (endTime < startTime)
                 throw new RpcException(-32602, "Invalid params");
@@ -772,14 +788,113 @@ namespace NeoExpress.Node
             };
         }
 
+        const int INVALID_PARAMS = -32602;
+
+        static RpcException InvalidParams(Exception ex) => InvalidParams(ex.Message);
+
+        static RpcException InvalidParams(string message)
+            => new(INVALID_PARAMS, $"Invalid params: {message}");
+
+        static T ParseParam<T>(Func<T> parse)
+        {
+            try
+            {
+                return parse();
+            }
+            catch (RpcException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is ArgumentException
+                or FormatException
+                or IndexOutOfRangeException
+                or InvalidCastException
+                or NullReferenceException
+                or OverflowException)
+            {
+                throw InvalidParams(ex);
+            }
+        }
+
+        static JToken RequiredParam(JArray @params, int index)
+        {
+            if (index < 0 || index >= @params.Count || @params[index] is null)
+                throw InvalidParams($"missing parameter {index}");
+            return @params[index]!;
+        }
+
+        static JArray RequiredArrayParam(JArray @params, int index)
+            => RequiredArray(RequiredParam(@params, index), $"parameter {index}");
+
+        static JObject RequiredObjectParam(JArray @params, int index)
+            => RequiredObject(RequiredParam(@params, index), $"parameter {index}");
+
+        static string RequiredStringParam(JArray @params, int index)
+            => RequiredString(RequiredParam(@params, index), $"parameter {index}");
+
+        static JToken RequiredProperty(JObject json, string name)
+        {
+            var value = json[name];
+            if (value is null)
+                throw InvalidParams($"missing '{name}'");
+            return value;
+        }
+
+        static JArray RequiredArrayProperty(JObject json, string name)
+            => RequiredArray(RequiredProperty(json, name), $"'{name}'");
+
+        static JObject RequiredObjectProperty(JObject json, string name)
+            => RequiredObject(RequiredProperty(json, name), $"'{name}'");
+
+        static string RequiredStringProperty(JObject json, string name)
+            => RequiredString(RequiredProperty(json, name), $"'{name}'");
+
+        static JArray RequiredArray(JToken? json, string name)
+            => json is JArray array ? array : throw InvalidParams($"{name} must be an array");
+
+        static JObject RequiredObject(JToken? json, string name)
+            => json is JObject obj ? obj : throw InvalidParams($"{name} must be an object");
+
+        static string RequiredString(JToken? json, string name)
+        {
+            if (json is null)
+                throw InvalidParams($"missing {name}");
+            return ParseParam(json.AsString);
+        }
+
+        static uint OptionalUInt32Param(JArray @params, int index, uint defaultValue)
+            => @params.Count > index ? ParseParam(() => uint.Parse(RequiredStringParam(@params, index))) : defaultValue;
+
+        static int OptionalInt32NumberParam(JArray @params, int index, int defaultValue)
+            => @params.Count > index ? ParseParam(() => (int)RequiredParam(@params, index).AsNumber()) : defaultValue;
+
+        static ulong OptionalUInt64NumberParam(JArray @params, int index, ulong defaultValue)
+            => @params.Count > index ? ParseParam(() => (ulong)RequiredParam(@params, index).AsNumber()) : defaultValue;
+
+        static UInt160 ParseUInt160Param(JArray @params, int index)
+            => ParseUInt160Token(RequiredParam(@params, index));
+
+        static UInt160 ParseUInt160Token(JToken? json)
+        {
+            if (json is null)
+                throw InvalidParams("missing value");
+            return ParseParam(() => UInt160.Parse(json.AsString()));
+        }
+
+        static UInt256 ParseUInt256Param(JArray @params, int index)
+            => ParseParam(() => UInt256.Parse(RequiredParam(@params, index).AsString()));
+
         UInt160 AsScriptHash(JToken json)
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var text = json.AsString();
-            return text.Length < 40
-               ? text.ToScriptHash(neoSystem.Settings.AddressVersion)
-               : UInt160.Parse(text);
+            return ParseParam(() =>
+            {
+                var text = json.AsString();
+                return text.Length < 40
+                   ? text.ToScriptHash(neoSystem.Settings.AddressVersion)
+                   : UInt160.Parse(text);
+            });
         }
 
         (string name, string symbol, byte decimals) GetTokenDetails(DataCache snapshot, UInt160 tokenHash)

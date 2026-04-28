@@ -64,6 +64,18 @@ public class ExpressRpcServerPluginTests
         exception.Message.Should().Contain("Invalid params");
     }
 
+    [Fact]
+    public void GetNotificationPaging_RejectsMalformedValuesAsInvalidParams()
+    {
+        var @params = new JArray { new JArray(), new JArray() };
+        @params.Add(null);
+
+        var exception = Assert.Throws<RpcException>(
+            () => ExpressRpcServerPlugin.GetNotificationPaging(@params));
+
+        exception.Message.Should().Contain("Invalid params");
+    }
+
     static JArray CreateNotificationParams(int? skip = null, int? take = null)
     {
         var @params = new JArray { new JArray(), new JArray() };

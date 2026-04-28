@@ -87,34 +87,41 @@ namespace NeoExpress
                 throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
             }
 
-            checkpointPath = ResolveCheckpointFileName(checkpointPath);
-            if (fileSystem.File.Exists(checkpointPath))
+            try
             {
-                if (force)
+                checkpointPath = ResolveCheckpointFileName(checkpointPath);
+                if (fileSystem.File.Exists(checkpointPath))
                 {
-                    fileSystem.File.Delete(checkpointPath);
+                    if (force)
+                    {
+                        fileSystem.File.Delete(checkpointPath);
+                    }
+                    else
+                    {
+                        throw new Exception("You must specify --force to overwrite an existing file");
+                    }
                 }
-                else
+
+                var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath)
+                    ?? throw new InvalidOperationException($"GetDirectoryName({checkpointPath}) returned null");
+                if (!fileSystem.Directory.Exists(parentPath))
                 {
-                    throw new Exception("You must specify --force to overwrite an existing file");
+                    fileSystem.Directory.CreateDirectory(parentPath);
                 }
-            }
 
-            var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath)
-                ?? throw new InvalidOperationException($"GetDirectoryName({checkpointPath}) returned null");
-            if (!fileSystem.Directory.Exists(parentPath))
+                var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+
+                if (writer is not null)
+                {
+                    await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
+                }
+
+                return (checkpointPath, mode);
+            }
+            catch (System.IO.PathTooLongException ex)
             {
-                fileSystem.Directory.CreateDirectory(parentPath);
+                throw new Exception($"Checkpoint path is too long: {ex.Message}");
             }
-
-            var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
-
-            if (writer is not null)
-            {
-                await writer.WriteLineAsync($"Created {fileSystem.Path.GetFileName(checkpointPath)} checkpoint {mode}").ConfigureAwait(false);
-            }
-
-            return (checkpointPath, mode);
         }
 
         public void RestoreCheckpoint(string checkPointArchive, bool force)
@@ -159,8 +166,15 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+            try
+            {
+                RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
+                    ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+            }
+            catch (Exception ex) when (ex is System.IO.InvalidDataException or System.IO.EndOfStreamException)
+            {
+                throw new Exception($"Checkpoint {checkPointArchive} is not a valid checkpoint archive: {ex.Message}");
+            }
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
@@ -307,11 +321,12 @@ namespace NeoExpress
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {
             var nodePath = fileSystem.GetNodePath(node);
+            if (discard)
+                return CheckpointExpressStorage.OpenForDiscard(nodePath);
+
             if (!fileSystem.Directory.Exists(nodePath))
                 fileSystem.Directory.CreateDirectory(nodePath);
-            return discard
-                ? CheckpointExpressStorage.OpenForDiscard(nodePath)
-                : new RocksDbExpressStorage(nodePath);
+            return new RocksDbExpressStorage(nodePath);
         }
 
         public IExpressStorage GetCheckpointStorageProvider(string checkPointPath)

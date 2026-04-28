@@ -280,6 +280,10 @@ namespace NeoExpress.Node
             }
 
             var state = await rpcClient.GetContractStateAsync(scripthash.ToString()).ConfigureAwait(false);
+            if (state is null)
+            {
+                throw new Exception("Contract not found");
+            }
 
             JObject o = new JObject();
             o["state"] = state.ToJson();

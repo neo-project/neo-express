@@ -411,10 +411,15 @@ namespace NeoExpress.Node
         public Task<int> PersistStorageKeyValueAsync(UInt160 scripthash, (string key, string value) storagePair)
             => MakeAsync(() =>
             {
-                var state = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scripthash);
                 if (chain.ConsensusNodes.Count != 1)
                 {
                     throw new ArgumentException("Contract storage update is only supported for single-node consensus");
+                }
+
+                var state = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scripthash);
+                if (state is null)
+                {
+                    throw new Exception("Contract not found");
                 }
 
                 return NodeUtility.PersistStorageKeyValuePair(neoSystem, state, storagePair, ContractCommand.OverwriteForce.None);

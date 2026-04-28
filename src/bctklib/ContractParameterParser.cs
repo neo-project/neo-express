@@ -25,6 +25,8 @@ namespace Neo.BlockchainToolkit
 {
     public class ContractParameterParser
     {
+        internal const long MaxInvocationFileBytes = 4 * 1024 * 1024;
+
         public delegate bool TryGetUInt160(string value, [MaybeNullWhen(false)] out UInt160 account);
 
         private readonly byte addressVersion;
@@ -50,19 +52,99 @@ namespace Neo.BlockchainToolkit
         public async Task<Script> LoadInvocationScriptAsync(string path)
         {
             var invokeFile = fileSystem.Path.GetFullPath(path);
-            if (!fileSystem.File.Exists(invokeFile))
+            var fileInfo = fileSystem.FileInfo.New(invokeFile);
+            if (!fileInfo.Exists)
                 throw new ArgumentException($"{path} doesn't exist", nameof(path));
+            if ((fileInfo.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
+                throw new ArgumentException($"{path} is not a file", nameof(path));
+            if (fileInfo.Length > MaxInvocationFileBytes)
+                throw new Exception($"Invocation file {path} is invalid: file is larger than {MaxInvocationFileBytes} bytes");
 
-            using var streamReader = fileSystem.File.OpenText(invokeFile);
+            using var stream = fileSystem.File.OpenRead(invokeFile);
+            using var budgetedStream = new ReadBudgetStream(stream, MaxInvocationFileBytes);
+            using var streamReader = new StreamReader(budgetedStream);
             using var jsonReader = new JsonTextReader(streamReader);
             try
             {
                 var document = await JContainer.LoadAsync(jsonReader).ConfigureAwait(false);
                 return LoadInvocationScript(document);
             }
-            catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException)
+            catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or IOException)
             {
                 throw new Exception($"Invocation file {path} is invalid: {ex.Message}");
+            }
+        }
+
+        sealed class ReadBudgetStream : Stream
+        {
+            readonly Stream inner;
+            readonly long maxBytes;
+            long bytesRead;
+
+            public ReadBudgetStream(Stream inner, long maxBytes)
+            {
+                this.inner = inner;
+                this.maxBytes = maxBytes;
+            }
+
+            public override bool CanRead => inner.CanRead;
+            public override bool CanSeek => inner.CanSeek;
+            public override bool CanWrite => false;
+            public override long Length => inner.Length;
+            public override long Position
+            {
+                get => inner.Position;
+                set => inner.Position = value;
+            }
+
+            public override void Flush() => inner.Flush();
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                var read = inner.Read(buffer, offset, GetAllowedCount(count));
+                AddBytesRead(read);
+                return read;
+            }
+
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                var allowedCount = GetAllowedCount(buffer.Length);
+                var read = await inner.ReadAsync(buffer[..allowedCount], cancellationToken).ConfigureAwait(false);
+                AddBytesRead(read);
+                return read;
+            }
+
+            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                var read = await inner.ReadAsync(buffer, offset, GetAllowedCount(count), cancellationToken).ConfigureAwait(false);
+                AddBytesRead(read);
+                return read;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+            int GetAllowedCount(int requestedCount)
+            {
+                if (requestedCount == 0)
+                    return 0;
+
+                var remaining = maxBytes - bytesRead;
+                if (remaining <= 0)
+                    throw new IOException($"file is larger than {maxBytes} bytes");
+
+                return (int)Math.Min(requestedCount, remaining + 1);
+            }
+
+            void AddBytesRead(int count)
+            {
+                if (count == 0)
+                    return;
+
+                bytesRead += count;
+                if (bytesRead > maxBytes)
+                    throw new IOException($"file is larger than {maxBytes} bytes");
             }
         }
 

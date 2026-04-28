@@ -293,6 +293,21 @@ namespace test.bctklib
         }
 
         [Fact]
+        public async Task LoadInvocationScriptAsync_rejects_oversized_invocation_file()
+        {
+            var fileSystem = new MockFileSystem();
+            var rootPath = fileSystem.AllDirectories.First();
+            var invocationPath = fileSystem.Path.Combine(rootPath, "large.neo-invoke.json");
+            fileSystem.AddFile(invocationPath, new MockFileData(new string(' ', (int)ContractParameterParser.MaxInvocationFileBytes + 1)));
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION, fileSystem: fileSystem);
+            var action = () => parser.LoadInvocationScriptAsync(invocationPath);
+
+            var exception = await action.Should().ThrowAsync<Exception>();
+            exception.Which.Message.Should().Be($"Invocation file {invocationPath} is invalid: file is larger than {ContractParameterParser.MaxInvocationFileBytes} bytes");
+        }
+
+        [Fact]
         public void TestParseStringParameter_file_uri_relative_current_directory_unix()
         {
             var fileSystem = new MockFileSystem();

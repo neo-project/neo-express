@@ -50,7 +50,31 @@ namespace NeoExpress
 
         public ExpressChain Chain => chain;
 
-        private string ResolveCheckpointFileName(string path) => fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
+        private string ResolveCheckpointFileName(string path) => ResolveCheckpointFileName(fileSystem, path);
+
+        internal static string ResolveCheckpointFileName(IFileSystem fileSystem, string path)
+        {
+            var checkpointPath = fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
+            checkpointPath = fileSystem.Path.GetFullPath(checkpointPath);
+
+            var currentDirectory = fileSystem.Path.GetFullPath(fileSystem.Directory.GetCurrentDirectory());
+            if (!IsPathWithinDirectory(fileSystem, checkpointPath, currentDirectory))
+            {
+                throw new ArgumentException("Checkpoint path must stay within the current directory", nameof(path));
+            }
+
+            return checkpointPath;
+        }
+
+        private static bool IsPathWithinDirectory(IFileSystem fileSystem, string path, string directory)
+        {
+            var comparison = fileSystem.Path.DirectorySeparatorChar == '\\'
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            var directoryPrefix = directory.TrimEnd(fileSystem.Path.DirectorySeparatorChar, fileSystem.Path.AltDirectorySeparatorChar)
+                + fileSystem.Path.DirectorySeparatorChar;
+            return path.StartsWith(directoryPrefix, comparison);
+        }
 
         private static bool IsNodeRunning(ExpressConsensusNode node)
         {

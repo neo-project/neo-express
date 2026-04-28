@@ -48,8 +48,15 @@ namespace Neo.BlockchainToolkit
             using var stream = fileSystem.File.OpenRead(path);
             using var streamReader = new System.IO.StreamReader(stream);
             using var reader = new JsonTextReader(streamReader);
-            return serializer.Deserialize<ExpressChain>(reader)
-                ?? throw new Exception($"Cannot load Neo-Express instance information from {path}");
+            try
+            {
+                return serializer.Deserialize<ExpressChain>(reader)
+                    ?? throw new Exception($"Cannot load Neo-Express instance information from {path}");
+            }
+            catch (JsonException ex)
+            {
+                throw new Exception($"Cannot load Neo-Express instance information from {path}: invalid JSON ({ex.Message})");
+            }
         }
 
         public static void SaveChain(this IFileSystem fileSystem, ExpressChain chain, string path)

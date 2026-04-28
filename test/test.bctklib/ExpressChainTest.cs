@@ -101,15 +101,17 @@ namespace test.bctklib
         }
 
         [Fact]
-        public void null_settings_load_as_empty_dictionary()
+        public void malformed_json_reports_config_load_error()
         {
             var fileSystem = new MockFileSystem();
             var fileName = fileSystem.Path.Combine(fileSystem.AllDirectories.First(), FILENAME);
-            fileSystem.AddFile(fileName, new MockFileData("{'settings': null}"));
+            fileSystem.AddFile(fileName, new MockFileData("NaN"));
 
-            var chain = fileSystem.LoadChain(fileName);
+            var action = () => fileSystem.LoadChain(fileName);
 
-            chain.Settings.Should().BeEmpty();
+            var exception = action.Should().Throw<System.Exception>().Which;
+            exception.Message.Should().StartWith($"Cannot load Neo-Express instance information from {fileName}: invalid JSON");
+            exception.InnerException.Should().BeNull();
         }
     }
 }

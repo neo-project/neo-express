@@ -120,7 +120,6 @@ namespace NeoExpress.Commands
                 if (txScript != null)
                 {
                     return txScript;
-
                 }
                 var file = File.ReadAllBytes(fileName);
                 try

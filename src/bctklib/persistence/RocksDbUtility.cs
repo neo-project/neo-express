@@ -177,15 +177,22 @@ namespace Neo.BlockchainToolkit.Persistence
         public static (uint network, byte addressVersion, UInt160 scriptHash) RestoreCheckpoint(string checkPointArchive, string restorePath,
             uint? network = null, byte? addressVersion = null, UInt160? scriptHash = null)
         {
-            var metadata = GetCheckpointMetadata(checkPointArchive);
-            if (network.HasValue && network.Value != metadata.network)
-                throw new Exception($"checkpoint network ({metadata.network}) doesn't match ({network.Value})");
-            if (addressVersion.HasValue && addressVersion.Value != metadata.addressVersion)
-                throw new Exception($"checkpoint address version ({metadata.addressVersion}) doesn't match ({addressVersion.Value})");
-            if (scriptHash != null && scriptHash != metadata.scriptHash)
-                throw new Exception($"checkpoint script hash ({metadata.scriptHash}) doesn't match ({scriptHash})");
-            ExtractCheckpoint(checkPointArchive, restorePath);
-            return metadata;
+            try
+            {
+                var metadata = GetCheckpointMetadata(checkPointArchive);
+                if (network.HasValue && network.Value != metadata.network)
+                    throw new Exception($"checkpoint network ({metadata.network}) doesn't match ({network.Value})");
+                if (addressVersion.HasValue && addressVersion.Value != metadata.addressVersion)
+                    throw new Exception($"checkpoint address version ({metadata.addressVersion}) doesn't match ({addressVersion.Value})");
+                if (scriptHash != null && scriptHash != metadata.scriptHash)
+                    throw new Exception($"checkpoint script hash ({metadata.scriptHash}) doesn't match ({scriptHash})");
+                ExtractCheckpoint(checkPointArchive, restorePath);
+                return metadata;
+            }
+            catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException)
+            {
+                throw new Exception($"Checkpoint {checkPointArchive} is not a valid checkpoint archive: {ex.Message}");
+            }
 
 
             static (uint network, byte addressVersion, UInt160 scriptHash) GetCheckpointMetadata(string checkPointArchive)

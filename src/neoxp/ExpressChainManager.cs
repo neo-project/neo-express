@@ -190,15 +190,8 @@ namespace NeoExpress
 
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            try
-            {
-                RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                    ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
-            }
-            catch (Exception ex) when (ex is System.IO.InvalidDataException or System.IO.EndOfStreamException)
-            {
-                throw new Exception($"Checkpoint {checkPointArchive} is not a valid checkpoint archive: {ex.Message}");
-            }
+            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
+                ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
             fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 

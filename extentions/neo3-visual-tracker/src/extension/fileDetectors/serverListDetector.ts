@@ -8,6 +8,7 @@ import IoHelpers from "../util/ioHelpers";
 import JSONC from "../util/JSONC";
 import Log from "../util/log";
 import posixPath from "../util/posixPath";
+import parseServerListConfig from "./serverListConfig";
 
 const LOG_PREFIX = "ServerListDetector";
 
@@ -109,41 +110,36 @@ export default class ServerListDetector extends DetectorBase {
         const contents = JSONC.parse(
           (await fs.promises.readFile(file)).toString()
         );
-        const blockchainNamesThisFile = contents["neo-blockchain-names"];
-        if (blockchainNamesThisFile) {
-          for (let gensisBlockHash of Object.getOwnPropertyNames(
-            blockchainNamesThisFile
-          )) {
-            gensisBlockHash = gensisBlockHash.toLowerCase().trim();
-            const name = blockchainNamesThisFile[gensisBlockHash]?.trim();
-            if (!blockchainNames[gensisBlockHash] && name) {
-              blockchainNames[gensisBlockHash] = name;
-            }
+        const serverListConfig = parseServerListConfig(contents);
+        for (const gensisBlockHash of Object.getOwnPropertyNames(
+          serverListConfig.blockchainNames
+        )) {
+          if (!blockchainNames[gensisBlockHash]) {
+            blockchainNames[gensisBlockHash] =
+              serverListConfig.blockchainNames[gensisBlockHash];
           }
         }
-        const rpcUrlsThisFile = contents["neo-rpc-uris"];
-        if (rpcUrlsThisFile && Array.isArray(rpcUrlsThisFile)) {
-          for (const url of rpcUrlsThisFile) {
-            try {
-              const parsedUrl = vscode.Uri.parse(url, true);
-              if (parsedUrl.scheme === "http" || parsedUrl.scheme === "https") {
-                rpcUrls[url] = true;
-              } else {
-                Log.log(
-                  LOG_PREFIX,
-                  "Ignoring malformed URL (bad scheme)",
-                  url,
-                  file
-                );
-              }
-            } catch (e : any) {
+
+        for (const url of serverListConfig.rpcUrls) {
+          try {
+            const parsedUrl = vscode.Uri.parse(url, true);
+            if (parsedUrl.scheme === "http" || parsedUrl.scheme === "https") {
+              rpcUrls[url] = true;
+            } else {
               Log.log(
                 LOG_PREFIX,
-                "Ignoring malformed URL (parse error)",
+                "Ignoring malformed URL (bad scheme)",
                 url,
                 file
               );
             }
+          } catch (e : any) {
+            Log.log(
+              LOG_PREFIX,
+              "Ignoring malformed URL (parse error)",
+              url,
+              file
+            );
           }
         }
       } catch (e : any) {

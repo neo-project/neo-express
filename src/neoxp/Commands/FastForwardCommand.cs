@@ -16,6 +16,8 @@ namespace NeoExpress.Commands
     [Command("fastfwd", Description = "Mint empty blocks to fast forward the block chain")]
     class FastForwardCommand
     {
+        internal const uint MaxFastForwardCount = 100_000;
+
         readonly ExpressChainManagerFactory chainManagerFactory;
 
         public FastForwardCommand(ExpressChainManagerFactory chainManagerFactory)
@@ -37,6 +39,8 @@ namespace NeoExpress.Commands
         {
             try
             {
+                ValidateCount(Count);
+
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                 using var expressNode = chainManager.GetExpressNode();
 
@@ -51,6 +55,12 @@ namespace NeoExpress.Commands
                 app.WriteException(ex);
                 return 1;
             }
+        }
+
+        internal static void ValidateCount(uint count)
+        {
+            if (count > MaxFastForwardCount)
+                throw new Exception($"Cannot mint more than {MaxFastForwardCount} blocks at once");
         }
 
         internal static TimeSpan ParseTimestampDelta(string timestampDelta)

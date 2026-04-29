@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es5",
+    "target": "es2020",
     "lib": ["esnext", "dom", "dom.iterable"],
     "esModuleInterop": true,
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "out",
     "strict": true,
+    "skipLibCheck": true,
     "jsx": "react",
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,

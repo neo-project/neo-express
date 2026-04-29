@@ -9,6 +9,7 @@ import JSONC from "../util/JSONC";
 import Log from "../util/log";
 import posixPath from "../util/posixPath";
 import parseServerListConfig from "./serverListConfig";
+import getTrustedWorkspaceServerListFiles from "./serverListWorkspaceTrust";
 
 const LOG_PREFIX = "ServerListDetector";
 
@@ -105,7 +106,18 @@ export default class ServerListDetector extends DetectorBase {
   async processFiles() {
     const blockchainNames = { ...WELL_KNOWN_BLOCKCHAINS };
     const rpcUrls: { [url: string]: boolean } = { ...SEED_URLS };
-    for (const file of this.files) {
+    const files = getTrustedWorkspaceServerListFiles(
+      this.files,
+      vscode.workspace.isTrusted
+    );
+    if (this.files.length && !files.length) {
+      Log.log(
+        LOG_PREFIX,
+        "Ignoring workspace RPC server list files because the workspace is not trusted"
+      );
+    }
+
+    for (const file of files) {
       try {
         const contents = JSONC.parse(
           (await fs.promises.readFile(file)).toString()

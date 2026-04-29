@@ -68,6 +68,20 @@ public class ReadOnlyStoreTests : IClassFixture<CheckpointFixture>, IClassFixtur
     }
 
     [Fact]
+    public void restore_checkpoint_wraps_corrupt_archive_errors()
+    {
+        System.IO.Directory.CreateDirectory(path);
+        var checkpointPath = System.IO.Path.Combine(path, "corrupt.neoxp-checkpoint");
+        var restorePath = System.IO.Path.Combine(path, "restore");
+        System.IO.File.WriteAllText(checkpointPath, "not a zip archive");
+
+        Action restore = () => RocksDbUtility.RestoreCheckpoint(checkpointPath, restorePath);
+
+        restore.Should().Throw<Exception>()
+            .WithMessage($"Checkpoint {checkpointPath} is not a valid checkpoint archive:*");
+    }
+
+    [Fact]
     public void readonly_rocksdb_store_throws_on_write_operations()
     {
         using (var popDB = RocksDbUtility.OpenDb(path))

@@ -24,6 +24,7 @@ using Neo.Wallets;
 using NeoExpress;
 using NeoExpress.Commands;
 using NeoExpress.Models;
+using NeoExpress.Node;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -111,6 +112,14 @@ public class ExpressNodeExtensionsTests
     {
         var token = TokenIdParser.Parse("0x0A0B0C");
         token.ToArray().Should().Equal(new byte[] { 0x0A, 0x0B, 0x0C });
+    }
+
+    [Fact]
+    public void ContractNotFoundMessage_includes_script_hash()
+    {
+        var scriptHash = UInt160.Parse("0x0101010101010101010101010101010101010101");
+
+        NodeUtility.ContractNotFoundMessage(scriptHash).Should().Be($"Contract {scriptHash} not found");
     }
 
     static bool ContainsSequence(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needle)

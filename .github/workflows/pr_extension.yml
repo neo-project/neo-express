@@ -33,9 +33,17 @@ jobs:
       working-directory: extentions/neo3-visual-tracker
       run: npm ci
 
+    - name: Typecheck
+      working-directory: extentions/neo3-visual-tracker
+      run: npm run typecheck
+
     - name: Compile
       working-directory: extentions/neo3-visual-tracker
       run: npm run compile
+
+    - name: Lint
+      working-directory: extentions/neo3-visual-tracker
+      run: npm run lint
 
     - name: Test Quick Start actions
       working-directory: extentions/neo3-visual-tracker

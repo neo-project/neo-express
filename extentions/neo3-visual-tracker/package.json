@@ -330,6 +330,8 @@
     "bundle-nxp-download": "shx rm -rf deps/nxp && shx mkdir -p deps/nxp && curl -fL \"https://www.nuget.org/api/v2/package/Neo.Express/%npm_package_version%\" -o deps/nxp/nxp.nupkg",
     "bundle-nxp-extract": "cd deps/nxp && extract-zip nxp.nupkg",
     "compile": "npm run compile-ext && npm run compile-panel",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "compile-ext": "webpack --config src/extension/webpack.config.js --mode development",
     "compile-panel": "webpack --config src/panel/webpack.config.js --mode development",
     "compile-prod": "npm run compile-prod-ext && npm run compile-prod-panel",
@@ -346,6 +348,7 @@
   },
   "devDependencies": {
     "@cityofzion/neon-core": "^5.8.1",
+    "@eslint/js": "^10.0.1",
     "@types/crypto-js": "^4.2.2",
     "@types/glob": "^7.2.0",
     "@types/gulp": "^4.0.17",
@@ -355,15 +358,19 @@
     "@types/temp": "^0.9.4",
     "@types/vscode": "^1.104.0",
     "@types/which": "^2.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.59.1",
+    "@typescript-eslint/parser": "^8.59.1",
     "bignumber.js": "^9.3.1",
     "bitset": "^5.2.3",
     "buffer": "^6.0.3",
     "concurrently": "^9.2.1",
     "crypto-browserify": "^3.12.1",
     "crypto-js": "^4.2.0",
+    "eslint": "^10.2.1",
     "extract-zip": "^2.0.1",
     "file-loader": "^6.2.0",
     "glob": "^7.2.3",
+    "globals": "^17.5.0",
     "gulp": "^5.0.1",
     "jsonc-parser": "^3.3.1",
     "nerdbank-gitversioning": "^3.8.118",
@@ -377,10 +384,12 @@
     "typescript": "^5.9.3",
     "webpack": "^5.105.0",
     "webpack-cli": "^6.0.1",
-    "wget-improved": "^3.4.0",
     "which": "^2.0.2"
   },
   "dependencies": {
     "@vscode/vsce": "^3.6.2"
+  },
+  "overrides": {
+    "lodash": "4.18.1"
   }
 }

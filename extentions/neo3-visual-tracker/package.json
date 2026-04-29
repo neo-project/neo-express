@@ -381,5 +381,8 @@
   },
   "dependencies": {
     "@vscode/vsce": "^3.6.2"
+  },
+  "overrides": {
+    "lodash": "4.18.1"
   }
 }

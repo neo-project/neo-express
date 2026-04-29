@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import ControllerRequest from "../../shared/messages/controllerRequest";
 import Log from "../util/log";
 import posixPath from "../util/posixPath";
-import ViewRequest from "../../shared/messages/viewRequest";
+import { parseViewRequest } from "../../shared/messages/viewRequest";
 import ViewStateBase from "../../shared/viewState/viewStateBase";
 
 const LOG_PREFIX = "PanelControllerBase";
@@ -112,7 +112,13 @@ export default abstract class PanelControllerBase<
     await this.sendRequest({ viewState: this.viewState });
   }
 
-  private async recieveRequest(request: ViewRequest) {
+  private async recieveRequest(message: unknown) {
+    const request = parseViewRequest(message);
+    if (!request) {
+      Log.warn(LOG_PREFIX, "Ignoring malformed webview request");
+      return;
+    }
+
     Log.log(
       LOG_PREFIX,
       "Received:",
@@ -125,7 +131,7 @@ export default abstract class PanelControllerBase<
     if (request.typedRequest) {
       await this.sendRequest({ loadingState: { isLoading: true } });
       try {
-        await this.onRequest(request.typedRequest);
+        await this.onRequest(request.typedRequest as TViewRequest);
       } finally {
         await this.sendRequest({ loadingState: { isLoading: false } });
       }

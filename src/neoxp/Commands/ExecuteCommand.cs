@@ -110,22 +110,32 @@ namespace NeoExpress.Commands
 
         private static Script? LoadFileScript(string fileName)
         {
-            var fileText = File.ReadAllText(fileName);
-            var txScript = ConvertTextToScript(fileText);
-            if (txScript != null)
-            {
-                return txScript;
-
-            }
-            var file = File.ReadAllBytes(fileName);
             try
             {
-                var nef = file.AsSerializable<NefFile>();
-                return nef?.Script;
+                if (!File.Exists(fileName))
+                    return null;
+
+                var fileText = File.ReadAllText(fileName);
+                var txScript = ConvertTextToScript(fileText);
+                if (txScript != null)
+                {
+                    return txScript;
+
+                }
+                var file = File.ReadAllBytes(fileName);
+                try
+                {
+                    var nef = file.AsSerializable<NefFile>();
+                    return nef?.Script;
+                }
+                catch (Exception)
+                {
+                }
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
             {
             }
+
             return null;
         }
 

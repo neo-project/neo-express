@@ -28,6 +28,15 @@ type CommandArguments = {
 };
 
 async function sanitizeCommandArguments(input: any): Promise<CommandArguments> {
+  if (input.path !== undefined) {
+    throw new Error("Command URI argument 'path' is not supported");
+  }
+  if (input.blockchainIdentifier !== undefined) {
+    throw new Error(
+      "Command URI argument 'blockchainIdentifier' is not supported"
+    );
+  }
+
   return {
     address: input.address
       ? `${input.address}`.replace(/[^a-z0-9]/gi, "")

@@ -33,6 +33,10 @@ jobs:
       working-directory: extentions/neo3-visual-tracker
       run: npm ci
 
+    - name: Typecheck
+      working-directory: extentions/neo3-visual-tracker
+      run: npm run typecheck
+
     - name: Compile
       working-directory: extentions/neo3-visual-tracker
       run: npm run compile

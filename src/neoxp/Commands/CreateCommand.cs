@@ -48,6 +48,8 @@ namespace NeoExpress.Commands
         [Option(Description = "Use a batch file to initialize the blockchain after creation.")]
         internal string BatchFilename { get; set; } = string.Empty;
 
+        internal const long MaxBatchFileBytes = 4 * 1024 * 1024;
+
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
         {
             try
@@ -84,7 +86,7 @@ namespace NeoExpress.Commands
                     var batchFileInfo = fileSystem.FileInfo.New(BatchFilename);
                     var batchDirInfo = batchFileInfo.Directory ?? throw new InvalidOperationException("batchFileInfo.Directory is null");
 
-                    var commands = await fileSystem.File.ReadAllLinesAsync(BatchFilename, token).ConfigureAwait(false);
+                    var commands = await LoadBatchCommandsAsync(fileSystem, BatchFilename, token).ConfigureAwait(false);
                     await batchCommand.ExecuteAsync(batchDirInfo, commands, console.Out, chainManager, outputPath).ConfigureAwait(false);
                 }
 
@@ -94,6 +96,62 @@ namespace NeoExpress.Commands
             {
                 app.WriteException(ex);
                 return 1;
+            }
+        }
+
+        internal static async Task<string[]> LoadBatchCommandsAsync(IFileSystem fileSystem, string batchFilename, CancellationToken token)
+        {
+            var fileInfo = fileSystem.FileInfo.New(batchFilename);
+            if (!fileInfo.Exists)
+                throw new FileNotFoundException(batchFilename);
+
+            if ((fileInfo.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
+                throw new Exception($"Batch file {batchFilename} is invalid: path is a directory");
+
+            if (fileInfo.Length > MaxBatchFileBytes)
+                throw new Exception($"Batch file {batchFilename} is invalid: file is larger than {MaxBatchFileBytes} bytes");
+
+            try
+            {
+                using var stream = fileSystem.File.OpenRead(batchFilename);
+                using var memory = new MemoryStream();
+                var buffer = new byte[8192];
+                long bytesRead = 0;
+
+                while (true)
+                {
+                    var read = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
+                    if (read == 0)
+                        break;
+
+                    bytesRead += read;
+                    if (bytesRead > MaxBatchFileBytes)
+                        throw new IOException($"file is larger than {MaxBatchFileBytes} bytes");
+
+                    memory.Write(buffer, 0, read);
+                }
+
+                memory.Position = 0;
+                using var reader = new StreamReader(memory);
+                var commands = new List<string>();
+                while (await reader.ReadLineAsync(token).ConfigureAwait(false) is { } line)
+                {
+                    commands.Add(line);
+                }
+
+                return commands.ToArray();
+            }
+            catch (IOException ex)
+            {
+                throw new Exception($"Batch file {batchFilename} is invalid: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new Exception($"Batch file {batchFilename} is invalid: {ex.Message}");
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new Exception($"Batch file {batchFilename} is invalid: {ex.Message}");
             }
         }
     }

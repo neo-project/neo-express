@@ -8,6 +8,7 @@
     "rootDir": "src",
     "outDir": "out",
     "strict": true,
+    "skipLibCheck": true,
     "jsx": "react",
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,

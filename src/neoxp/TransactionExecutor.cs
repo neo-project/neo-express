@@ -34,6 +34,8 @@ namespace NeoExpress
 
     class TransactionExecutor : IDisposable
     {
+        internal const long MaxOracleResponseFileBytes = 4 * 1024 * 1024;
+
         readonly ExpressChainManager chainManager;
         readonly IExpressNode expressNode;
         readonly IFileSystem fileSystem;
@@ -417,23 +419,7 @@ namespace NeoExpress
 
         public async Task OracleResponseAsync(string url, string responsePath, ulong? requestId = null)
         {
-            if (!fileSystem.File.Exists(responsePath))
-                throw new Exception($"Response File {responsePath} couldn't be found");
-
-            JObject responseJson;
-            {
-                using var stream = fileSystem.File.OpenRead(responsePath);
-                using var reader = new System.IO.StreamReader(stream);
-                using var jsonReader = new Newtonsoft.Json.JsonTextReader(reader);
-                try
-                {
-                    responseJson = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
-                }
-                catch (JsonException ex)
-                {
-                    throw new Exception($"Oracle response file {responsePath} is invalid JSON: {ex.Message}");
-                }
-            }
+            var responseJson = await LoadOracleResponseJsonAsync(fileSystem, responsePath).ConfigureAwait(false);
 
             var txHashes = await expressNode.SubmitOracleResponseAsync(url, OracleResponseCode.Success, responseJson, requestId).ConfigureAwait(false);
 
@@ -461,6 +447,61 @@ namespace NeoExpress
                         await writer.WriteLineAsync($"    {txHashes[i]}").ConfigureAwait(false);
                     }
                 }
+            }
+        }
+
+        internal static async Task<JObject> LoadOracleResponseJsonAsync(IFileSystem fileSystem, string responsePath, CancellationToken token = default)
+        {
+            if (!fileSystem.File.Exists(responsePath))
+                throw new Exception($"Response File {responsePath} couldn't be found");
+
+            var fileInfo = fileSystem.FileInfo.New(responsePath);
+            if ((fileInfo.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
+                throw new Exception($"Oracle response file {responsePath} is invalid: path is a directory");
+
+            if (fileInfo.Length > MaxOracleResponseFileBytes)
+                throw new Exception($"Oracle response file {responsePath} is invalid: file is larger than {MaxOracleResponseFileBytes} bytes");
+
+            try
+            {
+                using var stream = fileSystem.File.OpenRead(responsePath);
+                using var memory = new MemoryStream();
+                var buffer = new byte[8192];
+                long bytesRead = 0;
+
+                while (true)
+                {
+                    var read = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
+                    if (read == 0)
+                        break;
+
+                    bytesRead += read;
+                    if (bytesRead > MaxOracleResponseFileBytes)
+                        throw new IOException($"file is larger than {MaxOracleResponseFileBytes} bytes");
+
+                    memory.Write(buffer, 0, read);
+                }
+
+                memory.Position = 0;
+                using var reader = new StreamReader(memory);
+                using var jsonReader = new JsonTextReader(reader);
+                return await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+            }
+            catch (JsonException ex)
+            {
+                throw new Exception($"Oracle response file {responsePath} is invalid JSON: {ex.Message}");
+            }
+            catch (IOException ex)
+            {
+                throw new Exception($"Oracle response file {responsePath} is invalid: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new Exception($"Oracle response file {responsePath} is invalid: {ex.Message}");
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new Exception($"Oracle response file {responsePath} is invalid: {ex.Message}");
             }
         }
 

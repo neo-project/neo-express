@@ -419,7 +419,7 @@ namespace NeoExpress.Node
                 var state = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scripthash);
                 if (state is null)
                 {
-                    throw new Exception("Contract not found");
+                    throw new Exception(NodeUtility.ContractNotFoundMessage(scripthash));
                 }
 
                 return NodeUtility.PersistStorageKeyValuePair(neoSystem, state, storagePair, ContractCommand.OverwriteForce.None);

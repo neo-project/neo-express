@@ -298,7 +298,7 @@ namespace NeoExpress.Commands
         }
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api
-        static IEnumerable<string> SplitCommandLine(string commandLine)
+        internal static IEnumerable<string> SplitCommandLine(string commandLine)
         {
             var memory = commandLine.AsMemory();
 
@@ -366,6 +366,8 @@ namespace NeoExpress.Commands
                     {
                         case Boundary.TokenStart:
                             break;
+                        case Boundary.QuoteEnd:
+                            throw new FormatException("Unbalanced quote in batch command line.");
                         default:
                             yield return CurrentToken();
                             break;

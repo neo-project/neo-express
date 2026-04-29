@@ -32,6 +32,8 @@ namespace NeoExpress.Node
 {
     internal class NodeUtility
     {
+        internal static string ContractNotFoundMessage(UInt160 scriptHash) => $"Contract {scriptHash} not found";
+
         public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
         {
             transactions ??= Array.Empty<Transaction>();
@@ -487,7 +489,7 @@ namespace NeoExpress.Node
             if (localContract is null)
             {
                 // if localContract is null, the contract does not exist in the local Express chain
-                throw new Exception("Contract not found");
+                throw new Exception(ContractNotFoundMessage(state.Hash));
             }
 
             var overwriteStorage = force switch

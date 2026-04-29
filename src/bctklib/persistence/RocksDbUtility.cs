@@ -203,6 +203,8 @@ namespace Neo.BlockchainToolkit.Persistence
 
             static void ExtractCheckpoint(string checkPointArchive, string restorePath)
             {
+                // ZipFile.ExtractToDirectory rejects entries that would escape restorePath.
+                // Keep that runtime guard if this is refactored away from the framework helper.
                 ZipFile.ExtractToDirectory(checkPointArchive, restorePath);
                 var addressFile = GetAddressFilePath(restorePath);
                 if (File.Exists(addressFile))

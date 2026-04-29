@@ -122,16 +122,10 @@ namespace NeoExpress.Commands
                     return txScript;
                 }
                 var file = File.ReadAllBytes(fileName);
-                try
-                {
-                    var nef = file.AsSerializable<NefFile>();
-                    return nef?.Script;
-                }
-                catch (Exception)
-                {
-                }
+                var nef = file.AsSerializable<NefFile>();
+                return nef?.Script;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or FormatException or InvalidOperationException)
             {
             }
 

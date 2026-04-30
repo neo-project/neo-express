@@ -26,6 +26,7 @@ namespace NeoExpress.Commands
     [Command(Name = "execute", Description = "Invoke a custom script, the input text will be converted to script with a priority: hex, base64, file path.")]
     class ExecuteCommand
     {
+        internal const long MaxExecuteScriptFileBytes = 4 * 1024 * 1024;
 
         readonly ExpressChainManagerFactory chainManagerFactory;
         readonly TransactionExecutorFactory txExecutorFactory;
@@ -110,22 +111,30 @@ namespace NeoExpress.Commands
 
         private static Script? LoadFileScript(string fileName)
         {
-            var fileText = File.ReadAllText(fileName);
-            var txScript = ConvertTextToScript(fileText);
-            if (txScript != null)
-            {
-                return txScript;
-
-            }
-            var file = File.ReadAllBytes(fileName);
             try
             {
+                if (!File.Exists(fileName))
+                    return null;
+
+                var fileInfo = new FileInfo(fileName);
+                if ((fileInfo.Attributes & FileAttributes.Directory) == FileAttributes.Directory ||
+                    fileInfo.Length > MaxExecuteScriptFileBytes)
+                    return null;
+
+                var fileText = File.ReadAllText(fileName);
+                var txScript = ConvertTextToScript(fileText);
+                if (txScript != null)
+                {
+                    return txScript;
+                }
+                var file = File.ReadAllBytes(fileName);
                 var nef = file.AsSerializable<NefFile>();
                 return nef?.Script;
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or FormatException or InvalidOperationException)
             {
             }
+
             return null;
         }
 

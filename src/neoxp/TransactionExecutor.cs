@@ -466,22 +466,8 @@ namespace NeoExpress
             {
                 using var stream = fileSystem.File.OpenRead(responsePath);
                 using var memory = new MemoryStream();
-                var buffer = new byte[8192];
-                long bytesRead = 0;
 
-                while (true)
-                {
-                    var read = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
-                    if (read == 0)
-                        break;
-
-                    bytesRead += read;
-                    if (bytesRead > MaxOracleResponseFileBytes)
-                        throw new IOException($"file is larger than {MaxOracleResponseFileBytes} bytes");
-
-                    memory.Write(buffer, 0, read);
-                }
-
+                await stream.CopyToAsync(memory, 81920, token).ConfigureAwait(false);
                 memory.Position = 0;
                 using var reader = new StreamReader(memory);
                 using var jsonReader = new JsonTextReader(reader);

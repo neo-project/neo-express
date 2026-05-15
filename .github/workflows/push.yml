@@ -7,6 +7,8 @@ on:
       - development
       - release/*
     paths:
+      - '.github/workflows/push.yml'
+      - '.github/workflows/test.yml'
       - '**.cs'
       - '**.csproj'
 

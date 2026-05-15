@@ -452,28 +452,29 @@ namespace NeoExpress.Node
                     && a.Manifest.ToJson().ToByteArray(false).SequenceEqual(b.Manifest.ToJson().ToByteArray(false));
             }
 
-            static bool ContractStorageEquals(int contractId, DataCache snapshot, IReadOnlyList<(string key, string value)> storagePairs)
+        }
+
+        internal static bool ContractStorageEquals(int contractId, DataCache snapshot, IReadOnlyList<(string key, string value)> storagePairs)
+        {
+            IReadOnlyDictionary<string, string> storagePairMap = storagePairs.ToDictionary(p => p.key, p => p.value);
+            var storageCount = 0;
+
+            byte[] prefixKey = StorageKey.CreateSearchPrefix(contractId, default);
+            foreach (var (k, v) in snapshot.Find(prefixKey))
             {
-                IReadOnlyDictionary<string, string> storagePairMap = storagePairs.ToDictionary(p => p.key, p => p.value);
-                var storageCount = 0;
-
-                byte[] prefixKey = StorageKey.CreateSearchPrefix(contractId, default);
-                foreach (var (k, v) in snapshot.Find(prefixKey))
+                var storageKey = Convert.ToBase64String(k.Key.Span);
+                if (storagePairMap.TryGetValue(storageKey, out var storageValue)
+                    && storageValue.Equals(Convert.ToBase64String(v.Value.Span)))
                 {
-                    var storageKey = Convert.ToBase64String(k.Key.Span);
-                    if (storagePairMap.TryGetValue(storageKey, out var storageValue)
-                        && storageValue.Equals(Convert.ToBase64String(v.Value.Span)))
-                    {
-                        storageCount++;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    storageCount++;
                 }
-
-                return storageCount != storagePairs.Count;
+                else
+                {
+                    return false;
+                }
             }
+
+            return storageCount == storagePairs.Count;
         }
 
         public static int PersistStorageKeyValuePair(NeoSystem neoSystem, ContractState state,

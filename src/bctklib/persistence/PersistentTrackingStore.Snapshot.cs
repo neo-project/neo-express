@@ -118,7 +118,31 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                return PersistentTrackingStore.Seek(key_prefix, direction, db, columnFamily, readOptions, store);
+                return FindWithUncommittedChanges(key_prefix, direction);
+            }
+
+            IEnumerable<(byte[] Key, byte[] Value)> FindWithUncommittedChanges(byte[]? key, SeekDirection direction)
+            {
+                key ??= Array.Empty<byte>();
+                if (key.Length == 0 && direction == SeekDirection.Backward)
+                {
+                    return Enumerable.Empty<(byte[] Key, byte[] Value)>();
+                }
+
+                var comparer = direction == SeekDirection.Forward
+                    ? MemorySequenceComparer.Default
+                    : MemorySequenceComparer.Reverse;
+
+                var uncommittedItems = uncommittedChanges
+                    .Where(kvp => kvp.Value.IsT0)
+                    .Where(kvp => comparer.Compare(kvp.Key, key) >= 0)
+                    .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value.AsT0.ToArray()));
+
+                var committedItems = PersistentTrackingStore
+                    .Seek(key, direction, db, columnFamily, readOptions, store)
+                    .Where(kvp => !uncommittedChanges.ContainsKey(kvp.Key));
+
+                return uncommittedItems.Concat(committedItems).OrderBy(kvp => kvp.Key, comparer);
             }
 
             public unsafe void Put(byte[]? key, byte[] value)

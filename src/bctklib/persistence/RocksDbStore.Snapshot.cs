@@ -95,7 +95,31 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                return RocksDbStore.Seek(key_prefix, direction, db, columnFamily, readOptions);
+                return FindWithPendingWrites(key_prefix, direction);
+            }
+
+            IEnumerable<(byte[] Key, byte[] Value)> FindWithPendingWrites(byte[]? key, SeekDirection direction)
+            {
+                key ??= Array.Empty<byte>();
+                if (key.Length == 0 && direction == SeekDirection.Backward)
+                {
+                    return Enumerable.Empty<(byte[] Key, byte[] Value)>();
+                }
+
+                var comparer = direction == SeekDirection.Forward
+                    ? MemorySequenceComparer.Default
+                    : MemorySequenceComparer.Reverse;
+
+                var pendingItems = pendingWrites
+                    .Where(kvp => kvp.Value is not null)
+                    .Where(kvp => comparer.Compare(kvp.Key, key) >= 0)
+                    .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value!.ToArray()));
+
+                var storeItems = RocksDbStore
+                    .Seek(key, direction, db, columnFamily, readOptions)
+                    .Where(kvp => !pendingWrites.ContainsKey(kvp.Key));
+
+                return pendingItems.Concat(storeItems).OrderBy(kvp => kvp.Key, comparer);
             }
 
             public void Put(byte[]? key, byte[] value)

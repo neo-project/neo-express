@@ -164,6 +164,47 @@ public class ReadWriteStoreTests : IDisposable
         afterCommit.Should().BeNull();
     }
 
+    [Fact]
+    public void rocksdb_snapshot_find_includes_uncommitted_put()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        test_snapshot_find_includes_uncommitted_put(store);
+    }
+
+    internal static void test_snapshot_find_includes_uncommitted_put(IStore store)
+    {
+        var key = Bytes(0);
+        var value = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, value);
+
+        var found = snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value));
+        found.Should().BeTrue();
+    }
+
+    [Fact]
+    public void rocksdb_snapshot_find_excludes_uncommitted_delete()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        test_snapshot_find_excludes_uncommitted_delete(store);
+    }
+
+    internal static void test_snapshot_find_excludes_uncommitted_delete(IStore store, int index = 0)
+    {
+        var (key, value) = TestData.ElementAt(index);
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Delete(key);
+
+        snapshot.TryGet(key, out var deletedValue).Should().BeFalse();
+        deletedValue.Should().BeNull();
+        var found = snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value));
+        found.Should().BeFalse();
+    }
+
     [Theory, CombinatorialData]
     public void snapshot_isolation_addition(StoreType storeType)
     {

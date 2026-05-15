@@ -82,10 +82,20 @@ namespace Neo.BlockchainToolkit.Persistence
 
             [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
             public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction)
-                => MemoryTrackingStore.Seek(key, direction, trackingMap, store);
+                => MemoryTrackingStore.Seek(key, direction, GetSnapshotTrackingMap(), store);
 
             public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
-                => MemoryTrackingStore.Seek(key_prefix, direction, trackingMap, store);
+                => MemoryTrackingStore.Seek(key_prefix, direction, GetSnapshotTrackingMap(), store);
+
+            TrackingMap GetSnapshotTrackingMap()
+            {
+                var snapshotTrackingMap = trackingMap;
+                foreach (var change in writeBatchMap)
+                {
+                    snapshotTrackingMap = snapshotTrackingMap.SetItem(change.Key, change.Value);
+                }
+                return snapshotTrackingMap;
+            }
 
             public void Put(byte[]? key, byte[]? value)
             {

@@ -347,7 +347,7 @@
     "test:server-list": "node --test -r ts-node/register src/extension/fileDetectors/serverListConfig.test.ts"
   },
   "devDependencies": {
-    "@cityofzion/neon-core": "^5.8.1",
+    "@cityofzion/neon-core": "^5.9.0",
     "@eslint/js": "^10.0.1",
     "@types/crypto-js": "^4.2.2",
     "@types/glob": "^7.2.0",
@@ -364,7 +364,6 @@
     "bitset": "^5.2.3",
     "buffer": "^6.0.3",
     "concurrently": "^9.2.1",
-    "crypto-browserify": "^3.12.1",
     "crypto-js": "^4.2.0",
     "eslint": "^10.2.1",
     "extract-zip": "^2.0.1",

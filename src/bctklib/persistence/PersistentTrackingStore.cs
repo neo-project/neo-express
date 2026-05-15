@@ -61,7 +61,14 @@ namespace Neo.BlockchainToolkit.Persistence
         {
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
+
             using var iterator = db.NewIterator(columnFamily);
+            using var batch = new WriteBatch();
+            for (iterator.SeekToFirst(); iterator.Valid(); iterator.Next())
+            {
+                batch.Delete(iterator.Key(), columnFamily);
+            }
+            db.Write(batch);
         }
 
         [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]

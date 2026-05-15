@@ -25,7 +25,6 @@ public class PrivateKeyParsingTests
         var wif = CreateWifWithPrefix('K', out var privateKey);
         var chain = ExpressChainManagerFactory.CreateChain(1, null);
         var manager = new ExpressChainManager(new MockFileSystem(), chain);
-
         var wallet = manager.CreateWallet("alice", wif);
 
         wallet.Accounts.Should().ContainSingle();

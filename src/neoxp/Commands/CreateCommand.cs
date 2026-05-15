@@ -60,17 +60,7 @@ namespace NeoExpress.Commands
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
                 {
-                    try
-                    {
-                        if (PrivateKey.StartsWith('L'))
-                            priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
-                        else
-                            priKey = Convert.FromHexString(PrivateKey);
-                    }
-                    catch (FormatException)
-                    {
-                        throw new FormatException("Private key must be in HEX or WIF format.");
-                    }
+                    priKey = ExpressChainManager.ParsePrivateKey(PrivateKey);
                 }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);

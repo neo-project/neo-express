@@ -50,6 +50,25 @@ namespace NeoExpress
 
         public ExpressChain Chain => chain;
 
+        internal static byte[] ParsePrivateKey(string privateKey)
+        {
+            try
+            {
+                return Neo.Wallets.Wallet.GetPrivateKeyFromWIF(privateKey);
+            }
+            catch (FormatException)
+            {
+                try
+                {
+                    return Convert.FromHexString(privateKey);
+                }
+                catch (FormatException)
+                {
+                    throw new FormatException("Private key must be in HEX or WIF format.");
+                }
+            }
+        }
+
         private string ResolveCheckpointFileName(string path) => ResolveCheckpointFileName(fileSystem, path);
 
         internal static string ResolveCheckpointFileName(IFileSystem fileSystem, string path)
@@ -424,17 +443,7 @@ namespace NeoExpress
             byte[]? priKey = null;
             if (string.IsNullOrEmpty(privateKey) == false)
             {
-                try
-                {
-                    if (privateKey.StartsWith('L'))
-                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(privateKey);
-                    else
-                        priKey = Convert.FromHexString(privateKey);
-                }
-                catch (FormatException)
-                {
-                    throw new FormatException("Private key must be in HEX or WIF format.");
-                }
+                priKey = ParsePrivateKey(privateKey);
             }
 
             var wallet = new DevWallet(ProtocolSettings, name);

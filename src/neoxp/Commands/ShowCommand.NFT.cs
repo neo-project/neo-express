@@ -66,7 +66,7 @@ namespace NeoExpress.Commands
                     if (list.Count == 0)
                         await console.Out.WriteLineAsync($"No NFT yet. (Contract:{scriptHash}, Account:{accountHash.ToAddress(ProtocolSettings.Default.AddressVersion)})");
                     else
-                        list.ForEach(p => console.Out.WriteLine($"TokenId(Base64): {p}, TokenId(Hex): 0x{Convert.FromBase64String(p).Reverse().ToArray().ToHexString()}"));
+                        list.ForEach(p => console.Out.WriteLine(FormatTokenId(p)));
                     return 0;
                 }
                 catch (Exception ex)
@@ -75,6 +75,9 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
+
+            internal static string FormatTokenId(string tokenId)
+                => $"TokenId(Base64): {tokenId}, TokenId(Hex): 0x{Convert.FromBase64String(tokenId).ToHexString()}";
         }
     }
 }

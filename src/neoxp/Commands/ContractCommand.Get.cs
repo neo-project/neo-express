@@ -55,22 +55,26 @@ namespace NeoExpress.Commands
                 var expressNode = chainManager.GetExpressNode();
 
                 using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-                jsonWriter.WriteStartArray();
-
                 if (UInt160.TryParse(Contract, out var contractHash))
                 {
                     var manifest = await expressNode.GetContractAsync(contractHash).ConfigureAwait(false);
-                    WriteContract(jsonWriter, contractHash, manifest);
+                    WriteContracts(jsonWriter, new[] { (contractHash, manifest) });
                 }
                 else
                 {
                     var contracts = await expressNode.ListContractsAsync(Contract).ConfigureAwait(false);
-
-                    foreach (var (hash, manifest) in contracts)
-                    {
-                        WriteContract(jsonWriter, hash, manifest);
-                    }
+                    WriteContracts(jsonWriter, contracts);
                 }
+            }
+
+            internal static void WriteContracts(JsonWriter writer, IEnumerable<(UInt160 hash, ContractManifest manifest)> contracts)
+            {
+                writer.WriteStartArray();
+                foreach (var (hash, manifest) in contracts)
+                {
+                    WriteContract(writer, hash, manifest);
+                }
+                writer.WriteEndArray();
 
                 static void WriteContract(JsonWriter writer, UInt160 hash, ContractManifest manifest)
                 {

@@ -301,6 +301,21 @@ namespace test.bctklib
             Assert.Equal(someFakePathFile, exception.FileName);
         }
 
+        [Fact]
+        public void TestParseStringParameter_file_uri_rejects_oversized_file()
+        {
+            var fileSystem = new MockFileSystem();
+            var rootPath = fileSystem.AllDirectories.First();
+            var someFakePathFile = fileSystem.Path.Combine(rootPath, "some", "fake", "path", "file.txt");
+            fileSystem.AddFile(someFakePathFile, new MockFileData(new string(' ', (int)ContractParameterParser.MaxInvocationFileBytes + 1)));
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION, fileSystem: fileSystem);
+            var action = () => parser.ParseStringParameter($"file://{someFakePathFile}");
+
+            var exception = action.Should().Throw<Exception>();
+            exception.Which.Message.Should().Be($"Parameter file {someFakePathFile} is invalid: file is larger than {ContractParameterParser.MaxInvocationFileBytes} bytes");
+        }
+
         [Theory]
         [InlineData("NaN")]
         [InlineData("\"not an invocation\"")]

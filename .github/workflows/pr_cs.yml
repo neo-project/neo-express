@@ -9,6 +9,8 @@ on:
     paths:
       - '**.cs'
       - '**.csproj'
+      - '**.props'
+      - '**.targets'
 
 # Cancel old test actions when new commits are pushed
 concurrency:

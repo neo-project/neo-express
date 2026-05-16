@@ -451,7 +451,22 @@ and the non-signing account information of the account that would deploy the con
 ### neoxp contract storage
 
 ```
-Usage: neoxp contract storage [Options] <Contract>
+Usage: neoxp contract storage [command] [options]
+
+Options:
+  -?|-h|--help  Show help information.
+
+Commands:
+  get           Display storage for specified contract
+  update        Update the storage of a contract given the new key-value pair
+```
+
+The `contract storage` command groups storage inspection and update commands.
+
+### neoxp contract storage get
+
+```
+Usage: neoxp contract storage get [Options] <Contract>
 
 Arguments:
 [Options]:
@@ -459,10 +474,26 @@ Arguments:
   -j|--json           Output as JSON
 <Contract>: Contract name or invocation hash
 ```
-The `contract storage` commands dumps all the key/value pairs stored in the blockchain for
-this contract. This command takes a single argument indicating the contract to dump storage
+The `contract storage get` command dumps all the key/value pairs stored in the blockchain for
+this contract. This command takes a single argument indicating the contract to display storage
 records for. For each key/value pair, the command shows both the key and the value
 as both a hex-encoded byte array as well as a UTF-8 encoded string.
+
+### neoxp contract storage update
+
+```
+Usage: neoxp contract storage update [Options] <Contract> <Key> <Value>
+
+Arguments:
+[Options]:
+  -i|--input <INPUT>  Path to neo-express data file
+<Contract>: Contract name or invocation hash
+<Key>: Storage key to update
+<Value>: Storage value to update
+```
+
+The `contract storage update` command updates a single contract storage key/value pair.
+Storage updates are only supported for single-node consensus chains.
 
 ### neoxp contract update
 

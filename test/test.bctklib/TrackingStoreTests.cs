@@ -158,17 +158,17 @@ public class TrackingStoreTests : IDisposable
     }
 
     [Theory, CombinatorialData]
-    public void snapshot_find_includes_uncommitted_put(StoreType storeType)
+    public void SnapshotFindIncludesUncommittedPut(StoreType storeType)
     {
         using var store = GetStore(storeType);
-        test_snapshot_find_includes_uncommitted_put(store);
+        TestSnapshotFindIncludesUncommittedPut(store);
     }
 
     [Theory, CombinatorialData]
-    public void snapshot_find_excludes_uncommitted_delete(StoreType storeType, [CombinatorialValues(0, 1, 5)] int index)
+    public void SnapshotFindExcludesUncommittedDelete(StoreType storeType, [CombinatorialValues(0, 1, 5)] int index)
     {
         using var store = GetStore(storeType);
-        test_snapshot_find_excludes_uncommitted_delete(store, index);
+        TestSnapshotFindExcludesUncommittedDelete(store, index);
     }
 
     [Theory, CombinatorialData]

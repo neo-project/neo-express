@@ -165,13 +165,13 @@ public class ReadWriteStoreTests : IDisposable
     }
 
     [Fact]
-    public void rocksdb_snapshot_find_includes_uncommitted_put()
+    public void RocksDbSnapshotFindIncludesUncommittedPut()
     {
         using var store = GetPopulatedRocksDbStore(path);
-        test_snapshot_find_includes_uncommitted_put(store);
+        TestSnapshotFindIncludesUncommittedPut(store);
     }
 
-    internal static void test_snapshot_find_includes_uncommitted_put(IStore store)
+    internal static void TestSnapshotFindIncludesUncommittedPut(IStore store)
     {
         var key = Bytes(0);
         var value = Bytes("test-value");
@@ -185,13 +185,13 @@ public class ReadWriteStoreTests : IDisposable
     }
 
     [Fact]
-    public void rocksdb_snapshot_find_excludes_uncommitted_delete()
+    public void RocksDbSnapshotFindExcludesUncommittedDelete()
     {
         using var store = GetPopulatedRocksDbStore(path);
-        test_snapshot_find_excludes_uncommitted_delete(store);
+        TestSnapshotFindExcludesUncommittedDelete(store);
     }
 
-    internal static void test_snapshot_find_excludes_uncommitted_delete(IStore store, int index = 0)
+    internal static void TestSnapshotFindExcludesUncommittedDelete(IStore store, int index = 0)
     {
         var (key, value) = TestData.ElementAt(index);
 

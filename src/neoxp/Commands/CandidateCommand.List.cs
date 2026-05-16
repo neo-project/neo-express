@@ -9,8 +9,9 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
 using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NeoExpress.Commands
 {
@@ -58,18 +59,10 @@ namespace NeoExpress.Commands
             {
                 if (json)
                 {
-                    using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-                    await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
-                    foreach (var candidate in candidates)
-                    {
-                        await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
-                        await jsonWriter.WritePropertyNameAsync("public-key").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(candidate.PublicKey).ConfigureAwait(false);
-                        await jsonWriter.WritePropertyNameAsync("votes").ConfigureAwait(false);
-                        await jsonWriter.WriteValueAsync(candidate.Votes.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
-                        await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
-                    }
-                    await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                    var output = candidates.Select(candidate => new CandidateJson(
+                        candidate.PublicKey,
+                        candidate.Votes.ToString(CultureInfo.InvariantCulture)));
+                    await writer.WriteAsync(JsonSerializer.Serialize(output, JsonOptions)).ConfigureAwait(false);
                 }
                 else
                 {
@@ -79,6 +72,12 @@ namespace NeoExpress.Commands
                     }
                 }
             }
+
+            private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
+            private sealed record CandidateJson(
+                [property: JsonPropertyName("public-key")] string PublicKey,
+                [property: JsonPropertyName("votes")] string Votes);
         }
     }
 }

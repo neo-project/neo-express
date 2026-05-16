@@ -239,7 +239,8 @@ namespace NeoExpress
         {
             if (json)
             {
-                await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
+                using var jsonWriter = new Newtonsoft.Json.JsonTextWriter(writer);
+                await jsonWriter.WriteValueAsync(txHash.ToString()).ConfigureAwait(false);
             }
             else
             {

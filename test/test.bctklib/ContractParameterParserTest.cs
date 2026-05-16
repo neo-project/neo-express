@@ -65,6 +65,23 @@ namespace test.bctklib
         }
 
         [Fact]
+        public void ParseObjectParameter_bytearray_uppercase_hex_prefix()
+        {
+            var value = "0XBCBBCD38FB0C097BE28E6AEF0177F5D65534EB3B";
+            var expected = Convert.FromHexString(value.AsSpan(2));
+            var json = new JObject()
+            {
+                ["type"] = "ByteArray",
+                ["value"] = value
+            };
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
+            var param = parser.ParseObjectParameter(json);
+            param.Type.Should().Be(ContractParameterType.ByteArray);
+            param.Value.Should().BeOfType<byte[]>();
+            ((byte[])param.Value).AsSpan().SequenceEqual(expected).Should().BeTrue();
+        }
+
+        [Fact]
         public void TestParseStringParameter_string()
         {
             const string expected = "string-value";
@@ -177,6 +194,17 @@ namespace test.bctklib
         public void TestParseStringParameter_hexstring()
         {
             const string hexstring = "0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b";
+            var expected = Convert.FromHexString(hexstring.AsSpan()[2..]);
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
+            var param = parser.ParseStringParameter(hexstring);
+            param.Type.Should().Be(ContractParameterType.ByteArray);
+            param.Value.Should().BeEquivalentTo(expected);
+        }
+
+        [Fact]
+        public void TestParseStringParameter_uppercase_hex_prefix()
+        {
+            const string hexstring = "0XBCBBCD38FB0C097BE28E6AEF0177F5D65534EB3B";
             var expected = Convert.FromHexString(hexstring.AsSpan()[2..]);
             var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
             var param = parser.ParseStringParameter(hexstring);

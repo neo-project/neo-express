@@ -20,6 +20,7 @@ using Neo.Plugins.RpcServer;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Net;
 
@@ -50,23 +51,77 @@ namespace NeoExpress
 
         public ExpressChain Chain => chain;
 
+        private const int PrivateKeyLength = 32;
+
         internal static byte[] ParsePrivateKey(string privateKey)
         {
+            if (TryParseBase64PrivateKey(privateKey, out var privateKeyBytes)
+                || TryParseWifPrivateKey(privateKey, out privateKeyBytes)
+                || TryParseHexPrivateKey(privateKey, out privateKeyBytes))
+            {
+                return privateKeyBytes;
+            }
+
+            throw new FormatException("Private key must be in HEX, Base64, or WIF format.");
+        }
+
+        static bool TryParseBase64PrivateKey(string text, [NotNullWhen(true)] out byte[]? privateKey)
+        {
+            var buffer = new byte[PrivateKeyLength];
+            if (Convert.TryFromBase64String(text, buffer, out var bytesWritten)
+                && bytesWritten == PrivateKeyLength)
+            {
+                privateKey = buffer;
+                return true;
+            }
+
+            privateKey = null;
+            return false;
+        }
+
+        static bool TryParseWifPrivateKey(string text, [NotNullWhen(true)] out byte[]? privateKey)
+        {
+            if (text.Length is not (51 or 52))
+            {
+                privateKey = null;
+                return false;
+            }
+
             try
             {
-                return Neo.Wallets.Wallet.GetPrivateKeyFromWIF(privateKey);
+                privateKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(text);
+                if (privateKey.Length == PrivateKeyLength)
+                {
+                    return true;
+                }
             }
             catch (FormatException)
             {
-                try
-                {
-                    return Convert.FromHexString(privateKey);
-                }
-                catch (FormatException)
-                {
-                    throw new FormatException("Private key must be in HEX or WIF format.");
-                }
             }
+
+            privateKey = null;
+            return false;
+        }
+
+        static bool TryParseHexPrivateKey(string text, [NotNullWhen(true)] out byte[]? privateKey)
+        {
+            if (text.Length != PrivateKeyLength * 2)
+            {
+                privateKey = null;
+                return false;
+            }
+
+            try
+            {
+                privateKey = Convert.FromHexString(text);
+                return true;
+            }
+            catch (FormatException)
+            {
+            }
+
+            privateKey = null;
+            return false;
         }
 
         private string ResolveCheckpointFileName(string path) => ResolveCheckpointFileName(fileSystem, path);

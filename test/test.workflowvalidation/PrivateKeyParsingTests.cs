@@ -20,7 +20,7 @@ namespace test.workflowvalidation;
 public class PrivateKeyParsingTests
 {
     [Fact]
-    public void CreateWallet_accepts_k_prefixed_wif_private_key()
+    public void CreateWalletAcceptsKPrefixedWifPrivateKey()
     {
         var wif = CreateWifWithPrefix('K', out var privateKey);
         var chain = ExpressChainManagerFactory.CreateChain(1, null);
@@ -29,6 +29,41 @@ public class PrivateKeyParsingTests
 
         wallet.Accounts.Should().ContainSingle();
         wallet.Accounts[0].PrivateKey.HexToBytes().Should().Equal(privateKey);
+    }
+
+    [Fact]
+    public void ParsePrivateKeyAcceptsBase64PrivateKey()
+    {
+        var privateKey = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
+        var text = Convert.ToBase64String(privateKey);
+
+        var parsed = ExpressChainManager.ParsePrivateKey(text);
+
+        parsed.Should().Equal(privateKey);
+    }
+
+    [Theory]
+    [InlineData(31)]
+    [InlineData(33)]
+    public void ParsePrivateKeyRejectsWrongLengthBase64PrivateKey(int length)
+    {
+        var text = Convert.ToBase64String(Enumerable.Repeat((byte)1, length).ToArray());
+
+        var parse = () => ExpressChainManager.ParsePrivateKey(text);
+
+        parse.Should().Throw<FormatException>();
+    }
+
+    [Theory]
+    [InlineData(31)]
+    [InlineData(33)]
+    public void ParsePrivateKeyRejectsWrongLengthHexPrivateKey(int length)
+    {
+        var text = Convert.ToHexString(Enumerable.Repeat((byte)1, length).ToArray());
+
+        var parse = () => ExpressChainManager.ParsePrivateKey(text);
+
+        parse.Should().Throw<FormatException>();
     }
 
     static string CreateWifWithPrefix(char prefix, out byte[] privateKey)

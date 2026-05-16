@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
-        [Option(Description = "Private key for default dev account (Format: HEX or WIF)\nDefault: Random")]
+        [Option(Description = "Private key for default dev account (Format: HEX, Base64, or WIF)\nDefault: Random")]
         internal string PrivateKey { get; set; } = string.Empty;
 
         [Option(Description = "Use a batch file to initialize the blockchain after creation.")]

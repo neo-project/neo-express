@@ -256,13 +256,13 @@ public class ReadWriteStoreTests : IDisposable
     }
 
     [Fact]
-    public void rocksdb_snapshot_key_instance_isolation()
+    public void RocksDbSnapshotKeyInstanceIsolation()
     {
         using var store = GetStore(StoreType.RocksDb);
-        test_snapshot_key_instance_isolation(store);
+        TestSnapshotKeyInstanceIsolation(store);
     }
 
-    internal static void test_snapshot_key_instance_isolation(IStore store)
+    internal static void TestSnapshotKeyInstanceIsolation(IStore store)
     {
         var key = Bytes(0);
         var value = Bytes("test-value");
@@ -280,13 +280,13 @@ public class ReadWriteStoreTests : IDisposable
     }
 
     [Fact]
-    public void rocksdb_snapshot_value_instance_isolation()
+    public void RocksDbSnapshotValueInstanceIsolation()
     {
         using var store = GetStore(StoreType.RocksDb);
-        test_snapshot_value_instance_isolation(store);
+        TestSnapshotValueInstanceIsolation(store);
     }
 
-    internal static void test_snapshot_value_instance_isolation(IStore store)
+    internal static void TestSnapshotValueInstanceIsolation(IStore store)
     {
         var key = Bytes(0);
         var value = Bytes("test-value");
@@ -305,13 +305,13 @@ public class ReadWriteStoreTests : IDisposable
     }
 
     [Fact]
-    public void rocksdb_snapshot_delete_key_instance_isolation()
+    public void RocksDbSnapshotDeleteKeyInstanceIsolation()
     {
         using var store = GetStore(StoreType.RocksDb);
-        test_snapshot_delete_key_instance_isolation(store);
+        TestSnapshotDeleteKeyInstanceIsolation(store);
     }
 
-    internal static void test_snapshot_delete_key_instance_isolation(IStore store, int index = 0)
+    internal static void TestSnapshotDeleteKeyInstanceIsolation(IStore store, int index = 0)
     {
         var (key, _) = TestData.ElementAt(index);
         var expectedKey = key.ToArray();

@@ -125,8 +125,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                if (value is null)
-                    throw new NullReferenceException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value, nameof(value));
 
                 var keyBytes = key?.AsSpan().ToArray() ?? Array.Empty<byte>();
                 var valueBytes = value.AsSpan().ToArray();

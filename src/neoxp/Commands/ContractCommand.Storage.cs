@@ -172,54 +172,56 @@ namespace NeoExpress.Commands
                             : throw new InvalidOperationException($"contract \"{contract}\" not found");
 
                     var internalPair = (
-                        ConvertArg(parser, key),
-                        ConvertArg(parser, value)
+                        ConvertStorageArgument(parser, key),
+                        ConvertStorageArgument(parser, value)
                         );
                     await expressNode.PersistStorageKeyValueAsync(scriptHash, internalPair);
+                }
 
-                    static string ConvertArg(ContractParameterParser parser, string arg)
+                internal static string ConvertStorageArgument(ContractParameterParser parser, string arg)
+                {
+                    var parameter = parser.ParseStringParameter(arg);
+                    var paramValue = parameter.Value;
+
+                    byte[] result;
+                    if (paramValue is string strValue)
                     {
-                        var parameter = parser.ParseStringParameter(arg);
-                        var paramValue = parameter.Value;
-
-                        byte[] result;
-                        if (paramValue is string strValue)
+                        try
                         {
-                            try
+                            _ = Convert.FromBase64String(strValue);
+                            return strValue;
+                        }
+                        catch
+                        {
+                            if (BigInteger.TryParse(strValue, out var integerValue))
                             {
-                                var fromBase64 = Convert.FromBase64String(strValue);
-                                return strValue;
+                                result = integerValue.ToByteArray();
                             }
-                            catch
+                            else if (bool.TryParse(strValue, out var boolValue))
                             {
-                                if (BigInteger.TryParse(strValue, out var integerValue))
-                                {
-                                    result = integerValue.ToByteArray();
-                                }
-                                else if (bool.TryParse(strValue, out var boolValue))
-                                {
-                                    result = new byte[] { Convert.ToByte(boolValue) };
-                                }
-                                else
-                                {
-                                    result = Encoding.ASCII.GetBytes(strValue);
-                                }
+                                result = new byte[] { Convert.ToByte(boolValue) };
+                            }
+                            else
+                            {
+                                result = Encoding.UTF8.GetBytes(strValue);
                             }
                         }
-                        else if (paramValue is byte[] value)
-                        {
-                            result = value;
-                        }
-                        else if (paramValue is UInt160 hashValue)
-                        {
-                            result = ((byte[])parser.ParseStringParameter(hashValue.ToString()).Value).Reverse().ToArray();
-                        }
-                        else
-                        {
-                            result = Encoding.ASCII.GetBytes(parameter.ToString());
-                        }
-                        return Convert.ToBase64String(result);
                     }
+                    else if (paramValue is byte[] value)
+                    {
+                        result = value;
+                    }
+                    else if (paramValue is UInt160 hashValue)
+                    {
+                        var hashBytes = parser.ParseStringParameter(hashValue.ToString()).Value as byte[]
+                            ?? throw new InvalidOperationException($"script hash \"{hashValue}\" could not be converted to bytes");
+                        result = hashBytes.Reverse().ToArray();
+                    }
+                    else
+                    {
+                        result = Encoding.UTF8.GetBytes(parameter.ToString());
+                    }
+                    return Convert.ToBase64String(result);
                 }
 
                 internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

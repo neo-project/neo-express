@@ -214,7 +214,7 @@ public class TrackingStoreTests : IDisposable
     }
 
     [Fact]
-    public void persistent_tracking_reset_discards_tracked_changes()
+    public void PersistentTrackingResetDiscardsTrackedChanges()
     {
         var existingKey = Bytes(0);
         var existingValue = Bytes("existing-value");

@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
                 internal string Input { get; init; } = string.Empty;
 
                 [Option(Description = "Output as JSON")]
-                internal bool Json { get; }
+                internal bool Json { get; init; } = false;
 
                 internal async Task WriteStoragesAsync(IExpressNode expressNode, TextWriter writer, IReadOnlyList<(UInt160 hash, ContractManifest)> contracts)
                 {
@@ -53,8 +53,7 @@ namespace NeoExpress.Commands
                     {
                         using var jsonWriter = new JsonTextWriter(writer);
 
-                        if (contracts.Count > 1)
-                            await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+                        await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
 
                         for (int i = 0; i < contracts.Count; i++)
                         {
@@ -80,8 +79,7 @@ namespace NeoExpress.Commands
                             await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
                         }
 
-                        if (contracts.Count > 1)
-                            await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                        await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
                     }
                     else
                     {

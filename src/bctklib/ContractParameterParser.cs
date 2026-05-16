@@ -446,7 +446,7 @@ namespace Neo.BlockchainToolkit
 
         static bool TryParseHexString(string hexString, [MaybeNullWhen(false)] out byte[] array)
         {
-            if (hexString.StartsWith("0x"))
+            if (hexString.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {

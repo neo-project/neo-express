@@ -20,7 +20,7 @@ namespace test.workflowvalidation;
 public class ContractStorageUpdateCommandTests
 {
     [Fact]
-    public void ConvertStorageArgument_preserves_unicode_text_as_utf8()
+    public void ConvertStorageArgument_PreservesUnicodeTextAsUtf8()
     {
         var parser = new ContractParameterParser(ProtocolSettings.Default);
         const string value = "neo-汉字";
@@ -31,7 +31,7 @@ public class ContractStorageUpdateCommandTests
     }
 
     [Fact]
-    public void ConvertStorageArgument_preserves_base64_input()
+    public void ConvertStorageArgument_PreservesBase64Input()
     {
         var parser = new ContractParameterParser(ProtocolSettings.Default);
         var value = Convert.ToBase64String([0xde, 0xad, 0xbe, 0xef]);

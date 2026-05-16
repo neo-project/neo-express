@@ -53,15 +53,7 @@ namespace NeoExpress.Commands
                     {
                         using var jsonWriter = new JsonTextWriter(writer);
 
-                        if (contracts.Count == 0)
-                        {
-                            await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
-                            await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
-                            return;
-                        }
-
-                        if (contracts.Count > 1)
-                            await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+                        await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
 
                         for (int i = 0; i < contracts.Count; i++)
                         {
@@ -87,8 +79,7 @@ namespace NeoExpress.Commands
                             await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
                         }
 
-                        if (contracts.Count > 1)
-                            await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                        await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
                     }
                     else
                     {

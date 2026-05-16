@@ -142,7 +142,7 @@ namespace Neo.Test.Runner
                         await writer.WriteEndArrayAsync();
                         await writer.WritePropertyNameAsync("truncated");
                         await writer.WriteValueAsync(iterator.Next());
-                        await writer.WriteEndArrayAsync();
+                        await writer.WriteEndObjectAsync();
                         break;
                     }
             }

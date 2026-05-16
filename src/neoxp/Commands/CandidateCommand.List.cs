@@ -9,6 +9,8 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
+using System.Globalization;
 
 namespace NeoExpress.Commands
 {
@@ -42,13 +44,39 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
                     var list = await txExec.ListCandidatesAsync().ConfigureAwait(false);
-                    list.ForEach(x => console.Out.WriteLine(x));
+                    await WriteCandidatesAsync(console.Out, list, Json).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
                 {
                     app.WriteException(ex, true);
                     return 1;
+                }
+            }
+
+            internal static async Task WriteCandidatesAsync(TextWriter writer, IReadOnlyList<TransactionExecutor.CandidateInfo> candidates, bool json)
+            {
+                if (json)
+                {
+                    using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+                    await jsonWriter.WriteStartArrayAsync().ConfigureAwait(false);
+                    foreach (var candidate in candidates)
+                    {
+                        await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
+                        await jsonWriter.WritePropertyNameAsync("public-key").ConfigureAwait(false);
+                        await jsonWriter.WriteValueAsync(candidate.PublicKey).ConfigureAwait(false);
+                        await jsonWriter.WritePropertyNameAsync("votes").ConfigureAwait(false);
+                        await jsonWriter.WriteValueAsync(candidate.Votes.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
+                        await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
+                    }
+                    await jsonWriter.WriteEndArrayAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    foreach (var candidate in candidates)
+                    {
+                        await writer.WriteLineAsync($"{candidate.PublicKey,-67}{candidate.Votes.ToString(CultureInfo.InvariantCulture)}").ConfigureAwait(false);
+                    }
                 }
             }
         }

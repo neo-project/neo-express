@@ -36,6 +36,8 @@ namespace NeoExpress
     {
         internal const long MaxOracleResponseFileBytes = 4 * 1024 * 1024;
 
+        internal readonly record struct CandidateInfo(string PublicKey, BigInteger Votes);
+
         readonly ExpressChainManager chainManager;
         readonly IExpressNode expressNode;
         readonly IFileSystem fileSystem;
@@ -620,14 +622,13 @@ namespace NeoExpress
             await writer.WriteTxHashAsync(txHash, $"Vote/Unvote", json).ConfigureAwait(false);
         }
 
-        public async Task<List<string>> ListCandidatesAsync()
+        public async Task<List<CandidateInfo>> ListCandidatesAsync()
         {
             using var builder = new ScriptBuilder();
             builder.EmitDynamicCall(NativeContract.NEO.Hash, "getCandidates");
 
             var result = await expressNode.InvokeAsync(builder.ToArray()).ConfigureAwait(false);
-            var stack = result.Stack;
-            var list = new List<string>();
+            var list = new List<CandidateInfo>();
             try
             {
                 if (result.State != VMState.FAULT
@@ -637,7 +638,11 @@ namespace NeoExpress
                     for (var i = 0; i < array.Count; i++)
                     {
                         var value = (Neo.VM.Types.Array)array[i];
-                        list.Add($"{((Neo.VM.Types.ByteString?)value?[0])?.GetSpan().ToHexString(),-67}{((Neo.VM.Types.Integer?)value?[1])?.GetInteger()}");
+                        var publicKey = ((Neo.VM.Types.ByteString?)value?[0])?.GetSpan().ToHexString()
+                            ?? throw new InvalidOperationException();
+                        var votes = ((Neo.VM.Types.Integer?)value?[1])?.GetInteger()
+                            ?? throw new InvalidOperationException();
+                        list.Add(new CandidateInfo(publicKey, votes));
                     }
                 }
             }

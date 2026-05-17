@@ -36,7 +36,6 @@ public class PrivateKeyParsingTests
     {
         var privateKey = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
         var text = Convert.ToBase64String(privateKey);
-
         var parsed = ExpressChainManager.ParsePrivateKey(text);
 
         parsed.Should().Equal(privateKey);
@@ -48,7 +47,6 @@ public class PrivateKeyParsingTests
     public void ParsePrivateKeyRejectsWrongLengthBase64PrivateKey(int length)
     {
         var text = Convert.ToBase64String(Enumerable.Repeat((byte)1, length).ToArray());
-
         var parse = () => ExpressChainManager.ParsePrivateKey(text);
 
         parse.Should().Throw<FormatException>();
@@ -60,7 +58,6 @@ public class PrivateKeyParsingTests
     public void ParsePrivateKeyRejectsWrongLengthHexPrivateKey(int length)
     {
         var text = Convert.ToHexString(Enumerable.Repeat((byte)1, length).ToArray());
-
         var parse = () => ExpressChainManager.ParsePrivateKey(text);
 
         parse.Should().Throw<FormatException>();

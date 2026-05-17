@@ -125,33 +125,33 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                if (value is null)
-                    throw new NullReferenceException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value, nameof(value));
 
-                key ??= Array.Empty<byte>();
+                var keyBytes = key?.AsSpan().ToArray() ?? Array.Empty<byte>();
+                var valueBytes = value.AsSpan().ToArray();
 
                 // Track the change in uncommitted changes
-                uncommittedChanges = uncommittedChanges.SetItem(key, (ReadOnlyMemory<byte>)value);
+                uncommittedChanges = uncommittedChanges.SetItem(keyBytes, (ReadOnlyMemory<byte>)valueBytes);
 
-                writeBatch.PutVector(columnFamily, key, UPDATED_PREFIX, value);
+                writeBatch.PutVector(columnFamily, keyBytes, UPDATED_PREFIX, valueBytes);
             }
 
             public void Delete(byte[]? key)
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                key ??= Array.Empty<byte>();
+                var keyBytes = key?.AsSpan().ToArray() ?? Array.Empty<byte>();
 
                 // Track the deletion in uncommitted changes
-                uncommittedChanges = uncommittedChanges.SetItem(key, default(None));
+                uncommittedChanges = uncommittedChanges.SetItem(keyBytes, default(None));
 
-                if (store.Contains(key))
+                if (store.Contains(keyBytes))
                 {
-                    writeBatch.Put(key.AsSpan(), DELETED_PREFIX.Span, columnFamily);
+                    writeBatch.Put(keyBytes.AsSpan(), DELETED_PREFIX.Span, columnFamily);
                 }
                 else
                 {
-                    writeBatch.Delete(key, columnFamily);
+                    writeBatch.Delete(keyBytes, columnFamily);
                 }
             }
 

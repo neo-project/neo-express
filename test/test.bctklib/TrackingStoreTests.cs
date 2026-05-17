@@ -193,6 +193,27 @@ public class TrackingStoreTests : IDisposable
     }
 
     [Theory, CombinatorialData]
+    public void SnapshotKeyInstanceIsolation(StoreType storeType)
+    {
+        using var store = GetStore(storeType);
+        TestSnapshotKeyInstanceIsolation(store);
+    }
+
+    [Theory, CombinatorialData]
+    public void SnapshotValueInstanceIsolation(StoreType storeType)
+    {
+        using var store = GetStore(storeType);
+        TestSnapshotValueInstanceIsolation(store);
+    }
+
+    [Theory, CombinatorialData]
+    public void SnapshotDeleteKeyInstanceIsolation(StoreType storeType, [CombinatorialValues(0, 1, 5)] int index)
+    {
+        using var store = GetStore(storeType);
+        TestSnapshotDeleteKeyInstanceIsolation(store, index);
+    }
+
+    [Theory, CombinatorialData]
     public void put_null_value_throws(StoreType storeType)
     {
         using var store = GetStore(storeType);

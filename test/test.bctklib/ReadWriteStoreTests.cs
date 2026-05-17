@@ -179,9 +179,7 @@ public class ReadWriteStoreTests : IDisposable
         using var snapshot = store.GetSnapshot();
         snapshot.Put(key, value);
 
-        var found = snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
-            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value));
-        found.Should().BeTrue();
+        AssertFindContains(snapshot, key, value);
     }
 
     [Fact]
@@ -200,9 +198,27 @@ public class ReadWriteStoreTests : IDisposable
 
         snapshot.TryGet(key, out var deletedValue).Should().BeFalse();
         deletedValue.Should().BeNull();
-        var found = snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
-            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value));
-        found.Should().BeFalse();
+        AssertFindDoesNotContain(snapshot, key, value);
+    }
+
+    static void AssertFindContains(IStoreSnapshot snapshot, byte[] key, byte[] value)
+    {
+        snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeTrue();
+        snapshot.Find([byte.MaxValue], SeekDirection.Backward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeTrue();
+    }
+
+    static void AssertFindDoesNotContain(IStoreSnapshot snapshot, byte[] key, byte[] value)
+    {
+        snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeFalse();
+        snapshot.Find([byte.MaxValue], SeekDirection.Backward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeFalse();
     }
 
     [Theory, CombinatorialData]

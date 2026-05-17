@@ -111,7 +111,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                return PersistentTrackingStore.Seek(key, direction, db, columnFamily, readOptions, store);
+                return FindWithUncommittedChanges(key, direction);
             }
 
             public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)

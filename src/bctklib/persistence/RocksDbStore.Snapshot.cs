@@ -100,7 +100,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
             IEnumerable<(byte[] Key, byte[] Value)> FindWithPendingWrites(byte[]? key, SeekDirection direction)
             {
-                key ??= Array.Empty<byte>();
+                key ??= [];
                 if (key.Length == 0 && direction == SeekDirection.Backward)
                 {
                     return Enumerable.Empty<(byte[] Key, byte[] Value)>();

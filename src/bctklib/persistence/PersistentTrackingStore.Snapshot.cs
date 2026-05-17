@@ -69,7 +69,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     throw new ObjectDisposedException(nameof(Snapshot));
 
                 // First check if the key is in uncommitted changes
-                key ??= Array.Empty<byte>();
+                key ??= [];
                 if (uncommittedChanges.TryGetValue(key, out var changeValue))
                 {
                     if (changeValue.TryPickT0(out var changeValueData, out var _))
@@ -96,7 +96,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     throw new ObjectDisposedException(nameof(Snapshot));
 
                 // First check if the key is in uncommitted changes
-                key ??= Array.Empty<byte>();
+                key ??= [];
                 if (uncommittedChanges.TryGetValue(key, out var changeValue))
                 {
                     return changeValue.IsT0; // True if it's a value, false if it's a deletion
@@ -123,7 +123,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
             IEnumerable<(byte[] Key, byte[] Value)> FindWithUncommittedChanges(byte[]? key, SeekDirection direction)
             {
-                key ??= Array.Empty<byte>();
+                key ??= [];
                 if (key.Length == 0 && direction == SeekDirection.Backward)
                 {
                     return Enumerable.Empty<(byte[] Key, byte[] Value)>();
@@ -152,7 +152,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (value is null)
                     throw new NullReferenceException(nameof(value));
 
-                key ??= Array.Empty<byte>();
+                key ??= [];
 
                 // Track the change in uncommitted changes
                 uncommittedChanges = uncommittedChanges.SetItem(key, (ReadOnlyMemory<byte>)value);
@@ -164,7 +164,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                key ??= Array.Empty<byte>();
+                key ??= [];
 
                 // Track the deletion in uncommitted changes
                 uncommittedChanges = uncommittedChanges.SetItem(key, default(None));

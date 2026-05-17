@@ -9,6 +9,9 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NeoExpress.Commands
 {
@@ -42,7 +45,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
                     var list = await txExec.ListCandidatesAsync().ConfigureAwait(false);
-                    list.ForEach(x => console.Out.WriteLine(x));
+                    await WriteCandidatesAsync(console.Out, list, Json).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -51,6 +54,30 @@ namespace NeoExpress.Commands
                     return 1;
                 }
             }
+
+            internal static async Task WriteCandidatesAsync(TextWriter writer, IReadOnlyList<TransactionExecutor.CandidateInfo> candidates, bool json)
+            {
+                if (json)
+                {
+                    var output = candidates.Select(candidate => new CandidateJson(
+                        candidate.PublicKey,
+                        candidate.Votes.ToString(CultureInfo.InvariantCulture)));
+                    await writer.WriteAsync(JsonSerializer.Serialize(output, JsonOptions)).ConfigureAwait(false);
+                }
+                else
+                {
+                    foreach (var candidate in candidates)
+                    {
+                        await writer.WriteLineAsync($"{candidate.PublicKey,-67}{candidate.Votes.ToString(CultureInfo.InvariantCulture)}").ConfigureAwait(false);
+                    }
+                }
+            }
+
+            private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
+            private sealed record CandidateJson(
+                [property: JsonPropertyName("public-key")] string PublicKey,
+                [property: JsonPropertyName("votes")] string Votes);
         }
     }
 }

@@ -5,7 +5,6 @@
         <Company>The Neo Project</Company>
         <Copyright>2015-2026 The Neo Project</Copyright>
         <ImplicitUsings>enable</ImplicitUsings>
-        <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
         <PackageIcon>neo-logo-72.png</PackageIcon>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>

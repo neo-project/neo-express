@@ -417,6 +417,10 @@ namespace Neo.BlockchainToolkit
                     throw new System.IO.FileNotFoundException(null, file);
                 }
 
+                var fileInfo = fileSystem.FileInfo.New(file);
+                if (fileInfo.Length > MaxInvocationFileBytes)
+                    throw new Exception($"Parameter file {file} is invalid: file is larger than {MaxInvocationFileBytes} bytes");
+
                 return new ContractParameter(ContractParameterType.ByteArray)
                 {
                     Value = fileSystem.File.ReadAllBytes(file)
@@ -446,7 +450,7 @@ namespace Neo.BlockchainToolkit
 
         static bool TryParseHexString(string hexString, [MaybeNullWhen(false)] out byte[] array)
         {
-            if (hexString.StartsWith("0x"))
+            if (hexString.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {

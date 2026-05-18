@@ -34,14 +34,23 @@ namespace NeoTestHarness
             }
             else
             {
+                var originalCheckpointPath = checkpointPath;
                 var directory = Path.GetFullPath(".");
-                var tempPath = Path.GetFullPath(checkpointPath, directory);
-                while (!File.Exists(tempPath))
+                while (true)
                 {
-                    directory = Path.GetDirectoryName(directory);
-                    tempPath = Path.GetFullPath(checkpointPath, directory!);
+                    var tempPath = Path.GetFullPath(checkpointPath, directory);
+                    if (File.Exists(tempPath))
+                    {
+                        checkpointPath = tempPath;
+                        break;
+                    }
+
+                    var parentDirectory = Path.GetDirectoryName(directory);
+                    if (parentDirectory is null)
+                        throw new FileNotFoundException("couldn't find checkpoint", originalCheckpointPath);
+
+                    directory = parentDirectory;
                 }
-                checkpointPath = tempPath;
             }
 
             checkpointStore = new CheckpointStore(checkpointPath);
@@ -56,4 +65,3 @@ namespace NeoTestHarness
             => (fileSystem ?? defaultFileSystem.Value).FindChain(fileName, searchFolder);
     }
 }
-

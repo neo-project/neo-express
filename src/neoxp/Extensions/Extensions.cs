@@ -239,7 +239,7 @@ namespace NeoExpress
         {
             if (json)
             {
-                await writer.WriteLineAsync($"{txHash}").ConfigureAwait(false);
+                await writer.WriteAsync($"\"{txHash}\"").ConfigureAwait(false);
             }
             else
             {

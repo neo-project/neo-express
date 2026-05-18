@@ -19,6 +19,8 @@ namespace NeoExpress
 {
     static class FileSystemExtensions
     {
+        internal const int MaxContractFileBytes = 4 * 1024 * 1024;
+
         public static string ResolveFileName(this IFileSystem fileSystem, string fileName, string extension, Func<string> getDefaultFileName)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -77,7 +79,7 @@ namespace NeoExpress
 
             static async Task<NefFile> LoadNefAsync(IFileSystem fileSystem, string contractPath)
             {
-                var buffer = await fileSystem.File.ReadAllBytesAsync(contractPath).ConfigureAwait(false);
+                var buffer = await ReadContractFileAsync(fileSystem, contractPath, "Contract file").ConfigureAwait(false);
                 try
                 {
                     return LoadNef(buffer);
@@ -98,7 +100,7 @@ namespace NeoExpress
             static async Task<ContractManifest> LoadManifestAsync(IFileSystem fileSystem, string contractPath)
             {
                 var path = fileSystem.Path.ChangeExtension(contractPath, ".manifest.json");
-                var buffer = await fileSystem.File.ReadAllBytesAsync(path).ConfigureAwait(false);
+                var buffer = await ReadContractFileAsync(fileSystem, path, "Contract manifest").ConfigureAwait(false);
                 try
                 {
                     return ContractManifest.Parse(buffer);
@@ -107,6 +109,15 @@ namespace NeoExpress
                 {
                     throw new Exception($"Contract manifest '{path}' is invalid: {ex.Message}");
                 }
+            }
+
+            static async Task<byte[]> ReadContractFileAsync(IFileSystem fileSystem, string path, string description)
+            {
+                var fileInfo = fileSystem.FileInfo.New(path);
+                if (fileInfo.Length > MaxContractFileBytes)
+                    throw new Exception($"{description} '{path}' is invalid: file is larger than {MaxContractFileBytes} bytes");
+
+                return await fileSystem.File.ReadAllBytesAsync(path).ConfigureAwait(false);
             }
         }
     }

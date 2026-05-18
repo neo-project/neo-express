@@ -312,6 +312,79 @@ public class ReadWriteStoreTests : IDisposable
         retrievedValue.Should().BeEquivalentTo(Bytes("test-value"));
     }
 
+    [Fact]
+    public void RocksDbSnapshotKeyInstanceIsolation()
+    {
+        using var store = GetStore(StoreType.RocksDb);
+        TestSnapshotKeyInstanceIsolation(store);
+    }
+
+    internal static void TestSnapshotKeyInstanceIsolation(IStore store)
+    {
+        var key = Bytes(0);
+        var value = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, value);
+
+        key[0] = 0xff;
+        snapshot.TryGet(Bytes(0), out var snapshotValue).Should().BeTrue();
+        snapshotValue.Should().BeEquivalentTo(value);
+
+        snapshot.Commit();
+        store.TryGet(Bytes(0), out var committedValue).Should().BeTrue();
+        committedValue.Should().BeEquivalentTo(value);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotValueInstanceIsolation()
+    {
+        using var store = GetStore(StoreType.RocksDb);
+        TestSnapshotValueInstanceIsolation(store);
+    }
+
+    internal static void TestSnapshotValueInstanceIsolation(IStore store)
+    {
+        var key = Bytes(0);
+        var value = Bytes("test-value");
+        var expected = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, value);
+
+        value[0] = 0xff;
+        snapshot.TryGet(key, out var snapshotValue).Should().BeTrue();
+        snapshotValue.Should().BeEquivalentTo(expected);
+
+        snapshot.Commit();
+        store.TryGet(key, out var committedValue).Should().BeTrue();
+        committedValue.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotDeleteKeyInstanceIsolation()
+    {
+        using var store = GetStore(StoreType.RocksDb);
+        TestSnapshotDeleteKeyInstanceIsolation(store);
+    }
+
+    internal static void TestSnapshotDeleteKeyInstanceIsolation(IStore store, int index = 0)
+    {
+        var (key, _) = TestData.ElementAt(index);
+        var expectedKey = key.ToArray();
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Delete(key);
+
+        key[0] = 0xff;
+        snapshot.TryGet(expectedKey, out var snapshotValue).Should().BeFalse();
+        snapshotValue.Should().BeNull();
+
+        snapshot.Commit();
+        store.TryGet(expectedKey, out var committedValue).Should().BeFalse();
+        committedValue.Should().BeNull();
+    }
+
     [Theory, CombinatorialData]
     public void put_null_value_throws(StoreType storeType)
     {

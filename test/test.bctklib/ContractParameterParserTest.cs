@@ -65,6 +65,23 @@ namespace test.bctklib
         }
 
         [Fact]
+        public void ParseObjectParameter_bytearray_uppercase_hex_prefix()
+        {
+            var value = "0XBCBBCD38FB0C097BE28E6AEF0177F5D65534EB3B";
+            var expected = Convert.FromHexString(value.AsSpan(2));
+            var json = new JObject()
+            {
+                ["type"] = "ByteArray",
+                ["value"] = value
+            };
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
+            var param = parser.ParseObjectParameter(json);
+            param.Type.Should().Be(ContractParameterType.ByteArray);
+            param.Value.Should().BeOfType<byte[]>();
+            ((byte[])param.Value).AsSpan().SequenceEqual(expected).Should().BeTrue();
+        }
+
+        [Fact]
         public void TestParseStringParameter_string()
         {
             const string expected = "string-value";
@@ -184,6 +201,17 @@ namespace test.bctklib
             param.Value.Should().BeEquivalentTo(expected);
         }
 
+        [Fact]
+        public void TestParseStringParameter_uppercase_hex_prefix()
+        {
+            const string hexstring = "0XBCBBCD38FB0C097BE28E6AEF0177F5D65534EB3B";
+            var expected = Convert.FromHexString(hexstring.AsSpan()[2..]);
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
+            var param = parser.ParseStringParameter(hexstring);
+            param.Type.Should().Be(ContractParameterType.ByteArray);
+            param.Value.Should().BeEquivalentTo(expected);
+        }
+
         static string FakeRootPath()
         {
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -271,6 +299,21 @@ namespace test.bctklib
             var exception = Assert.Throws<FileNotFoundException>(() => parser.ParseStringParameter($"file://{someFakePathFile}"));
 
             Assert.Equal(someFakePathFile, exception.FileName);
+        }
+
+        [Fact]
+        public void TestParseStringParameter_file_uri_rejects_oversized_file()
+        {
+            var fileSystem = new MockFileSystem();
+            var rootPath = fileSystem.AllDirectories.First();
+            var someFakePathFile = fileSystem.Path.Combine(rootPath, "some", "fake", "path", "file.txt");
+            fileSystem.AddFile(someFakePathFile, new MockFileData(new string(' ', (int)ContractParameterParser.MaxInvocationFileBytes + 1)));
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION, fileSystem: fileSystem);
+            var action = () => parser.ParseStringParameter($"file://{someFakePathFile}");
+
+            var exception = action.Should().Throw<Exception>();
+            exception.Which.Message.Should().Be($"Parameter file {someFakePathFile} is invalid: file is larger than {ContractParameterParser.MaxInvocationFileBytes} bytes");
         }
 
         [Theory]

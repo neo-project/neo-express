@@ -126,16 +126,19 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                var keyBytes = key ?? Array.Empty<byte>();
-                writeBatch.Put(keyBytes, value, columnFamily);
-                pendingWrites[keyBytes] = value;
+                ArgumentNullException.ThrowIfNull(value, nameof(value));
+
+                var keyBytes = key?.AsSpan().ToArray() ?? Array.Empty<byte>();
+                var valueBytes = value.AsSpan().ToArray();
+                writeBatch.Put(keyBytes, valueBytes, columnFamily);
+                pendingWrites[keyBytes] = valueBytes;
             }
 
             public void Delete(byte[]? key)
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                var keyBytes = key ?? Array.Empty<byte>();
+                var keyBytes = key?.AsSpan().ToArray() ?? Array.Empty<byte>();
                 writeBatch.Delete(keyBytes, columnFamily);
                 pendingWrites[keyBytes] = null; // null indicates deletion
             }

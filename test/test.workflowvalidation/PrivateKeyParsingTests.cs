@@ -42,6 +42,19 @@ public class PrivateKeyParsingTests
     }
 
     [Theory]
+    [InlineData("")]
+    [InlineData("0x")]
+    [InlineData("0X")]
+    public void ParsePrivateKeyAcceptsHexPrivateKeyWithOptionalPrefix(string prefix)
+    {
+        var privateKey = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
+        var text = $"{prefix}{Convert.ToHexString(privateKey)}";
+        var parsed = ExpressChainManager.ParsePrivateKey(text);
+
+        parsed.Should().Equal(privateKey);
+    }
+
+    [Theory]
     [InlineData(31)]
     [InlineData(33)]
     public void ParsePrivateKeyRejectsWrongLengthBase64PrivateKey(int length)

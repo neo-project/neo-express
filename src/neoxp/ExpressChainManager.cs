@@ -105,6 +105,7 @@ namespace NeoExpress
 
         static bool TryParseHexPrivateKey(string text, [NotNullWhen(true)] out byte[]? privateKey)
         {
+            text = TrimHexPrefix(text);
             if (text.Length != PrivateKeyLength * 2)
             {
                 privateKey = null;
@@ -123,6 +124,9 @@ namespace NeoExpress
             privateKey = null;
             return false;
         }
+
+        static string TrimHexPrefix(string text)
+            => text.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? text[2..] : text;
 
         private string ResolveCheckpointFileName(string path) => ResolveCheckpointFileName(fileSystem, path);
 

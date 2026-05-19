@@ -19,12 +19,6 @@ namespace Neo.Test.Runner
 {
     static class Extensions
     {
-        public static ContractParameterParser CreateContractParameterParser(this IReadOnlyStore store, ExpressChain chain, IFileSystem? fileSystem = null)
-        {
-            var tryGetContract = CreateTryGetContract(store);
-            return CreateContractParameterParser(chain, tryGetContract, fileSystem);
-        }
-
         public static ContractParameterParser CreateContractParameterParser(this ExpressChain chain, ContractParameterParser.TryGetUInt160 tryGetContract, IFileSystem? fileSystem = null)
         {
             ContractParameterParser.TryGetUInt160 tryGetAccount = (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) =>
@@ -43,12 +37,6 @@ namespace Neo.Test.Runner
                                                tryGetAccount: tryGetAccount,
                                                tryGetContract: tryGetContract,
                                                fileSystem: fileSystem);
-        }
-
-        public static ContractParameterParser CreateContractParameterParser(this IReadOnlyStore store, ProtocolSettings settings, IFileSystem? fileSystem = null)
-        {
-            var tryGetContract = CreateTryGetContract(store);
-            return CreateContractParameterParser(settings, tryGetContract, fileSystem);
         }
 
         public static ContractParameterParser CreateContractParameterParser(this ProtocolSettings settings, ContractParameterParser.TryGetUInt160 tryGetContract, IFileSystem? fileSystem = null)
@@ -70,18 +58,6 @@ namespace Neo.Test.Runner
             }
 
             return CreateTryGetContractFromArray(contracts);
-        }
-
-        public static ContractParameterParser.TryGetUInt160 CreateTryGetContract(this IReadOnlyStore store)
-        {
-            // For IReadOnlyStore, we need to use a different approach since it doesn't have GetSnapshot()
-            // We'll create a minimal implementation that returns a no-op function
-            // This maintains compatibility but with limited functionality
-            return (string name, [MaybeNullWhen(false)] out UInt160 scriptHash) =>
-            {
-                scriptHash = null!;
-                return false;
-            };
         }
 
         private static ContractParameterParser.TryGetUInt160 CreateTryGetContractFromArray((string name, UInt160 hash)[] contracts)

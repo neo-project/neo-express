@@ -20,6 +20,7 @@ using Neo.Plugins.RpcServer;
 using NeoExpress.Models;
 using NeoExpress.Node;
 using Nito.Disposables;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Net;
 
@@ -49,6 +50,83 @@ namespace NeoExpress
         }
 
         public ExpressChain Chain => chain;
+
+        private const int PrivateKeyLength = 32;
+
+        internal static byte[] ParsePrivateKey(string privateKey)
+        {
+            if (TryParseBase64PrivateKey(privateKey, out var privateKeyBytes)
+                || TryParseWifPrivateKey(privateKey, out privateKeyBytes)
+                || TryParseHexPrivateKey(privateKey, out privateKeyBytes))
+            {
+                return privateKeyBytes;
+            }
+
+            throw new FormatException("Private key must be in HEX, Base64, or WIF format.");
+        }
+
+        static bool TryParseBase64PrivateKey(string text, [NotNullWhen(true)] out byte[]? privateKey)
+        {
+            var buffer = new byte[PrivateKeyLength];
+            if (Convert.TryFromBase64String(text, buffer, out var bytesWritten)
+                && bytesWritten == PrivateKeyLength)
+            {
+                privateKey = buffer;
+                return true;
+            }
+
+            privateKey = null;
+            return false;
+        }
+
+        static bool TryParseWifPrivateKey(string text, [NotNullWhen(true)] out byte[]? privateKey)
+        {
+            if (text.Length is not (51 or 52))
+            {
+                privateKey = null;
+                return false;
+            }
+
+            try
+            {
+                privateKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(text);
+                if (privateKey.Length == PrivateKeyLength)
+                {
+                    return true;
+                }
+            }
+            catch (FormatException)
+            {
+            }
+
+            privateKey = null;
+            return false;
+        }
+
+        static bool TryParseHexPrivateKey(string text, [NotNullWhen(true)] out byte[]? privateKey)
+        {
+            text = TrimHexPrefix(text);
+            if (text.Length != PrivateKeyLength * 2)
+            {
+                privateKey = null;
+                return false;
+            }
+
+            try
+            {
+                privateKey = Convert.FromHexString(text);
+                return true;
+            }
+            catch (FormatException)
+            {
+            }
+
+            privateKey = null;
+            return false;
+        }
+
+        static string TrimHexPrefix(string text)
+            => text.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? text[2..] : text;
 
         private string ResolveCheckpointFileName(string path) => ResolveCheckpointFileName(fileSystem, path);
 
@@ -424,17 +502,7 @@ namespace NeoExpress
             byte[]? priKey = null;
             if (string.IsNullOrEmpty(privateKey) == false)
             {
-                try
-                {
-                    if (privateKey.StartsWith('L'))
-                        priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(privateKey);
-                    else
-                        priKey = Convert.FromHexString(privateKey);
-                }
-                catch (FormatException)
-                {
-                    throw new FormatException("Private key must be in HEX or WIF format.");
-                }
+                priKey = ParsePrivateKey(privateKey);
             }
 
             var wallet = new DevWallet(ProtocolSettings, name);

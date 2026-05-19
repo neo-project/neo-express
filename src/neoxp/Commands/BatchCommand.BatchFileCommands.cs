@@ -331,7 +331,7 @@ namespace NeoExpress.Commands
                     [Option(Description = "Overwrite existing data")]
                     internal bool Force { get; }
 
-                    [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
+                    [Option(Description = "Private key for account (Format: HEX, Base64, or WIF)\nDefault: Random")]
                     internal string PrivateKey { get; set; } = string.Empty;
                 }
             }

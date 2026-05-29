@@ -110,6 +110,8 @@ namespace Neo.BlockchainToolkit.Persistence
                     ? MemorySequenceComparer.Default
                     : MemorySequenceComparer.Reverse;
 
+                var shadowedStoreKeys = new HashSet<byte[]>(pendingWrites.Keys, pendingWrites.Comparer);
+
                 var pendingItems = pendingWrites
                     .Where(kvp => kvp.Value is not null)
                     .Where(kvp => comparer.Compare(kvp.Key, key) >= 0)
@@ -117,7 +119,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
                 var storeItems = RocksDbStore
                     .Seek(key, direction, db, columnFamily, readOptions)
-                    .Where(kvp => !pendingWrites.ContainsKey(kvp.Key));
+                    .Where(kvp => !shadowedStoreKeys.Contains(kvp.Key));
 
                 return pendingItems.Concat(storeItems).OrderBy(kvp => kvp.Key, comparer);
             }

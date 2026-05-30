@@ -77,9 +77,21 @@ public class ExpressChainManagerCheckpointTests
         directoryMock.Setup(d => d.Exists(It.IsAny<string>()))
             .Returns((string path) =>
             {
-                if (path == nodePath) return nodeExists;
-                if (path == oldNodePath) return false;
-                if (nodePathBackup is not null && path == nodePathBackup) return backupExists;
+                if (path == nodePath)
+                {
+                    return nodeExists;
+                }
+
+                if (path == oldNodePath)
+                {
+                    return false;
+                }
+
+                if (nodePathBackup is not null && path == nodePathBackup)
+                {
+                    return backupExists;
+                }
+
                 return false;
             });
 
@@ -172,9 +184,21 @@ public class ExpressChainManagerCheckpointTests
         directoryMock.Setup(d => d.Exists(It.IsAny<string>()))
             .Returns((string path) =>
             {
-                if (path == nodePath) return nodeExists;
-                if (path == oldNodePath) return false;
-                if (nodePathBackup is not null && path == nodePathBackup) return backupExists;
+                if (path == nodePath)
+                {
+                    return nodeExists;
+                }
+
+                if (path == oldNodePath)
+                {
+                    return false;
+                }
+
+                if (nodePathBackup is not null && path == nodePathBackup)
+                {
+                    return backupExists;
+                }
+
                 return false;
             });
 

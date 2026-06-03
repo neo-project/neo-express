@@ -248,24 +248,15 @@ namespace NeoExpress
 
             var checkpointTempPath = fileSystem.GetTempFolder();
             var nodePath = fileSystem.GetNodePath(node);
-            var nodePathBackup = nodePath + ".backup-" + Guid.NewGuid().ToString().Substring(0, 8);
+            var nodePathBackup = string.Concat(nodePath, ".backup-", Guid.NewGuid().ToString().AsSpan(0, 8));
+
+            // Step 1: Restore checkpoint to temp location
+            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
 
             try
             {
-                // Step 1: Restore checkpoint to temp location
-                using var folderCleanup = AnonymousDisposable.Create(() =>
-                {
-                    if (fileSystem.Directory.Exists(checkpointTempPath))
-                    {
-                        fileSystem.Directory.Delete(checkpointTempPath, true);
-                    }
-                });
-
-                var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-                var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-                RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                    ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
-
                 // Step 2: Backup existing node directory (if exists)
                 if (fileSystem.Directory.Exists(nodePath))
                 {
@@ -287,7 +278,9 @@ namespace NeoExpress
                     if (fileSystem.Directory.Exists(nodePathBackup))
                     {
                         if (fileSystem.Directory.Exists(nodePath))
+                        {
                             fileSystem.Directory.Delete(nodePath, true);
+                        }
                         fileSystem.Directory.Move(nodePathBackup, nodePath);
                     }
                     throw;
@@ -299,14 +292,13 @@ namespace NeoExpress
                     fileSystem.Directory.Delete(nodePathBackup, true);
                 }
             }
-            catch
+            finally
             {
-                // Ensure backup is cleaned up on other errors
-                if (fileSystem.Directory.Exists(nodePathBackup))
+                // Clean up temp folder if it still exists
+                if (fileSystem.Directory.Exists(checkpointTempPath))
                 {
-                    fileSystem.Directory.Delete(nodePathBackup, true);
+                    fileSystem.Directory.Delete(checkpointTempPath, true);
                 }
-                throw;
             }
         }
 

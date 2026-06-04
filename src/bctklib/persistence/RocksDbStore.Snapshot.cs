@@ -115,13 +115,51 @@ namespace Neo.BlockchainToolkit.Persistence
                 var pendingItems = pendingWrites
                     .Where(kvp => kvp.Value is not null)
                     .Where(kvp => comparer.Compare(kvp.Key, key) >= 0)
-                    .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value!.ToArray()));
+                    .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value!.ToArray()))
+                    .OrderBy(kvp => kvp.Key, comparer);
 
                 var storeItems = RocksDbStore
                     .Seek(key, direction, db, columnFamily, readOptions)
                     .Where(kvp => !shadowedStoreKeys.Contains(kvp.Key));
 
-                return pendingItems.Concat(storeItems).OrderBy(kvp => kvp.Key, comparer);
+                return MergeSortedItems(pendingItems, storeItems, comparer);
+            }
+
+            static IEnumerable<(byte[] Key, byte[] Value)> MergeSortedItems(
+                IEnumerable<(byte[] Key, byte[] Value)> first,
+                IEnumerable<(byte[] Key, byte[] Value)> second,
+                MemorySequenceComparer comparer)
+            {
+                using var firstEnumerator = first.GetEnumerator();
+                using var secondEnumerator = second.GetEnumerator();
+                var hasFirst = firstEnumerator.MoveNext();
+                var hasSecond = secondEnumerator.MoveNext();
+
+                while (hasFirst && hasSecond)
+                {
+                    if (comparer.Compare(firstEnumerator.Current.Key, secondEnumerator.Current.Key) <= 0)
+                    {
+                        yield return firstEnumerator.Current;
+                        hasFirst = firstEnumerator.MoveNext();
+                    }
+                    else
+                    {
+                        yield return secondEnumerator.Current;
+                        hasSecond = secondEnumerator.MoveNext();
+                    }
+                }
+
+                while (hasFirst)
+                {
+                    yield return firstEnumerator.Current;
+                    hasFirst = firstEnumerator.MoveNext();
+                }
+
+                while (hasSecond)
+                {
+                    yield return secondEnumerator.Current;
+                    hasSecond = secondEnumerator.MoveNext();
+                }
             }
 
             public void Put(byte[]? key, byte[] value)

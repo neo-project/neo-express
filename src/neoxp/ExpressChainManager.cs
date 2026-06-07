@@ -248,7 +248,7 @@ namespace NeoExpress
 
             var checkpointTempPath = fileSystem.GetTempFolder();
             var nodePath = fileSystem.GetNodePath(node);
-            var nodePathBackup = string.Concat(nodePath, ".backup-", Guid.NewGuid().ToString().AsSpan(0, 8));
+            var nodePathBackup = string.Concat(nodePath, ".backup-", Guid.NewGuid().ToString("N"));
 
             // Step 1: Restore checkpoint to temp location
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);

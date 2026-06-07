@@ -183,6 +183,27 @@ public class ReadWriteStoreTests : IDisposable
     }
 
     [Fact]
+    public void RocksDbSnapshotFindIncludesUncommittedUpdate()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        TestSnapshotFindIncludesUncommittedUpdate(store);
+    }
+
+    internal static void TestSnapshotFindIncludesUncommittedUpdate(IStore store, int index = 0)
+    {
+        var (key, value) = TestData.ElementAt(index);
+        var newValue = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, newValue);
+
+        snapshot.TryGet(key, out var updatedValue).Should().BeTrue();
+        updatedValue.Should().BeEquivalentTo(newValue);
+        AssertFindContains(snapshot, key, newValue);
+        AssertFindDoesNotContain(snapshot, key, value);
+    }
+
+    [Fact]
     public void RocksDbSnapshotFindExcludesUncommittedDelete()
     {
         using var store = GetPopulatedRocksDbStore(path);

@@ -247,30 +247,59 @@ namespace NeoExpress
             }
 
             var checkpointTempPath = fileSystem.GetTempFolder();
-            using var folderCleanup = AnonymousDisposable.Create(() =>
+            var nodePath = fileSystem.GetNodePath(node);
+            var nodePathBackup = string.Concat(nodePath, ".backup-", Guid.NewGuid().ToString("N"));
+
+            // Step 1: Restore checkpoint to temp location
+            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
+            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
+            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+
+            try
             {
+                // Step 2: Backup existing node directory (if exists)
+                if (fileSystem.Directory.Exists(nodePath))
+                {
+                    if (!force)
+                    {
+                        throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
+                    }
+                    fileSystem.Directory.Move(nodePath, nodePathBackup);
+                }
+
+                // Step 3: Move restored checkpoint to node path
+                try
+                {
+                    fileSystem.Directory.Move(checkpointTempPath, nodePath);
+                }
+                catch
+                {
+                    // If move failed, restore the backup
+                    if (fileSystem.Directory.Exists(nodePathBackup))
+                    {
+                        if (fileSystem.Directory.Exists(nodePath))
+                        {
+                            fileSystem.Directory.Delete(nodePath, true);
+                        }
+                        fileSystem.Directory.Move(nodePathBackup, nodePath);
+                    }
+                    throw;
+                }
+
+                // Step 4: Clean up backup if successful
+                if (fileSystem.Directory.Exists(nodePathBackup))
+                {
+                    fileSystem.Directory.Delete(nodePathBackup, true);
+                }
+            }
+            finally
+            {
+                // Clean up temp folder if it still exists
                 if (fileSystem.Directory.Exists(checkpointTempPath))
                 {
                     fileSystem.Directory.Delete(checkpointTempPath, true);
                 }
-            });
-
-            var nodePath = fileSystem.GetNodePath(node);
-            if (fileSystem.Directory.Exists(nodePath))
-            {
-                if (!force)
-                {
-                    throw new Exception("You must specify force to restore a checkpoint to an existing blockchain.");
-                }
-
-                fileSystem.Directory.Delete(nodePath, true);
             }
-
-            var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
-            var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath,
-                ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
-            fileSystem.Directory.Move(checkpointTempPath, nodePath);
         }
 
         public void SaveChain(string path)

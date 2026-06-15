@@ -20,8 +20,9 @@ namespace Neo.BlockchainToolkit.Models
     {
         readonly Dictionary<UInt160, Account> accounts = new();
 
-        public override string Name { get; }
+        public override string Name { get; set; }
         public override Version Version => Version.Parse(ThisAssembly.AssemblyFileVersion);
+        public override bool IsUnlocked => true;
 
         public ToolkitWallet(string name, ProtocolSettings settings) : base(string.Empty, settings)
         {

@@ -81,7 +81,8 @@ namespace NeoExpress.Node
             var response = new JObject();
             response["process-id"] = proc.Id;
 
-            Log($"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds", LogLevel.Info);
+            Logs.GetLogger(nameof(ExpressRpcServerPlugin))
+                .Information("ExpressShutdown requested. Shutting down in {ShutdownTime} seconds", SHUTDOWN_TIME);
             cancellationToken.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
             return response;
         }

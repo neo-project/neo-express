@@ -60,7 +60,7 @@ namespace NeoExpress.Models
         {
             ScriptHash = reader.ReadSerializable<UInt160>();
             State = (Neo.VM.Types.Array)BinarySerializer.Deserialize(
-                ref reader, ExecutionEngineLimits.Default, null);
+                ref reader, ExecutionEngineLimits.Default);
             EventName = reader.ReadVarString();
             InventoryHash = reader.ReadSerializable<UInt256>();
             InventoryType = (InventoryType)reader.ReadByte();
@@ -131,4 +131,3 @@ namespace NeoExpress.Models
         }
     }
 }
-

@@ -17,8 +17,9 @@
         <ApplicationIcon>../neo-cli.ico</ApplicationIcon>
     </PropertyGroup>
     <PropertyGroup>
-        <NeoVersion>3.9.1</NeoVersion>
-        <NeoModuleVersion>3.9.2</NeoModuleVersion>
+        <NeoVersion>3.10.0</NeoVersion>
+        <NeoModuleVersion>3.10.0</NeoModuleVersion>
+        <NeoConsensusDbftVersion>3.9.1</NeoConsensusDbftVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>

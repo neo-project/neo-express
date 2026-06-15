@@ -58,7 +58,7 @@ namespace Neo.BlockchainToolkit.Plugins
         public void Deserialize(ref MemoryReader reader)
         {
             ScriptHash = reader.ReadSerializable<UInt160>();
-            State = (NeoArray)BinarySerializer.Deserialize(ref reader, ExecutionEngineLimits.Default, null);
+            State = (NeoArray)BinarySerializer.Deserialize(ref reader, ExecutionEngineLimits.Default);
             EventName = reader.ReadVarString();
             InventoryHash = reader.ReadSerializable<UInt256>();
             InventoryType = (InventoryType)reader.ReadByte();
@@ -74,4 +74,3 @@ namespace Neo.BlockchainToolkit.Plugins
         }
     }
 }
-

@@ -63,7 +63,7 @@ public class JsonWriterExtensionsTests
             return true;
         }
 
-        public StackItem Value(IReferenceCounter? referenceCounter)
+        public StackItem Value()
             => value;
 
         public void Dispose()

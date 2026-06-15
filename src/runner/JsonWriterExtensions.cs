@@ -137,7 +137,7 @@ namespace Neo.Test.Runner
                         await writer.WriteStartArrayAsync();
                         while (maxIteratorCount-- > 0 && iterator.Next())
                         {
-                            await writer.WriteStackItemAsync(iterator.Value(null), maxIteratorCount, context);
+                            await writer.WriteStackItemAsync(iterator.Value(), maxIteratorCount, context);
                         }
                         await writer.WriteEndArrayAsync();
                         await writer.WritePropertyNameAsync("truncated");

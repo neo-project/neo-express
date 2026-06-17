@@ -3,7 +3,7 @@
   "publisher": "ngd-seattle",
   "displayName": "Neo N3 Visual DevTracker",
   "description": "A Neo N3 blockchain explorer that is directly available within Visual Studio Code",
-  "version": "3.9.1",
+  "version": "3.10.0",
   "icon": "resources/neo-logo.png",
   "galleryBanner": {
     "color": "#242424",
@@ -363,7 +363,7 @@
     "bignumber.js": "^9.3.1",
     "bitset": "^5.2.3",
     "buffer": "^6.0.3",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.3",
     "crypto-js": "^4.2.0",
     "eslint": "^10.2.1",
     "extract-zip": "^2.0.1",

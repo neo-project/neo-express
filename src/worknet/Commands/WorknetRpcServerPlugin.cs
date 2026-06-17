@@ -63,7 +63,8 @@ class WorknetRpcServerPlugin : Plugin
         var response = new JObject();
         response["process-id"] = proc.Id;
 
-        Neo.Utility.Log(nameof(WorknetRpcServerPlugin), LogLevel.Info, $"ExpressShutdown requested. Shutting down in {SHUTDOWN_TIME} seconds");
+        Logs.GetLogger(nameof(WorknetRpcServerPlugin))
+            .Information("ExpressShutdown requested. Shutting down in {ShutdownTime} seconds", SHUTDOWN_TIME);
         cancellationToken.CancelAfter(TimeSpan.FromSeconds(SHUTDOWN_TIME));
         return response;
     }

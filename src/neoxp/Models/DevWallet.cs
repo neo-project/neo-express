@@ -21,8 +21,9 @@ namespace NeoExpress.Models
     {
         private readonly Dictionary<UInt160, DevWalletAccount> accounts = new Dictionary<UInt160, DevWalletAccount>();
 
-        public override string Name { get; }
+        public override string Name { get; set; }
         public override Version? Version => null;
+        public override bool IsUnlocked => true;
 
         public DevWallet(ProtocolSettings settings, string name, IEnumerable<DevWalletAccount>? accounts = null) : base(string.Empty, settings)
         {

@@ -47,6 +47,7 @@ public class ToolkitWalletTests
         var wallet = GetWallet(walletName);
 
         Assert.Equal(walletName, wallet.Name);
+        Assert.True(wallet.IsUnlocked);
         Assert.Single(wallet.GetAccounts());
         Assert.NotNull(wallet.GetDefaultAccount());
 
@@ -59,6 +60,16 @@ public class ToolkitWalletTests
         Assert.NotNull(account.Contract);
         var contract = account.Contract;
         Assert.True(expectedScript.Span.SequenceEqual(contract.Script));
+    }
+
+    [Fact]
+    public void NameCanBeUpdated()
+    {
+        var wallet = GetWallet("devhawk");
+
+        wallet.Name = "updated";
+
+        Assert.Equal("updated", wallet.Name);
     }
 
     // [Fact]

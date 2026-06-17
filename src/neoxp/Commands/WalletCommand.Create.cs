@@ -37,7 +37,7 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
-            [Option(Description = "Private key for account (Format: HEX or WIF)\nDefault: Random")]
+            [Option(Description = "Private key for account (Format: HEX, Base64, or WIF)\nDefault: Random")]
             internal string PrivateKey { get; set; } = string.Empty;
 
             internal int OnExecute(CommandLineApplication app, IConsole console)

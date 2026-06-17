@@ -383,7 +383,7 @@ namespace NeoExpress
                         {
                             await WriteLineAsync($"{iop.Type}: ({iter.GetType().Name})").ConfigureAwait(false);
                             while (iter.Next())
-                                await WriteStackItemAsync(writer, iter.Value(null), indent + 1).ConfigureAwait(false);
+                                await WriteStackItemAsync(writer, iter.Value(), indent + 1).ConfigureAwait(false);
                         }
                         break;
                 }
@@ -666,7 +666,7 @@ namespace NeoExpress
 
         public async Task<OneOf<PolicyValues, None>> TryLoadPolicyFromFileSystemAsync(string filename)
         {
-            filename = fileSystem.ResolveFileName(filename, JSON_EXTENSION, () => DEAULT_POLICY_FILENAME);
+            filename = fileSystem.ResolveFileName(filename, JSON_EXTENSION, () => DEFAULT_POLICY_FILENAME);
             if (fileSystem.File.Exists(filename))
             {
                 using var stream = fileSystem.File.OpenRead(filename);

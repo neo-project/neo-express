@@ -23,7 +23,8 @@ namespace Neo.BlockchainToolkit.Persistence
         readonly static ReadOnlyMemory<byte> DELETED_PREFIX = (new byte[] { DELETED_KEY }).AsMemory();
 
         readonly RocksDb db;
-        readonly ColumnFamilyHandle columnFamily;
+        ColumnFamilyHandle columnFamily;
+        readonly string? columnFamilyName;
         readonly IReadOnlyStore<byte[], byte[]> store;
         readonly bool shared;
         bool disposed;
@@ -31,14 +32,15 @@ namespace Neo.BlockchainToolkit.Persistence
         public event IStore.OnNewSnapshotDelegate? OnNewSnapshot;
 
         public PersistentTrackingStore(RocksDb db, IReadOnlyStore<byte[], byte[]> store, bool shared = false, string familyName = nameof(PersistentTrackingStore))
-            : this(db, db.GetOrCreateColumnFamily(familyName), store, shared)
+            : this(db, db.GetOrCreateColumnFamily(familyName), store, shared, string.IsNullOrEmpty(familyName) ? null : familyName)
         {
         }
 
-        internal PersistentTrackingStore(RocksDb db, ColumnFamilyHandle columnFamily, IReadOnlyStore<byte[], byte[]> store, bool shared = false)
+        internal PersistentTrackingStore(RocksDb db, ColumnFamilyHandle columnFamily, IReadOnlyStore<byte[], byte[]> store, bool shared = false, string? columnFamilyName = null)
         {
             this.db = db;
             this.columnFamily = columnFamily;
+            this.columnFamilyName = columnFamilyName;
             this.store = store;
             this.shared = shared;
         }
@@ -57,11 +59,34 @@ namespace Neo.BlockchainToolkit.Persistence
             disposed = true;
         }
 
+        /// <summary>
+        /// Discards persisted tracking changes so reads return to the backing store state.
+        /// </summary>
         public void Reset()
         {
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
+
+            // PersistentTrackingStore owns this column family, not the whole database.
+            if (columnFamilyName is not null)
+            {
+                db.DropColumnFamily(columnFamilyName);
+                columnFamily = db.CreateColumnFamily(new ColumnFamilyOptions(), columnFamilyName);
+                return;
+            }
+
+            ClearTrackedKeys();
+        }
+
+        void ClearTrackedKeys()
+        {
             using var iterator = db.NewIterator(columnFamily);
+            using var batch = new WriteBatch();
+            for (iterator.SeekToFirst(); iterator.Valid(); iterator.Next())
+            {
+                batch.Delete(iterator.Key(), columnFamily);
+            }
+            db.Write(batch);
         }
 
         [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]

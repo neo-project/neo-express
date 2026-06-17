@@ -110,10 +110,9 @@ internal class Nep11Token : TokenBase
             var result = appEng.ResultStack.Pop().GetInterface<object>();
             if (result is IIterator iter)
             {
-                var refCounter = new ReferenceCounter();
                 var lstOwners = new List<UInt160>();
                 while (iter.Next())
-                    lstOwners.Add(new UInt160(iter.Value(refCounter).GetSpan()));
+                    lstOwners.Add(new UInt160(iter.Value().GetSpan()));
                 return lstOwners;
             }
             return Array.Empty<UInt160>();
@@ -151,10 +150,9 @@ internal class Nep11Token : TokenBase
             var result = appEng.ResultStack.Pop().GetInterface<object>();
             if (result is IIterator iter)
             {
-                var refCounter = new ReferenceCounter();
                 var lstTokenIds = new List<byte[]>();
                 while (iter.Next())
-                    lstTokenIds.Add(iter.Value(refCounter).GetSpan().ToArray());
+                    lstTokenIds.Add(iter.Value().GetSpan().ToArray());
                 return lstTokenIds;
             }
             return Array.Empty<byte[]>();
@@ -173,10 +171,9 @@ internal class Nep11Token : TokenBase
             var result = appEng.ResultStack.Pop().GetInterface<object>();
             if (result is IIterator iter)
             {
-                var refCounter = new ReferenceCounter();
                 var lstTokenIds = new List<byte[]>();
                 while (iter.Next())
-                    lstTokenIds.Add(iter.Value(refCounter).GetSpan().ToArray());
+                    lstTokenIds.Add(iter.Value().GetSpan().ToArray());
                 return lstTokenIds;
             }
             return Array.Empty<byte[]>();

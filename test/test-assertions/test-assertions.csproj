@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <RootNamespace>test.workflowvalidation</RootNamespace>
+    <RootNamespace>test.assertions</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,23 +15,15 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="7.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
-    <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.16" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Xunit.Combinatorial" Version="2.0.24" />
     <PackageReference Include="xunit.v3" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\bctklib\bctklib.csproj" />
-    <ProjectReference Include="..\..\src\neoxp\neoxp.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
+    <ProjectReference Include="..\..\src\assertions\assertions.csproj" />
   </ItemGroup>
 
 </Project>

@@ -33,7 +33,7 @@ Advanced neoxp tool functionality tests:
 
 ### Prerequisites
 
-- .NET 9.0 SDK installed
+- .NET 10.0 SDK installed
 - Git repository with neo-express solution
 - All dependencies restored (`dotnet restore`)
 

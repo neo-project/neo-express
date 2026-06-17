@@ -42,7 +42,7 @@ namespace NeoExpress.Commands
         [Option(Description = "Overwrite existing data")]
         internal bool Force { get; set; }
 
-        [Option(Description = "Private key for default dev account (Format: HEX or WIF)\nDefault: Random")]
+        [Option(Description = "Private key for default dev account (Format: HEX, Base64, or WIF)\nDefault: Random")]
         internal string PrivateKey { get; set; } = string.Empty;
 
         [Option(Description = "Use a batch file to initialize the blockchain after creation.")]
@@ -60,17 +60,7 @@ namespace NeoExpress.Commands
                 byte[]? priKey = null;
                 if (string.IsNullOrEmpty(PrivateKey) == false)
                 {
-                    try
-                    {
-                        if (PrivateKey.StartsWith('L'))
-                            priKey = Neo.Wallets.Wallet.GetPrivateKeyFromWIF(PrivateKey);
-                        else
-                            priKey = Convert.FromHexString(PrivateKey);
-                    }
-                    catch (FormatException)
-                    {
-                        throw new FormatException("Private key must be in HEX or WIF format.");
-                    }
+                    priKey = ExpressChainManager.ParsePrivateKey(PrivateKey);
                 }
 
                 var (chainManager, outputPath) = chainManagerFactory.CreateChain(Count, AddressVersion, Output, Force, privateKey: priKey);

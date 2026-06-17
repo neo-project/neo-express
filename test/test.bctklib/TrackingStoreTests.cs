@@ -255,6 +255,42 @@ public class TrackingStoreTests : IDisposable
         test_delete_missing_value_no_effect(store);
     }
 
+    [Fact]
+    public void PersistentTrackingResetDiscardsTrackedChanges()
+    {
+        var existingKey = Bytes(0);
+        var existingValue = Bytes("existing-value");
+        var deletedKey = Bytes(1);
+        var deletedValue = Bytes("deleted-value");
+        var newKey = Bytes(2);
+        var newValue = Bytes("new-value");
+
+        var memoryStore = new MemoryStore();
+        memoryStore.Put(existingKey, existingValue);
+        memoryStore.Put(deletedKey, deletedValue);
+        using var store = new PersistentTrackingStore(RocksDbUtility.OpenDb(path), memoryStore);
+
+        store.Put(existingKey, Bytes("updated-value"));
+        store.Put(newKey, newValue);
+        store.Delete(deletedKey);
+
+        store.TryGet(existingKey, out var trackedExistingValue).Should().BeTrue();
+        trackedExistingValue.Should().BeEquivalentTo(Bytes("updated-value"));
+        store.TryGet(newKey, out var trackedNewValue).Should().BeTrue();
+        trackedNewValue.Should().BeEquivalentTo(newValue);
+        store.TryGet(deletedKey, out var trackedDeletedValue).Should().BeFalse();
+        trackedDeletedValue.Should().BeNull();
+
+        store.Reset();
+
+        store.TryGet(existingKey, out var resetExistingValue).Should().BeTrue();
+        resetExistingValue.Should().BeEquivalentTo(existingValue);
+        store.TryGet(newKey, out var resetNewValue).Should().BeFalse();
+        resetNewValue.Should().BeNull();
+        store.TryGet(deletedKey, out var resetDeletedValue).Should().BeTrue();
+        resetDeletedValue.Should().BeEquivalentTo(deletedValue);
+    }
+
     internal IStore GetStore(StoreType type)
     {
         var memoryStore = new MemoryStore();

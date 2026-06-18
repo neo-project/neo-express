@@ -75,6 +75,7 @@ jobs:
       run: neoxp checkpoint create checkpoints/init --force
 
     - name: Test Policy Command (offline) (neoxp)
+      shell: bash
       run: |
         for attempt in 1 2 3; do
           if neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json; then

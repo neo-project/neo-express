@@ -28,6 +28,7 @@ namespace Neo.Assertions
             where T : IEquatable<T>
         {
             Execute.Assertion
+                .BecauseOf(because, becauseArgs)
                 .Given(() => convert(Subject.Value))
                 .ForCondition(subject => subject.Equals(expected))
                 .FailWith("Expected {context:StorageItem} to be {0}{reason}, but was {1}.",

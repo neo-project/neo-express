@@ -51,6 +51,7 @@ class WorknetRpcServerPlugin : Plugin
     public override void Dispose()
     {
         rpcServer?.Dispose();
+        cancellationToken.Dispose();
         base.Dispose();
     }
 

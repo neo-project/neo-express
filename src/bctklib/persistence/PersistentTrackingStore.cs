@@ -222,7 +222,7 @@ namespace Neo.BlockchainToolkit.Persistence
             key ??= Array.Empty<byte>();
             using var batch = new WriteBatch();
             batch.PutVector(columnFamily, key.AsMemory(), UPDATED_PREFIX, value);
-            db.Write(batch);
+            db.Write(batch, writeOptions);
         }
 
         public void Delete(byte[]? key)

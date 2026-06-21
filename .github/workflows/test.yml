@@ -83,11 +83,14 @@ jobs:
             exit 0
           fi
 
-          echo "mainnet policy get failed on attempt ${attempt}; retrying..."
-          sleep 10
+          if [ "${attempt}" -lt 3 ]; then
+            echo "mainnet policy get failed on attempt ${attempt}; retrying..."
+            sleep 10
+          fi
         done
 
-        echo "Skipping policy sync because the mainnet RPC endpoint is unavailable."
+        echo "mainnet policy get failed after 3 attempts."
+        exit 1
 
     - name: Test Wallet Command (neoxp)
       run: |

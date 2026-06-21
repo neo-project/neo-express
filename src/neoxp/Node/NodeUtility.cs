@@ -142,6 +142,8 @@ namespace NeoExpress.Node
                 throw new Exception("No oracle nodes available. Have you enabled oracles via the `oracle enable` command?");
 
             var requestTx = NativeContract.Ledger.GetTransactionState(snapshot, request.OriginalTxid);
+            if (requestTx is null)
+                throw new Exception($"Could not find the original transaction {request.OriginalTxid} for the oracle response.");
             var n = oracleNodes.Count;
             var m = n - (n - 1) / 3;
             var oracleSignContract = Contract.CreateMultiSigContract(m, oracleNodes);

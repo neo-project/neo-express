@@ -273,7 +273,7 @@ namespace Neo.BlockchainToolkit.SmartContract
                 branchMaps.Add(branchInstructionInfo.ContractHash, branchMap);
             }
 
-            var (branchCount, continueCount) = branchMap.TryGetValue(offsetIP, out var value)
+            var (branchCount, continueCount) = branchMap.TryGetValue(branchIP, out var value)
                 ? value : (0, 0);
 
             if (currentIP == offsetIP)

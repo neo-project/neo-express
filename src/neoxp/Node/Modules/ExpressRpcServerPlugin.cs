@@ -684,7 +684,8 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
             var nep11Hash = AsScriptHash(@param);
 
-            var nep11 = new Nep11Token(neoSystem.Settings, neoSystem.GetSnapshotCache(), nep11Hash);
+            using var snapshot = neoSystem.GetSnapshotCache();
+            var nep11 = new Nep11Token(neoSystem.Settings, snapshot, nep11Hash);
 
             return nep11.HasValidMethods() &&
                 nep11.IsSymbolValid() &&
@@ -699,7 +700,8 @@ namespace NeoExpress.Node
                 throw new NullReferenceException(nameof(neoSystem));
             var nep17Hash = AsScriptHash(@param);
 
-            var nep17 = new Nep17Token(neoSystem.Settings, neoSystem.GetSnapshotCache(), nep17Hash);
+            using var snapshot = neoSystem.GetSnapshotCache();
+            var nep17 = new Nep17Token(neoSystem.Settings, snapshot, nep17Hash);
 
             return nep17.HasValidMethods() &&
                 nep17.IsSymbolValid() &&

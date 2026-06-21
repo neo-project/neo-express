@@ -69,6 +69,7 @@ namespace NeoExpress.Node
         public override void Dispose()
         {
             rpcServer?.Dispose();
+            cancellationToken.Dispose();
             base.Dispose();
         }
 

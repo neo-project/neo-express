@@ -122,12 +122,9 @@ namespace Neo.BuildTasks
         {
             var results = processRunner.Run(command, arguments, directory?.ItemSpec ?? "");
 
-            if (results.ExitCode != 0 || results.Error.Any())
+            if (results.ExitCode != 0)
             {
-                if (results.ExitCode != 0)
-                    Log.LogError("{0} returned {1}", Command, results.ExitCode);
-                else
-                    Log.LogWarning("{0} returned {1}", Command, results.ExitCode);
+                Log.LogError("{0} returned {1}", Command, results.ExitCode);
 
                 foreach (var err in results.Error)
                 {
@@ -140,6 +137,14 @@ namespace Neo.BuildTasks
 
                 output = Array.Empty<string>();
                 return false;
+            }
+
+            // A zero exit code indicates success even when the tool wrote to
+            // stderr (for example dotnet telemetry or NuGet notices). Surface any
+            // stderr lines as warnings rather than failing the task.
+            foreach (var err in results.Error)
+            {
+                Log.LogWarning(err);
             }
 
             output = results.Output;

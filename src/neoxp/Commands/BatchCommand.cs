@@ -189,6 +189,7 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.FastForward> cmd:
                         {
+                            FastForwardCommand.ValidateCount(cmd.Model.Count);
                             var timestampDelta = FastForwardCommand.ParseTimestampDelta(cmd.Model.TimestampDelta);
                             await txExec.ExpressNode.FastForwardAsync(
                                 cmd.Model.Count,

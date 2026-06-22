@@ -119,6 +119,11 @@ neoxp run
 neoxp show balances genesis
 ```
 
+> **Tip:** While the blockchain is running it mints a new block every 15 seconds by
+> default, so a transaction is not reflected in queries such as `show balances` until the
+> next block is produced. For faster local iteration, start the chain with a shorter block
+> time, for example `neoxp run --seconds-per-block 1`.
+
 ### Neo-Express
 
 - Create a new local Neo network:

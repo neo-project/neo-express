@@ -43,7 +43,7 @@ internal static class ContractManifestExtensions
                                 balanceOfMethod2?.ReturnType == ContractParameterType.Integer &&
                                 balanceOfMethod2?.Parameters.Length == 2 &&
                                 balanceOfMethod2?.Parameters[0].Type == ContractParameterType.Hash160 &&
-                                balanceOfMethod2?.Parameters[0].Type == ContractParameterType.ByteArray;
+                                balanceOfMethod2?.Parameters[1].Type == ContractParameterType.ByteArray;
         var tokensOfValid = tokensOfMethod != null && tokensOfMethod.Safe &&
                             tokensOfMethod.ReturnType == ContractParameterType.InteropInterface &&
                             tokensOfMethod.Parameters.Length == 1 &&

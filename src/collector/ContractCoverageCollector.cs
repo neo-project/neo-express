@@ -55,7 +55,11 @@ namespace Neo.Collector
         {
             if (this.instructionMap.Count > 0)
             {
-                throw new InvalidOperationException($"RecordScript already called for {contractName}");
+                // A contract can appear in the coverage output as both a .nef and a
+                // .neo-script (deployed and executed); both describe the same script,
+                // so ignore the duplicate rather than failing, which would otherwise
+                // drop this contract's coverage entirely.
+                return;
             }
 
             var instructionMap = new SortedDictionary<int, Instruction>();

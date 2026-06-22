@@ -163,6 +163,8 @@ Please review the [Command Reference](docs/command-reference.md) to get an under
   neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-uri testnet
   ```
 
+Please review the [NeoTrace Command Reference](docs/trace-command-reference.md) for the full list of commands and options.
+
 > Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled.
 
 ## New Features or issues

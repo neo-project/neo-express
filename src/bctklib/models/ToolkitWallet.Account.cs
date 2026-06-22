@@ -35,6 +35,7 @@ namespace Neo.BlockchainToolkit.Models
             {
                 var isDefault = json.TryGetValue("is-default", out var token) && token.Value<bool>();
                 var label = json.TryGetValue("label", out token) ? token.Value<string>() : null;
+                var locked = json.TryGetValue("lock", out token) && token.Value<bool>();
 
                 if (json.TryGetValue("private-key", out token) && token.Type == JTokenType.String)
                 {
@@ -47,7 +48,8 @@ namespace Neo.BlockchainToolkit.Models
                         {
                             Contract = contract,
                             IsDefault = isDefault,
-                            Label = label
+                            Label = label,
+                            Lock = locked
                         };
                     }
                 }

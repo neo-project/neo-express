@@ -106,7 +106,7 @@ namespace NeoExpress.Commands
                 internal async Task ExecuteAsync(TextWriter writer)
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                    var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.GetExpressNode();
 
                     if (UInt160.TryParse(Contract, out var hash))
                     {
@@ -161,7 +161,7 @@ namespace NeoExpress.Commands
 
                 internal static async Task ExecuteAsync(ExpressChainManager chainManager, string contract, string key, string value, TextWriter writer)
                 {
-                    var expressNode = chainManager.GetExpressNode();
+                    using var expressNode = chainManager.GetExpressNode();
                     ContractParameterParser parser = await expressNode.GetContractParameterParserAsync(chainManager.Chain).ConfigureAwait(false);
                     var scriptHash = parser.TryLoadScriptHash(contract, out var hash)
                         ? hash

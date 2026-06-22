@@ -52,7 +52,7 @@ namespace NeoExpress.Commands
             internal async Task ExecuteAsync(TextWriter writer)
             {
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                var expressNode = chainManager.GetExpressNode();
+                using var expressNode = chainManager.GetExpressNode();
 
                 using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
                 if (UInt160.TryParse(Contract, out var contractHash))

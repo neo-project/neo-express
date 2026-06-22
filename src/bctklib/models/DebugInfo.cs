@@ -115,7 +115,7 @@ namespace Neo.BlockchainToolkit.Models
             var (@namespace, name) = ParseName(token["name"]);
             var @params = ParseSlotVariables(token["params"]).ToImmutableList();
 
-            return new Event(id, name, @namespace, @params);
+            return new Event(id, @namespace, name, @params);
         }
 
         static SequencePoint ParseSequencePoint(JToken token)
@@ -144,7 +144,7 @@ namespace Neo.BlockchainToolkit.Models
                 ?? Array.Empty<SequencePoint>();
             var range = ParseRange(token["range"]);
 
-            return new Method(id, name, @namespace, range, @return, @params, variables, sequencePoints);
+            return new Method(id, @namespace, name, range, @return, @params, variables, sequencePoints);
         }
 
         static (string, string) ParseName(JToken? token)

@@ -39,11 +39,21 @@ namespace NeoExpress.Node
             transactions ??= Array.Empty<Transaction>();
 
             var blockHeight = prevHeader.Index + 1;
+
+            // dBFT assigns each block a random nonce. Mirror that here so the block
+            // nonce contribution to System.Runtime.GetRandom varies per block instead
+            // of being a constant 0, which otherwise makes on-chain randomness behave
+            // differently from a real network.
+            Span<byte> nonceBuffer = stackalloc byte[sizeof(ulong)];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(nonceBuffer);
+            var nonce = BitConverter.ToUInt64(nonceBuffer);
+
             var block = new Block
             {
                 Header = new Header
                 {
                     Version = 0,
+                    Nonce = nonce,
                     PrevHash = prevHeader.Hash,
                     MerkleRoot = MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
                     Timestamp = timestamp > prevHeader.Timestamp

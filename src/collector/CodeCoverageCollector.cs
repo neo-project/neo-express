@@ -117,6 +117,17 @@ namespace Neo.Collector
 
         public void LoadCoverageFiles(string coveragePath)
         {
+            // The coverage directory is created lazily, the first time an engine
+            // writes coverage data. A test session that produced no coverage never
+            // creates it, so guard against it being absent rather than letting
+            // Directory.EnumerateFiles throw out of the session-end handler.
+            if (!Directory.Exists(coveragePath))
+            {
+                if (verboseLog)
+                    logger.LogWarning($"Coverage output directory {coveragePath} does not exist");
+                return;
+            }
+
             foreach (var filename in Directory.EnumerateFiles(coveragePath))
             {
                 if (verboseLog)

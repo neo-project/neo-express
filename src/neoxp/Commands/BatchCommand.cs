@@ -181,7 +181,7 @@ namespace NeoExpress.Commands
                         {
                             await txExec.ContractUpdateAsync(
                                 cmd.Model.Contract,
-                                cmd.Model.NefFile,
+                                root.Resolve(cmd.Model.NefFile),
                                 cmd.Model.Account,
                                 cmd.Model.Password,
                                 cmd.Model.WitnessScope).ConfigureAwait(false);

@@ -516,21 +516,24 @@ namespace NeoExpress
             var assetHash = await expressNode.ParseAssetAsync(asset).ConfigureAwait(false);
             var txHash = await expressNode.TransferAsync(assetHash, ParseQuantity(quantity), senderWallet, senderAccountHash, receiverHash, dataParam);
             await writer.WriteTxHashAsync(txHash, "Transfer", json).ConfigureAwait(false);
+        }
 
-            static OneOf<decimal, All> ParseQuantity(string quantity)
+        // Quantities are always expressed with '.' as the decimal separator, so parse
+        // with the invariant culture rather than the host culture (which would, for
+        // example, read "1.5" as 15 where '.' is a thousands separator).
+        internal static OneOf<decimal, All> ParseQuantity(string quantity)
+        {
+            if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
             {
-                if ("all".Equals(quantity, StringComparison.OrdinalIgnoreCase))
-                {
-                    return new All();
-                }
-
-                if (decimal.TryParse(quantity, out var amount))
-                {
-                    return amount;
-                }
-
-                throw new Exception($"Invalid quantity value {quantity}");
+                return new All();
             }
+
+            if (decimal.TryParse(quantity, System.Globalization.CultureInfo.InvariantCulture, out var amount))
+            {
+                return amount;
+            }
+
+            throw new Exception($"Invalid quantity value {quantity}");
         }
 
         public async Task TransferNFTAsync(string contract, string tokenId, string sender, string password, string receiver, string data)

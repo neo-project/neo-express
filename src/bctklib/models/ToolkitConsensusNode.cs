@@ -29,6 +29,8 @@ namespace Neo.BlockchainToolkit.Models
             writer.WriteStartObject();
             if (TcpPort != 0)
                 writer.WriteProperty("tcp-port", TcpPort);
+            if (RpcPort != 0)
+                writer.WriteProperty("rpc-port", RpcPort);
             writer.WritePropertyName("wallet");
             Wallet.WriteJson(writer);
             writer.WriteEndObject();

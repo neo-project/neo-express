@@ -69,7 +69,11 @@ namespace NeoExpress.Models
         public void Serialize(BinaryWriter writer)
         {
             ScriptHash.Serialize(writer);
-            BinarySerializer.Serialize(State, ExecutionEngineLimits.Default);
+            // Write the serialized State bytes the paired Deserialize reads. The
+            // BinarySerializer.Serialize(StackItem, ExecutionEngineLimits) overload
+            // returns the bytes rather than writing to the stream, so its result must
+            // be written explicitly; previously it was discarded, omitting State.
+            writer.Write(BinarySerializer.Serialize(State, ExecutionEngineLimits.Default));
             writer.WriteVarString(EventName);
             InventoryHash.Serialize(writer);
             writer.Write((byte)InventoryType);

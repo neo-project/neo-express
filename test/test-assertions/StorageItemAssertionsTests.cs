@@ -43,6 +43,17 @@ public class StorageItemAssertionsTests
     }
 
     [Fact]
+    public void Be_includes_the_supplied_reason_in_the_failure_message()
+    {
+        var item = new StorageItem(new BigInteger(1).ToByteArray());
+
+        var act = () => item.Should().Be(new BigInteger(2), "of {0}", "the configured value");
+
+        act.Should().Throw<Xunit.Sdk.XunitException>()
+            .WithMessage("*because of the configured value*");
+    }
+
+    [Fact]
     public void Be_UInt160_matches_raw_bytes()
     {
         var hash = UInt160.Parse("0x0102030405060708090a0b0c0d0e0f1011121314");

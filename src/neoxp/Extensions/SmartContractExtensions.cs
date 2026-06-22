@@ -160,7 +160,7 @@ namespace NeoExpress
                 && engine.ResultStack.Pop() is ByteString byteString
                 && byteString.Size == UInt160.Length)
             {
-                owner = new UInt160(engine.ResultStack.Pop().GetSpan());
+                owner = new UInt160(byteString.GetSpan());
                 return true;
             }
 

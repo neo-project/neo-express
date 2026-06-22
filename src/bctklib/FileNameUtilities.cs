@@ -57,13 +57,13 @@ namespace Neo.BlockchainToolkit
         internal static string GetDirectoryName(string path)
         {
             int fileNameStart = IndexOfFileName(path);
-            while (fileNameStart >= 0
+            while (fileNameStart > 0
                 && IsDirectorySeparator(path[fileNameStart - 1]))
             {
                 fileNameStart--;
             }
 
-            return (fileNameStart <= 0) ? path : path.Substring(0, fileNameStart);
+            return (fileNameStart <= 0) ? string.Empty : path.Substring(0, fileNameStart);
         }
 
         internal static string TrimStartDirectorySeparators(string path)
@@ -72,7 +72,8 @@ namespace Neo.BlockchainToolkit
                 return path;
 
             var i = 0;
-            while (IsDirectorySeparator(path[i]))
+            while (i < path.Length
+                && IsDirectorySeparator(path[i]))
             {
                 i++;
             }

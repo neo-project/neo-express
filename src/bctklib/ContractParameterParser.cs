@@ -519,10 +519,13 @@ namespace Neo.BlockchainToolkit
             static byte[] ParseBinary(JToken json)
             {
                 var value = json.Value<string>() ?? "";
-                Span<byte> span = stackalloc byte[value.Length / 4 * 3];
-                if (Convert.TryFromBase64String(value, span, out var written))
+                // Decode on the heap rather than via stackalloc: the buffer length is
+                // derived from the (untrusted) input string, so a large value would
+                // overflow the stack with an uncatchable StackOverflowException.
+                var buffer = new byte[value.Length / 4 * 3];
+                if (Convert.TryFromBase64String(value, buffer, out var written))
                 {
-                    return span.Slice(0, written).ToArray();
+                    return buffer[..written];
                 }
 
                 if (TryParseHexString(value, out var byteArray))

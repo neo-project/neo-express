@@ -48,6 +48,26 @@ namespace test.bctklib
         }
 
         [Fact]
+        public void ParseObjectParameter_bytearray_large_base64()
+        {
+            // The decode buffer is sized from the input string length. A large value
+            // must be decoded on the heap; the previous stackalloc overflowed the stack.
+            var expected = new byte[4 * 1024 * 1024];
+            var value = Convert.ToBase64String(expected);
+            var json = new JObject()
+            {
+                ["type"] = "ByteArray",
+                ["value"] = value
+            };
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
+            var param = parser.ParseObjectParameter(json);
+            param.Type.Should().Be(ContractParameterType.ByteArray);
+            param.Value.Should().BeOfType<byte[]>();
+            ((byte[])param.Value).Length.Should().Be(expected.Length);
+            ((byte[])param.Value).AsSpan().SequenceEqual(expected).Should().BeTrue();
+        }
+
+        [Fact]
         public void ParseObjectParameter_bytearray_hex()
         {
             var value = "0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b";

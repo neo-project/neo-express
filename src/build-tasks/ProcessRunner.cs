@@ -48,7 +48,7 @@ namespace Neo.BuildTasks
                 WorkingDirectory = string.IsNullOrEmpty(workingDirectory) ? "" : workingDirectory,
             };
 
-            var process = new System.Diagnostics.Process
+            using var process = new System.Diagnostics.Process
             {
                 StartInfo = startInfo,
                 EnableRaisingEvents = true,
@@ -60,7 +60,7 @@ namespace Neo.BuildTasks
             var error = new ConcurrentQueue<string>();
             process.ErrorDataReceived += (sender, args) => { if (args.Data != null) { error.Enqueue(args.Data); } };
 
-            var completeEvent = new ManualResetEvent(false);
+            using var completeEvent = new ManualResetEvent(false);
 
             process.Exited += (sender, args) => completeEvent.Set();
 
@@ -70,8 +70,14 @@ namespace Neo.BuildTasks
             process.BeginErrorReadLine();
 
             completeEvent.WaitOne();
+            // The Exited event can fire before the asynchronous output and error
+            // handlers have finished receiving the redirected streams. The
+            // parameterless WaitForExit blocks until that processing completes, so
+            // the captured output and error are complete before they are returned.
+            process.WaitForExit();
 
-            return new ProcessResults(process.ExitCode, output, error);
+            var exitCode = process.ExitCode;
+            return new ProcessResults(exitCode, output, error);
         }
     }
 }

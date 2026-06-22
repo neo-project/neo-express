@@ -155,7 +155,7 @@ internal static class ContractManifestExtensions
     public static List<string> Nep24CompliantErrors(this ContractManifest manifest)
     {
         var errors = new List<string>();
-        var royaltyInfoMethod = manifest.Abi.GetMethod("royaltyInfo", 0);
+        var royaltyInfoMethod = manifest.Abi.GetMethod("royaltyInfo", 3);
 
         var royaltyInfoValid = royaltyInfoMethod != null && royaltyInfoMethod.Safe &&
                             royaltyInfoMethod.ReturnType == ContractParameterType.Array &&

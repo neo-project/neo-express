@@ -63,7 +63,7 @@ export default class NeoExpress {
   }
 
   async runInTerminal(name: string, command: Command, ...options: string[]) {
-    if (!this.checkForDotNet()) {
+    if (!(await this.checkForDotNet())) {
       return null;
     }
     const dotNetArguments = [this.binaryPath, command, ...options];
@@ -128,7 +128,7 @@ export default class NeoExpress {
     command: string,
     ...options: string[]
   ): Promise<{ message: string; isError?: boolean }> {
-    if (!this.checkForDotNet()) {
+    if (!(await this.checkForDotNet())) {
       return { message: "Could not launch Neo Express", isError: true };
     }
     const dotNetArguments = [

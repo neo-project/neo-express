@@ -30,70 +30,87 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
     {
         public static readonly StackItemFormatter Instance = new StackItemFormatter();
 
+        // Bound on StackItem nesting depth. StackItems are read from (potentially
+        // untrusted) .neo-trace files and Map/Array/Struct recurse, so a deeply nested
+        // payload would otherwise overflow the stack with an uncatchable
+        // StackOverflowException. The standard MessagePack options used for trace files
+        // treat data as trusted and do not enforce a depth limit, so it is enforced here.
+        const int MaxDepth = 500;
+
         public StackItem Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            var count = reader.ReadArrayHeader();
-            if (count != 2)
-                throw new MessagePackSerializationException($"Invalid StackItem Array Header {count}");
-
-            var type = options.Resolver.GetFormatterWithVerify<StackItemType>().Deserialize(ref reader, options);
-            switch (type)
+            if (reader.Depth >= MaxDepth)
+                throw new MessagePackSerializationException($"StackItem nesting exceeds the maximum supported depth of {MaxDepth}");
+            reader.Depth++;
+            try
             {
-                case StackItemType.Any:
-                    reader.ReadNil();
-                    return StackItem.Null;
-                case StackItemType.Boolean:
-                    return reader.ReadBoolean() ? StackItem.True : StackItem.False;
-                case StackItemType.Buffer:
-                    {
-                        var bytes = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
-                        return new NeoBuffer(bytes);
-                    }
-                case StackItemType.ByteString:
-                    {
-                        var bytes = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
-                        return new NeoByteString(bytes);
-                    }
-                case StackItemType.Integer:
-                    {
-                        var integer = options.Resolver.GetFormatterWithVerify<BigInteger>().Deserialize(ref reader, options);
-                        return new NeoInteger(integer);
-                    }
-                case StackItemType.InteropInterface:
-                    {
-                        var typeName = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
-                        return new TraceInteropInterface(typeName);
-                    }
-                case StackItemType.Pointer:
-                    reader.ReadNil();
-                    return new NeoPointer(Array.Empty<byte>(), 0);
-                case StackItemType.Map:
-                    {
-                        var map = new NeoMap();
-                        var mapCount = reader.ReadMapHeader();
-                        for (int i = 0; i < mapCount; i++)
-                        {
-                            var key = (PrimitiveType)Deserialize(ref reader, options);
-                            map[key] = Deserialize(ref reader, options);
-                        }
-                        return map;
-                    }
-                case StackItemType.Array:
-                case StackItemType.Struct:
-                    {
-                        var array = type == StackItemType.Array
-                            ? new NeoArray()
-                            : new NeoStruct();
-                        var arrayCount = reader.ReadArrayHeader();
-                        for (int i = 0; i < arrayCount; i++)
-                        {
-                            array.Add(Deserialize(ref reader, options));
-                        }
-                        return array;
-                    }
-            }
+                var count = reader.ReadArrayHeader();
+                if (count != 2)
+                    throw new MessagePackSerializationException($"Invalid StackItem Array Header {count}");
 
-            throw new MessagePackSerializationException($"Invalid StackItem {type}");
+                var type = options.Resolver.GetFormatterWithVerify<StackItemType>().Deserialize(ref reader, options);
+                switch (type)
+                {
+                    case StackItemType.Any:
+                        reader.ReadNil();
+                        return StackItem.Null;
+                    case StackItemType.Boolean:
+                        return reader.ReadBoolean() ? StackItem.True : StackItem.False;
+                    case StackItemType.Buffer:
+                        {
+                            var bytes = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
+                            return new NeoBuffer(bytes);
+                        }
+                    case StackItemType.ByteString:
+                        {
+                            var bytes = options.Resolver.GetFormatter<byte[]>()!.Deserialize(ref reader, options);
+                            return new NeoByteString(bytes);
+                        }
+                    case StackItemType.Integer:
+                        {
+                            var integer = options.Resolver.GetFormatterWithVerify<BigInteger>().Deserialize(ref reader, options);
+                            return new NeoInteger(integer);
+                        }
+                    case StackItemType.InteropInterface:
+                        {
+                            var typeName = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
+                            return new TraceInteropInterface(typeName);
+                        }
+                    case StackItemType.Pointer:
+                        reader.ReadNil();
+                        return new NeoPointer(Array.Empty<byte>(), 0);
+                    case StackItemType.Map:
+                        {
+                            var map = new NeoMap();
+                            var mapCount = reader.ReadMapHeader();
+                            for (int i = 0; i < mapCount; i++)
+                            {
+                                var key = (PrimitiveType)Deserialize(ref reader, options);
+                                map[key] = Deserialize(ref reader, options);
+                            }
+                            return map;
+                        }
+                    case StackItemType.Array:
+                    case StackItemType.Struct:
+                        {
+                            var array = type == StackItemType.Array
+                                ? new NeoArray()
+                                : new NeoStruct();
+                            var arrayCount = reader.ReadArrayHeader();
+                            for (int i = 0; i < arrayCount; i++)
+                            {
+                                array.Add(Deserialize(ref reader, options));
+                            }
+                            return array;
+                        }
+                }
+
+                throw new MessagePackSerializationException($"Invalid StackItem {type}");
+            }
+            finally
+            {
+                reader.Depth--;
+            }
         }
 
         public void Serialize(ref MessagePackWriter writer, StackItem? value, MessagePackSerializerOptions options)

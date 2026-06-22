@@ -29,7 +29,7 @@ may not exactly match a publicly released version.
 * Updated to .NET 10.0
 * Updated all dependencies to Neo 3.9.1 compatible versions
 
-## [3.6] - Unreleased
+## [3.6] - 2023-11-15
 
 ### Added
 

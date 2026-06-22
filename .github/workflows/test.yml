@@ -75,9 +75,22 @@ jobs:
       run: neoxp checkpoint create checkpoints/init --force
 
     - name: Test Policy Command (offline) (neoxp)
+      shell: bash
       run: |
-        neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json
-        neoxp policy sync mainnet-policy --account genesis
+        for attempt in 1 2 3; do
+          if neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json; then
+            neoxp policy sync mainnet-policy --account genesis
+            exit 0
+          fi
+
+          if [ "${attempt}" -lt 3 ]; then
+            echo "mainnet policy get failed on attempt ${attempt}; retrying..."
+            sleep 10
+          fi
+        done
+
+        echo "mainnet policy get failed after 3 attempts."
+        exit 1
 
     - name: Test Wallet Command (neoxp)
       run: |

@@ -88,14 +88,78 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                return RocksDbStore.Seek(key, direction, db, columnFamily, readOptions);
+                return FindWithPendingWrites(key, direction);
             }
 
             public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
             {
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                return RocksDbStore.Seek(key_prefix, direction, db, columnFamily, readOptions);
+                return FindWithPendingWrites(key_prefix, direction);
+            }
+
+            IEnumerable<(byte[] Key, byte[] Value)> FindWithPendingWrites(byte[]? key, SeekDirection direction)
+            {
+                key ??= [];
+                if (key.Length == 0 && direction == SeekDirection.Backward)
+                {
+                    return Enumerable.Empty<(byte[] Key, byte[] Value)>();
+                }
+
+                var comparer = direction == SeekDirection.Forward
+                    ? MemorySequenceComparer.Default
+                    : MemorySequenceComparer.Reverse;
+
+                var shadowedStoreKeys = new HashSet<byte[]>(pendingWrites.Keys, pendingWrites.Comparer);
+
+                var pendingItems = pendingWrites
+                    .Where(kvp => kvp.Value is not null)
+                    .Where(kvp => comparer.Compare(kvp.Key, key) >= 0)
+                    .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value!.ToArray()))
+                    .OrderBy(kvp => kvp.Key, comparer);
+
+                var storeItems = RocksDbStore
+                    .Seek(key, direction, db, columnFamily, readOptions)
+                    .Where(kvp => !shadowedStoreKeys.Contains(kvp.Key));
+
+                return MergeSortedItems(pendingItems, storeItems, comparer);
+            }
+
+            static IEnumerable<(byte[] Key, byte[] Value)> MergeSortedItems(
+                IEnumerable<(byte[] Key, byte[] Value)> first,
+                IEnumerable<(byte[] Key, byte[] Value)> second,
+                MemorySequenceComparer comparer)
+            {
+                using var firstEnumerator = first.GetEnumerator();
+                using var secondEnumerator = second.GetEnumerator();
+                var hasFirst = firstEnumerator.MoveNext();
+                var hasSecond = secondEnumerator.MoveNext();
+
+                while (hasFirst && hasSecond)
+                {
+                    if (comparer.Compare(firstEnumerator.Current.Key, secondEnumerator.Current.Key) <= 0)
+                    {
+                        yield return firstEnumerator.Current;
+                        hasFirst = firstEnumerator.MoveNext();
+                    }
+                    else
+                    {
+                        yield return secondEnumerator.Current;
+                        hasSecond = secondEnumerator.MoveNext();
+                    }
+                }
+
+                while (hasFirst)
+                {
+                    yield return firstEnumerator.Current;
+                    hasFirst = firstEnumerator.MoveNext();
+                }
+
+                while (hasSecond)
+                {
+                    yield return secondEnumerator.Current;
+                    hasSecond = secondEnumerator.MoveNext();
+                }
             }
 
             public void Put(byte[]? key, byte[] value)

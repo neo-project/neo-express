@@ -164,6 +164,84 @@ public class ReadWriteStoreTests : IDisposable
         afterCommit.Should().BeNull();
     }
 
+    [Fact]
+    public void RocksDbSnapshotFindIncludesUncommittedPut()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        TestSnapshotFindIncludesUncommittedPut(store);
+    }
+
+    internal static void TestSnapshotFindIncludesUncommittedPut(IStore store)
+    {
+        var key = Bytes(0);
+        var value = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, value);
+
+        AssertFindContains(snapshot, key, value);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotFindIncludesUncommittedUpdate()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        TestSnapshotFindIncludesUncommittedUpdate(store);
+    }
+
+    internal static void TestSnapshotFindIncludesUncommittedUpdate(IStore store, int index = 0)
+    {
+        var (key, value) = TestData.ElementAt(index);
+        var newValue = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, newValue);
+
+        snapshot.TryGet(key, out var updatedValue).Should().BeTrue();
+        updatedValue.Should().BeEquivalentTo(newValue);
+        AssertFindContains(snapshot, key, newValue);
+        AssertFindDoesNotContain(snapshot, key, value);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotFindExcludesUncommittedDelete()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        TestSnapshotFindExcludesUncommittedDelete(store);
+    }
+
+    internal static void TestSnapshotFindExcludesUncommittedDelete(IStore store, int index = 0)
+    {
+        var (key, value) = TestData.ElementAt(index);
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Delete(key);
+
+        snapshot.TryGet(key, out var deletedValue).Should().BeFalse();
+        deletedValue.Should().BeNull();
+        AssertFindDoesNotContain(snapshot, key, value);
+    }
+
+    static void AssertFindContains(IStoreSnapshot snapshot, byte[] key, byte[] value)
+    {
+        snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeTrue();
+        snapshot.Find([byte.MaxValue], SeekDirection.Backward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeTrue();
+    }
+
+    static void AssertFindDoesNotContain(IStoreSnapshot snapshot, byte[] key, byte[] value)
+    {
+        snapshot.Find(Array.Empty<byte>(), SeekDirection.Forward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeFalse();
+        snapshot.Find([byte.MaxValue], SeekDirection.Backward)
+            .Any(kvp => kvp.Key.SequenceEqual(key) && kvp.Value.SequenceEqual(value))
+            .Should().BeFalse();
+    }
+
     [Theory, CombinatorialData]
     public void snapshot_isolation_addition(StoreType storeType)
     {

@@ -12,7 +12,6 @@ using Neo.Collector.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace Neo.Collector
 {
@@ -69,47 +68,6 @@ namespace Neo.Collector
         public ContractCoverage CollectCoverage()
         {
             return new(contractName, debugInfo, instructionMap, hitMap, branchMap);
-        }
-
-        internal IEnumerable<ImmutableQueue<int>> FindPaths(int address, ImmutableQueue<int>? path = null, int methodEnd = int.MaxValue, int nextSPAddress = int.MaxValue)
-        {
-            var maxAddress = instructionMap.Keys.Max();
-            path = path is null ? ImmutableQueue<int>.Empty : path;
-
-            while (true)
-            {
-                var ins = address <= maxAddress
-                    ? instructionMap[address]
-                    : new Instruction(OpCode.RET);
-
-                if (ins.IsBranchInstruction())
-                {
-                }
-
-                if (ins.IsCallInstruction())
-                {
-                    var offset = ins.GetCallOffset();
-                    var paths = Enumerable.Empty<ImmutableQueue<int>>();
-                    foreach (var callPath in FindPaths(address + offset))
-                    {
-                        var tempPath = path;
-                        foreach (var item in callPath)
-                        {
-                            tempPath = tempPath.Enqueue(item);
-                        }
-                        paths = paths.Concat(FindPaths(address + ins.Size, tempPath, methodEnd, nextSPAddress));
-                    }
-                    return paths;
-                }
-
-                address += ins.Size;
-                if (ins.OpCode == OpCode.RET
-                    || address > methodEnd
-                    || address >= nextSPAddress)
-                {
-                    return Enumerable.Repeat(path, 1);
-                }
-            }
         }
     }
 }

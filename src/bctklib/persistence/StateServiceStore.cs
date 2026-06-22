@@ -201,7 +201,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     }
                     if (!found.Truncated || found.Results.Length == 0)
                         break;
-                    from = found.Results[^1].key;
+                    from = EnsureCursorAdvanced(from, found.Results[^1].key);
                 }
                 return contracts;
             }
@@ -542,7 +542,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     var found = await rpcClient.FindStatesAsync(branchInfo.RootHash, contractHash, prefixOwner.Memory, from).ConfigureAwait(false);
                     token.ThrowIfCancellationRequested();
                     callback?.Invoke(found);
-                    if (WriteFoundStates(found, snapshot, out from, ref count, loggerName))
+                    if (WriteFoundStates(found, snapshot, ref from, ref count, loggerName))
                         break;
                 }
                 snapshot.Commit();
@@ -575,7 +575,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     token.ThrowIfCancellationRequested();
                     var found = rpcClient.FindStates(branchInfo.RootHash, contractHash, prefixOwner.Memory.Span, from);
                     token.ThrowIfCancellationRequested();
-                    if (WriteFoundStates(found, snapshot, out from, ref count, loggerName))
+                    if (WriteFoundStates(found, snapshot, ref from, ref count, loggerName))
                         break;
                 }
                 snapshot.Commit();
@@ -621,7 +621,20 @@ namespace Neo.BlockchainToolkit.Persistence
             return owner;
         }
 
-        bool WriteFoundStates(RpcFoundStates found, ICacheSnapshot snapshot, out byte[] from, ref int count, string loggerName)
+        // A truncated FindStates page must advance past the previous query cursor:
+        // results are returned in ascending key order, so the last key of a page is
+        // strictly greater than the cursor it was queried with. A node that returns a
+        // truncated page without advancing the cursor would otherwise drive an
+        // unbounded loop that re-fetches the same page forever and accumulates state
+        // without limit, so reject it.
+        internal static byte[] EnsureCursorAdvanced(byte[] previous, byte[] next)
+        {
+            if (((ReadOnlySpan<byte>)next).SequenceCompareTo(previous) <= 0)
+                throw new InvalidOperationException("State service returned a truncated result that did not advance the query cursor");
+            return next;
+        }
+
+        bool WriteFoundStates(RpcFoundStates found, ICacheSnapshot snapshot, ref byte[] from, ref int count, string loggerName)
         {
             ValidateFoundStates(branchInfo.RootHash, found);
             count += found.Results.Length;
@@ -641,7 +654,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 return true;
             }
 
-            from = found.Results[^1].key;
+            from = EnsureCursorAdvanced(from, found.Results[^1].key);
             return false;
         }
     }

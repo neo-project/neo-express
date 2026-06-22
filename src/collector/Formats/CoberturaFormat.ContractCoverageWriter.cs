@@ -135,13 +135,13 @@ namespace Neo.Collector.Formats
 
                 if (branchCount == 0)
                 {
-                    writer.WriteAttributeString("branch", $"{false}");
+                    writer.WriteAttributeString("branch", "false");
                 }
                 else
                 {
                     var branchRate = Utility.CalculateHitRate(branchCount, branchHit);
 
-                    writer.WriteAttributeString("branch", $"{true}");
+                    writer.WriteAttributeString("branch", "true");
                     writer.WriteAttributeString("condition-coverage", $"{branchRate * 100:N}% ({branchHit}/{branchCount})");
                     writer.WriteStartElement("conditions");
                     foreach (var (address, opCode) in contract.InstructionMap.GetBranchInstructions(method, index))

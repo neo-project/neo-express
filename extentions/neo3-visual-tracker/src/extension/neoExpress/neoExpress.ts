@@ -1,4 +1,5 @@
 import * as childProcess from "child_process";
+import * as fs from "fs";
 import * as vscode from "vscode";
 import * as which from "which";
 
@@ -30,18 +31,35 @@ export default class NeoExpress {
   private checkForDotNetPassedAt: number;
 
   constructor(private readonly context: vscode.ExtensionContext) {
-    this.binaryPath = posixPath(
-      this.context.extensionPath,
-      "deps",
-      "nxp",
-      "tools",
-      "net6.0",
-      "any",
-      "neoxp.dll"
-    );
+    this.binaryPath = NeoExpress.resolveBinaryPath(this.context.extensionPath);
     this.dotnetPath = which.sync("dotnet", { nothrow: true }) || "dotnet";
     this.runLock = false;
     this.checkForDotNetPassedAt = 0;
+  }
+
+  // A packed .NET tool places its assemblies under tools/<target-framework>/any/.
+  // Resolve the framework folder at runtime so the path tracks the bundled
+  // Neo.Express target framework instead of a hardcoded value that breaks
+  // whenever the tool is repacked for a newer framework.
+  private static resolveBinaryPath(extensionPath: string): string {
+    const toolsRoot = posixPath(extensionPath, "deps", "nxp", "tools");
+    try {
+      const framework = fs
+        .readdirSync(toolsRoot)
+        .find((tfm) =>
+          fs.existsSync(posixPath(toolsRoot, tfm, "any", "neoxp.dll"))
+        );
+      if (framework) {
+        return posixPath(toolsRoot, framework, "any", "neoxp.dll");
+      }
+    } catch {
+      // toolsRoot is missing or unreadable; fall through to the error below.
+    }
+    Log.error(
+      LOG_PREFIX,
+      `Could not locate bundled neoxp under ${toolsRoot}; the extension package may be incomplete.`
+    );
+    return posixPath(toolsRoot, "neoxp.dll");
   }
 
   async runInTerminal(name: string, command: Command, ...options: string[]) {

@@ -440,26 +440,30 @@ namespace NeoExpress.Node
 
         public Task<bool> IsNep17CompliantAsync(UInt160 contractHash)
         {
-            var snapshot = neoSystem.GetSnapshotCache();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var validator = new Nep17Token(ProtocolSettings, snapshot, contractHash);
 
-            return Task.FromResult(
+            var isCompliant =
                 validator.HasValidMethods() &&
                 validator.IsSymbolValid() &&
                 validator.IsDecimalsValid() &&
-                validator.IsBalanceOfValid());
+                validator.IsBalanceOfValid();
+
+            return Task.FromResult(isCompliant);
         }
 
         public Task<bool> IsNep11CompliantAsync(UInt160 contractHash)
         {
-            var snapshot = neoSystem.GetSnapshotCache();
+            using var snapshot = neoSystem.GetSnapshotCache();
             var validator = new Nep11Token(ProtocolSettings, snapshot, contractHash);
 
-            return Task.FromResult(
+            var isCompliant =
                 validator.HasValidMethods() &&
                 validator.IsSymbolValid() &&
                 validator.IsDecimalsValid() &&
-                validator.IsBalanceOfValid());
+                validator.IsBalanceOfValid();
+
+            return Task.FromResult(isCompliant);
         }
     }
 }

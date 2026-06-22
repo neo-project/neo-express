@@ -51,10 +51,10 @@ namespace Neo.Collector.Formats
 
             writer.WriteStartDocument();
             writer.WriteStartElement("coverage");
-            writer.WriteAttributeString("line-rate", $"{lineRate:N4}");
+            writer.WriteAttributeString("line-rate", FormattableString.Invariant($"{lineRate:N4}"));
             writer.WriteAttributeString("lines-covered", $"{linesCovered}");
             writer.WriteAttributeString("lines-valid", $"{linesValid}");
-            writer.WriteAttributeString("branch-rate", $"{branchRate:N4}");
+            writer.WriteAttributeString("branch-rate", FormattableString.Invariant($"{branchRate:N4}"));
             writer.WriteAttributeString("branches-covered", $"{branchesCovered}");
             writer.WriteAttributeString("branches-valid", $"{branchesValid}");
             writer.WriteAttributeString("version", ThisAssembly.AssemblyFileVersion);

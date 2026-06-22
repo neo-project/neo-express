@@ -159,7 +159,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore<byte[], byte[]> store)
         {
-            var trackedItems = SeekTracked(key, direction, db, columnFamily);
+            var trackedItems = SeekTracked(key, direction, db, columnFamily, readOptions);
             var storeItems = store.Find(key, direction).Where(KeyUntracked);
 
             var comparer = direction == SeekDirection.Forward

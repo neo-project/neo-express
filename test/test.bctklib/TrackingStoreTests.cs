@@ -256,6 +256,24 @@ public class TrackingStoreTests : IDisposable
     }
 
     [Fact]
+    public void PersistentTrackingSnapshotFindIgnoresWritesAfterSnapshot()
+    {
+        var keyA = Bytes(0);
+        var keyB = Bytes(1);
+
+        var memoryStore = new MemoryStore();
+        using var store = new PersistentTrackingStore(RocksDbUtility.OpenDb(path), memoryStore);
+
+        store.Put(keyA, Bytes("v1"));
+        using var snapshot = store.GetSnapshot();
+        store.Put(keyB, Bytes("v2")); // written after the snapshot was taken
+
+        var keys = snapshot.Find().Select(kvp => kvp.Key).ToList();
+
+        keys.Should().ContainSingle().Which.Should().BeEquivalentTo(keyA);
+    }
+
+    [Fact]
     public void PersistentTrackingResetDiscardsTrackedChanges()
     {
         var existingKey = Bytes(0);

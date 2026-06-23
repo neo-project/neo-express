@@ -60,6 +60,13 @@ namespace Neo.Assertions
         }
 
         public AndConstraint<StorageItemAssertions> Be(byte[] expected, string because = "", params object[] becauseArgs)
-            => Be(expected.AsSpan(), because, becauseArgs);
+        {
+            Execute.Assertion
+                .BecauseOf(because, becauseArgs)
+                .ForCondition(expected is not null)
+                .FailWith("Expected {context:StorageItem} to compare against a byte array, but {0} was null.", "expected");
+
+            return Be(expected.AsSpan(), because, becauseArgs);
+        }
     }
 }

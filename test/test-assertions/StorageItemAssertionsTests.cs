@@ -96,6 +96,17 @@ public class StorageItemAssertionsTests
     }
 
     [Fact]
+    public void Be_byte_array_reports_a_null_expected_value()
+    {
+        var item = new StorageItem(new byte[] { 0x01, 0x02 });
+
+        var act = () => item.Should().Be((byte[])null!);
+
+        act.Should().Throw<Xunit.Sdk.XunitException>()
+            .WithMessage("*expected*null*");
+    }
+
+    [Fact]
     public void Be_byte_array_reports_mismatch()
     {
         var item = new StorageItem(new byte[] { 0x01, 0x02 });

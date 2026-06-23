@@ -13,6 +13,7 @@ import NeoExpress from "./neoExpress/neoExpress";
 import NeoExpressDetector from "./fileDetectors/neoExpressDetector";
 import NeoExpressIo from "./neoExpress/neoExpressIo";
 import WalletDetector from "./fileDetectors/walletDetector";
+import wellKnownContractsCacheKey from "./util/wellKnownContractsCacheKey";
 
 const LOG_PREFIX = "AutoComplete";
 
@@ -92,8 +93,7 @@ export default class AutoComplete {
       if (versionResult.isError) {
         Log.error(LOG_PREFIX, "Could not determine neo-express version");
       } else {
-        const version = versionResult.message.trim().substring(256);
-        cacheKey = `wellKnownContracts_${version}`;
+        cacheKey = wellKnownContractsCacheKey(versionResult.message);
         wellKnownContracts = this.context.globalState.get<
           typeof wellKnownContracts
         >(cacheKey, wellKnownContracts);

@@ -67,7 +67,7 @@ namespace NeoExpress.Commands
                 chainManager.SaveChain(outputPath);
 
                 await console.Out.WriteLineAsync($"Created {Count} node privatenet at {outputPath}").ConfigureAwait(false);
-                await console.Out.WriteLineAsync("\x1b[33m   Note: The private keys for the accounts in this file are are *not* encrypted.").ConfigureAwait(false);
+                await console.Out.WriteLineAsync("\x1b[33m   Note: The private keys for the accounts in this file are *not* encrypted.").ConfigureAwait(false);
                 await console.Out.WriteLineAsync("         Do not use these accounts on MainNet or in any other system where security is a concern.\x1b[0m\n").ConfigureAwait(false);
 
                 if (fileSystem.File.Exists(BatchFilename))

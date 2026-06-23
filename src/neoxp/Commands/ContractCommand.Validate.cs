@@ -22,6 +22,13 @@ internal partial class ContractCommand
         typeof(Nep11Compliant))]
     internal class Validate
     {
+        // A validate command must report non-compliance and exit non-zero, so a
+        // script (e.g. CI) does not read an empty stdout with exit 0 as success.
+        internal static (string message, int exitCode) ComplianceResult(UInt160 scriptHash, string standard, bool compliant)
+            => compliant
+                ? ($"{scriptHash} is {standard} compliant.", 0)
+                : ($"{scriptHash} is NOT {standard} compliant.", 1);
+
         [Command("nep11", Description = "Checks if contract is NEP-11 compliant")]
         public class Nep11Compliant
         {
@@ -32,7 +39,7 @@ internal partial class ContractCommand
                 this.chainManagerFactory = chainManagerFactory;
             }
 
-            [Argument(0, Description = "Path to contract .nef file")]
+            [Argument(0, Description = "Contract script hash")]
             [Required]
             internal string ContractHash { get; init; } = string.Empty;
 
@@ -50,10 +57,9 @@ internal partial class ContractCommand
                     using var expressNode = chainManager.GetExpressNode();
                     var nep11 = await expressNode.IsNep11CompliantAsync(scriptHash).ConfigureAwait(false);
 
-                    if (nep11)
-                        await console.Out.WriteLineAsync($"{scriptHash} is NEP-11 compliant.");
-
-                    return 0;
+                    var (message, exitCode) = ComplianceResult(scriptHash, "NEP-11", nep11);
+                    await console.Out.WriteLineAsync(message);
+                    return exitCode;
                 }
                 catch (Exception ex)
                 {
@@ -73,7 +79,7 @@ internal partial class ContractCommand
                 this.chainManagerFactory = chainManagerFactory;
             }
 
-            [Argument(0, Description = "Path to contract .nef file")]
+            [Argument(0, Description = "Contract script hash")]
             [Required]
             internal string ContractHash { get; init; } = string.Empty;
 
@@ -91,10 +97,9 @@ internal partial class ContractCommand
                     using var expressNode = chainManager.GetExpressNode();
                     var nep17 = await expressNode.IsNep17CompliantAsync(scriptHash).ConfigureAwait(false);
 
-                    if (nep17)
-                        await console.Out.WriteLineAsync($"{scriptHash} is NEP-17 compliant.");
-
-                    return 0;
+                    var (message, exitCode) = ComplianceResult(scriptHash, "NEP-17", nep17);
+                    await console.Out.WriteLineAsync(message);
+                    return exitCode;
                 }
                 catch (Exception ex)
                 {

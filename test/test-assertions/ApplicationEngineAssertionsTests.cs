@@ -105,4 +105,19 @@ public class ApplicationEngineAssertionsTests : IDisposable
             .WithMessage("*FAULT*")
             .WithMessage("*exception*");
     }
+
+    [Fact]
+    public void Fault_failure_message_reports_the_result_stack_and_gas_for_a_halted_engine()
+    {
+        using var engine = Run(OpCode.RET);
+
+        var act = () => engine.Should().Fault();
+
+        // A HALT engine carries a result stack and a fee figure; surfacing them in the
+        // failure message points at why execution succeeded instead of faulting.
+        act.Should().Throw<Xunit.Sdk.XunitException>()
+            .WithMessage("*HALT*")
+            .WithMessage("*result stack count*")
+            .WithMessage("*fee consumed*");
+    }
 }

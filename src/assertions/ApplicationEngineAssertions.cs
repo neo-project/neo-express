@@ -40,10 +40,15 @@ namespace Neo.Assertions
 
         public AndConstraint<ApplicationEngineAssertions> Fault(string because = "", params object[] becauseArgs)
         {
+            var context = Subject.State == VMState.HALT
+                ? $" with result stack count {Subject.ResultStack.Count} and fee consumed {Subject.FeeConsumed}"
+                : string.Empty;
+
             Execute.Assertion
                 .BecauseOf(because, becauseArgs)
                 .ForCondition(Subject.State == VMState.FAULT)
-                .FailWith("Expected {context:ApplicationEngine} to FAULT{reason}, but found {0}.", Subject.State);
+                .FailWith("Expected {context:ApplicationEngine} to FAULT{reason}, but found {0}{1}.",
+                    Subject.State, context);
 
             return new AndConstraint<ApplicationEngineAssertions>(this);
         }

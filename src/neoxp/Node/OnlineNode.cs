@@ -46,6 +46,7 @@ namespace NeoExpress.Node
 
         public void Dispose()
         {
+            rpcClient.Dispose();
         }
 
         public async Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)

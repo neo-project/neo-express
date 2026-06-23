@@ -394,7 +394,13 @@ namespace NeoExpress.Commands
 
             string CurrentToken()
             {
-                return memory.Slice(startTokenIndex, IndexOfEndOfToken()).ToString().Replace("\"", string.Empty);
+                var slice = memory.Slice(startTokenIndex, IndexOfEndOfToken());
+                var token = slice.ToString();
+                // Mid-word quotes are stripped from the token; skip the allocation
+                // for the common case of a token that contains no quote characters.
+                return slice.Span.IndexOf('\"') >= 0
+                    ? token.Replace("\"", string.Empty)
+                    : token;
             }
 
             int IndexOfEndOfToken() => pos - startTokenIndex;

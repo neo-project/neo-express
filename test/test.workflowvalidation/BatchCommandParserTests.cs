@@ -45,4 +45,14 @@ public class BatchCommandParserTests
         BatchCommand.SplitCommandLine("a\"b\"c").Should()
             .Equal("abc");
     }
+
+    [Fact]
+    public void SplitCommandLine_strips_every_quote_from_a_single_token()
+    {
+        // A token carrying more than one quoted segment has all of its quote
+        // characters removed, so a word with two quote pairs collapses to a
+        // single unquoted token.
+        BatchCommand.SplitCommandLine("a\"b\"c\"d\"").Should()
+            .Equal("abcd");
+    }
 }

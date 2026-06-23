@@ -308,7 +308,7 @@ namespace NeoExpress.Commands
             var pos = 0;
 
             var seeking = Boundary.TokenStart;
-            int? skipQuoteAtIndex = null;
+            var seekingQuote = Boundary.QuoteStart;
 
             while (pos < memory.Length)
             {
@@ -316,44 +316,55 @@ namespace NeoExpress.Commands
 
                 if (char.IsWhiteSpace(c))
                 {
-                    switch (seeking)
+                    if (seekingQuote == Boundary.QuoteStart)
                     {
-                        case Boundary.WordEnd:
-                            yield return CurrentToken();
-                            startTokenIndex = pos;
-                            seeking = Boundary.TokenStart;
-                            break;
+                        switch (seeking)
+                        {
+                            case Boundary.WordEnd:
+                                yield return CurrentToken();
+                                startTokenIndex = pos;
+                                seeking = Boundary.TokenStart;
+                                break;
 
-                        case Boundary.TokenStart:
-                            startTokenIndex = pos;
-                            break;
-
-                        case Boundary.QuoteEnd:
-                            break;
+                            case Boundary.TokenStart:
+                                startTokenIndex = pos;
+                                break;
+                        }
                     }
                 }
                 else if (c == '\"')
                 {
-                    switch (seeking)
+                    if (seeking == Boundary.TokenStart)
                     {
-                        case Boundary.QuoteEnd:
-                            yield return CurrentToken();
-                            startTokenIndex = pos;
-                            seeking = Boundary.TokenStart;
-                            break;
+                        switch (seekingQuote)
+                        {
+                            case Boundary.QuoteEnd:
+                                yield return CurrentToken();
+                                startTokenIndex = pos;
+                                seekingQuote = Boundary.QuoteStart;
+                                break;
 
-                        case Boundary.TokenStart:
-                            startTokenIndex = pos + 1;
-                            seeking = Boundary.QuoteEnd;
-                            break;
+                            case Boundary.QuoteStart:
+                                startTokenIndex = pos + 1;
+                                seekingQuote = Boundary.QuoteEnd;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (seekingQuote)
+                        {
+                            case Boundary.QuoteEnd:
+                                seekingQuote = Boundary.QuoteStart;
+                                break;
 
-                        case Boundary.WordEnd:
-                            seeking = Boundary.QuoteEnd;
-                            skipQuoteAtIndex = pos;
-                            break;
+                            case Boundary.QuoteStart:
+                                seekingQuote = Boundary.QuoteEnd;
+                                break;
+                        }
                     }
                 }
-                else if (seeking == Boundary.TokenStart)
+                else if (seeking == Boundary.TokenStart && seekingQuote == Boundary.QuoteStart)
                 {
                     seeking = Boundary.WordEnd;
                     startTokenIndex = pos;
@@ -363,12 +374,15 @@ namespace NeoExpress.Commands
 
                 if (IsAtEndOfInput())
                 {
+                    if (seekingQuote == Boundary.QuoteEnd)
+                    {
+                        throw new FormatException("Unbalanced quote in batch command line.");
+                    }
+
                     switch (seeking)
                     {
                         case Boundary.TokenStart:
                             break;
-                        case Boundary.QuoteEnd:
-                            throw new FormatException("Unbalanced quote in batch command line.");
                         default:
                             yield return CurrentToken();
                             break;
@@ -380,26 +394,7 @@ namespace NeoExpress.Commands
 
             string CurrentToken()
             {
-                if (skipQuoteAtIndex is null)
-                {
-                    return memory.Slice(startTokenIndex, IndexOfEndOfToken()).ToString();
-                }
-                else
-                {
-                    var beforeQuote = memory.Slice(
-                        startTokenIndex,
-                        skipQuoteAtIndex.Value - startTokenIndex);
-
-                    var indexOfCharAfterQuote = skipQuoteAtIndex.Value + 1;
-
-                    var afterQuote = memory.Slice(
-                        indexOfCharAfterQuote,
-                        pos - skipQuoteAtIndex.Value - 1);
-
-                    skipQuoteAtIndex = null;
-
-                    return $"{beforeQuote}{afterQuote}";
-                }
+                return memory.Slice(startTokenIndex, IndexOfEndOfToken()).ToString().Replace("\"", string.Empty);
             }
 
             int IndexOfEndOfToken() => pos - startTokenIndex;
@@ -411,6 +406,7 @@ namespace NeoExpress.Commands
         {
             TokenStart,
             WordEnd,
+            QuoteStart,
             QuoteEnd
         }
     }

@@ -61,7 +61,7 @@ namespace Neo.BuildTasks
 
         public string ContractNameOverride { get; set; } = "";
 
-        static void FileOperationWithRetry(Action operation)
+        internal static void FileOperationWithRetry(Action operation)
         {
             const int ProcessCannotAccessFileHR = unchecked((int)0x80070020);
 
@@ -70,8 +70,9 @@ namespace Neo.BuildTasks
                 try
                 {
                     operation();
+                    return;
                 }
-                catch (IOException ex) when (ex.HResult == ProcessCannotAccessFileHR && retriesLeft > 0)
+                catch (IOException ex) when (ex.HResult == ProcessCannotAccessFileHR && retriesLeft > 1)
                 {
                     System.Threading.Tasks.Task.Delay(100).Wait();
                     continue;

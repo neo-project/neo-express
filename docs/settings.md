@@ -7,10 +7,10 @@ This document details the values that Neo-Express reads from the `settings` obje
 
 The `chain.SecondsPerBlock` Neo-Express setting corresponds to the `MillisecondsPerBlock`
 [config.json property](https://github.com/neo-project/neo-node/blob/5e3ffcb957e4e8fd8182307f68a70e653557e7d0/neo-cli/config.json#L28)
-and the `--secondsPerBlock` option for the Neo-Express `run` command. 
+and the `--seconds-per-block` option for the Neo-Express `run` command. 
 
 By default, Neo-Express mints a new block every 15 seconds. The `chain.SecondsPerBlock` setting can
-be used to override the default behavior. If the `run` command `--secondsPerBlock` option is specified,
+be used to override the default behavior. If the `run` command `--seconds-per-block` option is specified,
 the `chain.SecondsPerBlock` setting is ignored.
 
 `chain.SecondsPerBlock` is specified as an unsigned integer. If you specify an invalid unsigned integer

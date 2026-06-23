@@ -45,5 +45,21 @@ namespace Neo.Assertions
 
         public AndConstraint<StorageItemAssertions> Be(UInt256 expected, string because = "", params object[] becauseArgs)
             => Be<UInt256>(expected, bytes => new UInt256(bytes.Span), because, becauseArgs);
+
+        public AndConstraint<StorageItemAssertions> Be(ReadOnlySpan<byte> expected, string because = "", params object[] becauseArgs)
+        {
+            var span = Subject.Value.Span;
+
+            Execute.Assertion
+                .BecauseOf(because, becauseArgs)
+                .ForCondition(span.SequenceEqual(expected))
+                .FailWith("Expected {context:StorageItem} to be {0}{reason}, but was {1}.",
+                    Convert.ToHexString(expected), Convert.ToHexString(span));
+
+            return new AndConstraint<StorageItemAssertions>(this);
+        }
+
+        public AndConstraint<StorageItemAssertions> Be(byte[] expected, string because = "", params object[] becauseArgs)
+            => Be(expected.AsSpan(), because, becauseArgs);
     }
 }

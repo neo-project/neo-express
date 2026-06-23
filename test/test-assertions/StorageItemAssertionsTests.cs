@@ -74,4 +74,46 @@ public class StorageItemAssertionsTests
 
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void Be_byte_array_matches_raw_value()
+    {
+        var item = new StorageItem(new byte[] { 0xde, 0xad, 0xbe, 0xef });
+
+        var act = () => item.Should().Be(new byte[] { 0xde, 0xad, 0xbe, 0xef });
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Be_byte_array_matches_an_empty_value()
+    {
+        var item = new StorageItem(System.Array.Empty<byte>());
+
+        var act = () => item.Should().Be(System.Array.Empty<byte>());
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Be_byte_array_reports_mismatch()
+    {
+        var item = new StorageItem(new byte[] { 0x01, 0x02 });
+
+        var act = () => item.Should().Be(new byte[] { 0x03, 0x04 });
+
+        act.Should().Throw<Xunit.Sdk.XunitException>()
+            .WithMessage("*0304*");
+    }
+
+    [Fact]
+    public void Be_byte_array_includes_the_supplied_reason_in_the_failure_message()
+    {
+        var item = new StorageItem(new byte[] { 0x01, 0x02 });
+
+        var act = () => item.Should().Be(new byte[] { 0x03, 0x04 }, "of {0}", "the configured value");
+
+        act.Should().Throw<Xunit.Sdk.XunitException>()
+            .WithMessage("*because of the configured value*");
+    }
 }

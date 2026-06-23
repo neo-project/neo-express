@@ -179,12 +179,14 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Update> cmd:
                         {
+                            var data = txExec.ContractParameterParser(cmd.Model.Data);
                             await txExec.ContractUpdateAsync(
                                 cmd.Model.Contract,
                                 root.Resolve(cmd.Model.NefFile),
                                 cmd.Model.Account,
                                 cmd.Model.Password,
-                                cmd.Model.WitnessScope).ConfigureAwait(false);
+                                cmd.Model.WitnessScope,
+                                data).ConfigureAwait(false);
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.FastForward> cmd:

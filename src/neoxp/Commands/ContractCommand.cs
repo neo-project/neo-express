@@ -28,7 +28,7 @@ namespace NeoExpress.Commands
     {
         internal int OnExecute(CommandLineApplication app, IConsole console)
         {
-            console.WriteLine("You must specify at a subcommand.");
+            console.WriteLine("You must specify a subcommand.");
             app.ShowHelp(false);
             return 1;
         }

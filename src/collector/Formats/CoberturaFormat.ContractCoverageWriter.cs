@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using Neo.Collector.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
@@ -40,8 +41,8 @@ namespace Neo.Collector.Formats
                 // TODO: complexity
                 writer.WriteAttributeString("name", contract.Name);
                 writer.WriteAttributeString("scripthash", $"{contract.DebugInfo.Hash}");
-                writer.WriteAttributeString("line-rate", $"{lineRate:N4}");
-                writer.WriteAttributeString("branch-rate", $"{branchRate:N4}");
+                writer.WriteAttributeString("line-rate", FormattableString.Invariant($"{lineRate:N4}"));
+                writer.WriteAttributeString("branch-rate", FormattableString.Invariant($"{branchRate:N4}"));
                 writer.WriteStartElement("classes");
                 {
                     foreach (var group in DebugInfo.Methods.GroupBy(NamespaceAndFilename))
@@ -79,8 +80,8 @@ namespace Neo.Collector.Formats
                 writer.WriteAttributeString("name", name);
                 if (filename.Length > 0)
                 { writer.WriteAttributeString("filename", filename); }
-                writer.WriteAttributeString("line-rate", $"{lineRate:N4}");
-                writer.WriteAttributeString("branch-rate", $"{branchRate:N4}");
+                writer.WriteAttributeString("line-rate", FormattableString.Invariant($"{lineRate:N4}"));
+                writer.WriteAttributeString("branch-rate", FormattableString.Invariant($"{branchRate:N4}"));
 
                 writer.WriteStartElement("methods");
                 foreach (var method in methods)
@@ -111,8 +112,8 @@ namespace Neo.Collector.Formats
                 writer.WriteStartElement("method");
                 writer.WriteAttributeString("name", method.Name);
                 writer.WriteAttributeString("signature", $"({signature})");
-                writer.WriteAttributeString("line-rate", $"{lineRate:N4}");
-                writer.WriteAttributeString("branch-rate", $"{branchRate:N4}");
+                writer.WriteAttributeString("line-rate", FormattableString.Invariant($"{lineRate:N4}"));
+                writer.WriteAttributeString("branch-rate", FormattableString.Invariant($"{branchRate:N4}"));
                 writer.WriteStartElement("lines");
                 for (int i = 0; i < method.SequencePoints.Count; i++)
                 {
@@ -142,7 +143,7 @@ namespace Neo.Collector.Formats
                     var branchRate = Utility.CalculateHitRate(branchCount, branchHit);
 
                     writer.WriteAttributeString("branch", "true");
-                    writer.WriteAttributeString("condition-coverage", $"{branchRate * 100:N}% ({branchHit}/{branchCount})");
+                    writer.WriteAttributeString("condition-coverage", FormattableString.Invariant($"{branchRate * 100:N}% ({branchHit}/{branchCount})"));
                     writer.WriteStartElement("conditions");
                     foreach (var (address, opCode) in contract.InstructionMap.GetBranchInstructions(method, index))
                     {
@@ -153,7 +154,7 @@ namespace Neo.Collector.Formats
                         writer.WriteStartElement("condition");
                         writer.WriteAttributeString("number", $"{address}");
                         writer.WriteAttributeString("type", $"{opCode}");
-                        writer.WriteAttributeString("coverage", $"{coverage / 2m * 100m}%");
+                        writer.WriteAttributeString("coverage", FormattableString.Invariant($"{coverage / 2m * 100m}%"));
                         writer.WriteEndElement();
                     }
                     writer.WriteEndElement();

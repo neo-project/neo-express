@@ -184,6 +184,11 @@ namespace Neo.BlockchainToolkit.Plugins
 
                 foreach (var (blockIndex, _, _, notification) in notifications)
                 {
+                    // a well-formed NEP-17 Transfer carries from/to/amount; skip malformed
+                    // events so a buggy or malicious contract cannot abort the whole query
+                    if (notification.State.Count < 3)
+                        continue;
+
                     // iterate backwards thru the notifications looking for all the Transfer events from a contract
                     // in assets where a Transfer event hasn't already been recorded
                     if (!updateIndexes.ContainsKey(notification.ScriptHash))
@@ -236,11 +241,14 @@ namespace Neo.BlockchainToolkit.Plugins
                 var header = NativeContract.Ledger.GetHeader(snapshot, blockIndex);
                 if (startTime > header.Timestamp || header.Timestamp > endTime)
                     continue;
-                if (notification.State[2] is not ByteString and not Integer)
-                    continue;
+                // a well-formed Transfer carries from/to/amount (and a token id for NEP-11);
+                // validate the item count before indexing State so a malformed event
+                // cannot throw and abort the whole enumeration
                 if (standard == NEP_17 && notification.State.Count != 3)
                     continue;
                 if (standard == NEP_11 && notification.State.Count != 4)
+                    continue;
+                if (notification.State[2] is not ByteString and not Integer)
                     continue;
 
                 var asset = notification.ScriptHash;

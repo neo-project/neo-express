@@ -38,7 +38,7 @@ namespace NeoExpress.Commands
             }
 
             [Command("contract")]
-            [Subcommand(typeof(Deploy), typeof(Download), typeof(Invoke), typeof(Run))]
+            [Subcommand(typeof(Deploy), typeof(Download), typeof(Invoke), typeof(Run), typeof(Update))]
             internal class Contract
             {
                 [Command("deploy")]
@@ -152,6 +152,9 @@ namespace NeoExpress.Commands
 
                     [Option(Description = "Password to use for NEP-2/NEP-6 account")]
                     internal string Password { get; init; } = string.Empty;
+
+                    [Option(Description = "Data parameter for update method on contract (Format: JSON)")]
+                    internal string Data { get; init; } = string.Empty;
                 }
             }
 

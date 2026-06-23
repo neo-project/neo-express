@@ -63,7 +63,7 @@ namespace Neo.BuildTasks
                 if (method.Name.StartsWith("_"))
                     continue;
 
-                builder.Append($"{ConvertParameterType(method.ReturnType)} {method.Name}(");
+                builder.Append($"{ConvertParameterType(method.ReturnType)} {CreateEscapedIdentifier(method.Name)}(");
                 builder.Append(string.Join(", ", method.Parameters.Select(p => $"{ConvertParameterType(p.Type)} {CreateEscapedIdentifier(p.Name)}")));
                 builder.AppendLine(");");
             }
@@ -75,7 +75,7 @@ namespace Neo.BuildTasks
                 for (int i = 0; i < manifest.Events.Count; i++)
                 {
                     var @event = manifest.Events[i];
-                    builder.Append($"void {@event.Name}(");
+                    builder.Append($"void {CreateEscapedIdentifier(@event.Name)}(");
                     builder.Append(string.Join(", ", @event.Parameters.Select(p => $"{ConvertParameterType(p.Type)} {CreateEscapedIdentifier(p.Name)}")));
                     builder.AppendLine($");");
                 }

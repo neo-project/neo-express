@@ -63,6 +63,9 @@ Arguments:
   -a|--address-version <ADDRESS_VERSION>  Version to use for addresses in this blockchain instance
                                           Default: 53
   -f|--force                              Overwrite existing data
+  --private-key <PRIVATE_KEY>             Private key for default dev account (Format: HEX, Base64, or WIF)
+                                          Default: Random
+  --batch-filename <BATCH_FILENAME>       Use a batch file to initialize the blockchain after creation.
 ```
 
 The `create` command is used to create a new Neo-Express blockchain network for local development
@@ -880,6 +883,7 @@ The commands supported in a batch file include:
 * `contract deploy`
 * `contract invoke`
 * `contract run`
+* `contract update`
 * `fastfwd`
 * `oracle enable`
 * `oracle response`

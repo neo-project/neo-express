@@ -300,7 +300,8 @@ namespace Neo.BlockchainToolkit
         {
             maxSize ??= ExecutionEngineLimits.Default.MaxItemSize;
             int size = 0;
-            var serialized = new List<VM.Types.CompoundType>();
+            // reference set for cycle detection: O(1) membership instead of an O(n) scan per node
+            var serialized = new HashSet<VM.Types.CompoundType>(ReferenceEqualityComparer.Instance);
             var unserialized = new Stack<StackItem>();
             unserialized.Push(item);
             while (unserialized.Count > 0)
@@ -324,17 +325,15 @@ namespace Neo.BlockchainToolkit
                         }
                         break;
                     case VM.Types.Array array:
-                        if (serialized.Any(p => ReferenceEquals(p, array)))
+                        if (!serialized.Add(array))
                             throw new NotSupportedException();
-                        serialized.Add(array);
                         size += array.Count.GetVarSize();
                         for (int i = array.Count - 1; i >= 0; i--)
                             unserialized.Push(array[i]);
                         break;
                     case VM.Types.Map map:
-                        if (serialized.Any(p => ReferenceEquals(p, map)))
+                        if (!serialized.Add(map))
                             throw new NotSupportedException();
-                        serialized.Add(map);
                         size += map.Count.GetVarSize();
                         foreach (var pair in map.Reverse())
                         {

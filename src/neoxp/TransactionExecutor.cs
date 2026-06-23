@@ -473,7 +473,7 @@ namespace NeoExpress
                 memory.Position = 0;
                 using var reader = new StreamReader(memory);
                 using var jsonReader = new JsonTextReader(reader);
-                return await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
+                return await JObject.LoadAsync(jsonReader, token).ConfigureAwait(false);
             }
             catch (JsonException ex)
             {

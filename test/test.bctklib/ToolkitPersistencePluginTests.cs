@@ -102,5 +102,38 @@ namespace test.bctklib
 
             hashes.Should().BeEquivalentTo(new[] { ContractA, ContractB });
         }
+
+        // The event-name filter is compared case-insensitively so a caller-supplied
+        // "transfer" still matches a stored "Transfer", matching ExpressPersistencePlugin.
+        [Fact(Timeout = 10000)]
+        public void GetNotifications_matches_event_names_case_insensitively()
+        {
+            using var path = new CleanupPath();
+            using var db = SeedTwoTransfers(path);
+            using var plugin = new ToolkitPersistencePlugin(db);
+
+            var result = plugin.GetNotifications(
+                SeekDirection.Forward,
+                null,
+                new HashSet<string> { "transfer" }).ToList();
+
+            result.Should().HaveCount(2);
+        }
+
+        // The backward direction walks the iterator with Prev() rather than Next();
+        // pin that path so the reverse advance cannot regress.
+        [Fact(Timeout = 10000)]
+        public void GetNotifications_walks_records_in_reverse_when_backward()
+        {
+            using var path = new CleanupPath();
+            using var db = SeedTwoTransfers(path);
+            using var plugin = new ToolkitPersistencePlugin(db);
+
+            var hashes = plugin.GetNotifications(SeekDirection.Backward)
+                .Select(n => n.Notification.ScriptHash)
+                .ToList();
+
+            hashes.Should().Equal(new[] { ContractB, ContractA });
+        }
     }
 }

@@ -82,12 +82,19 @@ namespace Neo.BlockchainToolkit.Plugins
             {
                 var info = ParseNotification(iterator.GetKeySpan(), iterator.Value());
                 if ((contracts is null || contracts.Contains(info.Notification.ScriptHash))
-                    && (eventNames is null || eventNames.Contains(info.Notification.EventName)))
+                    && MatchesEventName(eventNames, info.Notification.EventName))
                 {
                     yield return info;
                 }
                 _ = forward ? iterator.Next() : iterator.Prev();
             }
+
+            // eventNames can come from a HashSet<string> built with the default comparer, so
+            // compare the stored event name case-insensitively to match ExpressPersistencePlugin,
+            // which wraps caller-supplied event names in an OrdinalIgnoreCase set.
+            static bool MatchesEventName(IReadOnlySet<string>? eventNames, string eventName)
+                => eventNames is null
+                    || eventNames.Any(name => name.Equals(eventName, StringComparison.OrdinalIgnoreCase));
 
             static NotificationInfo ParseNotification(ReadOnlySpan<byte> key, byte[] value)
             {

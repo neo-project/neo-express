@@ -58,5 +58,28 @@ namespace Neo.Assertions
 
             return new AndConstraint<NotifyEventArgsAssertions>(this);
         }
+
+        public AndConstraint<NotifyEventArgsAssertions> NotBeSentBy(ContractState expected, string because = "", params object[] becauseArgs)
+            => NotBeSentBy(expected.Hash, because, becauseArgs);
+
+        public AndConstraint<NotifyEventArgsAssertions> NotBeSentBy(UInt160 expected, string because = "", params object[] becauseArgs)
+        {
+            Execute.Assertion
+                .BecauseOf(because, becauseArgs)
+                .ForCondition(Subject.ScriptHash != expected)
+                .FailWith("Expected {context:NotifyEventArgs} not to be sent by {0}{reason}.", expected);
+
+            return new AndConstraint<NotifyEventArgsAssertions>(this);
+        }
+
+        public AndConstraint<NotifyEventArgsAssertions> HaveEventName(string expected, string because = "", params object[] becauseArgs)
+        {
+            Execute.Assertion
+                .BecauseOf(because, becauseArgs)
+                .ForCondition(Subject.EventName == expected)
+                .FailWith("Expected {context:NotifyEventArgs} to have event name {0}{reason}, but found {1}.", expected, Subject.EventName);
+
+            return new AndConstraint<NotifyEventArgsAssertions>(this);
+        }
     }
 }

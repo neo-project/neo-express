@@ -48,7 +48,7 @@
     "onCommand:neo3-visual-devtracker.tracker.openContract",
     "onCommand:neo3-visual-devtracker.tracker.openTracker",
     "onCommand:neo3-visual-devtracker.tracker.openWallet",
-    "onCustomEditor:neo3-visual-devtracker.express.neo-invoke-json",
+    "onCustomEditor:neo3-visual-devtracker.neo.neo-invoke-json",
     "onView:neo3-visual-devtracker.views.blockchains",
     "onView:neo3-visual-devtracker.views.quickStart",
     "workspaceContains:**/*.nef",

@@ -20,5 +20,7 @@ namespace Neo.Assertions
         public static NotifyEventArgsAssertions Should(this NotifyEventArgs args) => new NotifyEventArgsAssertions(args);
 
         public static StorageItemAssertions Should(this StorageItem item) => new StorageItemAssertions(item);
+
+        public static ApplicationEngineAssertions Should(this ApplicationEngine engine) => new ApplicationEngineAssertions(engine);
     }
 }

@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import AddressInfo from "../../shared/addressInfo";
 import ApplicationLog from "../../shared/applicationLog";
 import BlockchainState from "./blockchainState";
+import isMethodNotFoundError from "./isMethodNotFoundError";
 import Log from "../util/log";
 
 const APP_LOG_CACHE_SIZE = 1024;
@@ -305,8 +306,8 @@ export default class BlockchainMonitorInternal {
             : 0;
           mayBeMoreResults = result.blocks.length >= count;
         } while (mayBeMoreResults);
-      } catch (e : any) {
-        if (e.message?.indexOf("Method not found") !== -1) {
+      } catch (e) {
+        if (isMethodNotFoundError(e)) {
           this.tryGetPopulatedBlocks = false;
         } else {
           throw e;

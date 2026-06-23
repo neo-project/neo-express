@@ -115,6 +115,43 @@ public class ExpressNodeExtensionsTests
     }
 
     [Fact]
+    public void TokenIdParser_decodes_base64()
+    {
+        var token = TokenIdParser.Parse("AQID");
+        token.ToArray().Should().Equal(new byte[] { 0x01, 0x02, 0x03 });
+    }
+
+    [Fact]
+    public void TokenIdParser_prefers_base64_over_literal_text()
+    {
+        // "test" is both meaningful text and valid base64; the parser decodes it
+        // as base64 (preferring base64 over the UTF-8 fallback), so the result is
+        // the decoded bytes, not the UTF-8 bytes of "test".
+        var token = TokenIdParser.Parse("test");
+        token.ToArray().Should().Equal(Convert.FromBase64String("test"));
+        token.ToArray().Should().NotEqual(Encoding.UTF8.GetBytes("test"));
+    }
+
+    [Fact]
+    public void TokenIdParser_falls_back_to_utf8_for_non_base64_text()
+    {
+        // 'tok!en' contains a character outside the base64 alphabet, so the
+        // base64 decode fails and the raw UTF-8 bytes are used instead.
+        var token = TokenIdParser.Parse("tok!en");
+        token.ToArray().Should().Equal(Encoding.UTF8.GetBytes("tok!en"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void TokenIdParser_rejects_null_or_whitespace(string? tokenId)
+    {
+        var act = () => TokenIdParser.Parse(tokenId!);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
     public void ContractNotFoundMessage_includes_script_hash()
     {
         var scriptHash = UInt160.Parse("0x0101010101010101010101010101010101010101");

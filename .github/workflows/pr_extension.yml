@@ -45,6 +45,6 @@ jobs:
       working-directory: extentions/neo3-visual-tracker
       run: npm run lint
 
-    - name: Test Quick Start actions
+    - name: Run unit tests
       working-directory: extentions/neo3-visual-tracker
-      run: npm run test:quickstart
+      run: npm test

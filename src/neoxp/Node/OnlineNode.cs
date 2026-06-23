@@ -33,6 +33,7 @@ namespace NeoExpress.Node
         readonly ExpressChain chain;
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
+        bool disposedValue;
 
         public ProtocolSettings ProtocolSettings { get; }
 
@@ -46,7 +47,11 @@ namespace NeoExpress.Node
 
         public void Dispose()
         {
-            rpcClient.Dispose();
+            if (!disposedValue)
+            {
+                rpcClient.Dispose();
+                disposedValue = true;
+            }
         }
 
         public async Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)

@@ -39,4 +39,20 @@ public class OnlineNodeTests
         var act = () => rpcClient.RpcSendAsync("getversion").GetAwaiter().GetResult();
         act.Should().Throw<ObjectDisposedException>();
     }
+
+    [Fact]
+    public void Dispose_is_idempotent()
+    {
+        var chain = new ExpressChain();
+        var node = new ExpressConsensusNode { RpcPort = 65002 };
+        var onlineNode = new OnlineNode(ProtocolSettings.Default, chain, node);
+
+        var act = () =>
+        {
+            onlineNode.Dispose();
+            onlineNode.Dispose();
+        };
+
+        act.Should().NotThrow();
+    }
 }

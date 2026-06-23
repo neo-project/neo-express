@@ -143,14 +143,16 @@ namespace Neo.BlockchainToolkit.Persistence
             }
         }
 
+        // Awaits the block hash directly so a faulted getblockhash propagates its real
+        // exception. The previous ContinueWith(OnlyOnRanToCompletion) cancelled the
+        // continuation on fault, surfacing a generic TaskCanceledException instead.
+        internal static async Task<UInt256> ParseBlockHashAsync(RpcClient rpcClient, uint index)
+            => UInt256.Parse(await rpcClient.GetBlockHashAsync(index).ConfigureAwait(false));
+
         public static async Task<BranchInfo> GetBranchInfoAsync(RpcClient rpcClient, uint index)
         {
             var versionTask = rpcClient.GetVersionAsync();
-            var blockHashTask = rpcClient.GetBlockHashAsync(index)
-                .ContinueWith(task => UInt256.Parse(task.Result),
-                              cancellationToken: default,
-                              TaskContinuationOptions.OnlyOnRanToCompletion,
-                              TaskScheduler.Default);
+            var blockHashTask = ParseBlockHashAsync(rpcClient, index);
             var stateRoot = await rpcClient.GetStateRootAsync(index).ConfigureAwait(false);
             var contractsTask = GetContractsAsync(rpcClient, stateRoot.RootHash);
 

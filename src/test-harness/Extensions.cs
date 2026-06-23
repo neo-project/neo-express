@@ -152,7 +152,6 @@ namespace NeoTestHarness
         public static NeoStorage StorageMap(this NeoStorage storages, UInt256 prefix)
             => storages.StorageMap(prefix.ToArray().AsMemory());
 
-
         public static bool TryGetValue(this NeoStorage storages, byte key, [MaybeNullWhen(false)] out StorageItem item)
         {
             byte[]? buffer = null;

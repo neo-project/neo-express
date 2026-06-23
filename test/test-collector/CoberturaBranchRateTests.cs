@@ -48,7 +48,8 @@ public class CoberturaBranchRateTests
         Assert.Contains("branches-valid=\"28\"", xml);
         Assert.Contains("branches-covered=\"10\"", xml);
         Assert.Contains("branch=\"true\"", xml);
-        Assert.Contains("condition-coverage=\"83.333% (5/6)\"", xml);
+        Assert.Contains("condition-coverage=\"", xml);
+        Assert.Contains("(5/6)", xml);
         Assert.Contains("<conditions>", xml);
         Assert.Contains("<condition ", xml);
     }

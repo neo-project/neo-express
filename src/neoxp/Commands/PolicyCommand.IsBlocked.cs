@@ -17,7 +17,7 @@ namespace NeoExpress.Commands
 {
     partial class PolicyCommand
     {
-        [Command("isBlocked", "blocked", Description = "Unblock account for usage")]
+        [Command("isBlocked", "blocked", Description = "Check whether an account is blocked")]
         internal class IsBlocked
         {
             readonly ExpressChainManagerFactory chainManagerFactory;

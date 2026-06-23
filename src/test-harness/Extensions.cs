@@ -146,6 +146,12 @@ namespace NeoTestHarness
             => storages.Where(kvp => kvp.Key.Span.StartsWith(prefix.Span))
                 .ToDictionary(kvp => kvp.Key.Slice(prefix.Length), kvp => kvp.Value, MemorySequenceComparer.Default);
 
+        public static NeoStorage StorageMap(this NeoStorage storages, UInt160 prefix)
+            => storages.StorageMap(prefix.ToArray().AsMemory());
+
+        public static NeoStorage StorageMap(this NeoStorage storages, UInt256 prefix)
+            => storages.StorageMap(prefix.ToArray().AsMemory());
+
 
         public static bool TryGetValue(this NeoStorage storages, byte key, [MaybeNullWhen(false)] out StorageItem item)
         {

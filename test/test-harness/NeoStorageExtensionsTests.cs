@@ -57,6 +57,41 @@ public class NeoStorageExtensionsTests
     }
 
     [Fact]
+    public void StorageMap_UInt160_prefix_strips_prefix()
+    {
+        var hash = UInt160.Parse("0x0102030405060708090a0b0c0d0e0f1011121314");
+        var hashBytes = hash.ToArray();
+        var storages = BuildStorage(
+            (Concat(hashBytes, [0xaa]), [0x11]),
+            (Concat(hashBytes, [0xbb]), [0x22]),
+            ([0x99], [0x33]));
+
+        var mapped = storages.StorageMap(hash);
+
+        mapped.Should().HaveCount(2);
+        mapped.TryGetValue(new ReadOnlyMemory<byte>([0xaa]), out var first).Should().BeTrue();
+        first!.Value.ToArray().Should().Equal(0x11);
+        mapped.TryGetValue(new ReadOnlyMemory<byte>([0xbb]), out var second).Should().BeTrue();
+        second!.Value.ToArray().Should().Equal(0x22);
+    }
+
+    [Fact]
+    public void StorageMap_UInt256_prefix_strips_prefix()
+    {
+        var hash = UInt256.Parse("0x0101010101010101010101010101010101010101010101010101010101010101");
+        var hashBytes = hash.ToArray();
+        var storages = BuildStorage(
+            (Concat(hashBytes, [0x01]), [0xcd]),
+            ([0x99], [0x33]));
+
+        var mapped = storages.StorageMap(hash);
+
+        mapped.Should().HaveCount(1);
+        mapped.TryGetValue(new ReadOnlyMemory<byte>([0x01]), out var item).Should().BeTrue();
+        item!.Value.ToArray().Should().Equal(0xcd);
+    }
+
+    [Fact]
     public void TryGetValue_byte_key_returns_matching_entry()
     {
         var storages = BuildStorage(

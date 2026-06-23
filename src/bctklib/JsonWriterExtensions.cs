@@ -150,7 +150,10 @@ namespace Neo.BlockchainToolkit
                 JTokenType.Null => null,
                 JTokenType.Boolean => json.Value<bool>(),
                 JTokenType.Float => json.Value<double>(),
-                JTokenType.Integer => json.Value<long>(),
+                // Neo.Json numbers are double-backed, and a JSON integer can exceed Int64
+                // (Newtonsoft then stores it as a BigInteger, for which Value<long>() and
+                // Value<double>() both throw). Parse the textual form, then narrow to double.
+                JTokenType.Integer => (double)System.Numerics.BigInteger.Parse(json.ToString(), System.Globalization.CultureInfo.InvariantCulture),
                 JTokenType.String => json.Value<string>(),
                 JTokenType.Array => new Neo.Json.JArray(json.Select(ToNeoJson)),
                 JTokenType.Object => ConvertJObject((JObject)json),

@@ -24,4 +24,23 @@ public class FastForwardCommandTests
         action.Should().Throw<Exception>()
             .WithMessage($"Cannot mint more than {FastForwardCommand.MaxFastForwardCount} blocks at once");
     }
+
+    [Theory]
+    [InlineData("-10")]
+    [InlineData("-1.00:00:00")]
+    public void ParseTimestampDelta_rejects_negative(string input)
+    {
+        var action = () => FastForwardCommand.ParseTimestampDelta(input);
+
+        action.Should().Throw<Exception>()
+            .WithMessage($"*{input}*");
+    }
+
+    [Fact]
+    public void ParseTimestampDelta_accepts_valid_inputs()
+    {
+        FastForwardCommand.ParseTimestampDelta("5").Should().Be(TimeSpan.FromSeconds(5));
+        FastForwardCommand.ParseTimestampDelta("").Should().Be(TimeSpan.Zero);
+        FastForwardCommand.ParseTimestampDelta("1.00:00:00").Should().Be(TimeSpan.FromDays(1));
+    }
 }

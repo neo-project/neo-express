@@ -351,7 +351,10 @@ namespace Neo.BlockchainToolkit
                 JTokenType.Integer => new ContractParameter()
                 {
                     Type = ContractParameterType.Integer,
-                    Value = new BigInteger(json.Value<long>())
+                    // Neo Integer parameters are 256-bit. Parse the textual form so values
+                    // outside Int64 round-trip (Value<long>() throws for those, and
+                    // Value<BigInteger>() throws for the in-range case Newtonsoft stores as long).
+                    Value = BigInteger.Parse(json.ToString(), System.Globalization.CultureInfo.InvariantCulture)
                 },
                 JTokenType.Array => new ContractParameter()
                 {

@@ -64,12 +64,19 @@ namespace NeoExpress.Commands
         }
 
         internal static TimeSpan ParseTimestampDelta(string timestampDelta)
-            => string.IsNullOrEmpty(timestampDelta)
+        {
+            var delta = string.IsNullOrEmpty(timestampDelta)
                 ? TimeSpan.Zero
                 : ulong.TryParse(timestampDelta, out var @ulong)
                     ? TimeSpan.FromSeconds(@ulong)
                     : TimeSpan.TryParse(timestampDelta, out var timeSpan)
                         ? timeSpan
                         : throw new Exception($"Could not parse timestamp delta {timestampDelta}");
+
+            if (delta < TimeSpan.Zero)
+                throw new Exception($"Timestamp delta {timestampDelta} cannot be negative");
+
+            return delta;
+        }
     }
 }

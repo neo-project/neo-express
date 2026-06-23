@@ -18,7 +18,7 @@ namespace NeoTrace.Commands
     [Command("transaction", "tx", Description = "Trace the specified transaction")]
     class TransactionCommand
     {
-        [Argument(0, Description = "Block index or hash")]
+        [Argument(0, Description = "Transaction hash")]
         [Required]
         internal string TransactionHash { get; } = string.Empty;
 

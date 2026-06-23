@@ -10,6 +10,7 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.Wallets;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;

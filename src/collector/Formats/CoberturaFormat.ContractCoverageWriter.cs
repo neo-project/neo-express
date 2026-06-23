@@ -126,7 +126,10 @@ namespace Neo.Collector.Formats
             {
                 var sp = method.SequencePoints[index];
                 var hits = contract.HitMap.TryGetValue(sp.Address, out var value) ? value : 0;
-                var (branchCount, branchHit) = contract.InstructionMap.GetBranchRate(method, index, GetBranchHit);
+                // Walk the instruction map once; both the branch rate and the per-condition
+                // loop below use the same materialized set of branch instructions.
+                var branchInstructions = contract.InstructionMap.GetBranchInstructions(method, index).ToList();
+                var (branchCount, branchHit) = branchInstructions.GetBranchRate(GetBranchHit);
 
                 writer.WriteStartElement("line");
                 writer.WriteAttributeString("number", $"{sp.Start.Line}");
@@ -144,7 +147,7 @@ namespace Neo.Collector.Formats
                     writer.WriteAttributeString("branch", "true");
                     writer.WriteAttributeString("condition-coverage", $"{branchRate * 100:N}% ({branchHit}/{branchCount})");
                     writer.WriteStartElement("conditions");
-                    foreach (var (address, opCode) in contract.InstructionMap.GetBranchInstructions(method, index))
+                    foreach (var (address, opCode) in branchInstructions)
                     {
                         var (condBranchCount, condContinueCount) = GetBranchHit(address);
                         var coverage = condBranchCount == 0 ? 0m : 1m;

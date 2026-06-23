@@ -42,6 +42,14 @@ a Neo-Express instance, you would specify the `rpc.BindAddress` to be `0.0.0.0`.
 If you specify an invalid IP Address, Neo-Express reverts to the default loopback `BindAddress`
 (aka `127.0.0.1`).
 
+> **Security note:** The Neo-Express RPC server exposes unauthenticated administrative methods
+> that control the node, including `expressshutdown` (stops the node), `expresscreatecheckpoint`,
+> `expresspersiststorage` and `expresspersistcontract` (modify chain state). The default loopback
+> `BindAddress` limits these to processes on the same machine. Binding to any other address (for
+> example `0.0.0.0`) makes them reachable, without authentication, by any host that can route to
+> that address. Only override the default on a trusted network and only for the duration of the
+> testing scenario that requires it.
+
 Example usage:
 
 ``` json

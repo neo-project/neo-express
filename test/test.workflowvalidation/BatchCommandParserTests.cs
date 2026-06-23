@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using FluentAssertions;
+using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Commands;
 using Xunit;
 
@@ -16,6 +17,31 @@ namespace test.workflowvalidation;
 
 public class BatchCommandParserTests
 {
+    [Fact]
+    public void Contract_update_is_a_recognized_batch_subcommand()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("contract", "update", "myContract", "contract.nef", "alice");
+
+        result.SelectedCommand.Should()
+            .BeOfType<CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Update>>();
+    }
+
+    [Fact]
+    public void Contract_update_binds_the_data_option()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("contract", "update", "myContract", "contract.nef", "alice", "--data", "42");
+
+        var update = result.SelectedCommand.Should()
+            .BeOfType<CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Update>>().Subject;
+        update.Model.Data.Should().Be("42");
+    }
+
     [Fact]
     public void SplitCommandLine_reports_unbalanced_quotes()
     {

@@ -880,6 +880,7 @@ The commands supported in a batch file include:
 * `contract deploy`
 * `contract invoke`
 * `contract run`
+* `contract update`
 * `fastfwd`
 * `oracle enable`
 * `oracle response`

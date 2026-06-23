@@ -91,20 +91,21 @@ namespace Neo.BuildTasks
             if (result != 0)
                 return result;
 
-            if (Suffix.Length == 0 && other.Suffix.Length > 0)
+            // Suffix is null for default(NugetPackageVersion); treat it as empty.
+            var suffix = Suffix ?? string.Empty;
+            var otherSuffix = other.Suffix ?? string.Empty;
+            if (suffix.Length == 0 && otherSuffix.Length > 0)
                 return 1;
-            if (Suffix.Length > 0 && other.Suffix.Length == 0)
+            if (suffix.Length > 0 && otherSuffix.Length == 0)
                 return -1;
-            return string.Compare(Suffix, other.Suffix, true);
+            return string.Compare(suffix, otherSuffix, true);
         }
 
         public override bool Equals(object? obj)
         {
-            return obj is NugetPackageVersion version &&
-                   Major == version.Major &&
-                   Minor == version.Minor &&
-                   Patch == version.Patch &&
-                   Suffix == version.Suffix;
+            // Defer to CompareTo so equality agrees with the == operator, including its
+            // null-suffix normalization and case-insensitive suffix comparison.
+            return obj is NugetPackageVersion version && CompareTo(version) == 0;
         }
 
         public override int GetHashCode()
@@ -113,7 +114,8 @@ namespace Neo.BuildTasks
             hashCode = hashCode * -1521134295 + Major.GetHashCode();
             hashCode = hashCode * -1521134295 + Minor.GetHashCode();
             hashCode = hashCode * -1521134295 + Patch.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Suffix);
+            // Match Equals/CompareTo: a null suffix hashes as empty and case is ignored.
+            hashCode = hashCode * -1521134295 + StringComparer.OrdinalIgnoreCase.GetHashCode(Suffix ?? string.Empty);
             return hashCode;
         }
 

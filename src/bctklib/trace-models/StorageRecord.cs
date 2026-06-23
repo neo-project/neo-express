@@ -40,8 +40,13 @@ namespace Neo.BlockchainToolkit.TraceDebug
 
         public static void Write(ref MessagePackWriter writer, MessagePackSerializerOptions options, UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages)
         {
-            var count = storages.Count();
-            if (count <= 0)
+            // Materialize once. storages is typically a lazy iterator returned by
+            // DataCache.Find (a prefix scan over the snapshot); the previous .Count()
+            // followed by foreach enumerated it twice, scanning the contract storage
+            // twice for every VM instruction while tracing.
+            var materialized = storages as IReadOnlyCollection<(StorageKey key, StorageItem item)>
+                ?? storages.ToList();
+            if (materialized.Count <= 0)
                 return;
 
             var byteArrayFormatter = options.Resolver.GetFormatterWithVerify<byte[]>();
@@ -51,8 +56,8 @@ namespace Neo.BlockchainToolkit.TraceDebug
             writer.WriteInt32(RecordKey);
             writer.WriteArrayHeader(2);
             options.Resolver.GetFormatterWithVerify<UInt160>().Serialize(ref writer, scriptHash, options);
-            writer.WriteMapHeader(count);
-            foreach (var (key, item) in storages)
+            writer.WriteMapHeader(materialized.Count);
+            foreach (var (key, item) in materialized)
             {
                 writer.Write(key.Key.Span);
                 storageItemFormatter.Serialize(ref writer, item, options);

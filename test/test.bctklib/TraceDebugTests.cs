@@ -120,6 +120,47 @@ namespace test.bctklib
                 Assert.Equal(storages.Length, storageRecord.Storages.Count);
             }
         }
+        [Fact]
+        public void storage_record_write_enumerates_lazy_storages_once()
+        {
+            var scriptHash = UInt160.Parse("0001020304050607080900010203040506070809");
+            var source = new[] {
+                (key: new StorageKey { Key = Convert.FromHexString("01")}, value: new StorageItem(Convert.FromHexString("11121314"))),
+                (key: new StorageKey { Key = Convert.FromHexString("02")}, value: new StorageItem(Convert.FromHexString("21222324")))
+            };
+
+            var enumerateCount = 0;
+            IEnumerable<(StorageKey key, StorageItem item)> Lazy()
+            {
+                foreach (var entry in source)
+                {
+                    enumerateCount++;
+                    yield return entry;
+                }
+            }
+
+            var lazyWriter = new ArrayBufferWriter<byte>();
+            StorageRecord.Write(lazyWriter, options, scriptHash, Lazy());
+
+            // A lazy DataCache.Find iterator must be walked exactly once, not once
+            // for a .Count() and again for the write loop.
+            Assert.Equal(source.Length, enumerateCount);
+
+            // Materializing the iterator must not change the serialized bytes: writing
+            // the same entries from an already-materialized array produces an identical
+            // record, so the optimization is purely a performance change.
+            var arrayWriter = new ArrayBufferWriter<byte>();
+            StorageRecord.Write(arrayWriter, options, scriptHash, source);
+            Assert.Equal(arrayWriter.WrittenMemory.ToArray(), lazyWriter.WrittenMemory.ToArray());
+
+            // And the record still round-trips through deserialization.
+            var record = MessagePackSerializer.Deserialize<ITraceDebugRecord>(lazyWriter.WrittenMemory, options, TestContext.Current.CancellationToken);
+            Assert.IsType<StorageRecord>(record);
+            var storageRecord = (StorageRecord)record;
+            Assert.Equal(scriptHash, storageRecord.ScriptHash);
+            Assert.Equal(source.Length, storageRecord.Storages.Count);
+        }
+
         static void StorageRecord_WriteWithStorageItemArrayHeader(
             IBufferWriter<byte> writer, MessagePackSerializerOptions options, UInt160 scriptHash,
             IEnumerable<(StorageKey key, StorageItem item)> storages)

@@ -75,7 +75,7 @@ namespace Neo.BlockchainToolkit.Plugins
                 throw new ObjectDisposedException(nameof(ToolkitPersistencePlugin));
 
             var forward = direction == SeekDirection.Forward;
-            var iterator = db.NewIterator(notificationsFamily);
+            using var iterator = db.NewIterator(notificationsFamily);
 
             _ = forward ? iterator.SeekToFirst() : iterator.SeekToLast();
             while (iterator.Valid())

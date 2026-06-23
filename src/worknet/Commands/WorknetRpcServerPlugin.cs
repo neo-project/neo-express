@@ -148,7 +148,7 @@ class WorknetRpcServerPlugin : Plugin
                 var token = balance.Tokens[i];
                 jsonTokens.Add(new JObject
                 {
-                    ["tokenid"] = Convert.ToHexString(token.TokenId.Span),
+                    ["tokenid"] = token.TokenId.Span.ToHexString(),
                     ["amount"] = $"{token.Balance}",
                     ["lastupdatedblock"] = token.LastUpdatedBlock,
                 });

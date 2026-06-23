@@ -81,11 +81,11 @@ namespace Neo.BlockchainToolkit.Plugins
             while (iterator.Valid())
             {
                 var info = ParseNotification(iterator.GetKeySpan(), iterator.Value());
-                if (contracts?.Contains(info.Notification.ScriptHash) ?? false)
-                    continue;
-                if (eventNames?.Contains(info.Notification.EventName) ?? false)
-                    continue;
-                yield return info;
+                if ((contracts is null || contracts.Contains(info.Notification.ScriptHash))
+                    && (eventNames is null || eventNames.Contains(info.Notification.EventName)))
+                {
+                    yield return info;
+                }
                 _ = forward ? iterator.Next() : iterator.Prev();
             }
 

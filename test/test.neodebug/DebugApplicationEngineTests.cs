@@ -53,7 +53,8 @@ namespace test.neodebug
                 using var sb = new ScriptBuilder();
                 sb.EmitSysCall(ApplicationEngine.System_Contract_NativeOnPersist);
                 engine.LoadScript(sb.ToArray());
-                if (engine.Execute() != VMState.HALT) throw new InvalidOperationException("NativeOnPersist failed", engine.FaultException);
+                if (engine.Execute() != VMState.HALT)
+                    throw new InvalidOperationException("NativeOnPersist failed", engine.FaultException);
             }
 
             using (var engine = ApplicationEngine.Create(TriggerType.PostPersist, null, snapshot, block, Settings, 0L))
@@ -61,7 +62,8 @@ namespace test.neodebug
                 using var sb = new ScriptBuilder();
                 sb.EmitSysCall(ApplicationEngine.System_Contract_NativePostPersist);
                 engine.LoadScript(sb.ToArray());
-                if (engine.Execute() != VMState.HALT) throw new InvalidOperationException("NativePostPersist failed", engine.FaultException);
+                if (engine.Execute() != VMState.HALT)
+                    throw new InvalidOperationException("NativePostPersist failed", engine.FaultException);
             }
 
             snapshot.Commit();

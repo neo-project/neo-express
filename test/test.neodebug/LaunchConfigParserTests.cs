@@ -113,11 +113,12 @@ namespace test.neodebug
         }
 
         [Fact]
-        public async Task live_launch_without_a_trace_is_not_yet_supported()
+        public async Task invocation_without_trace_file_or_operation_throws()
         {
-            var args = LaunchArgs(WriteNefFile(), new JObject { ["operation"] = "run" });
+            // Neither a trace-file (replay) nor an operation (live) — the invocation is unusable.
+            var args = LaunchArgs(WriteNefFile(), new JObject { ["something-else"] = "x" });
 
-            await Assert.ThrowsAsync<NotSupportedException>(() =>
+            await Assert.ThrowsAsync<JsonException>(() =>
                 LaunchConfigParser.CreateDebugSessionAsync(args, _ => { }, DebugView.Source));
         }
     }

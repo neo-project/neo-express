@@ -36,6 +36,9 @@ namespace NeoDebug.Neo3
         private IReadOnlyList<TraceRecord.StackFrame> _stackFrames = Array.Empty<TraceRecord.StackFrame>();
         private bool _disposed;
 
+        /// <summary>
+        /// Initializes a replay engine over a trace reader and positions it at the first recorded VM step.
+        /// </summary>
         public TraceReplayEngine(TraceDebugReader reader, IEnumerable<KeyValuePair<UInt160, Script>>? seedContracts = null)
         {
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
@@ -53,6 +56,7 @@ namespace NeoDebug.Neo3
             }
         }
 
+        /// <summary>Releases the underlying trace reader.</summary>
         public void Dispose()
         {
             if (_disposed)
@@ -61,8 +65,10 @@ namespace NeoDebug.Neo3
             _reader.Dispose();
         }
 
+        /// <inheritdoc />
         public bool SupportsStepBack => true;
 
+        /// <inheritdoc />
         public bool ExecuteNextInstruction()
         {
             while (_reader.TryGetNext(out var record))
@@ -78,6 +84,7 @@ namespace NeoDebug.Neo3
             return false;
         }
 
+        /// <inheritdoc />
         public bool ExecutePrevInstruction()
         {
             while (_reader.TryGetPrev(out var record))
@@ -142,20 +149,40 @@ namespace NeoDebug.Neo3
 
         private static readonly Script EmptyScript = new(ReadOnlyMemory<byte>.Empty);
 
+        /// <inheritdoc />
         public bool AtStart => _reader.AtStart;
+
+        /// <inheritdoc />
         public byte AddressVersion => _reader.AddressVersion;
+
+        /// <inheritdoc />
         public VMState State { get; private set; }
+
+        /// <inheritdoc />
         public IReadOnlyCollection<IExecutionContext> InvocationStack { get; private set; } = Array.Empty<IExecutionContext>();
+
+        /// <inheritdoc />
         public IExecutionContext? CurrentContext => InvocationStack.FirstOrDefault();
+
+        /// <inheritdoc />
         public IReadOnlyList<StackItem> ResultStack { get; private set; } = Array.Empty<StackItem>();
+
+        /// <inheritdoc />
         public Exception? FaultException { get; private set; }
+
+        /// <inheritdoc />
         public long GasConsumed { get; private set; }
 
+        /// <inheritdoc />
         public event EventHandler<(UInt160 scriptHash, string scriptName, string eventName, NeoArray state)>? DebugNotify;
+
+        /// <inheritdoc />
         public event EventHandler<(UInt160 scriptHash, string scriptName, string message)>? DebugLog;
 
+        /// <inheritdoc />
         public bool CatchBlockOnStack() => _stackFrames.Any(f => f.HasCatch);
 
+        /// <inheritdoc />
         public bool TryGetContract(UInt160 scriptHash, [MaybeNullWhen(false)] out Script script)
         {
             if (_seedContracts.TryGetValue(scriptHash, out script))
@@ -163,6 +190,7 @@ namespace NeoDebug.Neo3
             return _reader.TryGetContract(scriptHash, out script);
         }
 
+        /// <inheritdoc />
         public IEnumerable<(ReadOnlyMemory<byte> key, StorageItem item)> GetStorages(UInt160 scriptHash)
             => _reader.FindStorage(scriptHash);
     }

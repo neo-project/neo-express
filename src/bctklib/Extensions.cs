@@ -274,21 +274,39 @@ namespace Neo.BlockchainToolkit
         // replicated logic from Blockchain.OnInitialized + Blockchain.Persist
         public static void EnsureLedgerInitialized(this IStore store, ProtocolSettings settings)
         {
-            using var storeSnapshot = store.GetSnapshot();
-            if (LedgerInitialized(storeSnapshot))
+            using var snapshot = new StoreCache(store.GetSnapshot());
+            if (LedgerInitialized(snapshot))
                 return;
 
             var block = NeoSystem.CreateGenesisBlock(settings);
             if (block.Transactions.Length != 0)
                 throw new Exception("Unexpected Transactions in genesis block");
 
-            // For Neo 3.8.2, we need to create a proper DataCache implementation
-            // Since we can't easily create one from IStoreSnapshot, we'll skip the engine execution
-            // This is a simplified version that just checks if the ledger is initialized
-            // In a full implementation, you would need a proper DataCache implementation
+            // Persist the genesis block by running the native OnPersist and PostPersist scripts, exactly as
+            // the blockchain does for block 0. Without this the ledger is left empty and any ApplicationEngine
+            // constructed over the store throws when it reads LedgerContract.CurrentIndex.
+            using (var engine = ApplicationEngine.Create(TriggerType.OnPersist, null, snapshot, block, settings, 0L))
+            {
+                using var scriptBuilder = new ScriptBuilder();
+                scriptBuilder.EmitSysCall(ApplicationEngine.System_Contract_NativeOnPersist);
+                engine.LoadScript(scriptBuilder.ToArray());
+                if (engine.Execute() != VMState.HALT)
+                    throw new InvalidOperationException("NativeOnPersist operation failed", engine.FaultException);
+            }
+
+            using (var engine = ApplicationEngine.Create(TriggerType.PostPersist, null, snapshot, block, settings, 0L))
+            {
+                using var scriptBuilder = new ScriptBuilder();
+                scriptBuilder.EmitSysCall(ApplicationEngine.System_Contract_NativePostPersist);
+                engine.LoadScript(scriptBuilder.ToArray());
+                if (engine.Execute() != VMState.HALT)
+                    throw new InvalidOperationException("NativePostPersist operation failed", engine.FaultException);
+            }
+
+            snapshot.Commit();
 
             // replicated logic from LedgerContract.Initialized
-            static bool LedgerInitialized(IStoreSnapshot snapshot)
+            static bool LedgerInitialized(DataCache snapshot)
             {
                 const byte Prefix_Block = 5;
                 var key = new KeyBuilder(NativeContract.Ledger.Id, Prefix_Block).ToArray();

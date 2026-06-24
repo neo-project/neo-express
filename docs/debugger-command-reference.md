@@ -50,8 +50,8 @@ request whose configuration carries these properties:
 
 | Property | Required | Description |
 | --- | --- | --- |
-| `program` | yes | Path to the compiled `.nef`. Its sibling `.nefdbgnfo`/`.debug.json` is loaded automatically for source mapping. |
-| `invocation.trace-file` | yes | Path to the `.neo-trace` recording to replay. |
+| `program` | yes | Path to the compiled `.nef`. Its sibling `.manifest.json` and `.nefdbgnfo`/`.debug.json` are loaded automatically. |
+| `invocation` | yes | Either `{ "trace-file": "<path>" }` to **replay** a recorded trace, or `{ "operation": "<method>", "args": [ ... ] }` to **deploy and run** the contract live. |
 | `return-types` | no | Array of cast hints (`int`, `bool`, `string`, `hex`, `byte[]`, `addr`) for rendering the method's return values. |
 | `sourceFileMap` | no | Object remapping the document paths baked into the debug info to their location on this machine. |
 
@@ -72,6 +72,24 @@ A VS Code `launch.json` entry looks like:
       "return-types": [ "int" ]
     }
   ]
+}
+```
+
+To **deploy and run the contract live** instead, give the invocation an `operation` (and optional
+`args`) rather than a `trace-file`; the contract is deployed into a fresh, single-block in-process
+chain and the debugger stops at the call:
+
+```jsonc
+{
+  "name": "Debug Neo contract (live)",
+  "type": "neo-contract",
+  "request": "launch",
+  "program": "${workspaceFolder}/bin/sc/Contract.nef",
+  "invocation": {
+    "operation": "transfer",
+    "args": [ "@NXV7ZhHiyM1aHXwpVsRZC6BwNFP2jghXAq", 100 ]
+  },
+  "return-types": [ "bool" ]
 }
 ```
 
@@ -101,9 +119,15 @@ In the debug console you can evaluate:
 - contract storage rows — `#storage[...]`;
 - with a leading cast — `(int)`, `(bool)`, `(string)`, `(hex)`, `(byte[])`, `(addr)`.
 
-## Current scope
+## Replay vs. live
 
-NeoDebug currently debugs recorded traces (`invocation.trace-file`). Launching a fresh
-in-process invocation (deploy-and-run without a pre-recorded trace) is planned; until then, a
-launch configuration without a `trace-file` reports that it is not yet supported and points you
-at NeoTrace.
+NeoDebug supports two ways to drive an invocation:
+
+- **Replay** (`invocation.trace-file`) — steps a recorded `.neo-trace`. Because the execution is a
+  recording, you can step **backward** (time-travel).
+- **Live** (`invocation.operation`) — deploys the contract into a fresh, single-block in-process
+  chain and steps the call as it really executes. Live debugging cannot step backward.
+
+The live launch runs against a throwaway local chain seeded only with the contract under debug;
+multi-contract scenarios, signer/account resolution against a Neo-Express chain, checkpoints, and
+oracle responses are not yet wired into the launcher.

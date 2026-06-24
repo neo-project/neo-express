@@ -33,7 +33,6 @@ namespace NeoDebug.Neo3
         event EventHandler<(UInt160 scriptHash, string scriptName, string message)>? DebugLog;
 
         bool CatchBlockOnStack();
-
         bool ExecuteNextInstruction();
         bool ExecutePrevInstruction();
         bool TryGetContract(UInt160 scriptHash, [MaybeNullWhen(false)] out Script script);

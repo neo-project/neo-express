@@ -49,8 +49,8 @@ namespace NeoExpress.Node
         {
             if (!disposedValue)
             {
-                rpcClient.Dispose();
                 disposedValue = true;
+                rpcClient.Dispose();
             }
         }
 

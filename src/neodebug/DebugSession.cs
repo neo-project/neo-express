@@ -252,11 +252,16 @@ namespace NeoDebug.Neo3
             if (name.Length > 0 && name.Span[0] == '#')
             {
                 StackItem? item;
-                if (TryEvaluateIndexedSlot(name, ARG_SLOTS_PREFIX, context.Arguments, out item)) return (item, ContractParameterType.Any, remaining);
-                if (TryEvaluateIndexedSlot(name, EVAL_STACK_PREFIX, context.EvaluationStack, out item)) return (item, ContractParameterType.Any, remaining);
-                if (TryEvaluateIndexedSlot(name, LOCAL_SLOTS_PREFIX, context.LocalVariables, out item)) return (item, ContractParameterType.Any, remaining);
-                if (TryEvaluateIndexedSlot(name, RESULT_STACK_PREFIX, engine.ResultStack, out item)) return (item, ContractParameterType.Any, remaining);
-                if (TryEvaluateIndexedSlot(name, STATIC_SLOTS_PREFIX, context.StaticFields, out item)) return (item, ContractParameterType.Any, remaining);
+                if (TryEvaluateIndexedSlot(name, ARG_SLOTS_PREFIX, context.Arguments, out item))
+                    return (item, ContractParameterType.Any, remaining);
+                if (TryEvaluateIndexedSlot(name, EVAL_STACK_PREFIX, context.EvaluationStack, out item))
+                    return (item, ContractParameterType.Any, remaining);
+                if (TryEvaluateIndexedSlot(name, LOCAL_SLOTS_PREFIX, context.LocalVariables, out item))
+                    return (item, ContractParameterType.Any, remaining);
+                if (TryEvaluateIndexedSlot(name, RESULT_STACK_PREFIX, engine.ResultStack, out item))
+                    return (item, ContractParameterType.Any, remaining);
+                if (TryEvaluateIndexedSlot(name, STATIC_SLOTS_PREFIX, context.StaticFields, out item))
+                    return (item, ContractParameterType.Any, remaining);
             }
 
             if (debugInfoMap.TryGetValue(context.ScriptIdentifier, out var debugInfo))
@@ -322,7 +327,8 @@ namespace NeoDebug.Neo3
 
         private static (StackItem? item, ContractParameterType type, ReadOnlyMemory<char> remaining) Evaluate(StackItem? item, ContractParameterType type, ReadOnlyMemory<char> remaining)
         {
-            if (remaining.IsEmpty) throw new ArgumentException("Evaluate remaining argument IsEmpty", nameof(remaining));
+            if (remaining.IsEmpty)
+                throw new ArgumentException("Evaluate remaining argument IsEmpty", nameof(remaining));
 
             if (remaining.Span[0] == '[')
             {
@@ -405,7 +411,8 @@ namespace NeoDebug.Neo3
                 _ => null,
             };
 
-            if (value != null) return (value, 0);
+            if (value != null)
+                return (value, 0);
 
             var variable = castOperation switch
             {
@@ -521,7 +528,8 @@ namespace NeoDebug.Neo3
 
         private string ToResult(int index)
         {
-            if (index >= engine.ResultStack.Count) throw new ArgumentException("invalid ResultStack index", nameof(index));
+            if (index >= engine.ResultStack.Count)
+                throw new ArgumentException("invalid ResultStack index", nameof(index));
 
             var result = engine.ResultStack[index];
             var returnType = index < returnTypes.Count ? returnTypes[index] : CastOperation.None;
@@ -659,7 +667,8 @@ namespace NeoDebug.Neo3
         {
             Step((_) => false, true);
             // In source view, if we've stepped back before the first sequence point, step forward to it.
-            if (!disassemblyView && engine.AtStart) StepIn();
+            if (!disassemblyView && engine.AtStart)
+                StepIn();
         }
 
         public void StepIn()

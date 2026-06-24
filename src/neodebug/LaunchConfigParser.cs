@@ -24,6 +24,7 @@ using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
+using Neo.Wallets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Immutable;
@@ -102,19 +103,20 @@ namespace NeoDebug.Neo3
             if (string.IsNullOrEmpty(operation))
                 throw new JsonException("The 'invocation' must specify a 'trace-file' to replay or an 'operation' to invoke.");
 
-            return CreateLiveEngine(program, nef, invocation, operation);
+            return CreateLiveEngine(config, program, nef, invocation, operation);
         }
 
         // Deploys the contract into a fresh, single-block in-process chain and positions a live engine at the
         // requested invocation, so the same DebugSession can step it as it really executes.
-        private static IApplicationEngine CreateLiveEngine(string program, NefFile nef, JToken invocation, string operation)
+        private static IApplicationEngine CreateLiveEngine(IReadOnlyDictionary<string, JToken> config, string program, NefFile nef, JToken invocation, string operation)
         {
             var manifest = ContractManifest.Parse(File.ReadAllText(Path.ChangeExtension(program, ".manifest.json")));
+
+            var (signers, witnessChecker, deploySigner) = ParseSigners(config);
 
             var store = new MemoryStore();
             store.EnsureLedgerInitialized(Settings);
 
-            var deploySigner = new Signer { Account = UInt160.Zero, Scopes = WitnessScope.CalledByEntry };
             UInt160 contractHash;
             using (var snapshot = new StoreCache(store.GetSnapshot()))
             {
@@ -134,7 +136,6 @@ namespace NeoDebug.Neo3
                 invokeScript = builder.ToArray();
             }
 
-            var signers = new[] { new Signer { Account = deploySigner.Account, Scopes = WitnessScope.CalledByEntry } };
             var tx = new Transaction
             {
                 Version = 0,
@@ -152,10 +153,32 @@ namespace NeoDebug.Neo3
             var block = TestApplicationEngine.CreateDummyBlock(engineSnapshot, Settings);
             block.Transactions = new[] { tx };
 
-            var engine = new DebugApplicationEngine(tx, engineSnapshot, Settings, block, null);
+            var engine = new DebugApplicationEngine(tx, engineSnapshot, Settings, block, witnessChecker);
             engine.LoadScript(invokeScript);
             return engine;
         }
+
+        // Parses the launch configuration's signers. With explicit signers, CheckWitness succeeds only for
+        // those accounts (realistic). With none, a single default signer is used and all witnesses pass, so
+        // auth-gated code can be stepped without configuring real signatures.
+        private static (Signer[] signers, Func<byte[], bool> witnessChecker, Signer deploySigner) ParseSigners(IReadOnlyDictionary<string, JToken> config)
+        {
+            if (config.TryGetValue("signers", out var signersJson) && signersJson.Type == JTokenType.Array && signersJson.HasValues)
+            {
+                var signers = signersJson
+                    .Select(token => new Signer { Account = ParseAddress(token.Value<string>() ?? ""), Scopes = WitnessScope.CalledByEntry })
+                    .ToArray();
+                var accounts = signers.Select(s => s.Account).ToHashSet();
+                Func<byte[], bool> witnessChecker = hashOrPubkey =>
+                    hashOrPubkey.Length == UInt160.Length && accounts.Contains(new UInt160(hashOrPubkey));
+                return (signers, witnessChecker, signers[0]);
+            }
+
+            var deploySigner = new Signer { Account = UInt160.Zero, Scopes = WitnessScope.CalledByEntry };
+            return (new[] { deploySigner }, _ => true, deploySigner);
+        }
+
+        private static UInt160 ParseAddress(string address) => address.ToScriptHash(Settings.AddressVersion);
 
         // Deploys through ContractManagement so registry indexes, native calling context and the _deploy runtime
         // environment match a real deployment transaction.

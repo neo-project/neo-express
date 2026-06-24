@@ -14,6 +14,7 @@ using Neo.Extensions;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
+using Neo.Wallets;
 using NeoDebug.Neo3;
 using Newtonsoft.Json.Linq;
 using System;
@@ -153,6 +154,26 @@ namespace test.neodebug
 
             Assert.Contains(events.OfType<OutputEvent>(), e => e.Output.Contains("Return: True"));
             Assert.DoesNotContain(events.OfType<OutputEvent>(), e => e.Category == OutputEvent.CategoryValue.Stderr);
+        }
+
+        [Fact]
+        public async Task live_launch_deploys_under_a_configured_signer()
+        {
+            var events = new List<DebugEvent>();
+            var signer = UInt160.Parse("0x0000000000000000000000000000000000000001").ToAddress(ProtocolSettings.Default.AddressVersion);
+            var args = LaunchArgs(WriteContractFiles(), new JObject { ["operation"] = "main" }, new JArray("int"));
+            args.ConfigurationProperties["signers"] = new JArray(signer);
+
+            // The contract deploys under (and the invocation is signed by) the configured account; main() does
+            // not check witnesses, so it still runs to HALT returning 7.
+            var session = await LaunchConfigParser.CreateDebugSessionAsync(args, events.Add, DebugView.Source);
+            session.Start();
+            session.Continue();
+
+            Assert.Contains(events.OfType<OutputEvent>(), e => e.Output.Contains("Return: 7"));
+            Assert.DoesNotContain(events.OfType<OutputEvent>(), e => e.Category == OutputEvent.CategoryValue.Stderr);
+
+            (session as IDisposable)?.Dispose();
         }
     }
 }

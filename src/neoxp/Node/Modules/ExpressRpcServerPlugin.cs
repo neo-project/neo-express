@@ -249,6 +249,10 @@ namespace NeoExpress.Node
             {
                 try
                 {
+                    // The filename comes straight from the RPC request. Constrain it to the
+                    // node's working directory (the same restriction the CLI applies before
+                    // sending) so a caller cannot create a checkpoint at an arbitrary path.
+                    filename = EnsureCheckpointPathWithinDirectory(filename, System.IO.Directory.GetCurrentDirectory());
                     rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
                 }
                 catch (Exception ex) when (ex is ArgumentException
@@ -262,6 +266,24 @@ namespace NeoExpress.Node
             }
 
             throw new NotSupportedException($"Checkpoint create is only supported for {nameof(RocksDbExpressStorage)}");
+        }
+
+        // Resolves a checkpoint filename and rejects any path that escapes the given base
+        // directory (path traversal or an absolute path outside it).
+        internal static string EnsureCheckpointPathWithinDirectory(string filename, string baseDirectory)
+        {
+            var fullPath = System.IO.Path.GetFullPath(filename);
+            var prefix = System.IO.Path.GetFullPath(baseDirectory)
+                .TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar)
+                + System.IO.Path.DirectorySeparatorChar;
+            var comparison = System.IO.Path.DirectorySeparatorChar == '\\'
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            if (!fullPath.StartsWith(prefix, comparison))
+                throw new ArgumentException("Checkpoint path must stay within the current directory", nameof(filename));
+
+            return fullPath;
         }
 
         [RpcMethod]

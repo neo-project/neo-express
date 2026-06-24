@@ -881,6 +881,7 @@ The commands supported in a batch file include:
 
 * `checkpoint create`
 * `contract deploy`
+* `contract download`
 * `contract invoke`
 * `contract run`
 * `contract update`
@@ -893,6 +894,7 @@ The commands supported in a batch file include:
 * `policy unblock`
 * `transfer`
 * `transfernft`
+* `wallet create`
 
 ## neoxp execute
 

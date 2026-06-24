@@ -53,20 +53,27 @@ namespace NeoExpress.Commands
             }
             else
             {
-                var nodeIndex = NodeIndex.HasValue
-                    ? NodeIndex.Value
-                    : chain.ConsensusNodes.Count == 1
-                        ? 0
-                        : throw new InvalidOperationException("node index or --all must be specified when resetting a multi-node chain");
-
-                if (nodeIndex < 0 || nodeIndex >= chain.ConsensusNodes.Count)
-                {
-                    throw new ArgumentException($"node-index must be in [0, {chain.ConsensusNodes.Count - 1}]", nameof(NodeIndex));
-                }
+                var nodeIndex = ResolveNodeIndex(NodeIndex, chain.ConsensusNodes.Count);
 
                 var wasRunning = await chainManager.StopNodeAsync(chain.ConsensusNodes[nodeIndex]).ConfigureAwait(false);
                 await console.Out.WriteLineAsync($"node {nodeIndex} {(wasRunning ? "stopped" : "was not running")}").ConfigureAwait(false);
             }
+        }
+
+        internal static int ResolveNodeIndex(int? nodeIndex, int nodeCount)
+        {
+            var index = nodeIndex.HasValue
+                ? nodeIndex.Value
+                : nodeCount == 1
+                    ? 0
+                    : throw new InvalidOperationException("node index or --all must be specified when stopping a multi-node chain");
+
+            if (index < 0 || index >= nodeCount)
+            {
+                throw new ArgumentException($"node-index must be in [0, {nodeCount - 1}]", nameof(nodeIndex));
+            }
+
+            return index;
         }
 
         internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)

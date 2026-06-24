@@ -63,7 +63,7 @@ export default class NeoExpress {
   }
 
   async runInTerminal(name: string, command: Command, ...options: string[]) {
-    if (!this.checkForDotNet()) {
+    if (!(await this.checkForDotNetAsync())) {
       return null;
     }
     const dotNetArguments = [this.binaryPath, command, ...options];
@@ -128,7 +128,7 @@ export default class NeoExpress {
     command: string,
     ...options: string[]
   ): Promise<{ message: string; isError?: boolean }> {
-    if (!this.checkForDotNet()) {
+    if (!(await this.checkForDotNetAsync())) {
       return { message: "Could not launch Neo Express", isError: true };
     }
     const dotNetArguments = [
@@ -190,10 +190,10 @@ export default class NeoExpress {
     }
   }
 
-  private async checkForDotNet() {
+  private async checkForDotNetAsync() {
     const now = new Date().getTime();
     if (now - this.checkForDotNetPassedAt < DOTNET_CHECK_EXPIRY_IN_MS) {
-      Log.debug(LOG_PREFIX, `checkForDotNet skipped`);
+      Log.debug(LOG_PREFIX, `checkForDotNetAsync skipped`);
       return true;
     }
     Log.log(LOG_PREFIX, `Checking for dotnet...`);
@@ -204,7 +204,7 @@ export default class NeoExpress {
           childProcess.execFileSync(this.dotnetPath, ["--version"]).toString()
         ) >= 6;
     } catch (e : any) {
-      Log.error(LOG_PREFIX, "checkForDotNet error:", e.message);
+      Log.error(LOG_PREFIX, "checkForDotNetAsync error:", e.message);
       ok = false;
     }
     if (ok) {

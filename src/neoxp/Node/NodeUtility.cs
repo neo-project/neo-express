@@ -535,21 +535,24 @@ namespace NeoExpress.Node
             if (dirty)
                 snapshot.Commit();
             return localContract.Id;
+        }
 
-            static bool PersistStoragePair(DataCache snapshot, int contractId, (string key, string value) storagePair)
+        internal static bool PersistStoragePair(DataCache snapshot, int contractId, (string key, string value) storagePair)
+        {
+            // Decode outside the try so a malformed base64 key/value surfaces as a
+            // FormatException instead of being reported as a benign "already exists".
+            var key = Convert.FromBase64String(storagePair.key);
+            var value = Convert.FromBase64String(storagePair.value);
+            try
             {
-                try
-                {
-                    snapshot.Add(
-                        new StorageKey { Id = contractId, Key = Convert.FromBase64String(storagePair.key) },
-                        new StorageItem(Convert.FromBase64String(storagePair.value)));
-
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
+                snapshot.Add(new StorageKey { Id = contractId, Key = key }, new StorageItem(value));
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                // DataCache.Add throws ArgumentException when the key already exists; in the
+                // no-overwrite path this means "the key is present, leave the existing value".
+                return false;
             }
         }
 

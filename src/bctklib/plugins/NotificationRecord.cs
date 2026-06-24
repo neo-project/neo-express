@@ -67,7 +67,7 @@ namespace Neo.BlockchainToolkit.Plugins
         public void Serialize(BinaryWriter writer)
         {
             ScriptHash.Serialize(writer);
-            BinarySerializer.Serialize(State, ExecutionEngineLimits.Default);
+            writer.Write(BinarySerializer.Serialize(State, ExecutionEngineLimits.Default));
             writer.WriteVarString(EventName);
             InventoryHash.Serialize(writer);
             writer.Write((byte)InventoryType);

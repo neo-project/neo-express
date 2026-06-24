@@ -57,4 +57,28 @@ public class BatchCommandParserTests
         BatchCommand.SplitCommandLine("wallet create \"alice bob\"").Should()
             .Equal("wallet", "create", "alice bob");
     }
+
+    [Fact]
+    public void SplitCommandLine_keeps_text_after_a_mid_word_quote_in_the_same_token()
+    {
+        BatchCommand.SplitCommandLine("foo\"bar\"baz").Should()
+            .Equal("foobarbaz");
+    }
+
+    [Fact]
+    public void SplitCommandLine_joins_quoted_segments_within_a_single_word()
+    {
+        BatchCommand.SplitCommandLine("a\"b\"c").Should()
+            .Equal("abc");
+    }
+
+    [Fact]
+    public void SplitCommandLine_strips_every_quote_from_a_single_token()
+    {
+        // A token carrying more than one quoted segment has all of its quote
+        // characters removed, so a word with two quote pairs collapses to a
+        // single unquoted token.
+        BatchCommand.SplitCommandLine("a\"b\"c\"d\"").Should()
+            .Equal("abcd");
+    }
 }

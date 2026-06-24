@@ -60,6 +60,9 @@ namespace NeoExpress.Commands
         [Option(Description = "Enable contract execution tracing")]
         internal bool Trace { get; init; } = false;
 
+        [Option(Description = "Output as JSON")]
+        internal bool Json { get; init; } = false;
+
         [Option(Description = "Path to neo-express data file")]
         internal string Input { get; init; } = string.Empty;
 
@@ -74,7 +77,7 @@ namespace NeoExpress.Commands
                 }
 
                 var (chainManager, _) = chainManagerFactory.LoadChain(Input);
-                using var txExec = txExecutorFactory.Create(chainManager, Trace, false);
+                using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
 
                 var script = ConvertTextToScript(InputText) ?? LoadFileScript(InputText);
                 if (script == null)
@@ -93,10 +96,13 @@ namespace NeoExpress.Commands
                     await txExec.ContractInvokeAsync(script, Account, password, WitnessScope, AdditionalGas);
                 }
 
-                console.WriteLine("Opcodes:");
-                foreach (var opInfo in GetInstructionString(script))
+                if (!Json)
                 {
-                    console.WriteLine(opInfo);
+                    console.WriteLine("Opcodes:");
+                    foreach (var opInfo in GetInstructionString(script))
+                    {
+                        console.WriteLine(opInfo);
+                    }
                 }
                 return 0;
             }

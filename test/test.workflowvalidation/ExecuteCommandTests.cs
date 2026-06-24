@@ -9,14 +9,34 @@
 // modifications are permitted.
 
 using FluentAssertions;
+using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Commands;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace test.workflowvalidation;
 
 public class ExecuteCommandTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Json_option_binds_from_the_command_line(bool flagSupplied)
+    {
+        // ExecuteCommand has no parameterless constructor, so bypass construction
+        // (the factories are unused for argument parsing) and bind options directly.
+        var app = new CommandLineApplication<ExecuteCommand>
+        {
+            ModelFactory = () => (ExecuteCommand)RuntimeHelpers.GetUninitializedObject(typeof(ExecuteCommand)),
+        };
+        app.Conventions.UseOptionAttributes().UseArgumentAttributes();
+
+        app.Parse(flagSupplied ? ["somescript", "--json"] : ["somescript"]);
+
+        app.Model.Json.Should().Be(flagSupplied);
+    }
+
     [Fact]
     public void LoadFileScript_returns_null_for_long_non_file_input()
     {

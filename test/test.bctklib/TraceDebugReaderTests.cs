@@ -118,7 +118,9 @@ namespace test.bctklib
         public void steps_backward_in_reverse_order_to_the_start()
         {
             using var reader = Open(SampleTrace());
-            while (reader.TryGetNext(out _)) { }
+            while (reader.TryGetNext(out _))
+            {
+            }
 
             var backward = new List<string>();
             while (reader.TryGetPrev(out var record))
@@ -165,7 +167,9 @@ namespace test.bctklib
         public void next_after_end_keeps_history_intact_for_step_back()
         {
             using var reader = Open(SampleTrace());
-            while (reader.TryGetNext(out _)) { }
+            while (reader.TryGetNext(out _))
+            {
+            }
 
             // A failed next must not corrupt the cursor: stepping back still yields the last record.
             Assert.False(reader.TryGetNext(out _));

@@ -37,8 +37,6 @@ namespace NeoDebug.Neo3
 
         /// <summary>Returns whether the current invocation stack contains a catch block.</summary>
         bool CatchBlockOnStack();
-
-        /// <summary>Advances execution to the next VM instruction and updates the current engine state.</summary>
         bool ExecuteNextInstruction();
 
         /// <summary>Moves execution back to the previous VM instruction when the backend supports it.</summary>

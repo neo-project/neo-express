@@ -83,7 +83,10 @@ namespace Neo.BlockchainToolkit.Persistence
             }
             catch (Exception ex)
             {
-                throw ex.InnerException ?? ex;
+                // surface the underlying cause but keep its original stack trace; a plain
+                // throw of the (inner) exception would reset it and lose the failure site
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+                throw; // unreachable, satisfies the compiler's definite-return analysis
             }
         }
 
@@ -96,7 +99,10 @@ namespace Neo.BlockchainToolkit.Persistence
             }
             catch (Exception ex)
             {
-                throw ex.InnerException ?? ex;
+                // surface the underlying cause but keep its original stack trace; a plain
+                // throw of the (inner) exception would reset it and lose the failure site
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+                throw; // unreachable, satisfies the compiler's definite-return analysis
             }
         }
 

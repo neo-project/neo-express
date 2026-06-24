@@ -9,8 +9,11 @@
 // modifications are permitted.
 
 using FluentAssertions;
+using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using NeoExpress.Commands;
+using System;
+using System.IO;
 using Xunit;
 
 namespace test.workflowvalidation;
@@ -35,5 +38,36 @@ public class ContractValidateTests
 
         message.Should().Be($"{Hash} is NOT NEP-11 compliant.");
         exitCode.Should().NotBe(0);
+    }
+
+    [Fact]
+    public async Task WriteMessageAsync_skips_empty_messages()
+    {
+        var console = new CapturingConsole();
+
+        await ContractCommand.Validate.WriteMessageAsync(console, string.Empty);
+        await ContractCommand.Validate.WriteMessageAsync(console, "   ");
+
+        console.Text.Should().BeEmpty();
+    }
+
+    sealed class CapturingConsole : IConsole
+    {
+        readonly StringWriter writer = new();
+
+        public string Text => writer.ToString();
+
+        public TextWriter Out => writer;
+        public TextWriter Error => writer;
+        public TextReader In => TextReader.Null;
+        public bool IsInputRedirected => true;
+        public bool IsOutputRedirected => true;
+        public bool IsErrorRedirected => true;
+        public ConsoleColor ForegroundColor { get; set; }
+        public ConsoleColor BackgroundColor { get; set; }
+
+        public void ResetColor() { }
+
+        public event ConsoleCancelEventHandler? CancelKeyPress { add { } remove { } }
     }
 }

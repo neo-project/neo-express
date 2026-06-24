@@ -29,6 +29,11 @@ internal partial class ContractCommand
                 ? ($"{scriptHash} is {standard} compliant.", 0)
                 : ($"{scriptHash} is NOT {standard} compliant.", 1);
 
+        internal static Task WriteMessageAsync(IConsole console, string message)
+            => string.IsNullOrWhiteSpace(message)
+                ? Task.CompletedTask
+                : console.Out.WriteLineAsync(message);
+
         [Command("nep11", Description = "Checks if contract is NEP-11 compliant")]
         public class Nep11Compliant
         {
@@ -58,7 +63,7 @@ internal partial class ContractCommand
                     var nep11 = await expressNode.IsNep11CompliantAsync(scriptHash).ConfigureAwait(false);
 
                     var (message, exitCode) = ComplianceResult(scriptHash, "NEP-11", nep11);
-                    await console.Out.WriteLineAsync(message);
+                    await WriteMessageAsync(console, message);
                     return exitCode;
                 }
                 catch (Exception ex)
@@ -98,7 +103,7 @@ internal partial class ContractCommand
                     var nep17 = await expressNode.IsNep17CompliantAsync(scriptHash).ConfigureAwait(false);
 
                     var (message, exitCode) = ComplianceResult(scriptHash, "NEP-17", nep17);
-                    await console.Out.WriteLineAsync(message);
+                    await WriteMessageAsync(console, message);
                     return exitCode;
                 }
                 catch (Exception ex)

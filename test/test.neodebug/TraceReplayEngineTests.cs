@@ -105,7 +105,8 @@ namespace test.neodebug
         public void steps_backward_for_time_travel()
         {
             using var engine = Open();
-            while (engine.ExecuteNextInstruction()) { }
+            while (engine.ExecuteNextInstruction())
+            { }
 
             Assert.True(engine.ExecutePrevInstruction());
             Assert.Equal(2, engine.CurrentContext!.InstructionPointer);

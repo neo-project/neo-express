@@ -326,14 +326,14 @@ namespace Neo.BlockchainToolkit
                         break;
                     case VM.Types.Array array:
                         if (!serialized.Add(array))
-                            throw new NotSupportedException();
+                            throw new NotSupportedException("StackItem graph contains a circular reference.");
                         size += array.Count.GetVarSize();
                         for (int i = array.Count - 1; i >= 0; i--)
                             unserialized.Push(array[i]);
                         break;
                     case VM.Types.Map map:
                         if (!serialized.Add(map))
-                            throw new NotSupportedException();
+                            throw new NotSupportedException("StackItem graph contains a circular reference.");
                         size += map.Count.GetVarSize();
                         foreach (var pair in map.Reverse())
                         {

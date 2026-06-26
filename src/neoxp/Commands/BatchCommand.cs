@@ -12,6 +12,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Wallets;
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 
@@ -109,6 +110,15 @@ namespace NeoExpress.Commands
                     continue;
 
                 var pr = batchApp.Parse(args);
+
+                // Parse() does not run DataAnnotations validation (only ExecuteAsync does),
+                // so enforce the [Required]/[AllowedValues] attributes on the batch models
+                // here. Otherwise a line missing a required argument is dispatched with the
+                // field defaulted to "" and fails later with a confusing downstream error.
+                var validationResult = pr.SelectedCommand.GetValidationResult();
+                if (validationResult != ValidationResult.Success)
+                    throw new Exception(validationResult?.ErrorMessage ?? $"Invalid batch command: {commands.Span[i]}");
+
                 switch (pr.SelectedCommand)
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:

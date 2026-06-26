@@ -11,12 +11,36 @@
 using FluentAssertions;
 using McMaster.Extensions.CommandLineUtils;
 using NeoExpress.Commands;
+using System.ComponentModel.DataAnnotations;
 using Xunit;
 
 namespace test.workflowvalidation;
 
 public class BatchCommandParserTests
 {
+    [Fact]
+    public void Validation_detects_a_batch_line_missing_a_required_argument()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        // transfer requires a receiver; this line omits it.
+        var result = app.Parse("transfer", "10", "gas", "alice");
+
+        result.SelectedCommand.GetValidationResult().Should().NotBe(ValidationResult.Success);
+    }
+
+    [Fact]
+    public void Validation_passes_for_a_complete_batch_line()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("transfer", "10", "gas", "alice", "bob");
+
+        result.SelectedCommand.GetValidationResult().Should().Be(ValidationResult.Success);
+    }
+
     [Fact]
     public void Contract_update_is_a_recognized_batch_subcommand()
     {

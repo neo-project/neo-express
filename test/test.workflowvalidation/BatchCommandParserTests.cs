@@ -81,4 +81,33 @@ public class BatchCommandParserTests
         BatchCommand.SplitCommandLine("a\"b\"c\"d\"").Should()
             .Equal("abcd");
     }
+
+    [Fact]
+    public void Contract_invoke_binds_results_and_does_not_require_account()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("contract", "invoke", "invoke.json", "--results");
+
+        var invoke = result.SelectedCommand.Should()
+            .BeOfType<CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Invoke>>().Subject;
+        invoke.Model.Results.Should().BeTrue();
+        result.SelectedCommand.GetValidationResult()
+            .Should().Be(System.ComponentModel.DataAnnotations.ValidationResult.Success);
+    }
+
+    [Fact]
+    public void Contract_run_binds_additional_gas()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("contract", "run", "myContract", "myMethod", "--account", "alice", "--gas", "5");
+
+        var run = result.SelectedCommand.Should()
+            .BeOfType<CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Run>>().Subject;
+        run.Model.AdditionalGas.Should().Be(5m);
+        run.Model.Account.Should().Be("alice");
+    }
 }

@@ -62,7 +62,6 @@ public class OnlineNodeTests
     public void BuildPersistStoragePayload_includes_a_force_the_server_accepts()
     {
         var state = new JObject();
-
         var payload = OnlineNode.BuildPersistStoragePayload(state, ("AQ==", "Ag=="));
 
         // The ExpressPersistStorage handler rejects the request unless "force"

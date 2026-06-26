@@ -104,8 +104,14 @@ namespace NeoExpress.Node
 
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, args.ScriptHash);
             var name = contract is null ? args.ScriptHash.ToString() : contract.Manifest.Name;
-            Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m [{args.ScriptContainer.GetType().Name}]");
+            Console.WriteLine($"\x1b[35m{name}\x1b[0m Log: \x1b[{colorCode}m\"{args.Message}\"\x1b[0m{FormatScriptContainer(args.ScriptContainer)}");
         }
+
+        // args.ScriptContainer is null for executions without a transaction container
+        // (e.g. verification triggers), so guard it the way ExpressLogPlugin does
+        // rather than dereferencing it for the type name.
+        internal static string FormatScriptContainer(IVerifiable? container)
+            => container is null ? string.Empty : $" [{container.GetType().Name}]";
 
         Task<T> MakeAsync<T>(Func<T> func)
         {

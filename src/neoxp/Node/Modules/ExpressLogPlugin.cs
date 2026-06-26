@@ -108,15 +108,32 @@ namespace NeoExpress.Node
 
         void OnApplicationExecuted(Neo.Ledger.Blockchain.ApplicationExecuted applicationExecuted)
         {
-            if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
+            var logMessage = FormatFaultLog(
+                applicationExecuted.VMState,
+                applicationExecuted.Transaction,
+                applicationExecuted.Exception);
+            if (logMessage is not null)
             {
-                var logMessage = $"Tx FAULT: hash={applicationExecuted.Transaction.Hash}";
-                if (!string.IsNullOrEmpty(applicationExecuted.Exception.Message))
-                {
-                    logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
-                }
                 console.Error.WriteLine($"\x1b[31m{logMessage}\x1b[0m");
             }
+        }
+
+        // Block-level executions (native OnPersist/PostPersist) have a null
+        // Transaction, so a faulting one must be labelled rather than have its
+        // hash dereferenced - the way ExpressPersistencePlugin already skips
+        // null-Transaction entries.
+        internal static string? FormatFaultLog(Neo.VM.VMState vmState, Transaction? transaction, System.Exception? exception)
+        {
+            if (vmState != Neo.VM.VMState.FAULT)
+                return null;
+
+            var hash = transaction is null ? "(block)" : transaction.Hash.ToString();
+            var logMessage = $"Tx FAULT: hash={hash}";
+            if (!string.IsNullOrEmpty(exception?.Message))
+            {
+                logMessage += $" exception=\"{exception.Message}\"";
+            }
+            return logMessage;
         }
     }
 }

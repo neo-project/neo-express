@@ -100,6 +100,7 @@ namespace NeoExpress.Commands
             for (var i = 0; i < commands.Length; i++)
             {
                 var batchApp = new CommandLineApplication<BatchFileCommands>();
+                batchApp.UseInvariantValueParsing();
                 batchApp.Conventions.UseDefaultConventions();
 
                 var args = SplitCommandLine(commands.Span[i]).ToArray();

@@ -291,19 +291,31 @@ namespace NeoExpress.Node
                 throw new Exception(NodeUtility.ContractNotFoundMessage(scripthash));
             }
 
-            JObject o = new JObject();
-            o["state"] = state.ToJson();
-
-            JArray storage = new JArray();
-            JObject kv = new JObject();
-            kv["key"] = storagePair.key;
-            kv["value"] = storagePair.value;
-            storage.Add(kv);
-
-            o["storage"] = storage;
+            var o = BuildPersistStoragePayload(state.ToJson(), storagePair);
 
             var response = await rpcClient.RpcSendAsync("expresspersiststorage", o).ConfigureAwait(false);
             return (int)response.AsNumber();
+        }
+
+        internal static JObject BuildPersistStoragePayload(JToken state, (string key, string value) storagePair)
+        {
+            var o = new JObject();
+            o["state"] = state;
+
+            var storage = new JArray();
+            var kv = new JObject();
+            kv["key"] = storagePair.key;
+            kv["value"] = storagePair.value;
+            storage.Add(kv);
+            o["storage"] = storage;
+
+            // The ExpressPersistStorage RPC handler requires a "force" property
+            // (it does Enum.Parse<OverwriteForce> on it), and the offline path
+            // always persists storage with OverwriteForce.None. Omitting it made
+            // every storage update against a running node fail with the server
+            // error "Invalid params: missing 'force'".
+            o["force"] = ContractCommand.OverwriteForce.None;
+            return o;
         }
 
         public async IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter)

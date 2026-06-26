@@ -11,7 +11,9 @@
 using FluentAssertions;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Json;
 using Neo.Network.RPC;
+using NeoExpress.Commands;
 using NeoExpress.Node;
 using System;
 using System.Reflection;
@@ -54,5 +56,23 @@ public class OnlineNodeTests
         };
 
         act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void BuildPersistStoragePayload_includes_a_force_the_server_accepts()
+    {
+        var state = new JObject();
+
+        var payload = OnlineNode.BuildPersistStoragePayload(state, ("AQ==", "Ag=="));
+
+        // The ExpressPersistStorage handler rejects the request unless "force"
+        // is present and parses as an OverwriteForce; without it every online
+        // storage update failed with "Invalid params: missing 'force'".
+        var force = Enum.Parse<ContractCommand.OverwriteForce>(payload["force"]!.AsString());
+        force.Should().Be(ContractCommand.OverwriteForce.None);
+
+        payload["state"].Should().BeSameAs(state);
+        payload["storage"]![0]!["key"]!.AsString().Should().Be("AQ==");
+        payload["storage"]![0]!["value"]!.AsString().Should().Be("Ag==");
     }
 }

@@ -9,9 +9,11 @@
 // modifications are permitted.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Neo.Collector.Models
@@ -84,9 +86,25 @@ namespace Neo.Collector.Models
             if (script.Length == 0)
                 throw new FormatException($"Script can't be empty");
             var checksum = reader.ReadUInt32();
-            // TODO: Check Checksum
+            if (stream.CanSeek)
+            {
+                // The checksum is the first four bytes of the double SHA-256 hash of
+                // every preceding byte. Verify it so a corrupt or truncated .nef is
+                // rejected instead of being silently mapped to coverage data.
+                var contentLength = checked((int)stream.Position - sizeof(uint));
+                stream.Position = 0;
+                var content = reader.ReadBytes(contentLength);
+                if (ComputeChecksum(content) != checksum)
+                    throw new FormatException("CRC verification failed");
+            }
 
             return new NefFile(compiler, source, tokens, script, checksum);
+        }
+
+        static uint ComputeChecksum(byte[] content)
+        {
+            var hash = SHA256.HashData(SHA256.HashData(content));
+            return BinaryPrimitives.ReadUInt32LittleEndian(hash);
         }
 
         static MethodToken ReadMethodToken(BinaryReader reader)

@@ -20,13 +20,13 @@ namespace test.workflowvalidation;
 public class ExpressLogPluginTests
 {
     [Fact]
-    public void FormatFaultLog_labels_a_block_level_fault_with_a_null_transaction()
+    public void FormatFaultLog_labels_a_fault_with_a_null_transaction_as_unknown()
     {
-        // Block-level OnPersist/PostPersist executions have a null Transaction;
-        // formatting a fault must not dereference it.
+        // A fault without a transaction still needs a useful placeholder; do
+        // not assume every null Transaction is necessarily a block execution.
         var message = ExpressLogPlugin.FormatFaultLog(VMState.FAULT, null, new Exception("boom"));
 
-        message.Should().Be("Tx FAULT: hash=(block) exception=\"boom\"");
+        message.Should().Be("Tx FAULT: hash=<unknown> exception=\"boom\"");
     }
 
     [Fact]

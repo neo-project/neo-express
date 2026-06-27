@@ -118,16 +118,15 @@ namespace NeoExpress.Node
             }
         }
 
-        // Block-level executions (native OnPersist/PostPersist) have a null
-        // Transaction, so a faulting one must be labelled rather than have its
-        // hash dereferenced - the way ExpressPersistencePlugin already skips
-        // null-Transaction entries.
+        // Some executions can fault without a transaction. Keep the log useful
+        // without assuming every null Transaction corresponds to a block-level
+        // native execution.
         internal static string? FormatFaultLog(Neo.VM.VMState vmState, Transaction? transaction, System.Exception? exception)
         {
             if (vmState != Neo.VM.VMState.FAULT)
                 return null;
 
-            var hash = transaction is null ? "(block)" : transaction.Hash.ToString();
+            var hash = transaction is null ? "<unknown>" : transaction.Hash.ToString();
             var logMessage = $"Tx FAULT: hash={hash}";
             if (!string.IsNullOrEmpty(exception?.Message))
             {

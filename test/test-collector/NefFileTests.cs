@@ -45,4 +45,48 @@ public class NefFileTests
 
         Assert.Throws<FormatException>(() => NefFile.Load(new MemoryStream(bytes)));
     }
+
+    [Fact]
+    public void Load_rejects_a_nef_whose_checksum_does_not_match_from_a_non_seekable_stream()
+    {
+        var bytes = GetNefBytes();
+        bytes[^1] ^= 0xFF; // corrupt the trailing checksum
+
+        using var stream = new NonSeekableStream(bytes);
+
+        Assert.Throws<FormatException>(() => NefFile.Load(stream));
+    }
+
+    sealed class NonSeekableStream : Stream
+    {
+        readonly MemoryStream inner;
+
+        public NonSeekableStream(byte[] buffer)
+        {
+            inner = new MemoryStream(buffer);
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                inner.Dispose();
+            base.Dispose(disposing);
+        }
+    }
 }

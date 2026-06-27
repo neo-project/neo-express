@@ -54,8 +54,15 @@ class PrefetchCommand
             var contracts = worknet.BranchInfo.Contracts;
             if (!UInt160.TryParse(Contract, out var contractHash))
             {
-                var info = contracts.SingleOrDefault(c => c.Name.Equals(Contract, StringComparison.OrdinalIgnoreCase));
-                contractHash = info?.Hash ?? UInt160.Zero;
+                // Manifest names are not unique on Neo N3, so more than one contract can
+                // share a name. SingleOrDefault would throw an opaque "Sequence contains
+                // more than one matching element"; tell the user to disambiguate instead.
+                var matches = contracts
+                    .Where(c => c.Name.Equals(Contract, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (matches.Count > 1)
+                    throw new Exception($"More than one contract is named \"{Contract}\". Specify the contract's script hash instead.");
+                contractHash = matches.Count == 1 ? matches[0].Hash : UInt160.Zero;
             }
 
             if (contractHash == UInt160.Zero)

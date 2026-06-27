@@ -12,6 +12,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Wallets;
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using static Neo.BlockchainToolkit.Constants;
 
@@ -100,6 +101,7 @@ namespace NeoExpress.Commands
             for (var i = 0; i < commands.Length; i++)
             {
                 var batchApp = new CommandLineApplication<BatchFileCommands>();
+                batchApp.UseInvariantValueParsing();
                 batchApp.Conventions.UseDefaultConventions();
 
                 var args = SplitCommandLine(commands.Span[i]).ToArray();
@@ -109,6 +111,15 @@ namespace NeoExpress.Commands
                     continue;
 
                 var pr = batchApp.Parse(args);
+
+                // Parse() does not run DataAnnotations validation (only ExecuteAsync does),
+                // so enforce the [Required]/[AllowedValues] attributes on the batch models
+                // here. Otherwise a line missing a required argument is dispatched with the
+                // field defaulted to "" and fails later with a confusing downstream error.
+                var validationResult = pr.SelectedCommand.GetValidationResult();
+                if (validationResult != ValidationResult.Success)
+                    throw new Exception(validationResult?.ErrorMessage ?? $"Invalid batch command: {commands.Span[i]}");
+
                 switch (pr.SelectedCommand)
                 {
                     case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
@@ -158,11 +169,24 @@ namespace NeoExpress.Commands
                         {
                             var script = await txExec.LoadInvocationScriptAsync(
                                 root.Resolve(cmd.Model.InvocationFile)).ConfigureAwait(false);
-                            await txExec.ContractInvokeAsync(
-                                script,
-                                cmd.Model.Account,
-                                cmd.Model.Password,
-                                cmd.Model.WitnessScope).ConfigureAwait(false);
+                            if (cmd.Model.Results)
+                            {
+                                await txExec.InvokeForResultsAsync(
+                                    script,
+                                    cmd.Model.Account,
+                                    cmd.Model.WitnessScope).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                if (string.IsNullOrEmpty(cmd.Model.Account))
+                                    throw new Exception("Either Account or --results must be specified");
+                                await txExec.ContractInvokeAsync(
+                                    script,
+                                    cmd.Model.Account,
+                                    cmd.Model.Password,
+                                    cmd.Model.WitnessScope,
+                                    cmd.Model.AdditionalGas).ConfigureAwait(false);
+                            }
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Run> cmd:
@@ -171,11 +195,24 @@ namespace NeoExpress.Commands
                                 cmd.Model.Contract,
                                 cmd.Model.Method,
                                 cmd.Model.Arguments).ConfigureAwait(false);
-                            await txExec.ContractInvokeAsync(
-                                script,
-                                cmd.Model.Account,
-                                cmd.Model.Password,
-                                cmd.Model.WitnessScope).ConfigureAwait(false);
+                            if (cmd.Model.Results)
+                            {
+                                await txExec.InvokeForResultsAsync(
+                                    script,
+                                    cmd.Model.Account,
+                                    cmd.Model.WitnessScope).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                if (string.IsNullOrEmpty(cmd.Model.Account))
+                                    throw new Exception("Either Account or --results must be specified");
+                                await txExec.ContractInvokeAsync(
+                                    script,
+                                    cmd.Model.Account,
+                                    cmd.Model.Password,
+                                    cmd.Model.WitnessScope,
+                                    cmd.Model.AdditionalGas).ConfigureAwait(false);
+                            }
                             break;
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Update> cmd:

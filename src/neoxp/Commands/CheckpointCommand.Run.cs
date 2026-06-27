@@ -45,7 +45,7 @@ namespace NeoExpress.Commands
                 var chain = chainManager.Chain;
                 if (chain.ConsensusNodes.Count != 1)
                 {
-                    throw new ArgumentException("Checkpoint create is only supported on single node express instances", nameof(chain));
+                    throw new ArgumentException("Checkpoint run is only supported on single node express instances", nameof(chain));
                 }
 
                 var storageProvider = chainManager.GetCheckpointStorageProvider(Name);

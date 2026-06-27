@@ -69,27 +69,16 @@ namespace NeoDebug.Neo3
         public bool SupportsStepBack => true;
 
         /// <inheritdoc />
-        public bool ExecuteNextInstruction()
-        {
-            while (_reader.TryGetNext(out var record))
-            {
-                ProcessRecord(record);
-                if (record is TraceRecord trace && !ReferenceEquals(trace, _currentTraceRecord))
-                {
-                    _currentTraceRecord = trace;
-                    return true;
-                }
-            }
-
-            return false;
-        }
+        public bool ExecuteNextInstruction() => ExecuteInstruction(stepBack: false);
 
         /// <inheritdoc />
-        public bool ExecutePrevInstruction()
+        public bool ExecutePrevInstruction() => ExecuteInstruction(stepBack: true);
+
+        private bool ExecuteInstruction(bool stepBack)
         {
-            while (_reader.TryGetPrev(out var record))
+            while (TryGetRecord(stepBack, out var record))
             {
-                ProcessRecord(record, stepBack: true);
+                ProcessRecord(record, stepBack);
                 if (record is TraceRecord trace && !ReferenceEquals(trace, _currentTraceRecord))
                 {
                     _currentTraceRecord = trace;
@@ -99,6 +88,9 @@ namespace NeoDebug.Neo3
 
             return false;
         }
+
+        private bool TryGetRecord(bool stepBack, [MaybeNullWhen(false)] out ITraceDebugRecord record)
+            => stepBack ? _reader.TryGetPrev(out record) : _reader.TryGetNext(out record);
 
         private void ProcessRecord(ITraceDebugRecord record, bool stepBack = false)
         {

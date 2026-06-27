@@ -50,6 +50,7 @@ namespace NeoExpress
                 .BuildServiceProvider();
 
             var app = new CommandLineApplication<Program>();
+            app.UseInvariantValueParsing();
             app.Option<bool>("--stack-trace", "", CommandOptionType.NoValue, o => o.ShowInHelpText = false, inherited: true);
             app.Conventions
                 .UseDefaultConventions()

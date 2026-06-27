@@ -43,7 +43,7 @@ namespace NeoExpress.Commands
             var chain = chainManager.Chain;
 
             if (NodeIndex < 0 || NodeIndex >= chain.ConsensusNodes.Count)
-                throw new Exception("Invalid node index");
+                throw new ArgumentException($"node-index must be in [0, {chain.ConsensusNodes.Count - 1}]", nameof(NodeIndex));
 
             var node = chain.ConsensusNodes[NodeIndex];
             var storageProvider = chainManager.GetNodeStorageProvider(node, Discard);

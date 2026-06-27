@@ -144,7 +144,6 @@ namespace NeoExpress.Node
             using var snapshot = neoSystem.GetSnapshotCache();
             foreach (var contract in snapshot.EnumerateTokenContracts(neoSystem.Settings))
             {
-                var jsonContract = new JObject();
                 jsonContracts.Add(contract.ToJson());
             }
             return jsonContracts;

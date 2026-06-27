@@ -110,230 +110,237 @@ namespace NeoExpress.Commands
                     || args[0].StartsWith("//"))
                     continue;
 
-                var pr = batchApp.Parse(args);
-
-                // Parse() does not run DataAnnotations validation (only ExecuteAsync does),
-                // so enforce the [Required]/[AllowedValues] attributes on the batch models
-                // here. Otherwise a line missing a required argument is dispatched with the
-                // field defaulted to "" and fails later with a confusing downstream error.
-                var validationResult = pr.SelectedCommand.GetValidationResult();
-                if (validationResult != ValidationResult.Success)
-                    throw new Exception(validationResult?.ErrorMessage ?? $"Invalid batch command: {commands.Span[i]}");
-
-                switch (pr.SelectedCommand)
+                try
                 {
-                    case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
-                        {
-                            _ = await chainManager.CreateCheckpointAsync(
-                                txExec.ExpressNode,
-                                cmd.Model.Name,
-                                cmd.Model.Force,
-                                writer).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
-                        {
-                            await txExec.ContractDeployAsync(
-                                root.Resolve(cmd.Model.Contract),
-                                cmd.Model.Account,
-                                cmd.Model.Password,
-                                cmd.Model.WitnessScope,
-                                cmd.Model.Data,
-                                cmd.Model.Force).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
-                        {
-                            if (cmd.Model.Height == 0)
-                            {
-                                throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
-                            }
+                    var pr = batchApp.Parse(args);
 
-                            if (chainManager.Chain.ConsensusNodes.Count != 1)
-                            {
-                                throw new ArgumentException("Contract download is only supported for single-node consensus");
-                            }
+                    // Parse() does not run DataAnnotations validation (only ExecuteAsync does),
+                    // so enforce the [Required]/[AllowedValues] attributes on the batch models
+                    // here. Otherwise a line missing a required argument is dispatched with the
+                    // field defaulted to "" and fails later with a confusing downstream error.
+                    var validationResult = pr.SelectedCommand.GetValidationResult();
+                    if (validationResult != ValidationResult.Success)
+                        throw new Exception(validationResult?.ErrorMessage ?? $"Invalid batch command: {commands.Span[i]}");
 
-                            var force = ContractCommand.Download.ParseOverwriteForceOption(cmd);
-
-                            await ContractCommand.Download.ExecuteAsync(
-                                txExec.ExpressNode,
-                                cmd.Model.Contract,
-                                cmd.Model.RpcUri,
-                                cmd.Model.Height,
-                                force,
-                                writer).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
-                        {
-                            var script = await txExec.LoadInvocationScriptAsync(
-                                root.Resolve(cmd.Model.InvocationFile)).ConfigureAwait(false);
-                            if (cmd.Model.Results)
+                    switch (pr.SelectedCommand)
+                    {
+                        case CommandLineApplication<BatchFileCommands.Checkpoint.Create> cmd:
                             {
-                                await txExec.InvokeForResultsAsync(
-                                    script,
-                                    cmd.Model.Account,
-                                    cmd.Model.WitnessScope).ConfigureAwait(false);
+                                _ = await chainManager.CreateCheckpointAsync(
+                                    txExec.ExpressNode,
+                                    cmd.Model.Name,
+                                    cmd.Model.Force,
+                                    writer).ConfigureAwait(false);
+                                break;
                             }
-                            else
+                        case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
                             {
-                                if (string.IsNullOrEmpty(cmd.Model.Account))
-                                    throw new Exception("Either Account or --results must be specified");
-                                await txExec.ContractInvokeAsync(
-                                    script,
+                                await txExec.ContractDeployAsync(
+                                    root.Resolve(cmd.Model.Contract),
                                     cmd.Model.Account,
                                     cmd.Model.Password,
                                     cmd.Model.WitnessScope,
-                                    cmd.Model.AdditionalGas).ConfigureAwait(false);
+                                    cmd.Model.Data,
+                                    cmd.Model.Force).ConfigureAwait(false);
+                                break;
                             }
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Run> cmd:
-                        {
-                            var script = await txExec.BuildInvocationScriptAsync(
-                                cmd.Model.Contract,
-                                cmd.Model.Method,
-                                cmd.Model.Arguments).ConfigureAwait(false);
-                            if (cmd.Model.Results)
+                        case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
                             {
-                                await txExec.InvokeForResultsAsync(
-                                    script,
-                                    cmd.Model.Account,
-                                    cmd.Model.WitnessScope).ConfigureAwait(false);
+                                if (cmd.Model.Height == 0)
+                                {
+                                    throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
+                                }
+
+                                if (chainManager.Chain.ConsensusNodes.Count != 1)
+                                {
+                                    throw new ArgumentException("Contract download is only supported for single-node consensus");
+                                }
+
+                                var force = ContractCommand.Download.ParseOverwriteForceOption(cmd);
+
+                                await ContractCommand.Download.ExecuteAsync(
+                                    txExec.ExpressNode,
+                                    cmd.Model.Contract,
+                                    cmd.Model.RpcUri,
+                                    cmd.Model.Height,
+                                    force,
+                                    writer).ConfigureAwait(false);
+                                break;
                             }
-                            else
+                        case CommandLineApplication<BatchFileCommands.Contract.Invoke> cmd:
                             {
-                                if (string.IsNullOrEmpty(cmd.Model.Account))
-                                    throw new Exception("Either Account or --results must be specified");
-                                await txExec.ContractInvokeAsync(
-                                    script,
+                                var script = await txExec.LoadInvocationScriptAsync(
+                                    root.Resolve(cmd.Model.InvocationFile)).ConfigureAwait(false);
+                                if (cmd.Model.Results)
+                                {
+                                    await txExec.InvokeForResultsAsync(
+                                        script,
+                                        cmd.Model.Account,
+                                        cmd.Model.WitnessScope).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    if (string.IsNullOrEmpty(cmd.Model.Account))
+                                        throw new Exception("Either Account or --results must be specified");
+                                    await txExec.ContractInvokeAsync(
+                                        script,
+                                        cmd.Model.Account,
+                                        cmd.Model.Password,
+                                        cmd.Model.WitnessScope,
+                                        cmd.Model.AdditionalGas).ConfigureAwait(false);
+                                }
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Contract.Run> cmd:
+                            {
+                                var script = await txExec.BuildInvocationScriptAsync(
+                                    cmd.Model.Contract,
+                                    cmd.Model.Method,
+                                    cmd.Model.Arguments).ConfigureAwait(false);
+                                if (cmd.Model.Results)
+                                {
+                                    await txExec.InvokeForResultsAsync(
+                                        script,
+                                        cmd.Model.Account,
+                                        cmd.Model.WitnessScope).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    if (string.IsNullOrEmpty(cmd.Model.Account))
+                                        throw new Exception("Either Account or --results must be specified");
+                                    await txExec.ContractInvokeAsync(
+                                        script,
+                                        cmd.Model.Account,
+                                        cmd.Model.Password,
+                                        cmd.Model.WitnessScope,
+                                        cmd.Model.AdditionalGas).ConfigureAwait(false);
+                                }
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Contract.Update> cmd:
+                            {
+                                var data = txExec.ContractParameterParser(cmd.Model.Data);
+                                await txExec.ContractUpdateAsync(
+                                    cmd.Model.Contract,
+                                    root.Resolve(cmd.Model.NefFile),
                                     cmd.Model.Account,
                                     cmd.Model.Password,
                                     cmd.Model.WitnessScope,
-                                    cmd.Model.AdditionalGas).ConfigureAwait(false);
+                                    data).ConfigureAwait(false);
+                                break;
                             }
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Contract.Update> cmd:
-                        {
-                            var data = txExec.ContractParameterParser(cmd.Model.Data);
-                            await txExec.ContractUpdateAsync(
-                                cmd.Model.Contract,
-                                root.Resolve(cmd.Model.NefFile),
-                                cmd.Model.Account,
-                                cmd.Model.Password,
-                                cmd.Model.WitnessScope,
-                                data).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.FastForward> cmd:
-                        {
-                            FastForwardCommand.ValidateCount(cmd.Model.Count);
-                            var timestampDelta = FastForwardCommand.ParseTimestampDelta(cmd.Model.TimestampDelta);
-                            await txExec.ExpressNode.FastForwardAsync(
-                                cmd.Model.Count,
-                                timestampDelta).ConfigureAwait(false);
-                            await writer.WriteLineAsync($"{cmd.Model.Count} empty blocks minted").ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
-                        {
-                            await txExec.OracleEnableAsync(
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Oracle.Response> cmd:
-                        {
-                            await txExec.OracleResponseAsync(
-                                cmd.Model.Url,
-                                root.Resolve(cmd.Model.ResponsePath),
-                                cmd.Model.RequestId).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
-                        {
-                            await txExec.BlockAsync(
-                                cmd.Model.ScriptHash,
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
-                        {
-                            await txExec.SetPolicyAsync(
-                                cmd.Model.Policy,
-                                cmd.Model.Value,
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
-                        {
-                            if (string.IsNullOrEmpty(cmd.Model.Account))
-                                throw new ArgumentException("Policy sync requires --account field");
-
-                            var values = await txExec.TryGetRemoteNetworkPolicyAsync(cmd.Model.Source).ConfigureAwait(false);
-
-                            if (values.IsT1)
-                                values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source)
-                                    .ConfigureAwait(false);
-
-                            if (values.TryPickT0(out var policyValues, out _))
+                        case CommandLineApplication<BatchFileCommands.FastForward> cmd:
                             {
-                                await txExec.SetPolicyAsync(policyValues, cmd.Model.Account, cmd.Model.Password);
+                                FastForwardCommand.ValidateCount(cmd.Model.Count);
+                                var timestampDelta = FastForwardCommand.ParseTimestampDelta(cmd.Model.TimestampDelta);
+                                await txExec.ExpressNode.FastForwardAsync(
+                                    cmd.Model.Count,
+                                    timestampDelta).ConfigureAwait(false);
+                                await writer.WriteLineAsync($"{cmd.Model.Count} empty blocks minted").ConfigureAwait(false);
+                                break;
                             }
-                            else
+                        case CommandLineApplication<BatchFileCommands.Oracle.Enable> cmd:
                             {
-                                throw new ArgumentException($"Could not load policy values from \"{cmd.Model.Source}\"");
+                                await txExec.OracleEnableAsync(
+                                    cmd.Model.Account,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
                             }
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
-                        {
-                            await txExec.UnblockAsync(
-                                cmd.Model.ScriptHash,
-                                cmd.Model.Account,
-                                cmd.Model.Password).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Transfer> cmd:
-                        {
-                            await txExec.TransferAsync(
-                                cmd.Model.Quantity,
-                                cmd.Model.Asset,
-                                cmd.Model.Sender,
-                                cmd.Model.Password,
-                                cmd.Model.Receiver,
-                                cmd.Model.Data).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.TransferNFT> cmd:
-                        {
-                            await txExec.TransferNFTAsync(
-                                cmd.Model.Contract,
-                                cmd.Model.TokenId,
-                                cmd.Model.Sender,
-                                cmd.Model.Password,
-                                cmd.Model.Receiver,
-                                cmd.Model.Data).ConfigureAwait(false);
-                            break;
-                        }
-                    case CommandLineApplication<BatchFileCommands.Wallet.Create> cmd:
-                        {
-                            var wallet = chainManager.CreateWallet(
-                                cmd.Model.Name,
-                                cmd.Model.PrivateKey,
-                                cmd.Model.Force);
-                            chainManager.SaveChain(chainFilename!);
-                            await writer.WriteLineAsync($"Created Wallet {cmd.Model.Name}");
-                            for (int x = 0; x < wallet.Accounts.Count; x++)
-                                await writer.WriteLineAsync($"    Address: {wallet.Accounts[x].ScriptHash}");
-                            break;
-                        }
-                    default:
-                        throw new Exception($"Unknown batch command {pr.SelectedCommand.GetType()}");
+                        case CommandLineApplication<BatchFileCommands.Oracle.Response> cmd:
+                            {
+                                await txExec.OracleResponseAsync(
+                                    cmd.Model.Url,
+                                    root.Resolve(cmd.Model.ResponsePath),
+                                    cmd.Model.RequestId).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Policy.Block> cmd:
+                            {
+                                await txExec.BlockAsync(
+                                    cmd.Model.ScriptHash,
+                                    cmd.Model.Account,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Policy.Set> cmd:
+                            {
+                                await txExec.SetPolicyAsync(
+                                    cmd.Model.Policy,
+                                    cmd.Model.Value,
+                                    cmd.Model.Account,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Policy.Sync> cmd:
+                            {
+                                if (string.IsNullOrEmpty(cmd.Model.Account))
+                                    throw new ArgumentException("Policy sync requires --account field");
+
+                                var values = await txExec.TryGetRemoteNetworkPolicyAsync(cmd.Model.Source).ConfigureAwait(false);
+
+                                if (values.IsT1)
+                                    values = await txExec.TryLoadPolicyFromFileSystemAsync(cmd.Model.Source)
+                                        .ConfigureAwait(false);
+
+                                if (values.TryPickT0(out var policyValues, out _))
+                                {
+                                    await txExec.SetPolicyAsync(policyValues, cmd.Model.Account, cmd.Model.Password);
+                                }
+                                else
+                                {
+                                    throw new ArgumentException($"Could not load policy values from \"{cmd.Model.Source}\"");
+                                }
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Policy.Unblock> cmd:
+                            {
+                                await txExec.UnblockAsync(
+                                    cmd.Model.ScriptHash,
+                                    cmd.Model.Account,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Transfer> cmd:
+                            {
+                                await txExec.TransferAsync(
+                                    cmd.Model.Quantity,
+                                    cmd.Model.Asset,
+                                    cmd.Model.Sender,
+                                    cmd.Model.Password,
+                                    cmd.Model.Receiver,
+                                    cmd.Model.Data).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.TransferNFT> cmd:
+                            {
+                                await txExec.TransferNFTAsync(
+                                    cmd.Model.Contract,
+                                    cmd.Model.TokenId,
+                                    cmd.Model.Sender,
+                                    cmd.Model.Password,
+                                    cmd.Model.Receiver,
+                                    cmd.Model.Data).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Wallet.Create> cmd:
+                            {
+                                var wallet = chainManager.CreateWallet(
+                                    cmd.Model.Name,
+                                    cmd.Model.PrivateKey,
+                                    cmd.Model.Force);
+                                chainManager.SaveChain(chainFilename!);
+                                await writer.WriteLineAsync($"Created Wallet {cmd.Model.Name}");
+                                for (int x = 0; x < wallet.Accounts.Count; x++)
+                                    await writer.WriteLineAsync($"    Address: {wallet.Accounts[x].ScriptHash}");
+                                break;
+                            }
+                        default:
+                            throw new Exception($"Unknown batch command {pr.SelectedCommand.GetType()}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Error in batch file line {i + 1}: \"{commands.Span[i].Trim()}\" - {ex.Message}", ex);
                 }
             }
         }

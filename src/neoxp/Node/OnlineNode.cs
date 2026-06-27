@@ -172,7 +172,12 @@ namespace NeoExpress.Node
                 .ConfigureAwait(false);
             var balanceMap = rpcBalances.Balances.ToDictionary(b => b.AssetHash, b => b.Amount);
             var contracts = await ListTokenContractsAsync().ConfigureAwait(false);
-            return contracts.Select(c => (c, balanceMap.TryGetValue(c.ScriptHash, out var value) ? value : 0)).ToList();
+            // ListTokenContractsAsync returns both NEP-11 and NEP-17 contracts; filter to
+            // NEP-17 to match the offline node (OfflineNode.ListBalances) so this NEP-17
+            // balance view does not list NEP-11 contracts as spurious zero-balance rows.
+            return contracts
+                .Where(c => c.Standard == TokenStandard.Nep17)
+                .Select(c => (c, balanceMap.TryGetValue(c.ScriptHash, out var value) ? value : 0)).ToList();
         }
 
         public async Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()

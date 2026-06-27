@@ -134,4 +134,18 @@ public class BatchCommandParserTests
         run.Model.AdditionalGas.Should().Be(5m);
         run.Model.Account.Should().Be("alice");
     }
+
+    [Fact]
+    public void Contract_download_does_not_require_rpc_uri_or_height()
+    {
+        // The standalone contract download leaves the RPC URI optional and treats
+        // height 0 as "latest"; the batch form must match.
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("contract", "download", "0x0102030405060708090001020304050607080900");
+
+        result.SelectedCommand.GetValidationResult()
+            .Should().Be(System.ComponentModel.DataAnnotations.ValidationResult.Success);
+    }
 }

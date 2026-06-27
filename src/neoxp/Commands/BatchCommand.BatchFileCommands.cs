@@ -74,11 +74,9 @@ namespace NeoExpress.Commands
                     internal string Contract { get; init; } = string.Empty;
 
                     [Argument(1, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
-                    [Required]
                     internal string RpcUri { get; } = string.Empty;
 
-                    [Option(Description = "Block height to get contract state for")]
-                    [Required]
+                    [Option(Description = "Block height to get contract state for\nZero gets the latest")]
                     internal uint Height { get; } = 0;
 
                     [Option(CommandOptionType.SingleOrNoValue,

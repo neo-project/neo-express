@@ -144,11 +144,6 @@ namespace NeoExpress.Commands
                         }
                     case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
                         {
-                            if (cmd.Model.Height == 0)
-                            {
-                                throw new ArgumentException("Height cannot be 0. Please specify a height > 0");
-                            }
-
                             if (chainManager.Chain.ConsensusNodes.Count != 1)
                             {
                                 throw new ArgumentException("Contract download is only supported for single-node consensus");

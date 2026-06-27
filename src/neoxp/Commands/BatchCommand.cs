@@ -100,18 +100,18 @@ namespace NeoExpress.Commands
 
             for (var i = 0; i < commands.Length; i++)
             {
-                var batchApp = new CommandLineApplication<BatchFileCommands>();
-                batchApp.UseInvariantValueParsing();
-                batchApp.Conventions.UseDefaultConventions();
-
-                var args = SplitCommandLine(commands.Span[i]).ToArray();
-                if (args.Length == 0
-                    || args[0].StartsWith('#')
-                    || args[0].StartsWith("//"))
-                    continue;
-
                 try
                 {
+                    var args = SplitCommandLine(commands.Span[i]).ToArray();
+                    if (args.Length == 0
+                        || args[0].StartsWith('#')
+                        || args[0].StartsWith("//"))
+                        continue;
+
+                    var batchApp = new CommandLineApplication<BatchFileCommands>();
+                    batchApp.UseInvariantValueParsing();
+                    batchApp.Conventions.UseDefaultConventions();
+
                     var pr = batchApp.Parse(args);
 
                     // Parse() does not run DataAnnotations validation (only ExecuteAsync does),
@@ -340,10 +340,13 @@ namespace NeoExpress.Commands
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Error in batch file line {i + 1}: \"{commands.Span[i].Trim()}\" - {ex.Message}", ex);
+                    throw CreateBatchLineException(i + 1, commands.Span[i], ex);
                 }
             }
         }
+
+        internal static Exception CreateBatchLineException(int lineNumber, ReadOnlySpan<char> commandLine, Exception innerException)
+            => new($"Error in batch file line {lineNumber}: \"{commandLine.Trim()}\" - {innerException.Message}", innerException);
 
         // SplitCommandLine method adapted from CommandLineStringSplitter class in https://github.com/dotnet/command-line-api
         internal static IEnumerable<string> SplitCommandLine(string commandLine)

@@ -25,12 +25,11 @@ namespace Neo.Collector.Formats
         {
             writeAttachement("neo-coverage.lcov.info", stream =>
             {
-                var writer = new StreamWriter(stream);
+                using var writer = new StreamWriter(stream, leaveOpen: true);
                 foreach (var contract in coverage)
                 {
                     WriteContract(writer, contract);
                 }
-                writer.Flush();
             });
         }
 
@@ -50,7 +49,9 @@ namespace Neo.Collector.Formats
                 writer.WriteLine($"SF:{group.Key}");
 
                 var methods = group.Where(m => m.SequencePoints.Count > 0).ToList();
-                var fnHit = 0;
+                var functionsHit = 0;
+                // LCOV tracefiles use fixed labels: FN=function, FNDA=function data,
+                // FNF=functions found, and FNH=functions hit.
                 foreach (var method in methods)
                 {
                     writer.WriteLine($"FN:{method.SequencePoints[0].Start.Line},{method.Name}");
@@ -59,11 +60,11 @@ namespace Neo.Collector.Formats
                 {
                     var hits = HitsAt(method.SequencePoints[0].Address);
                     if (hits > 0)
-                        fnHit++;
+                        functionsHit++;
                     writer.WriteLine($"FNDA:{hits},{method.Name}");
                 }
                 writer.WriteLine($"FNF:{methods.Count}");
-                writer.WriteLine($"FNH:{fnHit}");
+                writer.WriteLine($"FNH:{functionsHit}");
 
                 // Aggregate per source line; a line can map to several sequence points,
                 // so record the highest hit count observed for that line.

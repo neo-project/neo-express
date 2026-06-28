@@ -54,7 +54,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.BlockAsync(ScriptHash, Account, Password).ConfigureAwait(false);
+                    await txExec.BlockAsync(ScriptHash, Account, password).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

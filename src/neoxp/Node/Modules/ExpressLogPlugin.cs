@@ -108,15 +108,31 @@ namespace NeoExpress.Node
 
         void OnApplicationExecuted(Neo.Ledger.Blockchain.ApplicationExecuted applicationExecuted)
         {
-            if (applicationExecuted.VMState == Neo.VM.VMState.FAULT)
+            var logMessage = FormatFaultLog(
+                applicationExecuted.VMState,
+                applicationExecuted.Transaction,
+                applicationExecuted.Exception);
+            if (logMessage is not null)
             {
-                var logMessage = $"Tx FAULT: hash={applicationExecuted.Transaction.Hash}";
-                if (!string.IsNullOrEmpty(applicationExecuted.Exception.Message))
-                {
-                    logMessage += $" exception=\"{applicationExecuted.Exception.Message}\"";
-                }
                 console.Error.WriteLine($"\x1b[31m{logMessage}\x1b[0m");
             }
+        }
+
+        // Some executions can fault without a transaction. Keep the log useful
+        // without assuming every null Transaction corresponds to a block-level
+        // native execution.
+        internal static string? FormatFaultLog(Neo.VM.VMState vmState, Transaction? transaction, System.Exception? exception)
+        {
+            if (vmState != Neo.VM.VMState.FAULT)
+                return null;
+
+            var hash = transaction is null ? "<unknown>" : transaction.Hash.ToString();
+            var logMessage = $"Tx FAULT: hash={hash}";
+            if (!string.IsNullOrEmpty(exception?.Message))
+            {
+                logMessage += $" exception=\"{exception.Message}\"";
+            }
+            return logMessage;
         }
     }
 }

@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Thread = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.Thread;
@@ -53,6 +54,11 @@ namespace test.neodebug
         {
             public TestDebugAdapter(IDebugSession session)
                 : base(Stream.Null, Stream.Null, (_, __, ___) => Task.FromResult(session))
+            {
+            }
+
+            public TestDebugAdapter(DebugSessionFactory sessionFactory)
+                : base(Stream.Null, Stream.Null, sessionFactory)
             {
             }
 
@@ -117,6 +123,34 @@ namespace test.neodebug
             Assert.True(session.SteppedOver);
             Assert.Single(frames);
             Assert.Equal(6, frames[0].Line);
+        }
+
+        [Fact]
+        public async Task launch_rejects_concurrent_requests()
+        {
+            var session = new FakeDebugSession();
+            var factoryStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseFactory = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            int factoryCalls = 0;
+
+            var adapter = new TestDebugAdapter(async (_, __, ___) =>
+            {
+                Interlocked.Increment(ref factoryCalls);
+                factoryStarted.SetResult();
+                await releaseFactory.Task;
+                return session;
+            });
+
+            Task firstLaunch = adapter.Launch();
+            await factoryStarted.Task;
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => adapter.Launch());
+            releaseFactory.SetResult();
+            await firstLaunch;
+
+            Assert.Equal("A debug session has already been launched.", exception.Message);
+            Assert.Equal(1, factoryCalls);
+            Assert.True(session.Started);
         }
     }
 }

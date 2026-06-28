@@ -11,6 +11,7 @@
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using System.IO;
+using System.Threading;
 
 namespace NeoDebug.Neo3
 {
@@ -47,6 +48,7 @@ namespace NeoDebug.Neo3
         private readonly DebugView defaultDebugView;
         private readonly DebugSessionFactory sessionFactory;
         private IDebugSession? session;
+        private int launching; // 0 = idle, 1 = launching or launched
 
         public DebugAdapter(Stream @in,
                             Stream @out,
@@ -87,14 +89,6 @@ namespace NeoDebug.Neo3
 
         protected override void HandleLaunchRequestAsync(IRequestResponder<LaunchArguments> responder)
         {
-            if (session != null)
-            {
-                var ex = new InvalidOperationException("A debug session has already been launched.");
-                Log(ex.Message);
-                responder.SetError(new ProtocolException(ex.Message, ex));
-                return;
-            }
-
             _ = LaunchAsync(responder.Arguments).ContinueWith(t =>
             {
                 if (t.IsCompletedSuccessfully)
@@ -113,9 +107,21 @@ namespace NeoDebug.Neo3
 
         internal async Task LaunchAsync(LaunchArguments arguments)
         {
-            session = await sessionFactory(arguments, Protocol.SendEvent, defaultDebugView).ConfigureAwait(false);
-            session.Start();
-            Protocol.SendEvent(new InitializedEvent());
+            if (Interlocked.CompareExchange(ref launching, 1, 0) != 0)
+                throw new InvalidOperationException("A debug session has already been launched.");
+
+            try
+            {
+                session = await sessionFactory(arguments, Protocol.SendEvent, defaultDebugView).ConfigureAwait(false);
+                session.Start();
+                Protocol.SendEvent(new InitializedEvent());
+            }
+            catch
+            {
+                session = null;
+                Interlocked.Exchange(ref launching, 0);
+                throw;
+            }
         }
 
         private void HandleDebugViewRequest(DebugViewArguments arguments)

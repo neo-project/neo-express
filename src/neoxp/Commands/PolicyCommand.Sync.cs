@@ -52,6 +52,7 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
+                    var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
 
                     var values = await txExec.TryGetRemoteNetworkPolicyAsync(Source).ConfigureAwait(false);
@@ -62,7 +63,7 @@ namespace NeoExpress.Commands
 
                     if (values.TryPickT0(out var policyValues, out var _))
                     {
-                        await txExec.SetPolicyAsync(policyValues, Account, Password).ConfigureAwait(false);
+                        await txExec.SetPolicyAsync(policyValues, Account, password).ConfigureAwait(false);
                     }
                     else
                     {

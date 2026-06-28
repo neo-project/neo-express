@@ -309,7 +309,7 @@ namespace NeoExpress.Commands
                 [Required]
                 internal string Contract { get; init; } = string.Empty;
 
-                [Argument(1, Description = "TokenId of NFT (Format: HEX, BASE64)")]
+                [Argument(1, Description = "TokenId of NFT (Format: BASE64, or 0x-prefixed HEX)")]
                 [Required]
                 internal string TokenId { get; init; } = string.Empty;
 

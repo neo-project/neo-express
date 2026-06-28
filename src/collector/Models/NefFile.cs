@@ -101,7 +101,7 @@ namespace Neo.Collector.Models
             stream.Position = 0;
             var content = reader.ReadBytes(contentLength);
             if (ComputeChecksum(content) != checksum)
-                throw new FormatException("CRC verification failed");
+                throw new FormatException("NEF checksum verification failed");
 
             return new NefFile(compiler, source, tokens, script, checksum);
         }

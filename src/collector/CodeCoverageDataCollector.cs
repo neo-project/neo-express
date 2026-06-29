@@ -115,6 +115,7 @@ namespace Neo.Collector
             if (coverage is not null)
             {
                 new CoberturaFormat().WriteReport(coverage, WriteAttachment);
+                new LcovFormat().WriteReport(coverage, WriteAttachment);
                 new RawCoverageFormat().WriteReport(coverage, WriteAttachment);
             }
 

@@ -138,6 +138,14 @@ namespace test.neodebug
         }
 
         [Fact]
+        public void storage_container_rejects_short_evaluate_expressions()
+        {
+            var container = new StorageContainer(Array.Empty<(ReadOnlyMemory<byte> key, StorageItem item)>());
+
+            Assert.Throws<InvalidOperationException>(() => container.Evaluate("#storage[00000000]".AsMemory()));
+        }
+
+        [Fact]
         public void execution_context_renders_named_locals_from_debug_info()
         {
             var context = new FakeContext

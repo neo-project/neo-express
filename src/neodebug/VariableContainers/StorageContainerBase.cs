@@ -60,7 +60,7 @@ namespace NeoDebug.Neo3
 
             static bool TryGetKeyHash(ReadOnlyMemory<char> expression, out int value)
             {
-                if (expression.Length >= 18
+                if (expression.Length >= 19
                     && expression.StartsWith(DebugSession.STORAGE_PREFIX)
                     && expression.Span[8] == '['
                     && expression.Span[17] == ']'

@@ -43,13 +43,13 @@ namespace NeoExpress.Models
 
         public static PolicyValues FromJson(JObject json)
         {
-            var gasPerBlock = ParseGasValue(json[nameof(GasPerBlock)]!);
-            var minimumDeploymentFee = ParseGasValue(json[nameof(MinimumDeploymentFee)]!);
-            var candidateRegistrationFee = ParseGasValue(json[nameof(CandidateRegistrationFee)]!);
-            var oracleRequestFee = ParseGasValue(json[nameof(OracleRequestFee)]!);
-            var networkFeePerByte = ParseGasValue(json[nameof(NetworkFeePerByte)]!);
-            var storageFeeFactor = SafeCast.ToUInt32((BigInteger)json[nameof(StorageFeeFactor)]!.AsNumber());
-            var executionFeeFactor = SafeCast.ToUInt32((BigInteger)json[nameof(ExecutionFeeFactor)]!.AsNumber());
+            var gasPerBlock = ParseGasValue(Required(nameof(GasPerBlock)));
+            var minimumDeploymentFee = ParseGasValue(Required(nameof(MinimumDeploymentFee)));
+            var candidateRegistrationFee = ParseGasValue(Required(nameof(CandidateRegistrationFee)));
+            var oracleRequestFee = ParseGasValue(Required(nameof(OracleRequestFee)));
+            var networkFeePerByte = ParseGasValue(Required(nameof(NetworkFeePerByte)));
+            var storageFeeFactor = SafeCast.ToUInt32((BigInteger)Required(nameof(StorageFeeFactor)).AsNumber());
+            var executionFeeFactor = SafeCast.ToUInt32((BigInteger)Required(nameof(ExecutionFeeFactor)).AsNumber());
 
             return new PolicyValues
             {
@@ -61,6 +61,11 @@ namespace NeoExpress.Models
                 StorageFeeFactor = storageFeeFactor,
                 ExecutionFeeFactor = executionFeeFactor,
             };
+
+            // A missing key would otherwise dereference null and throw an opaque
+            // NullReferenceException; name the absent value instead.
+            JToken Required(string name) => json[name]
+                ?? throw new FormatException($"policy is missing required value \"{name}\"");
 
             static BigDecimal ParseGasValue(JToken json) => new BigDecimal(BigInteger.Parse(json.AsString()), NativeContract.GAS.Decimals);
         }

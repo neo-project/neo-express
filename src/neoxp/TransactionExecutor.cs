@@ -675,12 +675,20 @@ namespace NeoExpress
                 using var stream = fileSystem.File.OpenRead(filename);
                 using var reader = new StreamReader(stream);
                 var text = await reader.ReadToEndAsync().ConfigureAwait(false);
-                var json = (Neo.Json.JObject)Neo.Json.JObject.Parse(text)!;
                 try
                 {
+                    // Parse inside the try so malformed JSON is reported below rather than
+                    // throwing an unhandled exception and crashing the command.
+                    var json = (Neo.Json.JObject)Neo.Json.JObject.Parse(text)!;
                     return PolicyValues.FromJson(json!);
                 }
-                catch { }
+                catch (Exception ex) when (ex is FormatException or InvalidCastException)
+                {
+                    // The file exists but its contents are not a valid policy (malformed JSON,
+                    // wrong root type, or a missing/invalid value). Report why instead of
+                    // swallowing the cause and surfacing a generic "could not load" message.
+                    throw new Exception($"Policy file {filename} is invalid: {ex.Message}");
+                }
             }
 
             return new None();

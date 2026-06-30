@@ -52,34 +52,43 @@ namespace Neo.BuildTasks
         }
 
         protected override string GetArguments()
+            => BuildArguments(Sources.Select(s => s.ItemSpec), Output?.ItemSpec, BaseFileName,
+                Debug, Assembly, Optimize, Inline, AddressVersion);
+
+        internal static string BuildArguments(IEnumerable<string> sources, string? output, string baseFileName,
+            bool debug, bool assembly, bool optimize, bool inline, byte addressVersion)
         {
             var builder = new StringBuilder();
-            foreach (var file in Sources)
+            // Quote every path-derived value so a source path, output directory or base
+            // name containing a space is passed to nccs as a single argument rather than
+            // split into multiple tokens. Sources is always the full project path, so a
+            // project located under e.g. "C:\Users\John Doe\..." would otherwise break.
+            foreach (var file in sources)
             {
-                builder.AppendFormat(" {0}", file.ItemSpec);
+                builder.AppendFormat(" \"{0}\"", file);
             }
 
-            if (!(Output is null))
+            if (output is not null)
             {
-                builder.AppendFormat(" --output {0}", Output.ItemSpec);
+                builder.AppendFormat(" --output \"{0}\"", output);
             }
 
-            if (!string.IsNullOrEmpty(BaseFileName))
+            if (!string.IsNullOrEmpty(baseFileName))
             {
-                builder.AppendFormat(" --base-name {0}", BaseFileName);
+                builder.AppendFormat(" --base-name \"{0}\"", baseFileName);
             }
 
-            if (Debug)
+            if (debug)
                 builder.Append(" --debug");
-            if (Assembly)
+            if (assembly)
                 builder.Append(" --assembly");
-            if (!Optimize)
+            if (!optimize)
                 builder.Append(" --no-optimize");
-            if (!Inline)
+            if (!inline)
                 builder.Append(" --no-inline");
-            if (AddressVersion != DEFAULT_ADDRESS_VERSION)
+            if (addressVersion != DEFAULT_ADDRESS_VERSION)
             {
-                builder.AppendFormat(" --address-version {0}", AddressVersion);
+                builder.AppendFormat(" --address-version {0}", addressVersion);
             }
 
             return builder.ToString();

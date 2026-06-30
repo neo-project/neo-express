@@ -92,7 +92,7 @@ class WorknetRpcServerPlugin : Plugin
     [RpcMethod]
     public JToken GetApplicationLog(JArray @params)
     {
-        UInt256 hash = UInt256.Parse(@params[0]!.AsString());
+        UInt256 hash = UInt256.Parse(RequiredStringParam(@params, 0));
         var log = persistencePlugin.GetAppLog(hash);
         return log is not null
             ? log
@@ -104,7 +104,7 @@ class WorknetRpcServerPlugin : Plugin
     {
         if (neoSystem is null)
             throw new NullReferenceException(nameof(neoSystem));
-        var address = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
+        var address = ParseScriptHash(RequiredStringParam(@params, 0), neoSystem.Settings);
         using var snapshot = neoSystem.GetSnapshotCache();
 
         var balances = ToolkitRpcServer.GetNep17Balances(snapshot, persistencePlugin, address, neoSystem.Settings);
@@ -135,7 +135,7 @@ class WorknetRpcServerPlugin : Plugin
     {
         if (neoSystem is null)
             throw new NullReferenceException(nameof(neoSystem));
-        var address = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
+        var address = ParseScriptHash(RequiredStringParam(@params, 0), neoSystem.Settings);
         using var snapshot = neoSystem.GetSnapshotCache();
         var balances = ToolkitRpcServer.GetNep11Balances(snapshot, persistencePlugin, address, neoSystem.Settings);
 
@@ -177,8 +177,8 @@ class WorknetRpcServerPlugin : Plugin
         if (neoSystem is null)
             throw new NullReferenceException(nameof(neoSystem));
 
-        var contractHash = ParseScriptHash(@params[0]!.AsString(), neoSystem.Settings);
-        var tokenId = @params[1]!.AsString().HexToBytes();
+        var contractHash = ParseScriptHash(RequiredStringParam(@params, 0), neoSystem.Settings);
+        var tokenId = RequiredStringParam(@params, 1).HexToBytes();
         using var snapshot = neoSystem.GetSnapshotCache();
 
         var properties = ToolkitRpcServer.GetNep11Properties(snapshot, contractHash, tokenId.AsMemory(), neoSystem.Settings);
@@ -198,4 +198,16 @@ class WorknetRpcServerPlugin : Plugin
         => text.Length < 40
             ? Neo.Wallets.Helper.ToScriptHash(text, settings.AddressVersion)
             : UInt160.Parse(text);
+
+    // Validate a required string parameter before indexing the attacker-controlled
+    // @params array. Without this a too-short array throws ArgumentOutOfRangeException
+    // and a JSON null throws NullReferenceException, both of which the RpcServer
+    // surfaces as a non-standard error that leaks the internal exception message
+    // instead of a clean "Invalid params" (-32602), unlike the Express plugin.
+    static string RequiredStringParam(JArray @params, int index)
+    {
+        if (index < 0 || index >= @params.Count || @params[index] is null)
+            throw new Neo.Network.RPC.RpcException(-32602, "Invalid params");
+        return @params[index]!.AsString();
+    }
 }

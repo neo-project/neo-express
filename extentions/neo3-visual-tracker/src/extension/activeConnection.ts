@@ -40,7 +40,9 @@ export default class ActiveConnection {
   dispose() {
     this.onChangeEmitter.dispose();
     this.statusBarItem.dispose();
-    this.disconnect();
+    // Force the disconnect so extension shutdown does not pop a modal
+    // "Disconnect from ...?" confirmation dialog.
+    this.disconnect(true);
   }
 
   async connect(

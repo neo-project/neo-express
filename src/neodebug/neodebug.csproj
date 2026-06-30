@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <AssemblyName>neodebug</AssemblyName>
+        <Description>Source-level (Debug Adapter Protocol) debugger for Neo N3 smart contracts</Description>
+        <RootNamespace>NeoDebug</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\bctklib\bctklib.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="test.neodebug" />
+    </ItemGroup>
+
+</Project>

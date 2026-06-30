@@ -127,6 +127,11 @@ namespace NeoExpress
 
             var chain = fileSystem.LoadChain(path);
 
+            if (chain.ConsensusNodes.Count == 0)
+            {
+                throw new Exception($"{path} is not a valid neo-express file: it has no consensus nodes");
+            }
+
             // validate neo-express file by ensuring stored node zero default account SignatureRedeemScript matches a generated script
             var account = chain.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("consensus node 0 missing default account");
             var keyPair = new KeyPair(account.PrivateKey.HexToBytes());

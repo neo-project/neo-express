@@ -22,7 +22,7 @@ export default class WalletPanelController extends PanelControllerBase<
     super(
       {
         view: "wallet",
-        panelTitle: autoComplete.data.addressNames[address][0] || address,
+        panelTitle: autoComplete.data.addressNames[address]?.[0] || address,
         autoCompleteData: autoComplete.data,
         address,
         addressInfo: null,
@@ -31,7 +31,7 @@ export default class WalletPanelController extends PanelControllerBase<
       context
     );
     autoComplete.onChange((autoCompleteData) => {
-      const name = autoComplete.data.addressNames[address][0] || address;
+      const name = autoComplete.data.addressNames[address]?.[0] || address;
       this.updateViewState({ panelTitle: name, autoCompleteData });
     });
     activeConnection.onChange(() => this.updateBalances());

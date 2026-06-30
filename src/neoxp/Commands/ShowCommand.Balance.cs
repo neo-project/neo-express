@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
@@ -29,7 +30,7 @@ namespace NeoExpress.Commands
             [Required]
             internal string Asset { get; init; } = string.Empty;
 
-            [Argument(1, Description = "Account to show asset balance for")]
+            [Argument(1, Description = "Account to show asset balance for (Format: Script Hash, Address, Wallet name)")]
             [Required]
             internal string Account { get; init; } = string.Empty;
 
@@ -43,10 +44,13 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
 
-                    var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
-                    if (getHashResult.TryPickT1(out _, out var accountHash))
+                    if (!UInt160.TryParse(Account, out var accountHash))
                     {
-                        throw new Exception($"{Account} account not found.");
+                        var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
+                        if (getHashResult.TryPickT1(out _, out accountHash))
+                        {
+                            throw new Exception($"{Account} account not found.");
+                        }
                     }
 
                     var (balance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);

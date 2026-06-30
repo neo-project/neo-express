@@ -86,10 +86,7 @@ namespace NeoExpress.Node
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
             var tm = await TransactionManager.MakeTransactionAsync(rpcClient, script, signers).ConfigureAwait(false);
 
-            if (additionalGas > 0.0m)
-            {
-                tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
-            }
+            tm.Tx.SystemFee += NodeUtility.AdditionalGasSystemFee(additionalGas);
 
             var account = wallet.GetAccount(accountHash) ?? throw new Exception();
             if (account.IsMultiSigContract())

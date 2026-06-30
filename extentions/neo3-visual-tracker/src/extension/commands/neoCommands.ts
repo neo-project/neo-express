@@ -138,11 +138,15 @@ export default class NeoCommands {
       const manifest = neonCore.sc.ContractManifest.fromJson(
         manifestJson as unknown as neonCore.sc.ContractManifestJson
       );
+      // Sign with the target network's magic, not a hardcoded TestNet value, so
+      // deployments to private/express and other custom networks produce a valid
+      // witness instead of a signature the node rejects.
+      const version = await new neonCore.rpc.RPCClient(rpcAddress).getVersion();
       const result = await neonExperimental.deployContract(
         neonCore.sc.NEF.fromBuffer(contractByteCode),
         manifest,
         {
-          networkMagic: neonCore.CONST.MAGIC_NUMBER.TestNet,
+          networkMagic: version.protocol.network,
           rpcAddress,
           account,
         }

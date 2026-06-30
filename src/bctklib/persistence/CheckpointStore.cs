@@ -31,15 +31,32 @@ namespace Neo.BlockchainToolkit.Persistence
         public CheckpointStore(string checkpointPath, uint? network = null, byte? addressVersion = null, UInt160? scriptHash = null, string? columnFamilyName = null)
         {
             checkpointTempPath = RocksDbUtility.GetTempPath();
-            var metadata = RocksDbUtility.RestoreCheckpoint(checkpointPath, checkpointTempPath, network, addressVersion, scriptHash);
-
-            Settings = ProtocolSettings.Default with
+            try
             {
-                Network = metadata.network,
-                AddressVersion = metadata.addressVersion,
-            };
-            var db = RocksDbUtility.OpenReadOnlyDb(checkpointTempPath);
-            store = new RocksDbStore(db, columnFamilyName, readOnly: true);
+                var metadata = RocksDbUtility.RestoreCheckpoint(checkpointPath, checkpointTempPath, network, addressVersion, scriptHash);
+
+                Settings = ProtocolSettings.Default with
+                {
+                    Network = metadata.network,
+                    AddressVersion = metadata.addressVersion,
+                };
+                var db = RocksDbUtility.OpenReadOnlyDb(checkpointTempPath);
+                store = new RocksDbStore(db, columnFamilyName, readOnly: true);
+            }
+            catch
+            {
+                // The checkpoint archive is extracted into checkpointTempPath before the
+                // database is opened. If opening fails (corrupt/locked/incompatible db),
+                // the constructor never completes, so Dispose is never called; delete the
+                // extracted directory here to avoid leaking it under the temp path.
+                if (Directory.Exists(checkpointTempPath))
+                {
+                    try
+                    { Directory.Delete(checkpointTempPath, true); }
+                    catch { }
+                }
+                throw;
+            }
         }
 
         public void Dispose()

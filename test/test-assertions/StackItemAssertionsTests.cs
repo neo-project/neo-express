@@ -52,6 +52,34 @@ public class StackItemAssertionsTests
         act.Should().NotThrow();
     }
 
+    [Theory]
+    [InlineData((int)42)]
+    [InlineData((long)42)]
+    [InlineData((short)42)]
+    [InlineData((byte)42)]
+    [InlineData((uint)42)]
+    [InlineData((ulong)42)]
+    public void BeEquivalentTo_object_matches_a_boxed_integral_value(object expected)
+    {
+        // A numeric event argument (e.g. an interface declaring an int/long parameter)
+        // arrives boxed; it must still compare equal to the integer stack item.
+        StackItem item = (Integer)42;
+
+        var act = () => item.Should().BeEquivalentTo(expected);
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void BeEquivalentTo_object_fails_when_a_boxed_integral_value_differs()
+    {
+        StackItem item = (Integer)42;
+
+        var act = () => item.Should().BeEquivalentTo((object)43);
+
+        act.Should().Throw<Exception>();
+    }
+
     [Fact]
     public void BeEquivalentTo_bool_matches_boolean_value()
     {

@@ -41,6 +41,19 @@ namespace Neo.Assertions
                 {
                     string expectedString => BeEquivalentTo(expectedString, because, becauseArgs),
                     BigInteger expectedInt => BeEquivalentTo(expectedInt, because, becauseArgs),
+                    // Integral event/stack values arrive here boxed (e.g. an event interface
+                    // declaring an int/long parameter), which defeats the implicit conversion
+                    // to BigInteger; convert each integral type explicitly so they compare by
+                    // numeric value instead of failing as an unknown type.
+                    sbyte expectedSByte => BeEquivalentTo((BigInteger)expectedSByte, because, becauseArgs),
+                    byte expectedByte => BeEquivalentTo((BigInteger)expectedByte, because, becauseArgs),
+                    short expectedShort => BeEquivalentTo((BigInteger)expectedShort, because, becauseArgs),
+                    ushort expectedUShort => BeEquivalentTo((BigInteger)expectedUShort, because, becauseArgs),
+                    int expectedInt32 => BeEquivalentTo((BigInteger)expectedInt32, because, becauseArgs),
+                    uint expectedUInt32 => BeEquivalentTo((BigInteger)expectedUInt32, because, becauseArgs),
+                    long expectedInt64 => BeEquivalentTo((BigInteger)expectedInt64, because, becauseArgs),
+                    ulong expectedUInt64 => BeEquivalentTo((BigInteger)expectedUInt64, because, becauseArgs),
+                    char expectedChar => BeEquivalentTo((BigInteger)expectedChar, because, becauseArgs),
                     bool expectedBool => BeEquivalentTo(expectedBool, because, becauseArgs),
                     UInt160 expectedHash => BeEquivalentTo(expectedHash, because, becauseArgs),
                     UInt256 expectedHash => BeEquivalentTo(expectedHash, because, becauseArgs),

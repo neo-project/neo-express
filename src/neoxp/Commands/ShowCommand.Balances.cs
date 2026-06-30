@@ -26,7 +26,7 @@ namespace NeoExpress.Commands
                 this.chainManagerFactory = chainManagerFactory;
             }
 
-            [Argument(0, Description = "Account to show asset balances for")]
+            [Argument(0, Description = "Account to show asset balances for (Format: Script Hash, Address, Wallet name)")]
             [Required]
             internal string Account { get; init; } = string.Empty;
 
@@ -40,10 +40,13 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
 
-                    var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
-                    if (getHashResult.TryPickT1(out _, out var accountHash))
+                    if (!UInt160.TryParse(Account, out var accountHash))
                     {
-                        throw new Exception($"{Account} account not found.");
+                        var getHashResult = await expressNode.TryGetAccountHashAsync(chainManager.Chain, Account).ConfigureAwait(false);
+                        if (getHashResult.TryPickT1(out _, out accountHash))
+                        {
+                            throw new Exception($"{Account} account not found.");
+                        }
                     }
 
                     var balances = await expressNode.ListBalancesAsync(accountHash).ConfigureAwait(false);

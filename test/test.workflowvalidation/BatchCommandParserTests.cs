@@ -76,6 +76,17 @@ public class BatchCommandParserTests
     }
 
     [Fact]
+    public void Batch_line_errors_include_the_line_number_and_text()
+    {
+        var original = new FormatException("Unbalanced quote in batch command line.");
+
+        var wrapped = BatchCommand.CreateBatchLineException(2, "wallet create \"alice", original);
+
+        wrapped.Message.Should().Be("Error in batch file line 2: \"wallet create \"alice\" - Unbalanced quote in batch command line.");
+        wrapped.InnerException.Should().BeSameAs(original);
+    }
+
+    [Fact]
     public void SplitCommandLine_preserves_balanced_quoted_tokens()
     {
         BatchCommand.SplitCommandLine("wallet create \"alice bob\"").Should()
@@ -133,5 +144,19 @@ public class BatchCommandParserTests
             .BeOfType<CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Run>>().Subject;
         run.Model.AdditionalGas.Should().Be(5m);
         run.Model.Account.Should().Be("alice");
+    }
+
+    [Fact]
+    public void Contract_download_does_not_require_rpc_uri_or_height()
+    {
+        // The standalone contract download leaves the RPC URI optional and treats
+        // height 0 as "latest"; the batch form must match.
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("contract", "download", "0x0102030405060708090001020304050607080900");
+
+        result.SelectedCommand.GetValidationResult()
+            .Should().Be(System.ComponentModel.DataAnnotations.ValidationResult.Success);
     }
 }

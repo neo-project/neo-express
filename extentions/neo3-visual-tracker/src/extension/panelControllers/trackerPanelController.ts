@@ -114,9 +114,13 @@ export default class TrackerPanelController extends PanelControllerBase<
         const selectedTransaction = await this.getTransaction(
           request.selectTransaction
         );
-        const selectedBlock = await this.blockchainMonitor.getBlock(
-          (selectedTransaction as any).blockhash
-        );
+        // getTransaction returns { tx, log } | null, so the containing block hash
+        // lives on selectedTransaction.tx, not at the top level. Only fetch the
+        // block when a hash is present.
+        const blockHash = (selectedTransaction?.tx as any)?.blockhash;
+        const selectedBlock = blockHash
+          ? await this.blockchainMonitor.getBlock(blockHash)
+          : null;
         await this.updateViewState({
           selectedTransaction,
           selectedBlock,

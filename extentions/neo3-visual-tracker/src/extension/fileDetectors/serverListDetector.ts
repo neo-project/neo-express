@@ -88,11 +88,14 @@ export default class ServerListDetector extends DetectorBase {
         );
       } else {
         let workspaceFolder = workspaceFolders[0];
-        if (workspaceFolders.length > 0) {
+        if (workspaceFolders.length > 1) {
           workspaceFolder = await IoHelpers.multipleChoiceFiles(
             "Please chose a location to store blockchain configuration.",
             ...workspaceFolders
           );
+        }
+        if (!workspaceFolder) {
+          return;
         }
         const fileToEdit = posixPath(workspaceFolder, "neo-servers.json");
         if (!fs.existsSync(fileToEdit)) {

@@ -67,6 +67,10 @@ export default class ActiveConnection {
         blockchainIdentifier,
         rpcClient: new neonCore.rpc.RPCClient(rpcUrl),
       };
+      // Release the previous connection's monitor before replacing it. The pool
+      // is ref-counted, so overwriting without disposing leaks the old monitor,
+      // whose refresh loop keeps polling the previous RPC URL forever.
+      this.connection?.blockchainMonitor.dispose();
       this.connection = connection;
       await this.onChangeEmitter.fire(connection.blockchainIdentifier);
     } else {

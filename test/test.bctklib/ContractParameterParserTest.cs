@@ -356,6 +356,48 @@ namespace test.bctklib
         }
 
         [Fact]
+        public async Task LoadInvocationScriptAsync_reports_an_invalid_parameter_type()
+        {
+            // A parameter with an unrecognized "type" string must be reported as an invalid
+            // invocation file, not surface the raw "Requested value 'X' was not found." from
+            // Enum.Parse.
+            var fileSystem = new MockFileSystem();
+            var rootPath = fileSystem.AllDirectories.First();
+            var invocationPath = fileSystem.Path.Combine(rootPath, "bad-type.neo-invoke.json");
+            var content = "[{\"contract\":\"0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b\",\"operation\":\"x\","
+                + "\"args\":[{\"type\":\"NotAType\",\"value\":\"1\"}]}]";
+            fileSystem.AddFile(invocationPath, new MockFileData(content));
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION, fileSystem: fileSystem);
+            var action = () => parser.LoadInvocationScriptAsync(invocationPath);
+
+            var exception = await action.Should().ThrowAsync<Exception>();
+            exception.Which.Message.Should().StartWith($"Invocation file {invocationPath} is invalid:");
+            exception.Which.Message.Should().Contain("NotAType");
+            exception.Which.InnerException.Should().BeNull();
+        }
+
+        [Theory]
+        // A null public-key value reaches ECPoint.Parse and previously threw a raw
+        // IndexOutOfRangeException; a bare float argument previously threw a raw ArgumentException.
+        [InlineData("[{\"contract\":\"0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b\",\"operation\":\"x\",\"args\":[{\"type\":\"PublicKey\",\"value\":null}]}]")]
+        [InlineData("[{\"contract\":\"0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b\",\"operation\":\"x\",\"args\":[1.5]}]")]
+        public async Task LoadInvocationScriptAsync_reports_a_malformed_argument(string content)
+        {
+            var fileSystem = new MockFileSystem();
+            var rootPath = fileSystem.AllDirectories.First();
+            var invocationPath = fileSystem.Path.Combine(rootPath, "bad-arg.neo-invoke.json");
+            fileSystem.AddFile(invocationPath, new MockFileData(content));
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION, fileSystem: fileSystem);
+            var action = () => parser.LoadInvocationScriptAsync(invocationPath);
+
+            var exception = await action.Should().ThrowAsync<Exception>();
+            exception.Which.Message.Should().StartWith($"Invocation file {invocationPath} is invalid:");
+            exception.Which.InnerException.Should().BeNull();
+        }
+
+        [Fact]
         public async Task LoadInvocationScriptAsync_rejects_oversized_invocation_file()
         {
             var fileSystem = new MockFileSystem();

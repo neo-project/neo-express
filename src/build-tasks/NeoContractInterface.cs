@@ -29,10 +29,16 @@ namespace Neo.BuildTasks
                 {
                     var manifest = NeoManifest.Load(ManifestFile);
                     var source = ContractGenerator.GenerateContractInterface(manifest, ManifestFile, ContractNameOverride, RootNamespace);
-                    var pathFile = Path.GetDirectoryName(this.OutputFile);
-                    if (!string.IsNullOrEmpty(source) && !string.IsNullOrWhiteSpace(pathFile))
+                    if (!string.IsNullOrEmpty(source))
                     {
-                        Directory.CreateDirectory(pathFile);
+                        // Only create a directory when OutputFile has one. Path.GetDirectoryName
+                        // returns an empty string for a bare filename, which previously skipped the
+                        // write entirely and left the build expecting a file that was never produced.
+                        var pathFile = Path.GetDirectoryName(this.OutputFile);
+                        if (!string.IsNullOrWhiteSpace(pathFile))
+                        {
+                            Directory.CreateDirectory(pathFile);
+                        }
                         FileOperationWithRetry(() => File.WriteAllText(this.OutputFile, source));
                     }
                 }

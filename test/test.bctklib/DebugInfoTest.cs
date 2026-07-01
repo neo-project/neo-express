@@ -28,6 +28,19 @@ namespace test.bctklib
         const string TEST_HASH = "0xf69e5188632deb3a9273519efc86cb68da8d42b8";
 
         [Fact]
+        public async Task LoadCompressedAsync_reports_an_empty_archive()
+        {
+            using var ms = new MemoryStream();
+            using (new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            { }
+            ms.Position = 0;
+
+            // An empty .nefdbgnfo archive previously crashed on Entries[0].
+            await Assert.ThrowsAsync<FormatException>(
+                () => DebugInfo.LoadCompressedAsync(ms));
+        }
+
+        [Fact]
         public void can_parse_no_docroot()
         {
             var text = Utility.GetResource("registrar-no-docroot.debug.json");

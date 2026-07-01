@@ -528,7 +528,17 @@ namespace NeoExpress
                 return new All();
             }
 
-            if (decimal.TryParse(quantity, System.Globalization.CultureInfo.InvariantCulture, out var amount))
+            // A token amount is a non-negative decimal: allow only a decimal point and
+            // surrounding whitespace. The default (NumberStyles.Number) would otherwise
+            // accept a leading sign (so "-5" became a negative transfer) and thousands
+            // separators (so a mistyped "1,5" silently parsed as 15).
+            const System.Globalization.NumberStyles styles =
+                System.Globalization.NumberStyles.AllowDecimalPoint
+                | System.Globalization.NumberStyles.AllowLeadingWhite
+                | System.Globalization.NumberStyles.AllowTrailingWhite;
+
+            if (decimal.TryParse(quantity, styles, System.Globalization.CultureInfo.InvariantCulture, out var amount)
+                && amount >= 0)
             {
                 return amount;
             }

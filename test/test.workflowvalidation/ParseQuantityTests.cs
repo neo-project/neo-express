@@ -36,4 +36,23 @@ public class ParseQuantityTests
             CultureInfo.CurrentCulture = original;
         }
     }
+
+    [Theory]
+    [InlineData("-5")]      // negative amount
+    [InlineData("1,5")]     // thousands separator mistaken for a decimal point
+    [InlineData("1,000")]   // thousands separator
+    [InlineData("+10")]     // leading sign
+    [InlineData("0x10")]    // not a decimal
+    public void ParseQuantity_rejects_invalid_amounts(string quantity)
+    {
+        var act = () => TransactionExecutor.ParseQuantity(quantity);
+
+        act.Should().Throw<System.Exception>().WithMessage("*Invalid quantity*");
+    }
+
+    [Fact]
+    public void ParseQuantity_accepts_all()
+    {
+        TransactionExecutor.ParseQuantity("all").IsT1.Should().BeTrue();
+    }
 }

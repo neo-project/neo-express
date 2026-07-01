@@ -51,8 +51,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 // extracted directory here to avoid leaking it under the temp path.
                 if (Directory.Exists(checkpointTempPath))
                 {
-                    try
-                    { Directory.Delete(checkpointTempPath, true); }
+                    try { Directory.Delete(checkpointTempPath, true); }
                     catch { }
                 }
                 throw;

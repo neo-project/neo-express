@@ -485,7 +485,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
               _.txid,
               true
             );
-            const confirmed = !!(tx?.tx as any).blockhash;
+            const confirmed = !!(tx?.tx as any)?.blockhash;
             return {
               txid: _.txid,
               blockchain: _.blockchain,

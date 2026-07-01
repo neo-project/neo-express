@@ -50,11 +50,11 @@ namespace NeoExpress.Node
             }
             catch (ArgumentException)
             {
-                throw new Exception($"--gas value {additionalGas} cannot have more than {NativeContract.GAS.Decimals} decimal places");
+                throw new Exception($"--additional-gas value {additionalGas} cannot have more than {NativeContract.GAS.Decimals} decimal places");
             }
 
             if (value > long.MaxValue)
-                throw new Exception($"--gas value {additionalGas} is too large");
+                throw new Exception($"--additional-gas value {additionalGas} is too large");
 
             return (long)value;
         }

@@ -128,7 +128,9 @@ namespace NeoExpress
         public static string Base64Fixed(string str)
         {
             //Unicode e.g. \u002B
-            MatchCollection mc = Regex.Matches(str, @"\\u([\w]{2})([\w]{2})", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            // Match only genuine hexadecimal escapes; a broader \w class would also match
+            // non-hex sequences (for example \uZZZZ) that then throw when parsed as hex.
+            MatchCollection mc = Regex.Matches(str, @"\\u([0-9a-fA-F]{2})([0-9a-fA-F]{2})", RegexOptions.Compiled);
             byte[] bts = new byte[2];
             foreach (Match m in mc)
             {

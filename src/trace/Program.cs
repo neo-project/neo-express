@@ -18,12 +18,14 @@ using Neo.IO;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoTrace.Commands;
 using OneOf;
+using System.Collections.Immutable;
 using SysIO = System.IO;
 
 namespace NeoTrace
@@ -157,9 +159,15 @@ namespace NeoTrace
         {
             using var rpcClient = new RpcClient(uri);
             var version = await rpcClient.GetVersionAsync().ConfigureAwait(false);
+            return CreateProtocolSettings(version);
+        }
+
+        internal static ProtocolSettings CreateProtocolSettings(RpcVersion version)
+        {
             return ProtocolSettings.Default with
             {
                 AddressVersion = version.Protocol.AddressVersion,
+                Hardforks = version.Protocol.Hardforks.ToImmutableDictionary(),
                 InitialGasDistribution = version.Protocol.InitialGasDistribution,
                 MaxTraceableBlocks = version.Protocol.MaxTraceableBlocks,
                 MaxTransactionsPerBlock = version.Protocol.MaxTransactionsPerBlock,

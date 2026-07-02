@@ -67,6 +67,62 @@ public class TestApplicationEngineHardforkTests
         gorgon.FaultException.Should().BeOfType<InvalidCastException>();
     }
 
+    [Fact]
+    public void Trace_engine_skips_storage_snapshot_for_unknown_entry_script()
+    {
+        using var store = new MemoryStore();
+        store.EnsureLedgerInitialized(DeployedContractFixture.Default);
+        using var snapshot = new StoreCache(store.GetSnapshot());
+        var block = CreateBlock(1);
+        var sink = new CountingTraceDebugSink();
+        var knownContracts = ImmutableDictionary<UInt160, (int Id, string Name)>.Empty
+            .Add(UInt160.Zero, (1, "KnownContract"));
+        using var engine = new TraceApplicationEngine(
+            sink,
+            TriggerType.Application,
+            TestApplicationEngine.CreateTestTransaction(),
+            snapshot,
+            block,
+            DeployedContractFixture.Default,
+            ApplicationEngine.TestModeGas,
+            knownContracts: knownContracts);
+
+        engine.LoadScript(new byte[] { 0x40 });
+        engine.Execute();
+
+        engine.State.Should().Be(VMState.HALT);
+        sink.StorageSnapshots.Should().Be(0);
+    }
+
+    [Fact]
+    public void Trace_engine_can_skip_storage_snapshots()
+    {
+        using var store = new MemoryStore();
+        store.EnsureLedgerInitialized(DeployedContractFixture.Default);
+        using var snapshot = new StoreCache(store.GetSnapshot());
+        var block = CreateBlock(1);
+        var sink = new CountingTraceDebugSink();
+        var script = new byte[] { 0x40 };
+        var knownContracts = ImmutableDictionary<UInt160, (int Id, string Name)>.Empty
+            .Add(Neo.SmartContract.Helper.ToScriptHash(script), (1, "KnownContract"));
+        using var engine = new TraceApplicationEngine(
+            sink,
+            TriggerType.Application,
+            TestApplicationEngine.CreateTestTransaction(),
+            snapshot,
+            block,
+            DeployedContractFixture.Default,
+            ApplicationEngine.TestModeGas,
+            knownContracts: knownContracts,
+            includeStorageSnapshots: false);
+
+        engine.LoadScript(script);
+        engine.Execute();
+
+        engine.State.Should().Be(VMState.HALT);
+        sink.StorageSnapshots.Should().Be(0);
+    }
+
     static byte[] CreateGorgonSensitiveScript()
     {
         using var sb = new ScriptBuilder();
@@ -120,42 +176,52 @@ public class TestApplicationEngineHardforkTests
         Transactions = []
     };
 
-    sealed class NullTraceDebugSink : ITraceDebugSink
+    class NullTraceDebugSink : ITraceDebugSink
     {
-        public void Dispose()
+        public virtual void Dispose()
         {
         }
 
-        public void Fault(Exception exception)
+        public virtual void Fault(Exception exception)
         {
         }
 
-        public void Log(LogEventArgs args, string scriptName)
+        public virtual void Log(LogEventArgs args, string scriptName)
         {
         }
 
-        public void Notify(NotifyEventArgs args, string scriptName)
+        public virtual void Notify(NotifyEventArgs args, string scriptName)
         {
         }
 
-        public void ProtocolSettings(uint network, byte addressVersion)
+        public virtual void ProtocolSettings(uint network, byte addressVersion)
         {
         }
 
-        public void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<Neo.VM.Types.StackItem> results)
+        public virtual void Results(VMState vmState, long gasConsumed, IReadOnlyCollection<Neo.VM.Types.StackItem> results)
         {
         }
 
-        public void Script(Script script)
+        public virtual void Script(Script script)
         {
         }
 
-        public void Storages(UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages)
+        public virtual void Storages(UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages)
         {
         }
 
-        public void Trace(VMState vmState, long gasConsumed, IReadOnlyCollection<ExecutionContext> executionContexts)
+        public virtual void Trace(VMState vmState, long gasConsumed, IReadOnlyCollection<ExecutionContext> executionContexts)
         {
+        }
+    }
+
+    sealed class CountingTraceDebugSink : NullTraceDebugSink
+    {
+        public int StorageSnapshots { get; private set; }
+
+        public override void Storages(UInt160 scriptHash, IEnumerable<(StorageKey key, StorageItem item)> storages)
+        {
+            StorageSnapshots++;
         }
     }
 }

@@ -37,6 +37,9 @@ partial class RunCommand
     [Option(Description = "Time between blocks")]
     internal uint? SecondsPerBlock { get; }
 
+    [Option("--disable-log", Description = "Disable verbose data logging")]
+    internal bool DisableLog { get; set; }
+
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
     {
         try
@@ -47,7 +50,7 @@ partial class RunCommand
                 throw new Exception($"Cannot locate data directory {dataDir}");
 
             var secondsPerBlock = SecondsPerBlock ?? 0;
-            await RunAsync(worknet, dataDir, secondsPerBlock, console, token).ConfigureAwait(false);
+            await RunAsync(worknet, dataDir, secondsPerBlock, DisableLog, console, token).ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)
@@ -72,7 +75,7 @@ partial class RunCommand
         };
     }
 
-    static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, IConsole console, CancellationToken token)
+    static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, bool disableLog, IConsole console, CancellationToken token)
     {
         var tcs = new TaskCompletionSource<bool>();
         _ = Task.Run(() =>
@@ -89,7 +92,8 @@ partial class RunCommand
                 StoreFactory.RegisterProvider(storeProvider);
 
                 using var persistencePlugin = new ToolkitPersistencePlugin(db);
-                using var logPlugin = new WorkNetLogPlugin(console, Utility.GetDiagnosticWriter(console));
+                using var logPlugin = new WorkNetLogPlugin(console,
+                    disableLog ? null : Utility.GetDiagnosticWriter(console));
                 using var dbftPlugin = new DBFTPlugin(GetConsensusSettings(worknet));
                 using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet), persistencePlugin, worknet.Uri);
                 using var neoSystem = new NeoSystem(protocolSettings, storeProvider.Name);

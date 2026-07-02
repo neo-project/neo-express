@@ -107,6 +107,7 @@ Usage: neo-worknet run [options]
 
 Options:
   -s|--seconds-per-block <SECONDS_PER_BLOCK>  Time between blocks
+  --disable-log                               Disable verbose data logging
   -?|-h|--help                                Show help information.
   --input                                     Path to .neo-worknet data file
 ```

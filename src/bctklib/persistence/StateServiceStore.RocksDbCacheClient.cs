@@ -124,6 +124,25 @@ namespace Neo.BlockchainToolkit.Persistence
                 }
             }
 
+            public bool TryGetCachedState(UInt160 contractHash, byte? prefix, ReadOnlyMemory<byte> key, out byte[]? value)
+            {
+                if (disposed)
+                    throw new ObjectDisposedException(nameof(RocksDbCacheClient));
+
+                // the found-states column family is keyed by the storage key, so a single
+                // record resolves with one point lookup instead of iterating the family
+                var familyName = GetCachedFoundStateFamilyName(contractHash, prefix);
+                if (db.TryGetColumnFamily(familyName, out var columnFamily))
+                {
+                    using var slice = db.GetSlice(key.Span, columnFamily);
+                    value = slice.Valid ? slice.GetValue().ToArray() : null;
+                    return true;
+                }
+
+                value = null;
+                return false;
+            }
+
             public ICacheSnapshot GetFoundStatesSnapshot(UInt160 contractHash, byte? prefix)
             {
                 if (disposed)

@@ -314,8 +314,17 @@ namespace Neo.BlockchainToolkit.Persistence
 
             byte[]? GetFromStates(UInt160 contractHash, byte? prefix, ReadOnlyMemory<byte> key)
             {
-                return FindStates(contractHash, prefix)
-                    .FirstOrDefault(kvp => MemorySequenceComparer.Equals(kvp.key.Span, key.Span)).value;
+                // resolve the key with a point lookup into the cached record set instead of
+                // scanning every cached record; download the record set on the first miss
+                if (cacheClient.TryGetCachedState(contractHash, prefix, key, out var value))
+                    return value;
+
+                _ = DownloadStates(contractHash, prefix, CancellationToken.None);
+
+                if (cacheClient.TryGetCachedState(contractHash, prefix, key, out value))
+                    return value;
+
+                throw new Exception("DownloadStates failed");
             }
         }
 

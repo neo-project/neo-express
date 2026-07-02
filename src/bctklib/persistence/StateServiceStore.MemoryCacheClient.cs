@@ -8,6 +8,7 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using Neo.BlockchainToolkit.Utilities;
 using System.Collections.Concurrent;
 
 namespace Neo.BlockchainToolkit.Persistence
@@ -17,8 +18,27 @@ namespace Neo.BlockchainToolkit.Persistence
         internal sealed class MemoryCacheClient : ICacheClient
         {
             readonly ConcurrentDictionary<int, byte[]?> storageMap = new();
-            readonly ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap = new();
+            readonly ConcurrentDictionary<int, FoundStates> foundStateMap = new();
             private bool disposed;
+
+            // Cached found states keep both the download-ordered list (for the enumerating
+            // API) and a content-keyed index so a single record resolves with one lookup
+            // instead of a scan.
+            sealed class FoundStates
+            {
+                public readonly IReadOnlyList<(ReadOnlyMemory<byte> key, byte[] value)> Items;
+                public readonly Dictionary<ReadOnlyMemory<byte>, byte[]> Index;
+
+                public FoundStates(List<(ReadOnlyMemory<byte> key, byte[] value)> items)
+                {
+                    Items = items;
+                    Index = new Dictionary<ReadOnlyMemory<byte>, byte[]>(items.Count, MemorySequenceComparer.Default);
+                    foreach (var (key, value) in items)
+                    {
+                        Index[key] = value;
+                    }
+                }
+            }
 
             public void Dispose()
             {
@@ -70,13 +90,29 @@ namespace Neo.BlockchainToolkit.Persistence
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
                 var hash = GetStorageKey(contractHash, prefix);
-                if (foundStateMap.TryGetValue(hash, out var list))
+                if (foundStateMap.TryGetValue(hash, out var states))
                 {
-                    value = list;
+                    value = states.Items;
                     return true;
                 }
 
                 value = Enumerable.Empty<(ReadOnlyMemory<byte> key, byte[] value)>();
+                return false;
+            }
+
+            public bool TryGetCachedState(UInt160 contractHash, byte? prefix, ReadOnlyMemory<byte> key, out byte[]? value)
+            {
+                if (disposed)
+                    throw new ObjectDisposedException(nameof(MemoryCacheClient));
+
+                var hash = GetStorageKey(contractHash, prefix);
+                if (foundStateMap.TryGetValue(hash, out var states))
+                {
+                    value = states.Index.TryGetValue(key, out var item) ? item : null;
+                    return true;
+                }
+
+                value = null;
                 return false;
             }
 
@@ -102,12 +138,12 @@ namespace Neo.BlockchainToolkit.Persistence
 
             class Snapshot : ICacheSnapshot
             {
-                readonly ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap;
+                readonly ConcurrentDictionary<int, FoundStates> foundStateMap;
                 readonly int hash;
                 List<(ReadOnlyMemory<byte> key, byte[] value)> entries = new();
                 bool disposed = false;
 
-                public Snapshot(ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap, int hash)
+                public Snapshot(ConcurrentDictionary<int, FoundStates> foundStateMap, int hash)
                 {
                     this.foundStateMap = foundStateMap;
                     this.hash = hash;
@@ -132,7 +168,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 {
                     ObjectDisposedException.ThrowIf(disposed, nameof(MemoryCacheClient.Snapshot));
 
-                    if (!foundStateMap.TryAdd(hash, entries))
+                    if (!foundStateMap.TryAdd(hash, new FoundStates(entries)))
                     {
                         throw new Exception("Failed to add cached entries");
                     }

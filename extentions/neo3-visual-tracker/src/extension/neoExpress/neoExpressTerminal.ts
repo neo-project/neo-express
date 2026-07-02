@@ -35,7 +35,9 @@ export default class NeoExpressTerminal {
       // Ctrl+C
       this.close();
     } else if (this.process?.exitCode === null) {
-      this.process.send(data);
+      // The child is spawned with default stdio (no IPC channel), so send()
+      // cannot deliver keystrokes; write them to the process stdin instead.
+      this.process.stdin?.write(data);
     } else {
       this.closeEmitter.fire();
     }

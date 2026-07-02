@@ -69,8 +69,12 @@ namespace Neo.BlockchainToolkit
                 var document = await JContainer.LoadAsync(jsonReader).ConfigureAwait(false);
                 return LoadInvocationScript(document);
             }
-            catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or IOException)
+            catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or IOException
+                or ArgumentException or IndexOutOfRangeException)
             {
+                // ArgumentException covers an unsupported parameter token type; IndexOutOfRangeException
+                // covers an empty or null public key reaching ECPoint.Parse. Both mean the file is
+                // malformed, so report it as such instead of surfacing a raw low-level exception.
                 throw new Exception($"Invocation file {path} is invalid: {ex.Message}");
             }
         }
@@ -495,7 +499,9 @@ namespace Neo.BlockchainToolkit
 
         internal ContractParameter ParseObjectParameter(JObject json)
         {
-            var type = Enum.Parse<ContractParameterType>(json.Value<string>("type") ?? throw new JsonException("missing type field"));
+            var typeString = json.Value<string>("type") ?? throw new JsonException("missing type field");
+            if (!Enum.TryParse<ContractParameterType>(typeString, out var type))
+                throw new FormatException($"invalid parameter type \"{typeString}\"");
             var valueProp = json["value"] ?? throw new JsonException("missing value field");
 
             object value = type switch

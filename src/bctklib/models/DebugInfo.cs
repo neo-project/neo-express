@@ -219,6 +219,10 @@ namespace Neo.BlockchainToolkit.Models
         internal static async Task<DebugInfo> LoadCompressedAsync(System.IO.Stream stream)
         {
             using var archive = new ZipArchive(stream);
+            if (archive.Entries.Count == 0)
+            {
+                throw new FormatException("Debug info archive contains no entries");
+            }
             using var entryStream = archive.Entries[0].Open();
             return await LoadAsync(entryStream).ConfigureAwait(false);
         }

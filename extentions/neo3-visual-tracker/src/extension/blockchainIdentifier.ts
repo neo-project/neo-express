@@ -39,7 +39,9 @@ export default class BlockchainIdentifier {
       const nodePorts = neoExpressConfig["consensus-nodes"]
         ?.map((_: any) => parseInt(_["rpc-port"]))
         .filter((_: any) => !!_);
-      if (!nodePorts.length) {
+      // nodePorts is undefined when the config has no "consensus-nodes" key;
+      // guard the access so a partial config is skipped instead of throwing.
+      if (!nodePorts?.length) {
         Log.log(LOG_PREFIX, "No RPC ports found", configPath);
         return undefined;
       }

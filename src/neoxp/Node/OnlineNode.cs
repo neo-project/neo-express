@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.Extensions;
@@ -73,7 +74,7 @@ namespace NeoExpress.Node
             var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
             var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
-            await NodeUtility.FastForwardAsync(prevHeader,
+            await BlockProducer.FastForwardAsync(prevHeader,
                 blockCount,
                 timestampDelta,
                 consensusNodesKeys.Value,

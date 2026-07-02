@@ -57,7 +57,7 @@ partial class RunCommand
         }
     }
 
-    static ProtocolSettings GetProtocolSettings(WorknetFile worknetFile, uint secondsPerBlock = 0)
+    internal static ProtocolSettings GetProtocolSettings(WorknetFile worknetFile, uint secondsPerBlock = 0)
     {
         var account = worknetFile.ConsensusWallet.GetAccounts().Single();
         var key = account.GetKey() ?? throw new Exception();

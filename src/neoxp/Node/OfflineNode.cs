@@ -10,6 +10,7 @@
 
 using Akka.Actor;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography.ECC;
@@ -235,7 +236,7 @@ namespace NeoExpress.Node
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
 
-            await NodeUtility.FastForwardAsync(prevHeader,
+            await BlockProducer.FastForwardAsync(prevHeader,
                 blockCount,
                 timestampDelta,
                 consensusNodesKeys.Value,
@@ -263,7 +264,7 @@ namespace NeoExpress.Node
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
-            var block = NodeUtility.CreateSignedBlock(prevHeader,
+            var block = BlockProducer.CreateSignedBlock(prevHeader,
                 consensusNodesKeys.Value,
                 neoSystem.Settings.Network,
                 transactions);

@@ -26,6 +26,7 @@ using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using System.Numerics;
 using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
 using NeoArray = Neo.VM.Types.Array;
@@ -59,6 +60,9 @@ class CreateCommand
     [Option("--disable-log", Description = "Disable verbose data logging")]
     internal bool DisableLog { get; set; }
 
+    [Option("--gas", Description = "Amount of GAS to seed the consensus account with (Default: 10000)")]
+    internal decimal Gas { get; init; } = DEFAULT_GAS_SEED;
+
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
     {
         try
@@ -69,6 +73,9 @@ class CreateCommand
                 var diagnosticObserver = new DiagnosticObserver(StateServiceStore.LoggerCategory, stateServiceObserver);
                 DiagnosticListener.AllListeners.Subscribe(diagnosticObserver);
             }
+
+            if (Gas < 0)
+                throw new ArgumentException("--gas cannot be negative");
 
             if (!TryParseRpcUri(RpcUri, out var uri))
             {
@@ -113,7 +120,7 @@ class CreateCommand
             using var stateStore = new StateServiceStore(uri, branchInfo, db);
             using var trackStore = new PersistentTrackingStore(db, stateStore);
 
-            InitializeStore(trackStore, consensusAccount);
+            InitializeStore(trackStore, Gas, new[] { consensusAccount });
 
             console.WriteLine($"Created {filename}");
             console.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
@@ -127,16 +134,23 @@ class CreateCommand
         }
     }
 
+    internal const decimal DEFAULT_GAS_SEED = 10_000m;
+
     internal static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)
-        => InitializeStore(store, (IEnumerable<WalletAccount>)consensusAccounts);
+        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts);
 
     internal static void InitializeStore(IStore store, IEnumerable<WalletAccount> consensusAccounts)
+        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts);
+
+    internal static void InitializeStore(IStore store, decimal gasSeed, IEnumerable<WalletAccount> consensusAccounts)
     {
         const byte Prefix_Block = 5;
         const byte Prefix_BlockHash = 9;
         const byte Prefix_Candidate = 33;
         const byte Prefix_Committee = 14;
         const byte Prefix_CurrentBlock = 12;
+        const byte Prefix_GasAccount = 20;
+        const byte Prefix_GasTotalSupply = 11;
 
         var keys = consensusAccounts
             .Select(a => a.GetKey()?.PublicKey ?? throw new InvalidOperationException("Consensus account is missing a private key"))
@@ -161,6 +175,34 @@ class CreateCommand
         foreach (var (key, value) in snapshot.Find(candidateKeyBuilder.ToArray()))
         {
             snapshot.Delete(key);
+        }
+
+        // Seed the consensus accounts with GAS so the branch can pay transaction fees
+        // immediately (contract deploys and invokes) instead of being read-only until
+        // committee emission slowly accrues. Total supply is bumped to match.
+        if (gasSeed > 0)
+        {
+            var seedAmount = (BigInteger)(gasSeed * 100_000_000m); // GAS has 8 decimals
+            var seededAccounts = 0;
+            foreach (var account in consensusAccounts)
+            {
+                var accountKey = new KeyBuilder(NativeContract.GAS.Id, Prefix_GasAccount).Add(account.ScriptHash);
+                var accountItem = snapshot.GetAndChange(accountKey);
+                if (accountItem is null)
+                {
+                    snapshot.Add(accountKey, new StorageItem(new AccountState { Balance = seedAmount }));
+                }
+                else
+                {
+                    accountItem.GetInteroperable<AccountState>().Balance += seedAmount;
+                }
+                seededAccounts++;
+            }
+
+            var totalSupplyKey = new KeyBuilder(NativeContract.GAS.Id, Prefix_GasTotalSupply);
+            var totalSupplyItem = snapshot.GetAndChange(totalSupplyKey)
+                ?? throw new InvalidOperationException("GAS total supply storage item is missing");
+            totalSupplyItem.Add(seedAmount * seededAccounts);
         }
 
         // create an *UNSIGNED* block that will be appended to the chain

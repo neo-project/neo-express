@@ -27,12 +27,17 @@ class ResetCommand
     [Option(Description = "Overwrite existing data")]
     internal bool Force { get; }
 
+    [Option("--gas", Description = "Amount of GAS to seed the consensus account with (Default: 10000)")]
+    internal decimal Gas { get; init; } = CreateCommand.DEFAULT_GAS_SEED;
+
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
     {
         try
         {
             if (!Force)
                 throw new InvalidOperationException("--force must be specified when resetting worknet");
+            if (Gas < 0)
+                throw new ArgumentException("--gas cannot be negative");
 
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.GetWorknetDataDirectory(filename);
@@ -44,7 +49,7 @@ class ResetCommand
             using var trackStore = new PersistentTrackingStore(db, stateStore, true);
 
             trackStore.Reset();
-            CreateCommand.InitializeStore(trackStore, worknet.ConsensusWallet.GetAccounts().Single());
+            CreateCommand.InitializeStore(trackStore, Gas, worknet.ConsensusWallet.GetAccounts());
             console.WriteLine("WorkNet node reset");
             return 0;
         }

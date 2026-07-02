@@ -22,8 +22,10 @@
       <NeoCscDebugInfoPath>$([MSBuild]::NormalizePath($(NeoCscOutputFolder), '$(NeoContractName).nefdbgnfo'))</NeoCscDebugInfoPath>
       <NeoCscAssemblyPath>$([MSBuild]::NormalizePath($(NeoCscOutputFolder), '$(NeoContractName).asm'))</NeoCscAssemblyPath>
 
-      <NeoCscOptimize>true</NeoCscOptimize>
-      <NeoCscOptimize Condition="'$(Configuration)'=='Debug'">false</NeoCscOptimize>
+      <NeoCscOptimize Condition="'$(NeoCscOptimize)'=='' and '$(Configuration)'=='Debug'">false</NeoCscOptimize>
+      <NeoCscOptimize Condition="'$(NeoCscOptimize)'==''">true</NeoCscOptimize>
+      <NeoCscInline Condition="'$(NeoCscInline)'==''">$(NeoCscOptimize)</NeoCscInline>
+      <NeoCscAddressVersion Condition="'$(NeoCscAddressVersion)'==''">53</NeoCscAddressVersion>
       <NeoCscDebugInfo Condition="'$(NeoCscDebugInfo)'==''">true</NeoCscDebugInfo>
     </PropertyGroup>
 
@@ -40,11 +42,12 @@
     Condition="'$(NeoContractName)'!=''"
     Inputs="$(MSBuildProjectFullPath);@(Compile);" Outputs="@(NeoCscOutput)">
 
-    <NeoCsc 
+    <NeoCsc
+      AddressVersion="$(NeoCscAddressVersion)"
       Assembly="$(NeoContractAssembly)"
       BaseFileName="$(NeoContractName)"
       Debug="$(NeoCscDebugInfo)"
-      Inline="$(NeoCscOptimize)"
+      Inline="$(NeoCscInline)"
       Optimize="$(NeoCscOptimize)"
       Output="$(NeoContractOutput)"
       Sources="$(MSBuildProjectFullPath)"

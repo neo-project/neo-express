@@ -113,6 +113,50 @@ namespace NeoExpress.Node
 
             var tx = await tm.SignAsync().ConfigureAwait(false);
 
+            if (ShouldAutoMine(chain))
+            {
+                return await SubmitAutoMinedBlockAsync(tx).ConfigureAwait(false);
+            }
+
+            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+        }
+
+        // Instant transaction confirmation is opt-in via the chain.AutoMine setting and only
+        // supported on single-node chains, where the express process holds every consensus key.
+        internal static bool ShouldAutoMine(ExpressChain chain)
+            => chain.ConsensusNodes.Count == 1
+                && chain.TryReadSetting<bool>("chain.AutoMine", bool.TryParse, out var autoMine)
+                && autoMine;
+
+        // Confirm the transaction immediately by wrapping it in a consensus-signed block and
+        // submitting the block, the same way OfflineNode.SubmitTransactionAsync and
+        // FastForwardAsync already do, instead of waiting out the dBFT block interval.
+        // Submitting can race an in-flight dBFT proposal at the same height (the first block
+        // at a height wins), so retry once on the new tip and fall back to the mempool if the
+        // race is lost twice.
+        async Task<UInt256> SubmitAutoMinedBlockAsync(Transaction tx)
+        {
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var prevHash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
+                var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
+                var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
+
+                var block = NodeUtility.CreateSignedBlock(prevHeader,
+                    consensusNodesKeys.Value,
+                    ProtocolSettings.Network,
+                    new[] { tx });
+                try
+                {
+                    await rpcClient.SubmitBlockAsync(block.ToArray()).ConfigureAwait(false);
+                    return tx.Hash;
+                }
+                catch (RpcException)
+                {
+                    // lost the race with a dBFT-proposed block at this height
+                }
+            }
+
             return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 

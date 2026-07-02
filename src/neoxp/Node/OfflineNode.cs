@@ -184,7 +184,8 @@ namespace NeoExpress.Node
             tx.SystemFee += NodeUtility.AdditionalGasSystemFee(additionalGas);
 
             var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
-            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            var account = wallet.GetAccount(accountHash)
+                ?? throw new Exception($"Account {accountHash} not found in wallet {wallet.Name}");
             if (account.IsMultiSigContract())
             {
                 var multiSigWallets = chain.GetMultiSigWallets(neoSystem.Settings, accountHash);
@@ -202,7 +203,7 @@ namespace NeoExpress.Node
 
             if (!context.Completed)
             {
-                throw new Exception();
+                throw new Exception($"Failed to complete the signing context for account {accountHash}: not enough signing wallets are available");
             }
 
             tx.Witnesses = context.GetWitnesses();

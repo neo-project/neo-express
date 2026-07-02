@@ -47,6 +47,9 @@ namespace NeoExpress.Node
             appLogsStore?.Dispose();
             notificationsSnapshot?.Dispose();
             notificationsStore?.Dispose();
+            // the Plugin constructor adds this instance to the global plugin list; remove it
+            // so a NeoSystem created later does not call into this disposed instance
+            _ = Plugins.Remove(this);
         }
 
         protected override void OnSystemLoaded(NeoSystem system)

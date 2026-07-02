@@ -18,9 +18,62 @@ namespace NeoExpress.Commands
     partial class BatchCommand
     {
         [Command]
-        [Subcommand(typeof(Checkpoint), typeof(Contract), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer), typeof(TransferNFT), typeof(Wallet))]
+        [Subcommand(typeof(Candidate), typeof(Checkpoint), typeof(Contract), typeof(Execute), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer), typeof(TransferNFT), typeof(Wallet))]
         internal class BatchFileCommands
         {
+            [Command("candidate")]
+            [Subcommand(typeof(Register), typeof(UnRegister), typeof(Vote), typeof(UnVote))]
+            internal class Candidate
+            {
+                [Command("register")]
+                internal class Register
+                {
+                    [Argument(0, Description = "Account to register candidate")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+
+                [Command("unregister")]
+                internal class UnRegister
+                {
+                    [Argument(0, Description = "Account to unregister candidate")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+
+                [Command("vote")]
+                internal class Vote
+                {
+                    [Argument(0, Description = "Account to vote")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Argument(1, Description = "Candidate publickey")]
+                    [Required]
+                    internal string PublicKey { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+
+                [Command("unvote")]
+                internal class UnVote
+                {
+                    [Argument(0, Description = "Account to unvote")]
+                    [Required]
+                    internal string Account { get; init; } = string.Empty;
+
+                    [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                    internal string Password { get; init; } = string.Empty;
+                }
+            }
+
             [Command("checkpoint")]
             [Subcommand(typeof(Create))]
             internal class Checkpoint
@@ -164,6 +217,30 @@ namespace NeoExpress.Commands
                     [Option(Description = "Data parameter for update method on contract (Format: JSON)")]
                     internal string Data { get; init; } = string.Empty;
                 }
+            }
+
+            [Command("execute")]
+            internal class Execute
+            {
+                [Argument(0, Description = "A neo-vm script (Format: HEX, BASE64, Filename)")]
+                [Required]
+                internal string InputText { get; init; } = string.Empty;
+
+                [Option(Description = "Account to pay invocation GAS fee")]
+                internal string Account { get; init; } = string.Empty;
+
+                [Option(Description = "Witness Scope for transaction signer(s) (Allowed: None, CalledByEntry, Global)")]
+                [AllowedValues(StringComparison.OrdinalIgnoreCase, "None", "CalledByEntry", "Global")]
+                internal WitnessScope WitnessScope { get; init; } = WitnessScope.CalledByEntry;
+
+                [Option(Description = "Invoke contract for results (does not cost GAS)")]
+                internal bool Results { get; init; } = false;
+
+                [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract invocation")]
+                internal decimal AdditionalGas { get; init; } = 0;
+
+                [Option(Description = "password to use for NEP-2/NEP-6 account")]
+                internal string Password { get; init; } = string.Empty;
             }
 
             [Command("fastfwd")]

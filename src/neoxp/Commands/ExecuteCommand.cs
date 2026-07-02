@@ -115,7 +115,7 @@ namespace NeoExpress.Commands
 
 
 
-        private static Script? LoadFileScript(string fileName)
+        internal static Script? LoadFileScript(string fileName)
         {
             try
             {
@@ -145,7 +145,7 @@ namespace NeoExpress.Commands
         }
 
 
-        private static Script? ConvertTextToScript(string inputScript)
+        internal static Script? ConvertTextToScript(string inputScript)
         {
             if (inputScript.TryGetBytesFromHexString(out var hexBytes) && TryConvertBytesToScript(hexBytes, out var s1))
             {

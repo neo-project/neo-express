@@ -3,6 +3,8 @@
     <PropertyGroup>
         <AssemblyName>neo-build-tasks</AssemblyName>
         <PackageId>Neo.BuildTasks</PackageId>
+        <!-- Clear the repo-wide TargetFramework so this package builds both task assemblies. -->
+        <TargetFramework></TargetFramework>
         <TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>
 
         <IncludeBuildOutput>false</IncludeBuildOutput>

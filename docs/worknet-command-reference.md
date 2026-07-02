@@ -56,6 +56,33 @@ the branched chain. Based on understanding of Neo-Express usage patterns, multip
 not typically used. If four or seven conesnsus node support in Neo-WorkNet is important to you, please
 file an issue in our [GitHub repo](https://github.com/neo-project/neo-express/issues)
 
+## neo-worknet fastfwd
+
+```
+Mint empty blocks to fast forward the block chain
+
+Usage: neo-worknet fastfwd [options] <Count>
+
+Arguments:
+  Count                                   Number of blocks to mint
+
+Options:
+  -t|--timestamp-delta <TIMESTAMP_DELTA>  Timestamp delta for last generated block
+  -?|-h|--help                            Show help information.
+  --input                                 Path to .neo-worknet data file
+```
+
+The `fastfwd` command mints the specified number of empty blocks, signed by the worknet
+consensus account. This is useful for testing contracts with time-dependent behavior such as
+vesting cliffs or auction expiry. Like the equivalent Neo-Express command, the
+`--timestamp-delta` option additionally advances the timestamp of the last minted block by
+the specified amount — either a whole number of seconds or a .NET TimeSpan string such as
+`1.02:03:04` (one day, two hours, three minutes and four seconds). The timestamps of the
+minted blocks are spaced evenly across the delta.
+
+The node must be stopped when running `fastfwd`; the blocks are appended directly to the
+local chain data.
+
 ## neo-worknet prefetch
 
 ```

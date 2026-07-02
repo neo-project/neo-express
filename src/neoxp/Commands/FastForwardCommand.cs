@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo.BlockchainToolkit;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
@@ -16,7 +17,7 @@ namespace NeoExpress.Commands
     [Command("fastfwd", Description = "Mint empty blocks to fast forward the block chain")]
     class FastForwardCommand
     {
-        internal const uint MaxFastForwardCount = 100_000;
+        internal const uint MaxFastForwardCount = BlockProducer.MaxFastForwardCount;
 
         readonly ExpressChainManagerFactory chainManagerFactory;
 
@@ -58,25 +59,9 @@ namespace NeoExpress.Commands
         }
 
         internal static void ValidateCount(uint count)
-        {
-            if (count > MaxFastForwardCount)
-                throw new Exception($"Cannot mint more than {MaxFastForwardCount} blocks at once");
-        }
+            => BlockProducer.ValidateCount(count);
 
         internal static TimeSpan ParseTimestampDelta(string timestampDelta)
-        {
-            var delta = string.IsNullOrEmpty(timestampDelta)
-                ? TimeSpan.Zero
-                : ulong.TryParse(timestampDelta, out var @ulong)
-                    ? TimeSpan.FromSeconds(@ulong)
-                    : TimeSpan.TryParse(timestampDelta, out var timeSpan)
-                        ? timeSpan
-                        : throw new Exception($"Could not parse timestamp delta {timestampDelta}");
-
-            if (delta < TimeSpan.Zero)
-                throw new Exception($"Timestamp delta {timestampDelta} cannot be negative");
-
-            return delta;
-        }
+            => BlockProducer.ParseTimestampDelta(timestampDelta);
     }
 }

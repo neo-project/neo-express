@@ -11,8 +11,10 @@
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.BlockchainToolkit.SmartContract;
 using Neo.BlockchainToolkit.Utilities;
 using Neo.Extensions;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
@@ -247,6 +249,38 @@ namespace NeoTestHarness
             var byteStore = (IReadOnlyStore)fixture.CheckpointStore;
             var store = new MemoryTrackingStore(byteStore);
             return new StoreCache(store.GetSnapshot());
+        }
+
+        // One-call engine construction for the common test shape: snapshot the fixture's
+        // checkpoint and build a TestApplicationEngine over it with the fixture's own
+        // protocol settings. Disposing the returned engine also disposes the snapshot.
+        public static TestApplicationEngine CreateEngine(this CheckpointFixture fixture, UInt160? signer = null, WitnessScope witnessScope = WitnessScope.CalledByEntry)
+        {
+            var snapshot = fixture.GetSnapshot();
+            var container = signer is null
+                ? TestApplicationEngine.CreateTestTransaction()
+                : TestApplicationEngine.CreateTestTransaction(signer, witnessScope);
+            return new FixtureApplicationEngine(snapshot, fixture.ProtocolSettings, container);
+        }
+
+        sealed class FixtureApplicationEngine : TestApplicationEngine
+        {
+            readonly StoreCache snapshot;
+
+            public FixtureApplicationEngine(StoreCache snapshot, ProtocolSettings settings, Neo.Network.P2P.Payloads.Transaction container)
+                : base(snapshot, container: container, settings: settings)
+            {
+                this.snapshot = snapshot;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                base.Dispose(disposing);
+                if (disposing)
+                {
+                    snapshot.Dispose();
+                }
+            }
         }
     }
 }

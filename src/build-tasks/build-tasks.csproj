@@ -3,6 +3,7 @@
     <PropertyGroup>
         <AssemblyName>neo-build-tasks</AssemblyName>
         <PackageId>Neo.BuildTasks</PackageId>
+        <TargetFramework></TargetFramework>
         <TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>
 
         <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -15,6 +16,7 @@
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);EnsureTaskBinariesForPack</TargetsForTfmSpecificContentInPackage>
     </PropertyGroup>
 
     <ItemGroup>
@@ -33,31 +35,20 @@
         <TfmSpecificPackageFile Remove="$(MSBuildProjectDirectory)\bin\**" />
     </ItemGroup>
 
-    <Target Name="EnsureTaskBinariesForPack" BeforeTargets="GetPackageContents">
-        <ItemGroup>
-            <_Tfms Include="net10.0" />
-            <_Tfms Include="netstandard2.0" />
-        </ItemGroup>
-
-        <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Restore;Build" Properties="TargetFramework=%(_Tfms.Identity);Configuration=$(Configuration)" Condition="!Exists('$(MSBuildProjectDirectory)\bin\$(Configuration)\%(_Tfms.Identity)\$(AssemblyName).dll')" ContinueOnError="WarnAndContinue" />
+    <Target Name="EnsureTaskBinariesForPack" Returns="@(TfmSpecificPackageFile)">
+        <PropertyGroup>
+            <_NeoBuildTasksPackTfm>$([MSBuild]::ValueOrDefault('$(TargetFramework)', 'net10.0'))</_NeoBuildTasksPackTfm>
+            <_NeoBuildTasksPackAssembly>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(_NeoBuildTasksPackTfm)\$(AssemblyName).dll</_NeoBuildTasksPackAssembly>
+        </PropertyGroup>
 
         <ItemGroup>
-            <_Candidate Include="$(MSBuildProjectDirectory)\bin\$(Configuration)\net10.0\$(AssemblyName).dll">
-                <Tfm>net10.0</Tfm>
-            </_Candidate>
-            <_Candidate Include="$(MSBuildProjectDirectory)\bin\$(Configuration)\netstandard2.0\$(AssemblyName).dll">
-                <Tfm>netstandard2.0</Tfm>
-            </_Candidate>
-        </ItemGroup>
-
-        <ItemGroup>
-            <TfmSpecificPackageFile Include="%(_Candidate.Identity)" Condition="Exists('%(_Candidate.Identity)')">
-                <PackagePath>tasks/%(_Candidate.Tfm)/</PackagePath>
+            <TfmSpecificPackageFile Include="$(_NeoBuildTasksPackAssembly)" Condition="Exists('$(_NeoBuildTasksPackAssembly)')">
+                <PackagePath>tasks/$(_NeoBuildTasksPackTfm)/</PackagePath>
             </TfmSpecificPackageFile>
         </ItemGroup>
 
-        <Message Importance="High" Text="Pack: include %(_Candidate.Tfm) → %(_Candidate.Identity)" Condition="Exists('%(_Candidate.Identity)')" />
-        <Message Importance="High" Text="Pack: not exists %(_Tfms.Identity); trying to compile and continue without it." Condition="!Exists('$(MSBuildProjectDirectory)\bin\$(Configuration)\%(_Tfms.Identity)\$(AssemblyName).dll')" />
+        <Message Importance="High" Text="Pack: include $(_NeoBuildTasksPackTfm) -> $(_NeoBuildTasksPackAssembly)" Condition="Exists('$(_NeoBuildTasksPackAssembly)')" />
+        <Message Importance="High" Text="Pack: not exists $(_NeoBuildTasksPackTfm); skipping task binary." Condition="!Exists('$(_NeoBuildTasksPackAssembly)')" />
     </Target>
 
     <ItemGroup>

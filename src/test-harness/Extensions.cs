@@ -260,27 +260,9 @@ namespace NeoTestHarness
             var container = signer is null
                 ? TestApplicationEngine.CreateTestTransaction()
                 : TestApplicationEngine.CreateTestTransaction(signer, witnessScope);
-            return new FixtureApplicationEngine(snapshot, fixture.ProtocolSettings, container);
-        }
-
-        sealed class FixtureApplicationEngine : TestApplicationEngine
-        {
-            readonly StoreCache snapshot;
-
-            public FixtureApplicationEngine(StoreCache snapshot, ProtocolSettings settings, Neo.Network.P2P.Payloads.Transaction container)
-                : base(snapshot, container: container, settings: settings)
-            {
-                this.snapshot = snapshot;
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                base.Dispose(disposing);
-                if (disposing)
-                {
-                    snapshot.Dispose();
-                }
-            }
+            var engine = new TestApplicationEngine(snapshot, container: container, settings: fixture.ProtocolSettings);
+            engine.AddDisposable(snapshot);
+            return engine;
         }
     }
 }

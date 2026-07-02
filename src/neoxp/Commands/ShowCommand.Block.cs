@@ -36,7 +36,7 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
-                    var block = await expressNode.GetBlockAsync(BlockHash).ConfigureAwait(false);
+                    var block = await NeoExpress.ExpressNodeExtensions.GetBlockAsync(expressNode, BlockHash).ConfigureAwait(false);
                     console.WriteJson(block.ToJson(chainManager.ProtocolSettings));
                     return 0;
                 }

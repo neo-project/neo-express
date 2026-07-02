@@ -44,10 +44,13 @@ namespace NeoExpress.Node
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         readonly object engineLock = new();
         readonly List<WeakReference<ApplicationEngine>> engineRefs = new();
+        readonly IApplicationEngineProvider? priorEngineProvider;
+        readonly bool engineProviderSet;
         bool disposedValue;
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
+        // OfflineNode takes ownership of expressStorage and disposes it when it is disposed.
         public OfflineNode(ProtocolSettings settings, RocksDbExpressStorage expressStorage, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
             this.nodeWallet = DevWallet.FromExpressWallet(settings, nodeWallet);
@@ -55,13 +58,19 @@ namespace NeoExpress.Node
             this.expressStorage = expressStorage;
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
 
+            // Pass the store provider instance directly instead of registering it in the
+            // global StoreFactory: a registration cannot be removed, so a second OfflineNode
+            // constructed in the same process would throw on the duplicate provider name.
             var storeProvider = new ExpressStoreProvider(expressStorage);
-            StoreFactory.RegisterProvider(storeProvider);
             if (enableTrace)
-            { ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+            {
+                priorEngineProvider = ApplicationEngine.Provider;
+                engineProviderSet = true;
+                ApplicationEngine.Provider = new ExpressApplicationEngineProvider();
+            }
 
             persistencePlugin = new ExpressPersistencePlugin();
-            neoSystem = new NeoSystem(settings, storeProvider.Name);
+            neoSystem = new NeoSystem(settings, storeProvider, null);
 
             ApplicationEngine.InstanceHandler += OnApplicationEngineCreated;
         }
@@ -84,6 +93,11 @@ namespace NeoExpress.Node
                 }
                 persistencePlugin.Dispose();
                 neoSystem.Dispose();
+                if (engineProviderSet)
+                {
+                    ApplicationEngine.Provider = priorEngineProvider;
+                }
+                expressStorage.Dispose();
                 disposedValue = true;
             }
         }

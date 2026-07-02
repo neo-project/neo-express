@@ -33,9 +33,13 @@ namespace NeoExpress.Commands
         [Option(Description = "Path to neo-express data file")]
         internal string Input { get; init; } = string.Empty;
 
+        [Option(Description = "Password to use for the exported wallets (prompted for if unspecified)")]
+        internal string Password { get; init; } = string.Empty;
+
         internal void Execute(System.IO.TextWriter writer)
         {
-            var password = Prompt.GetPassword("Input password to use for exported wallets");
+            var password = Extensions.ResolveExportPassword(Password, Console.IsInputRedirected,
+                () => Prompt.GetPassword("Input password to use for exported wallets"));
             var (chainManager, _) = chainManagerFactory.LoadChain(Input);
             var chain = chainManager.Chain;
             var folder = fileSystem.Directory.GetCurrentDirectory();

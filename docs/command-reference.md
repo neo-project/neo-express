@@ -158,7 +158,8 @@ Usage: neoxp export [Options]
 
 Arguments:
 [Options]:
-  -i|--input <INPUT>  Path to neo-express data file
+  -i|--input <INPUT>        Path to neo-express data file
+  -p|--password <PASSWORD>  Password to use for the exported wallets (prompted for if unspecified)
 ```
 
 The `export` command saves the wallet and settings of each consensus node in a standard format. The exported files can be found under the root directory of neoxp.exe. This allows for standard Neo node implementations such as Neo-CLI to connect to a running Neo-Express blockchain network.
@@ -233,9 +234,10 @@ Usage: neoxp wallet export [Options] <Name>
 
 Arguments:
 [Options]:
-  -i|--input <INPUT>    Path to neo-express data file
-  -o|--output <OUTPUT>  NEP-6 wallet name (Defaults to Neo-Express name if unspecified)
-  -f|--force            Overwrite existing data
+  -i|--input <INPUT>        Path to neo-express data file
+  -o|--output <OUTPUT>      NEP-6 wallet name (Defaults to Neo-Express name if unspecified)
+  -f|--force                Overwrite existing data
+  -p|--password <PASSWORD>  Password to use for the exported NEP-6 wallet (prompted for if unspecified)
 <Name>: Wallet name
 ```
 

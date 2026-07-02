@@ -159,4 +159,61 @@ public class BatchCommandParserTests
         result.SelectedCommand.GetValidationResult()
             .Should().Be(System.ComponentModel.DataAnnotations.ValidationResult.Success);
     }
+
+    [Theory]
+    [InlineData("register")]
+    [InlineData("unregister")]
+    [InlineData("unvote")]
+    public void Candidate_account_commands_are_recognized_batch_subcommands(string verb)
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("candidate", verb, "alice");
+
+        result.SelectedCommand.GetValidationResult().Should().Be(ValidationResult.Success);
+    }
+
+    [Fact]
+    public void Candidate_vote_requires_a_public_key()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var missingKey = app.Parse("candidate", "vote", "alice");
+        missingKey.SelectedCommand.GetValidationResult().Should().NotBe(ValidationResult.Success);
+
+        var complete = app.Parse("candidate", "vote", "alice", "02158c68fa3a03dbc73a6e20b4bbe626ecb02e765c72b95bd8c2c8f6b52f4a95b0");
+        complete.SelectedCommand.GetValidationResult().Should().Be(ValidationResult.Success);
+        var model = ((CommandLineApplication<BatchCommand.BatchFileCommands.Candidate.Vote>)complete.SelectedCommand).Model;
+        model.Account.Should().Be("alice");
+        model.PublicKey.Should().StartWith("02158c");
+    }
+
+    [Fact]
+    public void Execute_is_a_recognized_batch_subcommand()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("execute", "0c14aa", "--account", "genesis", "--gas", "1.5");
+
+        result.SelectedCommand.GetValidationResult().Should().Be(ValidationResult.Success);
+        var model = ((CommandLineApplication<BatchCommand.BatchFileCommands.Execute>)result.SelectedCommand).Model;
+        model.InputText.Should().Be("0c14aa");
+        model.Account.Should().Be("genesis");
+        model.AdditionalGas.Should().Be(1.5m);
+        model.Results.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Execute_requires_a_script_argument()
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var result = app.Parse("execute");
+
+        result.SelectedCommand.GetValidationResult().Should().NotBe(ValidationResult.Success);
+    }
 }

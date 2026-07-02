@@ -34,6 +34,31 @@ namespace NeoExpress.Node
     {
         internal static string ContractNotFoundMessage(UInt160 scriptHash) => $"Contract {scriptHash} not found";
 
+        // Convert an --additional-gas amount to the system-fee delta (in GAS datoshi),
+        // with clear errors instead of the raw exceptions the bare conversion throws: an
+        // ArgumentException for more than GAS.Decimals fractional digits, and an
+        // OverflowException when the scaled value does not fit in the System.Int64 fee.
+        internal static long AdditionalGasSystemFee(decimal additionalGas)
+        {
+            if (additionalGas <= 0m)
+                return 0;
+
+            BigInteger value;
+            try
+            {
+                value = additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
+            }
+            catch (ArgumentException)
+            {
+                throw new Exception($"--additional-gas value {additionalGas} cannot have more than {NativeContract.GAS.Decimals} decimal places");
+            }
+
+            if (value > long.MaxValue)
+                throw new Exception($"--additional-gas value {additionalGas} is too large");
+
+            return (long)value;
+        }
+
         public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
         {
             transactions ??= Array.Empty<Transaction>();

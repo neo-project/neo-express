@@ -168,7 +168,8 @@ namespace Neo.BlockchainToolkit.Persistence
                 index,
                 blockHash,
                 stateRoot.RootHash,
-                contracts);
+                contracts,
+                version.Protocol.Hardforks);
 
             static async Task<IReadOnlyList<ContractInfo>> GetContractsAsync(RpcClient rpcClient, UInt256 rootHash)
             {

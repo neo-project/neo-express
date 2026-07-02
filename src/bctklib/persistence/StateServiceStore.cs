@@ -42,6 +42,8 @@ namespace Neo.BlockchainToolkit.Persistence
         const byte NEO_Prefix_GasPerBlock = 29;
         const byte NEO_Prefix_VoterRewardPerCommittee = 23;
         const byte Oracle_Prefix_Request = 7;
+        const byte Policy_Prefix_BlockedAccount = 15;
+        const byte Policy_Prefix_WhitelistedFeeContracts = 16;
         const byte RoleMgmt_Prefix_NeoFSAlphabetNode = (byte)Role.NeoFSAlphabetNode;
         const byte RoleMgmt_Prefix_Oracle = (byte)Role.Oracle;
         const byte RoleMgmt_Prefix_StateValidator = (byte)Role.StateValidator;
@@ -51,6 +53,7 @@ namespace Neo.BlockchainToolkit.Persistence
             { NativeContract.ContractManagement.Id, new [] { ContractMgmt_Prefix_Contract, ContractMgmt_Prefix_ContractHash } },
             { NativeContract.NEO.Id, new [] { NEO_Prefix_Candidate, NEO_Prefix_GasPerBlock } },
             { NativeContract.Oracle.Id, new [] { Oracle_Prefix_Request } },
+            { NativeContract.Policy.Id, new [] { Policy_Prefix_BlockedAccount, Policy_Prefix_WhitelistedFeeContracts } },
             { NativeContract.RoleManagement.Id, new [] { RoleMgmt_Prefix_NeoFSAlphabetNode, RoleMgmt_Prefix_Oracle, RoleMgmt_Prefix_StateValidator } }
         };
 
@@ -289,34 +292,8 @@ namespace Neo.BlockchainToolkit.Persistence
                 return null;
             }
 
-            if (contractId < 0)
-            {
-                // contractSeekMap contains info on which native contract ids / prefixes can use seek methods
-                // For prefixes that need seek capability, ensure all records with that prefix are cached locally
-                // then retrieve the specifically keyed value from cache.
-                if (contractSeekMap.TryGetValue(contractId, out var prefixes))
-                {
-                    var prefix = key.Span[0];
-                    if (prefixes.Contains(prefix))
-                    {
-                        return GetFromStates(contractHash, prefix, key);
-                    }
-                }
-
-                // otherwise, retrieve and cache the keyed value
-                return GetStorage(contractHash, key,
-                    () => rpcClient.GetProvenState(branchInfo.RootHash, contractHash, key.Span));
-            }
-
-            // since there is no way to know the data usage patterns for deployed contracts download
-            // and cache all records for that contract then retrieve the keyed value from cache
-            return GetFromStates(contractHash, null, key);
-
-            byte[]? GetFromStates(UInt160 contractHash, byte? prefix, ReadOnlyMemory<byte> key)
-            {
-                return FindStates(contractHash, prefix)
-                    .FirstOrDefault(kvp => MemorySequenceComparer.Equals(kvp.key.Span, key.Span)).value;
-            }
+            return GetStorage(contractHash, key,
+                () => rpcClient.GetProvenState(branchInfo.RootHash, contractHash, key.Span));
         }
 
         byte[]? GetStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, Func<byte[]?> getStorageFromService)

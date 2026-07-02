@@ -72,6 +72,7 @@ namespace NeoTrace
         static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
         {
             IReadOnlyStore<byte[], byte[]> roStore;
+            IReadOnlyDictionary<UInt160, (int Id, string Name)>? knownContracts = null;
             if (block.Index == 0)
             {
                 roStore = NullStore.Instance;
@@ -80,6 +81,7 @@ namespace NeoTrace
             {
                 var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, block.Index - 1).ConfigureAwait(false);
                 roStore = new StateServiceStore(rpcClient, branchInfo);
+                knownContracts = branchInfo.Contracts.ToDictionary(c => c.Hash, c => (c.Id, c.Name));
             }
 
             using var store = new MemoryTrackingStore(roStore);
@@ -137,7 +139,16 @@ namespace NeoTrace
                 {
                     var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
                     var sink = new TraceDebugStream(SysIO.File.OpenWrite(path));
-                    return new TraceApplicationEngine(sink, TriggerType.Application, tx, snapshot, block, settings, tx.SystemFee);
+                    return new TraceApplicationEngine(
+                        sink,
+                        TriggerType.Application,
+                        tx,
+                        snapshot,
+                        block,
+                        settings,
+                        tx.SystemFee,
+                        knownContracts: knownContracts,
+                        includeStorageSnapshots: false);
                 }
                 else
                 {

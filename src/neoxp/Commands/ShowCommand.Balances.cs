@@ -93,7 +93,7 @@ namespace NeoExpress.Commands
                     writer.WriteStartObject();
                     writer.WritePropertyName("symbol");
                     writer.WriteValue(contract.Symbol);
-                    writer.WritePropertyName("script-hash");
+                    writer.WritePropertyName("scriptHash");
                     writer.WriteValue(contract.ScriptHash.ToString());
                     writer.WritePropertyName("decimals");
                     writer.WriteValue(contract.Decimals);

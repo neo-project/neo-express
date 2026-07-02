@@ -40,7 +40,7 @@ public class ShowJsonOutputTests
         var json = JObject.Parse(Capture(w => ShowCommand.Balance.WriteBalanceJson(w, contract, balance)));
 
         json.Value<string>("symbol").Should().Be("GAS");
-        json.Value<string>("script-hash").Should().Be(GAS_HASH.ToString());
+        json.Value<string>("scriptHash").Should().Be(GAS_HASH.ToString());
         json.Value<int>("decimals").Should().Be(8);
         json.Value<string>("balance").Should().Be("100.5");
     }
@@ -57,7 +57,7 @@ public class ShowJsonOutputTests
 
         json.Should().HaveCount(1);
         json[0].Value<string>("symbol").Should().Be("GAS");
-        json[0].Value<string>("script-hash").Should().Be(GAS_HASH.ToString());
+        json[0].Value<string>("scriptHash").Should().Be(GAS_HASH.ToString());
         json[0].Value<int>("decimals").Should().Be(8);
         json[0].Value<string>("balance").Should().Be("100.5");
     }
@@ -79,8 +79,8 @@ public class ShowJsonOutputTests
         var json = JArray.Parse(Capture(w => ShowCommand.NFT.WriteTokenIdsJson(w, new[] { tokenId })));
 
         json.Should().HaveCount(1);
-        json[0].Value<string>("token-id-base64").Should().Be(tokenId);
-        json[0].Value<string>("token-id-hex").Should().Be("0x0a0b0c");
+        json[0].Value<string>("tokenIdBase64").Should().Be(tokenId);
+        json[0].Value<string>("tokenIdHex").Should().Be("0x0a0b0c");
     }
 
     [Fact]

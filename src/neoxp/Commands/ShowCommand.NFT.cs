@@ -94,9 +94,9 @@ namespace NeoExpress.Commands
                 foreach (var tokenId in tokenIds)
                 {
                     writer.WriteStartObject();
-                    writer.WritePropertyName("token-id-base64");
+                    writer.WritePropertyName("tokenIdBase64");
                     writer.WriteValue(tokenId);
-                    writer.WritePropertyName("token-id-hex");
+                    writer.WritePropertyName("tokenIdHex");
                     writer.WriteValue($"0x{Convert.FromBase64String(tokenId).ToHexString()}");
                     writer.WriteEndObject();
                 }

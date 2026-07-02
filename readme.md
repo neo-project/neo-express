@@ -172,6 +172,18 @@ Please review the [NeoTrace Command Reference](docs/trace-command-reference.md) 
 
 > Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled.
 
+### NeoDebug
+
+NeoDebug (`neodebug`) is a source-level, time-travel debugger for Neo N3 smart contracts. It
+replays a `.neo-trace` recording over the Debug Adapter Protocol, so you can set breakpoints in
+your source, step forwards and backwards, and inspect arguments, locals, statics, and storage.
+
+```shell
+dotnet tool install Neo.Debug -g
+```
+
+Please review the [NeoDebug Command Reference](docs/debugger-command-reference.md) for installation, the launch configuration, and the debugging workflow.
+
 ## New Features or issues
 
 Thank you for using Neo-Express and Neo-Trace! We welcome your feedback to make these tools more accessible, intuitive, and powerful.

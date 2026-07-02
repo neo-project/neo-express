@@ -2,8 +2,8 @@
 # NeoTrace Command Reference
 
 NeoTrace generates `.neo-trace` files for transactions on public Neo N3 blockchains. These
-files can be opened in the [Neo Smart Contract Debugger](https://github.com/neo-project/neo-debugger)
-to step through the recorded execution.
+files can be opened in [NeoDebug](debugger-command-reference.md) to step through the recorded
+execution, forwards and backwards.
 
 > NeoTrace depends on the target node running the StateService plugin module with
 > `FullState` enabled. The official MainNet and TestNet JSON-RPC nodes are configured this

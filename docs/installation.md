@@ -5,7 +5,7 @@ Neo-Express ships as a set of cross-platform [.NET global tools](https://learn.m
 | Package | Command | Purpose |
 | ------- | ------- | ------- |
 | [`Neo.Express`](https://www.nuget.org/packages/Neo.Express/) | `neoxp` | Manage a local Neo N3 private network: nodes, wallets, contracts, and batch automation. |
-| [`Neo.Trace`](https://www.nuget.org/packages/Neo.Trace/) | `neotrace` | Generate trace files for the Neo Smart Contract Debugger from existing blocks/transactions. |
+| [`Neo.Trace`](https://www.nuget.org/packages/Neo.Trace/) | `neotrace` | Generate trace files for the Neo Smart Contract Debugger from public-chain blocks/transactions. |
 | [`Neo.WorkNet`](https://www.nuget.org/packages/Neo.WorkNet/) | `neo-worknet` | Branch a public MainNet/TestNet chain into a local single-node development chain. |
 
 ## Requirements

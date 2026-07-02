@@ -8,6 +8,10 @@ to step through the recorded execution.
 > NeoTrace depends on the target node running the StateService plugin module with
 > `FullState` enabled. The official MainNet and TestNet JSON-RPC nodes are configured this
 > way.
+>
+> For local Neo-Express transactions, use the `--trace` option on Neo-Express commands
+> such as `neoxp run`, `neoxp contract invoke`, or `neoxp contract run`. NeoTrace is for
+> replaying transactions from StateService-enabled public-chain RPC nodes.
 
 Each traced transaction is written to a `<transaction-hash>.neo-trace` file in the current
 directory.
@@ -26,7 +30,9 @@ Options:
 ```
 
 Traces every transaction in the specified block. The block can be identified by index or
-by hash.
+by hash. Blocks with many or complex transactions can take a while because NeoTrace
+reconstructs the previous block state from StateService proofs before replaying each
+transaction.
 
 ```shell
 neotrace block 365110 --rpc-uri testnet

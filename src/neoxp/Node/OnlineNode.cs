@@ -91,27 +91,31 @@ namespace NeoExpress.Node
                 tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
             }
 
-            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            var account = wallet.GetAccount(accountHash)
+                ?? throw new Exception($"Account {accountHash} not found in wallet {wallet.Name}");
             if (account.IsMultiSigContract())
             {
                 var signatureCount = account.Contract.ParameterList.Length;
                 var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
                 if (multiSigWallets.Count < signatureCount)
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException($"Multi-sig account {accountHash} requires {signatureCount} signatures but only {multiSigWallets.Count} signing wallets are available");
 
                 var publicKeys = multiSigWallets
-                    .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
+                    .Select(w => (w.GetAccount(accountHash)?.GetKey()
+                        ?? throw new Exception($"Wallet {w.Name} has no accessible private key for multi-sig account {accountHash}")).PublicKey)
                     .ToArray();
 
                 for (var i = 0; i < signatureCount; i++)
                 {
-                    var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey() ?? throw new Exception();
+                    var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey()
+                        ?? throw new Exception($"Wallet {multiSigWallets[i].Name} has no accessible private key for multi-sig account {accountHash}");
                     tm.AddMultiSig(key, signatureCount, publicKeys);
                 }
             }
             else
             {
-                tm.AddSignature(account.GetKey() ?? throw new Exception());
+                tm.AddSignature(account.GetKey()
+                    ?? throw new Exception($"Account {accountHash} has no accessible private key"));
             }
 
             var tx = await tm.SignAsync().ConfigureAwait(false);

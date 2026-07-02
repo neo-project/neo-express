@@ -33,6 +33,7 @@ namespace NeoExpress.Node
         readonly ExpressChain chain;
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
+        readonly bool autoMine;
         bool disposedValue;
 
         public ProtocolSettings ProtocolSettings { get; }
@@ -43,6 +44,7 @@ namespace NeoExpress.Node
             this.chain = chain;
             rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
+            autoMine = ShouldAutoMine(chain);
         }
 
         public void Dispose()
@@ -113,7 +115,7 @@ namespace NeoExpress.Node
 
             var tx = await tm.SignAsync().ConfigureAwait(false);
 
-            if (ShouldAutoMine(chain))
+            if (autoMine)
             {
                 return await SubmitAutoMinedBlockAsync(tx).ConfigureAwait(false);
             }

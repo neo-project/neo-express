@@ -148,10 +148,22 @@ namespace Neo.BlockchainToolkit.SmartContract
                 persistingBlock,
                 settings ?? ProtocolSettings.Default,
                 gas,
-                diagnostic)
+                diagnostic,
+                SelectJumpTable(snapshot, persistingBlock, settings ?? ProtocolSettings.Default))
         {
             this.witnessChecker = witnessChecker ?? CheckWitness;
             this.fileSystem = fileSystem;
+        }
+
+        static JumpTable SelectJumpTable(DataCache snapshot, Block? persistingBlock, ProtocolSettings settings)
+        {
+            var index = persistingBlock?.Index ?? NativeContract.Ledger.CurrentIndex(snapshot);
+            if (settings.IsHardforkEnabled(Hardfork.HF_Gorgon, index))
+                return DefaultJumpTable;
+
+            return settings.IsHardforkEnabled(Hardfork.HF_Echidna, index)
+                ? NotGorgonJumpTable
+                : NotEchidnaJumpTable;
         }
 
         protected override void Dispose(bool disposing)

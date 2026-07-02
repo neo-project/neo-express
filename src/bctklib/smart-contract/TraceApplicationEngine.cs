@@ -8,6 +8,7 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using Neo;
 using Neo.BlockchainToolkit.TraceDebug;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
@@ -26,12 +27,24 @@ namespace Neo.BlockchainToolkit.SmartContract
         public TraceApplicationEngine(ITraceDebugSink traceDebugSink, TriggerType trigger, IVerifiable container,
                                       DataCache snapshot, Block? persistingBlock, ProtocolSettings settings, long gas,
                                       IDiagnostic? diagnostic = null, JumpTable? jumpTable = null)
-            : base(trigger, container, snapshot, persistingBlock, settings, gas, diagnostic, jumpTable)
+            : base(trigger, container, snapshot, persistingBlock, settings, gas, diagnostic,
+                  jumpTable ?? SelectJumpTable(snapshot, persistingBlock, settings))
         {
             this.traceDebugSink = traceDebugSink;
 
             Log += OnLog;
             Notify += OnNotify;
+        }
+
+        static JumpTable SelectJumpTable(DataCache snapshot, Block? persistingBlock, ProtocolSettings settings)
+        {
+            var index = persistingBlock?.Index ?? NativeContract.Ledger.CurrentIndex(snapshot);
+            if (settings.IsHardforkEnabled(Hardfork.HF_Gorgon, index))
+                return DefaultJumpTable;
+
+            return settings.IsHardforkEnabled(Hardfork.HF_Echidna, index)
+                ? NotGorgonJumpTable
+                : NotEchidnaJumpTable;
         }
 
         protected override void Dispose(bool disposing)

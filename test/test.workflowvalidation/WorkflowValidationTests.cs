@@ -18,6 +18,7 @@ namespace test.workflowvalidation;
 /// These tests validate the same functionality as the CI/CD pipeline
 /// </summary>
 [Collection("PackExclusive")]
+[Trait("Category", "Integration")]
 public class WorkflowValidationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;

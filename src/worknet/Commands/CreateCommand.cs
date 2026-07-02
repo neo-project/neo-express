@@ -25,6 +25,7 @@ using Neo.Wallets;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Abstractions;
 using System.Numerics;
 using static Neo.BlockchainToolkit.Constants;
@@ -120,7 +121,7 @@ class CreateCommand
             using var stateStore = new StateServiceStore(uri, branchInfo, db);
             using var trackStore = new PersistentTrackingStore(db, stateStore);
 
-            InitializeStore(trackStore, Gas, new[] { consensusAccount });
+            InitializeStore(trackStore, Gas, new[] { consensusAccount }, branchInfo.ProtocolSettings);
 
             console.WriteLine($"Created {filename}");
             console.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
@@ -137,20 +138,21 @@ class CreateCommand
     internal const decimal DEFAULT_GAS_SEED = 10_000m;
 
     internal static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)
-        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts);
+        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts, ProtocolSettings.Default);
 
     internal static void InitializeStore(IStore store, IEnumerable<WalletAccount> consensusAccounts)
-        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts);
+        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts, ProtocolSettings.Default);
 
     internal static void InitializeStore(IStore store, decimal gasSeed, IEnumerable<WalletAccount> consensusAccounts)
+        => InitializeStore(store, gasSeed, consensusAccounts, ProtocolSettings.Default);
+
+    internal static void InitializeStore(IStore store, decimal gasSeed, IEnumerable<WalletAccount> consensusAccounts, ProtocolSettings settings)
     {
         const byte Prefix_Block = 5;
         const byte Prefix_BlockHash = 9;
         const byte Prefix_Candidate = 33;
         const byte Prefix_Committee = 14;
         const byte Prefix_CurrentBlock = 12;
-        const byte Prefix_GasAccount = 20;
-        const byte Prefix_GasTotalSupply = 11;
 
         var keys = consensusAccounts
             .Select(a => a.GetKey()?.PublicKey ?? throw new InvalidOperationException("Consensus account is missing a private key"))
@@ -159,6 +161,7 @@ class CreateCommand
         var consensusContract = Contract.CreateMultiSigContract(signerCount, keys);
 
         using var snapshot = new StoreCache(store.GetSnapshot());
+        var sourceAccount = NativeContract.NEO.GetCommitteeAddress(snapshot);
 
         // replace the Neo Committee with express consensus nodes
         // Prefix_Committee stores array of structs containing PublicKey / vote count
@@ -183,26 +186,10 @@ class CreateCommand
         if (gasSeed > 0)
         {
             var seedAmount = (BigInteger)(gasSeed * 100_000_000m); // GAS has 8 decimals
-            var seededAccounts = 0;
             foreach (var account in consensusAccounts)
             {
-                var accountKey = new KeyBuilder(NativeContract.GAS.Id, Prefix_GasAccount).Add(account.ScriptHash);
-                var accountItem = snapshot.GetAndChange(accountKey);
-                if (accountItem is null)
-                {
-                    snapshot.Add(accountKey, new StorageItem(new AccountState { Balance = seedAmount }));
-                }
-                else
-                {
-                    accountItem.GetInteroperable<AccountState>().Balance += seedAmount;
-                }
-                seededAccounts++;
+                TransferGas(snapshot, settings, sourceAccount, account.ScriptHash, seedAmount);
             }
-
-            var totalSupplyKey = new KeyBuilder(NativeContract.GAS.Id, Prefix_GasTotalSupply);
-            var totalSupplyItem = snapshot.GetAndChange(totalSupplyKey)
-                ?? throw new InvalidOperationException("GAS total supply storage item is missing");
-            totalSupplyItem.Add(seedAmount * seededAccounts);
         }
 
         // create an *UNSIGNED* block that will be appended to the chain
@@ -247,5 +234,52 @@ class CreateCommand
         currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         snapshot.Commit();
+    }
+
+    static void TransferGas(DataCache snapshot, ProtocolSettings settings, UInt160 from, UInt160 to, BigInteger amount)
+    {
+        using var scriptBuilder = new ScriptBuilder();
+        scriptBuilder.EmitDynamicCall(NativeContract.GAS.Hash, "transfer", from, to, amount, null!);
+
+        using var engine = ApplicationEngine.Create(
+            TriggerType.Application,
+            new WitnessScopeContainer(from),
+            snapshot,
+            settings: settings);
+        engine.LoadScript(scriptBuilder.ToArray());
+
+        if (engine.Execute() != VMState.HALT)
+            throw new InvalidOperationException("GAS seed transfer failed", engine.FaultException);
+
+        if (!engine.ResultStack.Pop().GetBoolean())
+            throw new InvalidOperationException($"GAS seed transfer from {from} to {to} failed");
+    }
+
+    sealed class WitnessScopeContainer : IVerifiable
+    {
+        readonly UInt160[] hashes;
+
+        public WitnessScopeContainer(UInt160 hash)
+        {
+            hashes = new[] { hash };
+        }
+
+        public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
+
+        Witness[] IVerifiable.Witnesses
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        int ISerializable.Size => throw new NotImplementedException();
+
+        void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
+
+        void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
+
+        void ISerializable.Deserialize(ref MemoryReader reader) => throw new NotImplementedException();
+
+        void IVerifiable.DeserializeUnsigned(ref MemoryReader reader) => throw new NotImplementedException();
     }
 }

@@ -55,17 +55,21 @@ public class InitializeStoreTests
         using var _ = store;
 
         BigInteger supplyBefore;
+        BigInteger sourceBalanceBefore;
+        var sourceAccount = Neo.SmartContract.Contract.GetBFTAddress(Settings.StandbyValidators);
         using (var snapshot = new StoreCache(store.GetSnapshot()))
         {
             supplyBefore = NativeContract.GAS.TotalSupply(snapshot);
+            sourceBalanceBefore = NativeContract.GAS.BalanceOf(snapshot, sourceAccount);
         }
 
-        CreateCommand.InitializeStore(store, account);
+        CreateCommand.InitializeStore(store, CreateCommand.DEFAULT_GAS_SEED, new[] { account }, Settings);
 
         using var after = new StoreCache(store.GetSnapshot());
         var expected = new BigInteger(10_000) * 100_000_000; // default seed, GAS has 8 decimals
         NativeContract.GAS.BalanceOf(after, account.ScriptHash).Should().Be(expected);
-        NativeContract.GAS.TotalSupply(after).Should().Be(supplyBefore + expected);
+        NativeContract.GAS.BalanceOf(after, sourceAccount).Should().Be(sourceBalanceBefore - expected);
+        NativeContract.GAS.TotalSupply(after).Should().Be(supplyBefore);
     }
 
     [Fact]
@@ -74,7 +78,7 @@ public class InitializeStoreTests
         var (store, account) = CreateInitializedStore();
         using var _ = store;
 
-        CreateCommand.InitializeStore(store, 12.5m, new[] { account });
+        CreateCommand.InitializeStore(store, 12.5m, new[] { account }, Settings);
 
         using var after = new StoreCache(store.GetSnapshot());
         NativeContract.GAS.BalanceOf(after, account.ScriptHash).Should().Be(new BigInteger(1_250_000_000));
@@ -92,7 +96,7 @@ public class InitializeStoreTests
             supplyBefore = NativeContract.GAS.TotalSupply(snapshot);
         }
 
-        CreateCommand.InitializeStore(store, 0m, new[] { account });
+        CreateCommand.InitializeStore(store, 0m, new[] { account }, Settings);
 
         using var after = new StoreCache(store.GetSnapshot());
         NativeContract.GAS.BalanceOf(after, account.ScriptHash).Should().Be(BigInteger.Zero);
@@ -105,7 +109,7 @@ public class InitializeStoreTests
         var (store, account) = CreateInitializedStore();
         using var _ = store;
 
-        CreateCommand.InitializeStore(store, account);
+        CreateCommand.InitializeStore(store, CreateCommand.DEFAULT_GAS_SEED, new[] { account }, Settings);
 
         using var after = new StoreCache(store.GetSnapshot());
         // the branch block was appended on top of genesis

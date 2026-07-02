@@ -49,7 +49,7 @@ class ResetCommand
             using var trackStore = new PersistentTrackingStore(db, stateStore, true);
 
             trackStore.Reset();
-            CreateCommand.InitializeStore(trackStore, Gas, worknet.ConsensusWallet.GetAccounts());
+            CreateCommand.InitializeStore(trackStore, Gas, worknet.ConsensusWallet.GetAccounts(), worknet.BranchInfo.ProtocolSettings);
             console.WriteLine("WorkNet node reset");
             return 0;
         }

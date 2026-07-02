@@ -187,7 +187,7 @@ namespace NeoExpress.Node
             {
                 Version = 0,
                 Nonce = unchecked((uint)response.Id),
-                ValidUntilBlock = requestTx.BlockIndex + settings.MaxValidUntilBlockIncrement,
+                ValidUntilBlock = requestTx.BlockIndex + snapshot.GetMaxValidUntilBlockIncrement(settings),
                 Signers = new[]
                 {
                     new Signer

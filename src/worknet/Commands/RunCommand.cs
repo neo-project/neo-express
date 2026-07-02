@@ -61,10 +61,8 @@ partial class RunCommand
     {
         var account = worknetFile.ConsensusWallet.GetAccounts().Single();
         var key = account.GetKey() ?? throw new Exception();
-        return ProtocolSettings.Default with
+        return worknetFile.BranchInfo.ProtocolSettings with
         {
-            Network = worknetFile.BranchInfo.Network,
-            AddressVersion = worknetFile.BranchInfo.AddressVersion,
             MillisecondsPerBlock = secondsPerBlock == 0 ? 15000 : secondsPerBlock * 1000,
             ValidatorsCount = 1,
             StandbyCommittee = new ECPoint[] { key.PublicKey },

@@ -21,6 +21,11 @@
         <InternalsVisibleTo Include="test-build-tasks" />
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- shared source, also compiled into Neo.Collector -->
+        <Compile Include="..\shared\SimpleJSON.cs" Link="SimpleJSON.cs" />
+    </ItemGroup>
+
     <!-- Pack targets if exists -->
     <ItemGroup>
         <Content Include="build\*" Pack="true" PackagePath="build\" Condition="Exists('build')" />

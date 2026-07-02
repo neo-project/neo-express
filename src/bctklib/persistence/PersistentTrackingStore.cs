@@ -166,7 +166,9 @@ namespace Neo.BlockchainToolkit.Persistence
                 ? MemorySequenceComparer.Default
                 : MemorySequenceComparer.Reverse;
 
-            return trackedItems.Concat(storeItems).OrderBy(kvp => kvp.Key, comparer);
+            // both sides are already sorted in seek direction (RocksDB iterator and the
+            // backing store's Find); merge lazily instead of buffering and re-sorting
+            return trackedItems.MergeSorted(storeItems, comparer);
 
             static IEnumerable<(byte[] Key, byte[] Value)> SeekTracked(
                 byte[]? key, SeekDirection direction, RocksDb db,

@@ -98,16 +98,19 @@ namespace Neo.BlockchainToolkit.Persistence
                 ? MemorySequenceComparer.Default
                 : MemorySequenceComparer.Reverse;
 
+            // sort only the (small) tracked side; the backing store's Find is already
+            // sorted in seek direction, so the two can be merged lazily
             var memoryItems = trackingMap
                 .Where(kvp => kvp.Value.IsT0)
                 .Where(kvp => normalizedKey.Length == 0 || comparer.Compare(kvp.Key, normalizedKey) >= 0)
-                .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value.AsT0.ToArray()));
+                .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value.AsT0.ToArray()))
+                .OrderBy(kvp => kvp.Key, comparer);
 
             var storeItems = store
                 .Find(normalizedKey, direction)
                 .Where<(byte[] Key, byte[] Value)>(kvp => !trackingMap.ContainsKey(kvp.Key));
 
-            return memoryItems.Concat(storeItems).OrderBy(kvp => kvp.Key, comparer);
+            return memoryItems.MergeSorted(storeItems, comparer);
         }
 
         public void Put(byte[]? key, byte[]? value)

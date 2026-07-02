@@ -160,14 +160,17 @@ namespace Neo.BlockchainToolkit.Persistence
         public static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore<byte[], byte[]> store)
         {
             var trackedItems = SeekTracked(key, direction, db, columnFamily, readOptions);
-            var storeItems = store.Find(key, direction).Where(KeyUntracked);
-
             var comparer = direction == SeekDirection.Forward
                 ? MemorySequenceComparer.Default
                 : MemorySequenceComparer.Reverse;
 
-            // both sides are already sorted in seek direction (RocksDB iterator and the
-            // backing store's Find); merge lazily instead of buffering and re-sorting
+            var storeItems = store.Find(key, direction)
+                .Where(KeyUntracked)
+                .OrderBy(kvp => kvp.Key, comparer);
+
+            // The RocksDB iterator is already sorted in seek direction. The backing
+            // store is normalized here before merging so the result keeps the same
+            // ordering guarantees as Concat+OrderBy.
             return trackedItems.MergeSorted(storeItems, comparer);
 
             static IEnumerable<(byte[] Key, byte[] Value)> SeekTracked(

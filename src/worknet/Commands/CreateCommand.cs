@@ -25,7 +25,9 @@ using Neo.Wallets;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Abstractions;
+using System.Numerics;
 using static Neo.BlockchainToolkit.Constants;
 using static Neo.BlockchainToolkit.Utility;
 using NeoArray = Neo.VM.Types.Array;
@@ -59,6 +61,9 @@ class CreateCommand
     [Option("--disable-log", Description = "Disable verbose data logging")]
     internal bool DisableLog { get; set; }
 
+    [Option("--gas", Description = "Amount of GAS to seed the consensus account with (Default: 10000)")]
+    internal decimal Gas { get; init; } = DEFAULT_GAS_SEED;
+
     internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
     {
         try
@@ -69,6 +74,9 @@ class CreateCommand
                 var diagnosticObserver = new DiagnosticObserver(StateServiceStore.LoggerCategory, stateServiceObserver);
                 DiagnosticListener.AllListeners.Subscribe(diagnosticObserver);
             }
+
+            if (Gas < 0)
+                throw new ArgumentException("--gas cannot be negative");
 
             if (!TryParseRpcUri(RpcUri, out var uri))
             {
@@ -113,7 +121,7 @@ class CreateCommand
             using var stateStore = new StateServiceStore(uri, branchInfo, db);
             using var trackStore = new PersistentTrackingStore(db, stateStore);
 
-            InitializeStore(trackStore, consensusAccount);
+            InitializeStore(trackStore, Gas, new[] { consensusAccount }, branchInfo.ProtocolSettings);
 
             console.WriteLine($"Created {filename}");
             console.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
@@ -127,10 +135,18 @@ class CreateCommand
         }
     }
 
+    internal const decimal DEFAULT_GAS_SEED = 10_000m;
+
     internal static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)
-        => InitializeStore(store, (IEnumerable<WalletAccount>)consensusAccounts);
+        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts, ProtocolSettings.Default);
 
     internal static void InitializeStore(IStore store, IEnumerable<WalletAccount> consensusAccounts)
+        => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts, ProtocolSettings.Default);
+
+    internal static void InitializeStore(IStore store, decimal gasSeed, IEnumerable<WalletAccount> consensusAccounts)
+        => InitializeStore(store, gasSeed, consensusAccounts, ProtocolSettings.Default);
+
+    internal static void InitializeStore(IStore store, decimal gasSeed, IEnumerable<WalletAccount> consensusAccounts, ProtocolSettings settings)
     {
         const byte Prefix_Block = 5;
         const byte Prefix_BlockHash = 9;
@@ -145,6 +161,7 @@ class CreateCommand
         var consensusContract = Contract.CreateMultiSigContract(signerCount, keys);
 
         using var snapshot = new StoreCache(store.GetSnapshot());
+        var sourceAccount = NativeContract.NEO.GetCommitteeAddress(snapshot);
 
         // replace the Neo Committee with express consensus nodes
         // Prefix_Committee stores array of structs containing PublicKey / vote count
@@ -161,6 +178,18 @@ class CreateCommand
         foreach (var (key, value) in snapshot.Find(candidateKeyBuilder.ToArray()))
         {
             snapshot.Delete(key);
+        }
+
+        // Seed the consensus accounts with GAS so the branch can pay transaction fees
+        // immediately (contract deploys and invokes) instead of being read-only until
+        // committee emission slowly accrues. Total supply is bumped to match.
+        if (gasSeed > 0)
+        {
+            var seedAmount = (BigInteger)(gasSeed * 100_000_000m); // GAS has 8 decimals
+            foreach (var account in consensusAccounts)
+            {
+                TransferGas(snapshot, settings, sourceAccount, account.ScriptHash, seedAmount);
+            }
         }
 
         // create an *UNSIGNED* block that will be appended to the chain
@@ -205,5 +234,52 @@ class CreateCommand
         currentBlockItem.Value = BinarySerializer.Serialize(currentBlock, ExecutionEngineLimits.Default with { MaxItemSize = 1024 * 1024 });
 
         snapshot.Commit();
+    }
+
+    static void TransferGas(DataCache snapshot, ProtocolSettings settings, UInt160 from, UInt160 to, BigInteger amount)
+    {
+        using var scriptBuilder = new ScriptBuilder();
+        scriptBuilder.EmitDynamicCall(NativeContract.GAS.Hash, "transfer", from, to, amount, null!);
+
+        using var engine = ApplicationEngine.Create(
+            TriggerType.Application,
+            new WitnessScopeContainer(from),
+            snapshot,
+            settings: settings);
+        engine.LoadScript(scriptBuilder.ToArray());
+
+        if (engine.Execute() != VMState.HALT)
+            throw new InvalidOperationException("GAS seed transfer failed", engine.FaultException);
+
+        if (!engine.ResultStack.Pop().GetBoolean())
+            throw new InvalidOperationException($"GAS seed transfer from {from} to {to} failed");
+    }
+
+    sealed class WitnessScopeContainer : IVerifiable
+    {
+        readonly UInt160[] hashes;
+
+        public WitnessScopeContainer(UInt160 hash)
+        {
+            hashes = new[] { hash };
+        }
+
+        public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
+
+        Witness[] IVerifiable.Witnesses
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        int ISerializable.Size => throw new NotImplementedException();
+
+        void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
+
+        void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
+
+        void ISerializable.Deserialize(ref MemoryReader reader) => throw new NotImplementedException();
+
+        void IVerifiable.DeserializeUnsigned(ref MemoryReader reader) => throw new NotImplementedException();
     }
 }

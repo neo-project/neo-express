@@ -384,6 +384,17 @@ namespace NeoExpress.Node
         public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
             => MakeAsync(ListContracts);
 
+        IReadOnlyList<string> ListNftTokenIds(UInt160 address, UInt160 assetHash)
+        {
+            using var snapshot = neoSystem.GetSnapshotCache();
+            return snapshot.GetNep11Tokens(assetHash, address, ProtocolSettings)
+                .Select(tokenId => Convert.ToBase64String(tokenId.Span))
+                .ToList();
+        }
+
+        public Task<IReadOnlyList<string>> ListNftTokenIdsAsync(UInt160 address, UInt160 assetHash)
+            => MakeAsync(() => ListNftTokenIds(address, assetHash));
+
         IReadOnlyList<(ulong requestId, OracleRequest request)> ListOracleRequests()
             => NativeContract.Oracle.GetRequests(neoSystem.StoreView).ToList();
 

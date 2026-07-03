@@ -66,7 +66,7 @@ namespace NeoExpress.Commands
                         : UInt160.TryParse(Contract, out var uint160)
                             ? uint160
                             : throw new InvalidOperationException($"contract \"{Contract}\" not found");
-                    var list = await expressNode.GetNFTAsync(accountHash, scriptHash).ConfigureAwait(false);
+                    var list = await expressNode.ListNftTokenIdsAsync(accountHash, scriptHash).ConfigureAwait(false);
                     if (Json)
                     {
                         using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
@@ -75,7 +75,12 @@ namespace NeoExpress.Commands
                     else if (list.Count == 0)
                         await console.Out.WriteLineAsync($"No NFT yet. (Contract:{scriptHash}, Account:{accountHash.ToAddress(ProtocolSettings.Default.AddressVersion)})");
                     else
-                        list.ForEach(p => console.Out.WriteLine(FormatTokenId(p)));
+                    {
+                        foreach (var tokenId in list)
+                        {
+                            console.Out.WriteLine(FormatTokenId(tokenId));
+                        }
+                    }
                     return 0;
                 }
                 catch (Exception ex)

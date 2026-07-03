@@ -220,6 +220,9 @@ public class ExpressNodeExtensionsTests
         public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync() =>
             Task.FromResult<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>>(Contracts);
 
+        public Task<IReadOnlyList<string>> ListNftTokenIdsAsync(UInt160 address, UInt160 assetHash) =>
+            Task.FromResult<IReadOnlyList<string>>(SysArray.Empty<string>());
+
         public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync() =>
             Task.FromResult<IReadOnlyList<(ulong requestId, OracleRequest request)>>(SysArray.Empty<(ulong requestId, OracleRequest request)>());
 

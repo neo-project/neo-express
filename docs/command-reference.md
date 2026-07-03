@@ -596,6 +596,7 @@ Arguments:
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
+  -j|--json           Output as JSON
 ```
 
 The `show balance` displays the balance of a single NEP-17 asset (including NEO and GAS) of a specific account.
@@ -610,6 +611,7 @@ Arguments:
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
+  -j|--json           Output as JSON
 ```
 
 The `show balances` displays the balance of all NEP-17 asset (including NEO and GAS) owned by a specific account.
@@ -640,6 +642,7 @@ Arguments:
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
+  -j|--json           Output as JSON
 ```
 
 The `show nft` displays the content of an NFT contract for a specified account. The output consists of TokenId in Base64 and big-endian Hex string formats.

@@ -10,6 +10,8 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using NeoExpress.Models;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
@@ -37,6 +39,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
+            [Option(Description = "Output as JSON")]
+            internal bool Json { get; init; } = false;
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -54,7 +59,15 @@ namespace NeoExpress.Commands
                     }
 
                     var (balance, contract) = await expressNode.GetBalanceAsync(accountHash, Asset).ConfigureAwait(false);
-                    await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
+                    if (Json)
+                    {
+                        using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                        WriteBalanceJson(writer, contract, balance.ToBigDecimal(contract.Decimals));
+                    }
+                    else
+                    {
+                        await console.Out.WriteLineAsync($"{contract.Symbol} ({contract.ScriptHash})\n  balance: {balance.ToBigDecimal(contract.Decimals)}");
+                    }
                     return 0;
                 }
                 catch (Exception ex)
@@ -62,6 +75,20 @@ namespace NeoExpress.Commands
                     app.WriteException(ex);
                     return 1;
                 }
+            }
+
+            internal static void WriteBalanceJson(JsonTextWriter writer, Nep17Contract contract, BigDecimal balance)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("symbol");
+                writer.WriteValue(contract.Symbol);
+                writer.WritePropertyName("scriptHash");
+                writer.WriteValue(contract.ScriptHash.ToString());
+                writer.WritePropertyName("decimals");
+                writer.WriteValue(contract.Decimals);
+                writer.WritePropertyName("balance");
+                writer.WriteValue($"{balance}");
+                writer.WriteEndObject();
             }
         }
     }

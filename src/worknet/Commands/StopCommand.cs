@@ -42,7 +42,7 @@ class StopCommand
             }
             catch (HttpRequestException ex)
             {
-                await console.Out.WriteLineAsync($"worknet node was not running: {ex.Message}").ConfigureAwait(false);
+                await console.Out.WriteLineAsync($"Neo-WorkNet node was not running: {ex.Message}").ConfigureAwait(false);
                 return 0;
             }
 
@@ -56,7 +56,7 @@ class StopCommand
             {
                 // the process exited before we could observe it
             }
-            await console.Out.WriteLineAsync("worknet node stopped").ConfigureAwait(false);
+            await console.Out.WriteLineAsync("Neo-WorkNet node stopped").ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)

@@ -271,18 +271,13 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
 
             // Equivalent to: neoxp stop --all
-            await _runCommand.RunNeoxpCommand("stop", "--all");
-            // Note: Stop command may fail if no blockchain is running, which is expected
+            var (stopExitCode, _, stopError) = await _runCommand.RunNeoxpCommand("stop", "--all");
+            stopExitCode.Should().Be(0, stopError);
 
             // Wait for the run task to complete
-            try
-            {
-                await runTask;
-            }
-            catch (TimeoutException)
-            {
-                _output.WriteLine("Run command timed out as expected");
-            }
+            var (runExitCode, _, runError) = await runTask;
+            runExitCode.Should().Be(0, runError);
+            runError.Should().NotContain("Collection was modified");
 
             _output.WriteLine("✅ neoxp run command with timeout test completed");
         }

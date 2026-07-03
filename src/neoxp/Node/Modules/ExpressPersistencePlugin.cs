@@ -32,6 +32,7 @@ namespace NeoExpress.Node
         IStore? notificationsStore;
         IStoreSnapshot? appLogsSnapshot;
         IStoreSnapshot? notificationsSnapshot;
+        bool disposedValue;
 
         public ExpressPersistencePlugin()
         {
@@ -41,14 +42,24 @@ namespace NeoExpress.Node
 
         public override void Dispose()
         {
+            if (disposedValue)
+                return;
+
+            disposedValue = true;
             Blockchain.Committing -= OnCommitting;
             Blockchain.Committed -= OnCommitted;
             appLogsSnapshot?.Dispose();
             appLogsStore?.Dispose();
             notificationsSnapshot?.Dispose();
             notificationsStore?.Dispose();
-            // the Plugin constructor adds this instance to the global plugin list; remove it
-            // so a NeoSystem created later does not call into this disposed instance
+        }
+
+        internal void RemoveFromPluginList()
+        {
+            // The Plugin constructor adds this instance to the global plugin list. Remove it
+            // after NeoSystem.Dispose finishes so a later NeoSystem does not load this
+            // disposed instance, without mutating the plugin list while NeoSystem is
+            // enumerating it during shutdown.
             _ = Plugins.Remove(this);
         }
 

@@ -363,25 +363,33 @@ namespace NeoExpress
                     if (enableTrace)
                     { Neo.SmartContract.ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
 
-                    using var persistencePlugin = new ExpressPersistencePlugin();
-                    using var logPlugin = new ExpressLogPlugin(console);
-                    using var dbftPlugin = new DBFTPlugin(GetConsensusSettings(chain));
-                    using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
-                        expressStorage, multiSigAccount.ScriptHash);
-                    using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
-
-                    neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    var persistencePlugin = new ExpressPersistencePlugin();
+                    try
                     {
-                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort)
-                    });
-                    dbftPlugin.Start(wallet);
+                        using var logPlugin = new ExpressLogPlugin(console);
+                        using var dbftPlugin = new DBFTPlugin(GetConsensusSettings(chain));
+                        using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
+                            expressStorage, multiSigAccount.ScriptHash);
+                        using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 
-                    // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
-                    // Do not remove or re-word this console output:
-                    console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
+                        neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
+                        {
+                            Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort)
+                        });
+                        dbftPlugin.Start(wallet);
 
-                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
-                    linkedToken.Token.WaitHandle.WaitOne();
+                        // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
+                        // Do not remove or re-word this console output:
+                        console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
+
+                        var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
+                        linkedToken.Token.WaitHandle.WaitOne();
+                    }
+                    finally
+                    {
+                        persistencePlugin.Dispose();
+                        persistencePlugin.RemoveFromPluginList();
+                    }
                 }
                 catch (Exception ex)
                 {

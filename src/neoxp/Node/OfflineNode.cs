@@ -80,25 +80,28 @@ namespace NeoExpress.Node
             if (!disposedValue)
             {
                 ApplicationEngine.InstanceHandler -= OnApplicationEngineCreated;
+                List<WeakReference<ApplicationEngine>> refs;
                 lock (engineLock)
                 {
-                    foreach (var engineRef in engineRefs)
-                    {
-                        if (engineRef.TryGetTarget(out var engine))
-                        {
-                            engine.Log -= OnLog;
-                        }
-                    }
+                    disposedValue = true;
+                    refs = engineRefs.ToList();
                     engineRefs.Clear();
+                }
+                foreach (var engineRef in refs)
+                {
+                    if (engineRef.TryGetTarget(out var engine))
+                    {
+                        engine.Log -= OnLog;
+                    }
                 }
                 persistencePlugin.Dispose();
                 neoSystem.Dispose();
+                persistencePlugin.RemoveFromPluginList();
                 if (engineProviderSet)
                 {
                     ApplicationEngine.Provider = priorEngineProvider;
                 }
                 expressStorage.Dispose();
-                disposedValue = true;
             }
         }
 
@@ -106,9 +109,12 @@ namespace NeoExpress.Node
         {
             lock (engineLock)
             {
+                if (disposedValue)
+                    return;
+
                 engineRefs.Add(new WeakReference<ApplicationEngine>(engine));
+                engine.Log += OnLog;
             }
-            engine.Log += OnLog;
         }
 
         private void OnLog(ApplicationEngine engine, LogEventArgs args)

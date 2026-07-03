@@ -60,9 +60,37 @@ file an issue in our [GitHub repo](https://github.com/neo-project/neo-express/is
 ### Consensus account funding
 
 When a worknet is created (and whenever it is reset), the generated consensus account is seeded
-with GAS — 10,000 by default, configurable with the `--gas` option — so contracts can be deployed
-and invoked on the branch immediately, without waiting for committee emission to accrue. The GAS
-total supply is increased by the seeded amount. Use `--gas 0` to disable seeding.
+with 10,000 GAS by default, configurable with the `--gas` option, so contracts can be deployed
+and invoked on the branch immediately, without waiting for committee emission to accrue. The seed
+uses a native GAS transfer from the current committee account to the generated consensus account, so
+the GAS total supply is unchanged. Use `--gas 0` to disable seeding.
+
+## neo-worknet fastfwd
+
+```
+Mint empty blocks to fast forward the block chain
+
+Usage: neo-worknet fastfwd [options] <Count>
+
+Arguments:
+  Count                                   Number of blocks to mint
+
+Options:
+  -t|--timestamp-delta <TIMESTAMP_DELTA>  Timestamp delta for last generated block
+  -?|-h|--help                            Show help information.
+  --input                                 Path to .neo-worknet data file
+```
+
+The `fastfwd` command mints the specified number of empty blocks, signed by the worknet
+consensus account. This is useful for testing contracts with time-dependent behavior such as
+vesting cliffs or auction expiry. Like the equivalent Neo-Express command, the
+`--timestamp-delta` option additionally advances the timestamp of the last minted block by
+the specified amount — either a whole number of seconds or a .NET TimeSpan string such as
+`1.02:03:04` (one day, two hours, three minutes and four seconds). The timestamps of the
+minted blocks are spaced evenly across the delta.
+
+The node must be stopped when running `fastfwd`; the blocks are appended directly to the
+local chain data.
 
 ## neo-worknet prefetch
 
@@ -116,12 +144,13 @@ Usage: neo-worknet run [options]
 
 Options:
   -s|--seconds-per-block <SECONDS_PER_BLOCK>  Time between blocks
+  --disable-log                               Disable verbose data logging
   -?|-h|--help                                Show help information.
   --input                                     Path to .neo-worknet data file
 ```
 
 Runs the branched blockchain locally. New blocks will be added to the chain every 15 seconds unless
-overridded with the `--seconds-per-block` option. 
+overridden with the `--seconds-per-block` option.
 
 These new blocks added to the chain have *no* correlation to the blocks added to the public chain that
 was branched from. From the point of the branch, the original source chain and the local branched chain

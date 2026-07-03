@@ -75,8 +75,7 @@ class CreateCommand
                 DiagnosticListener.AllListeners.Subscribe(diagnosticObserver);
             }
 
-            if (Gas < 0)
-                throw new ArgumentException("--gas cannot be negative");
+            ArgumentOutOfRangeException.ThrowIfNegative(Gas, "--gas cannot be negative");
 
             if (!TryParseRpcUri(RpcUri, out var uri))
             {

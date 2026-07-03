@@ -91,6 +91,7 @@ namespace Neo.BlockchainToolkit.SmartContract
         readonly Dictionary<UInt160, OneOf<ContractState, Script>> executedScripts = new();
         readonly Dictionary<UInt160, Dictionary<int, int>> hitMaps = new();
         readonly Dictionary<UInt160, Dictionary<int, (int branchCount, int continueCount)>> branchMaps = new();
+        readonly List<IDisposable> disposables = new();
         readonly WitnessChecker witnessChecker;
         readonly IFileSystem? fileSystem;
         BranchInstructionInfo? branchInstructionInfo = null;
@@ -148,10 +149,22 @@ namespace Neo.BlockchainToolkit.SmartContract
                 persistingBlock,
                 settings ?? ProtocolSettings.Default,
                 gas,
-                diagnostic)
+                diagnostic,
+                SelectJumpTable(snapshot, persistingBlock, settings ?? ProtocolSettings.Default))
         {
             this.witnessChecker = witnessChecker ?? CheckWitness;
             this.fileSystem = fileSystem;
+        }
+
+        static JumpTable SelectJumpTable(DataCache snapshot, Block? persistingBlock, ProtocolSettings settings)
+        {
+            var index = persistingBlock?.Index ?? NativeContract.Ledger.CurrentIndex(snapshot);
+            if (settings.IsHardforkEnabled(Hardfork.HF_Gorgon, index))
+                return DefaultJumpTable;
+
+            return settings.IsHardforkEnabled(Hardfork.HF_Echidna, index)
+                ? NotGorgonJumpTable
+                : NotEchidnaJumpTable;
         }
 
         protected override void Dispose(bool disposing)
@@ -159,8 +172,17 @@ namespace Neo.BlockchainToolkit.SmartContract
             if (disposing)
             {
                 coverageWriter?.Dispose();
+                for (var i = disposables.Count - 1; i >= 0; i--)
+                    disposables[i].Dispose();
+                disposables.Clear();
             }
             base.Dispose(disposing);
+        }
+
+        public T AddDisposable<T>(T disposable) where T : IDisposable
+        {
+            disposables.Add(disposable ?? throw new ArgumentNullException(nameof(disposable)));
+            return disposable;
         }
 
         public IReadOnlyDictionary<int, int> GetHitMap(UInt160 contractHash)

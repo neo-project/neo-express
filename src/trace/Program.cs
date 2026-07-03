@@ -18,12 +18,14 @@ using Neo.IO;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using NeoTrace.Commands;
 using OneOf;
+using System.Collections.Immutable;
 using SysIO = System.IO;
 
 namespace NeoTrace
@@ -70,14 +72,18 @@ namespace NeoTrace
         static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
         {
             IReadOnlyStore<byte[], byte[]> roStore;
+            IReadOnlyDictionary<UInt160, (int Id, string Name)>? knownContracts = null;
             if (block.Index == 0)
             {
                 roStore = NullStore.Instance;
             }
             else
             {
-                var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, block.Index - 1).ConfigureAwait(false);
+                await console.Out.WriteLineAsync($"Loading state for block {block.Index - 1}").ConfigureAwait(false);
+                var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, block.Index - 1, includeContractNames: false).ConfigureAwait(false);
+                await console.Out.WriteLineAsync($"Loaded {branchInfo.Contracts.Count} contracts").ConfigureAwait(false);
                 roStore = new StateServiceStore(rpcClient, branchInfo);
+                knownContracts = branchInfo.Contracts.ToDictionary(c => c.Hash, c => (c.Id, c.Name));
             }
 
             using var store = new MemoryTrackingStore(roStore);
@@ -135,7 +141,16 @@ namespace NeoTrace
                 {
                     var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
                     var sink = new TraceDebugStream(SysIO.File.OpenWrite(path));
-                    return new TraceApplicationEngine(sink, TriggerType.Application, tx, snapshot, block, settings, tx.SystemFee);
+                    return new TraceApplicationEngine(
+                        sink,
+                        TriggerType.Application,
+                        tx,
+                        snapshot,
+                        block,
+                        settings,
+                        tx.SystemFee,
+                        knownContracts: knownContracts,
+                        includeStorageSnapshots: false);
                 }
                 else
                 {
@@ -157,9 +172,15 @@ namespace NeoTrace
         {
             using var rpcClient = new RpcClient(uri);
             var version = await rpcClient.GetVersionAsync().ConfigureAwait(false);
+            return CreateProtocolSettings(version);
+        }
+
+        internal static ProtocolSettings CreateProtocolSettings(RpcVersion version)
+        {
             return ProtocolSettings.Default with
             {
                 AddressVersion = version.Protocol.AddressVersion,
+                Hardforks = version.Protocol.Hardforks.ToImmutableDictionary(),
                 InitialGasDistribution = version.Protocol.InitialGasDistribution,
                 MaxTraceableBlocks = version.Protocol.MaxTraceableBlocks,
                 MaxTransactionsPerBlock = version.Protocol.MaxTransactionsPerBlock,

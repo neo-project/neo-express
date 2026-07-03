@@ -1,0 +1,136 @@
+{
+  "name": "neo-contract-debug",
+  "displayName": "Neo Smart Contract Debugger",
+  "description": "Source-level, time-travel debugger for Neo N3 smart contracts, powered by the neodebug (Neo.Debug) tool.",
+  "version": "3.10.0",
+  "publisher": "neo-project",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neo-project/neo-express.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Debuggers"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onDebugResolve:neo-contract"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Neo Smart Contract Debugger",
+      "properties": {
+        "neo-contract.debugAdapterPath": {
+          "type": "string",
+          "default": "neodebug",
+          "description": "Path to the neodebug Debug Adapter executable. Defaults to the 'neodebug' global tool (Neo.Debug) on PATH."
+        }
+      }
+    },
+    "breakpoints": [
+      {
+        "language": "csharp"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "neo-contract",
+        "label": "Neo Smart Contract",
+        "languages": [
+          "csharp"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program",
+              "invocation"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Absolute path to the compiled .nef file. Its sibling .manifest.json and .nefdbgnfo/.debug.json are loaded automatically.",
+                "default": "${workspaceFolder}/bin/sc/Contract.nef"
+              },
+              "invocation": {
+                "type": "object",
+                "description": "Either { \"trace-file\": \"<path>\" } to replay a recorded .neo-trace, or { \"operation\": \"<method>\", \"args\": [ ... ] } to deploy and run the contract live."
+              },
+              "return-types": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "int",
+                    "bool",
+                    "string",
+                    "hex",
+                    "byte[]",
+                    "addr"
+                  ]
+                },
+                "description": "Cast hints used to render the invocation's return values."
+              },
+              "sourceFileMap": {
+                "type": "object",
+                "description": "Remaps the document paths baked into the debug info to their location on this machine."
+              },
+              "debug-view": {
+                "type": "string",
+                "enum": [
+                  "source",
+                  "disassembly"
+                ],
+                "default": "source",
+                "description": "Whether to start in the source or the NeoVM disassembly view."
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "name": "Debug Neo contract (live)",
+            "type": "neo-contract",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/sc/Contract.nef",
+            "invocation": {
+              "operation": "main",
+              "args": []
+            }
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Neo Contract: replay a trace",
+            "description": "Debug a recorded .neo-trace (supports stepping backward)",
+            "body": {
+              "name": "Debug Neo contract (trace)",
+              "type": "neo-contract",
+              "request": "launch",
+              "program": "^\"\\${workspaceFolder}/bin/sc/Contract.nef\"",
+              "invocation": {
+                "trace-file": "^\"\\${workspaceFolder}/traces/transaction.neo-trace\""
+              }
+            }
+          },
+          {
+            "label": "Neo Contract: live invocation",
+            "description": "Deploy the contract and debug a fresh invocation",
+            "body": {
+              "name": "Debug Neo contract (live)",
+              "type": "neo-contract",
+              "request": "launch",
+              "program": "^\"\\${workspaceFolder}/bin/sc/Contract.nef\"",
+              "invocation": {
+                "operation": "main",
+                "args": []
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

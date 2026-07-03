@@ -160,7 +160,7 @@ const languages: { [code: string]: Language } = {
         group: "set-private-chain",
         type: "shell",
         command: "neoxp",
-        args: ["create", "-f", "test/$_CONTRACTNAME_$Tests.neo-express"],
+        args: ["create", "-f", "-o", "test/$_CONTRACTNAME_$Tests.neo-express"],
         problemMatcher: [],
       },
       {

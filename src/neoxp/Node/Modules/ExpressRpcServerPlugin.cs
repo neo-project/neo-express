@@ -700,11 +700,11 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JToken ExpressIsNep11Compliant(JToken @param)
+        public JToken ExpressIsNep11Compliant(JArray @params)
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var nep11Hash = AsScriptHash(@param);
+            var nep11Hash = AsScriptHash(RequiredParam(@params, 0));
 
             using var snapshot = neoSystem.GetSnapshotCache();
             var nep11 = new Nep11Token(neoSystem.Settings, snapshot, nep11Hash);
@@ -716,11 +716,11 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JToken ExpressIsNep17Compliant(JToken @param)
+        public JToken ExpressIsNep17Compliant(JArray @params)
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
-            var nep17Hash = AsScriptHash(@param);
+            var nep17Hash = AsScriptHash(RequiredParam(@params, 0));
 
             using var snapshot = neoSystem.GetSnapshotCache();
             var nep17 = new Nep17Token(neoSystem.Settings, snapshot, nep17Hash);

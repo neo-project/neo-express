@@ -19,6 +19,7 @@ namespace test.workflowvalidation;
 /// These tests validate the same neoxp tool commands as the CI/CD pipeline
 /// </summary>
 [Collection("PackExclusive")]
+[Trait("Category", "Integration")]
 public class NeoxpToolIntegrationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;

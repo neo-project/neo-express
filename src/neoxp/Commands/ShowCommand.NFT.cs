@@ -12,6 +12,7 @@ using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.Extensions;
 using Neo.Wallets;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeoExpress.Commands
@@ -39,6 +40,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
+            [Option(Description = "Output as JSON")]
+            internal bool Json { get; init; } = false;
+
             internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
             {
                 try
@@ -63,7 +67,12 @@ namespace NeoExpress.Commands
                             ? uint160
                             : throw new InvalidOperationException($"contract \"{Contract}\" not found");
                     var list = await expressNode.GetNFTAsync(accountHash, scriptHash).ConfigureAwait(false);
-                    if (list.Count == 0)
+                    if (Json)
+                    {
+                        using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
+                        WriteTokenIdsJson(writer, list);
+                    }
+                    else if (list.Count == 0)
                         await console.Out.WriteLineAsync($"No NFT yet. (Contract:{scriptHash}, Account:{accountHash.ToAddress(ProtocolSettings.Default.AddressVersion)})");
                     else
                         list.ForEach(p => console.Out.WriteLine(FormatTokenId(p)));
@@ -78,6 +87,21 @@ namespace NeoExpress.Commands
 
             internal static string FormatTokenId(string tokenId)
                 => $"TokenId(Base64): {tokenId}, TokenId(Hex): 0x{Convert.FromBase64String(tokenId).ToHexString()}";
+
+            internal static void WriteTokenIdsJson(JsonTextWriter writer, IReadOnlyList<string> tokenIds)
+            {
+                writer.WriteStartArray();
+                foreach (var tokenId in tokenIds)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("tokenIdBase64");
+                    writer.WriteValue(tokenId);
+                    writer.WritePropertyName("tokenIdHex");
+                    writer.WriteValue($"0x{Convert.FromBase64String(tokenId).ToHexString()}");
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+            }
         }
     }
 }

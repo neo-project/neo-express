@@ -1,10 +1,10 @@
 <!-- markdownlint-enable -->
-# Neo-Express and Neo-Trace
+# Neo-Express, Neo-WorkNet and Neo-Trace
 
 [![Nuget](https://img.shields.io/nuget/v/Neo.Express)](https://www.nuget.org/packages/Neo.Express/)
 [![Build Status](https://dev.azure.com/ngdenterprise/Build/_apis/build/status/neo-project.neo-express?branchName=master)](https://dev.azure.com/ngdenterprise/Build/_build/latest?definitionId=2&branchName=master)
 
-[Neo-Express and Neo-Trace](#neo-express-and-neo-trace)
+[Neo-Express, Neo-WorkNet and Neo-Trace](#neo-express-neo-worknet-and-neo-trace)
 
 - [Overview](#overview)
 - [Download Links](#download-links)
@@ -15,7 +15,7 @@
 
 ## Overview
 
-Neo-Express is a private net optimized for development scenarios, built on the same Neo platform core as [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) to maximize compatibility between local development and public chain environments. Neo-Trace is a tool for generating trace files for the Neo Smart Contract Debugger.
+Neo-Express is a private net optimized for development scenarios, built on the same Neo platform core as [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) to maximize compatibility between local development and public chain environments. Neo-WorkNet branches a public Neo network — MainNet, TestNet or any JSON-RPC node — into a local chain for development against real network state. Neo-Trace is a tool for generating trace files for the Neo Smart Contract Debugger from public Neo N3 blocks and transactions.
 
 These tools provide developers with a complete local development environment for building, testing, and debugging Neo smart contracts efficiently.
 
@@ -29,10 +29,18 @@ These tools provide developers with a complete local development environment for
   - Smart contract management
   - Blockchain checkpoint and rollback
 
+  **Neo-WorkNet**:
+
+  - Branch a public Neo N3 network at any block height for local use
+  - Develop and test against real deployed contracts and state
+  - Prefetch contract storage for offline work
+  - Reset the local branch back to its branch point
+
   **Neo-Trace**:
 
   - Generate trace files for Neo Smart Contract Debugger
   - Support specifying blocks by index or hash and transactions by hash
+  - Replay public-chain transactions from StateService-enabled RPC nodes
 
 ## Download Links
 
@@ -70,9 +78,12 @@ To update Neo-Express to the latest version, run the following command:
 dotnet tool update Neo.Express -g
 ```
 
-The installation and update process for Neo-Trace is identical:
+The installation and update process for Neo-WorkNet and Neo-Trace is identical:
 
 ```shell
+dotnet tool install Neo.WorkNet -g
+dotnet tool update Neo.WorkNet -g
+
 dotnet tool install Neo.Trace -g
 dotnet tool update Neo.Trace -g
 ```
@@ -152,7 +163,39 @@ neoxp show balances genesis
   neoxp transfer 1 gas genesis node1
   ```
 
+- Invoke a deployed contract with an invocation file:
+
+  ```shell
+  neoxp contract invoke transfer.neo-invoke.json genesis
+  ```
+
+  Invocation files identify deployed contracts by name or script hash. See the
+  [Neo Express Invocation File](docs/Neo%20Express%20Invocation%20File.md) guide for the supported format.
+
 Please review the [Command Reference](docs/command-reference.md) to get an understanding of Neo-Express capabilities.
+
+### Neo-WorkNet
+
+- Branch the Neo N3 TestNet at the current block height:
+
+  ```shell
+  neo-worknet create testnet
+  ```
+
+- Run the branched chain locally:
+
+  ```shell
+  neo-worknet run
+  ```
+
+From the point of the branch, the local chain evolves independently of the public network:
+transactions and blocks added locally have no effect on the public chain. This makes it
+possible to test contracts against real deployed contracts and live state without spending
+GAS on a public network.
+
+Please review the [Neo-WorkNet Command Reference](docs/worknet-command-reference.md) for the full list of commands and options.
+
+> Note: Neo-WorkNet depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled on the node being branched. The official JSON-RPC nodes for MainNet and TestNet are configured this way.
 
 ### Neo-Trace
 
@@ -170,14 +213,14 @@ Please review the [Command Reference](docs/command-reference.md) to get an under
 
 Please review the [NeoTrace Command Reference](docs/trace-command-reference.md) for the full list of commands and options.
 
-> Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled.
+> Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled. Neo-Trace does not include per-instruction storage snapshots from public-chain StateService replay. For local Neo-Express transactions with storage snapshots, use the `--trace` option on commands such as `neoxp run`, `neoxp contract invoke`, or `neoxp contract run` to write `.neo-trace` files locally.
 
 ## New Features or issues
 
-Thank you for using Neo-Express and Neo-Trace! We welcome your feedback to make these tools more accessible, intuitive, and powerful.
+Thank you for using Neo-Express, Neo-WorkNet and Neo-Trace! We welcome your feedback to make these tools more accessible, intuitive, and powerful.
 
 Please visit the [issues page](https://github.com/neo-project/neo-express/issues) to report problems or suggest new features. When creating a new issue, try to keep the title and description concise and provide context, such as a code snippet or an example of a feature and its expected behavior.
 
 ## License
 
-Neo-Express and Neo-Trace are licensed under the [MIT License](https://github.com/neo-project/neo-express#MIT-1-ov-file).
+Neo-Express, Neo-WorkNet and Neo-Trace are licensed under the [MIT License](https://github.com/neo-project/neo-express#MIT-1-ov-file).

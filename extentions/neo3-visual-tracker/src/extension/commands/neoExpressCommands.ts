@@ -100,6 +100,7 @@ export default class NeoExpressCommands {
       "-f",
       "-c",
       nodeCount,
+      "-o",
       configSavePath
     );
     NeoExpressCommands.showResult(output);
@@ -230,12 +231,8 @@ export default class NeoExpressCommands {
     if (!confirmed) {
       return;
     }
-    const wasRunning =
-      neoExpressInstanceManager.runningInstance?.configPath ===
-      blockchainIdentifier.configPath;
-    if (wasRunning) {
-      await neoExpressInstanceManager.stopAll();
-    }
+    const wasRunning = neoExpressInstanceManager.isRunning(blockchainIdentifier);
+    await neoExpressInstanceManager.stopAll(blockchainIdentifier);
     try {
       const output = await neoExpress.run(
         "reset",
@@ -255,6 +252,7 @@ export default class NeoExpressCommands {
 
   static async restoreCheckpoint(
     neoExpress: NeoExpress,
+    neoExpressInstanceManager: NeoExpressInstanceManager,
     blockchainsTreeDataProvider: BlockchainsTreeDataProvider,
     checkpointDetector: CheckpointDetector,
     commandArguments?: CommandArguments
@@ -278,15 +276,25 @@ export default class NeoExpressCommands {
     if (!confirmed) {
       return;
     }
-    const output = await neoExpress.run(
-      "checkpoint",
-      "restore",
-      "-f",
-      "-i",
-      identifier.configPath,
-      filename
-    );
-    NeoExpressCommands.showResult(output);
+    const wasRunning = neoExpressInstanceManager.isRunning(identifier);
+    await neoExpressInstanceManager.stopAll(identifier);
+    try {
+      const output = await neoExpress.run(
+        "checkpoint",
+        "restore",
+        "-f",
+        "-i",
+        identifier.configPath,
+        filename
+      );
+      NeoExpressCommands.showResult(output);
+    } finally {
+      if (wasRunning) {
+        await neoExpressInstanceManager.run(blockchainsTreeDataProvider, {
+          blockchainIdentifier: identifier,
+        });
+      }
+    }
   }
 
   static async transfer(

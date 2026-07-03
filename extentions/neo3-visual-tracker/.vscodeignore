@@ -8,4 +8,4 @@ node_modules/**
 **/tsconfig.json
 **/*.map
 **/*.ts
-*.nupkg
+**/*.nupkg

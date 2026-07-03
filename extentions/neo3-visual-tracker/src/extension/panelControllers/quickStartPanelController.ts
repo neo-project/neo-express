@@ -36,6 +36,7 @@ export default class QuickStartPanelController extends PanelControllerBase<
         hasNeoExpressInstance: false,
         hasWallets: false,
         hasCheckpoints: false,
+        hasCheckpointCompatibleNeoExpressInstance: false,
         neoDeploymentRequired: false,
         neoExpressDeploymentRequired: false,
         neoExpressIsRunning: false,
@@ -85,10 +86,15 @@ export default class QuickStartPanelController extends PanelControllerBase<
       Object.values(this.contractDetector.contracts).filter((_) => _.deployed)
         .length > 0;
 
-    const hasNeoExpressInstance =
-      this.blockchainsTreeDataProvider
-        .getChildren()
-        .filter((_) => _.blockchainType === "express").length > 0;
+    const neoExpressInstances = this.blockchainsTreeDataProvider
+      .getChildren()
+      .filter((_) => _.blockchainType === "express");
+
+    const hasNeoExpressInstance = neoExpressInstances.length > 0;
+
+    const hasCheckpointCompatibleNeoExpressInstance = (
+      await Promise.all(neoExpressInstances.map((_) => _.isSingleNodeExpress()))
+    ).some(Boolean);
 
     const hasWallets = this.walletDetector.wallets.length > 0;
 
@@ -108,6 +114,7 @@ export default class QuickStartPanelController extends PanelControllerBase<
       hasNeoExpressInstance,
       hasWallets,
       hasCheckpoints,
+      hasCheckpointCompatibleNeoExpressInstance,
       neoDeploymentRequired,
       neoExpressDeploymentRequired,
       neoExpressIsRunning,

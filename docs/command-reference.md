@@ -888,12 +888,17 @@ the same as using the `checkpoint restore` command.
 
 The commands supported in a batch file include:
 
+* `candidate register`
+* `candidate unregister`
+* `candidate vote`
+* `candidate unvote`
 * `checkpoint create`
 * `contract deploy`
 * `contract download`
 * `contract invoke`
 * `contract run`
 * `contract update`
+* `execute`
 * `fastfwd`
 * `oracle enable`
 * `oracle response`

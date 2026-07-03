@@ -116,7 +116,7 @@ namespace NeoExpress
                         ? (ByteString)value
                         : (ByteString)(value.ConvertTo(StackItemType.ByteString));
 
-                    yield return (ReadOnlyMemory<byte>)byteString;
+                    yield return byteString.GetSpan().ToArray();
                 }
             }
         }
@@ -124,7 +124,7 @@ namespace NeoExpress
         public static BigInteger GetDivisibleNep11Balance(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, UInt160 address, ProtocolSettings settings)
         {
             using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "balanceOf", address.ToArray(), (ByteString)tokenId);
+            builder.EmitDynamicCall(asset, "balanceOf", address.ToArray(), tokenId.ToArray());
             return TryGetBalance(snapshot, builder, settings, out var balance)
                 ? balance
                 : BigInteger.Zero;
@@ -152,7 +152,7 @@ namespace NeoExpress
         public static bool TryGetIndivisibleNep11Owner(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, ProtocolSettings settings, out UInt160 owner)
         {
             using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "ownerOf", (ByteString)tokenId);
+            builder.EmitDynamicCall(asset, "ownerOf", tokenId.ToArray());
 
             using var engine = builder.Invoke(settings, snapshot);
             if (engine.State != VMState.FAULT

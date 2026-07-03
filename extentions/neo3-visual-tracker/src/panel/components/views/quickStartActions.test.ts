@@ -13,6 +13,7 @@ const baseState: QuickStartViewState = {
   hasNeoExpressInstance: false,
   hasWallets: false,
   hasCheckpoints: false,
+  hasCheckpointCompatibleNeoExpressInstance: false,
   neoDeploymentRequired: false,
   neoExpressDeploymentRequired: false,
   neoExpressIsRunning: false,
@@ -41,10 +42,21 @@ test("offers transfer when Express and wallets are available", () => {
   assert(actions.includes("transfer"));
 });
 
-test("offers checkpoint actions when Express is present", () => {
+test("does not offer checkpoint actions when no single-node Express instance is present", () => {
   const actions = getQuickStartActions({
     ...baseState,
     hasNeoExpressInstance: true,
+    hasCheckpoints: true,
+  });
+  assert(!actions.includes("createCheckpoint"));
+  assert(!actions.includes("restoreCheckpoint"));
+});
+
+test("offers checkpoint actions when a single-node Express instance is present", () => {
+  const actions = getQuickStartActions({
+    ...baseState,
+    hasNeoExpressInstance: true,
+    hasCheckpointCompatibleNeoExpressInstance: true,
     hasCheckpoints: true,
   });
   assert(actions.includes("createCheckpoint"));

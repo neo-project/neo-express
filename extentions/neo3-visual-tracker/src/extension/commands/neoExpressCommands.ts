@@ -82,14 +82,14 @@ export default class NeoExpressCommands {
     if (!nodeCount) {
       return;
     }
-    const worksapcePath = (vscode.workspace.workspaceFolders || [])[0]?.uri
+    const workspacePath = (vscode.workspace.workspaceFolders || [])[0]?.uri
       .fsPath;
     const configSavePath = await IoHelpers.pickSaveFile(
       "Create",
       "Neo Express Configurations",
       "neo-express",
-      worksapcePath
-        ? vscode.Uri.file(posixPath(worksapcePath, "default.neo-express"))
+      workspacePath
+        ? vscode.Uri.file(posixPath(workspacePath, "default.neo-express"))
         : undefined
     );
     if (!configSavePath) {

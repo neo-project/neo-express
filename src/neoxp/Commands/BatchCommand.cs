@@ -133,6 +133,36 @@ namespace NeoExpress.Commands
                                     writer).ConfigureAwait(false);
                                 break;
                             }
+                        case CommandLineApplication<BatchFileCommands.Candidate.Register> cmd:
+                            {
+                                await txExec.RegisterCandidateAsync(
+                                    cmd.Model.Account,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Candidate.UnRegister> cmd:
+                            {
+                                await txExec.UnregisterCandidateAsync(
+                                    cmd.Model.Account,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Candidate.Vote> cmd:
+                            {
+                                await txExec.VoteAsync(
+                                    cmd.Model.Account,
+                                    cmd.Model.PublicKey,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Candidate.UnVote> cmd:
+                            {
+                                await txExec.VoteAsync(
+                                    cmd.Model.Account,
+                                    null,
+                                    cmd.Model.Password).ConfigureAwait(false);
+                                break;
+                            }
                         case CommandLineApplication<BatchFileCommands.Contract.Deploy> cmd:
                             {
                                 await txExec.ContractDeployAsync(
@@ -222,6 +252,32 @@ namespace NeoExpress.Commands
                                     cmd.Model.Password,
                                     cmd.Model.WitnessScope,
                                     data).ConfigureAwait(false);
+                                break;
+                            }
+                        case CommandLineApplication<BatchFileCommands.Execute> cmd:
+                            {
+                                if (string.IsNullOrEmpty(cmd.Model.Account) && !cmd.Model.Results)
+                                    throw new Exception("Either Account or --results must be specified");
+
+                                var script = ExecuteCommand.ConvertTextToScript(cmd.Model.InputText)
+                                    ?? ExecuteCommand.LoadFileScript(root.Resolve(cmd.Model.InputText))
+                                    ?? throw new Exception($"Invalid script: {cmd.Model.InputText}");
+                                if (cmd.Model.Results)
+                                {
+                                    await txExec.InvokeForResultsAsync(
+                                        script,
+                                        cmd.Model.Account,
+                                        cmd.Model.WitnessScope).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    await txExec.ContractInvokeAsync(
+                                        script,
+                                        cmd.Model.Account,
+                                        cmd.Model.Password,
+                                        cmd.Model.WitnessScope,
+                                        cmd.Model.AdditionalGas).ConfigureAwait(false);
+                                }
                                 break;
                             }
                         case CommandLineApplication<BatchFileCommands.FastForward> cmd:

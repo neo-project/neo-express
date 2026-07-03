@@ -29,9 +29,17 @@ jobs:
         cache: npm
         cache-dependency-path: extentions/neo3-visual-tracker/package-lock.json
 
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5.2.0
+      with:
+        dotnet-version: '10.0.x'
+
     - name: Install dependencies
       working-directory: extentions/neo3-visual-tracker
       run: npm ci
+
+    - name: Pack Neo Express
+      run: dotnet pack src/neoxp/neoxp.csproj --configuration Release --output ./out --verbosity normal
 
     - name: Typecheck
       working-directory: extentions/neo3-visual-tracker
@@ -48,3 +56,11 @@ jobs:
     - name: Run unit tests
       working-directory: extentions/neo3-visual-tracker
       run: npm test
+
+    - name: Package extension
+      working-directory: extentions/neo3-visual-tracker
+      shell: bash
+      run: |
+        nupkg="$(find "${GITHUB_WORKSPACE}/out" -maxdepth 1 -name 'Neo.Express.*.nupkg' -print -quit)"
+        test -n "$nupkg"
+        NEO_EXPRESS_NUPKG="$nupkg" npx vsce package --no-git-tag-version

@@ -176,12 +176,12 @@ namespace NeoDebug.Neo3
 
             return item.ToVariable(manager, name);
 
-            Variable? NewVariable(object? obj) => obj == null ? null : new Variable { Name = name, Value = obj.ToString(), Type = parameterType.ToString() };
+            Variable? NewVariable(object? obj) => obj == null ? null : new Variable { Name = name, Value = obj.ToString(), Type = item.Type.ToString() };
 
             Variable? ConvertByteArray()
             {
                 if (item.IsNull)
-                    return new Variable { Name = name, Value = "<null>", Type = parameterType.ToString() };
+                    return new Variable { Name = name, Value = "<null>", Type = item.Type.ToString() };
                 if (item is Neo.VM.Types.Buffer buffer)
                     return ByteArrayContainer.Create(manager, buffer, name);
                 if (item is ByteString byteString)
@@ -200,14 +200,14 @@ namespace NeoDebug.Neo3
             return item switch
             {
                 Neo.VM.Types.Array array => NeoArrayContainer.Create(manager, array, name),
-                Neo.VM.Types.Boolean _ => new Variable { Name = name, Value = $"{item.GetBoolean()}", Type = "Boolean" },
+                Neo.VM.Types.Boolean _ => new Variable { Name = name, Value = $"{item.GetBoolean()}", Type = item.Type.ToString() },
                 Neo.VM.Types.Buffer buffer => ByteArrayContainer.Create(manager, buffer, name),
                 Neo.VM.Types.ByteString byteString => ByteArrayContainer.Create(manager, byteString, name),
-                Neo.VM.Types.Integer @int => new Variable { Name = name, Value = $"{@int.GetInteger()}", Type = "Integer" },
-                Neo.VM.Types.InteropInterface _ => new Variable { Name = name, Value = "InteropInterface" },
+                Neo.VM.Types.Integer @int => new Variable { Name = name, Value = $"{@int.GetInteger()}", Type = item.Type.ToString() },
+                Neo.VM.Types.InteropInterface _ => new Variable { Name = name, Value = "InteropInterface", Type = item.Type.ToString() },
                 Neo.VM.Types.Map map => NeoMapContainer.Create(manager, map, name),
-                Neo.VM.Types.Null _ => new Variable { Name = name, Value = "<null>", Type = "Null" },
-                Neo.VM.Types.Pointer _ => new Variable { Name = name, Value = "Pointer" },
+                Neo.VM.Types.Null _ => new Variable { Name = name, Value = "<null>", Type = item.Type.ToString() },
+                Neo.VM.Types.Pointer _ => new Variable { Name = name, Value = "Pointer", Type = item.Type.ToString() },
                 _ => throw new NotSupportedException(),
             };
         }

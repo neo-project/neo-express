@@ -23,6 +23,7 @@ using NeoMap = Neo.VM.Types.Map;
 using NeoStruct = Neo.VM.Types.Struct;
 using Script = Neo.VM.Script;
 using StackItem = Neo.VM.Types.StackItem;
+using StackItemType = Neo.VM.Types.StackItemType;
 
 namespace test.neodebug
 {
@@ -53,11 +54,12 @@ namespace test.neodebug
             Assert.Equal("True", StackItem.True.ToVariable(_manager, "b").Value);
 
             var @null = StackItem.Null.ToVariable(_manager, "z");
-            Assert.Equal("Null", @null.Type);
+            Assert.Equal(StackItemType.Any.ToString(), @null.Type);
             Assert.Equal("<null>", @null.Value);
 
             var pointer = ((StackItem)new Neo.VM.Types.Pointer(new Script(new byte[] { (byte)OpCode.RET }), 0)).ToVariable(_manager, "p");
             Assert.Equal("Pointer", pointer.Value);
+            Assert.Equal(StackItemType.Pointer.ToString(), pointer.Type);
         }
 
         [Fact]
@@ -67,6 +69,7 @@ namespace test.neodebug
             var variable = ((StackItem)new Neo.VM.Types.ByteString(bytes)).ToVariable(_manager, "data");
 
             Assert.Equal("ByteString[3]", variable.Value);
+            Assert.Equal(StackItemType.ByteString.ToString(), variable.Type);
             Assert.Equal(3, variable.IndexedVariables);
 
             var children = Expand(variable);
@@ -82,6 +85,7 @@ namespace test.neodebug
             var variable = ((StackItem)array).ToVariable(_manager, "arr");
 
             Assert.Equal("Array[2]", variable.Value);
+            Assert.Equal(StackItemType.Array.ToString(), variable.Type);
             Assert.Equal(2, variable.IndexedVariables);
             Assert.Equal(2, Expand(variable).Count);
         }
@@ -108,10 +112,22 @@ namespace test.neodebug
             var variable = ((StackItem)map).ToVariable(_manager, "m");
 
             Assert.Equal("Map[2]", variable.Value);
+            Assert.Equal(StackItemType.Map.ToString(), variable.Type);
             var children = Expand(variable);
             Assert.Equal(2, children.Count);
             Assert.Contains(children, c => c.Name == "7");
             Assert.Contains(children, c => c.Name == "ab");
+        }
+
+        [Fact]
+        public void typed_contract_parameters_still_report_vm_stack_item_types()
+        {
+            var bytes = Enumerable.Range(1, UInt160.Length).Select(i => (byte)i).ToArray();
+            var hash = new UInt160(bytes);
+            var variable = ((StackItem)new Neo.VM.Types.ByteString(bytes)).ToVariable(_manager, "hash", ContractParameterType.Hash160);
+
+            Assert.Equal(hash.ToString(), variable.Value);
+            Assert.Equal(StackItemType.ByteString.ToString(), variable.Type);
         }
 
         [Fact]

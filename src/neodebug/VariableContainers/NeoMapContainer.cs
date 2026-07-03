@@ -10,6 +10,7 @@
 
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using NeoMap = Neo.VM.Types.Map;
+using StackItemType = Neo.VM.Types.StackItemType;
 
 namespace NeoDebug.Neo3
 {
@@ -30,6 +31,7 @@ namespace NeoDebug.Neo3
             {
                 Name = name,
                 Value = $"Map[{map.Count}]",
+                Type = StackItemType.Map.ToString(),
                 VariablesReference = manager.Add(container),
                 NamedVariables = map.Count,
             };

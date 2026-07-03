@@ -11,6 +11,7 @@
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using NeoArray = Neo.VM.Types.Array;
 using NeoStruct = Neo.VM.Types.Struct;
+using StackItemType = Neo.VM.Types.StackItemType;
 
 namespace NeoDebug.Neo3
 {
@@ -26,12 +27,13 @@ namespace NeoDebug.Neo3
 
         public static Variable Create(IVariableManager manager, NeoArray array, string name)
         {
-            var typeName = array is NeoStruct ? "Struct" : "Array";
+            var typeName = (array is NeoStruct ? StackItemType.Struct : StackItemType.Array).ToString();
             var container = new NeoArrayContainer(array);
             return new Variable()
             {
                 Name = name,
                 Value = $"{typeName}[{array.Count}]",
+                Type = typeName,
                 VariablesReference = manager.Add(container),
                 IndexedVariables = array.Count,
             };

@@ -100,6 +100,7 @@ export default class NeoExpressCommands {
       "-f",
       "-c",
       nodeCount,
+      "-o",
       configSavePath
     );
     NeoExpressCommands.showResult(output);

@@ -370,18 +370,25 @@ namespace NeoExpress
                         expressStorage, multiSigAccount.ScriptHash);
                     using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 
-                    neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
+                    try
                     {
-                        Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort)
-                    });
-                    dbftPlugin.Start(wallet);
+                        neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
+                        {
+                            Tcp = new IPEndPoint(IPAddress.Loopback, node.TcpPort)
+                        });
+                        dbftPlugin.Start(wallet);
 
-                    // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
-                    // Do not remove or re-word this console output:
-                    console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
+                        // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
+                        // Do not remove or re-word this console output:
+                        console.Out.WriteLine($"Neo express is running ({expressStorage.Name})");
 
-                    var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
-                    linkedToken.Token.WaitHandle.WaitOne();
+                        var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, rpcServerPlugin.CancellationToken);
+                        linkedToken.Token.WaitHandle.WaitOne();
+                    }
+                    finally
+                    {
+                        _ = Plugin.Plugins.Remove(persistencePlugin);
+                    }
                 }
                 catch (Exception ex)
                 {

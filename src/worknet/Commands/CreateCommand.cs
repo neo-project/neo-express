@@ -179,9 +179,10 @@ class CreateCommand
             snapshot.Delete(key);
         }
 
-        // Seed the consensus accounts with GAS so the branch can pay transaction fees
+        // Seed each consensus account with GAS so the branch can pay transaction fees
         // immediately (contract deploys and invokes) instead of being read-only until
-        // committee emission slowly accrues. Total supply is bumped to match.
+        // committee emission slowly accrues. The GAS is transferred from the current
+        // committee account, so total supply is unchanged.
         if (gasSeed > 0)
         {
             var seedAmount = (BigInteger)(gasSeed * 100_000_000m); // GAS has 8 decimals

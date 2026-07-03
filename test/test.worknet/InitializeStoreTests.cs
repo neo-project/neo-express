@@ -85,6 +85,35 @@ public class InitializeStoreTests
     }
 
     [Fact]
+    public void initialize_store_seeds_each_consensus_account_with_gas()
+    {
+        var (store, account1) = CreateInitializedStore();
+        using var _ = store;
+
+        var wallet = new ToolkitWallet("consensus", Settings);
+        var account2 = wallet.CreateAccount();
+        var accounts = new[] { account1, account2 };
+        var sourceAccount = Neo.SmartContract.Contract.GetBFTAddress(Settings.StandbyValidators);
+
+        BigInteger supplyBefore;
+        BigInteger sourceBalanceBefore;
+        using (var snapshot = new StoreCache(store.GetSnapshot()))
+        {
+            supplyBefore = NativeContract.GAS.TotalSupply(snapshot);
+            sourceBalanceBefore = NativeContract.GAS.BalanceOf(snapshot, sourceAccount);
+        }
+
+        CreateCommand.InitializeStore(store, 2.5m, accounts, Settings);
+
+        using var after = new StoreCache(store.GetSnapshot());
+        var expectedPerAccount = new BigInteger(250_000_000);
+        NativeContract.GAS.BalanceOf(after, account1.ScriptHash).Should().Be(expectedPerAccount);
+        NativeContract.GAS.BalanceOf(after, account2.ScriptHash).Should().Be(expectedPerAccount);
+        NativeContract.GAS.BalanceOf(after, sourceAccount).Should().Be(sourceBalanceBefore - (expectedPerAccount * accounts.Length));
+        NativeContract.GAS.TotalSupply(after).Should().Be(supplyBefore);
+    }
+
+    [Fact]
     public void initialize_store_seeds_nothing_when_gas_is_zero()
     {
         var (store, account) = CreateInitializedStore();

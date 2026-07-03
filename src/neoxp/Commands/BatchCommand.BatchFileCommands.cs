@@ -18,7 +18,17 @@ namespace NeoExpress.Commands
     partial class BatchCommand
     {
         [Command]
-        [Subcommand(typeof(Candidate), typeof(Checkpoint), typeof(Contract), typeof(Execute), typeof(FastForward), typeof(Oracle), typeof(Policy), typeof(Transfer), typeof(TransferNFT), typeof(Wallet))]
+        [Subcommand(
+            typeof(Candidate),
+            typeof(Checkpoint),
+            typeof(Contract),
+            typeof(Execute),
+            typeof(FastForward),
+            typeof(Oracle),
+            typeof(Policy),
+            typeof(Transfer),
+            typeof(TransferNFT),
+            typeof(Wallet))]
         internal class BatchFileCommands
         {
             [Command("candidate")]

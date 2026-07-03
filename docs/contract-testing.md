@@ -109,7 +109,7 @@ public class ContractDeployedTests : IClassFixture<CheckpointFixture<ContractDep
     }
 
     [Fact]
-    public void test_symbol()
+    public void TestSymbol()
     {
         var settings = chain.GetProtocolSettings();
         using var snapshot = fixture.GetSnapshot();

@@ -140,7 +140,7 @@ Options:
 ```
 
 Runs the branched blockchain locally. New blocks will be added to the chain every 15 seconds unless
-overridded with the `--seconds-per-block` option. 
+overridden with the `--seconds-per-block` option. 
 
 These new blocks added to the chain have *no* correlation to the blocks added to the public chain that
 was branched from. From the point of the branch, the original source chain and the local branched chain

@@ -1,10 +1,14 @@
 <!-- markdownlint-enable -->
 # Neo-Express N3 Command Reference
 
-> Note: This is the command reference for Neo-Express 3.6, targeting N3.
+> Note: This is the command reference for Neo-Express 3.10.0, targeting N3.
 >
 > You can pass -?|-h|--help to show a list of supported commands or to show
 > help information about a specific command.
+
+Commands that accept `--trace` write local `.neo-trace` files for executed
+transactions in the current directory. To trace transactions that already exist
+on MainNet or TestNet, use `neotrace` instead.
 
 ## Specifying Signing and Non-Signing Accounts
 
@@ -362,7 +366,7 @@ Arguments:
 <Account>: Account to pay contract invocation GAS fee
 ```
 
-The `contract invoke` command generates a script from an [invocation file](Neo Express Invocation File.md) and submits it to the Neo-Express blockchain network as a transaction.
+The `contract invoke` command generates a script from an [invocation file](Neo Express Invocation File.md) and submits it to the Neo-Express blockchain network as a transaction. The invocation file identifies the deployed contract by name or script hash.
 
 A script can be invoked either for results (specified via the `--results` option) or to make changes
 (specified via the signed account argument). If a script is submitted for results, it may read information
@@ -397,7 +401,7 @@ Arguments:
 ```
 
 Like `contract invoke`, the `contract run` command generates a script and submits it to the Neo-Express
-blockchain network as a transaction wither for results or changes. However, unlike `contract invoke`, 
+blockchain network as a transaction either for results or changes. However, unlike `contract invoke`,
 the `contract run` command generates the script from command line parameters instead of an invocation
 file. The command line constraints limit the flexibility of `contract run` relative to `contract invoke`,
 but saves the developer from needing to create an invocation file for simple contract invocation scenarios.

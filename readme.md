@@ -15,7 +15,7 @@
 
 ## Overview
 
-Neo-Express is a private net optimized for development scenarios, built on the same Neo platform core as [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) to maximize compatibility between local development and public chain environments. Neo-WorkNet branches a public Neo network — MainNet, TestNet or any JSON-RPC node — into a local chain for development against real network state. Neo-Trace is a tool for generating trace files for the Neo Smart Contract Debugger.
+Neo-Express is a private net optimized for development scenarios, built on the same Neo platform core as [neo-cli](https://docs.neo.org/docs/en-us/node/cli/setup.html) and [neo-gui](https://docs.neo.org/docs/en-us/node/gui/install.html) to maximize compatibility between local development and public chain environments. Neo-WorkNet branches a public Neo network — MainNet, TestNet or any JSON-RPC node — into a local chain for development against real network state. Neo-Trace is a tool for generating trace files for the Neo Smart Contract Debugger from public Neo N3 blocks and transactions.
 
 These tools provide developers with a complete local development environment for building, testing, and debugging Neo smart contracts efficiently.
 
@@ -40,6 +40,7 @@ These tools provide developers with a complete local development environment for
 
   - Generate trace files for Neo Smart Contract Debugger
   - Support specifying blocks by index or hash and transactions by hash
+  - Replay public-chain transactions from StateService-enabled RPC nodes
 
 ## Download Links
 
@@ -162,6 +163,15 @@ neoxp show balances genesis
   neoxp transfer 1 gas genesis node1
   ```
 
+- Invoke a deployed contract with an invocation file:
+
+  ```shell
+  neoxp contract invoke transfer.neo-invoke.json genesis
+  ```
+
+  Invocation files identify deployed contracts by name or script hash. See the
+  [Neo Express Invocation File](docs/Neo%20Express%20Invocation%20File.md) guide for the supported format.
+
 Please review the [Command Reference](docs/command-reference.md) to get an understanding of Neo-Express capabilities.
 
 ### Neo-WorkNet
@@ -203,7 +213,7 @@ Please review the [Neo-WorkNet Command Reference](docs/worknet-command-reference
 
 Please review the [NeoTrace Command Reference](docs/trace-command-reference.md) for the full list of commands and options.
 
-> Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled.
+> Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled. Neo-Trace does not include per-instruction storage snapshots from public-chain StateService replay. For local Neo-Express transactions with storage snapshots, use the `--trace` option on commands such as `neoxp run`, `neoxp contract invoke`, or `neoxp contract run` to write `.neo-trace` files locally.
 
 ## New Features or issues
 

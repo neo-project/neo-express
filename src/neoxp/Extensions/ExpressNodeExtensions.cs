@@ -459,14 +459,14 @@ namespace NeoExpress
                 return await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
             }
 
-            if (UInt256.TryParse(blockHash, out var uint256))
-            {
-                return await expressNode.GetBlockAsync(uint256).ConfigureAwait(false);
-            }
-
             if (uint.TryParse(blockHash, out var index))
             {
                 return await expressNode.GetBlockAsync(index).ConfigureAwait(false);
+            }
+
+            if (UInt256.TryParse(blockHash, out var uint256))
+            {
+                return await expressNode.GetBlockAsync(uint256).ConfigureAwait(false);
             }
 
             throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));

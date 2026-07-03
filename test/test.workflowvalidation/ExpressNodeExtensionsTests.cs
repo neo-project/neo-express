@@ -36,6 +36,45 @@ namespace test.workflowvalidation;
 public class ExpressNodeExtensionsTests
 {
     [Fact]
+    public async Task GetBlockAsync_uses_latest_block_for_empty_identifier()
+    {
+        var node = new StubExpressNode(ProtocolSettings.Default);
+
+        _ = await NeoExpress.ExpressNodeExtensions.GetBlockAsync(node, string.Empty);
+
+        node.LatestBlockRequested.Should().BeTrue();
+        node.RequestedBlockIndex.Should().BeNull();
+        node.RequestedBlockHash.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("0", 0u)]
+    [InlineData("123", 123u)]
+    public async Task GetBlockAsync_uses_block_index_for_numeric_identifier(string identifier, uint expectedIndex)
+    {
+        var node = new StubExpressNode(ProtocolSettings.Default);
+
+        _ = await NeoExpress.ExpressNodeExtensions.GetBlockAsync(node, identifier);
+
+        node.RequestedBlockIndex.Should().Be(expectedIndex);
+        node.RequestedBlockHash.Should().BeNull();
+        node.LatestBlockRequested.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetBlockAsync_uses_block_hash_for_uint256_identifier()
+    {
+        var node = new StubExpressNode(ProtocolSettings.Default);
+        var hash = UInt256.Parse("0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
+
+        _ = await NeoExpress.ExpressNodeExtensions.GetBlockAsync(node, hash.ToString());
+
+        node.RequestedBlockHash.Should().Be(hash);
+        node.RequestedBlockIndex.Should().BeNull();
+        node.LatestBlockRequested.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task GetBalanceAsync_respects_stack_order()
     {
         var invokeResult = new RpcInvokeResult
@@ -179,6 +218,12 @@ public class ExpressNodeExtensionsTests
 
         public Script? CapturedScript { get; private set; }
 
+        public UInt256? RequestedBlockHash { get; private set; }
+
+        public uint? RequestedBlockIndex { get; private set; }
+
+        public bool LatestBlockRequested { get; private set; }
+
         public StubExpressNode(ProtocolSettings protocolSettings)
         {
             ProtocolSettings = protocolSettings;
@@ -202,13 +247,25 @@ public class ExpressNodeExtensionsTests
 
         public Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes) => throw new NotSupportedException();
 
-        public Task<Block> GetBlockAsync(UInt256 blockHash) => throw new NotSupportedException();
+        public Task<Block> GetBlockAsync(UInt256 blockHash)
+        {
+            RequestedBlockHash = blockHash;
+            return Task.FromResult<Block>(null!);
+        }
 
-        public Task<Block> GetBlockAsync(uint blockIndex) => throw new NotSupportedException();
+        public Task<Block> GetBlockAsync(uint blockIndex)
+        {
+            RequestedBlockIndex = blockIndex;
+            return Task.FromResult<Block>(null!);
+        }
 
         public Task<ContractManifest> GetContractAsync(UInt160 scriptHash) => throw new NotSupportedException();
 
-        public Task<Block> GetLatestBlockAsync() => throw new NotSupportedException();
+        public Task<Block> GetLatestBlockAsync()
+        {
+            LatestBlockRequested = true;
+            return Task.FromResult<Block>(null!);
+        }
 
         public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash) => throw new NotSupportedException();
 

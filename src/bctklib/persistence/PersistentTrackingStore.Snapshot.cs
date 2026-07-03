@@ -133,16 +133,19 @@ namespace Neo.BlockchainToolkit.Persistence
                     ? MemorySequenceComparer.Default
                     : MemorySequenceComparer.Reverse;
 
+                // sort only the (small) uncommitted side; the committed side is already
+                // sorted in seek direction, so the two can be merged lazily
                 var uncommittedItems = uncommittedChanges
                     .Where(kvp => kvp.Value.IsT0)
                     .Where(kvp => comparer.Compare(kvp.Key, key) >= 0)
-                    .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value.AsT0.ToArray()));
+                    .Select(kvp => (Key: kvp.Key.ToArray(), Value: kvp.Value.AsT0.ToArray()))
+                    .OrderBy(kvp => kvp.Key, comparer);
 
                 var committedItems = PersistentTrackingStore
                     .Seek(key, direction, db, columnFamily, readOptions, store)
                     .Where(kvp => !uncommittedChanges.ContainsKey(kvp.Key));
 
-                return uncommittedItems.Concat(committedItems).OrderBy(kvp => kvp.Key, comparer);
+                return uncommittedItems.MergeSorted(committedItems, comparer);
             }
 
             public unsafe void Put(byte[]? key, byte[] value)

@@ -16,6 +16,12 @@ to step through the recorded execution.
 Each traced transaction is written to a `<transaction-hash>.neo-trace` file in the current
 directory.
 
+NeoTrace records script execution, stack state, logs, notifications, and results for public
+chain transactions. It does not include per-instruction storage snapshots from StateService,
+because downloading full public-chain contract storage during every trace step can make
+large contracts impractical to replay. For local Neo-Express contract debugging with storage
+snapshots, use the `--trace` option on the relevant `neoxp` command.
+
 ## neotrace block
 
 ```

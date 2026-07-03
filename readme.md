@@ -135,6 +135,10 @@ neoxp show balances genesis
 > next block is produced. For faster local iteration, start the chain with a shorter block
 > time, for example `neoxp run --seconds-per-block 1`.
 
+For writing automated smart-contract tests against a Neo-Express checkpoint — including build
+integration, typed contract interfaces, assertions and contract code coverage — see the
+[contract testing guide](docs/contract-testing.md).
+
 ### Neo-Express
 
 - Create a new local Neo network:

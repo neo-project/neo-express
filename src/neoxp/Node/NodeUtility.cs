@@ -59,87 +59,6 @@ namespace NeoExpress.Node
             return (long)value;
         }
 
-        public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
-        {
-            transactions ??= Array.Empty<Transaction>();
-
-            var blockHeight = prevHeader.Index + 1;
-
-            // dBFT assigns each block a random nonce. Mirror that here so the block
-            // nonce contribution to System.Runtime.GetRandom varies per block instead
-            // of being a constant 0, which otherwise makes on-chain randomness behave
-            // differently from a real network.
-            Span<byte> nonceBuffer = stackalloc byte[sizeof(ulong)];
-            System.Security.Cryptography.RandomNumberGenerator.Fill(nonceBuffer);
-            var nonce = BitConverter.ToUInt64(nonceBuffer);
-
-            var block = new Block
-            {
-                Header = new Header
-                {
-                    Version = 0,
-                    Nonce = nonce,
-                    PrevHash = prevHeader.Hash,
-                    MerkleRoot = MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
-                    Timestamp = timestamp > prevHeader.Timestamp
-                        ? timestamp
-                        : Math.Max(DateTime.UtcNow.ToTimestampMS(), prevHeader.Timestamp + 1),
-                    Index = blockHeight,
-                    PrimaryIndex = 0,
-                    NextConsensus = prevHeader.NextConsensus,
-                    Witness = Witness.Empty
-                },
-                Transactions = transactions
-            };
-
-            // generate the block header witness. Logic lifted from ConsensusContext.CreateBlock
-            var m = keyPairs.Count - (keyPairs.Count - 1) / 3;
-            var contract = Contract.CreateMultiSigContract(m, keyPairs.Select(k => k.PublicKey).ToList());
-            var signingContext = new ContractParametersContext(null, new BlockScriptHashes(prevHeader.NextConsensus), network);
-            for (int i = 0; i < keyPairs.Count; i++)
-            {
-                var signature = block.Header.Sign(keyPairs[i], network);
-                signingContext.AddSignature(contract, keyPairs[i].PublicKey, signature);
-                if (signingContext.Completed)
-                    break;
-            }
-            if (!signingContext.Completed)
-                throw new Exception("block signing incomplete");
-            block.Header.Witness = signingContext.GetWitnesses()[0];
-
-            return block;
-        }
-
-        public static async Task FastForwardAsync(Header prevHeader, uint blockCount, TimeSpan timestampDelta, KeyPair[] keyPairs, uint network, Func<Block, Task> submitBlockAsync)
-        {
-            if (timestampDelta.TotalSeconds < 0)
-                throw new ArgumentException($"Negative {nameof(timestampDelta)} not supported");
-            if (blockCount == 0)
-                return;
-
-            var timestamp = Math.Max(DateTime.UtcNow.ToTimestampMS(), prevHeader.Timestamp + 1);
-            var delta = (ulong)timestampDelta.TotalMilliseconds;
-
-            if (blockCount == 1)
-            {
-                var block = CreateSignedBlock(
-                    prevHeader, keyPairs, network, timestamp: timestamp + delta);
-                await submitBlockAsync(block).ConfigureAwait(false);
-            }
-            else
-            {
-                var period = delta / (blockCount - 1);
-                for (int i = 0; i < blockCount; i++)
-                {
-                    var block = CreateSignedBlock(
-                        prevHeader, keyPairs, network, timestamp: timestamp);
-                    await submitBlockAsync(block).ConfigureAwait(false);
-                    prevHeader = block.Header;
-                    timestamp += period;
-                }
-            }
-        }
-
         public static void SignOracleResponseTransaction(ProtocolSettings settings, ExpressChain chain, Transaction tx, IReadOnlyList<ECPoint> oracleNodes)
         {
             var signatures = new Dictionary<ECPoint, byte[]>();
@@ -581,35 +500,5 @@ namespace NeoExpress.Node
             }
         }
 
-        // Need an IVerifiable.GetScriptHashesForVerifying implementation that doesn't
-        // depend on the DataCache snapshot parameter in order to create a
-        // ContractParametersContext without direct access to node data.
-        private class BlockScriptHashes : IVerifiable
-        {
-            private readonly UInt160[] hashes;
-
-            public BlockScriptHashes(UInt160 scriptHash)
-            {
-                hashes = new[] { scriptHash };
-            }
-
-            public UInt160[] GetScriptHashesForVerifying(DataCache snapshot) => hashes;
-
-            Witness[] IVerifiable.Witnesses
-            {
-                get => throw new NotImplementedException();
-                set => throw new NotImplementedException();
-            }
-
-            int ISerializable.Size => throw new NotImplementedException();
-
-            void ISerializable.Serialize(BinaryWriter writer) => throw new NotImplementedException();
-
-            void IVerifiable.SerializeUnsigned(BinaryWriter writer) => throw new NotImplementedException();
-
-            void ISerializable.Deserialize(ref MemoryReader reader) => throw new NotImplementedException();
-
-            void IVerifiable.DeserializeUnsigned(ref MemoryReader reader) => throw new NotImplementedException();
-        }
     }
 }

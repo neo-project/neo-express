@@ -82,14 +82,14 @@ export default class NeoExpressCommands {
     if (!nodeCount) {
       return;
     }
-    const worksapcePath = (vscode.workspace.workspaceFolders || [])[0]?.uri
+    const workspacePath = (vscode.workspace.workspaceFolders || [])[0]?.uri
       .fsPath;
     const configSavePath = await IoHelpers.pickSaveFile(
       "Create",
       "Neo Express Configurations",
       "neo-express",
-      worksapcePath
-        ? vscode.Uri.file(posixPath(worksapcePath, "default.neo-express"))
+      workspacePath
+        ? vscode.Uri.file(posixPath(workspacePath, "default.neo-express"))
         : undefined
     );
     if (!configSavePath) {
@@ -136,6 +136,12 @@ export default class NeoExpressCommands {
       commandArguments?.blockchainIdentifier ||
       (await blockchainsTreeDataProvider.select("express"));
     if (!identifier) {
+      return;
+    }
+    if (!(await identifier.isSingleNodeExpress())) {
+      vscode.window.showErrorMessage(
+        "Checkpoints can only be created for single-node Neo Express instances."
+      );
       return;
     }
     const rootFolder = workspaceFolder();

@@ -24,6 +24,30 @@ Example usage:
   }
 ```
 
+## `chain.AutoMine`
+
+When `chain.AutoMine` is enabled on a single-node chain, transactions submitted against a running
+node — transfers, contract deploys and invocations, `execute`, policy and candidate operations —
+are confirmed immediately: instead of entering the mempool and waiting for the next dBFT block
+(15 seconds by default, 1 second minimum), Neo-Express wraps the transaction in a consensus-signed
+block and submits the block directly, the same way the offline node and the `fastfwd` command
+already produce blocks. The regular dBFT block timer keeps running alongside and continues to mint
+empty blocks on its normal schedule.
+
+`chain.AutoMine` is specified as a boolean and defaults to `false`. It only takes effect on
+single-node chains, where the Neo-Express process holds every consensus key; the setting is
+ignored on four- and seven-node chains. In the unlikely event that a submitted block races an
+in-flight dBFT block at the same height, Neo-Express retries once on the new chain tip and then
+falls back to normal mempool submission.
+
+Example usage:
+
+``` json
+  "settings": {
+    "chain.AutoMine": "true" // Confirm transactions immediately on a single node chain
+  }
+```
+
 ## `rpc.BindAddress`
 
 The `rpc.BindAddress` Neo-Express setting corresponds to the `BindAddress`

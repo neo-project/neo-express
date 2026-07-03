@@ -363,7 +363,7 @@ namespace Neo.BlockchainToolkit.Plugins
                         ? (ByteString)value
                         : (ByteString)value.ConvertTo(StackItemType.ByteString);
 
-                    yield return (ReadOnlyMemory<byte>)byteString;
+                    yield return byteString.GetSpan().ToArray();
                 }
             }
         }
@@ -371,7 +371,7 @@ namespace Neo.BlockchainToolkit.Plugins
         public static BigInteger GetDivisibleNep11Balance(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, UInt160 address, ProtocolSettings settings)
         {
             using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "balanceOf", address.ToArray(), (ByteString)tokenId);
+            builder.EmitDynamicCall(asset, "balanceOf", address.ToArray(), tokenId.ToArray());
             return TryGetBalance(snapshot, builder, settings, out var balance)
                 ? balance
                 : BigInteger.Zero;
@@ -380,7 +380,7 @@ namespace Neo.BlockchainToolkit.Plugins
         public static UInt160 GetIndivisibleNep11Owner(this DataCache snapshot, UInt160 asset, ReadOnlyMemory<byte> tokenId, ProtocolSettings settings)
         {
             using var builder = new ScriptBuilder();
-            builder.EmitDynamicCall(asset, "ownerOf", (ByteString)tokenId);
+            builder.EmitDynamicCall(asset, "ownerOf", tokenId.ToArray());
 
             using var engine = builder.Invoke(settings, snapshot);
             if (engine.State != VMState.FAULT

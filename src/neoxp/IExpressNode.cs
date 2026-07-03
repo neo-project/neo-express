@@ -45,6 +45,7 @@ namespace NeoExpress
 
         Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address);
         Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync();
+        Task<IReadOnlyList<string>> ListNftTokenIdsAsync(UInt160 address, UInt160 assetHash);
         Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync();
         Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash);
         Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync();

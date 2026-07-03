@@ -18,11 +18,9 @@ using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract;
-using Neo.SmartContract.Iterators;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Native;
 using Neo.VM;
-using Neo.VM.Types;
 using Neo.Wallets;
 using NeoExpress.Models;
 using NeoExpress.Utility;
@@ -454,34 +452,6 @@ namespace NeoExpress
             throw new Exception("invalid script results");
         }
 
-        public static async Task<List<string>> GetNFTAsync(this IExpressNode expressNode, UInt160 accountHash, UInt160 assetHash)
-        {
-            using var sb = new ScriptBuilder();
-            sb.EmitDynamicCall(assetHash, "tokensOf", accountHash);
-
-            var result = await expressNode.InvokeAsync(sb.ToArray()).ConfigureAwait(false);
-            var stack = result.Stack;
-            var list = new List<string>();
-            try
-            {
-                if (result.State != VMState.FAULT
-                        && result.Stack.Length >= 1
-                        && result.Stack[0] is InteropInterface interop
-                        && interop.GetInterface<object>() is IIterator iterator)
-                {
-                    while (iterator.Next())
-                    {
-                        list.Add(Convert.ToBase64String(iterator.Value().GetSpan()));
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                throw new Exception("invalid script results");
-            }
-            return list;
-        }
-
         public static async Task<Block> GetBlockAsync(this IExpressNode expressNode, string blockHash)
         {
             if (string.IsNullOrEmpty(blockHash))
@@ -489,14 +459,14 @@ namespace NeoExpress
                 return await expressNode.GetLatestBlockAsync().ConfigureAwait(false);
             }
 
-            if (UInt256.TryParse(blockHash, out var uint256))
-            {
-                return await expressNode.GetBlockAsync(uint256).ConfigureAwait(false);
-            }
-
             if (uint.TryParse(blockHash, out var index))
             {
                 return await expressNode.GetBlockAsync(index).ConfigureAwait(false);
+            }
+
+            if (UInt256.TryParse(blockHash, out var uint256))
+            {
+                return await expressNode.GetBlockAsync(uint256).ConfigureAwait(false);
             }
 
             throw new ArgumentException($"{nameof(blockHash)} must be block index, block hash or empty", nameof(blockHash));

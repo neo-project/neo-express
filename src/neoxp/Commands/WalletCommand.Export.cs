@@ -42,6 +42,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Overwrite existing data")]
             internal bool Force { get; }
 
+            [Option(Description = "Password to use for the exported NEP-6 wallet (prompted for if unspecified)")]
+            internal string Password { get; init; } = string.Empty;
+
             internal string Execute()
             {
                 var output = string.IsNullOrEmpty(Output)
@@ -68,7 +71,8 @@ namespace NeoExpress.Commands
                     }
                 }
 
-                var password = Prompt.GetPassword("Input password to use for exported wallet");
+                var password = Extensions.ResolveExportPassword(Password, Console.IsInputRedirected,
+                    () => Prompt.GetPassword("Input password to use for exported wallet"));
                 var devWallet = DevWallet.FromExpressWallet(chainManager.ProtocolSettings, wallet);
                 devWallet.Export(output, password);
                 return output;

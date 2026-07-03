@@ -11,16 +11,17 @@
 using Neo.BlockchainToolkit.Models;
 using Neo.Persistence;
 using Neo.SmartContract;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo.BlockchainToolkit.Persistence
 {
-    public class NullCheckpointStore : ICheckpointStore
+    public class NullCheckpointStore : ICheckpointStore, IReadOnlyStore<byte[], byte[]>
     {
         public ProtocolSettings Settings { get; }
 
         public NullCheckpointStore(ExpressChain? chain)
-            : this(chain?.Network, chain?.AddressVersion)
         {
+            Settings = chain.GetProtocolSettings();
         }
 
         public NullCheckpointStore(uint? network = null, byte? addressVersion = null)
@@ -32,10 +33,17 @@ namespace Neo.BlockchainToolkit.Persistence
             };
         }
 
-        public IEnumerable<(byte[] Key, byte[]? Value)> Seek(byte[] key, SeekDirection direction)
-            => Enumerable.Empty<(byte[], byte[]?)>();
+        public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[] key, SeekDirection direction)
+            => Enumerable.Empty<(byte[], byte[])>();
         public byte[]? TryGet(byte[] key) => null;
+        public bool TryGet(byte[] key, [NotNullWhen(true)] out byte[]? value)
+        {
+            value = null;
+            return false;
+        }
         public bool Contains(byte[] key) => false;
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+            => Enumerable.Empty<(byte[], byte[])>();
 
         // IReadOnlyStore<StorageKey, StorageItem> implementation
         public StorageItem this[StorageKey key]
@@ -46,7 +54,7 @@ namespace Neo.BlockchainToolkit.Persistence
         [Obsolete("use TryGet(StorageKey key, out StorageItem? value) instead.")]
         public StorageItem? TryGet(StorageKey key) => null;
 
-        public bool TryGet(StorageKey key, out StorageItem? value)
+        public bool TryGet(StorageKey key, [NotNullWhen(true)] out StorageItem? value)
         {
             value = null;
             return false;

@@ -11,7 +11,7 @@ export default function CreateContract({ onCreate }: Props) {
     <>
       <div style={{ margin: 10, textAlign: "left" }}>
         You don't appear to have any smart contracts in the current Visual
-        Studio Code worskspace. Would you like to create a new smart contract?
+        Studio Code workspace. Would you like to create a new smart contract?
         You can write your smart contract's code in a programming language of
         your choice and then deploy and test it locally using Neo Express.
       </div>

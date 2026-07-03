@@ -46,7 +46,8 @@ class StopCommand
                 return 0;
             }
 
-            var processId = int.Parse(json["process-id"]!.AsString());
+            var processIdToken = json["processId"] ?? json["process-id"];
+            var processId = int.Parse(processIdToken!.AsString());
             try
             {
                 var process = System.Diagnostics.Process.GetProcessById(processId);

@@ -62,7 +62,7 @@ class WorknetRpcServerPlugin : Plugin
 
         var proc = System.Diagnostics.Process.GetCurrentProcess();
         var response = new JObject();
-        response["process-id"] = proc.Id;
+        response["processId"] = proc.Id;
 
         Logs.GetLogger(nameof(WorknetRpcServerPlugin))
             .Information("ExpressShutdown requested. Shutting down in {ShutdownTime} seconds", SHUTDOWN_TIME);

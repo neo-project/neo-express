@@ -98,6 +98,26 @@ export default class BlockchainIdentifier {
     }
   }
 
+  async isSingleNodeExpress(): Promise<boolean> {
+    if (this.blockchainType !== "express" || !this.configPath) {
+      return false;
+    }
+    try {
+      const neoExpressConfig = JSONC.parse(
+        (await fs.promises.readFile(this.configPath)).toString()
+      );
+      return neoExpressConfig["consensus-nodes"]?.length === 1;
+    } catch (e : any) {
+      Log.log(
+        LOG_PREFIX,
+        "Error parsing neo-express node count",
+        this.configPath,
+        e.message
+      );
+      return false;
+    }
+  }
+
   async getWalletAddresses(): Promise<{ [walletName: string]: string }> {
     if (this.blockchainType !== "express") {
       return {};

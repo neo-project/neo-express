@@ -137,6 +137,12 @@ export default class NeoExpressCommands {
     if (!identifier) {
       return;
     }
+    if (!(await identifier.isSingleNodeExpress())) {
+      vscode.window.showErrorMessage(
+        "Checkpoints can only be created for single-node Neo Express instances."
+      );
+      return;
+    }
     const rootFolder = workspaceFolder();
     if (!rootFolder) {
       vscode.window.showErrorMessage(

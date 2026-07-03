@@ -19,6 +19,14 @@ export default class NeoExpressInstanceManager {
     return this.running;
   }
 
+  isRunning(identifier: BlockchainIdentifier) {
+    return (
+      this.running?.configPath === identifier.configPath ||
+      this.activeConnection.connection?.blockchainIdentifier.configPath ===
+        identifier.configPath
+    );
+  }
+
   private readonly onChangeEmitter: vscode.EventEmitter<void>;
 
   private disposed: boolean;
@@ -141,7 +149,25 @@ export default class NeoExpressInstanceManager {
     }
   }
 
-  async stopAll() {
+  async stopAll(identifier?: BlockchainIdentifier) {
+    const target = identifier || this.running;
+    if (target?.blockchainType === "express") {
+      const output = await this.neoExpress.run(
+        "stop",
+        "--all",
+        "-i",
+        target.configPath
+      );
+      if (output.isError) {
+        Log.warn(
+          LOG_PREFIX,
+          "Could not stop",
+          target.name,
+          output.message.trim()
+        );
+      }
+    }
+
     try {
       for (const terminal of this.terminals) {
         if (!terminal.exitStatus) {

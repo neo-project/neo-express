@@ -14,6 +14,7 @@ type Command =
   | "reset"
   | "run"
   | "show"
+  | "stop"
   | "transfer"
   | "wallet"
   | "-v";

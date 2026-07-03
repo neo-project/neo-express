@@ -251,6 +251,7 @@ export async function activate(context: vscode.ExtensionContext) {
     (commandArguments) =>
       NeoExpressCommands.restoreCheckpoint(
         neoExpress,
+        neoExpressInstanceManager,
         blockchainsTreeDataProvider,
         checkpointDetector,
         commandArguments

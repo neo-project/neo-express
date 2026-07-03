@@ -83,6 +83,7 @@ export default class NeoExpressInstanceManager {
           child.configPath,
           "-s",
           `${secondsPerBlock}`,
+          "--node-index",
           `${child.index}`
         );
         if (terminal) {
@@ -97,6 +98,7 @@ export default class NeoExpressInstanceManager {
         identifier.configPath,
         "-s",
         `${secondsPerBlock}`,
+        "--node-index",
         `${identifier.index}`
       );
       if (terminal) {

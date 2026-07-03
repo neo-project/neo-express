@@ -74,4 +74,32 @@ public class OnlineNodeTests
         payload["storage"]![0]!["key"]!.AsString().Should().Be("AQ==");
         payload["storage"]![0]!["value"]!.AsString().Should().Be("Ag==");
     }
+
+    [Fact]
+    public void ParseNftTokenIds_filters_by_asset_hash_and_returns_base64_token_ids()
+    {
+        var assetHash = UInt160.Parse("0xe94c5a1f5018fc34eabe84335f9690bd552780ba");
+        var otherAssetHash = UInt160.Parse("0x0102030405060708090a0b0c0d0e0f1011121314");
+        var tokens = new JArray
+        {
+            new JObject { ["tokenid"] = "31" },
+            new JObject { ["tokenid"] = "0a0b" },
+        };
+        var otherTokens = new JArray
+        {
+            new JObject { ["tokenid"] = "ff" },
+        };
+        var balances = new JArray
+        {
+            new JObject { ["assethash"] = otherAssetHash.ToString(), ["tokens"] = otherTokens },
+            new JObject { ["assethash"] = assetHash.ToString(), ["tokens"] = tokens },
+        };
+        var json = new JObject { ["balance"] = balances };
+
+        var result = OnlineNode.ParseNftTokenIds(json, assetHash);
+
+        result.Should().Equal(
+            Convert.ToBase64String(new byte[] { 0x31 }),
+            Convert.ToBase64String(new byte[] { 0x0a, 0x0b }));
+    }
 }

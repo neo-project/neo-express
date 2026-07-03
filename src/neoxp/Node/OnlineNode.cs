@@ -256,6 +256,29 @@ namespace NeoExpress.Node
             return Array.Empty<TokenContract>();
         }
 
+        public async Task<IReadOnlyList<string>> ListNftTokenIdsAsync(UInt160 address, UInt160 assetHash)
+        {
+            var json = await rpcClient.RpcSendAsync("getnep11balances", address.ToAddress(ProtocolSettings.AddressVersion))
+                .ConfigureAwait(false);
+
+            return ParseNftTokenIds(json, assetHash);
+        }
+
+        internal static IReadOnlyList<string> ParseNftTokenIds(JToken? json, UInt160 assetHash)
+        {
+            if (json is JObject obj && obj["balance"] is JArray balances)
+            {
+                return balances
+                    .OfType<JObject>()
+                    .Where(balance => UInt160.Parse(balance["assethash"]!.AsString()) == assetHash)
+                    .SelectMany(balance => ((JArray?)balance["tokens"])?.OfType<JObject>() ?? Enumerable.Empty<JObject>())
+                    .Select(token => Convert.ToBase64String(token["tokenid"]!.AsString().HexToBytes()))
+                    .ToList();
+            }
+
+            return Array.Empty<string>();
+        }
+
         public async Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync()
         {
             var json = await rpcClient.RpcSendAsync("expresslistoraclerequests").ConfigureAwait(false);

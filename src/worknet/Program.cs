@@ -18,7 +18,7 @@ namespace NeoWorkNet;
 
 [Command("neo-worknet", Description = "Branch a public Neo N3 blockchain for private development use", UsePagerForHelpText = false)]
 [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
-[Subcommand(typeof(CreateCommand), typeof(PrefetchCommand), typeof(ResetCommand), typeof(RunCommand), typeof(StopCommand))]
+[Subcommand(typeof(CreateCommand), typeof(FastForwardCommand), typeof(PrefetchCommand), typeof(ResetCommand), typeof(RunCommand), typeof(StopCommand))]
 partial class Program
 {
     public static async Task<int> Main(string[] args)

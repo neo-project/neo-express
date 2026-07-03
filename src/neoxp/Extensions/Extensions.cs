@@ -61,6 +61,18 @@ namespace NeoExpress
             Console.WriteLine($"\x1b[33mWarning: {value}\x1b[0m");
         }
 
+        // Shared by the export commands: prefer an explicitly provided password, refuse to
+        // prompt when input is redirected (batch scripts and CI would block forever), and
+        // fall back to an interactive prompt otherwise.
+        public static string ResolveExportPassword(string password, bool isInputRedirected, Func<string> promptForPassword)
+        {
+            if (!string.IsNullOrEmpty(password))
+                return password;
+            if (isInputRedirected)
+                throw new Exception("A password is required in non-interactive mode. Specify one with --password.");
+            return promptForPassword();
+        }
+
         public static bool TryGetUtf8String(this ReadOnlySpan<byte> data, out string text)
         {
             try

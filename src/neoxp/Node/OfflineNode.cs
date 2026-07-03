@@ -10,6 +10,7 @@
 
 using Akka.Actor;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography.ECC;
@@ -44,10 +45,13 @@ namespace NeoExpress.Node
         readonly Lazy<KeyPair[]> consensusNodesKeys;
         readonly object engineLock = new();
         readonly List<WeakReference<ApplicationEngine>> engineRefs = new();
+        readonly IApplicationEngineProvider? priorEngineProvider;
+        readonly bool engineProviderSet;
         bool disposedValue;
 
         public ProtocolSettings ProtocolSettings => neoSystem.Settings;
 
+        // OfflineNode takes ownership of expressStorage and disposes it when it is disposed.
         public OfflineNode(ProtocolSettings settings, RocksDbExpressStorage expressStorage, ExpressWallet nodeWallet, ExpressChain chain, bool enableTrace)
         {
             this.nodeWallet = DevWallet.FromExpressWallet(settings, nodeWallet);
@@ -55,13 +59,19 @@ namespace NeoExpress.Node
             this.expressStorage = expressStorage;
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
 
+            // Pass the store provider instance directly instead of registering it in the
+            // global StoreFactory: a registration cannot be removed, so a second OfflineNode
+            // constructed in the same process would throw on the duplicate provider name.
             var storeProvider = new ExpressStoreProvider(expressStorage);
-            StoreFactory.RegisterProvider(storeProvider);
             if (enableTrace)
-            { ApplicationEngine.Provider = new ExpressApplicationEngineProvider(); }
+            {
+                priorEngineProvider = ApplicationEngine.Provider;
+                engineProviderSet = true;
+                ApplicationEngine.Provider = new ExpressApplicationEngineProvider();
+            }
 
             persistencePlugin = new ExpressPersistencePlugin();
-            neoSystem = new NeoSystem(settings, storeProvider.Name);
+            neoSystem = new NeoSystem(settings, storeProvider, null);
 
             ApplicationEngine.InstanceHandler += OnApplicationEngineCreated;
         }
@@ -71,20 +81,28 @@ namespace NeoExpress.Node
             if (!disposedValue)
             {
                 ApplicationEngine.InstanceHandler -= OnApplicationEngineCreated;
+                List<WeakReference<ApplicationEngine>> refs;
                 lock (engineLock)
                 {
-                    foreach (var engineRef in engineRefs)
-                    {
-                        if (engineRef.TryGetTarget(out var engine))
-                        {
-                            engine.Log -= OnLog;
-                        }
-                    }
+                    disposedValue = true;
+                    refs = engineRefs.ToList();
                     engineRefs.Clear();
+                }
+                foreach (var engineRef in refs)
+                {
+                    if (engineRef.TryGetTarget(out var engine))
+                    {
+                        engine.Log -= OnLog;
+                    }
                 }
                 persistencePlugin.Dispose();
                 neoSystem.Dispose();
-                disposedValue = true;
+                persistencePlugin.RemoveFromPluginList();
+                if (engineProviderSet)
+                {
+                    ApplicationEngine.Provider = priorEngineProvider;
+                }
+                expressStorage.Dispose();
             }
         }
 
@@ -92,9 +110,12 @@ namespace NeoExpress.Node
         {
             lock (engineLock)
             {
+                if (disposedValue)
+                    return;
+
                 engineRefs.Add(new WeakReference<ApplicationEngine>(engine));
+                engine.Log += OnLog;
             }
-            engine.Log += OnLog;
         }
 
         private void OnLog(ApplicationEngine engine, LogEventArgs args)
@@ -167,13 +188,11 @@ namespace NeoExpress.Node
             const long maxSafeGas = long.MaxValue / 10_000;
             var maxGas = balance.Amount > maxSafeGas ? maxSafeGas : (long)balance.Amount;
             var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: maxGas);
-            if (additionalGas > 0.0m)
-            {
-                tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
-            }
+            tx.SystemFee += NodeUtility.AdditionalGasSystemFee(additionalGas);
 
             var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
-            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            var account = wallet.GetAccount(accountHash)
+                ?? throw new Exception($"Account {accountHash} not found in wallet {wallet.Name}");
             if (account.IsMultiSigContract())
             {
                 var multiSigWallets = chain.GetMultiSigWallets(neoSystem.Settings, accountHash);
@@ -191,7 +210,7 @@ namespace NeoExpress.Node
 
             if (!context.Completed)
             {
-                throw new Exception();
+                throw new Exception($"Failed to complete the signing context for account {accountHash}: not enough signing wallets are available");
             }
 
             tx.Witnesses = context.GetWitnesses();
@@ -224,7 +243,7 @@ namespace NeoExpress.Node
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
 
-            await NodeUtility.FastForwardAsync(prevHeader,
+            await BlockProducer.FastForwardAsync(prevHeader,
                 blockCount,
                 timestampDelta,
                 consensusNodesKeys.Value,
@@ -252,7 +271,7 @@ namespace NeoExpress.Node
 
             var prevHash = NativeContract.Ledger.CurrentHash(neoSystem.StoreView);
             var prevHeader = NativeContract.Ledger.GetHeader(neoSystem.StoreView, prevHash);
-            var block = NodeUtility.CreateSignedBlock(prevHeader,
+            var block = BlockProducer.CreateSignedBlock(prevHeader,
                 consensusNodesKeys.Value,
                 neoSystem.Settings.Network,
                 transactions);

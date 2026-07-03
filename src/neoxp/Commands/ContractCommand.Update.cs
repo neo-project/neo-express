@@ -67,7 +67,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    var data = txExec.ContractParameterParser(Data);
+                    var data = ParseUpdateData(Data, txExec.ContractParameterParser);
                     await txExec.ContractUpdateAsync(Contract, NefFile, Account, password, WitnessScope, data).ConfigureAwait(false);
                     return 0;
                 }
@@ -78,6 +78,8 @@ namespace NeoExpress.Commands
                 }
             }
 
+            internal static object? ParseUpdateData(string data, Func<string, object> parseData)
+                => string.IsNullOrEmpty(data) ? null : parseData(data);
         }
     }
 }

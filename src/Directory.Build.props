@@ -19,7 +19,7 @@
     <PropertyGroup>
         <NeoVersion>3.10.0</NeoVersion>
         <NeoModuleVersion>3.10.0</NeoModuleVersion>
-        <NeoConsensusDbftVersion>3.9.1</NeoConsensusDbftVersion>
+        <NeoConsensusDbftVersion>3.10.0</NeoConsensusDbftVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>

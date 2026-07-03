@@ -40,9 +40,9 @@ class StopCommand
             {
                 json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
-                await console.Out.WriteLineAsync("worknet node was not running").ConfigureAwait(false);
+                await console.Out.WriteLineAsync($"worknet node was not running: {ex.Message}").ConfigureAwait(false);
                 return 0;
             }
 

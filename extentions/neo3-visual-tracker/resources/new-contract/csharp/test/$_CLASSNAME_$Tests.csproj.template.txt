@@ -30,10 +30,10 @@
 
   <Target Name="ExecuteCreateNeoExpressInstance" Condition="!Exists($(NeoExpressBatchInputFile))"
           AfterTargets="Build" BeforeTargets="ExecuteNeoExpressBatch">
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp create" />
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create owner" />
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create alice" />
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create bob" />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp create -o &quot;$(NeoExpressBatchInputFile)&quot;" />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create -i &quot;$(NeoExpressBatchInputFile)&quot; owner" />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create -i &quot;$(NeoExpressBatchInputFile)&quot; alice" />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create -i &quot;$(NeoExpressBatchInputFile)&quot; bob" />
   </Target>
 
 </Project>

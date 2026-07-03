@@ -8,6 +8,7 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using Neo.BlockchainToolkit.Utilities;
 using System.Collections.Concurrent;
 
 namespace Neo.BlockchainToolkit.Persistence
@@ -16,8 +17,11 @@ namespace Neo.BlockchainToolkit.Persistence
     {
         internal sealed class MemoryCacheClient : ICacheClient
         {
-            readonly ConcurrentDictionary<int, byte[]?> storageMap = new();
-            readonly ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap = new();
+            // Key the caches by the actual (contract, key) pair rather than by its 32-bit
+            // hash code. Using the hash as the identity meant two distinct storage keys
+            // could collide and silently serve each other's cached value.
+            readonly ConcurrentDictionary<(UInt160 contractHash, ReadOnlyMemory<byte> key), byte[]?> storageMap = new(StorageKeyComparer.Instance);
+            readonly ConcurrentDictionary<(UInt160 contractHash, byte? prefix), IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap = new();
             private bool disposed;
 
             public void Dispose()
@@ -28,21 +32,21 @@ namespace Neo.BlockchainToolkit.Persistence
                 }
             }
 
-            static int GetStorageKey(UInt160 contractHash, byte? prefix)
+            sealed class StorageKeyComparer : IEqualityComparer<(UInt160 contractHash, ReadOnlyMemory<byte> key)>
             {
-                var hashBuilder = new HashCode();
-                hashBuilder.Add(contractHash);
-                if (prefix.HasValue)
-                    hashBuilder.Add(prefix.Value);
-                return hashBuilder.ToHashCode();
-            }
+                public static StorageKeyComparer Instance { get; } = new();
 
-            static int GetStorageKey(UInt160 contractHash, ReadOnlyMemory<byte> key)
-            {
-                var hashBuilder = new HashCode();
-                hashBuilder.Add(contractHash);
-                hashBuilder.AddBytes(key.Span);
-                return hashBuilder.ToHashCode();
+                public bool Equals((UInt160 contractHash, ReadOnlyMemory<byte> key) x, (UInt160 contractHash, ReadOnlyMemory<byte> key) y)
+                    => x.contractHash == y.contractHash
+                        && MemorySequenceComparer.Equals(x.key.Span, y.key.Span);
+
+                public int GetHashCode((UInt160 contractHash, ReadOnlyMemory<byte> key) obj)
+                {
+                    var hashBuilder = new HashCode();
+                    hashBuilder.Add(obj.contractHash);
+                    hashBuilder.AddBytes(obj.key.Span);
+                    return hashBuilder.ToHashCode();
+                }
             }
 
             public bool TryGetCachedStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, out byte[]? value)
@@ -50,8 +54,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                var hash = GetStorageKey(contractHash, key);
-                return storageMap.TryGetValue(hash, out value);
+                return storageMap.TryGetValue((contractHash, key), out value);
             }
 
             public void CacheStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, byte[]? value)
@@ -59,8 +62,9 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                var hash = GetStorageKey(contractHash, key);
-                if (!storageMap.TryAdd(hash, value))
+                // Copy the key so the stored identity stays stable even if the caller
+                // reuses the underlying buffer.
+                if (!storageMap.TryAdd((contractHash, key.ToArray()), value))
                     throw new Exception($"Key already exists {Convert.ToHexString(key.Span)}");
             }
 
@@ -69,8 +73,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                var hash = GetStorageKey(contractHash, prefix);
-                if (foundStateMap.TryGetValue(hash, out var list))
+                if (foundStateMap.TryGetValue((contractHash, prefix), out var list))
                 {
                     value = list;
                     return true;
@@ -85,10 +88,9 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                var hash = GetStorageKey(contractHash, prefix);
-                if (foundStateMap.ContainsKey(hash))
+                if (foundStateMap.ContainsKey((contractHash, prefix)))
                     throw new Exception($"{contractHash}-{prefix} already cached");
-                return new Snapshot(foundStateMap, hash);
+                return new Snapshot(foundStateMap, (contractHash, prefix));
             }
 
             public void DropCachedFoundStates(UInt160 contractHash, byte? prefix)
@@ -96,21 +98,20 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                var hash = GetStorageKey(contractHash, prefix);
-                _ = foundStateMap.TryRemove(hash, out _);
+                _ = foundStateMap.TryRemove((contractHash, prefix), out _);
             }
 
             class Snapshot : ICacheSnapshot
             {
-                readonly ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap;
-                readonly int hash;
+                readonly ConcurrentDictionary<(UInt160 contractHash, byte? prefix), IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap;
+                readonly (UInt160 contractHash, byte? prefix) key;
                 List<(ReadOnlyMemory<byte> key, byte[] value)> entries = new();
                 bool disposed = false;
 
-                public Snapshot(ConcurrentDictionary<int, IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap, int hash)
+                public Snapshot(ConcurrentDictionary<(UInt160 contractHash, byte? prefix), IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap, (UInt160 contractHash, byte? prefix) key)
                 {
                     this.foundStateMap = foundStateMap;
-                    this.hash = hash;
+                    this.key = key;
                 }
 
                 public void Dispose()
@@ -132,7 +133,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 {
                     ObjectDisposedException.ThrowIf(disposed, nameof(MemoryCacheClient.Snapshot));
 
-                    if (!foundStateMap.TryAdd(hash, entries))
+                    if (!foundStateMap.TryAdd(key, entries))
                     {
                         throw new Exception("Failed to add cached entries");
                     }

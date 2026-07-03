@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.Cryptography.ECC;
 using Neo.Extensions;
@@ -73,7 +74,7 @@ namespace NeoExpress.Node
             var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
             var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
-            await NodeUtility.FastForwardAsync(prevHeader,
+            await BlockProducer.FastForwardAsync(prevHeader,
                 blockCount,
                 timestampDelta,
                 consensusNodesKeys.Value,
@@ -86,32 +87,33 @@ namespace NeoExpress.Node
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
             var tm = await TransactionManager.MakeTransactionAsync(rpcClient, script, signers).ConfigureAwait(false);
 
-            if (additionalGas > 0.0m)
-            {
-                tm.Tx.SystemFee += (long)additionalGas.ToBigInteger(NativeContract.GAS.Decimals);
-            }
+            tm.Tx.SystemFee += NodeUtility.AdditionalGasSystemFee(additionalGas);
 
-            var account = wallet.GetAccount(accountHash) ?? throw new Exception();
+            var account = wallet.GetAccount(accountHash)
+                ?? throw new Exception($"Account {accountHash} not found in wallet {wallet.Name}");
             if (account.IsMultiSigContract())
             {
                 var signatureCount = account.Contract.ParameterList.Length;
                 var multiSigWallets = chain.GetMultiSigWallets(ProtocolSettings, accountHash);
                 if (multiSigWallets.Count < signatureCount)
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException($"Multi-sig account {accountHash} requires {signatureCount} signatures but only {multiSigWallets.Count} signing wallets are available");
 
                 var publicKeys = multiSigWallets
-                    .Select(w => (w.GetAccount(accountHash)?.GetKey() ?? throw new Exception()).PublicKey)
+                    .Select(w => (w.GetAccount(accountHash)?.GetKey()
+                        ?? throw new Exception($"Wallet {w.Name} has no accessible private key for multi-sig account {accountHash}")).PublicKey)
                     .ToArray();
 
                 for (var i = 0; i < signatureCount; i++)
                 {
-                    var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey() ?? throw new Exception();
+                    var key = multiSigWallets[i].GetAccount(accountHash)?.GetKey()
+                        ?? throw new Exception($"Wallet {multiSigWallets[i].Name} has no accessible private key for multi-sig account {accountHash}");
                     tm.AddMultiSig(key, signatureCount, publicKeys);
                 }
             }
             else
             {
-                tm.AddSignature(account.GetKey() ?? throw new Exception());
+                tm.AddSignature(account.GetKey()
+                    ?? throw new Exception($"Account {accountHash} has no accessible private key"));
             }
 
             var tx = await tm.SignAsync().ConfigureAwait(false);

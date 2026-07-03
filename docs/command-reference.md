@@ -1,10 +1,14 @@
 <!-- markdownlint-enable -->
 # Neo-Express N3 Command Reference
 
-> Note: This is the command reference for Neo-Express 3.6, targeting N3.
+> Note: This is the command reference for Neo-Express 3.10.0, targeting N3.
 >
 > You can pass -?|-h|--help to show a list of supported commands or to show
 > help information about a specific command.
+
+Commands that accept `--trace` write local `.neo-trace` files for executed
+transactions in the current directory. To trace transactions that already exist
+on MainNet or TestNet, use `neotrace` instead.
 
 ## Specifying Signing and Non-Signing Accounts
 
@@ -158,7 +162,8 @@ Usage: neoxp export [Options]
 
 Arguments:
 [Options]:
-  -i|--input <INPUT>  Path to neo-express data file
+  -i|--input <INPUT>        Path to neo-express data file
+  -p|--password <PASSWORD>  Password to use for the exported wallets (prompted for if unspecified)
 ```
 
 The `export` command saves the wallet and settings of each consensus node in a standard format. The exported files can be found under the root directory of neoxp.exe. This allows for standard Neo node implementations such as Neo-CLI to connect to a running Neo-Express blockchain network.
@@ -233,9 +238,10 @@ Usage: neoxp wallet export [Options] <Name>
 
 Arguments:
 [Options]:
-  -i|--input <INPUT>    Path to neo-express data file
-  -o|--output <OUTPUT>  NEP-6 wallet name (Defaults to Neo-Express name if unspecified)
-  -f|--force            Overwrite existing data
+  -i|--input <INPUT>        Path to neo-express data file
+  -o|--output <OUTPUT>      NEP-6 wallet name (Defaults to Neo-Express name if unspecified)
+  -f|--force                Overwrite existing data
+  -p|--password <PASSWORD>  Password to use for the exported NEP-6 wallet (prompted for if unspecified)
 <Name>: Wallet name
 ```
 
@@ -362,7 +368,7 @@ Arguments:
 <Account>: Account to pay contract invocation GAS fee
 ```
 
-The `contract invoke` command generates a script from an [invocation file](Neo Express Invocation File.md) and submits it to the Neo-Express blockchain network as a transaction.
+The `contract invoke` command generates a script from an [invocation file](Neo Express Invocation File.md) and submits it to the Neo-Express blockchain network as a transaction. The invocation file identifies the deployed contract by name or script hash.
 
 A script can be invoked either for results (specified via the `--results` option) or to make changes
 (specified via the signed account argument). If a script is submitted for results, it may read information
@@ -397,7 +403,7 @@ Arguments:
 ```
 
 Like `contract invoke`, the `contract run` command generates a script and submits it to the Neo-Express
-blockchain network as a transaction wither for results or changes. However, unlike `contract invoke`, 
+blockchain network as a transaction either for results or changes. However, unlike `contract invoke`,
 the `contract run` command generates the script from command line parameters instead of an invocation
 file. The command line constraints limit the flexibility of `contract run` relative to `contract invoke`,
 but saves the developer from needing to create an invocation file for simple contract invocation scenarios.
@@ -596,6 +602,7 @@ Arguments:
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
+  -j|--json           Output as JSON
 ```
 
 The `show balance` displays the balance of a single NEP-17 asset (including NEO and GAS) of a specific account.
@@ -610,6 +617,7 @@ Arguments:
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
+  -j|--json           Output as JSON
 ```
 
 The `show balances` displays the balance of all NEP-17 asset (including NEO and GAS) owned by a specific account.
@@ -640,6 +648,7 @@ Arguments:
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
+  -j|--json           Output as JSON
 ```
 
 The `show nft` displays the content of an NFT contract for a specified account. The output consists of TokenId in Base64 and big-endian Hex string formats.

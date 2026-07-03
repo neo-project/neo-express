@@ -214,7 +214,7 @@ namespace NeoExpress.Commands
                             }
                         case CommandLineApplication<BatchFileCommands.Contract.Update> cmd:
                             {
-                                var data = txExec.ContractParameterParser(cmd.Model.Data);
+                                var data = ContractCommand.Update.ParseUpdateData(cmd.Model.Data, txExec.ContractParameterParser);
                                 await txExec.ContractUpdateAsync(
                                     cmd.Model.Contract,
                                     root.Resolve(cmd.Model.NefFile),

@@ -42,6 +42,8 @@ namespace Neo.BlockchainToolkit.Persistence
         const byte NEO_Prefix_GasPerBlock = 29;
         const byte NEO_Prefix_VoterRewardPerCommittee = 23;
         const byte Oracle_Prefix_Request = 7;
+        const byte Policy_Prefix_BlockedAccount = 15;
+        const byte Policy_Prefix_WhitelistedFeeContracts = 16;
         const byte RoleMgmt_Prefix_NeoFSAlphabetNode = (byte)Role.NeoFSAlphabetNode;
         const byte RoleMgmt_Prefix_Oracle = (byte)Role.Oracle;
         const byte RoleMgmt_Prefix_StateValidator = (byte)Role.StateValidator;
@@ -51,6 +53,7 @@ namespace Neo.BlockchainToolkit.Persistence
             { NativeContract.ContractManagement.Id, new [] { ContractMgmt_Prefix_Contract, ContractMgmt_Prefix_ContractHash } },
             { NativeContract.NEO.Id, new [] { NEO_Prefix_Candidate, NEO_Prefix_GasPerBlock } },
             { NativeContract.Oracle.Id, new [] { Oracle_Prefix_Request } },
+            { NativeContract.Policy.Id, new [] { Policy_Prefix_BlockedAccount, Policy_Prefix_WhitelistedFeeContracts } },
             { NativeContract.RoleManagement.Id, new [] { RoleMgmt_Prefix_NeoFSAlphabetNode, RoleMgmt_Prefix_Oracle, RoleMgmt_Prefix_StateValidator } }
         };
 
@@ -149,12 +152,17 @@ namespace Neo.BlockchainToolkit.Persistence
         internal static async Task<UInt256> ParseBlockHashAsync(RpcClient rpcClient, uint index)
             => UInt256.Parse(await rpcClient.GetBlockHashAsync(index).ConfigureAwait(false));
 
-        public static async Task<BranchInfo> GetBranchInfoAsync(RpcClient rpcClient, uint index)
+        public static Task<BranchInfo> GetBranchInfoAsync(RpcClient rpcClient, uint index)
+            => GetBranchInfoAsync(rpcClient, index, includeContractNames: true);
+
+        public static async Task<BranchInfo> GetBranchInfoAsync(RpcClient rpcClient, uint index, bool includeContractNames)
         {
             var versionTask = rpcClient.GetVersionAsync();
             var blockHashTask = ParseBlockHashAsync(rpcClient, index);
             var stateRoot = await rpcClient.GetStateRootAsync(index).ConfigureAwait(false);
-            var contractsTask = GetContractsAsync(rpcClient, stateRoot.RootHash);
+            var contractsTask = includeContractNames
+                ? GetContractsAsync(rpcClient, stateRoot.RootHash)
+                : GetContractHashesAsync(rpcClient, stateRoot.RootHash);
 
             await Task.WhenAll(versionTask, blockHashTask, contractsTask).ConfigureAwait(false);
 
@@ -168,45 +176,80 @@ namespace Neo.BlockchainToolkit.Persistence
                 index,
                 blockHash,
                 stateRoot.RootHash,
-                contracts);
+                contracts,
+                version.Protocol.Hardforks);
+        }
 
-            static async Task<IReadOnlyList<ContractInfo>> GetContractsAsync(RpcClient rpcClient, UInt256 rootHash)
+        internal static async Task<IReadOnlyList<ContractInfo>> GetContractHashesAsync(RpcClient rpcClient, UInt256 rootHash)
+        {
+            using var memoryOwner = MemoryPool<byte>.Shared.Rent(1);
+            memoryOwner.Memory.Span[0] = ContractMgmt_Prefix_ContractHash;
+            var prefix = memoryOwner.Memory[..1];
+
+            var contracts = NativeContract.Contracts
+                .Select(static c => new ContractInfo(c.Id, c.Hash, c.Name))
+                .ToList();
+            var contractIds = contracts.Select(static c => c.Id).ToHashSet();
+
+            var from = Array.Empty<byte>();
+            while (true)
             {
-                const byte ContractManagement_Prefix_Contract = 8;
-
-                using var memoryOwner = MemoryPool<byte>.Shared.Rent(1);
-                memoryOwner.Memory.Span[0] = ContractManagement_Prefix_Contract;
-                var prefix = memoryOwner.Memory[..1];
-
-                var contracts = new List<ContractInfo>();
-                var from = Array.Empty<byte>();
-                while (true)
+                var found = await rpcClient.FindStatesAsync(rootHash, NativeContract.ContractManagement.Hash, prefix, from.AsMemory()).ConfigureAwait(false);
+                ValidateFoundStates(rootHash, found);
+                for (var i = 0; i < found.Results.Length; i++)
                 {
-                    var found = await rpcClient.FindStatesAsync(rootHash, NativeContract.ContractManagement.Hash, prefix, from.AsMemory()).ConfigureAwait(false);
-                    ValidateFoundStates(rootHash, found);
-                    for (var i = 0; i < found.Results.Length; i++)
+                    var (key, value) = found.Results[i];
+                    if (key.Length == 5 && key.AsSpan().StartsWith(prefix.Span) && value.Length == UInt160.Length)
                     {
-                        var (key, value) = found.Results[i];
-                        if (key.AsSpan().StartsWith(prefix.Span))
+                        var id = BinaryPrimitives.ReadInt32BigEndian(key.AsSpan(1));
+                        if (contractIds.Add(id))
                         {
-                            // Temporary fix --> https://github.com/neo-project/neo/issues/2829
-                            try
-                            {
-                                var state = new StorageItem(value).GetInteroperable<ContractState>();
-                                contracts.Add(new ContractInfo(state.Id, state.Hash, state.Manifest.Name));
-                            }
-                            catch
-                            {
-
-                            }
+                            var hash = new UInt160(value);
+                            contracts.Add(new ContractInfo(id, hash, hash.ToString()));
                         }
                     }
-                    if (!found.Truncated || found.Results.Length == 0)
-                        break;
-                    from = EnsureCursorAdvanced(from, found.Results[^1].key);
                 }
-                return contracts;
+                if (!found.Truncated || found.Results.Length == 0)
+                    break;
+                from = EnsureCursorAdvanced(from, found.Results[^1].key);
             }
+            return contracts;
+        }
+
+        static async Task<IReadOnlyList<ContractInfo>> GetContractsAsync(RpcClient rpcClient, UInt256 rootHash)
+        {
+            using var memoryOwner = MemoryPool<byte>.Shared.Rent(1);
+            memoryOwner.Memory.Span[0] = ContractMgmt_Prefix_Contract;
+            var prefix = memoryOwner.Memory[..1];
+
+            var contracts = new List<ContractInfo>();
+            var from = Array.Empty<byte>();
+            while (true)
+            {
+                var found = await rpcClient.FindStatesAsync(rootHash, NativeContract.ContractManagement.Hash, prefix, from.AsMemory()).ConfigureAwait(false);
+                ValidateFoundStates(rootHash, found);
+                for (var i = 0; i < found.Results.Length; i++)
+                {
+                    var (key, value) = found.Results[i];
+                    if (key.AsSpan().StartsWith(prefix.Span))
+                    {
+                        // Temporary fix --> https://github.com/neo-project/neo/issues/2829
+                        try
+                        {
+                            var state = new StorageItem(value).GetInteroperable<ContractState>();
+                            contracts.Add(new ContractInfo(state.Id, state.Hash, state.Manifest.Name));
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+                if (!found.Truncated || found.Results.Length == 0)
+                    break;
+                from = EnsureCursorAdvanced(from, found.Results[^1].key);
+            }
+            return contracts;
         }
 
         static void ValidateFoundStates(UInt256 rootHash, RpcFoundStates foundStates)
@@ -289,34 +332,8 @@ namespace Neo.BlockchainToolkit.Persistence
                 return null;
             }
 
-            if (contractId < 0)
-            {
-                // contractSeekMap contains info on which native contract ids / prefixes can use seek methods
-                // For prefixes that need seek capability, ensure all records with that prefix are cached locally
-                // then retrieve the specifically keyed value from cache.
-                if (contractSeekMap.TryGetValue(contractId, out var prefixes))
-                {
-                    var prefix = key.Span[0];
-                    if (prefixes.Contains(prefix))
-                    {
-                        return GetFromStates(contractHash, prefix, key);
-                    }
-                }
-
-                // otherwise, retrieve and cache the keyed value
-                return GetStorage(contractHash, key,
-                    () => rpcClient.GetProvenState(branchInfo.RootHash, contractHash, key.Span));
-            }
-
-            // since there is no way to know the data usage patterns for deployed contracts download
-            // and cache all records for that contract then retrieve the keyed value from cache
-            return GetFromStates(contractHash, null, key);
-
-            byte[]? GetFromStates(UInt160 contractHash, byte? prefix, ReadOnlyMemory<byte> key)
-            {
-                return FindStates(contractHash, prefix)
-                    .FirstOrDefault(kvp => MemorySequenceComparer.Equals(kvp.key.Span, key.Span)).value;
-            }
+            return GetStorage(contractHash, key,
+                () => rpcClient.GetProvenState(branchInfo.RootHash, contractHash, key.Span));
         }
 
         byte[]? GetStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, Func<byte[]?> getStorageFromService)

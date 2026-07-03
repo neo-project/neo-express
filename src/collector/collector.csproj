@@ -17,6 +17,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- shared source, also compiled into Neo.BuildTasks -->
+        <Compile Include="..\shared\SimpleJSON.cs" Link="Utility\SimpleJSON.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="18.0.0" />
         <PackageReference Remove="Microsoft.SourceLink.GitHub" />
         <PackageReference Include="PolySharp" Version="1.15.0">

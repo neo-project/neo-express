@@ -24,6 +24,18 @@ namespace test.workflowvalidation;
 public class ExpressRpcServerPluginTests
 {
     [Theory]
+    [InlineData(nameof(ExpressRpcServerPlugin.ExpressIsNep11Compliant))]
+    [InlineData(nameof(ExpressRpcServerPlugin.ExpressIsNep17Compliant))]
+    public void ContractComplianceRpcMethods_AcceptRpcParameterArray(string methodName)
+    {
+        var method = typeof(ExpressRpcServerPlugin).GetMethod(methodName);
+
+        method.Should().NotBeNull();
+        method!.GetParameters().Should().ContainSingle()
+            .Which.ParameterType.Should().Be(typeof(JArray));
+    }
+
+    [Theory]
     [InlineData(3, 0, 0, true)]
     [InlineData(3, 2, 2, true)]
     [InlineData(3, 3, 3, false)]

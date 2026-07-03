@@ -26,6 +26,7 @@ namespace NeoExpress.Node
         readonly List<WeakReference<ApplicationEngine>> engineRefs = new();
         NeoSystem? neoSystem;
         readonly IConsole console;
+        bool disposedValue;
 
         public ExpressLogPlugin(IConsole console)
         {
@@ -40,16 +41,19 @@ namespace NeoExpress.Node
         {
             Neo.Utility.Logging -= OnNeoUtilityLog;
             ApplicationEngine.InstanceHandler -= OnApplicationEngineCreated;
+            List<WeakReference<ApplicationEngine>> refs;
             lock (engineLock)
             {
-                foreach (var engineRef in engineRefs)
-                {
-                    if (engineRef.TryGetTarget(out var engine))
-                    {
-                        engine.Log -= OnAppEngineLog;
-                    }
-                }
+                disposedValue = true;
+                refs = engineRefs.ToList();
                 engineRefs.Clear();
+            }
+            foreach (var engineRef in refs)
+            {
+                if (engineRef.TryGetTarget(out var engine))
+                {
+                    engine.Log -= OnAppEngineLog;
+                }
             }
             Blockchain.Committing -= OnCommitting;
         }
@@ -58,9 +62,12 @@ namespace NeoExpress.Node
         {
             lock (engineLock)
             {
+                if (disposedValue)
+                    return;
+
                 engineRefs.Add(new WeakReference<ApplicationEngine>(engine));
+                engine.Log += OnAppEngineLog;
             }
-            engine.Log += OnAppEngineLog;
         }
 
         protected override void OnSystemLoaded(NeoSystem system)

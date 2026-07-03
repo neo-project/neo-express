@@ -140,7 +140,7 @@ Options:
 ```
 
 Runs the branched blockchain locally. New blocks will be added to the chain every 15 seconds unless
-overridden with the `--seconds-per-block` option. 
+overridden with the `--seconds-per-block` option.
 
 These new blocks added to the chain have *no* correlation to the blocks added to the public chain that
 was branched from. From the point of the branch, the original source chain and the local branched chain
@@ -161,3 +161,19 @@ and [`getnep17balances`](https://docs.neo.org/docs/en-us/reference/rpc/latest-ve
 from the ApplicationLogs and TokenTracker plugins (Note, the `getnep11transfers` and `getnep17transfers`)
 RPC methods are *not* supported. Additionally, Neo-WorkNet implements `ExpressShutdown` and `ExpressListContracts`
 RPC methods that are exposed by Neo-Express.
+## neo-worknet stop
+
+```
+Stop the running Neo-WorkNet instance node
+
+Usage: neo-worknet stop [options]
+
+Options:
+  -?|-h|--help  Show help information.
+  --input       Path to .neo-worknet data file
+```
+
+Stops a running Neo-WorkNet instance node. When running in a terminal window, Neo-WorkNet can be
+shut down via standard CTRL-C or CTRL-BREAK operations; the `stop` command additionally allows
+shutting the node down from another terminal or a script, using the same `ExpressShutdown` RPC
+method that Neo-Express uses. If no node is running, the command reports that and exits cleanly.

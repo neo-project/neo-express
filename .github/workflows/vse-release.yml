@@ -30,12 +30,21 @@ jobs:
       with:
         node-version: '22'
 
+    - name: Restore .NET dependencies
+      working-directory: .
+      run: dotnet restore neo-express.sln
+
+    - name: Pack Neo Express
+      working-directory: .
+      run: dotnet pack neo-express.sln --output ./dist --configuration Release --no-restore --verbosity normal
+
     - name: Build + Package extension
       run: |
         npm ci
         npx vsce package --no-git-tag-version ${{ steps.nbgv.outputs.NpmPackageVersion }}
       env:
         EXTENSION_VERSION: ${{ steps.nbgv.outputs.NpmPackageVersion }}
+        NEO_EXPRESS_NUPKG: ${{ format('{0}/dist/Neo.Express.{1}.nupkg', github.workspace, steps.nbgv.outputs.NuGetPackageVersion) }}
 
     - name: Create Release
       uses: softprops/action-gh-release@v3

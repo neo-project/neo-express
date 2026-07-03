@@ -149,7 +149,7 @@ namespace NeoExpress.Node
                 var prevHeaderHex = await rpcClient.GetBlockHeaderHexAsync($"{prevHash}").ConfigureAwait(false);
                 var prevHeader = Convert.FromBase64String(prevHeaderHex).AsSerializable<Header>();
 
-                var block = NodeUtility.CreateSignedBlock(prevHeader,
+                var block = BlockProducer.CreateSignedBlock(prevHeader,
                     consensusNodesKeys.Value,
                     ProtocolSettings.Network,
                     new[] { tx });

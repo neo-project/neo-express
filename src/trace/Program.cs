@@ -79,7 +79,9 @@ namespace NeoTrace
             }
             else
             {
-                var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, block.Index - 1).ConfigureAwait(false);
+                await console.Out.WriteLineAsync($"Loading state for block {block.Index - 1}").ConfigureAwait(false);
+                var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, block.Index - 1, includeContractNames: false).ConfigureAwait(false);
+                await console.Out.WriteLineAsync($"Loaded {branchInfo.Contracts.Count} contracts").ConfigureAwait(false);
                 roStore = new StateServiceStore(rpcClient, branchInfo);
                 knownContracts = branchInfo.Contracts.ToDictionary(c => c.Hash, c => (c.Id, c.Name));
             }

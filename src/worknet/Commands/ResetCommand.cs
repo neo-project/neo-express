@@ -36,8 +36,7 @@ class ResetCommand
         {
             if (!Force)
                 throw new InvalidOperationException("--force must be specified when resetting worknet");
-            if (Gas < 0)
-                throw new ArgumentException("--gas cannot be negative");
+            ArgumentOutOfRangeException.ThrowIfNegative(Gas, nameof(Gas));
 
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
             var dataDir = fs.GetWorknetDataDirectory(filename);

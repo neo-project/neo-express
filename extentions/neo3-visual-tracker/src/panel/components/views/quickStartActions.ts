@@ -53,7 +53,7 @@ export function getQuickStartActions(
       actions.push("transfer");
     }
 
-    if (viewState.hasNeoExpressInstance) {
+    if (viewState.hasCheckpointCompatibleNeoExpressInstance) {
       actions.push("createCheckpoint");
       if (viewState.hasCheckpoints) {
         actions.push("restoreCheckpoint");

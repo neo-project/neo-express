@@ -66,3 +66,10 @@ jobs:
         nupkg="$(find "${GITHUB_WORKSPACE}/out" -maxdepth 1 -name 'Neo.Express.*.nupkg' -print -quit)"
         test -n "$nupkg"
         NEO_EXPRESS_NUPKG="$nupkg" npx vsce package --no-git-tag-version
+        vsix="$(find . -maxdepth 1 -name 'neo3-visual-tracker-*.vsix' -print -quit)"
+        test -n "$vsix"
+        unzip -l "$vsix" | grep -q 'extension/deps/nxp/tools/net10.0/any/neoxp.dll'
+        if unzip -l "$vsix" | grep -q 'nxp\.nupkg'; then
+          echo "The VSIX should not include the source Neo Express nupkg."
+          exit 1
+        fi

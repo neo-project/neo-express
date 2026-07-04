@@ -9,7 +9,7 @@ using Neo.SmartContract.Framework.Services;
 
 namespace Sample
 {
-    [DisplayName("YourName.SampleContract")]
+    [DisplayName("SampleContract")]
     [ManifestExtra("Author", "Your name")]
     [ManifestExtra("Email", "your@address.invalid")]
     [ManifestExtra("Description", "Describe your contract...")]

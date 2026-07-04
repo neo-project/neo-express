@@ -10,7 +10,7 @@ using Neo.SmartContract.Framework.Services;
 
 namespace $_CONTRACTNAME_$
 {
-    [DisplayName("YourName.$_CLASSNAME_$")]
+    [DisplayName("$_CLASSNAME_$")]
     [ManifestExtra("Author", "Your name")]
     [ManifestExtra("Email", "your@address.invalid")]
     [ManifestExtra("Description", "Describe your contract...")]

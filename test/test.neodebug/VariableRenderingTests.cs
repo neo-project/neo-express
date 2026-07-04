@@ -191,11 +191,15 @@ namespace test.neodebug
         }
 
         [Fact]
-        public void storage_container_rejects_short_evaluate_expressions()
+        public void storage_container_leaves_short_evaluate_expressions_for_the_caller()
         {
             var container = new StorageContainer(Array.Empty<(ReadOnlyMemory<byte> key, StorageItem item)>());
 
-            Assert.Throws<InvalidOperationException>(() => container.Evaluate("#storage[00000000]".AsMemory()));
+            var expression = "#storage[00000000]".AsMemory();
+            var (item, remaining) = container.Evaluate(expression);
+
+            Assert.Null(item);
+            Assert.True(remaining.Span.SequenceEqual(expression.Span));
         }
 
         [Fact]

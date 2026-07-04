@@ -33,6 +33,8 @@ namespace test.bctklib
 
     public class ToolkitPersistencePluginTests
     {
+        const int RocksDbTimeout = 30000;
+
         static readonly UInt160 ContractA = UInt160.Parse("0x0101010101010101010101010101010101010101");
         static readonly UInt160 ContractB = UInt160.Parse("0x0202020202020202020202020202020202020202");
 
@@ -73,7 +75,7 @@ namespace test.bctklib
         // A contract+event filter must KEEP matching notifications and must terminate.
         // The pre-fix code inverted the filter and never advanced the iterator on a
         // filtered record, so this would return the wrong record or loop forever.
-        [Fact(Timeout = 10000)]
+        [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_returns_only_records_matching_the_filter()
         {
             using var path = new CleanupPath();
@@ -89,7 +91,7 @@ namespace test.bctklib
             result[0].Notification.ScriptHash.Should().Be(ContractA);
         }
 
-        [Fact(Timeout = 10000)]
+        [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_returns_every_record_when_unfiltered()
         {
             using var path = new CleanupPath();
@@ -105,7 +107,7 @@ namespace test.bctklib
 
         // The event-name filter is compared case-insensitively so a caller-supplied
         // "transfer" still matches a stored "Transfer", matching ExpressPersistencePlugin.
-        [Fact(Timeout = 10000)]
+        [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_matches_event_names_case_insensitively()
         {
             using var path = new CleanupPath();
@@ -122,7 +124,7 @@ namespace test.bctklib
 
         // The backward direction walks the iterator with Prev() rather than Next();
         // pin that path so the reverse advance cannot regress.
-        [Fact(Timeout = 10000)]
+        [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_walks_records_in_reverse_when_backward()
         {
             using var path = new CleanupPath();

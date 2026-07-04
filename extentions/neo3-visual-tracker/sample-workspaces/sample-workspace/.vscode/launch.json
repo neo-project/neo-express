@@ -8,7 +8,7 @@
       "name": "Change sample number",
       "type": "neo-contract",
       "request": "launch",
-      "program": "${workspaceFolder}/Sample/bin/sc/YourName.SampleContract.nef",
+      "program": "${workspaceFolder}/Sample/bin/sc/SampleContract.nef",
       "invocation": {
         "operation": "changeNumber",
         "args": [42]
@@ -18,7 +18,7 @@
       "name": "Read sample number",
       "type": "neo-contract",
       "request": "launch",
-      "program": "${workspaceFolder}/Sample/bin/sc/YourName.SampleContract.nef",
+      "program": "${workspaceFolder}/Sample/bin/sc/SampleContract.nef",
       "invocation": {
         "operation": "getNumber"
       }

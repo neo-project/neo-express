@@ -53,8 +53,8 @@ Updating this field requires adding an *unsigned* block to the local blockchain 
 transition block is unsigned, the blockchain history can not be validated across this transition block. 
 
 Unlike Neo-Express, Neo-Worknet doesn't provide an option for creating a multiple consensus nodes for
-the branched chain. Based on understanding of Neo-Express usage patterns, multiple conesnsus nodes are
-not typically used. If four or seven conesnsus node support in Neo-WorkNet is important to you, please
+the branched chain. Based on understanding of Neo-Express usage patterns, multiple consensus nodes are
+not typically used. If four- or seven-consensus-node support in Neo-WorkNet is important to you, please
 file an issue in our [GitHub repo](https://github.com/neo-project/neo-express/issues)
 
 ### Consensus account funding
@@ -131,7 +131,7 @@ Options:
 This command resets all the locally generated blocks in the chain. The unsigned branch transition block
 (described in the `create` command section) is deleted and regenerated as part of this process.
 
-Any contract data from the public chain that has been cached locally - either via `prefetch` or thru
+Any contract data from the public chain that has been cached locally - either via `prefetch` or through
 the normal process of executing transactions on the branched chain - are not affected. Even after a
 `reset`, contract storage does not need to be `prefetch`ed again.
 

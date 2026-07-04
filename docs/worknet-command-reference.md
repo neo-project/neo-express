@@ -27,6 +27,7 @@ Options:
                       Default value is: 0.
   -f|--force          Overwrite existing data
   --disable-log       Disable verbose data logging
+  --gas <GAS>         Amount of GAS to seed the consensus account with (Default: 10000)
   -?|-h|--help        Show help information.
 ```
 
@@ -55,6 +56,14 @@ Unlike Neo-Express, Neo-Worknet doesn't provide an option for creating a multipl
 the branched chain. Based on understanding of Neo-Express usage patterns, multiple conesnsus nodes are
 not typically used. If four or seven conesnsus node support in Neo-WorkNet is important to you, please
 file an issue in our [GitHub repo](https://github.com/neo-project/neo-express/issues)
+
+### Consensus account funding
+
+When a worknet is created (and whenever it is reset), the generated consensus account is seeded
+with 10,000 GAS by default, configurable with the `--gas` option, so contracts can be deployed
+and invoked on the branch immediately, without waiting for committee emission to accrue. The seed
+uses a native GAS transfer from the current committee account to the generated consensus account, so
+the GAS total supply is unchanged. Use `--gas 0` to disable seeding.
 
 ## neo-worknet fastfwd
 
@@ -114,6 +123,7 @@ Usage: neo-worknet reset [options]
 
 Options:
   -f|--force    Overwrite existing data
+  --gas <GAS>   Amount of GAS to seed the consensus account with (Default: 10000)
   -?|-h|--help  Show help information.
   --input       Path to .neo-worknet data file
 ```

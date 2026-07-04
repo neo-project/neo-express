@@ -2,7 +2,9 @@
 using System.ComponentModel;
 using System.Numerics;
 
+using Neo;
 using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Attributes;
 using Neo.SmartContract.Framework.Services;
 
 namespace Sample
@@ -16,7 +18,7 @@ namespace Sample
         const string MAP_NAME = "SampleContract";
 
         [DisplayName("NumberChanged")]
-        public static event Action<Neo.UInt160, BigInteger> OnNumberChanged;
+        public static event Action<UInt160, BigInteger> OnNumberChanged;
 
         public static bool ChangeNumber(BigInteger positiveNumber)
         {
@@ -25,7 +27,7 @@ namespace Sample
                 throw new Exception("Only positive numbers are allowed.");
             }
 
-            var tx = (Transaction) Runtime.ScriptContainer;
+            var tx = Runtime.Transaction;
 
             var storageMap = new StorageMap(Storage.CurrentContext, MAP_NAME);
 
@@ -38,7 +40,7 @@ namespace Sample
 
         public static ByteString GetNumber()
         {
-            var tx = (Transaction) Runtime.ScriptContainer;
+            var tx = Runtime.Transaction;
 
             var storageMap = new StorageMap(Storage.CurrentContext, MAP_NAME);
 

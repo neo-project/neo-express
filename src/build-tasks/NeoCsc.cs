@@ -79,11 +79,11 @@ namespace Neo.BuildTasks
             }
 
             if (debug)
-                builder.Append(" --debug");
+                builder.Append(" --debug Extended");
             if (assembly)
                 builder.Append(" --assembly");
             if (!optimize)
-                builder.Append(" --no-optimize");
+                builder.Append(" --optimize None");
             if (!inline)
                 builder.Append(" --no-inline");
             if (addressVersion != DEFAULT_ADDRESS_VERSION)

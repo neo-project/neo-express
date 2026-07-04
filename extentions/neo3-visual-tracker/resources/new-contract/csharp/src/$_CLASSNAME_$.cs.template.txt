@@ -18,7 +18,7 @@ namespace $_CONTRACTNAME_$
     {
         const byte Prefix_NumberStorage = 0x00;
         const byte Prefix_ContractOwner = 0xFF;
-        private static Transaction Tx => (Transaction) Runtime.ScriptContainer;
+        private static Transaction Tx => Runtime.Transaction;
 
         [DisplayName("NumberChanged")]
         public static event Action<UInt160, BigInteger> OnNumberChanged;

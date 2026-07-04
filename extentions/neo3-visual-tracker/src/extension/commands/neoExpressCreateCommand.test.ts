@@ -31,6 +31,6 @@ test("Visual Tracker create commands pass Neo Express output explicitly", () => 
     ),
     "utf8"
   );
-  assert.match(csharpTemplate, /neoxp create -o &quot;\$\(NeoExpressBatchInputFile\)&quot;/);
-  assert.match(csharpTemplate, /neoxp wallet create -i &quot;\$\(NeoExpressBatchInputFile\)&quot; owner/);
+  assert.match(csharpTemplate, /dotnet tool run neoxp -- create -o &quot;\$\(NeoExpressBatchInputFileFromWorkspace\)&quot;/);
+  assert.match(csharpTemplate, /dotnet tool run neoxp -- wallet create -i &quot;\$\(NeoExpressBatchInputFileFromWorkspace\)&quot; owner/);
 });

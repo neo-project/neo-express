@@ -5,26 +5,22 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "register",
+      "name": "Change sample number",
       "type": "neo-contract",
       "request": "launch",
-      "program": "${workspaceFolder}/src/bin/Debug/netstandard2.1/registrar.nef",
+      "program": "${workspaceFolder}/Sample/bin/sc/YourName.SampleContract.nef",
       "invocation": {
-        "operation": "register",
-        "args": ["sample.domain", "@NSWmpUp8hvqPJnEFAxcVPYzntXs3mkmQJg"]
+        "operation": "changeNumber",
+        "args": [42]
       }
     },
     {
-      "name": "delete",
+      "name": "Read sample number",
       "type": "neo-contract",
       "request": "launch",
-      "program": "${workspaceFolder}/src/bin/Debug/netstandard2.1/registrar.nef",
+      "program": "${workspaceFolder}/Sample/bin/sc/YourName.SampleContract.nef",
       "invocation": {
-        "operation": "delete",
-        "args": ["sample.domain"]
-      },
-      "runtime": {
-        "check-witness": true
+        "operation": "getNumber"
       }
     }
   ]

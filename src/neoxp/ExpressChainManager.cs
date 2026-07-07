@@ -30,6 +30,7 @@ namespace NeoExpress
     {
         private const string GLOBAL_PREFIX = "Global\\";
         private const string CHECKPOINT_EXTENSION = ".neoxp-checkpoint";
+        internal const string MaxBlockSystemFeeSetting = "dbft.MaxBlockSystemFee";
 
         private readonly IFileSystem fileSystem;
         private readonly ExpressChain chain;
@@ -368,8 +369,8 @@ namespace NeoExpress
                     try
                     {
                         using var logPlugin = new ExpressLogPlugin(console);
-                        using var dbftPlugin = new DBFTPlugin(GetConsensusSettings(chain));
-                        using var rpcServerPlugin = new ExpressRpcServerPlugin(GetRpcServerSettings(chain, node),
+                        using var dbftPlugin = new DBFTPlugin(CreateConsensusSettings(chain));
+                        using var rpcServerPlugin = new ExpressRpcServerPlugin(CreateRpcServerSettings(chain, node),
                             expressStorage, multiSigAccount.ScriptHash);
                         using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
 
@@ -403,52 +404,59 @@ namespace NeoExpress
             });
             await tcs.Task.ConfigureAwait(false);
 
-            static DbftSettings GetConsensusSettings(ExpressChain chain)
-            {
-                var settings = new Dictionary<string, string>()
-                {
-                    { "PluginConfiguration:Network", $"{chain.Network}" },
-                    { "IgnoreRecoveryLogs", "true" }
-                };
+        }
 
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-                return new DbftSettings(config.GetSection("PluginConfiguration"));
+        internal static DbftSettings CreateConsensusSettings(ExpressChain chain)
+        {
+            var settings = new Dictionary<string, string>()
+            {
+                { "PluginConfiguration:Network", $"{chain.Network}" },
+                { "IgnoreRecoveryLogs", "true" }
+            };
+
+            if (chain.TryReadSetting<long>(MaxBlockSystemFeeSetting, long.TryParse, out var maxBlockSystemFee)
+                && maxBlockSystemFee >= 0)
+            {
+                settings.Add("PluginConfiguration:MaxBlockSystemFee", $"{maxBlockSystemFee}");
             }
 
-            static RpcServersSettings GetRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+            var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
+            return new DbftSettings(config.GetSection("PluginConfiguration"));
+        }
+
+        internal static RpcServersSettings CreateRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
+        {
+            var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+                ? bindAddress : IPAddress.Loopback;
+
+            var settings = new Dictionary<string, string>()
             {
-                var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
-                    ? bindAddress : IPAddress.Loopback;
+                { "PluginConfiguration:Network", $"{chain.Network}" },
+                { "PluginConfiguration:BindAddress", $"{ipAddress}" },
+                { "PluginConfiguration:Port", $"{node.RpcPort}" },
+            };
 
-                var settings = new Dictionary<string, string>()
-                {
-                    { "PluginConfiguration:Network", $"{chain.Network}" },
-                    { "PluginConfiguration:BindAddress", $"{ipAddress}" },
-                    { "PluginConfiguration:Port", $"{node.RpcPort}" },
-                };
-
-                if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
-                {
-                    settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
-                }
-
-                if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
-                {
-                    settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
-                }
-
-                if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
-                    && maxIteratorResultItems > 0)
-                {
-                    settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
-                }
-
-                var sessionEnabled = !chain.TryReadSetting<bool>("rpc.SessionEnabled", bool.TryParse, out var value) || value;
-                settings.Add("PluginConfiguration:SessionEnabled", $"{sessionEnabled}");
-
-                var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-                return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
+            if (chain.TryReadSetting<decimal>("rpc.MaxGasInvoke", decimal.TryParse, out var maxGasInvoke))
+            {
+                settings.Add("PluginConfiguration:MaxGasInvoke", $"{maxGasInvoke}");
             }
+
+            if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
+            {
+                settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
+            }
+
+            if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
+                && maxIteratorResultItems > 0)
+            {
+                settings.Add("PluginConfiguration:MaxIteratorResultItems", $"{maxIteratorResultItems}");
+            }
+
+            var sessionEnabled = !chain.TryReadSetting<bool>("rpc.SessionEnabled", bool.TryParse, out var value) || value;
+            settings.Add("PluginConfiguration:SessionEnabled", $"{sessionEnabled}");
+
+            var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
+            return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
         }
 
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)

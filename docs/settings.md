@@ -48,6 +48,24 @@ Example usage:
   }
 ```
 
+## `dbft.MaxBlockSystemFee`
+
+The `dbft.MaxBlockSystemFee` Neo-Express setting corresponds to the `MaxBlockSystemFee`
+DBFT plugin setting. This setting specifies the maximum transaction system fee, in
+datoshi, accepted by the consensus service.
+
+This setting defaults to `2000000000` datoshi, or 20 GAS. If you specify an invalid or
+negative integer value for this setting, Neo-Express reverts to the default. One GAS is
+`100000000` datoshi.
+
+Example usage:
+
+``` json
+  "settings": {
+    "dbft.MaxBlockSystemFee": "4000000000" // support transaction system fees up to 40 GAS
+  }
+```
+
 ## `rpc.BindAddress`
 
 The `rpc.BindAddress` Neo-Express setting corresponds to the `BindAddress`

@@ -12,6 +12,7 @@ using FluentAssertions;
 using Neo;
 using Neo.BlockchainToolkit.Models;
 using Neo.Json;
+using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using NeoExpress.Commands;
 using NeoExpress.Node;
@@ -101,5 +102,54 @@ public class OnlineNodeTests
         result.Should().Equal(
             Convert.ToBase64String(new byte[] { 0x31 }),
             Convert.ToBase64String(new byte[] { 0x0a, 0x0b }));
+    }
+
+    [Fact]
+    public void CreatePolicyFailException_explains_default_max_block_system_fee_when_system_fee_is_high()
+    {
+        var rpcException = new RpcException(OnlineNode.RpcPolicyFailedCode, "Policy check failed");
+        var tx = new Transaction
+        {
+            Signers = [],
+            Attributes = [],
+            Witnesses = [],
+            SystemFee = OnlineNode.DefaultMaxBlockSystemFee + 1
+        };
+
+        var exception = OnlineNode.CreatePolicyFailException(rpcException, tx);
+
+        exception.Message.Should().Contain("Transaction rejected by node policy (PolicyFail)");
+        exception.Message.Should().Contain("System fee:");
+        exception.Message.Should().Contain("default DBFT MaxBlockSystemFee");
+        exception.Message.Should().Contain("20 GAS");
+        exception.Message.Should().Contain("NEF and manifest size");
+        exception.InnerException.Should().BeSameAs(rpcException);
+    }
+
+    [Fact]
+    public void CreatePolicyFailException_keeps_policy_block_hint_when_system_fee_is_not_high()
+    {
+        var rpcException = new RpcException(OnlineNode.RpcPolicyFailedCode, "Policy check failed");
+        var tx = new Transaction
+        {
+            Signers = [],
+            Attributes = [],
+            Witnesses = [],
+            SystemFee = OnlineNode.DefaultMaxBlockSystemFee
+        };
+
+        var exception = OnlineNode.CreatePolicyFailException(rpcException, tx);
+
+        exception.Message.Should().Contain("does not exceed the default DBFT MaxBlockSystemFee");
+        exception.Message.Should().Contain("blocked by Policy");
+        exception.Message.Should().Contain("lower MaxBlockSystemFee");
+    }
+
+    [Fact]
+    public void IsPolicyFail_matches_rpc_policy_error_code()
+    {
+        var rpcException = new RpcException(OnlineNode.RpcPolicyFailedCode, "Policy check failed");
+
+        OnlineNode.IsPolicyFail(rpcException).Should().BeTrue();
     }
 }

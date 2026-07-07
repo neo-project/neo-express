@@ -43,8 +43,8 @@ namespace NeoDebug.Neo3
 
             static IEnumerable<Variable> EnumerateSlot(IVariableManager manager, string prefix, IReadOnlyList<StackItem>? slot, IReadOnlyList<DebugInfo.SlotVariable>? variableList = null)
             {
-                variableList ??= Array.Empty<DebugInfo.SlotVariable>();
-                slot ??= Array.Empty<StackItem>();
+                variableList ??= [];
+                slot ??= [];
 
                 for (int i = 0; i < variableList.Count; i++)
                 {

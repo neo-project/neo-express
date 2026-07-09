@@ -48,6 +48,87 @@ Example usage:
   }
 ```
 
+## `protocol.*`
+
+Neo-Express can read Neo protocol configuration values from the `settings` object. These values
+override the defaults used to build the `ProtocolSettings` passed to the Neo node. The network
+magic, address version, consensus committee, validators count and seed list continue to come from
+the top-level `.neo-express` chain definition.
+
+Supported protocol settings:
+
+- `protocol.MillisecondsPerBlock`
+- `protocol.MaxTransactionsPerBlock`
+- `protocol.MemoryPoolMaxTransactions`
+- `protocol.MaxTraceableBlocks`
+- `protocol.MaxValidUntilBlockIncrement`
+- `protocol.InitialGasDistribution`
+- `protocol.Hardforks.<HardforkName>`
+
+The `chain.SecondsPerBlock` setting and the `run --seconds-per-block` option still override
+`protocol.MillisecondsPerBlock`.
+
+Protocol values are specified as unsigned integers, except `protocol.MemoryPoolMaxTransactions`,
+which is a positive integer. Hardfork names use the Neo `Hardfork` enum names, such as
+`HF_Echidna` or `HF_Faun`, and values are activation block heights.
+
+Example usage:
+
+``` json
+  "settings": {
+    "protocol.MillisecondsPerBlock": "3000",
+    "protocol.MaxTransactionsPerBlock": "1024",
+    "protocol.MemoryPoolMaxTransactions": "100000",
+    "protocol.MaxTraceableBlocks": "2102400",
+    "protocol.MaxValidUntilBlockIncrement": "86400",
+    "protocol.InitialGasDistribution": "5200000000000000",
+    "protocol.Hardforks.HF_Echidna": "0",
+    "protocol.Hardforks.HF_Faun": "0"
+  }
+```
+
+## `policy.*`
+
+Neo-Express can also initialize native policy values from the `settings` object. These values are
+written to the chain state only while the chain is still at genesis height. If the chain has already
+produced blocks, use the `policy set` command to change policy values through a transaction.
+
+Supported native policy settings:
+
+- `policy.GasPerBlock`
+- `policy.MinimumDeploymentFee`
+- `policy.CandidateRegistrationFee`
+- `policy.OracleRequestFee`
+- `policy.NetworkFeePerByte`
+- `policy.StorageFeeFactor`
+- `policy.ExecutionFeeFactor`
+- `policy.MillisecondsPerBlock`
+- `policy.MaxValidUntilBlockIncrement`
+- `policy.MaxTraceableBlocks`
+
+GAS-denominated policy values are specified in datoshi. One GAS is `100000000` datoshi.
+`policy.StorageFeeFactor`, `policy.ExecutionFeeFactor`, `policy.MillisecondsPerBlock`,
+`policy.MaxValidUntilBlockIncrement` and `policy.MaxTraceableBlocks` are whole-number factors or
+counts.
+
+When `HF_Echidna` is active at genesis height, Neo stores block time, max valid-until-block
+increment and max traceable blocks in the native Policy contract. In that case Neo-Express uses
+`policy.MillisecondsPerBlock`, `policy.MaxValidUntilBlockIncrement` and
+`policy.MaxTraceableBlocks` if they are present; otherwise it initializes those native policy values
+from `protocol.MillisecondsPerBlock`, `protocol.MaxValidUntilBlockIncrement` and
+`protocol.MaxTraceableBlocks`.
+
+Example usage:
+
+``` json
+  "settings": {
+    "policy.NetworkFeePerByte": "2000",
+    "policy.StorageFeeFactor": "200000",
+    "policy.ExecutionFeeFactor": "40",
+    "policy.MinimumDeploymentFee": "2000000000"
+  }
+```
+
 ## `dbft.MaxBlockSystemFee`
 
 The `dbft.MaxBlockSystemFee` Neo-Express setting corresponds to the `MaxBlockSystemFee`

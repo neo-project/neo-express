@@ -72,6 +72,10 @@ namespace NeoExpress.Node
 
             persistencePlugin = new ExpressPersistencePlugin();
             neoSystem = new NeoSystem(settings, storeProvider, null);
+            using (var snapshot = neoSystem.GetSnapshotCache())
+            {
+                chain.ApplyNativePolicySettings(snapshot, settings);
+            }
 
             ApplicationEngine.InstanceHandler += OnApplicationEngineCreated;
         }

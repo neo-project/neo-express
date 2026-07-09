@@ -17,8 +17,8 @@ using Neo.Persistence;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.Wallets;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 
@@ -44,6 +44,8 @@ namespace Neo.BlockchainToolkit
         const string PolicyMillisecondsPerBlockSetting = "policy.MillisecondsPerBlock";
         const string PolicyMaxValidUntilBlockIncrementSetting = "policy.MaxValidUntilBlockIncrement";
         const string PolicyMaxTraceableBlocksSetting = "policy.MaxTraceableBlocks";
+        const string PolicyAttributeFeePrefix = "policy.AttributeFee.";
+        const string NotaryMaxNotValidBeforeDeltaSetting = "notary.MaxNotValidBeforeDelta";
 
         const byte NeoGasPerBlockPrefix = 29;
         const byte NeoRegisterPricePrefix = 13;
@@ -52,9 +54,11 @@ namespace Neo.BlockchainToolkit
         const byte PolicyFeePerBytePrefix = 10;
         const byte PolicyExecFeeFactorPrefix = 18;
         const byte PolicyStoragePricePrefix = 19;
+        const byte PolicyAttributeFeeStoragePrefix = 20;
         const byte PolicyMillisecondsPerBlockPrefix = 21;
         const byte PolicyMaxValidUntilBlockIncrementPrefix = 22;
         const byte PolicyMaxTraceableBlocksPrefix = 23;
+        const byte NotaryMaxNotValidBeforeDeltaPrefix = 10;
 
         public static ProtocolSettings GetProtocolSettings(this ExpressChain? chain, uint secondsPerBlock = 0)
         {
@@ -181,12 +185,14 @@ namespace Neo.BlockchainToolkit
                         : value;
                     SetStorageValue(snapshot, NativeContract.Policy.Id, PolicyExecFeeFactorPrefix, storageValue);
                 });
+            changed |= ApplyAttributeFeeSettings(chain, snapshot, settings, currentIndex);
             if (settings.IsHardforkEnabled(Hardfork.HF_Echidna, currentIndex))
             {
                 changed |= ApplyUIntSettingOrProtocolValue(chain, PolicyMillisecondsPerBlockSetting, ProtocolMillisecondsPerBlockSetting,
                     settings.MillisecondsPerBlock, ProtocolSettings.Default.MillisecondsPerBlock, 1, PolicyContract.MaxMillisecondsPerBlock,
                     value => SetStorageValue(snapshot, NativeContract.Policy.Id, PolicyMillisecondsPerBlockPrefix, value));
                 changed |= ApplyTraceableBlockSettings(chain, snapshot, settings);
+                changed |= ApplyNotarySettings(chain, snapshot, settings);
             }
 
             if (changed)
@@ -230,6 +236,38 @@ namespace Neo.BlockchainToolkit
 
             static void SetIndexedStorage(DataCache snapshot, int contractId, byte prefix, uint index, BigInteger value)
                 => snapshot.GetAndChange(StorageKey.Create(contractId, prefix, index), () => new StorageItem())!.Set(value);
+
+            static void SetByteIndexedStorage(DataCache snapshot, int contractId, byte prefix, byte index, BigInteger value)
+                => snapshot.GetAndChange(StorageKey.Create(contractId, prefix, index), () => new StorageItem())!.Set(value);
+
+            static bool ApplyAttributeFeeSettings(ExpressChain chain, DataCache snapshot, ProtocolSettings settings, uint currentIndex)
+            {
+                var changed = false;
+                var echidnaEnabled = settings.IsHardforkEnabled(Hardfork.HF_Echidna, currentIndex);
+                foreach (var (key, value) in chain.Settings)
+                {
+                    if (!key.StartsWith(PolicyAttributeFeePrefix, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var attributeName = key[PolicyAttributeFeePrefix.Length..];
+                    if (!Enum.TryParse<TransactionAttributeType>(attributeName, ignoreCase: true, out var attributeType)
+                        || !Enum.IsDefined(typeof(TransactionAttributeType), attributeType)
+                        || (attributeType == TransactionAttributeType.NotaryAssisted && !echidnaEnabled)
+                        || !uint.TryParse(value, out var attributeFee)
+                        || attributeFee > PolicyContract.MaxAttributeFee)
+                    {
+                        continue;
+                    }
+
+                    SetByteIndexedStorage(snapshot, NativeContract.Policy.Id, PolicyAttributeFeeStoragePrefix,
+                        (byte)attributeType, attributeFee);
+                    changed = true;
+                }
+
+                return changed;
+            }
 
             static bool ApplyUIntSettingOrProtocolValue(
                 ExpressChain chain,
@@ -304,6 +342,24 @@ namespace Neo.BlockchainToolkit
                     changed = true;
                 }
                 return changed;
+            }
+
+            static bool ApplyNotarySettings(ExpressChain chain, DataCache snapshot, ProtocolSettings settings)
+            {
+                if (!TryReadSetting<uint>(chain, NotaryMaxNotValidBeforeDeltaSetting, uint.TryParse, out var maxNotValidBeforeDelta))
+                {
+                    return false;
+                }
+
+                var maxValidUntilBlockIncrement = NativeContract.Policy.GetMaxValidUntilBlockIncrement(snapshot);
+                if (maxNotValidBeforeDelta < settings.ValidatorsCount
+                    || maxNotValidBeforeDelta > maxValidUntilBlockIncrement / 2)
+                {
+                    return false;
+                }
+
+                SetStorageValue(snapshot, NativeContract.Notary.Id, NotaryMaxNotValidBeforeDeltaPrefix, maxNotValidBeforeDelta);
+                return true;
             }
 
             static uint? GetUIntPolicyOrProtocolValue(

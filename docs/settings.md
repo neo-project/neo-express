@@ -105,11 +105,13 @@ Supported native policy settings:
 - `policy.MillisecondsPerBlock`
 - `policy.MaxValidUntilBlockIncrement`
 - `policy.MaxTraceableBlocks`
+- `policy.AttributeFee.<TransactionAttributeType>`
 
 GAS-denominated policy values are specified in datoshi. One GAS is `100000000` datoshi.
 `policy.StorageFeeFactor`, `policy.ExecutionFeeFactor`, `policy.MillisecondsPerBlock`,
 `policy.MaxValidUntilBlockIncrement` and `policy.MaxTraceableBlocks` are whole-number factors or
-counts.
+counts. Attribute fee keys use Neo `TransactionAttributeType` enum names, such as `HighPriority`,
+`NotValidBefore`, `Conflicts` or `NotaryAssisted`.
 
 When `HF_Echidna` is active at genesis height, Neo stores block time, max valid-until-block
 increment and max traceable blocks in the native Policy contract. In that case Neo-Express uses
@@ -118,6 +120,9 @@ increment and max traceable blocks in the native Policy contract. In that case N
 from `protocol.MillisecondsPerBlock`, `protocol.MaxValidUntilBlockIncrement` and
 `protocol.MaxTraceableBlocks`.
 
+`policy.AttributeFee.NotaryAssisted` only takes effect when `HF_Echidna` is active at genesis
+height.
+
 Example usage:
 
 ``` json
@@ -125,7 +130,30 @@ Example usage:
     "policy.NetworkFeePerByte": "2000",
     "policy.StorageFeeFactor": "200000",
     "policy.ExecutionFeeFactor": "40",
-    "policy.MinimumDeploymentFee": "2000000000"
+    "policy.MinimumDeploymentFee": "2000000000",
+    "policy.AttributeFee.HighPriority": "1000"
+  }
+```
+
+## `notary.*`
+
+Neo-Express can initialize native Notary values from the `settings` object when the Notary contract
+is active at genesis height. These values are written only while the chain is still at genesis
+height.
+
+Supported native Notary settings:
+
+- `notary.MaxNotValidBeforeDelta`
+
+`notary.MaxNotValidBeforeDelta` must be at least the validator count and no more than half of the
+current max valid-until-block increment.
+
+Example usage:
+
+``` json
+  "settings": {
+    "protocol.Hardforks.HF_Echidna": "0",
+    "notary.MaxNotValidBeforeDelta": "40"
   }
 ```
 

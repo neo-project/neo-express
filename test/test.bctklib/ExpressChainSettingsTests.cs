@@ -15,6 +15,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Extensions;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Persistence.Providers;
 using Neo.SmartContract;
@@ -149,6 +150,34 @@ namespace test.bctklib
             snapshot.GetTimePerBlock(settings).Should().Be(TimeSpan.FromSeconds(7));
             snapshot.GetMaxValidUntilBlockIncrement(settings).Should().Be(100);
             snapshot.GetMaxTraceableBlocks(settings).Should().Be(1000);
+        }
+
+        [Fact]
+        public void apply_native_policy_settings_updates_echidna_policy_values_from_policy_settings()
+        {
+            var chain = CreateExpressChain();
+            chain.Settings["protocol.Hardforks.HF_Echidna"] = "0";
+            chain.Settings["protocol.MillisecondsPerBlock"] = "7000";
+            chain.Settings["policy.MillisecondsPerBlock"] = "6000";
+            chain.Settings["policy.MaxValidUntilBlockIncrement"] = "100";
+            chain.Settings["policy.MaxTraceableBlocks"] = "1000";
+            chain.Settings["policy.AttributeFee.HighPriority"] = "1234";
+            chain.Settings["policy.AttributeFee.NotaryAssisted"] = "5678";
+            chain.Settings["notary.MaxNotValidBeforeDelta"] = "40";
+            var settings = chain.GetProtocolSettings();
+
+            using var store = new MemoryStore();
+            store.EnsureLedgerInitialized(settings);
+            using var snapshot = new StoreCache(store.GetSnapshot());
+
+            chain.ApplyNativePolicySettings(snapshot, settings).Should().BeTrue();
+
+            NativeContract.Policy.GetMillisecondsPerBlock(snapshot).Should().Be(6000);
+            NativeContract.Policy.GetMaxValidUntilBlockIncrement(snapshot).Should().Be(100);
+            NativeContract.Policy.GetMaxTraceableBlocks(snapshot).Should().Be(1000);
+            NativeContract.Policy.GetAttributeFeeV1(snapshot, (byte)TransactionAttributeType.HighPriority).Should().Be(1234);
+            NativeContract.Policy.GetAttributeFeeV1(snapshot, (byte)TransactionAttributeType.NotaryAssisted).Should().Be(5678);
+            NativeContract.Notary.GetMaxNotValidBeforeDelta(snapshot).Should().Be(40);
         }
 
         static BigInteger InvokeInteger(ProtocolSettings settings, DataCache snapshot, UInt160 contractHash, string operation)

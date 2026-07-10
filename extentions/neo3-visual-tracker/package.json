@@ -2,7 +2,7 @@
   "name": "neo3-visual-tracker",
   "publisher": "ngd-seattle",
   "displayName": "Neo N3 Visual DevTracker",
-  "description": "A Neo N3 blockchain explorer that is directly available within Visual Studio Code",
+  "description": "Explore and manage Neo N3 and Neo Express development networks from Visual Studio Code",
   "version": "3.10.0",
   "icon": "resources/neo-logo.png",
   "galleryBanner": {
@@ -14,14 +14,16 @@
     "vscode": "^1.104.0"
   },
   "categories": [
+    "Visualization",
     "Other"
   ],
   "bugs": {
-    "url": "https://github.com/ngdseattle/neo3-visual-tracker/issues"
+    "url": "https://github.com/neo-project/neo-express/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ngdseattle/neo3-visual-tracker.git"
+    "url": "https://github.com/neo-project/neo-express.git",
+    "directory": "extentions/neo3-visual-tracker"
   },
   "capabilities": {
     "untrustedWorkspaces": {
@@ -59,7 +61,10 @@
   ],
   "keywords": [
     "Neo",
-    "Blockchain"
+    "Neo Express",
+    "Blockchain",
+    "Smart Contracts",
+    "Explorer"
   ],
   "main": "./dist/extension/index.js",
   "contributes": {

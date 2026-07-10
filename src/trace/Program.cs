@@ -35,6 +35,8 @@ namespace NeoTrace
     [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
     class Program
     {
+        internal const int DefaultTimeoutSeconds = 300;
+
         public static int Main(string[] args) => CommandLineApplication.Execute<Program>(args);
 
         int OnExecute(CommandLineApplication app, IConsole console)
@@ -45,32 +47,56 @@ namespace NeoTrace
         }
 
 
-        internal static async Task TraceBlockAsync(Uri uri, OneOf<uint, UInt256> blockId, IConsole console)
+        internal static async Task RunWithTimeoutAsync(Func<CancellationToken, Task> operation, int timeoutSeconds, CancellationToken token)
         {
+            if (timeoutSeconds < 0)
+                throw new ArgumentOutOfRangeException(nameof(timeoutSeconds), "Timeout must be greater than or equal to zero.");
+
+            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            if (timeoutSeconds > 0)
+                linkedTokenSource.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
+            try
+            {
+                await operation(linkedTokenSource.Token).WaitAsync(linkedTokenSource.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!token.IsCancellationRequested && timeoutSeconds > 0 && linkedTokenSource.IsCancellationRequested)
+            {
+                throw new TimeoutException($"NeoTrace did not complete within {timeoutSeconds} seconds. Use --timeout 0 to disable the timeout.");
+            }
+        }
+
+        internal static async Task TraceBlockAsync(Uri uri, OneOf<uint, UInt256> blockId, IConsole console, CancellationToken token = default)
+        {
+            token.ThrowIfCancellationRequested();
             var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var block = await GetBlockAsync(rpcClient, blockId).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
             if (block.Transactions.Length == 0)
                 throw new Exception($"Block {block.Index} ({block.Hash}) had no transactions");
 
             await console.Out.WriteLineAsync($"Tracing all the transactions in block {block.Index} ({block.Hash})").ConfigureAwait(false);
-            await TraceBlockAsync(rpcClient, block, settings, console).ConfigureAwait(false);
+            await TraceBlockAsync(rpcClient, block, settings, console, token: token).ConfigureAwait(false);
         }
 
-        internal static async Task TraceTransactionAsync(Uri uri, UInt256 txHash, IConsole console)
+        internal static async Task TraceTransactionAsync(Uri uri, UInt256 txHash, IConsole console, CancellationToken token = default)
         {
+            token.ThrowIfCancellationRequested();
             var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
             var rpcTx = await rpcClient.GetRawTransactionAsync($"{txHash}").ConfigureAwait(false);
             var block = await GetBlockAsync(rpcClient, rpcTx.BlockHash).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
             await console.Out.WriteLineAsync($"Tracing transaction {txHash} in block {block.Index} ({block.Hash})").ConfigureAwait(false);
-            await TraceBlockAsync(rpcClient, block, settings, console, rpcTx.Transaction.Hash).ConfigureAwait(false);
+            await TraceBlockAsync(rpcClient, block, settings, console, rpcTx.Transaction.Hash, token).ConfigureAwait(false);
         }
 
-        static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null)
+        static async Task TraceBlockAsync(RpcClient rpcClient, Block block, ProtocolSettings settings, IConsole console, UInt256? txHash = null, CancellationToken token = default)
         {
+            token.ThrowIfCancellationRequested();
             IReadOnlyStore<byte[], byte[]> roStore;
             IReadOnlyDictionary<UInt160, (int Id, string Name)>? knownContracts = null;
             if (block.Index == 0)
@@ -81,6 +107,7 @@ namespace NeoTrace
             {
                 await console.Out.WriteLineAsync($"Loading state for block {block.Index - 1}").ConfigureAwait(false);
                 var branchInfo = await StateServiceStore.GetBranchInfoAsync(rpcClient, block.Index - 1, includeContractNames: false).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
                 await console.Out.WriteLineAsync($"Loaded {branchInfo.Contracts.Count} contracts").ConfigureAwait(false);
                 roStore = new StateServiceStore(rpcClient, branchInfo);
                 knownContracts = branchInfo.Contracts.ToDictionary(c => c.Hash, c => (c.Id, c.Name));
@@ -103,6 +130,7 @@ namespace NeoTrace
             var clonedSnapshot = snapshot.CloneCache();
             for (int i = 0; i < block.Transactions.Length; i++)
             {
+                token.ThrowIfCancellationRequested();
                 Transaction tx = block.Transactions[i];
 
                 using var engine = GetEngine(tx, clonedSnapshot);
@@ -116,6 +144,7 @@ namespace NeoTrace
                 }
 
                 var appLog = await rpcClient.GetApplicationLogAsync(tx.Hash.ToString()).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
                 if (appLog.Executions.Count != 1)
                     throw new Exception($"Unexpected Application Log executions count. Expected 1, got {appLog.Executions.Count}");
                 var execution = appLog.Executions[0];

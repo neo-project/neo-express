@@ -325,6 +325,12 @@ namespace Neo.BlockchainToolkit
                     ?? NativeContract.Policy.GetMaxTraceableBlocks(snapshot);
                 if (resultingMaxValidUntilBlockIncrement >= resultingMaxTraceableBlocks)
                 {
+                    Logs.GetLogger(nameof(ExpressChainExtensions)).Warning(
+                        "Ignoring traceable block settings because {MaxValidUntilBlockIncrementSetting} ({MaxValidUntilBlockIncrement}) must be less than {MaxTraceableBlocksSetting} ({MaxTraceableBlocks})",
+                        PolicyMaxValidUntilBlockIncrementSetting,
+                        resultingMaxValidUntilBlockIncrement,
+                        PolicyMaxTraceableBlocksSetting,
+                        resultingMaxTraceableBlocks);
                     return false;
                 }
 

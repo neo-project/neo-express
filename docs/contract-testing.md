@@ -31,7 +31,7 @@ compile and drops `<name>.nef`, `<name>.manifest.json` and `<name>.nefdbgnfo` un
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Neo.SmartContract.Framework" Version="3.10.0" />
-    <PackageReference Include="Neo.BuildTasks" Version="3.10.0" PrivateAssets="all" />
+    <PackageReference Include="Neo.BuildTasks" Version="3.10.1" PrivateAssets="all" />
   </ItemGroup>
 </Project>
 ```
@@ -77,9 +77,9 @@ project ([`samples/test/contract-test.csproj`](../samples/test/contract-test.csp
 </ItemGroup>
 <ItemGroup>
   <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.0" />
-  <PackageReference Include="Neo.Assertions" Version="3.10.0" />
-  <PackageReference Include="Neo.BuildTasks" Version="3.10.0" PrivateAssets="all" />
-  <PackageReference Include="Neo.Test.Harness" Version="3.10.0" />
+  <PackageReference Include="Neo.Assertions" Version="3.10.1" />
+  <PackageReference Include="Neo.BuildTasks" Version="3.10.1" PrivateAssets="all" />
+  <PackageReference Include="Neo.Test.Harness" Version="3.10.1" />
   <PackageReference Include="xunit" Version="2.4.2" />
   <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
 </ItemGroup>

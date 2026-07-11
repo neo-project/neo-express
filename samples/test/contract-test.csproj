@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>ContractTests</RootNamespace>
     <TargetFramework>net10.0</TargetFramework>
-    <NeoTestVersion>3.10.0</NeoTestVersion>
+    <NeoTestVersion>3.10.1</NeoTestVersion>
   </PropertyGroup>
   <ItemGroup>
     <NeoContractReference Include="..\src\contract.csproj" />

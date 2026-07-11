@@ -373,6 +373,10 @@ namespace NeoExpress
                         using var rpcServerPlugin = new ExpressRpcServerPlugin(CreateRpcServerSettings(chain, node),
                             expressStorage, multiSigAccount.ScriptHash);
                         using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
+                        using (var snapshot = neoSystem.GetSnapshotCache())
+                        {
+                            chain.ApplyNativePolicySettings(snapshot, ProtocolSettings);
+                        }
 
                         neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                         {

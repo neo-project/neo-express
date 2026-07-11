@@ -18,7 +18,7 @@ namespace NeoExpress
         internal static ulong GetScaledExecFeeFactorArgument(uint logicalFactor, bool isFaunEnabled)
         {
             return isFaunEnabled
-                ? (ulong)logicalFactor * ApplicationEngine.FeeFactor
+                ? (ulong)(logicalFactor * ApplicationEngine.FeeFactor)
                 : (ulong)logicalFactor;
         }
 

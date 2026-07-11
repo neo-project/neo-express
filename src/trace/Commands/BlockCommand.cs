@@ -48,20 +48,6 @@ namespace NeoTrace.Commands
             catch (TimeoutException ex)
             {
                 await app.Error.WriteLineAsync(ex.Message);
-                return 1;
-            }
-            catch (OperationCanceledException)
-            {
-                await app.Error.WriteLineAsync("Operation canceled");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                await app.Error.WriteLineAsync(ex.Message);
-                return 1;
-            catch (TimeoutException ex)
-            {
-                await app.Error.WriteLineAsync(ex.Message);
             }
             catch (OperationCanceledException)
             {

@@ -55,9 +55,9 @@ namespace NeoTrace.Commands
             }
             catch (Exception ex)
             {
-                 await app.Error.WriteLineAsync(ex.Message);
+                await app.Error.WriteLineAsync(ex.Message);
             }
-            return  1;
+            return 1;
         }
 
         OneOf<uint, UInt256> ParseBlockIdentifier()

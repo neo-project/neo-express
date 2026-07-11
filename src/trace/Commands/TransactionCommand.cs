@@ -25,7 +25,10 @@ namespace NeoTrace.Commands
         [Option(Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
         internal string RpcUri { get; } = string.Empty;
 
-        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        [Option("--timeout <SECONDS>", Description = "Maximum tracing time in seconds. Use 0 to disable the timeout.")]
+        internal int Timeout { get; } = Program.DefaultTimeoutSeconds;
+
+        internal async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console, CancellationToken token)
         {
             try
             {
@@ -36,8 +39,21 @@ namespace NeoTrace.Commands
                 var txHash = UInt256.TryParse(TransactionHash, out var _txHash)
                     ? _txHash
                     : throw new ArgumentException($"Invalid transaction hash {TransactionHash}");
-                await Program.TraceTransactionAsync(uri, txHash, console);
+                await Program.RunWithTimeoutAsync(
+                    traceToken => Program.TraceTransactionAsync(uri, txHash, console, traceToken),
+                    Timeout,
+                    token).ConfigureAwait(false);
                 return 0;
+            }
+            catch (TimeoutException ex)
+            {
+                await app.Error.WriteLineAsync(ex.Message);
+                return 1;
+            }
+            catch (OperationCanceledException)
+            {
+                await app.Error.WriteLineAsync("Operation canceled");
+                return 1;
             }
             catch (Exception ex)
             {

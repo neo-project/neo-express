@@ -33,6 +33,8 @@ Arguments:
 Options:
   --rpc-uri <RPC_URI>  URL of a Neo JSON-RPC node. Specify MainNet (the default),
                        TestNet, or a JSON-RPC URL.
+  --timeout <SECONDS>  Maximum tracing time in seconds. Defaults to 300. Use 0
+                       to disable the timeout.
 ```
 
 Traces every transaction in the specified block. The block can be identified by index or
@@ -55,6 +57,8 @@ Arguments:
 Options:
   --rpc-uri <RPC_URI>  URL of a Neo JSON-RPC node. Specify MainNet (the default),
                        TestNet, or a JSON-RPC URL.
+  --timeout <SECONDS>  Maximum tracing time in seconds. Defaults to 300. Use 0
+                       to disable the timeout.
 ```
 
 Traces the specified transaction. `tx` is an alias for `transaction`.

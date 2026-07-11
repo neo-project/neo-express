@@ -58,8 +58,7 @@ partial class RunCommand
             if (!fs.Directory.Exists(dataDir))
                 throw new Exception($"Cannot locate data directory {dataDir}");
 
-            ValidatePort(RpcPort, nameof(RpcPort));
-            ValidatePort(TcpPort, nameof(TcpPort));
+            ValidatePorts(RpcPort, TcpPort);
 
             var secondsPerBlock = SecondsPerBlock ?? 0;
             await RunAsync(worknet, dataDir, secondsPerBlock, RpcPort, TcpPort, DisableLog, console, token).ConfigureAwait(false);
@@ -166,5 +165,13 @@ partial class RunCommand
     {
         if (port == 0)
             throw new ArgumentOutOfRangeException(name, "Port must be greater than zero.");
+    }
+
+    internal static void ValidatePorts(ushort rpcPort, ushort tcpPort)
+    {
+        ValidatePort(rpcPort, nameof(rpcPort));
+        ValidatePort(tcpPort, nameof(tcpPort));
+        if (rpcPort == tcpPort)
+            throw new ArgumentException("RPC and TCP ports must be different.");
     }
 }

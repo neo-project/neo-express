@@ -75,4 +75,13 @@ public class RunCommandPortTests
 
         settings.Port.Should().Be(rpcPort);
     }
+
+    [Fact]
+    public void validate_ports_rejects_shared_port()
+    {
+        Action act = () => RunCommand.ValidatePorts(40332, 40332);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("RPC and TCP ports must be different.");
+    }
 }

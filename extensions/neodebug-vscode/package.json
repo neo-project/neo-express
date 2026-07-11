@@ -2,7 +2,7 @@
   "name": "neo-contract-debug",
   "displayName": "Neo Smart Contract Debugger",
   "description": "Source-level, time-travel debugger for Neo N3 smart contracts, powered by the neodebug (Neo.Debug) tool.",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "publisher": "neo-project",
   "license": "MIT",
   "repository": {

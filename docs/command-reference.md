@@ -1,7 +1,7 @@
 <!-- markdownlint-enable -->
 # Neo-Express N3 Command Reference
 
-> Note: This is the command reference for Neo-Express 3.10.0, targeting N3.
+> Note: This is the command reference for Neo-Express 3.10.1, targeting N3.
 >
 > You can pass -?|-h|--help to show a list of supported commands or to show
 > help information about a specific command.

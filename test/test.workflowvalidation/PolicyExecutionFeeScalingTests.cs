@@ -34,7 +34,7 @@ public class PolicyExecutionFeeScalingTests
         PolicyExecutionFeeExtensions.GetScaledExecFeeFactorArgument(logical, faun).Should().Be(expected);
         logical.Should().BeLessOrEqualTo(100u, "Neo Policy MaxExecFeeFactor is 100 for the logical factor");
         if (faun)
-            expected.Should().Be((ulong)logical * ApplicationEngine.FeeFactor);
+            expected.Should().Be((ulong)(logical * ApplicationEngine.FeeFactor));
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class PolicyExecutionFeeScalingTests
         var policy = CreatePolicyValues(executionFeeFactor: 42);
         PolicyExecutionFeeExtensions.GetScaledExecFeeFactorArgument(policy, isFaunEnabled: false).Should().Be(42u);
         PolicyExecutionFeeExtensions.GetScaledExecFeeFactorArgument(policy, isFaunEnabled: true)
-            .Should().Be(42u * ApplicationEngine.FeeFactor);
+            .Should().Be((ulong)(42u * ApplicationEngine.FeeFactor));
     }
 
     /// <summary>

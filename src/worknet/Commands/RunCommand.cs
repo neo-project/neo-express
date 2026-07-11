@@ -27,6 +27,9 @@ namespace NeoWorkNet.Commands;
 [Command("run", Description = "Run Neo-WorkNet instance node")]
 partial class RunCommand
 {
+    internal const ushort DEFAULT_RPC_PORT = 30332;
+    internal const ushort DEFAULT_TCP_PORT = 30333;
+
     readonly IFileSystem fs;
 
     public RunCommand(IFileSystem fs)
@@ -36,6 +39,12 @@ partial class RunCommand
 
     [Option(Description = "Time between blocks")]
     internal uint? SecondsPerBlock { get; }
+
+    [Option("--rpc-port <PORT>", Description = "RPC server port")]
+    internal ushort RpcPort { get; } = DEFAULT_RPC_PORT;
+
+    [Option("--tcp-port <PORT>", Description = "TCP server port")]
+    internal ushort TcpPort { get; } = DEFAULT_TCP_PORT;
 
     [Option("--disable-log", Description = "Disable verbose data logging")]
     internal bool DisableLog { get; set; }
@@ -49,8 +58,10 @@ partial class RunCommand
             if (!fs.Directory.Exists(dataDir))
                 throw new Exception($"Cannot locate data directory {dataDir}");
 
+            ValidatePorts(RpcPort, TcpPort);
+
             var secondsPerBlock = SecondsPerBlock ?? 0;
-            await RunAsync(worknet, dataDir, secondsPerBlock, DisableLog, console, token).ConfigureAwait(false);
+            await RunAsync(worknet, dataDir, secondsPerBlock, RpcPort, TcpPort, DisableLog, console, token).ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)
@@ -60,7 +71,7 @@ partial class RunCommand
         }
     }
 
-    internal static ProtocolSettings GetProtocolSettings(WorknetFile worknetFile, uint secondsPerBlock = 0)
+    internal static ProtocolSettings GetProtocolSettings(WorknetFile worknetFile, uint secondsPerBlock = 0, ushort tcpPort = DEFAULT_TCP_PORT)
     {
         var account = worknetFile.ConsensusWallet.GetAccounts().Single();
         var key = account.GetKey() ?? throw new Exception();
@@ -69,11 +80,27 @@ partial class RunCommand
             MillisecondsPerBlock = secondsPerBlock == 0 ? 15000 : secondsPerBlock * 1000,
             ValidatorsCount = 1,
             StandbyCommittee = new ECPoint[] { key.PublicKey },
-            SeedList = new string[] { $"{System.Net.IPAddress.Loopback}:{30333}" }
+            SeedList = new string[] { $"{System.Net.IPAddress.Loopback}:{tcpPort}" }
         };
     }
 
-    static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, bool disableLog, IConsole console, CancellationToken token)
+    internal static RpcServersSettings GetRpcServerSettings(WorknetFile worknet, ushort rpcPort)
+    {
+        ValidatePort(rpcPort, nameof(rpcPort));
+
+        var settings = new Dictionary<string, string>()
+            {
+                { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
+                { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
+                { "PluginConfiguration:Port", $"{rpcPort}" },
+                { "PluginConfiguration:SessionEnabled", $"{true}"}
+            };
+
+        var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
+        return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
+    }
+
+    static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, ushort rpcPort, ushort tcpPort, bool disableLog, IConsole console, CancellationToken token)
     {
         var tcs = new TaskCompletionSource<bool>();
         _ = Task.Run(() =>
@@ -84,7 +111,7 @@ partial class RunCommand
                 using var stateStore = new StateServiceStore(worknet.Uri, worknet.BranchInfo, db, true);
                 using var trackStore = new PersistentTrackingStore(db, stateStore, true);
 
-                var protocolSettings = GetProtocolSettings(worknet, secondsPerBlock);
+                var protocolSettings = GetProtocolSettings(worknet, secondsPerBlock, tcpPort);
 
                 var storeProvider = new WorknetStorageProvider(trackStore);
                 StoreFactory.RegisterProvider(storeProvider);
@@ -93,12 +120,12 @@ partial class RunCommand
                 using var logPlugin = new WorkNetLogPlugin(console,
                     disableLog ? null : Utility.GetDiagnosticWriter(console));
                 using var dbftPlugin = new DBFTPlugin(GetConsensusSettings(worknet));
-                using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet), persistencePlugin, worknet.Uri);
+                using var rpcServerPlugin = new WorknetRpcServerPlugin(GetRpcServerSettings(worknet, rpcPort), persistencePlugin, worknet.Uri);
                 using var neoSystem = new NeoSystem(protocolSettings, storeProvider.Name);
 
                 neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                 {
-                    Tcp = new IPEndPoint(IPAddress.Loopback, 30333)
+                    Tcp = new IPEndPoint(IPAddress.Loopback, tcpPort)
                 });
                 dbftPlugin.Start(worknet.ConsensusWallet);
 
@@ -132,19 +159,19 @@ partial class RunCommand
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
             return new DbftSettings(config.GetSection("PluginConfiguration"));
         }
+    }
 
-        static RpcServersSettings GetRpcServerSettings(WorknetFile worknet)
-        {
-            var settings = new Dictionary<string, string>()
-                {
-                    { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
-                    { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
-                    { "PluginConfiguration:Port", $"{30332}" },
-                    { "PluginConfiguration:SessionEnabled", $"{true}"}
-                };
+    static void ValidatePort(ushort port, string name)
+    {
+        if (port == 0)
+            throw new ArgumentOutOfRangeException(name, "Port must be greater than zero.");
+    }
 
-            var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-            return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
-        }
+    internal static void ValidatePorts(ushort rpcPort, ushort tcpPort)
+    {
+        ValidatePort(rpcPort, nameof(rpcPort));
+        ValidatePort(tcpPort, nameof(tcpPort));
+        if (rpcPort == tcpPort)
+            throw new ArgumentException("RPC and TCP ports must be different.");
     }
 }

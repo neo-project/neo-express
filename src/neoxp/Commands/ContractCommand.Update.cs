@@ -17,7 +17,7 @@ namespace NeoExpress.Commands
 
     partial class ContractCommand
     {
-        [Command("update", Description = "update a contract that has been deployed to a neo-express instance")]
+        [Command("update", Description = "Update a contract that has been deployed to a neo-express instance")]
         internal class Update
         {
             readonly ExpressChainManagerFactory chainManagerFactory;

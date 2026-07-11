@@ -31,6 +31,9 @@ namespace NeoExpress.Node
 {
     class OnlineNode : IExpressNode
     {
+        internal const int RpcPolicyFailedCode = -505;
+        internal const long DefaultMaxBlockSystemFee = 20_00000000;
+
         readonly ExpressChain chain;
         readonly RpcClient rpcClient;
         readonly Lazy<KeyPair[]> consensusNodesKeys;
@@ -125,7 +128,7 @@ namespace NeoExpress.Node
                 return await SubmitAutoMinedBlockAsync(tx).ConfigureAwait(false);
             }
 
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            return await SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
         // Instant transaction confirmation is opt-in via the chain.AutoMine setting and only
@@ -164,7 +167,7 @@ namespace NeoExpress.Node
                 }
             }
 
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            return await SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
 
         public async Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes)
@@ -173,8 +176,42 @@ namespace NeoExpress.Node
             var tx = Convert.FromBase64String(jsonTx.AsString()).AsSerializable<Transaction>();
             NodeUtility.SignOracleResponseTransaction(ProtocolSettings, chain, tx, oracleNodes);
 
-            return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            return await SendRawTransactionAsync(tx).ConfigureAwait(false);
         }
+
+        async Task<UInt256> SendRawTransactionAsync(Transaction tx)
+        {
+            try
+            {
+                return await rpcClient.SendRawTransactionAsync(tx).ConfigureAwait(false);
+            }
+            catch (RpcException ex) when (IsPolicyFail(ex))
+            {
+                throw CreatePolicyFailException(ex, tx);
+            }
+        }
+
+        internal static bool IsPolicyFail(RpcException ex)
+            => ex.HResult == RpcPolicyFailedCode
+            || ex.Message.Contains("PolicyFail", StringComparison.OrdinalIgnoreCase)
+            || ex.Message.Contains("Policy check failed", StringComparison.OrdinalIgnoreCase);
+
+        internal static Exception CreatePolicyFailException(RpcException ex, Transaction tx)
+        {
+            var systemFee = FormatGas(tx.SystemFee);
+            var maxBlockSystemFee = FormatGas(DefaultMaxBlockSystemFee);
+
+            var hint = tx.SystemFee > DefaultMaxBlockSystemFee
+                ? $" The transaction system fee exceeds the default DBFT MaxBlockSystemFee of {maxBlockSystemFee} GAS."
+                : $" The transaction system fee does not exceed the default DBFT MaxBlockSystemFee of {maxBlockSystemFee} GAS; check whether any signer or target contract is blocked by Policy or whether the node uses a lower MaxBlockSystemFee setting.";
+
+            return new Exception(
+                $"Transaction rejected by node policy (PolicyFail). System fee: {systemFee} GAS.{hint} Contract deployment and update transactions include storage fees based on NEF and manifest size. Increase the DBFT MaxBlockSystemFee setting or reduce the transaction system fee. Original RPC error: {ex.Message}",
+                ex);
+        }
+
+        internal static string FormatGas(long value)
+            => $"{new BigDecimal((BigInteger)value, NativeContract.GAS.Decimals)}";
 
         public async Task<Block> GetBlockAsync(UInt256 blockHash)
         {

@@ -30,7 +30,7 @@ using SysIO = System.IO;
 
 namespace NeoTrace
 {
-    [Command("neotrace", Description = "Generates .neo-trace files for transactions on a public Neo N3 blockchains", UsePagerForHelpText = false)]
+    [Command("neotrace", Description = "Generates .neo-trace files for transactions on public Neo N3 blockchains", UsePagerForHelpText = false)]
     [VersionOption(ThisAssembly.AssemblyInformationalVersion)]
     [Subcommand(typeof(BlockCommand), typeof(TransactionCommand))]
     class Program

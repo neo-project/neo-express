@@ -11,6 +11,7 @@
 using FluentAssertions;
 using Neo;
 using Neo.BlockchainToolkit;
+using Neo.Cryptography.ECC;
 using Neo.Extensions;
 using Neo.SmartContract;
 using Newtonsoft.Json.Linq;
@@ -99,6 +100,44 @@ namespace test.bctklib
             param.Type.Should().Be(ContractParameterType.ByteArray);
             param.Value.Should().BeOfType<byte[]>();
             ((byte[])param.Value).AsSpan().SequenceEqual(expected).Should().BeTrue();
+        }
+
+        [Fact]
+        public void ParseObjectParameter_publickey()
+        {
+            const string value = "0233DE3496D32B8EA6AB5FB925D16009D05E41C109A129AA5B0BE3DB2809946BA8";
+            var json = new JObject()
+            {
+                ["type"] = "PublicKey",
+                ["value"] = value
+            };
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
+            var param = parser.ParseObjectParameter(json);
+
+            param.Type.Should().Be(ContractParameterType.PublicKey);
+            param.Value.Should().BeOfType<ECPoint>();
+            param.Value.Should().Be(ECPoint.Parse(value, ECCurve.Secp256r1));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("not-a-public-key")]
+        public void ParseObjectParameter_publickey_reports_malformed_values(string? value)
+        {
+            var json = new JObject()
+            {
+                ["type"] = "PublicKey",
+                ["value"] = value == null ? JValue.CreateNull() : new JValue(value)
+            };
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION);
+
+            var action = () => parser.ParseObjectParameter(json);
+
+            action.Should().Throw<FormatException>()
+                .WithMessage("*PublicKey*");
         }
 
         [Fact]

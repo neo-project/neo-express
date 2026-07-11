@@ -70,11 +70,10 @@ namespace Neo.BlockchainToolkit
                 return LoadInvocationScript(document);
             }
             catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or IOException
-                or ArgumentException or IndexOutOfRangeException)
+                or ArgumentException)
             {
-                // ArgumentException covers an unsupported parameter token type; IndexOutOfRangeException
-                // covers an empty or null public key reaching ECPoint.Parse. Both mean the file is
-                // malformed, so report it as such instead of surfacing a raw low-level exception.
+                // ArgumentException covers an unsupported parameter token type. All caught errors
+                // mean the file is malformed, so report it without surfacing low-level parser details.
                 throw new Exception($"Invocation file {path} is invalid: {ex.Message}");
             }
         }
@@ -511,7 +510,7 @@ namespace Neo.BlockchainToolkit
                 ContractParameterType.Integer => BigInteger.Parse(valueProp.Value<string>() ?? ""),
                 ContractParameterType.Hash160 => UInt160.Parse(valueProp.Value<string>()),
                 ContractParameterType.Hash256 => UInt256.Parse(valueProp.Value<string>()),
-                ContractParameterType.PublicKey => ECPoint.Parse(valueProp.Value<string>(), ECCurve.Secp256r1),
+                ContractParameterType.PublicKey => ParsePublicKey(valueProp),
                 ContractParameterType.String => valueProp.Value<string>() ?? throw new JsonException(),
                 ContractParameterType.Array => valueProp.Select(ParseParameter).ToList(),
                 ContractParameterType.Map => valueProp.Select(ParseMapElement).ToList(),
@@ -543,6 +542,22 @@ namespace Neo.BlockchainToolkit
                 }
 
                 throw new ArgumentException($"ContractParameterParser could not parse \"{value}\" as binary", nameof(json));
+            }
+
+            static ECPoint ParsePublicKey(JToken json)
+            {
+                var value = json.Value<string>();
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new FormatException("PublicKey parameter value must be a non-empty string");
+
+                try
+                {
+                    return ECPoint.Parse(value, ECCurve.Secp256r1);
+                }
+                catch (Exception ex) when (ex is ArgumentException or FormatException)
+                {
+                    throw new FormatException($"Invalid PublicKey parameter value: {ex.Message}", ex);
+                }
             }
         }
     }

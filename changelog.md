@@ -13,6 +13,14 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
+## [3.10.1] - 2026-07-09
+
+### Changed
+
+* Updated to Neo 3.10.1
+* Updated Neo module dependencies to 3.10.1 where matching packages are available
+* Kept Neo.Consensus.DBFT at 3.10.0 because its 3.10.1 package depends on an unpublished Neo.ConsoleService 3.10.1 package
+
 ## [3.10.0] - 2026-06-15
 
 ### Changed

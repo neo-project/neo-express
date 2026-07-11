@@ -2,12 +2,10 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <Nullable>enable</Nullable>
+        <RootNamespace>test.worknet</RootNamespace>
     </PropertyGroup>
     <ItemGroup>
-        <EmbeddedResource Include="_testFiles/*" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\..\src\bctklib\bctklib.csproj" />
+        <ProjectReference Include="..\..\src\worknet\neoworknet.csproj" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="coverlet.collector" Version="6.0.4">
@@ -16,16 +14,10 @@
         </PackageReference>
         <PackageReference Include="FluentAssertions" Version="7.2.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
-        <PackageReference Include="Neo.Plugins.Storage.RocksDBStore" Version="3.10.1" />
-        <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.16" />
-        <PackageReference Include="Xunit.Combinatorial" Version="2.0.24" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="xunit.v3" Version="3.1.0" />
-    </ItemGroup>
-    <ItemGroup>
-      <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
     </ItemGroup>
 </Project>

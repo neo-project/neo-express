@@ -4,6 +4,7 @@
     <IsPackable>false</IsPackable>
     <NeoExpressBatchFile>.\setup-test-chain.batch</NeoExpressBatchFile>
     <NeoExpressBatchInputFile>.\default.neo-express</NeoExpressBatchInputFile>
+    <NeoExpressBatchInputFileFromWorkspace>test/default.neo-express</NeoExpressBatchInputFileFromWorkspace>
     <RootNamespace>$_CONTRACTNAME_$Tests</RootNamespace>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
@@ -30,10 +31,14 @@
 
   <Target Name="ExecuteCreateNeoExpressInstance" Condition="!Exists($(NeoExpressBatchInputFile))"
           AfterTargets="Build" BeforeTargets="ExecuteNeoExpressBatch">
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp create -o &quot;$(NeoExpressBatchInputFile)&quot;" />
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create -i &quot;$(NeoExpressBatchInputFile)&quot; owner" />
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create -i &quot;$(NeoExpressBatchInputFile)&quot; alice" />
-    <Exec WorkingDirectory="$(ProjectDir)" Command="neoxp wallet create -i &quot;$(NeoExpressBatchInputFile)&quot; bob" />
+    <Exec WorkingDirectory="$(ProjectDir).."
+          Command="dotnet tool run neoxp -- create -o &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot;" />
+    <Exec WorkingDirectory="$(ProjectDir).."
+          Command="dotnet tool run neoxp -- wallet create -i &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot; owner" />
+    <Exec WorkingDirectory="$(ProjectDir).."
+          Command="dotnet tool run neoxp -- wallet create -i &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot; alice" />
+    <Exec WorkingDirectory="$(ProjectDir).."
+          Command="dotnet tool run neoxp -- wallet create -i &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot; bob" />
   </Target>
 
 </Project>

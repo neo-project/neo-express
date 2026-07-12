@@ -10,7 +10,7 @@ using Neo.SmartContract.Framework.Services;
 
 namespace $_CONTRACTNAME_$
 {
-    [DisplayName("YourName.$_CLASSNAME_$")]
+    [DisplayName("$_CLASSNAME_$")]
     [ManifestExtra("Author", "Your name")]
     [ManifestExtra("Email", "your@address.invalid")]
     [ManifestExtra("Description", "Describe your contract...")]
@@ -18,7 +18,7 @@ namespace $_CONTRACTNAME_$
     {
         const byte Prefix_NumberStorage = 0x00;
         const byte Prefix_ContractOwner = 0xFF;
-        private static Transaction Tx => (Transaction) Runtime.ScriptContainer;
+        private static Transaction Tx => Runtime.Transaction;
 
         [DisplayName("NumberChanged")]
         public static event Action<UInt160, BigInteger> OnNumberChanged;

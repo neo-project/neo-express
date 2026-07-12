@@ -19,7 +19,7 @@ namespace Neo.BuildTasks
 {
     public class NeoCsc : DotNetToolTask
     {
-        readonly static NugetPackageVersion REQUIRED_VERSION = new NugetPackageVersion(3, 3, 0);
+        readonly static NugetPackageVersion REQUIRED_VERSION = new NugetPackageVersion(3, 10, 0);
         const string PACKAGE_ID = "Neo.Compiler.CSharp";
         const string COMMAND = "nccs";
         const byte DEFAULT_ADDRESS_VERSION = 53;
@@ -79,11 +79,11 @@ namespace Neo.BuildTasks
             }
 
             if (debug)
-                builder.Append(" --debug");
+                builder.Append(" --debug Extended");
             if (assembly)
                 builder.Append(" --assembly");
             if (!optimize)
-                builder.Append(" --no-optimize");
+                builder.Append(" --optimize None");
             if (!inline)
                 builder.Append(" --no-inline");
             if (addressVersion != DEFAULT_ADDRESS_VERSION)

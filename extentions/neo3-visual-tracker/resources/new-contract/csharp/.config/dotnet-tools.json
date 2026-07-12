@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "neo.express": {
+      "version": "3.10.0",
+      "commands": [
+        "neoxp"
+      ]
+    },
+    "neo.compiler.csharp": {
+      "version": "3.10.0",
+      "commands": [
+        "nccs"
+      ]
+    }
+  }
+}

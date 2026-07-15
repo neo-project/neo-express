@@ -30,6 +30,7 @@ namespace test.neodebug
         {
             public bool Started, Continued, SteppedOver, Disposed;
 
+            public void Dispose() => Disposed = true;
             public void Start() => Started = true;
             public IEnumerable<Thread> GetThreads() => new[] { new Thread(1, "main") };
             public IEnumerable<StackFrame> GetStackFrames(StackTraceArguments args) => new[] { new StackFrame(0, "Run", 6, 0) };
@@ -67,6 +68,7 @@ namespace test.neodebug
             public StackTraceResponse StackTrace() => HandleStackTraceRequest(new StackTraceArguments());
             public ContinueResponse Continue() => HandleContinueRequest(new ContinueArguments());
             public ConfigurationDoneResponse ConfigurationDone() => HandleConfigurationDoneRequest(new ConfigurationDoneArguments());
+            public DisconnectResponse Disconnect() => HandleDisconnectRequest(new DisconnectArguments());
             public NextResponse Next() => HandleNextRequest(new NextArguments());
             public Task Launch() => LaunchAsync(new LaunchArguments());
         }
@@ -156,6 +158,19 @@ namespace test.neodebug
             Assert.Equal("A debug session has already been launched.", exception.Message);
             Assert.Equal(1, factoryCalls);
             Assert.False(session.Started);
+        }
+
+        [Fact]
+        public async Task disconnect_disposes_the_session()
+        {
+            var session = new FakeDebugSession();
+            var adapter = new TestDebugAdapter(session);
+            await adapter.Launch();
+            adapter.ConfigurationDone();
+
+            adapter.Disconnect();
+
+            Assert.True(session.Disposed);
         }
     }
 }

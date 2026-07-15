@@ -14,6 +14,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.VM;
 using NeoDebug.Neo3;
 using System;
+using System.IO;
 using System.Linq;
 using Xunit;
 using Script = Neo.VM.Script;
@@ -35,15 +36,15 @@ namespace test.neodebug
         }
 
         // A method spanning the whole script with one sequence point (address 2 -> source line 5).
-        static DebugInfo SampleDebugInfo(UInt160 scriptHash) => new(
-            scriptHash, "", new[] { DocumentPath },
+        static DebugInfo SampleDebugInfo(UInt160 scriptHash, string documentPath = DocumentPath, int address = 2, int line = 5, int startColumn = 1, int endColumn = 10) => new(
+            scriptHash, "", new[] { documentPath },
             new[]
             {
                 new DebugInfo.Method(
                     Id: "Contract.Run", Namespace: "Contract", Name: "Run", Range: (0, 3), ReturnType: "Integer",
                     Parameters: Array.Empty<DebugInfo.SlotVariable>(),
                     Variables: Array.Empty<DebugInfo.SlotVariable>(),
-                    SequencePoints: new[] { new DebugInfo.SequencePoint(2, 0, (5, 1), (5, 10)) }),
+                    SequencePoints: new[] { new DebugInfo.SequencePoint(address, 0, (line, startColumn), (line, endColumn)) }),
             },
             Array.Empty<DebugInfo.Event>(), Array.Empty<DebugInfo.SlotVariable>());
 
@@ -67,6 +68,49 @@ namespace test.neodebug
             {
                 Assert.True(disassembly.AddressMap.TryGetValue(address, out var line));
                 Assert.Equal(address, disassembly.LineMap[line]);
+            }
+        }
+
+        [Fact]
+        public void disassembly_source_references_are_positive_and_unique()
+        {
+            var firstHash = UInt160.Parse("0x0000000000000000000000000000000000000001");
+            var secondHash = UInt160.Parse("0x0000000000000000000000000000000000000002");
+            var script = SampleScript();
+            var manager = new DisassemblyManager(
+                (UInt160 h, out Script? s) => { s = h == firstHash || h == secondHash ? script : null; return s is not null; },
+                (UInt160 h, out DebugInfo? d) => { d = null; return false; });
+
+            Assert.True(manager.TryGetDisassembly(firstHash, out var first));
+            Assert.True(manager.TryGetDisassembly(secondHash, out var second));
+
+            Assert.True(first.SourceReference > 0);
+            Assert.True(second.SourceReference > 0);
+            Assert.NotEqual(first.SourceReference, second.SourceReference);
+            Assert.True(manager.TryGetDisassembly(first.SourceReference, out var byReference));
+            Assert.Equal(first.Name, byReference.Name);
+        }
+
+        [Fact]
+        public void disassembly_ignores_stale_source_columns()
+        {
+            var path = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(path, "x");
+                var hash = UInt160.Parse("0x0000000000000000000000000000000000000001");
+                var script = SampleScript();
+                var debugInfo = SampleDebugInfo(hash, path, startColumn: 10, endColumn: 11);
+                var manager = new DisassemblyManager(
+                    (UInt160 h, out Script? s) => { s = h == hash ? script : null; return s is not null; },
+                    (UInt160 h, out DebugInfo? d) => { d = h == hash ? debugInfo : null; return d is not null; });
+
+                Assert.True(manager.TryGetDisassembly(hash, out var disassembly));
+                Assert.DoesNotContain("# Code", disassembly.Source);
+            }
+            finally
+            {
+                File.Delete(path);
             }
         }
 
@@ -96,6 +140,22 @@ namespace test.neodebug
             Assert.True(manager.CheckBreakpoint(UInt160.Zero, 2));  // line 5 resolved to address 2
             Assert.False(manager.CheckBreakpoint(UInt160.Zero, 3));
             Assert.False(manager.CheckBreakpoint(UInt160.Zero, null));
+        }
+
+        [Fact]
+        public void source_breakpoints_are_resolved_per_contract()
+        {
+            var firstHash = UInt160.Parse("0x0000000000000000000000000000000000000001");
+            var secondHash = UInt160.Parse("0x0000000000000000000000000000000000000002");
+            var first = SampleDebugInfo(firstHash, line: 5, address: 2);
+            var second = SampleDebugInfo(secondHash, line: 6, address: 3);
+            var manager = new BreakpointManager(EmptyDisassemblyManager(), new[] { first, second });
+            _ = manager.SetBreakpoints(
+                new Source { Name = "Contract.cs", Path = DocumentPath },
+                new[] { new SourceBreakpoint(6) }).ToList();
+
+            Assert.False(manager.CheckBreakpoint(firstHash, 3));
+            Assert.True(manager.CheckBreakpoint(secondHash, 3));
         }
 
         static DisassemblyManager EmptyDisassemblyManager() => new(

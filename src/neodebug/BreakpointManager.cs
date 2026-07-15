@@ -99,7 +99,7 @@ namespace NeoDebug.Neo3
                     }
                     else
                     {
-                        foreach (var debugInfo in _debugInfoList)
+                        foreach (var debugInfo in _debugInfoList.Where(d => d.ScriptHash == scriptHash))
                         {
                             IReadOnlyList<DebugInfo.SequencePoint> sequencePoints = debugInfo.Methods
                                 .SelectMany(m => m.SequencePoints)

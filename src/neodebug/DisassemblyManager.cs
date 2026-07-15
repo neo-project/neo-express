@@ -13,7 +13,6 @@ using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.SmartContract;
 using Neo.VM;
-using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -49,7 +48,10 @@ namespace NeoDebug.Neo3
             }
         }
 
-        private readonly ConcurrentDictionary<int, Disassembly> _disassemblies = new();
+        private readonly object _disassemblyLock = new();
+        private readonly Dictionary<UInt160, Disassembly> _disassembliesByScript = new();
+        private readonly Dictionary<int, Disassembly> _disassembliesBySourceReference = new();
+        private int _nextSourceReference = 1;
         private readonly TryGetScript _tryGetScript;
         private readonly TryGetDebugInfo _tryGetDebugInfo;
 
@@ -63,7 +65,21 @@ namespace NeoDebug.Neo3
             => GetDisassembly(context.ScriptIdentifier, context.Script, debugInfo, context.Tokens);
 
         private Disassembly GetDisassembly(UInt160 scriptHash, Script script, DebugInfo? debugInfo, MethodToken[] tokens)
-            => _disassemblies.GetOrAdd(scriptHash.GetHashCode(), sourceRef => ToDisassembly(sourceRef, scriptHash, script, debugInfo, tokens));
+        {
+            lock (_disassemblyLock)
+            {
+                if (_disassembliesByScript.TryGetValue(scriptHash, out var disassembly))
+                    return disassembly;
+                if (_nextSourceReference == int.MaxValue)
+                    throw new InvalidOperationException("No source references remain for generated disassemblies.");
+
+                var sourceReference = _nextSourceReference++;
+                disassembly = ToDisassembly(sourceReference, scriptHash, script, debugInfo, tokens);
+                _disassembliesByScript.Add(scriptHash, disassembly);
+                _disassembliesBySourceReference.Add(sourceReference, disassembly);
+                return disassembly;
+            }
+        }
 
         public bool TryGetDisassembly(UInt160 scriptHash, out Disassembly disassembly)
         {
@@ -79,7 +95,10 @@ namespace NeoDebug.Neo3
         }
 
         public bool TryGetDisassembly(int sourceRef, out Disassembly disassembly)
-            => _disassemblies.TryGetValue(sourceRef, out disassembly);
+        {
+            lock (_disassemblyLock)
+                return _disassembliesBySourceReference.TryGetValue(sourceRef, out disassembly);
+        }
 
         private static Disassembly ToDisassembly(int sourceRef, UInt160 scriptHash, Script script, DebugInfo? debugInfo, MethodToken[] tokens)
         {
@@ -112,18 +131,13 @@ namespace NeoDebug.Neo3
                     line++;
                 }
 
-                if (sequencePoints.TryGetValue(instructions[i].address, out var sp) && sp.Document < documents.Count)
+                if (sequencePoints.TryGetValue(instructions[i].address, out var sp)
+                    && sp.Document >= 0
+                    && sp.Document < documents.Count)
                 {
                     var doc = documents[sp.Document];
-                    if (doc.lines.Length > sp.Start.Line - 1)
+                    if (TryGetSourceText(doc.lines, sp, out var srcLine))
                     {
-                        var srcLine = doc.lines[sp.Start.Line - 1];
-
-                        if (sp.Start.Column > 1)
-                            srcLine = srcLine.Substring(sp.Start.Column - 1);
-                        if (sp.Start.Line == sp.End.Line && sp.End.Column > sp.Start.Column)
-                            srcLine = srcLine.Substring(0, sp.End.Column - sp.Start.Column);
-
                         sourceBuilder.AppendLine($"# Code {doc.fileName} line {sp.Start.Line}: \"{srcLine.Trim()}\"");
                         line++;
                     }
@@ -147,6 +161,32 @@ namespace NeoDebug.Neo3
                 sourceRef,
                 addressMapBuilder.ToImmutable(),
                 lineMapBuilder.ToImmutable());
+
+            static bool TryGetSourceText(string[] lines, DebugInfo.SequencePoint sequencePoint, out string sourceText)
+            {
+                sourceText = string.Empty;
+                if (sequencePoint.Start.Line < 1 || sequencePoint.Start.Line > lines.Length)
+                    return false;
+
+                var lineText = lines[sequencePoint.Start.Line - 1];
+                if (sequencePoint.Start.Column < 1 || sequencePoint.Start.Column > lineText.Length + 1)
+                    return false;
+
+                var start = sequencePoint.Start.Column - 1;
+                if (sequencePoint.Start.Line != sequencePoint.End.Line)
+                {
+                    sourceText = lineText[start..];
+                    return true;
+                }
+
+                if (sequencePoint.End.Column < sequencePoint.Start.Column || sequencePoint.End.Column > lineText.Length + 1)
+                    return false;
+
+                sourceText = sequencePoint.End.Column > sequencePoint.Start.Column
+                    ? lineText.Substring(start, sequencePoint.End.Column - sequencePoint.Start.Column)
+                    : lineText[start..];
+                return true;
+            }
 
             static void AddSource(StringBuilder sourceBuilder, int address, Instruction instruction, string padString, MethodToken[]? tokens)
             {

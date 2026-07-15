@@ -25,14 +25,13 @@ namespace NeoDebug.Neo3
         [Option("-v|--debug-view", Description = "Default debug view: 'source' or 'disassembly'")]
         private string DefaultDebugView { get; } = string.Empty;
 
-        private void OnExecute(CommandLineApplication app, IConsole console)
+        private int OnExecute(CommandLineApplication app, IConsole console)
         {
-            var defaultDebugView = DefaultDebugView.Length > 0
-                ? Enum.Parse<DebugView>(DefaultDebugView, true)
-                : DebugView.Source;
-
-            if (defaultDebugView == DebugView.Toggle)
-                throw new ArgumentException($"Invalid default debug view '{DefaultDebugView}'.", nameof(DefaultDebugView));
+            if (!TryParseDebugView(DefaultDebugView, out var defaultDebugView))
+            {
+                console.Error.WriteLine($"Invalid debug view '{DefaultDebugView}'. Expected 'source' or 'disassembly'.");
+                return 1;
+            }
 
             var adapter = new DebugAdapter(
                 Console.OpenStandardInput(),
@@ -41,6 +40,20 @@ namespace NeoDebug.Neo3
                 defaultDebugView: defaultDebugView);
 
             adapter.Run();
+            return 0;
+        }
+
+        internal static bool TryParseDebugView(string value, out DebugView debugView)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                debugView = DebugView.Source;
+                return true;
+            }
+
+            return Enum.TryParse(value, ignoreCase: true, out debugView)
+                && Enum.IsDefined(typeof(DebugView), debugView)
+                && debugView is DebugView.Source or DebugView.Disassembly;
         }
     }
 }

@@ -51,7 +51,18 @@ namespace NeoDebug.Neo3
                 .Switch(info => debugInfos.Add(info), _ => { });
 
             var engine = CreateEngine(config, seedContracts);
-            return new DebugSession(engine, debugInfos, returnTypes, sendEvent, defaultDebugView);
+            var debugView = defaultDebugView;
+            if (debugView == DebugView.Source && debugInfos.Count == 0)
+            {
+                debugView = DebugView.Disassembly;
+                sendEvent(new OutputEvent
+                {
+                    Category = OutputEvent.CategoryValue.Console,
+                    Output = "Source debug information was not found; using disassembly view.\n",
+                });
+            }
+
+            return new DebugSession(engine, debugInfos, returnTypes, sendEvent, debugView);
         }
 
         private static IApplicationEngine CreateEngine(IReadOnlyDictionary<string, JToken> config, IReadOnlyDictionary<UInt160, Script> seedContracts)

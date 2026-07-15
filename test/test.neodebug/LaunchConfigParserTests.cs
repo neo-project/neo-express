@@ -20,6 +20,7 @@ using NeoDebug.Neo3;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -100,6 +101,53 @@ namespace test.neodebug
             Assert.NotNull(session);
             Assert.Single(session.GetThreads());
             (session as IDisposable)?.Dispose();
+        }
+
+        [Fact]
+        public async Task missing_debug_info_falls_back_to_disassembly()
+        {
+            var events = new List<DebugEvent>();
+            var args = LaunchArgs(WriteNefFile(), new JObject { ["trace-file"] = WriteTraceFile() });
+            using var session = await LaunchConfigParser.CreateDebugSessionAsync(args, events.Add, DebugView.Source);
+
+            session.Start();
+
+            var frame = session.GetStackFrames(new StackTraceArguments { ThreadId = 1 }).Single();
+            Assert.True(frame.Source.SourceReference > 0);
+            Assert.Contains(events.OfType<OutputEvent>(), e => e.Output.Contains("using disassembly view"));
+            Assert.Contains(events.OfType<StoppedEvent>(), e => e.Reason == StoppedEvent.ReasonValue.Entry);
+        }
+
+        [Fact]
+        public async Task empty_trace_is_rejected()
+        {
+            var tracePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.neo-trace");
+            File.WriteAllBytes(tracePath, Array.Empty<byte>());
+            var args = LaunchArgs(WriteNefFile(), new JObject { ["trace-file"] = tracePath });
+
+            var exception = await Assert.ThrowsAsync<InvalidDataException>(() =>
+                LaunchConfigParser.CreateDebugSessionAsync(args, _ => { }, DebugView.Source));
+
+            Assert.Contains("VM execution record", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("source", DebugView.Source)]
+        [InlineData("DISASSEMBLY", DebugView.Disassembly)]
+        [InlineData("", DebugView.Source)]
+        public void debug_view_parser_accepts_supported_values(string value, DebugView expected)
+        {
+            Assert.True(Program.TryParseDebugView(value, out var actual));
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [InlineData("toggle")]
+        [InlineData("typo")]
+        [InlineData("99")]
+        public void debug_view_parser_rejects_unsupported_values(string value)
+        {
+            Assert.False(Program.TryParseDebugView(value, out _));
         }
 
         [Fact]

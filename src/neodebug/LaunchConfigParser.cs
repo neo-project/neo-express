@@ -112,7 +112,7 @@ namespace NeoDebug.Neo3
             var manifest = ContractManifest.Parse(File.ReadAllText(Path.ChangeExtension(program, ".manifest.json")));
 
             var store = new MemoryStore();
-            InitializeLedger(store);
+            store.EnsureLedgerInitialized(Settings);
 
             var deploySigner = new Signer { Account = UInt160.Zero, Scopes = WitnessScope.CalledByEntry };
             UInt160 contractHash;
@@ -155,28 +155,6 @@ namespace NeoDebug.Neo3
             var engine = new DebugApplicationEngine(tx, engineSnapshot, Settings, block, null);
             engine.LoadScript(invokeScript);
             return engine;
-        }
-
-        // Persists the genesis block so the ApplicationEngine ctor can read the ledger's current index.
-        private static void InitializeLedger(IStore store)
-        {
-            using var snapshot = new StoreCache(store.GetSnapshot());
-            var block = NeoSystem.CreateGenesisBlock(Settings);
-
-            RunNativePersist(snapshot, block, TriggerType.OnPersist, ApplicationEngine.System_Contract_NativeOnPersist);
-            RunNativePersist(snapshot, block, TriggerType.PostPersist, ApplicationEngine.System_Contract_NativePostPersist);
-
-            snapshot.Commit();
-
-            static void RunNativePersist(DataCache snapshot, Block block, TriggerType trigger, uint sysCall)
-            {
-                using var engine = ApplicationEngine.Create(trigger, null, snapshot, block, Settings, 0L);
-                using var scriptBuilder = new ScriptBuilder();
-                scriptBuilder.EmitSysCall(sysCall);
-                engine.LoadScript(scriptBuilder.ToArray());
-                if (engine.Execute() != VMState.HALT)
-                    throw new InvalidOperationException($"{trigger} operation failed", engine.FaultException);
-            }
         }
 
         // Deploys through ContractManagement so registry indexes, native calling context and the _deploy runtime

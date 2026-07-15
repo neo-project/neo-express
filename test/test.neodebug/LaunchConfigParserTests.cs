@@ -169,5 +169,20 @@ namespace test.neodebug
             await Assert.ThrowsAsync<JsonException>(() =>
                 LaunchConfigParser.CreateDebugSessionAsync(args, _ => { }, DebugView.Source));
         }
+
+        [Fact]
+        public async Task invocation_rejects_trace_and_operation_together()
+        {
+            var args = LaunchArgs(WriteNefFile(), new JObject
+            {
+                ["trace-file"] = WriteTraceFile(),
+                ["operation"] = "run",
+            });
+
+            var exception = await Assert.ThrowsAsync<JsonException>(() =>
+                LaunchConfigParser.CreateDebugSessionAsync(args, _ => { }, DebugView.Source));
+
+            Assert.Contains("not both", exception.Message);
+        }
     }
 }

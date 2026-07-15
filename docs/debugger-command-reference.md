@@ -131,3 +131,6 @@ NeoDebug supports two ways to drive an invocation:
 The live launch runs against a throwaway local chain seeded only with the contract under debug;
 multi-contract scenarios, signer/account resolution against a Neo-Express chain, checkpoints, and
 oracle responses are not yet wired into the launcher.
+
+The live transaction uses the zero account with `CalledByEntry` scope and follows normal Neo witness
+rules. Witness checks for other accounts fail; no signatures are fabricated by the debugger.

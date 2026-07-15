@@ -27,9 +27,7 @@ using Neo.VM;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Immutable;
-using System.Numerics;
 using Script = Neo.VM.Script;
-using StackItem = Neo.VM.Types.StackItem;
 
 namespace NeoDebug.Neo3
 {
@@ -91,13 +89,16 @@ namespace NeoDebug.Neo3
             };
 
             var traceFile = invocation.Value<string>("trace-file");
+            var operation = invocation.Value<string>("operation");
+            if (!string.IsNullOrEmpty(traceFile) && !string.IsNullOrEmpty(operation))
+                throw new JsonException("The 'invocation' must specify either 'trace-file' or 'operation', not both.");
+
             if (!string.IsNullOrEmpty(traceFile))
             {
                 var reader = new TraceDebugReader(File.OpenRead(traceFile), leaveOpen: false, seedContracts);
                 return new TraceReplayEngine(reader, seedContracts);
             }
 
-            var operation = invocation.Value<string>("operation");
             if (string.IsNullOrEmpty(operation))
                 throw new JsonException("The 'invocation' must specify a 'trace-file' to replay or an 'operation' to invoke.");
 
@@ -151,9 +152,7 @@ namespace NeoDebug.Neo3
             var block = TestApplicationEngine.CreateDummyBlock(engineSnapshot, Settings);
             block.Transactions = new[] { tx };
 
-            // A permissive witness checker: when stepping a contract under the debugger, treat all witnesses as
-            // present so methods that CheckWitness do not fault for lack of a real signature.
-            var engine = new DebugApplicationEngine(tx, engineSnapshot, Settings, block, _ => true);
+            var engine = new DebugApplicationEngine(tx, engineSnapshot, Settings, block, null);
             engine.LoadScript(invokeScript);
             return engine;
         }
@@ -180,54 +179,43 @@ namespace NeoDebug.Neo3
             }
         }
 
-        // Deploys a contract onto the snapshot — the logic of ContractManagement.Deploy, replayed directly so a
-        // launch can stand up the contract without a real deployment transaction.
+        // Deploys through ContractManagement so registry indexes, native calling context and the _deploy runtime
+        // environment match a real deployment transaction.
         private static UInt160 DeployContract(DataCache snapshot, Signer deploySigner, NefFile nef, ContractManifest manifest)
         {
-            const byte Prefix_Contract = 8;
-
             Neo.SmartContract.Helper.Check(nef.Script, manifest.Abi);
             var hash = Neo.SmartContract.Helper.GetContractHash(deploySigner.Account, nef.CheckSum, manifest.Name);
-            var key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_Contract).Add(hash);
-
-            if (snapshot.Contains(key))
+            if (NativeContract.ContractManagement.GetContract(snapshot, hash) is not null)
                 return hash;
-            if (!manifest.IsValid(ExecutionEngineLimits.Default, hash))
-                throw new InvalidOperationException($"Invalid manifest for contract {hash}.");
 
-            var contract = new ContractState
-            {
-                Hash = hash,
-                Id = GetNextAvailableId(snapshot),
-                Manifest = manifest,
-                Nef = nef,
-                UpdateCounter = 0,
-            };
-            snapshot.Add(key, new StorageItem(contract));
+            using var builder = new ScriptBuilder();
+            builder.EmitDynamicCall(
+                NativeContract.ContractManagement.Hash,
+                "deploy",
+                nef.ToArray(),
+                manifest.ToJson().ToString(),
+                new ContractParameter(ContractParameterType.Any));
+            var tx = TestApplicationEngine.CreateTestTransaction(deploySigner);
+            tx.Script = builder.ToArray();
+            var block = TestApplicationEngine.CreateDummyBlock(snapshot, Settings);
+            block.Transactions = new[] { tx };
 
-            var deployMethod = contract.Manifest.Abi.GetMethod("_deploy", 2);
-            if (deployMethod is not null)
+            using (var engine = ApplicationEngine.Create(
+                TriggerType.Application,
+                tx,
+                snapshot,
+                block,
+                Settings,
+                ApplicationEngine.TestModeGas))
             {
-                var tx = TestApplicationEngine.CreateTestTransaction(deploySigner);
-                using var engine = ApplicationEngine.Create(TriggerType.Application, tx, snapshot, null, Settings);
-                var context = engine.LoadContract(contract, deployMethod, CallFlags.All);
-                context.EvaluationStack.Push(StackItem.Null);
-                context.EvaluationStack.Push(StackItem.False);
+                engine.LoadScript(tx.Script);
                 if (engine.Execute() != VMState.HALT)
-                    throw new InvalidOperationException("_deploy operation failed", engine.FaultException);
+                    throw new InvalidOperationException("Contract deployment failed", engine.FaultException);
             }
 
-            return hash;
-
-            static int GetNextAvailableId(DataCache snapshot)
-            {
-                const byte Prefix_NextAvailableId = 15;
-                var key = new KeyBuilder(NativeContract.ContractManagement.Id, Prefix_NextAvailableId);
-                var item = snapshot.GetAndChange(key);
-                int value = (int)(BigInteger)item;
-                item.Add(1);
-                return value;
-            }
+            return NativeContract.ContractManagement.GetContract(snapshot, hash) is not null
+                ? hash
+                : throw new InvalidOperationException($"Contract {hash} was not registered after deployment.");
         }
 
         private static async Task<NefFile> LoadNefFileAsync(string path)

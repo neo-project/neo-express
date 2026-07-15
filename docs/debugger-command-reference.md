@@ -52,6 +52,7 @@ request whose configuration carries these properties:
 | --- | --- | --- |
 | `program` | yes | Path to the compiled `.nef`. Its sibling `.manifest.json` and `.nefdbgnfo`/`.debug.json` are loaded automatically. |
 | `invocation` | yes | Either `{ "trace-file": "<path>" }` to **replay** a recorded trace, or `{ "operation": "<method>", "args": [ ... ] }` to **deploy and run** the contract live. |
+| `signers` | no | Non-empty array of unique Neo N3 addresses for a live invocation. Each signer uses `CalledByEntry`; the first account also determines the deployed contract hash. |
 | `return-types` | no | Array of cast hints (`int`, `bool`, `string`, `hex`, `byte[]`, `addr`) for rendering the method's return values. |
 | `sourceFileMap` | no | Object remapping the document paths baked into the debug info to their location on this machine. |
 
@@ -85,6 +86,7 @@ chain and the debugger stops at the call:
   "type": "neo-contract",
   "request": "launch",
   "program": "${workspaceFolder}/bin/sc/Contract.nef",
+  "signers": [ "NXV7ZhHiyM1aHXwpVsRZC6BwNFP2jghXAq" ],
   "invocation": {
     "operation": "transfer",
     "args": [ "@NXV7ZhHiyM1aHXwpVsRZC6BwNFP2jghXAq", 100 ]
@@ -132,5 +134,7 @@ The live launch runs against a throwaway local chain seeded only with the contra
 multi-contract scenarios, signer/account resolution against a Neo-Express chain, checkpoints, and
 oracle responses are not yet wired into the launcher.
 
-The live transaction uses the zero account with `CalledByEntry` scope and follows normal Neo witness
-rules. Witness checks for other accounts fail; no signatures are fabricated by the debugger.
+Set `signers` to model the transaction accounts used by a live invocation. Every configured account
+uses `CalledByEntry`, and the first account also determines the deployed contract hash. If `signers`
+is omitted, the launcher uses the zero account. Live debugging follows normal Neo witness-scope
+rules and does not fabricate signatures, so nested calls and checks for unrelated accounts still fail.

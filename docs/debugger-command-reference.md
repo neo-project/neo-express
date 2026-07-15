@@ -75,9 +75,10 @@ A VS Code `launch.json` entry looks like:
 }
 ```
 
-> A dedicated VS Code extension that registers the `neo-contract` debug type and spawns
-> `neodebug` for you is planned. Until then, any DAP client that launches `neodebug` and sends
-> the configuration above can drive the debugger.
+> The repository includes a [VS Code extension](../extensions/neodebug-vscode/README.md) that
+> registers the `neo-contract` debug type and launches `neodebug` from your `PATH`. Set
+> `neo-contract.debugAdapterPath` in VS Code when you need to use a specific debugger build.
+> Other DAP clients can also launch `neodebug` and send the same configuration.
 
 ## Debug views
 

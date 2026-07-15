@@ -33,8 +33,9 @@ neodebug --version
    *extended*, unoptimized debug build so every statement has a sequence point.
 
 2. **Capture a trace.** Produce a `.neo-trace` for the invocation you want to debug — for
-   example with [NeoTrace](trace-command-reference.md) against a public transaction, or from a
-   Neo-Express node (which writes `<txhash>.neo-trace` files as it executes).
+   example with [NeoTrace](trace-command-reference.md) against a public transaction, or by
+   starting a Neo-Express node with `neoxp run --trace` (which writes
+   `<txhash>.neo-trace` files as it executes).
 
 3. **Configure** a launch configuration (see below) that points at the contract and the trace.
 
@@ -80,12 +81,15 @@ A VS Code `launch.json` entry looks like:
 
 ## Debug views
 
-NeoDebug presents two views, toggled with the `--debug-view` option (or the editor's debug-view
-command):
+NeoDebug presents two views. The `--debug-view` option selects the initial view; a DAP client can
+switch views later with NeoDebug's `debugview` request:
 
 - **Source** (default) — steps and breakpoints follow your source lines.
 - **Disassembly** — steps and breakpoints follow the NeoVM instructions, with the evaluation
   stack and slots exposed as raw values.
+
+If source debug information is unavailable, a source-mode launch falls back to disassembly and
+reports the fallback in the debug console.
 
 ## Evaluating expressions
 

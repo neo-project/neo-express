@@ -12,6 +12,7 @@ using MessagePack;
 using MessagePack.Resolvers;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
 using Neo.BlockchainToolkit.TraceDebug;
 using Neo.Extensions;
@@ -81,9 +82,11 @@ namespace test.neodebug
         {
             var debugInfo = LoadRegistrarDebugInfo();
             var script = LoadRegistrarScript();
-            var hash = debugInfo.ScriptHash;
+            var hash = script.CalculateScriptHash();
 
-            // The Registrar.Query method, with its real sequence points (addresses 131/132/143 -> lines 21/22/23).
+            Assert.Equal(hash, debugInfo.ScriptHash);
+
+            // The Registrar.Query method, with its real sequence points (addresses 131/132/143 -> lines 22/23/24).
             var method = debugInfo.Methods.First(m => m.Name == "Query");
             var sps = method.SequencePoints.OrderBy(sp => sp.Address).ToArray();
             var target = sps[2];

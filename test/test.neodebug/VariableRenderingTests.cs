@@ -20,6 +20,7 @@ using System.Linq;
 using Xunit;
 using NeoArray = Neo.VM.Types.Array;
 using NeoMap = Neo.VM.Types.Map;
+using NeoStruct = Neo.VM.Types.Struct;
 using Script = Neo.VM.Script;
 using StackItem = Neo.VM.Types.StackItem;
 
@@ -86,6 +87,17 @@ namespace test.neodebug
         }
 
         [Fact]
+        public void struct_preserves_its_type_while_using_indexed_children()
+        {
+            var @struct = new NeoStruct { new Neo.VM.Types.Integer(1) };
+            var variable = ((StackItem)@struct).ToVariable(_manager, "value");
+
+            Assert.Equal("Struct[1]", variable.Value);
+            Assert.Equal(1, variable.IndexedVariables);
+            Assert.Single(Expand(variable));
+        }
+
+        [Fact]
         public void map_renders_mixed_primitive_keys_without_throwing()
         {
             var map = new NeoMap
@@ -99,6 +111,7 @@ namespace test.neodebug
             var children = Expand(variable);
             Assert.Equal(2, children.Count);
             Assert.Contains(children, c => c.Name == "7");
+            Assert.Contains(children, c => c.Name == "ab");
         }
 
         [Fact]

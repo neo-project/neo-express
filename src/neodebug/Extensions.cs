@@ -120,6 +120,17 @@ namespace NeoDebug.Neo3
 
         public static int GetSequenceHashCode(this byte[] array) => GetSequenceHashCode(array.AsSpan());
 
+        public static string ToMapKeyString(this Neo.VM.Types.PrimitiveType item)
+        {
+            return item switch
+            {
+                Neo.VM.Types.Boolean @bool => @bool.GetBoolean().ToString(),
+                Neo.VM.Types.ByteString byteString => byteString.GetSpan().ToHexString(),
+                Neo.VM.Types.Integer @int => @int.GetInteger().ToString(),
+                _ => item.GetSpan().ToHexString(),
+            };
+        }
+
         public static JToken ToJson(this StackItem item)
         {
             return item switch

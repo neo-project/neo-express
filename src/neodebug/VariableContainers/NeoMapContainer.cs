@@ -9,7 +9,6 @@
 // modifications are permitted.
 
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
-using Neo.Extensions;
 using NeoMap = Neo.VM.Types.Map;
 
 namespace NeoDebug.Neo3
@@ -40,18 +39,8 @@ namespace NeoDebug.Neo3
         {
             foreach (var key in _map.Keys)
             {
-                // Map keys are always primitive types; render the common ones, and fall back to a hex dump
-                // of the key bytes for anything else rather than failing the whole map.
-                var keyString = key switch
-                {
-                    Neo.VM.Types.Boolean @bool => @bool.GetBoolean().ToString(),
-                    Neo.VM.Types.ByteString byteString => byteString.GetSpan().ToHexString(),
-                    Neo.VM.Types.Integer @int => @int.GetInteger().ToString(),
-                    Neo.VM.Types.PrimitiveType primitive => primitive.GetSpan().ToHexString(),
-                    _ => key.ToString() ?? key.Type.ToString(),
-                };
-
-                yield return _map[key].ToVariable(manager, keyString);
+                // A map key becomes the child name; keep its scalar value instead of an expandable ByteString label.
+                yield return _map[key].ToVariable(manager, key.ToMapKeyString());
             }
         }
     }

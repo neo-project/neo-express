@@ -67,10 +67,10 @@ namespace test.neodebug
             Trace(VMState.NONE, 30, 4),
             new TraceRecord(VMState.HALT, 40, Array.Empty<TraceRecord.StackFrame>()));
 
-        static TraceRecord Trace(VMState state, long gas, int instructionPointer)
+        static TraceRecord Trace(VMState state, long gas, int instructionPointer, UInt160? scriptHash = null)
         {
             var frame = new TraceRecord.StackFrame(
-                ContractHash, ContractHash, instructionPointer, hasCatch: false,
+                scriptHash ?? ContractHash, ContractHash, instructionPointer, hasCatch: false,
                 evaluationStack: Array.Empty<StackItem>(),
                 localVariables: new StackItem[] { new Neo.VM.Types.Integer(42) },
                 staticFields: Array.Empty<StackItem>(),
@@ -105,11 +105,35 @@ namespace test.neodebug
             session.Start();
 
             var stopped = events.OfType<StoppedEvent>().Last();
-            Assert.Equal(StoppedEvent.ReasonValue.Step, stopped.Reason);
+            Assert.Equal(StoppedEvent.ReasonValue.Entry, stopped.Reason);
 
             var frame = session.GetStackFrames(new StackTraceArguments { ThreadId = 1 }).First();
             Assert.Equal(DocumentPath, frame.Source.Path);
-            Assert.Equal(6, frame.Line); // step-in from entry advances to the next sequence point (line 6)
+            Assert.Equal(5, frame.Line);
+        }
+
+        [Fact]
+        public void disassembly_breakpoints_use_the_script_identifier()
+        {
+            var deployedHash = UInt160.Parse("0x0000000000000000000000000000000000000002");
+            var captured = new List<DebugEvent>();
+            var trace = Serialize(
+                new ProtocolSettingsRecord(0x004F454Eu, 0x35),
+                new ScriptRecord(ContractHash, ContractScript),
+                Trace(VMState.NONE, 10, 0, deployedHash),
+                Trace(VMState.NONE, 20, 2, deployedHash),
+                new TraceRecord(VMState.HALT, 30, Array.Empty<TraceRecord.StackFrame>()));
+            using var engine = new TraceReplayEngine(new TraceDebugReader(new MemoryStream(trace)));
+            using var session = new DebugSession(engine, new[] { SampleDebugInfo() }, Array.Empty<CastOperation>(), captured.Add, DebugView.Disassembly);
+
+            session.Start();
+            var source = session.GetStackFrames(new StackTraceArguments { ThreadId = 1 }).First().Source;
+            var breakpoint = session.SetBreakpoints(source, new[] { new SourceBreakpoint(4) }).Single();
+            Assert.True(breakpoint.Verified);
+
+            session.Continue();
+
+            Assert.Contains(captured.OfType<StoppedEvent>(), e => e.Reason == StoppedEvent.ReasonValue.Breakpoint);
         }
 
         [Fact]

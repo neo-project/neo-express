@@ -114,13 +114,23 @@ namespace NeoDebug.Neo3
         {
             variableManager.Clear();
 
-            if (disassemblyView)
+            if (disassemblyView || IsAtSourceLocation())
             {
                 FireStoppedEvent(StoppedEvent.ReasonValue.Entry);
             }
             else
             {
                 StepIn();
+            }
+
+            bool IsAtSourceLocation()
+            {
+                if (engine.CurrentContext is not IExecutionContext context
+                    || !debugInfoMap.TryGetValue(context.ScriptIdentifier, out var debugInfo)
+                    || !debugInfo.TryGetMethod(context.InstructionPointer, out var method))
+                    return false;
+
+                return method.SequencePoints.Any(sp => sp.Address == context.InstructionPointer);
             }
         }
 
@@ -623,7 +633,7 @@ namespace NeoDebug.Neo3
                     }
                 }
 
-                if (breakpointManager.CheckBreakpoint(engine.CurrentContext?.ScriptHash ?? UInt160.Zero, engine.CurrentContext?.InstructionPointer))
+                if (breakpointManager.CheckBreakpoint(engine.CurrentContext?.ScriptIdentifier ?? UInt160.Zero, engine.CurrentContext?.InstructionPointer))
                 {
                     FireStoppedEvent(StoppedEvent.ReasonValue.Breakpoint);
                     break;

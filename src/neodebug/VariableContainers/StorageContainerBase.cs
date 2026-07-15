@@ -10,14 +10,13 @@
 
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using Neo.SmartContract;
-using System.Globalization;
 using StackItem = Neo.VM.Types.StackItem;
 
 namespace NeoDebug.Neo3
 {
     /// <summary>
     /// Renders a contract's storage as debug variables (one entry per key, each expandable into its key and
-    /// value bytes) and resolves <c>#storage[hash].key|item</c> evaluate expressions. Subclasses supply the
+    /// value bytes) and resolves <c>#storage[key-hex].key|item</c> evaluate expressions. Subclasses supply the
     /// storage rows for a given backend.
     /// </summary>
     internal abstract class StorageContainerBase : IVariableContainer
@@ -28,11 +27,11 @@ namespace NeoDebug.Neo3
         {
             foreach (var (key, item) in GetStorages())
             {
-                var keyHashCode = key.Span.GetSequenceHashCode().ToString("x8");
-                var kvp = new KvpContainer(key, item, keyHashCode);
+                var keyIdentifier = Convert.ToHexString(key.Span).ToLowerInvariant();
+                var kvp = new KvpContainer(key, item, keyIdentifier);
                 yield return new Variable()
                 {
-                    Name = keyHashCode,
+                    Name = keyIdentifier,
                     Value = string.Empty,
                     VariablesReference = manager.Add(kvp),
                     NamedVariables = 2,
@@ -42,10 +41,10 @@ namespace NeoDebug.Neo3
 
         public (StackItem? item, ReadOnlyMemory<char> remaining) Evaluate(ReadOnlyMemory<char> expression)
         {
-            if (TryGetKeyHash(expression, out var keyHash)
-                && TryFindStorage(GetStorages(), keyHash, out var storage))
+            if (TryGetKeyIdentifier(expression, out var keyIdentifier, out var remainingOffset)
+                && TryFindStorage(GetStorages(), keyIdentifier.Span, out var storage))
             {
-                var remain = expression.Slice(19);
+                var remain = expression.Slice(remainingOffset);
                 if (remain.Length >= 3 && remain.Span.Slice(0, 3).SequenceEqual("key"))
                 {
                     return (storage.key, remain.Slice(3));
@@ -58,27 +57,54 @@ namespace NeoDebug.Neo3
 
             throw new InvalidOperationException("Invalid storage evaluation");
 
-            static bool TryGetKeyHash(ReadOnlyMemory<char> expression, out int value)
+            static bool TryGetKeyIdentifier(ReadOnlyMemory<char> expression,
+                out ReadOnlyMemory<char> keyIdentifier, out int remainingOffset)
             {
-                if (expression.Length >= 19
+                var prefixLength = DebugSession.STORAGE_PREFIX.Length;
+                var keyStart = prefixLength + 1;
+                if (expression.Length >= keyStart + 2
                     && expression.StartsWith(DebugSession.STORAGE_PREFIX)
-                    && expression.Span[8] == '['
-                    && expression.Span[17] == ']'
-                    && expression.Span[18] == '.'
-                    && int.TryParse(expression.Slice(9, 8).Span, NumberStyles.HexNumber, null, out value))
+                    && expression.Span[prefixLength] == '[')
                 {
-                    return true;
+                    var closingOffset = expression.Span[keyStart..].IndexOf(']');
+                    if (closingOffset >= 0)
+                    {
+                        var closingIndex = keyStart + closingOffset;
+                        var candidate = expression.Slice(keyStart, closingOffset);
+                        if (closingIndex + 1 < expression.Length
+                            && expression.Span[closingIndex + 1] == '.'
+                            && candidate.Length % 2 == 0
+                            && IsHexIdentifier(candidate.Span))
+                        {
+                            keyIdentifier = candidate;
+                            remainingOffset = closingIndex + 2;
+                            return true;
+                        }
+                    }
                 }
 
-                value = default;
+                keyIdentifier = default;
+                remainingOffset = default;
                 return false;
             }
 
-            static bool TryFindStorage(IEnumerable<(ReadOnlyMemory<byte> key, StorageItem item)> storages, int hashCode, out (ReadOnlyMemory<byte> key, StorageItem item) storage)
+            static bool IsHexIdentifier(ReadOnlySpan<char> value)
+            {
+                foreach (var character in value)
+                {
+                    if (!char.IsAsciiHexDigit(character))
+                        return false;
+                }
+
+                return true;
+            }
+
+            static bool TryFindStorage(IEnumerable<(ReadOnlyMemory<byte> key, StorageItem item)> storages,
+                ReadOnlySpan<char> keyIdentifier, out (ReadOnlyMemory<byte> key, StorageItem item) storage)
             {
                 foreach (var (key, item) in storages)
                 {
-                    if (hashCode == key.Span.GetSequenceHashCode())
+                    if (keyIdentifier.Equals(Convert.ToHexString(key.Span), StringComparison.OrdinalIgnoreCase))
                     {
                         storage = (key, item);
                         return true;

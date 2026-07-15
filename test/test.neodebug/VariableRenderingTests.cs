@@ -151,6 +151,30 @@ namespace test.neodebug
         }
 
         [Fact]
+        public void storage_container_uses_full_keys_to_disambiguate_hash_collisions()
+        {
+            var rows = new (ReadOnlyMemory<byte> key, StorageItem item)[]
+            {
+                (new byte[] { 0x00, 0x1f }, new StorageItem(new byte[] { 0xaa })),
+                (new byte[] { 0x01, 0x00 }, new StorageItem(new byte[] { 0xbb })),
+            };
+            var container = new StorageContainer(rows);
+
+            var entries = container.Enumerate(_manager).ToList();
+            Assert.Equal(new[] { "001f", "0100" }, entries.Select(entry => entry.Name));
+            Assert.Equal("#storage[001f].item", Expand(entries[0]).Single(child => child.Name == "item").EvaluateName);
+            Assert.Equal("#storage[0100].item", Expand(entries[1]).Single(child => child.Name == "item").EvaluateName);
+
+            var (first, firstRemaining) = container.Evaluate("#storage[001f].item".AsMemory());
+            var (second, secondRemaining) = container.Evaluate("#storage[0100].item".AsMemory());
+
+            Assert.True(firstRemaining.IsEmpty);
+            Assert.True(secondRemaining.IsEmpty);
+            Assert.Equal(new byte[] { 0xaa }, first!.GetSpan().ToArray());
+            Assert.Equal(new byte[] { 0xbb }, second!.GetSpan().ToArray());
+        }
+
+        [Fact]
         public void storage_container_rejects_short_evaluate_expressions()
         {
             var container = new StorageContainer(Array.Empty<(ReadOnlyMemory<byte> key, StorageItem item)>());

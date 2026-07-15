@@ -104,22 +104,6 @@ namespace NeoDebug.Neo3
             return false;
         }
 
-        // https://stackoverflow.com/a/1646913 — a deterministic hash over the bytes, used to address storage rows.
-        public static int GetSequenceHashCode(this ReadOnlySpan<byte> span)
-        {
-            unchecked
-            {
-                int hash = 17;
-                for (int i = 0; i < span.Length; i++)
-                {
-                    hash = (hash * 31) + span[i];
-                }
-                return hash;
-            }
-        }
-
-        public static int GetSequenceHashCode(this byte[] array) => GetSequenceHashCode(array.AsSpan());
-
         public static string ToMapKeyString(this Neo.VM.Types.PrimitiveType item)
         {
             return item switch

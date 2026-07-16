@@ -100,6 +100,19 @@ partial class RunCommand
         return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
     }
 
+    internal static DbftSettings GetConsensusSettings(WorknetFile worknet)
+    {
+        var settings = new Dictionary<string, string>()
+        {
+            { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
+            { "PluginConfiguration:IgnoreRecoveryLogs", "true" },
+            { "PluginConfiguration:RecoveryLogs", "ConsensusState" }
+        };
+
+        var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
+        return new DbftSettings(config.GetSection("PluginConfiguration"));
+    }
+
     static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, ushort rpcPort, ushort tcpPort, bool disableLog, IConsole console, CancellationToken token)
     {
         var tcs = new TaskCompletionSource<bool>();
@@ -146,19 +159,6 @@ partial class RunCommand
             }
         }, CancellationToken.None);
         await tcs.Task.ConfigureAwait(false);
-
-        static DbftSettings GetConsensusSettings(WorknetFile worknet)
-        {
-            var settings = new Dictionary<string, string>()
-            {
-                { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
-                { "IgnoreRecoveryLogs", "true" },
-                { "RecoveryLogs", "ConsensusState" }
-            };
-
-            var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
-            return new DbftSettings(config.GetSection("PluginConfiguration"));
-        }
     }
 
     static void ValidatePort(ushort port, string name)

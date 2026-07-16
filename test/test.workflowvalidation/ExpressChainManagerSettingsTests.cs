@@ -28,6 +28,14 @@ public class ExpressChainManagerSettingsTests
         settings.MaxBlockSystemFee.Should().Be(40_00000000L);
     }
 
+    [Fact]
+    public void CreateConsensusSettings_sets_ignore_recovery_logs()
+    {
+        var settings = ExpressChainManager.CreateConsensusSettings(CreateChain());
+
+        settings.IgnoreRecoveryLogs.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData("not-a-number")]
     [InlineData("-1")]

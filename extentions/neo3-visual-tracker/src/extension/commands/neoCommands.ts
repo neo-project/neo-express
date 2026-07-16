@@ -12,6 +12,7 @@ import ContractDetector from "../fileDetectors/contractDetector";
 import IoHelpers from "../util/ioHelpers";
 import JSONC from "../util/JSONC";
 import posixPath from "../util/posixPath";
+import sameFilePath from "../util/sameFilePath";
 import WalletDetector from "../fileDetectors/walletDetector";
 import workspaceFolder from "../util/workspaceFolder";
 
@@ -294,10 +295,10 @@ export default class NeoCommands {
 
     let contractReference: string | undefined;
     let contractName: string | undefined;
-    if (commandArguments.path) {
+    const targetPath = commandArguments.path;
+    if (targetPath) {
       const detectedContract = Object.entries(contractDetector.contracts).find(
-        ([, contract]) =>
-          contract.absolutePathToNef === commandArguments.path
+        ([, contract]) => sameFilePath(contract.absolutePathToNef, targetPath)
       );
       if (detectedContract) {
         contractName = detectedContract[0];

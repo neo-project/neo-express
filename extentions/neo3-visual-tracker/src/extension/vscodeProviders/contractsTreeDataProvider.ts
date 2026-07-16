@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 import AutoComplete from "../autoComplete";
 import ContractDetector from "../fileDetectors/contractDetector";
+import getContractTreeCommand from "./contractTreeCommand";
 import Log from "../util/log";
 import posixPath from "../util/posixPath";
 
@@ -36,19 +37,7 @@ export default class ContractsTreeDataProvider
 
   getTreeItem(contract: ContractData): vscode.TreeItem {
     return {
-      command: contract.hash
-        ? {
-            command: "neo3-visual-devtracker.tracker.openContract",
-            arguments: [{ hash: contract.hash }],
-            title: contract.hash,
-          }
-        : contract.path
-        ? {
-            command: "neo3-visual-devtracker.neo.openContractStudio",
-            arguments: [vscode.Uri.file(contract.path)],
-            title: `Open ${contract.name} in Contract Studio`,
-          }
-        : undefined,
+      command: getContractTreeCommand(contract),
       label: contract.name,
       tooltip: [contract.hash, contract.description].filter(Boolean).join("\n"),
       description: contract.description,

@@ -8,7 +8,13 @@ import AutoCompleteData from "../../shared/autoCompleteData";
 import ContractDetector from "../fileDetectors/contractDetector";
 import InvokeFileViewRequest from "../../shared/messages/invokeFileViewRequest";
 import InvokeFileViewState from "../../shared/viewState/invokeFileViewState";
+import {
+  isWitnessScope,
+  resolveSelectedAccount,
+  toInvocationAccounts,
+} from "../../shared/invocationExecution";
 import IoHelpers from "../util/ioHelpers";
+import indexContractState from "../../shared/indexContractState";
 import JSONC from "../util/JSONC";
 import Log from "../util/log";
 import NeoExpress from "../neoExpress/neoExpress";
@@ -24,6 +30,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
   InvokeFileViewRequest
 > {
   private changeWatcher: vscode.Disposable | null;
+  private monitorChangeWatcher: vscode.Disposable | null = null;
 
   constructor(
     context: vscode.ExtensionContext,
@@ -42,19 +49,26 @@ export default class InvokeFilePanelController extends PanelControllerBase<
         autoCompleteData: autoComplete.data,
         collapseTransactions: true,
         comments: [],
+        connectionHealthy: false,
+        connectionName: null,
         errorText: "",
+        executionAccounts: [],
         fileContents: [],
         fileContentsJson: "[]",
+        isExpressConnection: false,
         isPartOfDiffView,
         isReadOnly,
         jsonMode: false,
         recentTransactions: [],
+        selectedAccount: null,
         selectedTransactionId: null,
+        witnessScope: "CalledByEntry",
       },
       context,
       panel
     );
     this.onFileUpdate();
+    this.refreshExecutionContext();
     this.changeWatcher = vscode.workspace.onDidChangeTextDocument((e) => {
       if (e.document.uri.toString() === document.uri.toString()) {
         this.onFileUpdate();
@@ -68,20 +82,21 @@ export default class InvokeFilePanelController extends PanelControllerBase<
       });
     });
     this.activeConnection.onChange(async () => {
-      this.activeConnection.connection?.blockchainMonitor.onChange(() =>
-        this.updateTransactionList()
-      );
+      this.watchActiveMonitor();
+      await this.refreshExecutionContext();
       await this.updateTransactionList();
     });
-    this.activeConnection.connection?.blockchainMonitor.onChange(() =>
-      this.updateTransactionList()
-    );
+    this.watchActiveMonitor();
   }
 
   onClose() {
     if (this.changeWatcher) {
       this.changeWatcher.dispose();
       this.changeWatcher = null;
+    }
+    if (this.monitorChangeWatcher) {
+      this.monitorChangeWatcher.dispose();
+      this.monitorChangeWatcher = null;
     }
   }
 
@@ -101,6 +116,11 @@ export default class InvokeFilePanelController extends PanelControllerBase<
 
     if (request.close) {
       this.panel.dispose();
+    }
+
+    if (request.connect) {
+      await this.activeConnection.connect(undefined, "express");
+      await this.refreshExecutionContext();
     }
 
     if (request.debugStep) {
@@ -133,7 +153,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     }
 
     if (request.runAll) {
-      await this.runFile(this.document.uri.fsPath);
+      await this.runFile(this.document.uri.fsPath, "All steps");
     }
 
     if (request.runStep) {
@@ -144,6 +164,17 @@ export default class InvokeFilePanelController extends PanelControllerBase<
       await this.updateViewState({
         selectedTransactionId: request.selectTransaction.txid,
       });
+    }
+
+    if (request.selectAccount) {
+      const selectedAccount = request.selectAccount.name;
+      if (
+        this.viewState.executionAccounts.some(
+          (account) => account.name === selectedAccount
+        )
+      ) {
+        await this.updateViewState({ selectedAccount });
+      }
     }
 
     if (request.toggleJsonMode) {
@@ -203,6 +234,15 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     if (request.updateJson !== undefined) {
       await this.applyEdit(request.updateJson);
     }
+
+    if (
+      request.updateWitnessScope &&
+      isWitnessScope(request.updateWitnessScope.scope)
+    ) {
+      await this.updateViewState({
+        witnessScope: request.updateWitnessScope.scope,
+      });
+    }
   }
 
   private async applyEdit(newFileContentsJson: string) {
@@ -220,6 +260,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
   ): Promise<AutoCompleteData> {
     const result = { ...data };
     result.contractManifests = { ...result.contractManifests };
+    result.contractNames = { ...result.contractNames };
 
     const connection = this.activeConnection.connection;
     if (connection?.rpcClient) {
@@ -230,20 +271,20 @@ export default class InvokeFilePanelController extends PanelControllerBase<
           const contractState = await connection.rpcClient.getContractState(
             contractHash
           );
-          result.contractManifests[contractState.hash] = contractState.manifest;
+          indexContractState(result, contractState);
         } catch {}
       }
       for (const contractName of this.viewState.fileContents
         .filter((_) => !_.contract?.startsWith("0x"))
         .map((_) => _.contract || "")) {
         try {
-          const manifests = await ContractDetector.getContractStateByName(
+          const contractStates = await ContractDetector.getContractStateByName(
             connection.rpcClient,
             contractName
           );
-          if (manifests.length === 1) {
-            result.contractManifests[manifests[0].abi.hash] = manifests[0];
-          } else if (manifests.length > 1) {
+          if (contractStates.length === 1) {
+            indexContractState(result, contractStates[0], contractName);
+          } else if (contractStates.length > 1) {
             Log.warn(
               LOG_PREFIX,
               `Multiple contracts deployed to ${connection.blockchainIdentifier.friendlyName} with name ${contractName}`
@@ -293,7 +334,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     }
   }
 
-  private async runFile(filePath: string) {
+  private async runFile(filePath: string, operation?: string) {
     let connection = this.activeConnection.connection;
     if (!connection) {
       await this.activeConnection.connect();
@@ -312,22 +353,17 @@ export default class InvokeFilePanelController extends PanelControllerBase<
       const walletNames = Object.keys(
         await connection.blockchainIdentifier.getWalletAddresses()
       );
-      const account = await IoHelpers.multipleChoice(
-        "Select an account...",
-        ...walletNames
-      );
+      let account = this.viewState.selectedAccount || undefined;
+      if (!account || !walletNames.includes(account)) {
+        account = await IoHelpers.multipleChoice(
+          "Select an account...",
+          ...walletNames
+        );
+      }
       if (!account) {
         return;
       }
-      let witnessScope = await IoHelpers.multipleChoice(
-        "Select the witness scope for the transaction signature",
-        "CalledByEntry",
-        "Global",
-        "None"
-      );
-      if (!witnessScope) {
-        return;
-      }
+      const witnessScope = this.viewState.witnessScope;
       await this.document.save();
       await this.updateViewState({ collapseTransactions: false });
       const result = await this.neoExpress.runInDirectory(
@@ -351,9 +387,12 @@ export default class InvokeFilePanelController extends PanelControllerBase<
         )) {
           const txid = txidMatch[0].trim();
           recentTransactions.unshift({
+            account,
             txid,
             blockchain: connection.blockchainIdentifier.name,
+            operation,
             state: "pending",
+            submittedAt: new Date().toISOString(),
           });
         }
         if (recentTransactions.length > MAX_RECENT_TXS) {
@@ -377,7 +416,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     );
     try {
       fs.writeFileSync(tempFile, JSONC.stringify([fragment]));
-      await this.runFile(tempFile);
+      await this.runFile(tempFile, fragment?.operation || "Invocation");
     } catch (e : any) {
       Log.warn(
         LOG_PREFIX,
@@ -439,11 +478,14 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     if (connection) {
       const wallets =
         await connection.blockchainIdentifier.getWalletAddresses();
-      const signerWalletName = await IoHelpers.multipleChoice(
-        "Select an account",
-        "(none)",
-        ...Object.keys(wallets)
-      );
+      let signerWalletName = this.viewState.selectedAccount || undefined;
+      if (!signerWalletName || !wallets[signerWalletName]) {
+        signerWalletName = await IoHelpers.multipleChoice(
+          "Select an account",
+          "(none)",
+          ...Object.keys(wallets)
+        );
+      }
       if (signerWalletName && signerWalletName !== "(none)") {
         signer = wallets[signerWalletName] || undefined;
       }
@@ -487,6 +529,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
             );
             const confirmed = !!(tx?.tx as any)?.blockhash;
             return {
+              ..._,
               txid: _.txid,
               blockchain: _.blockchain,
               log: tx?.log,
@@ -507,5 +550,37 @@ export default class InvokeFilePanelController extends PanelControllerBase<
       recentTransactions,
       isPartOfDiffView: this.isPartOfDiffView,
     });
+  }
+
+  private async refreshExecutionContext() {
+    const connection = this.activeConnection.connection;
+    const isExpressConnection =
+      connection?.blockchainIdentifier.blockchainType === "express";
+    const executionAccounts = isExpressConnection
+      ? toInvocationAccounts(
+          await connection.blockchainIdentifier.getWalletAddresses()
+        )
+      : [];
+    await this.updateViewState({
+      connectionHealthy: connection?.blockchainMonitor.healthy || false,
+      connectionName: connection?.blockchainIdentifier.friendlyName || null,
+      executionAccounts,
+      isExpressConnection,
+      selectedAccount: resolveSelectedAccount(
+        executionAccounts,
+        this.viewState.selectedAccount
+      ),
+    });
+  }
+
+  private watchActiveMonitor() {
+    this.monitorChangeWatcher?.dispose();
+    const monitor = this.activeConnection.connection?.blockchainMonitor;
+    this.monitorChangeWatcher = monitor
+      ? monitor.onChange(async () => {
+          await this.updateViewState({ connectionHealthy: monitor.healthy });
+          await this.updateTransactionList();
+        })
+      : null;
   }
 }

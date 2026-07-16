@@ -335,6 +335,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
   registerCommand(
     context,
+    "neo3-visual-devtracker.neo.openContractStudio",
+    (commandArguments) =>
+      NeoCommands.openContractStudio(
+        activeConnection,
+        autoComplete,
+        blockchainsTreeDataProvider,
+        contractDetector,
+        commandArguments
+      )
+  );
+
+  registerCommand(
+    context,
     "neo3-visual-devtracker.tracker.openTracker",
     (commandArguments) =>
       TrackerCommands.openTracker(

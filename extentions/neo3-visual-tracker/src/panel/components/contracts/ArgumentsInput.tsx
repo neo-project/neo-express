@@ -9,7 +9,6 @@ type Props = {
   autoSuggestListId: string;
   isReadOnly: boolean;
   parameterDefinitions?: neonSc.ContractParameterDefinitionJson[];
-  style?: React.CSSProperties;
   setArguments: (newArguments: any[]) => void;
 };
 
@@ -18,50 +17,64 @@ export default function ArgumentsInput({
   autoSuggestListId,
   isReadOnly,
   parameterDefinitions,
-  style,
   setArguments,
 }: Props) {
-  while (args.length && !args[args.length - 1]) {
-    args.length--;
+  const requiredArgumentCount = parameterDefinitions?.length || 0;
+  const normalizedArguments = [...args];
+  while (
+    normalizedArguments.length > requiredArgumentCount &&
+    !normalizedArguments[normalizedArguments.length - 1]
+  ) {
+    normalizedArguments.pop();
   }
-  while (args.length < (parameterDefinitions?.length || 0)) {
-    args.push("");
+  while (normalizedArguments.length < requiredArgumentCount) {
+    normalizedArguments.push("");
   }
   return (
-    <div style={style}>
-      {(!parameterDefinitions || !!args.length) && (
-        <div>
-          <strong>Arguments:</strong>
-        </div>
+    <div className="neo-field">
+      {(!parameterDefinitions || !!normalizedArguments.length) && (
+        <div className="neo-field__label">Arguments</div>
       )}
-      {args.map((_, i) => (
-        <ArgumentInput
-          arg={_}
-          autoSuggestListId={autoSuggestListId}
-          isReadOnly={isReadOnly}
-          key={`${i}_${_}`}
-          name={(parameterDefinitions || [])[i]?.name || `Argument #${i + 1}`}
-          type={(parameterDefinitions || [])[i]?.type}
-          onUpdate={(arg) =>
-            setArguments(
-              args
-                .map((__, j) => (i === j ? arg : __))
-                .filter(
-                  (__, j) => !!__ || j < (parameterDefinitions?.length || 0)
-                )
-            )
-          }
-        />
-      ))}
-      {!parameterDefinitions && (
-        <ArgumentInput
-          autoSuggestListId={autoSuggestListId}
-          isReadOnly={isReadOnly}
-          key={args.length}
-          name={`Argument #${args.length + 1}`}
-          onUpdate={(arg) => setArguments(arg ? [...args, arg] : [...args])}
-        />
-      )}
+      <div className="argument-list">
+        {normalizedArguments.map((argument, i) => (
+          <ArgumentInput
+            arg={argument}
+            autoSuggestListId={autoSuggestListId}
+            isReadOnly={isReadOnly}
+            key={`${i}_${JSON.stringify(argument)}`}
+            name={
+              (parameterDefinitions || [])[i]?.name || `Argument ${i + 1}`
+            }
+            type={(parameterDefinitions || [])[i]?.type}
+            onUpdate={(updatedArgument) =>
+              setArguments(
+                normalizedArguments
+                  .map((candidate, j) =>
+                    i === j ? updatedArgument : candidate
+                  )
+                  .filter(
+                    (candidate, j) => !!candidate || j < requiredArgumentCount
+                  )
+              )
+            }
+          />
+        ))}
+        {!parameterDefinitions && (
+          <ArgumentInput
+            autoSuggestListId={autoSuggestListId}
+            isReadOnly={isReadOnly}
+            key={normalizedArguments.length}
+            name={`Argument ${normalizedArguments.length + 1}`}
+            onUpdate={(argument) =>
+              setArguments(
+                argument
+                  ? [...normalizedArguments, argument]
+                  : [...normalizedArguments]
+              )
+            }
+          />
+        )}
+      </div>
     </div>
   );
 }

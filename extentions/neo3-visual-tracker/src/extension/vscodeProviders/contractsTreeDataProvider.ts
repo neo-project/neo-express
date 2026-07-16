@@ -11,6 +11,7 @@ type ContractData = {
   description: string;
   hash?: string;
   name: string;
+  path?: string;
 };
 
 export default class ContractsTreeDataProvider
@@ -41,10 +42,17 @@ export default class ContractsTreeDataProvider
             arguments: [{ hash: contract.hash }],
             title: contract.hash,
           }
+        : contract.path
+        ? {
+            command: "neo3-visual-devtracker.neo.openContractStudio",
+            arguments: [vscode.Uri.file(contract.path)],
+            title: `Open ${contract.name} in Contract Studio`,
+          }
         : undefined,
       label: contract.name,
-      tooltip: `${contract.hash}\n${contract.description || ""}`.trim(),
+      tooltip: [contract.hash, contract.description].filter(Boolean).join("\n"),
       description: contract.description,
+      contextValue: contract.path ? "workspaceContract" : "deployedContract",
       iconPath: contract.hash
         ? posixPath(this.extensionPath, "resources", "blockchain-express.svg")
         : posixPath(this.extensionPath, "resources", "blockchain-private.svg"),
@@ -72,7 +80,11 @@ export default class ContractsTreeDataProvider
       const description =
         ((manifest.extra || {}) as any)["Description"] || undefined;
       if (!newData.find((_) => _.name === name)) {
-        newData.push({ name, description });
+        newData.push({
+          name,
+          description,
+          path: workspaceContract.absolutePathToNef,
+        });
       }
     }
     newData.sort((a, b) => a.name.localeCompare(b.name));

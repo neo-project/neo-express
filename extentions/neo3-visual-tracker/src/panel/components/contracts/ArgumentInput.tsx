@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import InputNonDraggable from "../InputNonDraggable";
 import NeoType from "./NeoType";
@@ -45,31 +45,23 @@ export default function ArgumentInput({
   onUpdate,
 }: Props) {
   const [value, setValue] = useState(valueToString(arg));
-  const inputStyle: React.CSSProperties = {
-    color: "var(--vscode-input-foreground)",
-    backgroundColor: "var(--vscode-input-background)",
-    border: "1px solid var(--vscode-input-border)",
-    boxSizing: "border-box",
-    width: "calc(100% - 15px)",
-    fontSize: "0.8rem",
-    padding: 1,
-    marginLeft: 15,
-  };
+  const inputId = useRef(
+    `neo-argument-${Math.random().toString(36).slice(2)}`
+  ).current;
+  useEffect(() => setValue(valueToString(arg)), [arg]);
   return (
-    <div style={{ marginLeft: 15, marginTop: 4 }}>
-      <div>
-        <strong>{name}</strong>{" "}
-        <small>
-          {" "}
-          <em>
-            (<NeoType type={type} />)
-          </em>
-        </small>
-      </div>
+    <div className="argument-field">
+      <label className="argument-field__name" htmlFor={inputId}>
+        <span>{name}</span>
+        <span className="argument-field__type">
+          <NeoType type={type} />
+        </span>
+      </label>
       <InputNonDraggable
+        className="neo-input"
         disabled={isReadOnly}
+        id={inputId}
         list={autoSuggestListId}
-        style={inputStyle}
         type="text"
         value={value}
         onBlur={(e) => onUpdate(stringToValue(e.target.value))}

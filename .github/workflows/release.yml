@@ -35,53 +35,21 @@ jobs:
     - name: Pack NeoExpress
       run: dotnet pack neo-express.sln --output ./dist --configuration Release --no-restore --verbosity normal
 
-    # - name: Download Express Files (Standalone)
-    #   uses: actions/download-artifact@v3
-    #   with:
-    #     name: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
-    #     path: ./out
-
-    - name: Get Cache Files (osx-x64)
-      uses: actions/cache@v5.0.5
+    - name: Download Standalone Distributions
+      uses: actions/download-artifact@v8.0.1
       with:
-        path: /tmp/dist/*
-        key: osx-x64
+        path: /tmp/dist
+        pattern: standalone-*
+        merge-multiple: true
 
-    - name: Get Cache Files (osx-arm64)
-      uses: actions/cache@v5.0.5
-      with:
-        path: /tmp/dist/*
-        key: osx-arm64
-
-    - name: Get Cache Files (linux-x64)
-      uses: actions/cache@v5.0.5
-      with:
-        path: /tmp/dist/*
-        key: linux-x64
-
-    - name: Get Cache Files (linux-arm64)
-      uses: actions/cache@v5.0.5
-      with:
-        path: /tmp/dist/*
-        key: linux-arm64
-
-    - name: Get Cache Files (linux-musl-arm64)
-      uses: actions/cache@v5.0.5
-      with:
-        path: /tmp/dist/*
-        key: linux-musl-arm64
-
-    - name: Get Cache Files (win-x64)
-      uses: actions/cache@v5.0.5
-      with:
-        path: /tmp/dist/*
-        key: win-x64
-
-    - name: Get Cache Files (win-arm64)
-      uses: actions/cache@v5.0.5
-      with:
-        path: /tmp/dist/*
-        key: win-arm64
+    - name: Verify Standalone Distributions
+      shell: bash
+      run: |
+        archive_count=$(find /tmp/dist -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.tar.xz' -o -name '*.zip' \) | wc -l | tr -d ' ')
+        if [ "$archive_count" -ne 7 ]; then
+          echo "Expected 7 standalone distributions, found $archive_count."
+          exit 1
+        fi
 
     - name: Create Release
       uses: marvinpinto/action-automatic-releases@latest

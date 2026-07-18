@@ -415,7 +415,7 @@ namespace NeoExpress
             var settings = new Dictionary<string, string>()
             {
                 { "PluginConfiguration:Network", $"{chain.Network}" },
-                { "IgnoreRecoveryLogs", "true" }
+                { "PluginConfiguration:IgnoreRecoveryLogs", "true" }
             };
 
             if (chain.TryReadSetting<long>(MaxBlockSystemFeeSetting, long.TryParse, out var maxBlockSystemFee)

@@ -6,6 +6,7 @@ on:
 env:
   CONFIGURATION: 'Release'
   DOTNET_VERSION: '10.0.x'
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
   format:
@@ -52,6 +53,13 @@ jobs:
     - name: Nerdbank.GitVersioning
       uses: dotnet/nbgv@v0.5.1
       id: nbgv
+
+    - name: Cache NuGet Packages
+      if: matrix.os == 'windows-latest'
+      uses: actions/cache@v5.0.5
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-dotnet-${{ env.DOTNET_VERSION }}-nuget-${{ hashFiles('global.json', 'NuGet.Config', 'Directory.Build.props', '**/*.csproj') }}
 
     - name: Restore
       run: dotnet restore neo-express.sln

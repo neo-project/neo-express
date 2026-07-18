@@ -9,30 +9,7 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
-  format:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v6.0.2
-      with:
-        fetch-depth: 0
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5.2.0
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Restore
-      run: dotnet restore neo-express.sln
-
-    - name: Format
-      run: |
-        dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
-
   build:
-    needs: [format]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -63,6 +40,10 @@ jobs:
 
     - name: Restore
       run: dotnet restore neo-express.sln
+
+    - name: Format
+      if: matrix.os == 'ubuntu-latest'
+      run: dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
 
     - name: Build
       run: dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal

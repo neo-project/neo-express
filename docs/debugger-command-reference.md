@@ -43,6 +43,24 @@ neodebug --version
    continue, step in/out/over, and — because this is a recorded trace — step back and reverse
    continue to move backward through the execution.
 
+### Example: debug a local contract call
+
+Assume `Contract.csproj` uses `Neo.BuildTasks`, produces `bin/sc/Contract.nef`, and exposes a
+parameterless `getValue` method. From the contract project directory, build and deploy it to a
+fresh Neo-Express instance, then invoke the method with tracing enabled:
+
+```shell
+dotnet build ./Contract.csproj
+neoxp create --force --output ./debug.neo-express
+neoxp contract deploy --input ./debug.neo-express ./bin/sc/Contract.nef genesis
+neoxp contract run --input ./debug.neo-express --trace --account genesis Contract getValue
+```
+
+The final command prints the transaction hash and writes `<transaction-hash>.neo-trace` in the
+current directory. Put that file in `traces/`, replace the placeholder in the launch configuration
+below with its file name, set a breakpoint in the contract source, and start the **Debug Neo
+contract (trace)** configuration from VS Code's Run and Debug view.
+
 ## Launch configuration
 
 `neodebug` is a DAP stdio host, so an editor (or any DAP client) spawns it and sends a `launch`

@@ -15,6 +15,7 @@ type Props = {
   args?: any[];
   autoCompleteData: AutoCompleteData;
   argumentSuggestionListId: string;
+  debugScopeReady: boolean;
   executionReadinessMessage: string;
   executionReady: boolean;
   forceFocus?: boolean;
@@ -35,6 +36,7 @@ export default function InvocationStep({
   args,
   autoCompleteData,
   argumentSuggestionListId,
+  debugScopeReady,
   executionReadinessMessage,
   executionReady,
   forceFocus,
@@ -63,7 +65,7 @@ export default function InvocationStep({
       }
     }
     const paths = autoCompleteData.contractPaths[contractHashOrName] || [];
-    canDebug = !!operation && paths.length > 0;
+    canDebug = !!operation && paths.length > 0 && debugScopeReady;
     if (manifest?.abi) {
       operations = manifest.abi.methods;
     }
@@ -153,6 +155,8 @@ export default function InvocationStep({
             title={
               canDebug
                 ? "Start a source debug session"
+                : !debugScopeReady
+                ? "Live debugging currently supports CalledByEntry witness scope."
                 : "Build this contract in the current workspace to enable debugging."
             }
             variant="secondary"

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   areInvocationStepsReady,
+  isLiveDebugWitnessScopeSupported,
   isWitnessScope,
   resolveSelectedAccount,
   toInvocationAccounts,
@@ -49,4 +50,10 @@ test("areInvocationStepsReady requires every contract and operation", () => {
     ]),
     true
   );
+});
+
+test("live debugging only supports CalledByEntry witness scope", () => {
+  assert.equal(isLiveDebugWitnessScopeSupported("CalledByEntry"), true);
+  assert.equal(isLiveDebugWitnessScopeSupported("Global"), false);
+  assert.equal(isLiveDebugWitnessScopeSupported("None"), false);
 });

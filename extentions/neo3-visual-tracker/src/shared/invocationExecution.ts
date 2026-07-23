@@ -43,3 +43,7 @@ export function areInvocationStepsReady(
     )
   );
 }
+
+export function isLiveDebugWitnessScopeSupported(scope: WitnessScope) {
+  return scope === "CalledByEntry";
+}

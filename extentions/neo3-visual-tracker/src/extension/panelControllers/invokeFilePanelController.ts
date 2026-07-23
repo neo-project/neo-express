@@ -10,6 +10,7 @@ import InvokeFileViewRequest from "../../shared/messages/invokeFileViewRequest";
 import InvokeFileViewState from "../../shared/viewState/invokeFileViewState";
 import {
   areInvocationStepsReady,
+  isLiveDebugWitnessScopeSupported,
   isWitnessScope,
   resolveSelectedAccount,
   toInvocationAccounts,
@@ -454,6 +455,13 @@ export default class InvokeFilePanelController extends PanelControllerBase<
   }
 
   private async runFragmentInDebugger(fragment: any) {
+    if (!isLiveDebugWitnessScopeSupported(this.viewState.witnessScope)) {
+      vscode.window.showErrorMessage(
+        "Live debugging currently supports CalledByEntry witness scope. Select CalledByEntry before debugging."
+      );
+      return;
+    }
+
     const contract: string = fragment?.contract || "";
     const operation: string = fragment?.operation || "";
     if (!contract || !operation) {

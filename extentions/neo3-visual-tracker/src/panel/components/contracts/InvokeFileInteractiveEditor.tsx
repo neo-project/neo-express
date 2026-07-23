@@ -9,6 +9,7 @@ import NavButton from "../NavButton";
 import TransactionList from "./TransactionList";
 import {
   areInvocationStepsReady,
+  isLiveDebugWitnessScopeSupported,
   witnessScopes,
 } from "../../../shared/invocationExecution";
 
@@ -62,6 +63,9 @@ export default function InvokeFileInteractiveEditor({
   const runAllReadinessMessage = !allStepsReady
     ? "Configure a contract and method for every invocation before running all steps."
     : executionReadinessMessage;
+  const debugScopeReady = isLiveDebugWitnessScopeSupported(
+    viewState.witnessScope
+  );
 
   return (
     <div className="contract-studio__interactive">
@@ -184,6 +188,7 @@ export default function InvokeFileInteractiveEditor({
                 argumentSuggestionListId={argumentSuggestionListId}
                 autoCompleteData={viewState.autoCompleteData}
                 contract={step.contract}
+                debugScopeReady={debugScopeReady}
                 executionReadinessMessage={executionReadinessMessage}
                 executionReady={executionReady}
                 forceFocus={

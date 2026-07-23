@@ -30,7 +30,7 @@ compile and drops `<name>.nef`, `<name>.manifest.json` and `<name>.nefdbgnfo` un
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Neo.SmartContract.Framework" Version="3.10.0" />
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.10.1" />
     <PackageReference Include="Neo.BuildTasks" Version="3.10.1" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -2,27 +2,22 @@ import * as vscode from "vscode";
 
 import AutoComplete from "../autoComplete";
 import ContractDetector from "../fileDetectors/contractDetector";
-import getContractTreeCommand from "./contractTreeCommand";
+import getContractTreeCommand, {
+  ContractTreeItemData,
+} from "./contractTreeCommand";
 import Log from "../util/log";
 import posixPath from "../util/posixPath";
 
 const LOG_PREFIX = "ContractsTreeDataProvider";
 
-type ContractData = {
-  description: string;
-  hash?: string;
-  name: string;
-  path?: string;
-};
-
 export default class ContractsTreeDataProvider
-  implements vscode.TreeDataProvider<ContractData>
+  implements vscode.TreeDataProvider<ContractTreeItemData>
 {
   onDidChangeTreeData: vscode.Event<void>;
 
   private readonly onDidChangeTreeDataEmitter: vscode.EventEmitter<void>;
 
-  private contracts: ContractData[] = [];
+  private contracts: ContractTreeItemData[] = [];
 
   constructor(
     private readonly extensionPath: string,
@@ -35,7 +30,7 @@ export default class ContractsTreeDataProvider
     contractDetector.onChange(() => this.refresh());
   }
 
-  getTreeItem(contract: ContractData): vscode.TreeItem {
+  getTreeItem(contract: ContractTreeItemData): vscode.TreeItem {
     return {
       command: getContractTreeCommand(contract),
       label: contract.name,
@@ -48,19 +43,19 @@ export default class ContractsTreeDataProvider
     };
   }
 
-  getChildren(contractHash?: ContractData): ContractData[] {
+  getChildren(contractHash?: ContractTreeItemData): ContractTreeItemData[] {
     return contractHash ? [] : this.contracts;
   }
 
   refresh() {
     Log.log(LOG_PREFIX, "Refreshing contract list");
-    const newData: ContractData[] = [];
+    const newData: ContractTreeItemData[] = [];
     for (const hash of Object.keys(this.autoComplete.data.contractNames)) {
       const name = this.autoComplete.data.contractNames[hash] || hash;
       const manifest = this.autoComplete.data.contractManifests[hash] || {};
       const description =
         ((manifest.extra || {}) as any)["Description"] || undefined;
-      newData.push({ hash, name, description });
+      newData.push(new ContractTreeItemData(name, description, hash));
     }
     const workspaceContracts = this.contractDetector.contracts;
     for (const name of Object.keys(workspaceContracts)) {
@@ -69,11 +64,14 @@ export default class ContractsTreeDataProvider
       const description =
         ((manifest.extra || {}) as any)["Description"] || undefined;
       if (!newData.find((_) => _.name === name)) {
-        newData.push({
-          name,
-          description,
-          path: workspaceContract.absolutePathToNef,
-        });
+        newData.push(
+          new ContractTreeItemData(
+            name,
+            description,
+            undefined,
+            workspaceContract.absolutePathToNef
+          )
+        );
       }
     }
     newData.sort((a, b) => a.name.localeCompare(b.name));

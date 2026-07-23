@@ -7,7 +7,10 @@ import InvokeFileViewRequest from "../../../shared/messages/invokeFileViewReques
 import InvokeFileViewState from "../../../shared/viewState/invokeFileViewState";
 import NavButton from "../NavButton";
 import TransactionList from "./TransactionList";
-import { witnessScopes } from "../../../shared/invocationExecution";
+import {
+  areInvocationStepsReady,
+  witnessScopes,
+} from "../../../shared/invocationExecution";
 
 type Props = {
   viewState: InvokeFileViewState;
@@ -54,6 +57,11 @@ export default function InvokeFileInteractiveEditor({
     : !viewState.selectedAccount
     ? "Select an account to sign this invocation."
     : "The invocation will be signed and relayed to the selected Neo Express blockchain.";
+  const allStepsReady = areInvocationStepsReady(viewState.fileContents);
+  const runAllReady = executionReady && allStepsReady;
+  const runAllReadinessMessage = !allStepsReady
+    ? "Configure a contract and method for every invocation before running all steps."
+    : executionReadinessMessage;
 
   return (
     <div className="contract-studio__interactive">
@@ -236,10 +244,10 @@ export default function InvokeFileInteractiveEditor({
               </NavButton>
               {!viewState.isPartOfDiffView && viewState.fileContents.length > 1 && (
                 <NavButton
-                  disabled={!executionReady}
+                  disabled={!runAllReady}
                   icon="run-all"
                   onClick={() => postMessage({ runAll: true })}
-                  title={executionReadinessMessage}
+                  title={runAllReadinessMessage}
                 >
                   Run all steps
                 </NavButton>

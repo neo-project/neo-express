@@ -9,6 +9,7 @@ import ContractDetector from "../fileDetectors/contractDetector";
 import InvokeFileViewRequest from "../../shared/messages/invokeFileViewRequest";
 import InvokeFileViewState from "../../shared/viewState/invokeFileViewState";
 import {
+  areInvocationStepsReady,
   isWitnessScope,
   resolveSelectedAccount,
   toInvocationAccounts,
@@ -153,11 +154,24 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     }
 
     if (request.runAll) {
-      await this.runFile(this.document.uri.fsPath, "All steps");
+      if (!areInvocationStepsReady(this.viewState.fileContents)) {
+        vscode.window.showErrorMessage(
+          "Configure a contract and method for every invocation before running all steps."
+        );
+      } else {
+        await this.runFile(this.document.uri.fsPath, "All steps");
+      }
     }
 
     if (request.runStep) {
-      await this.runFragment(this.viewState.fileContents[request.runStep.i]);
+      const fragment = this.viewState.fileContents[request.runStep.i];
+      if (!areInvocationStepsReady([fragment])) {
+        vscode.window.showErrorMessage(
+          "Select a contract and method before running this invocation."
+        );
+      } else {
+        await this.runFragment(fragment);
+      }
     }
 
     if (request.selectTransaction) {

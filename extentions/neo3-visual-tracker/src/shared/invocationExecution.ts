@@ -32,3 +32,14 @@ export function resolveSelectedAccount(
 export function isWitnessScope(value: string): value is WitnessScope {
   return witnessScopes.includes(value as WitnessScope);
 }
+
+export function areInvocationStepsReady(
+  steps: { contract?: string; operation?: string }[]
+) {
+  return (
+    steps.length > 0 &&
+    steps.every(
+      (step) => !!step.contract?.trim() && !!step.operation?.trim()
+    )
+  );
+}

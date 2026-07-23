@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  areInvocationStepsReady,
   isWitnessScope,
   resolveSelectedAccount,
   toInvocationAccounts,
@@ -33,4 +34,19 @@ test("isWitnessScope accepts only supported Neo witness scopes", () => {
   assert.equal(isWitnessScope("Global"), true);
   assert.equal(isWitnessScope("None"), true);
   assert.equal(isWitnessScope("CustomContracts"), false);
+});
+
+test("areInvocationStepsReady requires every contract and operation", () => {
+  assert.equal(areInvocationStepsReady([]), false);
+  assert.equal(
+    areInvocationStepsReady([{ contract: "#Sample", operation: "" }]),
+    false
+  );
+  assert.equal(
+    areInvocationStepsReady([
+      { contract: "#Sample", operation: "one" },
+      { contract: "0x1234", operation: "two" },
+    ]),
+    true
+  );
 });

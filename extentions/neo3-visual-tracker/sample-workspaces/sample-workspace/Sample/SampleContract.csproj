@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neo.SmartContract.Framework" Version="3.10.0" />
-    <PackageReference Include="Neo.BuildTasks" Version="3.10.0" PrivateAssets="all" />
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.10.1" />
+    <PackageReference Include="Neo.BuildTasks" Version="3.10.1" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

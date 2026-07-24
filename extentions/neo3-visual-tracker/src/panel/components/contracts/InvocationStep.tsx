@@ -5,8 +5,8 @@ import * as neonSc from "@cityofzion/neon-core/lib/sc";
 import ArgumentsInput from "./ArgumentsInput";
 import AutoCompleteData from "../../../shared/autoCompleteData";
 import ContractInput from "./ContractInput";
-import OperationInput from "./OperationInput";
 import NavButton from "../NavButton";
+import OperationInput from "./OperationInput";
 
 type Props = {
   i: number;
@@ -15,6 +15,9 @@ type Props = {
   args?: any[];
   autoCompleteData: AutoCompleteData;
   argumentSuggestionListId: string;
+  debugScopeReady: boolean;
+  executionReadinessMessage: string;
+  executionReady: boolean;
   forceFocus?: boolean;
   isPartOfDiffView: boolean;
   isReadOnly: boolean;
@@ -33,6 +36,9 @@ export default function InvocationStep({
   args,
   autoCompleteData,
   argumentSuggestionListId,
+  debugScopeReady,
+  executionReadinessMessage,
+  executionReady,
   forceFocus,
   isPartOfDiffView,
   isReadOnly,
@@ -44,7 +50,6 @@ export default function InvocationStep({
   onUpdate,
 }: Props) {
   let operations: neonSc.ContractMethodDefinitionJson[] = [];
-  let canRun = false;
   let canDebug = false;
   if (contract) {
     let contractHashOrName = contract;
@@ -54,121 +59,120 @@ export default function InvocationStep({
     let manifest = autoCompleteData.contractManifests[contractHashOrName];
     if (!manifest) {
       for (const contractHash of Object.keys(autoCompleteData.contractNames)) {
-        const contractName = autoCompleteData.contractNames[contractHash];
-        if (contractName === contractHashOrName) {
+        if (autoCompleteData.contractNames[contractHash] === contractHashOrName) {
           manifest = autoCompleteData.contractManifests[contractHash];
         }
       }
     }
-    if (operation) {
-      canRun = true;
-      const paths = autoCompleteData.contractPaths[contractHashOrName] || [];
-      canDebug = paths.length > 0;
-    }
+    const paths = autoCompleteData.contractPaths[contractHashOrName] || [];
+    canDebug = !!operation && paths.length > 0 && debugScopeReady;
     if (manifest?.abi) {
       operations = manifest.abi.methods;
     }
   }
+
+  const canRun = !!contract && !!operation && executionReady;
+  const runTitle = !contract || !operation
+    ? "Select a contract and method before running this invocation."
+    : executionReadinessMessage;
+
   return (
-    <div
+    <section
+      aria-labelledby={`invocation-step-${i}`}
+      className="invocation-step"
       draggable={!isReadOnly}
+      onDragEnd={isReadOnly ? undefined : onDragEnd}
       onDragStart={
         isReadOnly
           ? undefined
-          : (e) => {
-              e.dataTransfer.setData("InvocationStep", `${i}`);
+          : (event) => {
+              event.dataTransfer.setData("InvocationStep", `${i}`);
               onDragStart();
             }
       }
-      onDragEnd={isReadOnly ? undefined : onDragEnd}
-      style={{
-        backgroundColor: "var(--vscode-editorWidget-background)",
-        color: "var(--vscode-editorWidget-foreground)",
-        border: "var(--vscode-editorWidget-border)",
-        borderRadius: 10,
-        marginLeft: 10,
-        marginRight: 10,
-        padding: 15,
-        cursor: isReadOnly ? undefined : "move",
-      }}
     >
-      <ContractInput
-        autoCompleteData={autoCompleteData}
-        contract={contract}
-        forceFocus={forceFocus}
-        isPartOfDiffView={isPartOfDiffView}
-        isReadOnly={isReadOnly}
-        style={{ marginBottom: 10 }}
-        setContract={(newContract: string) =>
-          onUpdate(newContract, operation, args)
-        }
-      />
-      <OperationInput
-        isReadOnly={isReadOnly}
-        operations={operations}
-        operation={operation}
-        style={{ marginBottom: 10 }}
-        setOperation={(newOperation: string) =>
-          onUpdate(contract, newOperation, args)
-        }
-      />
-      <ArgumentsInput
-        args={args || []}
-        autoSuggestListId={argumentSuggestionListId}
-        isReadOnly={isReadOnly}
-        parameterDefinitions={
-          operations.find((_) => _.name === operation)?.parameters
-        }
-        style={{ marginBottom: 10 }}
-        setArguments={(newArguments) =>
-          onUpdate(contract, operation, newArguments)
-        }
-      />
-      {(!isReadOnly || isPartOfDiffView) && (
-        <div style={{ textAlign: "right" }}>
+      <header className="invocation-step__header">
+        <div>
+          <div className="invocation-step__eyebrow">Invocation {i + 1}</div>
+          <h2 className="invocation-step__title" id={`invocation-step-${i}`}>
+            {operation || "Configure contract method"}
+          </h2>
+        </div>
+        {!isReadOnly && (
           <NavButton
+            ariaLabel={`Delete invocation ${i + 1}`}
+            icon="trash"
+            iconOnly
             onClick={onDelete}
-            disabled={isReadOnly}
-            style={{
-              visibility: isPartOfDiffView && isReadOnly ? "hidden" : undefined,
-            }}
+            title="Delete invocation"
+            variant="ghost"
+          />
+        )}
+      </header>
+
+      <div className="invocation-step__fields">
+        <ContractInput
+          autoCompleteData={autoCompleteData}
+          contract={contract}
+          forceFocus={forceFocus}
+          isPartOfDiffView={isPartOfDiffView}
+          isReadOnly={isReadOnly}
+          setContract={(newContract) => onUpdate(newContract, operation, args)}
+        />
+        <OperationInput
+          isReadOnly={isReadOnly}
+          operations={operations}
+          operation={operation}
+          setOperation={(newOperation) =>
+            onUpdate(contract, newOperation, args)
+          }
+        />
+        <ArgumentsInput
+          args={args || []}
+          autoSuggestListId={argumentSuggestionListId}
+          isReadOnly={isReadOnly}
+          parameterDefinitions={
+            operations.find((candidate) => candidate.name === operation)
+              ?.parameters
+          }
+          setArguments={(newArguments) =>
+            onUpdate(contract, operation, newArguments)
+          }
+        />
+      </div>
+
+      {!isReadOnly && !isPartOfDiffView && (
+        <div className="invocation-step__actions">
+          <span className="invocation-step__hint">
+            {canRun
+              ? "Ready to sign and relay"
+              : runTitle}
+          </span>
+          <NavButton
+            disabled={!canDebug}
+            icon="debug-alt"
+            onClick={onDebug}
+            title={
+              canDebug
+                ? "Start a source debug session"
+                : !debugScopeReady
+                ? "Live debugging currently supports CalledByEntry witness scope."
+                : "Build this contract in the current workspace to enable debugging."
+            }
+            variant="secondary"
           >
-            Delete this step
+            Debug
           </NavButton>
-          {!isPartOfDiffView && (
-            <>
-              {" "}
-              <NavButton
-                onClick={onRun}
-                disabled={isReadOnly || !canRun}
-                title={
-                  canRun
-                    ? undefined
-                    : "You must at least specify a contract and an operaton name."
-                }
-              >
-                Run this step
-              </NavButton>
-            </>
-          )}
-          {!isPartOfDiffView && (
-            <>
-              {" "}
-              <NavButton
-                onClick={onDebug}
-                disabled={isReadOnly || !canDebug}
-                title={
-                  canDebug
-                    ? undefined
-                    : "To debug, the contract source code must be in the current workspace and the contract must be built."
-                }
-              >
-                Debug this step
-              </NavButton>
-            </>
-          )}
+          <NavButton
+            disabled={!canRun}
+            icon="play"
+            onClick={onRun}
+            title={runTitle}
+          >
+            Run invocation
+          </NavButton>
         </div>
       )}
-    </div>
+    </section>
   );
 }

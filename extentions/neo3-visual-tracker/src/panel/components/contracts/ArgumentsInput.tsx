@@ -2,6 +2,10 @@ import React from "react";
 
 import * as neonSc from "@cityofzion/neon-core/lib/sc";
 
+import {
+  isEmptyArgument,
+  normalizeArguments,
+} from "../../../shared/argumentValues";
 import ArgumentInput from "./ArgumentInput";
 
 type Props = {
@@ -20,16 +24,7 @@ export default function ArgumentsInput({
   setArguments,
 }: Props) {
   const requiredArgumentCount = parameterDefinitions?.length || 0;
-  const normalizedArguments = [...args];
-  while (
-    normalizedArguments.length > requiredArgumentCount &&
-    !normalizedArguments[normalizedArguments.length - 1]
-  ) {
-    normalizedArguments.pop();
-  }
-  while (normalizedArguments.length < requiredArgumentCount) {
-    normalizedArguments.push("");
-  }
+  const normalizedArguments = normalizeArguments(args, requiredArgumentCount);
   return (
     <div className="neo-field">
       {(!parameterDefinitions || !!normalizedArguments.length) && (
@@ -48,13 +43,12 @@ export default function ArgumentsInput({
             type={(parameterDefinitions || [])[i]?.type}
             onUpdate={(updatedArgument) =>
               setArguments(
-                normalizedArguments
-                  .map((candidate, j) =>
+                normalizeArguments(
+                  normalizedArguments.map((candidate, j) =>
                     i === j ? updatedArgument : candidate
-                  )
-                  .filter(
-                    (candidate, j) => !!candidate || j < requiredArgumentCount
-                  )
+                  ),
+                  requiredArgumentCount
+                )
               )
             }
           />
@@ -67,7 +61,7 @@ export default function ArgumentsInput({
             name={`Argument ${normalizedArguments.length + 1}`}
             onUpdate={(argument) =>
               setArguments(
-                argument
+                !isEmptyArgument(argument)
                   ? [...normalizedArguments, argument]
                   : [...normalizedArguments]
               )

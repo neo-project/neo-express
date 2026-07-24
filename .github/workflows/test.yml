@@ -6,32 +6,10 @@ on:
 env:
   CONFIGURATION: 'Release'
   DOTNET_VERSION: '10.0.x'
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
-  format:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v6.0.2
-      with:
-        fetch-depth: 0
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5.2.0
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Restore
-      run: dotnet restore neo-express.sln
-
-    - name: Format
-      run: |
-        dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
-
   build:
-    needs: [format]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -53,8 +31,19 @@ jobs:
       uses: dotnet/nbgv@v0.5.1
       id: nbgv
 
+    - name: Cache NuGet Packages
+      if: matrix.os == 'windows-latest'
+      uses: actions/cache@v5.0.5
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-dotnet-${{ env.DOTNET_VERSION }}-nuget-${{ hashFiles('global.json', 'NuGet.Config', 'Directory.Build.props', '**/*.csproj') }}
+
     - name: Restore
       run: dotnet restore neo-express.sln
+
+    - name: Format
+      if: matrix.os == 'ubuntu-latest'
+      run: dotnet format neo-express.sln --verify-no-changes --no-restore --verbosity diagnostic
 
     - name: Build
       run: dotnet build neo-express.sln --configuration ${{ env.CONFIGURATION }} --no-restore --verbosity normal
@@ -77,20 +66,8 @@ jobs:
     - name: Test Policy Command (offline) (neoxp)
       shell: bash
       run: |
-        for attempt in 1 2 3; do
-          if neoxp policy get --rpc-uri mainnet --json > mainnet-policy.json; then
-            neoxp policy sync mainnet-policy --account genesis
-            exit 0
-          fi
-
-          if [ "${attempt}" -lt 3 ]; then
-            echo "mainnet policy get failed on attempt ${attempt}; retrying..."
-            sleep 10
-          fi
-        done
-
-        echo "mainnet policy get failed after 3 attempts."
-        exit 1
+        neoxp policy get --json > local-policy.json
+        neoxp policy sync local-policy --account genesis
 
     - name: Test Wallet Command (neoxp)
       run: |

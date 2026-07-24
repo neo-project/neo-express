@@ -78,9 +78,10 @@ jobs:
         ZIP_FILE: ${{ format('{0}/Neo.Express-{1}-{2}.zip', env.DIST_PATH, matrix.runtime, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: zip ${{ env.ZIP_FILE }} -r *
 
-    - name: Cache Files
-      id: cache
-      uses: actions/cache@v5.0.5
+    - name: Upload Distribution
+      uses: actions/upload-artifact@v7.0.1
       with:
+        name: standalone-${{ matrix.runtime }}
         path: ${{ env.DIST_PATH }}/*
-        key: ${{ matrix.runtime }}
+        if-no-files-found: error
+        retention-days: 1

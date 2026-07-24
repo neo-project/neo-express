@@ -77,6 +77,15 @@ public class RunCommandPortTests
     }
 
     [Fact]
+    public void get_consensus_settings_configures_recovery_logs()
+    {
+        var settings = RunCommand.GetConsensusSettings(CreateWorknetFile());
+
+        settings.IgnoreRecoveryLogs.Should().BeTrue();
+        settings.RecoveryLogs.Should().Be("ConsensusState");
+    }
+
+    [Fact]
     public void validate_ports_rejects_shared_port()
     {
         Action act = () => RunCommand.ValidatePorts(40332, 40332);

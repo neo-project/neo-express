@@ -17,7 +17,7 @@ namespace NeoDebug.Neo3
     /// The debug-engine-facing contract the <see cref="DebugAdapter"/> drives. One implementation backs both
     /// the trace-replay and live engines; the adapter never references a concrete engine.
     /// </summary>
-    public interface IDebugSession
+    public interface IDebugSession : IDisposable
     {
         EvaluateResponse Evaluate(EvaluateArguments args);
         string GetExceptionInfo();

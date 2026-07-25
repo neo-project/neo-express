@@ -8,6 +8,9 @@
         <ProjectReference Include="..\..\src\bctklib\bctklib.csproj" />
     </ItemGroup>
     <ItemGroup>
+        <EmbeddedResource Include="_testFiles/*" />
+    </ItemGroup>
+    <ItemGroup>
         <PackageReference Include="coverlet.collector" Version="6.0.4">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>

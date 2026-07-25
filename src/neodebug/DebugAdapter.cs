@@ -49,6 +49,7 @@ namespace NeoDebug.Neo3
         private readonly DebugSessionFactory sessionFactory;
         private IDebugSession? session;
         private int launching; // 0 = idle, 1 = launching or launched
+        private int configured;
 
         public DebugAdapter(Stream @in,
                             Stream @out,
@@ -77,6 +78,7 @@ namespace NeoDebug.Neo3
         {
             return new InitializeResponse()
             {
+                SupportsConfigurationDoneRequest = true,
                 SupportsEvaluateForHovers = true,
                 SupportsExceptionInfoRequest = true,
                 ExceptionBreakpointFilters = new List<ExceptionBreakpointsFilter>
@@ -113,13 +115,32 @@ namespace NeoDebug.Neo3
             try
             {
                 session = await sessionFactory(arguments, Protocol.SendEvent, defaultDebugView).ConfigureAwait(false);
-                session.Start();
                 Protocol.SendEvent(new InitializedEvent());
             }
             catch
             {
-                session = null;
+                Interlocked.Exchange(ref session, null)?.Dispose();
                 Interlocked.Exchange(ref launching, 0);
+                Interlocked.Exchange(ref configured, 0);
+                throw;
+            }
+        }
+
+        protected override ConfigurationDoneResponse HandleConfigurationDoneRequest(ConfigurationDoneArguments arguments)
+        {
+            if (Interlocked.CompareExchange(ref configured, 1, 0) != 0)
+                throw new ProtocolException("The debug session has already been configured.");
+
+            try
+            {
+                session.AssertLaunched().Start();
+                return new ConfigurationDoneResponse();
+            }
+            catch
+            {
+                Interlocked.Exchange(ref session, null)?.Dispose();
+                Interlocked.Exchange(ref launching, 0);
+                Interlocked.Exchange(ref configured, 0);
                 throw;
             }
         }
@@ -138,7 +159,10 @@ namespace NeoDebug.Neo3
         }
 
         protected override DisconnectResponse HandleDisconnectRequest(DisconnectArguments arguments)
-            => new DisconnectResponse();
+        {
+            Interlocked.Exchange(ref session, null)?.Dispose();
+            return new DisconnectResponse();
+        }
 
         protected override ExceptionInfoResponse HandleExceptionInfoRequest(ExceptionInfoArguments arguments)
             => Guard(() => new ExceptionInfoResponse() { Description = session.AssertLaunched().GetExceptionInfo() });

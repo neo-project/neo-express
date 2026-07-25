@@ -67,6 +67,9 @@ jobs:
     - name: Push Neo.Trace Nuget.org
       run: dotnet nuget push ${{ format('./dist/Neo.Trace.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 
+    - name: Push Neo.Debug Nuget.org
+      run: dotnet nuget push ${{ format('./dist/Neo.Debug.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
+
     - name: Push Blockchain-toolkit-library Nuget.org
       run: dotnet nuget push ${{ format('./dist/Neo.BlockchainToolkit.{0}.nupkg', steps.nbgv.outputs.NuGetPackageVersion) }} --api-key ${{ secrets.NUGET_TOKEN }} --source https://api.nuget.org/v3/index.json
 

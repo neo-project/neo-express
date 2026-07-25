@@ -2,6 +2,9 @@
     <PropertyGroup>
         <AssemblyName>neodebug</AssemblyName>
         <Description>Source-level (Debug Adapter Protocol) debugger for Neo N3 smart contracts</Description>
+        <OutputType>Exe</OutputType>
+        <PackageId>Neo.Debug</PackageId>
+        <PackAsTool>true</PackAsTool>
         <RootNamespace>NeoDebug</RootNamespace>
     </PropertyGroup>
 
@@ -10,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
         <PackageReference Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol" Version="17.14.10225.1" />
     </ItemGroup>
 

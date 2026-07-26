@@ -70,7 +70,7 @@ The `chain.SecondsPerBlock` setting and the `run --seconds-per-block` option sti
 
 Protocol values are specified as unsigned integers, except `protocol.MemoryPoolMaxTransactions`,
 which is a positive integer. Hardfork names use the Neo `Hardfork` enum names, such as
-`HF_Echidna` or `HF_Faun`, and values are activation block heights.
+`HF_Echidna`, `HF_Faun`, or `HF_Huyao`, and values are activation block heights.
 
 Example usage:
 
@@ -83,7 +83,8 @@ Example usage:
     "protocol.MaxValidUntilBlockIncrement": "86400",
     "protocol.InitialGasDistribution": "5200000000000000",
     "protocol.Hardforks.HF_Echidna": "0",
-    "protocol.Hardforks.HF_Faun": "0"
+    "protocol.Hardforks.HF_Faun": "0",
+    "protocol.Hardforks.HF_Huyao": "0"
   }
 ```
 

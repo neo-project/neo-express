@@ -1,3 +1,4 @@
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as vscode from "vscode";
 
@@ -72,11 +73,14 @@ export default abstract class PanelControllerBase<
         panel.title = newTitle;
       }
     };
+    const nonce = crypto.randomBytes(18).toString("base64");
     panel.webview.html = fs
       .readFileSync(
         posixPath(context.extensionPath, "dist", "panel", "index.html")
       )
       .toString()
+      .replaceAll("[NONCE]", nonce)
+      .replaceAll("[CSP_SOURCE]", panel.webview.cspSource)
       .replace(
         "[BASE_HREF]",
         panel.webview

@@ -45,6 +45,7 @@
     "onCommand:neo3-visual-devtracker.express.walletCreate",
     "onCommand:neo3-visual-devtracker.neo.contractDeploy",
     "onCommand:neo3-visual-devtracker.neo.invokeContract",
+    "onCommand:neo3-visual-devtracker.neo.openContractStudio",
     "onCommand:neo3-visual-devtracker.neo.newContract",
     "onCommand:neo3-visual-devtracker.neo.walletCreate",
     "onCommand:neo3-visual-devtracker.tracker.openContract",
@@ -156,6 +157,12 @@
         "category": "Neo N3"
       },
       {
+        "command": "neo3-visual-devtracker.neo.openContractStudio",
+        "title": "Open Contract Studio",
+        "category": "Neo N3 Visual DevTracker",
+        "icon": "$(rocket)"
+      },
+      {
         "command": "neo3-visual-devtracker.neo.newContract",
         "title": "Create contract",
         "category": "Neo N3"
@@ -202,6 +209,11 @@
     ],
     "menus": {
       "explorer/context": [
+        {
+          "command": "neo3-visual-devtracker.neo.openContractStudio",
+          "when": "isFileSystemResource && resourceExtname == .nef",
+          "group": "navigation@1"
+        },
         {
           "command": "neo3-visual-devtracker.express.contractDeploy",
           "when": "isFileSystemResource && resourceExtname == .nef"
@@ -277,6 +289,11 @@
         {
           "command": "neo3-visual-devtracker.tracker.openTracker",
           "when": "view == neo3-visual-devtracker.views.blockchains"
+        },
+        {
+          "command": "neo3-visual-devtracker.neo.openContractStudio",
+          "when": "view == neo3-visual-devtracker.views.contracts && viewItem == workspaceContract",
+          "group": "inline"
         }
       ],
       "view/title": [
@@ -365,6 +382,7 @@
     "@types/react-dom": "^17.0.26",
     "@types/temp": "^0.9.4",
     "@types/vscode": "^1.104.0",
+    "@vscode/codicons": "^0.0.44",
     "@types/which": "^2.0.2",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
@@ -373,6 +391,7 @@
     "buffer": "^6.0.3",
     "concurrently": "^10.0.3",
     "crypto-js": "^4.2.0",
+    "css-loader": "^7.1.2",
     "eslint": "^10.2.1",
     "extract-zip": "^2.0.1",
     "file-loader": "^6.2.0",
@@ -385,6 +404,7 @@
     "react-dom": "^17.0.2",
     "shx": "^0.4.0",
     "stream-browserify": "^3.0.0",
+    "style-loader": "^4.0.0",
     "temp": "^0.9.4",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",

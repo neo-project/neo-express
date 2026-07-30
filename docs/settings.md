@@ -84,6 +84,7 @@ Example usage:
     "protocol.InitialGasDistribution": "5200000000000000",
     "protocol.Hardforks.HF_Echidna": "0",
     "protocol.Hardforks.HF_Faun": "0",
+    "protocol.Hardforks.HF_Gorgon": "0",
     "protocol.Hardforks.HF_Huyao": "0"
   }
 ```

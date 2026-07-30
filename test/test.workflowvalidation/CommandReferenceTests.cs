@@ -30,7 +30,7 @@ public class CommandReferenceTests
     public void public_chain_tools_document_full_state_requirement_without_promising_seed_configuration()
     {
         var repositoryRoot = FindRepositoryRoot(AppContext.BaseDirectory);
-        var readme = File.ReadAllText(Path.Combine(repositoryRoot, "README.md"));
+        var readme = File.ReadAllText(Path.Combine(repositoryRoot, "readme.md"));
         var traceReference = File.ReadAllText(Path.Combine(repositoryRoot, "docs", "trace-command-reference.md"));
 
         readme.Should().Contain("Old state not supported");

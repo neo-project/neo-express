@@ -414,8 +414,8 @@ namespace NeoExpress
         {
             var settings = new Dictionary<string, string>()
             {
-                { "PluginConfiguration:Network", $"{chain.Network}" },
-                { "PluginConfiguration:IgnoreRecoveryLogs", "true" }
+                { "PluginConfiguration:AutoStart", $"{false}" },
+                { "PluginConfiguration:IgnoreRecoveryLogs", $"{true}" }
             };
 
             if (chain.TryReadSetting<long>(MaxBlockSystemFeeSetting, long.TryParse, out var maxBlockSystemFee)
@@ -435,7 +435,6 @@ namespace NeoExpress
 
             var settings = new Dictionary<string, string>()
             {
-                { "PluginConfiguration:Network", $"{chain.Network}" },
                 { "PluginConfiguration:BindAddress", $"{ipAddress}" },
                 { "PluginConfiguration:Port", $"{node.RpcPort}" },
             };
@@ -448,6 +447,12 @@ namespace NeoExpress
             if (chain.TryReadSetting<decimal>("rpc.MaxFee", decimal.TryParse, out var maxFee))
             {
                 settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
+            }
+
+            if (chain.TryReadSetting<int>("rpc.MaxRequestBodySize", int.TryParse, out var maxRequestBodySize)
+                && maxRequestBodySize > 0)
+            {
+                settings.Add("PluginConfiguration:MaxRequestBodySize", $"{maxRequestBodySize}");
             }
 
             if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)

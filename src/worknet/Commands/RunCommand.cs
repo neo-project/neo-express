@@ -90,7 +90,6 @@ partial class RunCommand
 
         var settings = new Dictionary<string, string>()
             {
-                { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
                 { "PluginConfiguration:BindAddress", $"{IPAddress.Loopback}" },
                 { "PluginConfiguration:Port", $"{rpcPort}" },
                 { "PluginConfiguration:SessionEnabled", $"{true}"}
@@ -104,8 +103,8 @@ partial class RunCommand
     {
         var settings = new Dictionary<string, string>()
         {
-            { "PluginConfiguration:Network", $"{worknet.BranchInfo.Network}" },
-            { "PluginConfiguration:IgnoreRecoveryLogs", "true" },
+            { "PluginConfiguration:AutoStart", $"{false}" },
+            { "PluginConfiguration:IgnoreRecoveryLogs", $"{true}" },
             { "PluginConfiguration:RecoveryLogs", "ConsensusState" }
         };
 

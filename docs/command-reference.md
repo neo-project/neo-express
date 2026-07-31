@@ -1092,16 +1092,16 @@ The `policy set` command updates the current value of the specified Neo-Express 
 ```
 Synchronize local policy values with public Neo network
 
-Usage: neoxp policy sync [Options] <Source> <Account>
+Usage: neoxp policy sync [Options] <Source>
 
 Arguments:
 [Options]:
+  -a|--account <ACCOUNT>    Account to pay contract invocation GAS fee
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
 <Source>: Source of policy values. Must be local policy settings JSON file or the URL of Neo JSON-RPC Node For Node URL,"MainNet" or "TestNet" can be specified in addition to a standard HTTP URL
-<Account>: Account to pay contract invocation GAS fee
 ```
 
 The `policy sync` command updates the all the network policy values of the specified Neo-Express blockchain instance.

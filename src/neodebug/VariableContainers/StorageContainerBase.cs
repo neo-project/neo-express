@@ -55,7 +55,7 @@ namespace NeoDebug.Neo3
                 }
             }
 
-            throw new InvalidOperationException("Invalid storage evaluation");
+            return (null, expression);
 
             static bool TryGetKeyIdentifier(ReadOnlyMemory<char> expression,
                 out ReadOnlyMemory<char> keyIdentifier, out int remainingOffset)

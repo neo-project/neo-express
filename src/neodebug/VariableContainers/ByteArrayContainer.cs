@@ -11,6 +11,7 @@
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using Buffer = Neo.VM.Types.Buffer;
 using ByteString = Neo.VM.Types.ByteString;
+using StackItemType = Neo.VM.Types.StackItemType;
 
 namespace NeoDebug.Neo3
 {
@@ -25,20 +26,22 @@ namespace NeoDebug.Neo3
         }
 
         public static Variable Create(IVariableManager manager, ByteString byteString, string name)
-            => ToVariable(manager, new ByteArrayContainer(byteString), name, "ByteString");
+            => ToVariable(manager, new ByteArrayContainer(byteString), name, StackItemType.ByteString);
 
         public static Variable Create(IVariableManager manager, Buffer buffer, string name)
-            => ToVariable(manager, new ByteArrayContainer(buffer.InnerBuffer), name, "Buffer");
+            => ToVariable(manager, new ByteArrayContainer(buffer.InnerBuffer), name, StackItemType.Buffer);
 
         public static Variable Create(IVariableManager manager, ReadOnlyMemory<byte> memory, string name)
-            => ToVariable(manager, new ByteArrayContainer(memory), name, "ByteString");
+            => ToVariable(manager, new ByteArrayContainer(memory), name, StackItemType.ByteString);
 
-        private static Variable ToVariable(IVariableManager manager, ByteArrayContainer container, string name, string type)
+        private static Variable ToVariable(IVariableManager manager, ByteArrayContainer container, string name, StackItemType type)
         {
+            var typeName = type.ToString();
             return new Variable()
             {
                 Name = name,
-                Value = $"{type}[{container._memory.Length}]",
+                Value = $"{typeName}[{container._memory.Length}]",
+                Type = typeName,
                 VariablesReference = manager.Add(container),
                 IndexedVariables = container._memory.Length,
             };

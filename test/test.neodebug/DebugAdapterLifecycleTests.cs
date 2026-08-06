@@ -66,6 +66,7 @@ namespace test.neodebug
             public ThreadsResponse Threads() => HandleThreadsRequest(new ThreadsArguments());
             public StackTraceResponse StackTrace() => HandleStackTraceRequest(new StackTraceArguments());
             public ContinueResponse Continue() => HandleContinueRequest(new ContinueArguments());
+            public ConfigurationDoneResponse ConfigurationDone() => HandleConfigurationDoneRequest(new ConfigurationDoneArguments());
             public NextResponse Next() => HandleNextRequest(new NextArguments());
             public Task Launch() => LaunchAsync(new LaunchArguments());
         }
@@ -79,6 +80,7 @@ namespace test.neodebug
 
             Assert.True(response.SupportsEvaluateForHovers);
             Assert.True(response.SupportsExceptionInfoRequest);
+            Assert.True(response.SupportsConfigurationDoneRequest);
             Assert.Equal(2, response.ExceptionBreakpointFilters.Count);
             Assert.Contains(response.ExceptionBreakpointFilters, f => f.Filter == DebugAdapter.UNCAUGHT_EXCEPTION_FILTER && f.Default == true);
             Assert.Contains(response.ExceptionBreakpointFilters, f => f.Filter == DebugAdapter.CAUGHT_EXCEPTION_FILTER && f.Default == false);
@@ -93,13 +95,15 @@ namespace test.neodebug
         }
 
         [Fact]
-        public async Task launch_builds_and_starts_the_session()
+        public async Task configuration_done_starts_the_launched_session()
         {
             var session = new FakeDebugSession();
             var adapter = new TestDebugAdapter(session);
 
             await adapter.Launch();
 
+            Assert.False(session.Started);
+            adapter.ConfigurationDone();
             Assert.True(session.Started);
 
             var threads = adapter.Threads().Threads;
@@ -114,6 +118,7 @@ namespace test.neodebug
             var session = new FakeDebugSession();
             var adapter = new TestDebugAdapter(session);
             await adapter.Launch();
+            adapter.ConfigurationDone();
 
             adapter.Continue();
             adapter.Next();
@@ -150,7 +155,7 @@ namespace test.neodebug
 
             Assert.Equal("A debug session has already been launched.", exception.Message);
             Assert.Equal(1, factoryCalls);
-            Assert.True(session.Started);
+            Assert.False(session.Started);
         }
     }
 }

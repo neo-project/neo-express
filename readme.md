@@ -199,25 +199,25 @@ GAS on a public network.
 
 Please review the [Neo-WorkNet Command Reference](docs/worknet-command-reference.md) for the full list of commands and options.
 
-> Note: Neo-WorkNet depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled on the node being branched. The official JSON-RPC nodes for MainNet and TestNet are configured this way.
+> Note: Neo-WorkNet depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled on the node being branched. If a public seed node returns an `Old state not supported` error, use a JSON-RPC node with full-state StateService enabled.
 
 ### Neo-Trace
 
 - Generate a trace file for a block:
 
   ```shell
-  neotrace block 365110 --rpc-uri testnet
+  neotrace block <block-index-with-transactions> --rpc-uri <full-state-rpc-uri>
   ```
 
 - Generate a trace file for a transaction:
 
   ```shell
-  neotrace tx 0xef1917b8601828e1d2f3ed0954907ea611cb734771609ce0ce2b654bb5c78005 --rpc-uri testnet
+  neotrace tx <transaction-hash> --rpc-uri <full-state-rpc-uri>
   ```
 
 Please review the [NeoTrace Command Reference](docs/trace-command-reference.md) for the full list of commands and options.
 
-> Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. The official JSON-RPC nodes for MainNet and TestNet (such as `http://seed1.neo.org:10332` and `http://seed1t5.neo.org:20332`) are configured to run the StateService plugin with `FullState` enabled. Neo-Trace does not include per-instruction storage snapshots from public-chain StateService replay. For local Neo-Express transactions with storage snapshots, use the `--trace` option on commands such as `neoxp run`, `neoxp contract invoke`, or `neoxp contract run` to write `.neo-trace` files locally.
+> Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. If a public seed node returns an `Old state not supported` error, use a JSON-RPC node with full-state StateService enabled. Neo-Trace does not include per-instruction storage snapshots from public-chain StateService replay. For local Neo-Express transactions with storage snapshots, use the `--trace` option on commands such as `neoxp run`, `neoxp contract invoke`, or `neoxp contract run` to write `.neo-trace` files locally.
 
 ## New Features or issues
 

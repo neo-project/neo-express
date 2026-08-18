@@ -128,12 +128,13 @@ namespace NeoDebug.Neo3
 
         protected override ConfigurationDoneResponse HandleConfigurationDoneRequest(ConfigurationDoneArguments arguments)
         {
+            var launchedSession = session.AssertLaunched();
             if (Interlocked.CompareExchange(ref configured, 1, 0) != 0)
                 throw new ProtocolException("The debug session has already been configured.");
 
             try
             {
-                session.AssertLaunched().Start();
+                launchedSession.Start();
                 return new ConfigurationDoneResponse();
             }
             catch

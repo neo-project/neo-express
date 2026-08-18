@@ -41,6 +41,8 @@ namespace test.bctklib
             chain.Settings["protocol.MaxValidUntilBlockIncrement"] = "100";
             chain.Settings["protocol.InitialGasDistribution"] = "123456789";
             chain.Settings["protocol.Hardforks.HF_Faun"] = "42";
+            chain.Settings["protocol.Hardforks.HF_Gorgon"] = "42";
+            chain.Settings["protocol.Hardforks.HF_Huyao"] = "84";
 
             var settings = chain.GetProtocolSettings();
 
@@ -51,6 +53,21 @@ namespace test.bctklib
             settings.MaxValidUntilBlockIncrement.Should().Be(100);
             settings.InitialGasDistribution.Should().Be(123456789);
             settings.Hardforks[Hardfork.HF_Faun].Should().Be(42);
+            settings.Hardforks[Hardfork.HF_Gorgon].Should().Be(42);
+            settings.Hardforks[Hardfork.HF_Huyao].Should().Be(84);
+        }
+
+        [Fact]
+        public void get_protocol_settings_rejects_non_continuous_hardfork_settings()
+        {
+            var chain = CreateExpressChain();
+            chain.Settings["protocol.Hardforks.HF_Faun"] = "42";
+            chain.Settings["protocol.Hardforks.HF_Huyao"] = "84";
+
+            var action = () => chain.GetProtocolSettings();
+
+            action.Should().Throw<ArgumentException>()
+                .WithMessage("Hardfork configuration is not continuous*");
         }
 
         [Fact]

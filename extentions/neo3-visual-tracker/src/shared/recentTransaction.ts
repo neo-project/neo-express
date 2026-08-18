@@ -4,10 +4,13 @@ import ApplicationLog from "./applicationLog";
 import TransactionStatus from "./transactionStatus";
 
 type RecentTransaction = {
+  account?: string;
   blockchain: string;
   log?: ApplicationLog;
+  operation?: string;
   txid: string;
   state: TransactionStatus;
+  submittedAt?: string;
   tx?: TransactionJson;
 };
 

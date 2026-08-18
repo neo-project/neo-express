@@ -133,8 +133,7 @@ namespace Neo.BlockchainToolkit
                 settings = settings with { InitialGasDistribution = initialGasDistribution };
             }
 
-            var hardforks = settings.Hardforks.ToBuilder();
-            var hardforkChanged = false;
+            var configuredHardforks = new Dictionary<Hardfork, uint>();
             foreach (var (key, value) in chain.Settings)
             {
                 if (!key.StartsWith(ProtocolHardforksPrefix, StringComparison.Ordinal))
@@ -144,16 +143,55 @@ namespace Neo.BlockchainToolkit
 
                 var hardforkName = key[ProtocolHardforksPrefix.Length..];
                 if (Enum.TryParse<Hardfork>(hardforkName, ignoreCase: true, out var hardfork)
+                    && Enum.IsDefined(hardfork)
                     && uint.TryParse(value, out var height))
                 {
-                    hardforks[hardfork] = height;
-                    hardforkChanged = true;
+                    configuredHardforks[hardfork] = height;
                 }
             }
 
-            return hardforkChanged
-                ? settings with { Hardforks = hardforks.ToImmutableDictionary() }
+            return configuredHardforks.Count > 0
+                ? settings with { Hardforks = NormalizeHardforks(configuredHardforks).ToImmutableDictionary() }
                 : settings;
+        }
+
+        static Dictionary<Hardfork, uint> NormalizeHardforks(Dictionary<Hardfork, uint> configuredHardforks)
+        {
+            var hardforks = new Dictionary<Hardfork, uint>(configuredHardforks);
+            var allHardforks = Enum.GetValues<Hardfork>().ToList();
+            foreach (var hardfork in allHardforks)
+            {
+                if (hardforks.ContainsKey(hardfork))
+                {
+                    break;
+                }
+
+                hardforks[hardfork] = 0;
+            }
+
+            var sortedHardforks = hardforks.Keys
+                .OrderBy(allHardforks.IndexOf)
+                .ToList();
+
+            for (var i = 0; i < sortedHardforks.Count - 1; i++)
+            {
+                var currentIndex = allHardforks.IndexOf(sortedHardforks[i]);
+                var nextIndex = allHardforks.IndexOf(sortedHardforks[i + 1]);
+                if (nextIndex - currentIndex > 1)
+                {
+                    throw new ArgumentException($"Hardfork configuration is not continuous. There is a gap between {sortedHardforks[i]} and {sortedHardforks[i + 1]}. All hardforks must be configured in sequential order without gaps.");
+                }
+            }
+
+            for (var i = 0; i < sortedHardforks.Count - 1; i++)
+            {
+                if (hardforks[sortedHardforks[i]] > hardforks[sortedHardforks[i + 1]])
+                {
+                    throw new ArgumentException($"Invalid hardfork configuration: {sortedHardforks[i]} is configured to activate at block {hardforks[sortedHardforks[i]]}, which is greater than {sortedHardforks[i + 1]} at block {hardforks[sortedHardforks[i + 1]]}. Earlier hardforks must activate at lower block numbers than later hardforks.");
+                }
+            }
+
+            return hardforks;
         }
 
         public static bool ApplyNativePolicySettings(this ExpressChain? chain, DataCache snapshot, ProtocolSettings settings)

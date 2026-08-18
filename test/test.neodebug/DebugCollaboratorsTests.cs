@@ -14,6 +14,7 @@ using Neo.BlockchainToolkit.Models;
 using Neo.VM;
 using NeoDebug.Neo3;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -56,8 +57,8 @@ namespace test.neodebug
             var debugInfo = SampleDebugInfo(hash);
 
             var manager = new DisassemblyManager(
-                (UInt160 h, out Script? s) => { s = h == hash ? script : null; return s is not null; },
-                (UInt160 h, out DebugInfo? d) => { d = h == hash ? debugInfo : null; return d is not null; });
+                (UInt160 h, [MaybeNullWhen(false)] out Script s) => { s = h == hash ? script : null; return s is not null; },
+                (UInt160 h, [MaybeNullWhen(false)] out DebugInfo d) => { d = h == hash ? debugInfo : null; return d is not null; });
 
             Assert.True(manager.TryGetDisassembly(hash, out var disassembly));
             Assert.Contains("PUSH1", disassembly.Source);
@@ -78,8 +79,8 @@ namespace test.neodebug
             var secondHash = UInt160.Parse("0x0000000000000000000000000000000000000002");
             var script = SampleScript();
             var manager = new DisassemblyManager(
-                (UInt160 h, out Script? s) => { s = h == firstHash || h == secondHash ? script : null; return s is not null; },
-                (UInt160 h, out DebugInfo? d) => { d = null; return false; });
+                (UInt160 h, [MaybeNullWhen(false)] out Script s) => { s = h == firstHash || h == secondHash ? script : null; return s is not null; },
+                (UInt160 h, [MaybeNullWhen(false)] out DebugInfo d) => { d = null; return false; });
 
             Assert.True(manager.TryGetDisassembly(firstHash, out var first));
             Assert.True(manager.TryGetDisassembly(secondHash, out var second));
@@ -102,8 +103,8 @@ namespace test.neodebug
                 var script = SampleScript();
                 var debugInfo = SampleDebugInfo(hash, path, startColumn: 10, endColumn: 11);
                 var manager = new DisassemblyManager(
-                    (UInt160 h, out Script? s) => { s = h == hash ? script : null; return s is not null; },
-                    (UInt160 h, out DebugInfo? d) => { d = h == hash ? debugInfo : null; return d is not null; });
+                    (UInt160 h, [MaybeNullWhen(false)] out Script s) => { s = h == hash ? script : null; return s is not null; },
+                    (UInt160 h, [MaybeNullWhen(false)] out DebugInfo d) => { d = h == hash ? debugInfo : null; return d is not null; });
 
                 Assert.True(manager.TryGetDisassembly(hash, out var disassembly));
                 Assert.DoesNotContain("# Code", disassembly.Source);
@@ -158,8 +159,28 @@ namespace test.neodebug
             Assert.True(manager.CheckBreakpoint(secondHash, 3));
         }
 
+        [Fact]
+        public void disassembly_breakpoints_resolve_to_instruction_addresses()
+        {
+            var hash = UInt160.Parse("0x0000000000000000000000000000000000000001");
+            var script = SampleScript();
+            var disassemblyManager = new DisassemblyManager(
+                (UInt160 h, [MaybeNullWhen(false)] out Script s) => { s = h == hash ? script : null; return s is not null; },
+                (UInt160 h, [MaybeNullWhen(false)] out DebugInfo d) => { d = null; return false; });
+            Assert.True(disassemblyManager.TryGetDisassembly(hash, out var disassembly));
+
+            var manager = new BreakpointManager(disassemblyManager, Array.Empty<DebugInfo>());
+            var line = disassembly.AddressMap[2];
+            var source = new Source { Name = hash.ToString(), Path = hash.ToString(), SourceReference = disassembly.SourceReference };
+            var result = manager.SetBreakpoints(source, new[] { new SourceBreakpoint(line) }).Single();
+
+            Assert.True(result.Verified);
+            Assert.True(manager.CheckBreakpoint(hash, 2));
+            Assert.False(manager.CheckBreakpoint(hash, 3));
+        }
+
         static DisassemblyManager EmptyDisassemblyManager() => new(
-            (UInt160 h, out Script? s) => { s = null; return false; },
-            (UInt160 h, out DebugInfo? d) => { d = null; return false; });
+            (UInt160 h, [MaybeNullWhen(false)] out Script s) => { s = null; return false; },
+            (UInt160 h, [MaybeNullWhen(false)] out DebugInfo d) => { d = null; return false; });
     }
 }

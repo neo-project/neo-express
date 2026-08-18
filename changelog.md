@@ -19,7 +19,7 @@ may not exactly match a publicly released version.
 
 * Updated to Neo 3.10.1
 * Updated Neo module dependencies to 3.10.1 where matching packages are available
-* Kept Neo.Consensus.DBFT at 3.10.0 because its 3.10.1 package depends on an unpublished Neo.ConsoleService 3.10.1 package
+* Updated Neo.Consensus.DBFT to 3.10.1 and vendored Neo.ConsoleService 3.10.1 into `deps/` (unpublished on NuGet.org)
 
 ## [3.10.0] - 2026-06-15
 

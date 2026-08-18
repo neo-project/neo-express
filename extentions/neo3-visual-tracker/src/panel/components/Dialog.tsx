@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 import NavButton from "./NavButton";
 
@@ -19,61 +19,84 @@ export default function Dialog({
 }: Props) {
   affinity = affinity || "middle";
   closeButtonText = closeButtonText || "Close";
+  const titleId = useRef(
+    `neo-dialog-title-${Math.random().toString(36).slice(2)}`
+  ).current;
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const previousActiveElement = document.activeElement as HTMLElement | null;
+    const focusableSelector =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusableElements = () =>
+      Array.from(
+        dialog?.querySelectorAll<HTMLElement>(focusableSelector) || []
+      ).filter((element) => !element.hasAttribute("disabled"));
+
+    focusableElements()[0]?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const elements = focusableElements();
+      if (!elements.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previousActiveElement?.focus();
+    };
+  }, [onClose]);
+
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        cursor: "pointer",
-        display: "flex",
-        backgroundColor: "rgba(255,255,255,0.50)",
-        justifyContent:
-          affinity === "top-left"
-            ? "flex-start"
-            : affinity === "bottom-right"
-            ? "flex-end"
-            : "center",
-        alignItems:
-          affinity === "top-left"
-            ? "flex-start"
-            : affinity === "bottom-right"
-            ? "flex-end"
-            : "center",
-        zIndex: 100,
-      }}
+      className={`neo-dialog-backdrop neo-dialog-backdrop--${affinity}`}
       onClick={onClose}
     >
       <div
-        style={{
-          cursor: "default",
-          backgroundColor: "var(--vscode-editor-background)",
-          color: "var(--vscode-editor-foreground)",
-          border: "1px solid var(--vscode-focusBorder)",
-          boxShadow: "-1px 1px 2px 0px var(--vscode-focusBorder)",
-          borderRadius: 10,
-          padding: 20,
-          margin: 30,
-          overflow: "auto",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-evenly",
-          alignItems: "center",
-        }}
+        aria-labelledby={title ? titleId : undefined}
+        aria-modal="true"
+        className="neo-dialog"
         onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
       >
-        {!!title && (
-          <h2 style={{ margin: 0, padding: 0, textAlign: "center" }}>
-            {title}
-          </h2>
-        )}
-        <div style={{ margin: 15, maxHeight: "65vh", overflow: "auto" }}>
-          {children}
+        <div className="neo-dialog__header">
+          {!!title && (
+            <h2 className="neo-dialog__title" id={titleId}>
+              {title}
+            </h2>
+          )}
+          <NavButton
+            ariaLabel="Close dialog"
+            icon="close"
+            iconOnly
+            onClick={onClose}
+            title="Close"
+            variant="ghost"
+          />
         </div>
-        <div>
-          <NavButton clickOnEnter onClick={onClose}>
+        <div className="neo-dialog__body">{children}</div>
+        <div className="neo-dialog__footer">
+          <NavButton clickOnEnter onClick={onClose} variant="secondary">
             {closeButtonText}
           </NavButton>
         </div>

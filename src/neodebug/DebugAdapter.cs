@@ -119,8 +119,9 @@ namespace NeoDebug.Neo3
             }
             catch
             {
-                session = null;
+                Interlocked.Exchange(ref session, null)?.Dispose();
                 Interlocked.Exchange(ref launching, 0);
+                Interlocked.Exchange(ref configured, 0);
                 throw;
             }
         }
@@ -131,8 +132,18 @@ namespace NeoDebug.Neo3
             if (Interlocked.CompareExchange(ref configured, 1, 0) != 0)
                 throw new ProtocolException("The debug session has already been configured.");
 
-            launchedSession.Start();
-            return new ConfigurationDoneResponse();
+            try
+            {
+                launchedSession.Start();
+                return new ConfigurationDoneResponse();
+            }
+            catch
+            {
+                Interlocked.Exchange(ref session, null)?.Dispose();
+                Interlocked.Exchange(ref launching, 0);
+                Interlocked.Exchange(ref configured, 0);
+                throw;
+            }
         }
 
         private void HandleDebugViewRequest(DebugViewArguments arguments)
@@ -149,7 +160,10 @@ namespace NeoDebug.Neo3
         }
 
         protected override DisconnectResponse HandleDisconnectRequest(DisconnectArguments arguments)
-            => new DisconnectResponse();
+        {
+            Interlocked.Exchange(ref session, null)?.Dispose();
+            return new DisconnectResponse();
+        }
 
         protected override ExceptionInfoResponse HandleExceptionInfoRequest(ExceptionInfoArguments arguments)
             => Guard(() => new ExceptionInfoResponse() { Description = session.AssertLaunched().GetExceptionInfo() });

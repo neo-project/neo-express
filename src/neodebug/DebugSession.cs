@@ -44,6 +44,7 @@ namespace NeoDebug.Neo3
         private readonly BreakpointManager breakpointManager;
         private bool breakOnCaughtExceptions;
         private bool breakOnUncaughtExceptions = true;
+        private bool disposed;
 
         public DebugSession(IApplicationEngine engine, IReadOnlyList<DebugInfo> debugInfoList, IReadOnlyList<CastOperation> returnTypes, Action<DebugEvent> sendEvent, DebugView defaultDebugView)
         {
@@ -86,6 +87,12 @@ namespace NeoDebug.Neo3
 
         public void Dispose()
         {
+            if (disposed)
+                return;
+
+            disposed = true;
+            engine.DebugNotify -= OnNotify;
+            engine.DebugLog -= OnLog;
             engine.Dispose();
         }
 

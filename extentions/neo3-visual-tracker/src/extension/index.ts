@@ -12,6 +12,7 @@ import {
 } from "./commands/commandArguments";
 import ContractDetector from "./fileDetectors/contractDetector";
 import ContractsTreeDataProvider from "./vscodeProviders/contractsTreeDataProvider";
+import { getWorkspaceContractPath } from "./vscodeProviders/contractTreeCommand";
 import Log from "./util/log";
 import NeoCommands from "./commands/neoCommands";
 import NeoExpress from "./neoExpress/neoExpress";
@@ -41,6 +42,9 @@ function registerCommand(
         if (context && !!(context as vscode.Uri).fsPath) {
           // Activation was by right-click on an item in the VS Code file explorer
           commandArguments.path = (context as vscode.Uri).fsPath;
+        } else if (getWorkspaceContractPath(context)) {
+          // Activation was by a workspace contract in the Smart contracts tree
+          commandArguments.path = getWorkspaceContractPath(context);
         } else if (context && !!(context as BlockchainIdentifier).name) {
           // Activation was by right-click on an item in the Blockchain explorer
           commandArguments.blockchainIdentifier =
@@ -329,6 +333,19 @@ export async function activate(context: vscode.ExtensionContext) {
       NeoCommands.invokeContract(
         activeConnection,
         blockchainsTreeDataProvider,
+        commandArguments
+      )
+  );
+
+  registerCommand(
+    context,
+    "neo3-visual-devtracker.neo.openContractStudio",
+    (commandArguments) =>
+      NeoCommands.openContractStudio(
+        activeConnection,
+        autoComplete,
+        blockchainsTreeDataProvider,
+        contractDetector,
         commandArguments
       )
   );

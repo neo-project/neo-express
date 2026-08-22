@@ -51,7 +51,7 @@ namespace NeoExpress.Commands
                 var walletPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.wallet.json");
                 ExportNodeWallet(chainManager.ProtocolSettings, node, walletPath, password);
                 var nodeConfigPath = fileSystem.Path.Combine(folder, $"{node.Wallet.Name}.config.json");
-                ExportNodeConfig(chainManager.ProtocolSettings, chain, node, nodeConfigPath, password, walletPath);
+                ExportNodeConfig(chainManager.ProtocolSettings, node, nodeConfigPath, password, walletPath);
             }
         }
 
@@ -77,7 +77,7 @@ namespace NeoExpress.Commands
             devWallet.Export(path, password);
         }
 
-        void ExportNodeConfig(ProtocolSettings settings, ExpressChain chain, ExpressConsensusNode node, string path, string password, string walletPath)
+        void ExportNodeConfig(ProtocolSettings settings, ExpressConsensusNode node, string path, string password, string walletPath)
         {
             using var stream = fileSystem.File.Open(path, System.IO.FileMode.Create, System.IO.FileAccess.Write);
             using var writer = new JsonTextWriter(new System.IO.StreamWriter(stream)) { Formatting = Formatting.Indented };
@@ -112,44 +112,57 @@ namespace NeoExpress.Commands
 
             writer.WriteEndObject();
 
-            WriteProtocolConfiguration(writer, settings, chain);
+            WriteProtocolConfiguration(writer, settings);
 
             writer.WriteEndObject();
         }
 
-        void WriteProtocolConfiguration(JsonTextWriter writer, ProtocolSettings settings, ExpressChain chain)
+        internal static void WriteProtocolConfiguration(JsonTextWriter writer, ProtocolSettings settings)
         {
-            // use neo defaults for MillisecondsPerBlock
-
             writer.WritePropertyName("ProtocolConfiguration");
             writer.WriteStartObject();
 
-            writer.WritePropertyName("Magic");
-            writer.WriteValue(chain.Network);
+            writer.WritePropertyName("Network");
+            writer.WriteValue(settings.Network);
             writer.WritePropertyName("AddressVersion");
             writer.WriteValue(settings.AddressVersion);
+            writer.WritePropertyName("MillisecondsPerBlock");
+            writer.WriteValue(settings.MillisecondsPerBlock);
+            writer.WritePropertyName("MaxTransactionsPerBlock");
+            writer.WriteValue(settings.MaxTransactionsPerBlock);
+            writer.WritePropertyName("MemoryPoolMaxTransactions");
+            writer.WriteValue(settings.MemoryPoolMaxTransactions);
+            writer.WritePropertyName("MaxTraceableBlocks");
+            writer.WriteValue(settings.MaxTraceableBlocks);
+            writer.WritePropertyName("MaxValidUntilBlockIncrement");
+            writer.WriteValue(settings.MaxValidUntilBlockIncrement);
+            writer.WritePropertyName("InitialGasDistribution");
+            writer.WriteValue(settings.InitialGasDistribution);
             writer.WritePropertyName("ValidatorsCount");
-            writer.WriteValue(chain.ConsensusNodes.Count);
+            writer.WriteValue(settings.ValidatorsCount);
+
+            writer.WritePropertyName("Hardforks");
+            writer.WriteStartObject();
+            foreach (var hardfork in settings.Hardforks.OrderBy(pair => pair.Key))
+            {
+                writer.WritePropertyName(hardfork.Key.ToString());
+                writer.WriteValue(hardfork.Value);
+            }
+            writer.WriteEndObject();
 
             writer.WritePropertyName("StandbyCommittee");
             writer.WriteStartArray();
-            for (int i = 0; i < chain.ConsensusNodes.Count; i++)
+            foreach (var publicKey in settings.StandbyCommittee)
             {
-                var expressAccount = chain.ConsensusNodes[i].Wallet.DefaultAccount ?? throw new Exception("Invalid DefaultAccount");
-                var devAccount = DevWalletAccount.FromExpressWalletAccount(settings, expressAccount);
-                var key = devAccount.GetKey();
-                if (key is not null)
-                {
-                    writer.WriteValue(key.PublicKey.EncodePoint(true).ToHexString());
-                }
+                writer.WriteValue(publicKey.EncodePoint(true).ToHexString());
             }
             writer.WriteEndArray();
 
             writer.WritePropertyName("SeedList");
             writer.WriteStartArray();
-            foreach (var node in chain.ConsensusNodes)
+            foreach (var seed in settings.SeedList)
             {
-                writer.WriteValue($"{System.Net.IPAddress.Loopback}:{node.TcpPort}");
+                writer.WriteValue(seed);
             }
             writer.WriteEndArray();
 

@@ -1,0 +1,629 @@
+:root {
+  color-scheme: light dark;
+  --neo-space-1: 4px;
+  --neo-space-2: 8px;
+  --neo-space-3: 12px;
+  --neo-space-4: 16px;
+  --neo-space-5: 24px;
+  --neo-radius: 4px;
+  --neo-border: var(--vscode-panel-border, var(--vscode-editorWidget-border));
+  --neo-muted: var(--vscode-descriptionForeground);
+  --neo-success: var(--vscode-testing-iconPassed, #3fb950);
+  --neo-warning: var(--vscode-editorWarning-foreground, #d29922);
+  --neo-danger: var(--vscode-errorForeground, #f85149);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.neo-button-wrap {
+  display: inline-flex;
+}
+
+.neo-button {
+  align-items: center;
+  background: var(--vscode-button-background);
+  border: 1px solid transparent;
+  border-radius: var(--neo-radius);
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--neo-space-2);
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+.neo-button:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.neo-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.neo-button--secondary {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.neo-button--secondary:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.neo-button--ghost {
+  background: transparent;
+  color: var(--vscode-foreground);
+}
+
+.neo-button--ghost:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.neo-button--danger {
+  background: var(--vscode-inputValidation-errorBackground);
+  border-color: var(--vscode-inputValidation-errorBorder);
+  color: var(--vscode-errorForeground);
+}
+
+.neo-button--icon {
+  height: 28px;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 4px;
+}
+
+.neo-button--badge {
+  border-radius: 999px;
+  min-height: 24px;
+  padding: 2px 8px;
+}
+
+.neo-dialog-backdrop {
+  align-items: center;
+  background: var(--vscode-dimmedBackdrop, rgba(0, 0, 0, 0.58));
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  padding: var(--neo-space-5);
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.neo-dialog-backdrop--top-left {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.neo-dialog-backdrop--bottom-right {
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.neo-dialog {
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: var(--neo-radius);
+  box-shadow: 0 8px 24px var(--vscode-widget-shadow);
+  color: var(--vscode-editorWidget-foreground);
+  display: flex;
+  flex-direction: column;
+  max-height: min(720px, calc(100vh - 48px));
+  max-width: min(760px, calc(100vw - 48px));
+  min-width: min(420px, calc(100vw - 48px));
+}
+
+.neo-dialog__header {
+  align-items: center;
+  border-bottom: 1px solid var(--neo-border);
+  display: flex;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 0 var(--neo-space-3) 0 var(--neo-space-4);
+}
+
+.neo-dialog__title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.neo-dialog__body {
+  overflow: auto;
+  padding: var(--neo-space-4);
+}
+
+.neo-dialog__footer {
+  border-top: 1px solid var(--neo-border);
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--neo-space-3) var(--neo-space-4);
+}
+
+.contract-studio {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+}
+
+.contract-studio__header {
+  align-items: center;
+  border-bottom: 1px solid var(--neo-border);
+  display: flex;
+  gap: var(--neo-space-3);
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 var(--neo-space-3) 0 var(--neo-space-4);
+}
+
+.contract-studio__title-group {
+  align-items: center;
+  display: flex;
+  gap: var(--neo-space-2);
+  min-width: 0;
+}
+
+.contract-studio__title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.contract-studio__subtitle {
+  color: var(--neo-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contract-studio__toolbar {
+  align-items: center;
+  display: flex;
+  gap: var(--neo-space-1);
+}
+
+.contract-studio__content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.contract-studio__content > * {
+  height: 100%;
+}
+
+.contract-studio__interactive {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.execution-context {
+  align-items: end;
+  background: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--neo-border);
+  display: grid;
+  gap: var(--neo-space-3);
+  grid-template-columns: minmax(150px, 1fr) minmax(180px, 1.3fr) minmax(150px, 1fr) auto;
+  padding: var(--neo-space-3) var(--neo-space-4);
+}
+
+.execution-context__status {
+  align-items: center;
+  color: var(--neo-muted);
+  display: flex;
+  gap: var(--neo-space-2);
+  min-height: 30px;
+}
+
+.status-dot {
+  background: var(--vscode-disabledForeground);
+  border-radius: 50%;
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+}
+
+.status-dot--healthy {
+  background: var(--neo-success);
+}
+
+.status-dot--warning {
+  background: var(--neo-warning);
+}
+
+.neo-field {
+  display: grid;
+  gap: var(--neo-space-1);
+  min-width: 0;
+}
+
+.neo-field__label {
+  color: var(--neo-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.neo-input,
+.neo-select {
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: var(--neo-radius);
+  color: var(--vscode-input-foreground);
+  min-height: 30px;
+  padding: 4px 8px;
+  width: 100%;
+}
+
+.neo-input:disabled,
+.neo-select:disabled {
+  color: var(--vscode-disabledForeground);
+  opacity: 1;
+}
+
+.contract-studio__workspace {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.4fr) minmax(300px, 0.8fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.contract-studio__workspace--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.contract-studio__steps {
+  min-width: 0;
+  overflow: auto;
+  padding: var(--neo-space-4);
+}
+
+.contract-studio__transactions {
+  background: var(--vscode-panel-background);
+  border-left: 1px solid var(--neo-border);
+  min-width: 0;
+  overflow: auto;
+}
+
+.invocation-step {
+  border-bottom: 1px solid var(--neo-border);
+  padding: 0 0 var(--neo-space-4);
+}
+
+.invocation-step + .invocation-step {
+  padding-top: var(--neo-space-4);
+}
+
+.invocation-step__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--neo-space-4);
+}
+
+.invocation-step__eyebrow {
+  color: var(--neo-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.invocation-step__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+
+.invocation-step__fields {
+  display: grid;
+  gap: var(--neo-space-3);
+}
+
+.invocation-step__actions {
+  align-items: center;
+  display: flex;
+  gap: var(--neo-space-2);
+  justify-content: flex-end;
+  margin-top: var(--neo-space-4);
+}
+
+.invocation-step__hint {
+  color: var(--neo-muted);
+  flex: 1;
+  font-size: 12px;
+}
+
+.neo-combobox {
+  position: relative;
+}
+
+.neo-combobox__menu {
+  background: var(--vscode-dropdown-background);
+  border: 1px solid var(--vscode-dropdown-border);
+  box-shadow: 0 6px 18px var(--vscode-widget-shadow);
+  color: var(--vscode-dropdown-foreground);
+  left: 0;
+  max-height: 260px;
+  overflow: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 20;
+}
+
+.neo-field__meta {
+  color: var(--neo-muted);
+  font-size: 12px;
+  margin-top: var(--neo-space-1);
+}
+
+.neo-inline-action {
+  background: transparent;
+  border: 0;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.neo-inline-action:hover {
+  color: var(--vscode-textLink-activeForeground);
+  text-decoration: underline;
+}
+
+.argument-list {
+  display: grid;
+  gap: var(--neo-space-2);
+}
+
+.argument-field {
+  display: grid;
+  gap: var(--neo-space-1);
+  grid-template-columns: minmax(120px, 0.45fr) minmax(180px, 1fr);
+}
+
+.argument-field__name {
+  align-items: center;
+  color: var(--neo-muted);
+  display: flex;
+  gap: var(--neo-space-1);
+  min-width: 0;
+}
+
+.argument-field__type {
+  color: var(--vscode-symbolIcon-typeParameterForeground, var(--neo-muted));
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+}
+
+.studio-empty-state {
+  color: var(--neo-muted);
+  display: grid;
+  gap: var(--neo-space-3);
+  justify-items: start;
+  padding: var(--neo-space-5) 0;
+}
+
+.studio-footer {
+  align-items: center;
+  background: var(--vscode-statusBar-background);
+  border-top: 1px solid var(--vscode-statusBar-border, var(--neo-border));
+  color: var(--vscode-statusBar-foreground);
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+  min-height: 26px;
+  padding: 2px var(--neo-space-3);
+}
+
+.studio-footer__mode {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--neo-space-2);
+}
+
+.transaction-panel__header {
+  align-items: center;
+  border-bottom: 1px solid var(--neo-border);
+  display: flex;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 0 var(--neo-space-3);
+}
+
+.transaction-panel__title {
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.transaction-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.transaction-row {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--neo-border);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  padding: var(--neo-space-3);
+  text-align: left;
+  width: 100%;
+}
+
+.transaction-row:hover:not(:disabled) {
+  background: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
+}
+
+.transaction-row:disabled {
+  cursor: default;
+}
+
+.transaction-row__top,
+.transaction-row__bottom {
+  align-items: center;
+  display: flex;
+  gap: var(--neo-space-2);
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.transaction-row__operation {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-row__hash {
+  color: var(--neo-muted);
+  font-family: var(--vscode-editor-font-family);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-status {
+  align-items: center;
+  display: inline-flex;
+  font-size: 11px;
+  gap: var(--neo-space-1);
+  text-transform: capitalize;
+}
+
+.transaction-status--confirmed {
+  color: var(--neo-success);
+}
+
+.transaction-status--pending {
+  color: var(--neo-warning);
+}
+
+.transaction-panel__empty {
+  color: var(--neo-muted);
+  line-height: 1.5;
+  padding: var(--neo-space-4);
+}
+
+.studio-comments {
+  border-top: 1px solid var(--neo-border);
+  color: var(--neo-muted);
+  margin-top: var(--neo-space-4);
+  padding-top: var(--neo-space-3);
+}
+
+.studio-error {
+  color: var(--neo-danger);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .execution-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contract-studio__workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(320px, 1fr) minmax(180px, 0.55fr);
+  }
+
+  .contract-studio__transactions {
+    border-left: 0;
+    border-top: 1px solid var(--neo-border);
+  }
+}
+
+@media (max-width: 560px) {
+  .execution-context {
+    grid-template-columns: 1fr;
+  }
+
+  .argument-field {
+    grid-template-columns: 1fr;
+  }
+
+  .invocation-step__actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .invocation-step__actions .neo-button-wrap,
+  .invocation-step__actions .neo-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .contract-studio__header {
+    padding-left: var(--neo-space-3);
+  }
+
+  .contract-studio__subtitle,
+  .studio-footer__note {
+    display: none;
+  }
+
+  .studio-footer {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

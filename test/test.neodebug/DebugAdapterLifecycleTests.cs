@@ -115,6 +115,20 @@ namespace test.neodebug
         }
 
         [Fact]
+        public async Task configuration_done_before_launch_does_not_consume_configuration()
+        {
+            var session = new FakeDebugSession();
+            var adapter = new TestDebugAdapter(session);
+
+            Assert.Throws<InvalidOperationException>(() => adapter.ConfigurationDone());
+
+            await adapter.Launch();
+            adapter.ConfigurationDone();
+
+            Assert.True(session.Started);
+        }
+
+        [Fact]
         public async Task requests_delegate_to_the_session()
         {
             var session = new FakeDebugSession();

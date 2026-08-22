@@ -11,7 +11,6 @@ type Props = {
   forceFocus?: boolean;
   isPartOfDiffView: boolean;
   isReadOnly: boolean;
-  style?: React.CSSProperties;
   setContract: (newValue: string) => void;
 };
 
@@ -21,96 +20,72 @@ export default function ContractInput({
   forceFocus,
   isPartOfDiffView,
   isReadOnly,
-  style,
   setContract,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useRef(
+    `neo-contract-${Math.random().toString(36).slice(2)}`
+  ).current;
+  const [hasFocus, setHasFocus] = useState(false);
+
   useEffect(() => {
     if (forceFocus) {
       inputRef.current?.focus();
     }
-  }, []);
-  const [hasFocus, setHasFocus] = useState(false);
-  const inputStyle: React.CSSProperties = {
-    color: "var(--vscode-input-foreground)",
-    backgroundColor: "var(--vscode-input-background)",
-    border: "1px solid var(--vscode-input-border)",
-    boxSizing: "border-box",
-    width: "100%",
-    fontSize: "1.0rem",
-    fontWeight: "bold",
-    padding: 5,
-    marginTop: 5,
-  };
-  const akaStyle: React.CSSProperties = {
-    marginTop: 5,
-    marginLeft: 30,
-    fontStyle: "italic",
-  };
-  const akaItemStyle: React.CSSProperties = {
-    textDecoration: "underline",
-    cursor: "pointer",
-    marginTop: 3,
-  };
-  const dropdownStyle: React.CSSProperties = {
-    position: "absolute",
-    zIndex: 1,
-    left: 20,
-    right: 20,
-    color: "var(--vscode-dropdown-foreground)",
-    backgroundColor: "var(--vscode-dropdown-background)",
-    borderBottom: "1px solid var(--vscode-dropdown-border)",
-    borderLeft: "1px solid var(--vscode-dropdown-border)",
-    borderRight: "1px solid var(--vscode-dropdown-border)",
-    maxHeight: "80vh",
-    overflow: "auto",
-  };
+  }, [forceFocus]);
 
   const allNamesAndHashes = dedupeAndSort(
-    Object.keys(autoCompleteData.contractManifests).map((_) =>
-      _.startsWith("0x") ? autoCompleteData.contractNames[_] || _ : _
+    Object.keys(autoCompleteData.contractManifests).map((candidate) =>
+      candidate.startsWith("0x")
+        ? autoCompleteData.contractNames[candidate] || candidate
+        : candidate
     )
   );
-
   let contractHashOrName = contract || "";
   if (contractHashOrName.startsWith("#")) {
     contractHashOrName = contractHashOrName.substring(1);
   }
-
-  let aka = autoCompleteData.contractNames[contractHashOrName] || "";
+  const alternateName =
+    autoCompleteData.contractNames[contractHashOrName] || "";
 
   return (
-    <div style={{ ...style, position: "relative" }}>
+    <div className="neo-field neo-combobox">
+      <label className="neo-field__label" htmlFor={inputId}>
+        Contract
+      </label>
       <InputNonDraggable
+        className="neo-input"
         disabled={isReadOnly}
+        id={inputId}
         inputRef={inputRef}
-        style={inputStyle}
         type="text"
-        value={contract}
-        onChange={(e) => setContract(e.target.value)}
-        onFocus={() => setHasFocus(true)}
+        value={contract || ""}
         onBlur={() => setHasFocus(false)}
+        onChange={(event) => setContract(event.target.value)}
+        onFocus={() => setHasFocus(true)}
       />
       {hasFocus && !!allNamesAndHashes.length && (
-        <div style={dropdownStyle}>
-          {allNamesAndHashes.map((contractHashOrName) => {
-            return (
-              <ContractTile
-                key={contractHashOrName}
-                contractHashOrName={contractHashOrName}
-                autoCompleteData={autoCompleteData}
-                onMouseDown={setContract}
-              />
-            );
-          })}
+        <div className="neo-combobox__menu">
+          {allNamesAndHashes.map((candidate) => (
+            <ContractTile
+              key={candidate}
+              contractHashOrName={candidate}
+              autoCompleteData={autoCompleteData}
+              onMouseDown={setContract}
+            />
+          ))}
         </div>
       )}
-      {!isPartOfDiffView && !!aka && (
-        <div style={akaStyle}>
-          This contract can also be referred to as:{" "}
-          <span style={akaItemStyle} onClick={() => setContract(aka)}>
-            {aka}
-          </span>
+      {!isPartOfDiffView && !!alternateName && (
+        <div className="neo-field__meta">
+          Alias:{" "}
+          <button
+            className="neo-inline-action"
+            onClick={() => setContract(alternateName)}
+            type="button"
+          >
+            {alternateName}
+          </button>
         </div>
       )}
     </div>

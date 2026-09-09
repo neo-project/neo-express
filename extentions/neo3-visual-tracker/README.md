@@ -4,8 +4,28 @@ Neo N3 Visual DevTracker brings the local Neo Express development workflow into 
 
 > This extension targets Neo N3 only. The Neo Legacy network has been shut down and is no longer supported.
 
+Repo-wide walkthrough: [Getting started](../../docs/getting-started.md).
+
+## Getting started
+
+1. Install [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and
+   `dotnet tool install Neo.Express -g` (a packaged VSIX already bundles `neoxp`).
+2. Open a folder in VS Code. For this repo, `samples/examples/Nep17` (then `dotnet build` in the terminal) or the repo root works.
+3. Load the extension: from the Marketplace, or from source (`npm install` and `npm run compile`
+   in this directory, then **F5**, or
+   `code --extensionDevelopmentPath=<this-folder> <workspace>`).
+4. Open the Neo N3 view (logo in the activity bar) → **Quick Start**.
+5. Create or start a Neo Express instance, then **New contract**.
+6. For C#, pick a template: **Blank**, **NEP-17**, **NEP-11**, **Oracle**, **Ownable**, or
+   **Storage**. The scaffold restores tools and builds under `contracts/<name>/`.
+7. Deploy from **Smart contracts**, then open Contract Studio (rocket) to invoke.
+
+Ready-made Express layouts (no wizard) are in
+[`samples/examples/`](../../samples/examples/README.md).
+
 ## Features
 
+- Create a new C#, Python, or Java contract from the **Smart contracts** view (**New contract** button). C# starters match [Neo.SmartContract.Template](https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template) (Blank, NEP-17, NEP-11, Oracle, Ownable) plus the existing storage example.
 - Create, start, stop, reset, and restore Neo Express blockchains.
 - Create wallets, transfer assets, deploy contracts, and explore contract storage.
 - Inspect blocks, transactions, contracts, and wallets from the Neo N3 activity view.
@@ -22,7 +42,8 @@ Contract Studio keeps contract source in the normal VS Code editor while opening
 
 ### Run a contract invocation
 
-1. Open a folder containing a `.neo-express` file and a Neo smart contract project.
+1. Open a folder containing a `.neo-express` file and a Neo smart contract project
+   (`dotnet build` on `samples/examples/*` creates the chain file if it is missing).
 2. Build the contract so its `.nef`, manifest, and debug information are available.
 3. Start the blockchain from the **Blockchains** view and connect to it.
 4. In **Smart contracts**, select the rocket action on a workspace contract. You can also right-click a `.nef` file and select **Open Contract Studio**.
@@ -61,10 +82,10 @@ Open the Neo logo in the VS Code activity bar to access:
 ## Requirements
 
 - Visual Studio Code 1.104 or later.
-- A supported .NET installation available through the `dotnet` command.
-- A Neo smart contract toolchain when building C# contracts.
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) available as `dotnet` (`dotnet --version` starts with 10).
+- A Neo smart contract toolchain when building C# contracts (`Neo.SmartContract.Framework` 3.10.x).
 
-Neo Express is bundled with the extension package. The extension checks the local .NET installation before starting it.
+Neo Express 3.10 is bundled with the extension package (`neoxp.dll` under `deps/nxp`). If you are developing the extension from source without a packaged nupkg, install `dotnet tool install Neo.Express -g` so `neoxp` is on PATH. The extension checks for .NET 10 before starting it.
 
 ## Troubleshooting
 

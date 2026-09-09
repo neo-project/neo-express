@@ -7,6 +7,7 @@ import IoHelpers from "./util/ioHelpers";
 import JSONC from "./util/JSONC";
 import Log from "./util/log";
 import posixPath from "./util/posixPath";
+import { parseExpressWalletAddresses } from "../shared/expressWalletAddresses";
 
 const LOG_PREFIX = "BlockchainIdentifier";
 
@@ -45,11 +46,16 @@ export default class BlockchainIdentifier {
         Log.log(LOG_PREFIX, "No RPC ports found", configPath);
         return undefined;
       }
+      const relative = vscode.workspace.asRelativePath(configPath, false);
+      const name =
+        relative && relative !== configPath
+          ? relative.replace(/\\/g, "/")
+          : path.basename(configPath);
       return new BlockchainIdentifier(
         extensionPath,
         "express",
         "parent",
-        path.basename(configPath),
+        name,
         nodePorts.map((_: number) => `http://127.0.0.1:${_}`),
         0,
         configPath
@@ -127,28 +133,7 @@ export default class BlockchainIdentifier {
       const neoExpressConfig = JSONC.parse(
         (await fs.promises.readFile(this.configPath)).toString()
       );
-      for (const wallet of neoExpressConfig["wallets"]) {
-        if (
-          wallet.name &&
-          wallet.accounts &&
-          wallet.accounts[0] &&
-          wallet.accounts[0]["script-hash"]
-        ) {
-          result[wallet.name] = wallet.accounts[0]["script-hash"];
-        }
-      }
-      for (const consensusNode of neoExpressConfig["consensus-nodes"]) {
-        if (consensusNode.wallet?.accounts) {
-          for (const account of consensusNode.wallet.accounts) {
-            if (
-              account.label === "Consensus MultiSigContract" &&
-              account["script-hash"]
-            ) {
-              result["genesis"] = account["script-hash"];
-            }
-          }
-        }
-      }
+      result = parseExpressWalletAddresses(neoExpressConfig);
     } catch (e : any) {
       Log.log(
         LOG_PREFIX,

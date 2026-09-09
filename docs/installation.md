@@ -1,5 +1,7 @@
 # Neo-Express Installation
 
+New to Neo Express? Start at [getting-started.md](getting-started.md).
+
 Neo-Express ships as a set of cross-platform [.NET global tools](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools):
 
 | Package | Command | Purpose |
@@ -79,7 +81,18 @@ brew install rocksdb
 Apple Silicon is supported by both .NET and Homebrew. If you run into problems on Apple
 Silicon hardware, please [open an issue](https://github.com/neo-project/neo-express/issues).
 
+## Local tools (this repository)
+
+[`samples/.config/dotnet-tools.json`](../samples/.config/dotnet-tools.json) pins `Neo.Express`
+and `Neo.Compiler.CSharp` for the samples. From `samples/`:
+
+```shell
+dotnet tool restore
+dotnet tool run neoxp -- --version
+```
+
 ## Next steps
 
-- The [readme](../readme.md) has a quick-start guide and a command overview.
-- [settings.md](settings.md) documents the `.neo-express` configuration values.
+- **[Getting started](getting-started.md)** — create a chain, build a template contract, invoke it.
+- [quickstart.md](quickstart.md) — longer CLI walkthrough.
+- [settings.md](settings.md) — `.neo-express` configuration values.

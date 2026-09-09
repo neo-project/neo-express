@@ -52,6 +52,14 @@ export default function ViewRouter() {
     window.addEventListener("message", (msg) => receiveMessage(msg.data));
     postMessage({ retrieveViewState: true });
   }, []);
+  useEffect(() => {
+    const html = document.documentElement;
+    if (view) {
+      html.dataset.view = view;
+    } else {
+      delete html.dataset.view;
+    }
+  }, [view]);
   let panelContent = <div></div>;
   if (!!view && !!viewState) {
     switch (view) {

@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace ContractTests
 {
-    [CheckpointPath("checkpoints/contract-deployed.neoxp-checkpoint")]
+    [CheckpointPath("src/checkpoints/contract-deployed.neoxp-checkpoint")]
     public class ContractDeployedTests : IClassFixture<CheckpointFixture<ContractDeployedTests>>
     {
         readonly CheckpointFixture fixture;
@@ -31,7 +31,7 @@ namespace ContractTests
             using var snapshot = fixture.GetSnapshot();
             using var engine = new TestApplicationEngine(snapshot, settings);
 
-            var state = engine.ExecuteScript<contract>(c => c.symbol());
+            var state = engine.ExecuteScript<SampleContract>(c => c.symbol());
 
             engine.State.Should().Be(VMState.HALT);
             engine.ResultStack.Should().HaveCount(1);
@@ -45,7 +45,7 @@ namespace ContractTests
             using var snapshot = fixture.GetSnapshot();
             using var engine = new TestApplicationEngine(snapshot, settings);
 
-            var state = engine.ExecuteScript<contract>(c => c.decimals());
+            var state = engine.ExecuteScript<SampleContract>(c => c.decimals());
 
             engine.State.Should().Be(VMState.HALT);
             engine.ResultStack.Should().HaveCount(1);

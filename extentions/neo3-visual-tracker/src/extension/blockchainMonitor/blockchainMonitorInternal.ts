@@ -257,14 +257,40 @@ export default class BlockchainMonitorInternal {
     return new Promise((resolve) => setTimeout(resolve, SLEEP_ON_ERROR_MS));
   }
 
+  private async getBlockCountFallback(): Promise<number> {
+    const response = await fetch(this.rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "getblockcount",
+        params: [],
+        id: 1,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = (await response.json()) as { result?: number };
+    if (typeof payload.result !== "number") {
+      throw new Error("getblockcount returned no height");
+    }
+    return payload.result;
+  }
+
   private async updateState() {
     const wasHealthy = this.healthy;
     let blockHeight = this.state.lastKnownBlockHeight;
     try {
       blockHeight = await this.rpcClient.getBlockCount();
       this.state.isHealthy = true;
-    } catch (e : any) {
-      this.state.isHealthy = false;
+    } catch {
+      try {
+        blockHeight = await this.getBlockCountFallback();
+        this.state.isHealthy = true;
+      } catch {
+        this.state.isHealthy = false;
+      }
     }
 
     let fireChangeEvent =

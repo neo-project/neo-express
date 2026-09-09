@@ -15,6 +15,10 @@ import NeoExpressDetector from "./fileDetectors/neoExpressDetector";
 import NeoExpressIo from "./neoExpress/neoExpressIo";
 import WalletDetector from "./fileDetectors/walletDetector";
 import wellKnownContractsCacheKey from "./util/wellKnownContractsCacheKey";
+import {
+  walletFileName,
+  workspaceWalletDisplayName,
+} from "../shared/expressWalletAddresses";
 
 const LOG_PREFIX = "AutoComplete";
 
@@ -52,6 +56,7 @@ export default class AutoComplete {
       contractPaths: {},
       wellKnownAddresses: {},
       addressNames: {},
+      accountSigners: {},
     };
     this.onChangeEmitter = new vscode.EventEmitter<AutoCompleteData>();
     this.onChange = this.onChangeEmitter.event;
@@ -87,8 +92,14 @@ export default class AutoComplete {
     let wellKnownContracts: {
       [name: string]: { hash: string; manifest: neonSc.ContractManifestJson };
     } = {};
+    const status = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left,
+      41
+    );
+    status.text = "$(sync~spin) Loading native Neo contracts...";
+    status.show();
     try {
-      const versionResult = await this.neoExpress.run("-v");
+      const versionResult = await this.neoExpress.runUnlocked("-v");
       let cacheKey = "";
       if (versionResult.isError) {
         Log.error(LOG_PREFIX, "Could not determine neo-express version");
@@ -102,7 +113,7 @@ export default class AutoComplete {
         Log.log(LOG_PREFIX, "Using cache");
       } else {
         Log.log(LOG_PREFIX, "Creating temporary instance");
-        const result = await this.neoExpress.run(
+        const result = await this.neoExpress.runUnlocked(
           "create",
           "-f",
           "-c",
@@ -161,6 +172,7 @@ export default class AutoComplete {
         await fs.promises.rm(tempDir, { recursive: true, force: true });
       } catch {}
       Log.log(LOG_PREFIX, "Finished initializing well-known manifests...");
+      status.dispose();
       await this.update("finished initializing well-known manifests");
     }
   }
@@ -174,19 +186,32 @@ export default class AutoComplete {
       contractNames: { ...this.wellKnownNames },
       wellKnownAddresses: {},
       addressNames: {},
+      accountSigners: {},
     };
 
+    const connection = this.activeConnection.connection;
+    const expressAddresses =
+      (await connection?.blockchainIdentifier.getWalletAddresses()) || {};
     const wallets = [...this.walletDetector.wallets];
     for (const wallet of wallets) {
       for (const account of wallet.accounts) {
+        let displayName = workspaceWalletDisplayName(
+          wallet.path,
+          account.label
+        );
+        if (expressAddresses[displayName]) {
+          displayName = `${displayName} (${walletFileName(wallet.path)})`;
+        }
         newData.addressNames[account.address] =
           newData.addressNames[account.address] || [];
-        newData.addressNames[account.address].push(
-          account.label || wallet.path
-        );
+        newData.addressNames[account.address].push(displayName);
         newData.addressNames[account.address] = dedupeAndSort(
           newData.addressNames[account.address]
         );
+        if (!newData.wellKnownAddresses[displayName]) {
+          newData.wellKnownAddresses[displayName] = account.address;
+          newData.accountSigners![displayName] = wallet.path;
+        }
       }
     }
 
@@ -196,20 +221,28 @@ export default class AutoComplete {
       const contractName = (manifest as any)?.name;
       const contractPath = workspaceContract.absolutePathToNef;
       if (contractName) {
+        const nefBaseName = path.basename(contractPath, ".nef");
         newData.contractManifests[contractName] = manifest;
+        newData.contractManifests[nefBaseName] = manifest;
         newData.contractPaths[contractName] =
           newData.contractPaths[contractName] || [];
         newData.contractPaths[contractName].push(contractPath);
         newData.contractPaths[contractName] = dedupeAndSort(
           newData.contractPaths[contractName]
         );
+        newData.contractPaths[nefBaseName] = newData.contractPaths[contractName];
       }
     }
 
-    const connection = this.activeConnection.connection;
-
-    newData.wellKnownAddresses =
-      (await connection?.blockchainIdentifier.getWalletAddresses()) || {};
+    newData.wellKnownAddresses = {
+      ...newData.wellKnownAddresses,
+      ...expressAddresses,
+    };
+    for (const name of Object.keys(expressAddresses)) {
+      if (!newData.accountSigners![name]) {
+        newData.accountSigners![name] = name;
+      }
+    }
 
     for (const walletName of Object.keys(newData.wellKnownAddresses)) {
       const walletAddress = newData.wellKnownAddresses[walletName];

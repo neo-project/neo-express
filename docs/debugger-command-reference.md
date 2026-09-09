@@ -1,6 +1,8 @@
 <!-- markdownlint-enable -->
 # NeoDebug Command Reference
 
+Walkthrough: [getting-started.md](getting-started.md#debugger).
+
 NeoDebug (`neodebug`) is a source-level debugger for Neo N3 smart contracts. It is a
 [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/) host: an editor
 launches it and speaks DAP over standard in/out, letting you set breakpoints in your C# (or

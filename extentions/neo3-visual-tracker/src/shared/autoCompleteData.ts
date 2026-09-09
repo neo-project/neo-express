@@ -11,6 +11,8 @@ type AutoCompleteData = {
   contractPaths: { [contractHashOrName: string]: string[] };
   wellKnownAddresses: { [addressName: string]: string };
   addressNames: AddressNames;
+  /** Display name -> value passed to neoxp (wallet name or NEP-6 path). */
+  accountSigners?: { [addressName: string]: string };
 };
 
 export default AutoCompleteData;

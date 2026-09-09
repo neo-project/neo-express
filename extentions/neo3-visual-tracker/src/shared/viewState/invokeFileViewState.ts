@@ -5,6 +5,14 @@ import {
 } from "../invocationExecution";
 import RecentTransaction from "../recentTransaction";
 
+export type InvocationResult = {
+  message: string;
+  operation?: string;
+  success: boolean;
+  submittedAt: string;
+  txids: string[];
+};
+
 type InvokeFileViewState = {
   view: "invokeFile";
   panelTitle: string;
@@ -25,9 +33,11 @@ type InvokeFileViewState = {
   isPartOfDiffView: boolean;
   isReadOnly: boolean;
   jsonMode: boolean;
+  lastInvocation: InvocationResult | null;
   recentTransactions: RecentTransaction[];
   selectedAccount: string | null;
   selectedTransactionId: string | null;
+  showInvocationResult: boolean;
   witnessScope: WitnessScope;
 };
 

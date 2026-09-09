@@ -23,16 +23,32 @@ export default function TransactionList({
   );
   return (
     <div className="transaction-panel">
-      {!!selectedEntry?.tx && (
+      {!!selectedEntry && (
         <Dialog
-          title="Transaction receipt"
+          title={
+            selectedEntry.tx ? "Transaction receipt" : "Invocation transaction"
+          }
           onClose={() => onSelectTransaction(null)}
         >
-          <TransactionDetails
-            applicationLog={selectedEntry.log}
-            autoCompleteData={autoCompleteData}
-            transaction={selectedEntry.tx}
-          />
+          {selectedEntry.tx ? (
+            <TransactionDetails
+              applicationLog={selectedEntry.log}
+              autoCompleteData={autoCompleteData}
+              transaction={selectedEntry.tx}
+            />
+          ) : (
+            <>
+              <p>
+                {selectedEntry.operation || "Invocation"} is {selectedEntry.state}
+                {selectedEntry.txid ? ` (${selectedEntry.txid})` : ""}.
+              </p>
+              {!!selectedEntry.output && (
+                <pre className="invocation-result__body">
+                  {selectedEntry.output}
+                </pre>
+              )}
+            </>
+          )}
         </Dialog>
       )}
       <header className="transaction-panel__header">
@@ -47,7 +63,6 @@ export default function TransactionList({
             <button
               aria-label={`${entry.operation || "Invocation"}, ${entry.state}`}
               className="transaction-row"
-              disabled={!entry.tx}
               onClick={() => onSelectTransaction(entry.txid)}
               type="button"
             >

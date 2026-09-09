@@ -31,25 +31,17 @@ Add a configuration to `.vscode/launch.json`. Replay a recorded trace (supports 
 }
 ```
 
-…or deploy and run the contract live:
-
-```jsonc
-{
-  "name": "Debug Neo contract (live)",
-  "type": "neo-contract",
-  "request": "launch",
-  "program": "${workspaceFolder}/bin/sc/Contract.nef",
-  "signers": [ "NXV7ZhHiyM1aHXwpVsRZC6BwNFP2jghXAq" ],
-  "invocation": { "operation": "transfer", "args": [ "@NXV7ZhHiyM1aHXwpVsRZC6BwNFP2jghXAq", 100 ] }
-}
-```
+This build of `neodebug` replays recorded traces (`invocation.trace-file`). Live
+`{ "operation", "args" }` launch is documented in the
+[NeoDebug command reference](../../docs/debugger-command-reference.md) when the debugger build
+supports it.
 
 `signers` is optional. When omitted, the live launcher uses the zero account; normal Neo witness
 scope rules still apply.
 
 Set breakpoints in your C# source, then start debugging. See the
-[NeoDebug command reference](../../docs/debugger-command-reference.md) for the full launch-configuration
-schema, the source/disassembly views, and debug-console expression evaluation.
+[NeoDebug command reference](../../docs/debugger-command-reference.md) for the launch-configuration
+schema.
 
 ## Packaging
 

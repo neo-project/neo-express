@@ -7,9 +7,11 @@
 [Neo-Express, Neo-WorkNet and Neo-Trace](#neo-express-neo-worknet-and-neo-trace)
 
 - [Overview](#overview)
+- [Getting started](#getting-started)
 - [Download Links](#download-links)
 - [Installation Guide](#installation-guide)
 - [Usage Guide](#usage-guide)
+- [Documentation](#documentation)
 - [New Features or issues](#new-features-or-issues)
 - [License](#license)
 
@@ -41,6 +43,27 @@ These tools provide developers with a complete local development environment for
   - Generate trace files for Neo Smart Contract Debugger
   - Support specifying blocks by index or hash and transactions by hash
   - Replay public-chain transactions from StateService-enabled RPC nodes
+
+## Getting started
+
+**[Full getting-started guide](docs/getting-started.md)** — install, create a chain, build a
+contract from the official templates, invoke it, and optionally use Visual Studio Code.
+
+```shell
+dotnet tool install Neo.Express -g
+dotnet build samples/examples/Nep17
+neoxp run -i samples/examples/Nep17/default.neo-express --seconds-per-block 1
+```
+
+In another terminal:
+
+```shell
+neoxp contract run -i samples/examples/Nep17/default.neo-express Nep17Contract symbol --results
+```
+
+C# starters (Blank, NEP-17, NEP-11, Oracle, Ownable) live in
+[`samples/examples/`](samples/examples/README.md). The VS Code **New contract** wizard offers
+the same templates.
 
 ## Download Links
 
@@ -114,23 +137,16 @@ brew install rocksdb
 
 ### Quick Start
 
-Get started with Neo-Express in just a few commands:
+See **[Getting started](docs/getting-started.md)** for the full walkthrough (CLI and VS Code).
 
 ```shell
-# Install Neo-Express
 dotnet tool install Neo.Express -g
-
-# Create a new blockchain
 neoxp create
-
-# Start the blockchain
-neoxp run
-
-# Check wallet balances
+neoxp run --seconds-per-block 1
 neoxp show balances genesis
 ```
 
-> **Tip:** While the blockchain is running it mints a new block every 3 seconds by
+> **Tip:** While the blockchain is running it mints a new block every 15 seconds by
 > default, so a transaction is not reflected in queries such as `show balances` until the
 > next block is produced. For faster local iteration, start the chain with a shorter block
 > time, for example `neoxp run --seconds-per-block 1`.
@@ -218,6 +234,23 @@ Please review the [Neo-WorkNet Command Reference](docs/worknet-command-reference
 Please review the [NeoTrace Command Reference](docs/trace-command-reference.md) for the full list of commands and options.
 
 > Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. If a public seed node returns an `Old state not supported` error, use a JSON-RPC node with full-state StateService enabled. Neo-Trace does not include per-instruction storage snapshots from public-chain StateService replay. For local Neo-Express transactions with storage snapshots, use the `--trace` option on commands such as `neoxp run`, `neoxp contract invoke`, or `neoxp contract run` to write `.neo-trace` files locally.
+
+## Documentation
+
+| Doc | Topic |
+| --- | ----- |
+| [Getting started](docs/getting-started.md) | Install, first chain, first contract (CLI and VS Code) |
+| [Installation](docs/installation.md) | Global tools, release zips, Ubuntu/macOS |
+| [Quickstart](docs/quickstart.md) | Create, compile, deploy, invoke |
+| [Contract testing](docs/contract-testing.md) | `dotnet test` against a checkpoint |
+| [Samples](samples/README.md) | Simple sample and official C# templates |
+| [Command reference](docs/command-reference.md) | `neoxp` commands |
+| [Settings](docs/settings.md) | `.neo-express` settings |
+| [Invocation files](docs/Neo%20Express%20Invocation%20File.md) | `.neo-invoke.json` |
+| [Visual DevTracker](extentions/neo3-visual-tracker/README.md) | VS Code extension |
+| [Debugger](docs/debugger-command-reference.md) | VS Code `neo-contract` launch config |
+| [WorkNet](docs/worknet-command-reference.md) | Branch MainNet/TestNet |
+| [Trace](docs/trace-command-reference.md) | Public-chain traces |
 
 ### NeoDebug
 

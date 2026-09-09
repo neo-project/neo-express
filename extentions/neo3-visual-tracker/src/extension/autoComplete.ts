@@ -15,7 +15,10 @@ import NeoExpressDetector from "./fileDetectors/neoExpressDetector";
 import NeoExpressIo from "./neoExpress/neoExpressIo";
 import WalletDetector from "./fileDetectors/walletDetector";
 import wellKnownContractsCacheKey from "./util/wellKnownContractsCacheKey";
-import { workspaceWalletDisplayName } from "../shared/expressWalletAddresses";
+import {
+  walletFileName,
+  workspaceWalletDisplayName,
+} from "../shared/expressWalletAddresses";
 
 const LOG_PREFIX = "AutoComplete";
 
@@ -186,13 +189,19 @@ export default class AutoComplete {
       accountSigners: {},
     };
 
+    const connection = this.activeConnection.connection;
+    const expressAddresses =
+      (await connection?.blockchainIdentifier.getWalletAddresses()) || {};
     const wallets = [...this.walletDetector.wallets];
     for (const wallet of wallets) {
       for (const account of wallet.accounts) {
-        const displayName = workspaceWalletDisplayName(
+        let displayName = workspaceWalletDisplayName(
           wallet.path,
           account.label
         );
+        if (expressAddresses[displayName]) {
+          displayName = `${displayName} (${walletFileName(wallet.path)})`;
+        }
         newData.addressNames[account.address] =
           newData.addressNames[account.address] || [];
         newData.addressNames[account.address].push(displayName);
@@ -225,16 +234,14 @@ export default class AutoComplete {
       }
     }
 
-    const connection = this.activeConnection.connection;
-
-    const expressAddresses =
-      (await connection?.blockchainIdentifier.getWalletAddresses()) || {};
     newData.wellKnownAddresses = {
       ...newData.wellKnownAddresses,
       ...expressAddresses,
     };
     for (const name of Object.keys(expressAddresses)) {
-      newData.accountSigners![name] = name;
+      if (!newData.accountSigners![name]) {
+        newData.accountSigners![name] = name;
+      }
     }
 
     for (const walletName of Object.keys(newData.wellKnownAddresses)) {

@@ -443,7 +443,8 @@ export default class InvokeFilePanelController extends PanelControllerBase<
                 connection.blockchainIdentifier,
                 displayName,
                 account,
-                report
+                report,
+                this.autoComplete.data.wellKnownAddresses[displayName]
               ))
             ) {
               return { isError: true, message: "" };

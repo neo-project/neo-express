@@ -12,10 +12,7 @@ test("accountChoices reads wallets from the selected Express identifier plus wor
   assert.match(source, /identifier\.getWalletAddresses\(\)/);
   assert.match(source, /buildAccountChoices/);
   assert.match(source, /signerForAccountChoice/);
-  assert.doesNotMatch(
-    source,
-    /autoComplete\?\.data\.wellKnownAddresses/
-  );
+  assert.match(source, /autoComplete\?\.data\.wellKnownAddresses/);
 });
 
 test("ensureAccountHasGas does not look up addresses on the active connection", () => {

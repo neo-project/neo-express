@@ -122,7 +122,7 @@ export function resolveAccountForIdentifier(
   return identifierWallets[displayName] || signer;
 }
 
-export type AccountChoice = { label: string; signer: string };
+export type AccountChoice = { label: string; signer: string; address: string };
 
 export function walletFileName(filePath: string): string {
   const slash = Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\"));
@@ -143,22 +143,35 @@ export function sortWalletNames(names: string[]): string[] {
 
 export function buildAccountChoices(
   expressWallets: { [name: string]: string },
-  accountSigners?: { [name: string]: string }
+  accountSigners?: { [name: string]: string },
+  knownAddresses?: { [name: string]: string }
 ): AccountChoice[] {
   const expressNames = sortWalletNames(Object.keys(expressWallets));
   const expressSet = new Set(expressNames);
   const choices: AccountChoice[] = expressNames.map((name) => ({
     label: name,
     signer: name,
+    address: expressWallets[name],
   }));
   for (const name of sortWalletNames(workspaceNep6AccountNames(accountSigners))) {
     const path = accountSigners![name];
     const label = expressSet.has(name)
       ? `${name} (${walletFileName(path)})`
       : name;
-    choices.push({ label, signer: path });
+    choices.push({
+      label,
+      signer: path,
+      address: knownAddresses?.[name] || "",
+    });
   }
   return choices;
+}
+
+export function addressForAccountChoice(
+  label: string,
+  choices: AccountChoice[]
+): string {
+  return choices.find((choice) => choice.label === label)?.address || label;
 }
 
 export function signerForAccountChoice(

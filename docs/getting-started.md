@@ -122,11 +122,17 @@ method, choose the signing account, and run.
 From `samples/examples/Nep17`:
 
 ```shell
+# stop the node before resetting its persisted state
+neoxp stop -a -i default.neo-express
+
 # wipe chain state (keeps wallets)
 neoxp reset -f -i default.neo-express
 
 # rebuild contract + redeploy (stamp is deleted)
 dotnet build -t:Rebuild
+
+# start the chain again for subsequent invocations
+neoxp run -i default.neo-express --seconds-per-block 1
 ```
 
 `Neo.BuildTasks` records a stamp under `obj/` after a **successful** deploy. **Clean** and

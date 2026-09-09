@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 
 export default class NeoExpressTerminal {
   private readonly closeEmitter: vscode.EventEmitter<void | number>;
+  private readonly exitEmitter: vscode.EventEmitter<number | null>;
   private readonly writeEmitter: vscode.EventEmitter<string>;
 
   private dimensions: vscode.TerminalDimensions | undefined | null;
@@ -13,6 +14,7 @@ export default class NeoExpressTerminal {
     private readonly shellArgs: string[]
   ) {
     this.closeEmitter = new vscode.EventEmitter<void | number>();
+    this.exitEmitter = new vscode.EventEmitter<number | null>();
     this.writeEmitter = new vscode.EventEmitter<string>();
     this.dimensions = null;
     this.process = null;
@@ -22,12 +24,16 @@ export default class NeoExpressTerminal {
     return this.closeEmitter.event;
   }
 
+  get onDidExit() {
+    return this.exitEmitter.event;
+  }
+
   get onDidWrite() {
     return this.writeEmitter.event;
   }
 
   close() {
-    this.process?.kill();
+    this.killProcess();
   }
 
   handleInput(data: string) {
@@ -60,6 +66,7 @@ export default class NeoExpressTerminal {
         )
       );
       this.process = null;
+      this.exitEmitter.fire(code);
     });
     this.process.on("error", () => {
       this.writeEmitter.fire(
@@ -68,11 +75,36 @@ export default class NeoExpressTerminal {
         )
       );
       this.process = null;
+      this.exitEmitter.fire(1);
     });
   }
 
   setDimensions(dimensions: vscode.TerminalDimensions) {
     this.dimensions = dimensions;
+  }
+
+  private killProcess() {
+    const proc = this.process;
+    if (!proc?.pid) {
+      return;
+    }
+    try {
+      if (process.platform === "win32") {
+        childProcess.spawnSync(
+          "taskkill",
+          ["/pid", String(proc.pid), "/t", "/f"],
+          { windowsHide: true }
+        );
+      } else {
+        proc.kill("SIGKILL");
+      }
+    } catch {
+      try {
+        proc.kill();
+      } catch {
+        // Process is already gone.
+      }
+    }
   }
 
   private bold(text: string) {

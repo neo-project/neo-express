@@ -3,8 +3,9 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <NeoExpressBatchFile>.\setup-test-chain.batch</NeoExpressBatchFile>
-    <NeoExpressBatchInputFile>.\default.neo-express</NeoExpressBatchInputFile>
-    <NeoExpressBatchInputFileFromWorkspace>test/default.neo-express</NeoExpressBatchInputFileFromWorkspace>
+    <NeoExpressBatchInputFile>../default.neo-express</NeoExpressBatchInputFile>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <RootNamespace>$_CONTRACTNAME_$Tests</RootNamespace>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
@@ -14,16 +15,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="3.1.2">
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Neo.Assertions" Version="3.10.1" />
     <PackageReference Include="Neo.BuildTasks" Version="3.10.1" PrivateAssets="all" />
     <PackageReference Include="Neo.Test.Harness" Version="3.10.1" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -32,13 +33,15 @@
   <Target Name="ExecuteCreateNeoExpressInstance" Condition="!Exists($(NeoExpressBatchInputFile))"
           AfterTargets="Build" BeforeTargets="ExecuteNeoExpressBatch">
     <Exec WorkingDirectory="$(ProjectDir).."
-          Command="dotnet tool run neoxp -- create -o &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot;" />
+          Command="dotnet tool restore" />
     <Exec WorkingDirectory="$(ProjectDir).."
-          Command="dotnet tool run neoxp -- wallet create -i &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot; owner" />
+          Command="dotnet tool run neoxp -- create -o default.neo-express" />
     <Exec WorkingDirectory="$(ProjectDir).."
-          Command="dotnet tool run neoxp -- wallet create -i &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot; alice" />
+          Command="dotnet tool run neoxp -- wallet create -i default.neo-express owner" />
     <Exec WorkingDirectory="$(ProjectDir).."
-          Command="dotnet tool run neoxp -- wallet create -i &quot;$(NeoExpressBatchInputFileFromWorkspace)&quot; bob" />
+          Command="dotnet tool run neoxp -- wallet create -i default.neo-express alice" />
+    <Exec WorkingDirectory="$(ProjectDir).."
+          Command="dotnet tool run neoxp -- wallet create -i default.neo-express bob" />
   </Target>
 
 </Project>

@@ -127,6 +127,9 @@ namespace NeoExpress.Commands
 
                     [Option(Description = "Deploy contract regardless of name conflict")]
                     internal bool Force { get; }
+
+                    [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract deployment")]
+                    internal decimal AdditionalGas { get; init; } = 1;
                 }
 
                 [Command("download")]
@@ -137,7 +140,7 @@ namespace NeoExpress.Commands
                     internal string Contract { get; init; } = string.Empty;
 
                     [Argument(1, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
-                    internal string RpcUri { get; } = string.Empty;
+                    internal string RpcUri { get; } = "mainnet";
 
                     [Option(Description = "Block height to get contract state for\nZero gets the latest")]
                     internal uint Height { get; } = 0;
@@ -226,6 +229,9 @@ namespace NeoExpress.Commands
 
                     [Option(Description = "Data parameter for update method on contract (Format: JSON)")]
                     internal string Data { get; init; } = string.Empty;
+
+                    [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the contract update")]
+                    internal decimal AdditionalGas { get; init; } = 1;
                 }
             }
 

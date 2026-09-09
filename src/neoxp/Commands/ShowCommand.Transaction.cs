@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using McMaster.Extensions.CommandLineUtils;
+using Neo;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
@@ -30,6 +31,9 @@ namespace NeoExpress.Commands
             [Required]
             internal string TransactionHash { get; init; } = string.Empty;
 
+            internal static bool TryParseTransactionHash(string value, out UInt256 hash)
+                => UInt256.TryParse(value, out hash!);
+
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
@@ -39,7 +43,9 @@ namespace NeoExpress.Commands
                 {
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     using var expressNode = chainManager.GetExpressNode();
-                    var (tx, log) = await expressNode.GetTransactionAsync(Neo.UInt256.Parse(TransactionHash));
+                    if (!TryParseTransactionHash(TransactionHash, out var hash))
+                        throw new Exception($"Invalid transaction hash \"{TransactionHash}\".");
+                    var (tx, log) = await expressNode.GetTransactionAsync(hash);
 
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };
                     await writer.WriteStartObjectAsync();

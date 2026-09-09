@@ -454,6 +454,12 @@ namespace Neo.BlockchainToolkit
 
         public static bool TryGetWallet(this ExpressChain chain, string name, [MaybeNullWhen(false)] out ExpressWallet wallet)
         {
+            if (chain.Wallets is null)
+            {
+                wallet = null;
+                return false;
+            }
+
             for (int i = 0; i < chain.Wallets.Count; i++)
             {
                 if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))

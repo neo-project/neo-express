@@ -39,7 +39,7 @@ namespace NeoExpress.Commands
             internal string Contract { get; init; } = string.Empty;
 
             [Argument(1, Description = "URL of Neo JSON-RPC Node\nSpecify MainNet (default), TestNet or JSON-RPC URL")]
-            internal string RpcUri { get; } = string.Empty;
+            internal string RpcUri { get; } = "mainnet";
 
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
@@ -51,8 +51,12 @@ namespace NeoExpress.Commands
                 Description = "Replace contract and storage if it already exists\nDefaults to None if option unspecified, All if option value unspecified")]
             internal (bool hasValue, OverwriteForce value) Force { get; init; }
 
+            internal static string NormalizeRpcUri(string rpcUri)
+                => string.IsNullOrWhiteSpace(rpcUri) ? "mainnet" : rpcUri;
+
             internal static async Task ExecuteAsync(IExpressNode expressNode, string contract, string rpcUri, uint height, OverwriteForce force, TextWriter writer)
             {
+                rpcUri = NormalizeRpcUri(rpcUri);
                 var (state, storage) = await NodeUtility.DownloadContractStateAsync(contract, rpcUri, height)
                     .ConfigureAwait(false);
                 var storageCount = storage.Count == 1 ? "1 storage record" : $"{storage.Count} storage records";

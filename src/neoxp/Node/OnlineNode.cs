@@ -242,9 +242,21 @@ namespace NeoExpress.Node
         {
             var hash = txHash.ToString();
             var response = await rpcClient.GetRawTransactionAsync(hash).ConfigureAwait(false);
-            var log = await rpcClient.GetApplicationLogAsync(hash).ConfigureAwait(false);
+            RpcApplicationLog? log = null;
+            try
+            {
+                log = await rpcClient.GetApplicationLogAsync(hash).ConfigureAwait(false);
+            }
+            catch (RpcException ex) when (IsMissingApplicationLog(ex))
+            {
+                // Mempool / unconfirmed txs have no application log yet.
+            }
+
             return (response.Transaction, log);
         }
+
+        internal static bool IsMissingApplicationLog(RpcException ex)
+            => ex.HResult == -100;
 
         public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
         {

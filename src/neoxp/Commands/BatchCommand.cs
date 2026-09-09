@@ -172,7 +172,7 @@ namespace NeoExpress.Commands
                                     cmd.Model.WitnessScope,
                                     cmd.Model.Data,
                                     cmd.Model.Force,
-                                    1m).ConfigureAwait(false);
+                                    cmd.Model.AdditionalGas).ConfigureAwait(false);
                                 break;
                             }
                         case CommandLineApplication<BatchFileCommands.Contract.Download> cmd:
@@ -245,14 +245,18 @@ namespace NeoExpress.Commands
                             }
                         case CommandLineApplication<BatchFileCommands.Contract.Update> cmd:
                             {
-                                var data = ContractCommand.Update.ParseUpdateData(cmd.Model.Data, txExec.ContractParameterParser);
+                                var data = await ContractCommand.Update.ParseUpdateDataAsync(
+                                    cmd.Model.Data,
+                                    txExec.ExpressNode,
+                                    chainManager.Chain).ConfigureAwait(false);
                                 await txExec.ContractUpdateAsync(
                                     cmd.Model.Contract,
                                     root.Resolve(cmd.Model.NefFile),
                                     cmd.Model.Account,
                                     cmd.Model.Password,
                                     cmd.Model.WitnessScope,
-                                    data).ConfigureAwait(false);
+                                    data,
+                                    cmd.Model.AdditionalGas).ConfigureAwait(false);
                                 break;
                             }
                         case CommandLineApplication<BatchFileCommands.Execute> cmd:

@@ -126,6 +126,49 @@ public class ExpressNodeExtensionsTests
     }
 
     [Fact]
+    public async Task Contract_update_data_uses_the_chain_parser()
+    {
+        var manifest = ContractManifest.Parse("""
+        {
+          "name":"SampleContract",
+          "groups":[],
+          "features":{},
+          "supportedstandards":[],
+          "abi":{
+            "methods":[{"name":"dummy","parameters":[],"returntype":"Void","offset":0,"safe":false}],
+            "events":[]
+          },
+          "permissions":[],
+          "trusts":[],
+          "extra":{}
+        }
+        """);
+        var hash = UInt160.Parse("0x0101010101010101010101010101010101010101");
+        var node = new StubExpressNode(ProtocolSettings.Default);
+        node.Contracts.Add((hash, manifest));
+
+        var data = await ContractCommand.Update.ParseUpdateDataAsync(
+            "#SampleContract",
+            node,
+            new ExpressChain());
+
+        data.Should().BeOfType<ContractParameter>()
+            .Which.Value.Should().Be(hash);
+        node.ContractsRequested.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Contract_update_data_skips_the_chain_parser_when_omitted()
+    {
+        var node = new StubExpressNode(ProtocolSettings.Default);
+
+        var data = await ContractCommand.Update.ParseUpdateDataAsync(string.Empty, node, new ExpressChain());
+
+        data.Should().BeNull();
+        node.ContractsRequested.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task TransferNFT_uses_raw_token_bytes()
     {
         var node = new StubExpressNode(ProtocolSettings.Default);
@@ -328,6 +371,8 @@ public class ExpressNodeExtensionsTests
 
         public List<(UInt160 hash, ContractManifest manifest)> Contracts { get; } = new();
 
+        public bool ContractsRequested { get; private set; }
+
         public Script? CapturedScript { get; private set; }
 
         public UInt256? RequestedBlockHash { get; private set; }
@@ -407,8 +452,11 @@ public class ExpressNodeExtensionsTests
         public Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address) =>
             Task.FromResult<IReadOnlyList<(TokenContract contract, BigInteger balance)>>(SysArray.Empty<(TokenContract contract, BigInteger balance)>());
 
-        public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync() =>
-            Task.FromResult<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>>(Contracts);
+        public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync()
+        {
+            ContractsRequested = true;
+            return Task.FromResult<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>>(Contracts);
+        }
 
         public Task<IReadOnlyList<string>> ListNftTokenIdsAsync(UInt160 address, UInt160 assetHash) =>
             Task.FromResult<IReadOnlyList<string>>(SysArray.Empty<string>());

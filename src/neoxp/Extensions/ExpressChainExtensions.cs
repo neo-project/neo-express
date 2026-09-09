@@ -77,7 +77,7 @@ namespace NeoExpress
             // if the name is a valid Neo Express account name, no password is needed
             if (chain.IsReservedName(name))
                 return password;
-            if (chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase)))
+            if (chain.Wallets is not null && chain.Wallets.Any(w => name.Equals(w.Name, StringComparison.OrdinalIgnoreCase)))
                 return password;
 
             // if a password is needed but not provided, prompt the user

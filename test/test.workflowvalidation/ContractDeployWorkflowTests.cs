@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using FluentAssertions;
+using McMaster.Extensions.CommandLineUtils;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
@@ -21,6 +22,7 @@ using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
 using NeoExpress;
+using NeoExpress.Commands;
 using NeoExpress.Node;
 using System.IO.Abstractions;
 using System.Text;
@@ -31,6 +33,64 @@ namespace test.workflowvalidation;
 [Collection("OfflineNodeDispose")]
 public class ContractDeployWorkflowTests
 {
+    [Fact]
+    public async Task batch_deploy_forwards_additional_gas()
+    {
+        var nefPath = WriteContract();
+        var (fileSystem, manager, batch, root, nodePath) = CreateBatchCommand(nefPath);
+        try
+        {
+            var act = async () => await batch.ExecuteAsync(
+                root,
+                new[] { $"contract deploy {Path.GetFileName(nefPath)} genesis --gas 0.123456789" },
+                TextWriter.Null,
+                manager,
+                chainFilename: string.Empty);
+
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage("*batch file line 1*decimal places*");
+        }
+        finally
+        {
+            Cleanup(nodePath, Path.GetDirectoryName(nefPath)!);
+        }
+    }
+
+    [Fact]
+    public async Task batch_update_forwards_additional_gas()
+    {
+        var nefPath = WriteContract();
+        var (fileSystem, manager, batch, root, nodePath) = CreateBatchCommand(nefPath);
+        try
+        {
+            using (var txExec = new TransactionExecutor(fileSystem, manager, false, false, TextWriter.Null))
+            {
+                await txExec.ContractDeployAsync(
+                    nefPath,
+                    "genesis",
+                    password: string.Empty,
+                    WitnessScope.CalledByEntry,
+                    data: string.Empty,
+                    force: false,
+                    additionalGas: 1m);
+            }
+
+            var act = async () => await batch.ExecuteAsync(
+                root,
+                new[] { $"contract update \"DevHawk Registrar\" {Path.GetFileName(nefPath)} genesis --gas 0.123456789" },
+                TextWriter.Null,
+                manager,
+                chainFilename: string.Empty);
+
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage("*batch file line 1*decimal places*");
+        }
+        finally
+        {
+            Cleanup(nodePath, Path.GetDirectoryName(nefPath)!);
+        }
+    }
+
     [Fact]
     public async Task padded_deploy_persists_contract_state()
     {
@@ -170,6 +230,48 @@ public class ContractDeployWorkflowTests
             Path.Combine(root, "test", "test.bctklib", "_testFiles", "registrar.manifest.json"),
             Path.ChangeExtension(nefPath, ".manifest.json"));
         return nefPath;
+    }
+
+    static (FileSystem fileSystem, ExpressChainManager manager, BatchCommand batch, IDirectoryInfo root, string nodePath) CreateBatchCommand(string nefPath)
+    {
+        var fileSystem = new FileSystem();
+        var chain = ExpressChainManagerFactory.CreateChain(1, null);
+        var manager = new ExpressChainManager(fileSystem, chain);
+        var console = new CapturingConsole();
+        var batch = new BatchCommand(
+            new ExpressChainManagerFactory(fileSystem),
+            fileSystem,
+            new TransactionExecutorFactory(fileSystem, console));
+        var root = fileSystem.DirectoryInfo.New(Path.GetDirectoryName(nefPath)!);
+        return (fileSystem, manager, batch, root, fileSystem.GetNodePath(chain.ConsensusNodes[0]));
+    }
+
+    static void Cleanup(params string[] paths)
+    {
+        foreach (var path in paths)
+        {
+            if (!Directory.Exists(path))
+                continue;
+            try
+            { Directory.Delete(path, true); }
+            catch { }
+        }
+    }
+
+    sealed class CapturingConsole : IConsole
+    {
+        public TextWriter Out => TextWriter.Null;
+        public TextWriter Error => TextWriter.Null;
+        public TextReader In => TextReader.Null;
+        public bool IsInputRedirected => true;
+        public bool IsOutputRedirected => true;
+        public bool IsErrorRedirected => true;
+        public ConsoleColor ForegroundColor { get; set; }
+        public ConsoleColor BackgroundColor { get; set; }
+
+        public void ResetColor() { }
+
+        public event ConsoleCancelEventHandler? CancelKeyPress { add { } remove { } }
     }
 
     static string FindRepositoryRoot(string startPath)

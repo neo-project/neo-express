@@ -57,12 +57,13 @@ export async function ensureAccountHasGas(
   identifier: BlockchainIdentifier,
   displayName: string,
   signer: string,
-  report?: (msg: string) => void
+  report?: (msg: string) => void,
+  address?: string
 ): Promise<boolean> {
   if (displayName === "genesis" || signer === "genesis") {
     return true;
   }
-  const lookup = resolveAccountForIdentifier(
+  const lookup = address || resolveAccountForIdentifier(
     displayName,
     signer,
     await identifier.getWalletAddresses()

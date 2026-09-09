@@ -15,6 +15,7 @@ import posixPath from "../util/posixPath";
 import stripAnsi from "../util/stripAnsi";
 import {
   AccountChoice,
+  addressForAccountChoice,
   buildAccountChoices,
   contractsWithStandard,
   signerForAccountChoice,
@@ -31,12 +32,17 @@ export async function accountChoices(
 ): Promise<AccountChoice[]> {
   return buildAccountChoices(
     await identifier.getWalletAddresses(),
-    autoComplete?.data.accountSigners
+    autoComplete?.data.accountSigners,
+    autoComplete?.data.wellKnownAddresses
   );
 }
 
 function accountSigner(label: string, choices: AccountChoice[]): string {
   return signerForAccountChoice(label, choices);
+}
+
+function accountAddress(label: string, choices: AccountChoice[]): string {
+  return addressForAccountChoice(label, choices);
 }
 
 function choiceLabels(choices: AccountChoice[]): string[] {
@@ -100,7 +106,8 @@ export default class NeoExpressCommands {
           identifier,
           accountName,
           account,
-          report
+          report,
+          accountAddress(accountName, choices)
         ))
       ) {
         return;
@@ -551,7 +558,9 @@ export default class NeoExpressCommands {
         neoExpress,
         identifier,
         sender,
-        senderArg
+        senderArg,
+        undefined,
+        accountAddress(sender, choices)
       ))
     ) {
       return;
@@ -578,7 +587,7 @@ export default class NeoExpressCommands {
       `${amount}`,
       asset,
       senderArg,
-      accountSigner(receiver, choices),
+      accountAddress(receiver, choices),
       ...senderPassword
     );
     NeoExpressCommands.showResult(output);
@@ -641,7 +650,9 @@ export default class NeoExpressCommands {
         neoExpress,
         identifier,
         sender,
-        senderArg
+        senderArg,
+        undefined,
+        accountAddress(sender, choices)
       ))
     ) {
       return;
@@ -665,7 +676,7 @@ export default class NeoExpressCommands {
       nftContract,
       tokenId,
       senderArg,
-      accountSigner(receiver, choices),
+      accountAddress(receiver, choices),
       ...senderPassword
     );
     NeoExpressCommands.showResult(output);

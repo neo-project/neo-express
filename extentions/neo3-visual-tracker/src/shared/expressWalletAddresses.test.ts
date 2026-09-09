@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  addressForAccountChoice,
   buildAccountChoices,
   contractsWithStandard,
   isHiddenExpressConfig,
@@ -124,6 +125,17 @@ test("buildAccountChoices disambiguates Express owner from workspace owner.json"
     ),
     "/workspace/wallets/owner.json"
   );
+});
+
+test("account choices keep workspace address separate from signer path", () => {
+  const choices = buildAccountChoices(
+    { genesis: "Ngenesis" },
+    { alice: "/workspace/alice.json" },
+    { alice: "Nalice" }
+  );
+
+  assert.equal(signerForAccountChoice("alice", choices), "/workspace/alice.json");
+  assert.equal(addressForAccountChoice("alice", choices), "Nalice");
 });
 
 test("resolveAccountForIdentifier uses the selected Express config, not the active chain", () => {

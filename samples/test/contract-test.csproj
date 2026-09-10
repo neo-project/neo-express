@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <RootNamespace>ContractTests</RootNamespace>
@@ -9,13 +10,16 @@
   <ItemGroup>
     <NeoContractReference Include="..\src\contract.csproj" />
   </ItemGroup>
+  <Target Name="RestoreNeoContractReferences" BeforeTargets="PrepareNeoContractGeneration">
+    <MSBuild Projects="@(NeoContractReference)" Targets="Restore" />
+  </Target>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Neo.Assertions" Version="$(NeoTestVersion)" />
     <PackageReference Include="Neo.BuildTasks" Version="$(NeoTestVersion)" PrivateAssets="all" />
     <PackageReference Include="Neo.Test.Harness" Version="$(NeoTestVersion)" />
-    <PackageReference Include="xunit" Version="2.4.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

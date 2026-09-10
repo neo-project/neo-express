@@ -10,7 +10,7 @@
 
 using Neo.SmartContract.Framework;
 
-public class TestContract : TokenContract
+public class SampleContract : TokenContract
 {
     public override byte Decimals => 0;
     public override string Symbol => "TEST";

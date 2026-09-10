@@ -3,6 +3,12 @@ import * as vscode from "vscode";
 
 import IoHelpers from "../util/ioHelpers";
 import JSONC from "../util/JSONC";
+import {
+  csharpStarterLabels,
+  findCsharpStarter,
+  CsharpStarter,
+} from "./csharpStarters";
+import { hydrateFiles } from "./hydrateTemplates";
 import { Language, languages } from "./languages";
 import posixPath from "../util/posixPath";
 import workspaceFolder from "../util/workspaceFolder";
@@ -17,14 +23,44 @@ export default class Templates {
       return;
     }
 
-    const languageCode = await IoHelpers.multipleChoice(
-      "Choose a programming language",
-      ...Object.keys(languages)
+    const languageLabels: { [code: string]: string } = {
+      csharp: "C# (recommended for N3)",
+      python: "Python (neo3-boa)",
+      java: "Java (neow3j)",
+    };
+    const languageChoices = Object.keys(languages).map(
+      (code) => languageLabels[code] || code
     );
-    if (!languageCode) {
+    const languageChoice = await IoHelpers.multipleChoice(
+      "Language for the new contract",
+      ...languageChoices
+    );
+    if (!languageChoice) {
       return;
     }
+    const languageCode =
+      Object.keys(languageLabels).find(
+        (code) => languageLabels[code] === languageChoice
+      ) || languageChoice;
     const language = languages[languageCode];
+    if (!language) {
+      return;
+    }
+
+    let csharpStarter: CsharpStarter | undefined;
+    if (languageCode === "csharp") {
+      const starterChoice = await IoHelpers.multipleChoice(
+        "Contract template",
+        ...csharpStarterLabels()
+      );
+      if (!starterChoice) {
+        return;
+      }
+      csharpStarter = findCsharpStarter(starterChoice);
+      if (!csharpStarter) {
+        return;
+      }
+    }
 
     const parameters = await Templates.gatherParameters(language);
     if (!parameters) {
@@ -46,11 +82,26 @@ export default class Templates {
       return;
     }
 
-    await Templates.hydrateFiles(
-      language,
-      templatePath,
-      contractPath,
-      parameters
+    await hydrateFiles(templatePath, contractPath, parameters);
+    if (csharpStarter?.overlay) {
+      await hydrateFiles(
+        posixPath(
+          context.extensionPath,
+          "resources",
+          "new-contract",
+          "csharp-starters",
+          csharpStarter.id
+        ),
+        contractPath,
+        parameters
+      );
+    }
+
+    const starterNote = csharpStarter
+      ? ` (${csharpStarter.label})`
+      : "";
+    vscode.window.showInformationMessage(
+      `Created ${contractName}${starterNote} under contracts/${contractName}. Build it, then deploy from Smart contracts.`
     );
 
     const mainFile = parameters["$_MAINFILE_$"];
@@ -206,58 +257,6 @@ export default class Templates {
         }
         result[`$_${variableName}_$`] = value;
       }
-    }
-    return result;
-  }
-
-  private static async hydrateFiles(
-    language: Language,
-    templatePath: string,
-    destinationPath: string,
-    parameters: { [key: string]: string }
-  ) {
-    await fs.promises.mkdir(destinationPath, { recursive: true });
-    const templateFolderContents = await fs.promises.readdir(templatePath);
-    for (const item of templateFolderContents) {
-      const fullPathToSource = posixPath(templatePath, item);
-      const resolvedName = await Templates.substituteParameters(
-        item,
-        parameters
-      );
-      const fullPathToDestination = posixPath(destinationPath, resolvedName);
-      const stat = await fs.promises.stat(fullPathToSource);
-      if (stat.isDirectory()) {
-        await Templates.hydrateFiles(
-          language,
-          fullPathToSource,
-          posixPath(destinationPath, resolvedName),
-          parameters
-        );
-      } else if (item.endsWith(".template.txt")) {
-        const fileContents = (
-          await fs.promises.readFile(fullPathToSource)
-        ).toString();
-        const resolvedContents = await Templates.substituteParameters(
-          fileContents,
-          parameters
-        );
-        await fs.promises.writeFile(
-          fullPathToDestination.replace(/\.template\.txt$/, ""),
-          resolvedContents
-        );
-      } else {
-        await fs.promises.copyFile(fullPathToSource, fullPathToDestination);
-      }
-    }
-  }
-
-  private static async substituteParameters(
-    input: string,
-    parameters: { [key: string]: string }
-  ): Promise<string> {
-    let result = input;
-    for (const key of Object.keys(parameters)) {
-      result = result.replaceAll(key, parameters[key]);
     }
     return result;
   }

@@ -179,7 +179,12 @@ public class NeoxpToolIntegrationTests : IDisposable
     {
         _output.WriteLine("=== Building and Installing neoxp Tool ===");
 
-        // Pack neoxp tool (build happens during test project build)
+        // Build the requested configuration explicitly: the test runner normally builds the
+        // solution in Debug, while pack targets the Release output below.
+        var (buildExitCode, _, buildError) = await _runCommand.RunDotNetCommand("build", _neoxpProjectPath, "--configuration", _configuration, "--no-restore", "--verbosity", "minimal");
+        buildExitCode.Should().Be(0, $"neoxp {_configuration} build should succeed: {buildError}");
+
+        // Pack the freshly built neoxp tool.
         var (packExitCode, _, _) = await _runCommand.RunDotNetCommand("pack", _neoxpProjectPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build", "--verbosity", "normal");
         packExitCode.Should().Be(0, "pack should succeed");
 

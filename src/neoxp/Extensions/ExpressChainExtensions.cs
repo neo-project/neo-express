@@ -84,13 +84,18 @@ namespace NeoExpress
             return McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"enter password for {name}");
         }
 
-        public static UInt160 GetScriptHash(this ExpressWalletAccount? @this)
+        public static UInt160 GetScriptHash(this ExpressWalletAccount? @this, byte addressVersion)
         {
             ArgumentNullException.ThrowIfNull(@this);
 
+            if (!string.IsNullOrWhiteSpace(@this.ScriptHash))
+                return @this.ScriptHash.ToScriptHash(addressVersion);
+
+            if (string.IsNullOrWhiteSpace(@this.PrivateKey))
+                throw new FormatException("Wallet account must specify a script hash or private key");
+
             var keyPair = new KeyPair(@this.PrivateKey.HexToBytes());
-            var contract = Neo.SmartContract.Contract.CreateSignatureContract(keyPair.PublicKey);
-            return contract.ScriptHash;
+            return Neo.SmartContract.Contract.CreateSignatureContract(keyPair.PublicKey).ScriptHash;
         }
 
         public static bool TryGetAccountHash(this ExpressChain chain, string name, [MaybeNullWhen(false)] out UInt160 accountHash)
@@ -101,7 +106,7 @@ namespace NeoExpress
                 {
                     if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash();
+                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash(chain.AddressVersion);
                         return true;
                     }
                 }
@@ -114,7 +119,7 @@ namespace NeoExpress
                 var nodeWallet = chain.ConsensusNodes[i].Wallet;
                 if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    accountHash = nodeWallet.DefaultAccount.GetScriptHash();
+                    accountHash = nodeWallet.DefaultAccount.GetScriptHash(chain.AddressVersion);
                     return true;
                 }
             }

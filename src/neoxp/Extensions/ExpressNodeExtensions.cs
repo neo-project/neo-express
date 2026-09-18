@@ -114,7 +114,7 @@ namespace NeoExpress
                 {
                     if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        return chain.Wallets[i].DefaultAccount.GetScriptHash();
+                        return chain.Wallets[i].DefaultAccount.GetScriptHash(chain.AddressVersion);
                     }
                 }
             }

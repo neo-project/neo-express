@@ -13,7 +13,30 @@ will not have contiguous patch numbers. Initial major and minor releases will be
 in this file without a patch number. Patch version will be included for bug fix releases, but
 may not exactly match a publicly released version.
 
+## Unreleased
+
+### Added
+
+* NeoDebug — a Debug Adapter Protocol tool for replaying `.neo-trace` files and live-debugging contracts against a running instance
+
+### Changed
+
+* `contract deploy --force` now updates the existing contract in place when the deployment hash matches
+* Deploy and update fee estimation is padded to cover the shortfall between RPC estimation and persist-time consumption, and deployment waits for FAULT confirmation
+* `show transaction` accepts unconfirmed online transactions
+* `contract download` defaults its RPC URI to MainNet
+
+### Fixed
+
+* Parse `contract update --data` with the chain contract parameter resolver
+* Reject invalid hashes in `show transaction`
+* Treat a null wallet list in the neo-express data file as empty
+
 ## [3.10.1] - 2026-07-09
+
+### Added
+
+* `chain.AutoMine` setting to confirm transactions immediately on single-node chains
 
 ### Changed
 

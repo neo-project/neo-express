@@ -16,10 +16,6 @@
     <ItemGroup>
         <PackageReference Include="Crayon" Version="2.0.69" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-        <PackageReference Include="Microsoft.Build.Tasks.Git" Version="10.0.401">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
         <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoConsensusDbftVersion)" />
         <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
     </ItemGroup>

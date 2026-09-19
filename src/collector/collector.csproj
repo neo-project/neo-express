@@ -22,10 +22,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Build.Tasks.Git" Version="10.0.401">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
         <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="18.10.1" />
         <PackageReference Remove="Microsoft.SourceLink.GitHub" />
         <PackageReference Include="PolySharp" Version="1.16.0">

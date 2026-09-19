@@ -113,8 +113,6 @@ static class Utility
             ?? throw new JsonException("consensus-nodes");
         if (consensusNodes.Count == 0)
             throw new JsonException("consensus-nodes is empty");
-        if (consensusNodes[0]?["rpc-port"] is null)
-            throw new JsonException("consensus-nodes[0].rpc-port");
 
         consensusNodes[0]!["rpc-port"] = rpcPort;
 

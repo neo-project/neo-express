@@ -1,16 +1,19 @@
 // Copyright (C) 2015-2026 The Neo Project.
 //
-// WorknetFileTests.cs file belongs to the neo project and is free
+// WorknetFileTests.cs file belongs to neo-express project and is free
 // software distributed under the MIT software license, see the
-// accompanying file LICENSE in the main directory of the repository or
-// https://opensource.org/license/MIT for more details.
+// accompanying file LICENSE in the main directory of the
+// repository or https://opensource.org/license/MIT for more details.
+//
+// Redistribution and use in source and binary forms with or without
+// modifications are permitted.
 
 using FluentAssertions;
 using NeoWorkNet;
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.IO.Abstractions;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace test.worknet;

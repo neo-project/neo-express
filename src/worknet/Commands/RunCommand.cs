@@ -61,6 +61,16 @@ partial class RunCommand
             ValidatePorts(RpcPort, TcpPort);
 
             var secondsPerBlock = SecondsPerBlock ?? 0;
+
+            // persist the effective RPC port before the server starts so that
+            // `neo-worknet stop` connects to the right port even when the node
+            // was launched with a non-default --rpc-port value
+            if (RpcPort != worknet.RpcPort)
+            {
+                worknet = worknet with { RpcPort = RpcPort };
+                fs.UpdateWorknetRpcPort(filename, RpcPort);
+            }
+
             await RunAsync(worknet, dataDir, secondsPerBlock, RpcPort, TcpPort, DisableLog, console, token).ConfigureAwait(false);
             return 0;
         }

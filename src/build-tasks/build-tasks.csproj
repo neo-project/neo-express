@@ -53,13 +53,17 @@
             </TfmSpecificPackageFile>
         </ItemGroup>
 
-        <Message Importance="High" Text="Pack: include $(_NeoBuildTasksPackTfm) -> $(_NeoBuildTasksPackAssembly)" Condition="Exists('$(_NeoBuildTasksPackAssembly)')" />
+        <Message Importance="High" Text="Pack: include $(_NeoBuildTasksPackTfm) -&gt; $(_NeoBuildTasksPackAssembly)" Condition="Exists('$(_NeoBuildTasksPackAssembly)')" />
         <Message Importance="High" Text="Pack: not exists $(_NeoBuildTasksPackTfm); skipping task binary." Condition="!Exists('$(_NeoBuildTasksPackAssembly)')" />
     </Target>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Build.Tasks.Git" Version="10.0.401">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.28" PrivateAssets="All" />
-        <PackageReference Include="PolySharp" Version="1.15.0">
+        <PackageReference Include="PolySharp" Version="1.16.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

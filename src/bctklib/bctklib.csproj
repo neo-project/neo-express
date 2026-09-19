@@ -15,12 +15,16 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="MessagePack" Version="2.5.301" />
+        <PackageReference Include="Microsoft.Build.Tasks.Git" Version="10.0.401">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
         <PackageReference Include="Neo" Version="$(NeoVersion)" />
-        <PackageReference Include="Nerdbank.Streams" Version="2.13.16" />
+        <PackageReference Include="Nerdbank.Streams" Version="2.14.354" />
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="10.2.1.58549" />
-        <PackageReference Include="System.IO.Abstractions" Version="22.0.16" />
+        <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
         <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoModuleVersion)" />
         <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoModuleVersion)" />
     </ItemGroup>

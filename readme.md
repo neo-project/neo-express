@@ -49,16 +49,21 @@ These tools provide developers with a complete local development environment for
 **[Full getting-started guide](docs/getting-started.md)** â€” install, create a chain, build a
 contract from the official templates, invoke it, and optionally use Visual Studio Code.
 
+When working from this source checkout, follow that guide's source-build path: restore the
+pinned sample tools and build `src/neoxp`. The global tool commands below install the latest
+published release, which may not yet contain fixes present in this checkout.
+
 ```shell
-dotnet tool install Neo.Express -g
+dotnet tool restore --tool-manifest samples/.config/dotnet-tools.json
+dotnet build src/neoxp/neoxp.csproj
 dotnet build samples/examples/Nep17
-neoxp run -i samples/examples/Nep17/default.neo-express --seconds-per-block 1
+dotnet exec src/neoxp/bin/Debug/net10.0/neoxp.dll run -i samples/examples/Nep17/default.neo-express --seconds-per-block 1
 ```
 
 In another terminal:
 
 ```shell
-neoxp contract run -i samples/examples/Nep17/default.neo-express Nep17Contract symbol --results
+dotnet exec src/neoxp/bin/Debug/net10.0/neoxp.dll contract run -i samples/examples/Nep17/default.neo-express Nep17Contract symbol --results
 ```
 
 C# starters (Blank, NEP-17, NEP-11, Oracle, Ownable) live in
@@ -183,10 +188,10 @@ integration, typed contract interfaces, assertions and contract code coverage â€
   neoxp transfer 1 gas genesis node1
   ```
 
-- Invoke a deployed contract with an invocation file:
+- Invoke the sample contract after building `samples/src` with an invocation file:
 
   ```shell
-  neoxp contract invoke transfer.neo-invoke.json genesis
+  neoxp contract invoke samples/invoke-files/contract.neo-invoke.json genesis -i samples/default.neo-express
   ```
 
   Invocation files identify deployed contracts by name or script hash. See the

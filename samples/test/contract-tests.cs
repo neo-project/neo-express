@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace ContractTests
 {
-    [CheckpointPath("src/checkpoints/contract-deployed.neoxp-checkpoint")]
+    [CheckpointPath("../src/checkpoints/contract-deployed.neoxp-checkpoint")]
     public class ContractDeployedTests : IClassFixture<CheckpointFixture<ContractDeployedTests>>
     {
         readonly CheckpointFixture fixture;

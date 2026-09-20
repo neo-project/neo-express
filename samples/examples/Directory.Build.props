@@ -6,7 +6,7 @@
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
     <NeoTestVersion>3.10.1</NeoTestVersion>
     <NeoExpressInputFile>default.neo-express</NeoExpressInputFile>
-    <NeoExpressDeployStamp>$(IntermediateOutputPath)$(NeoContractName).neoxp.deploy.touch</NeoExpressDeployStamp>
+    <NeoExpressDeployStamp>$(MSBuildProjectDirectory)/obj/$(Configuration)/$(TargetFramework)/$(NeoContractName).neoxp.deploy.touch</NeoExpressDeployStamp>
     <NeoExpressProject>$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory)..\..\src\neoxp\neoxp.csproj))</NeoExpressProject>
     <NeoExpressDll>$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory)..\..\src\neoxp\bin\$(Configuration)\net10.0\neoxp.dll))</NeoExpressDll>
     <NeoExpressCli>dotnet tool run neoxp --</NeoExpressCli>

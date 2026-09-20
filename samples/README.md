@@ -25,7 +25,7 @@ neoxp run -i samples/examples/Blank/default.neo-express --seconds-per-block 1
 In another terminal:
 
 ```shell
-neoxp contract run -i samples/examples/Blank/default.neo-express Contract myMethod --results
+neoxp contract run -i samples/examples/Blank/default.neo-express Contract MyMethod --results
 ```
 
 Walkthrough: [docs/getting-started.md](../docs/getting-started.md).

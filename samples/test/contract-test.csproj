@@ -10,7 +10,7 @@
   <ItemGroup>
     <NeoContractReference Include="..\src\contract.csproj" />
   </ItemGroup>
-  <Target Name="RestoreNeoContractReferences" BeforeTargets="PrepareNeoContractGeneration">
+  <Target Name="RestoreReferencedNeoContractProjects" BeforeTargets="PrepareNeoContractReferences">
     <MSBuild Projects="@(NeoContractReference)" Targets="Restore" />
   </Target>
   <ItemGroup>

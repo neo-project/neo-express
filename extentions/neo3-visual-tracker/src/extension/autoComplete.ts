@@ -16,7 +16,8 @@ import NeoExpressIo from "./neoExpress/neoExpressIo";
 import WalletDetector from "./fileDetectors/walletDetector";
 import wellKnownContractsCacheKey from "./util/wellKnownContractsCacheKey";
 import {
-  walletFileName,
+  supportedWorkspaceWalletAccounts,
+  uniqueWorkspaceWalletDisplayName,
   workspaceWalletDisplayName,
 } from "../shared/expressWalletAddresses";
 
@@ -193,15 +194,19 @@ export default class AutoComplete {
     const expressAddresses =
       (await connection?.blockchainIdentifier.getWalletAddresses()) || {};
     const wallets = [...this.walletDetector.wallets];
+    const usedDisplayNames = new Set(Object.keys(expressAddresses));
     for (const wallet of wallets) {
-      for (const account of wallet.accounts) {
-        let displayName = workspaceWalletDisplayName(
+      for (const account of supportedWorkspaceWalletAccounts(wallet.accounts)) {
+        const baseDisplayName = workspaceWalletDisplayName(
           wallet.path,
           account.label
         );
-        if (expressAddresses[displayName]) {
-          displayName = `${displayName} (${walletFileName(wallet.path)})`;
-        }
+        const displayName = uniqueWorkspaceWalletDisplayName(
+          baseDisplayName,
+          wallet.path,
+          usedDisplayNames
+        );
+        usedDisplayNames.add(displayName);
         newData.addressNames[account.address] =
           newData.addressNames[account.address] || [];
         newData.addressNames[account.address].push(displayName);

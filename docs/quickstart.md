@@ -69,7 +69,8 @@ That:
 - restores local `neoxp` and `nccs` tools
 - compiles `Nep17Contract.nef` / `.manifest.json` to `samples/examples/Nep17/bin/sc`
 - creates `default.neo-express` next to the example if it is missing
-- resets the chain and deploys with `genesis` (`express.batch`)
+- deploys with `genesis`; when the chain is already running, the repository build uses
+  `contract deploy --force` so the build does not try to reset live node state
 
 | Starter | Path |
 | ------- | ---- |
@@ -128,11 +129,15 @@ See [Neo Express Invocation File](Neo%20Express%20Invocation%20File.md).
 
 ## 5. Rebuild so the contract redeploys
 
-`Neo.BuildTasks` skips the Express batch when the `.nef` has not changed. After **Clean**
-or **Rebuild**, the stamp is deleted and the next build resets the chain and deploys again:
+Stop the chain before a rebuild so its persisted state can be reset safely:
 
 ```shell
+neoxp stop -a -i default.neo-express
 dotnet build -t:Rebuild
+neoxp run -i default.neo-express --seconds-per-block 1
 ```
+
+The repository build records a deploy stamp under `obj/`. After **Clean** or **Rebuild**, the
+stamp is deleted and the next build deploys again.
 
 Checkpoint-backed `dotnet test` workflow: [contract-testing.md](contract-testing.md).

@@ -16,6 +16,11 @@ Neo-Express ships as a set of cross-platform [.NET global tools](https://learn.m
 
 ## Install via .NET tool (recommended)
 
+The commands below install the latest published tools. When working from this repository, use
+the pinned sample tools and the repository-built `neoxp` described in
+[getting-started](getting-started.md), because the source checkout can contain fixes that are
+not in the latest NuGet release yet.
+
 Install the tools globally:
 
 ```shell

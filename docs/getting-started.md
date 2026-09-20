@@ -30,6 +30,7 @@ repository** (the fee pad lives here until the next NuGet release).
 From the repository root:
 
 ```shell
+dotnet tool restore --tool-manifest samples/.config/dotnet-tools.json
 dotnet build src/neoxp/neoxp.csproj
 ```
 
@@ -46,7 +47,8 @@ $repoRoot = (Get-Location).Path
 function neoxp { dotnet exec "$repoRoot\src\neoxp\bin\Debug\net10.0\neoxp.dll" @args }
 ```
 
-`nccs` still comes from the sample local tools (`dotnet tool restore` in `samples/`).
+`nccs` and the sample `neoxp` tool are pinned in the sample tool manifest; the command above
+restores them before you build a sample.
 Full install options (release zip, Trace, WorkNet) are in [installation.md](installation.md).
 
 ### 2. Create and run a local chain
@@ -194,8 +196,8 @@ dotnet tool install Neo.Debug -g
 ```
 
 Launch configurations are documented in [debugger-command-reference.md](debugger-command-reference.md).
-This build of `neodebug` replays recorded traces (`invocation.trace-file`). Live in-process
-launch is not supported yet.
+This build of `neodebug` supports both recorded trace replay (`invocation.trace-file`) and live
+in-process launches with an `operation` and optional `args`.
 
 ## What to read next
 

@@ -31,10 +31,10 @@ Add a configuration to `.vscode/launch.json`. Replay a recorded trace (supports 
 }
 ```
 
-This build of `neodebug` replays recorded traces (`invocation.trace-file`). Live
-`{ "operation", "args" }` launch is documented in the
-[NeoDebug command reference](../../docs/debugger-command-reference.md) when the debugger build
-supports it.
+The extension supports both recorded trace replay (`invocation.trace-file`) and live
+`{ "operation", "args" }` launches. See the
+[NeoDebug command reference](../../docs/debugger-command-reference.md) for the complete
+launch-configuration schema.
 
 `signers` is optional. When omitted, the live launcher uses the zero account; normal Neo witness
 scope rules still apply.

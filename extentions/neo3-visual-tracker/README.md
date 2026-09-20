@@ -8,8 +8,10 @@ Repo-wide walkthrough: [Getting started](../../docs/getting-started.md).
 
 ## Getting started
 
-1. Install [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and
-   `dotnet tool install Neo.Express -g` (a packaged VSIX already bundles `neoxp`).
+1. Install [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0). In this checkout,
+   restore the pinned sample tools with
+   `dotnet tool restore --tool-manifest samples/.config/dotnet-tools.json`; a packaged VSIX
+   already bundles `neoxp`.
 2. Open a folder in VS Code. For this repo, `samples/examples/Nep17` (then `dotnet build` in the terminal) or the repo root works.
 3. Load the extension: from the Marketplace, or from source (`npm install` and `npm run compile`
    in this directory, then **F5**, or
@@ -85,7 +87,10 @@ Open the Neo logo in the VS Code activity bar to access:
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) available as `dotnet` (`dotnet --version` starts with 10).
 - A Neo smart contract toolchain when building C# contracts (`Neo.SmartContract.Framework` 3.10.x).
 
-Neo Express 3.10 is bundled with the extension package (`neoxp.dll` under `deps/nxp`). If you are developing the extension from source without a packaged nupkg, install `dotnet tool install Neo.Express -g` so `neoxp` is on PATH. The extension checks for .NET 10 before starting it.
+Neo Express is bundled with the packaged extension (`neoxp.dll` under `deps/nxp`). When developing
+from this source checkout, build `src/neoxp/neoxp.csproj` and follow the repository
+[getting-started guide](../../docs/getting-started.md) so the source build and pinned sample
+tools stay in sync. The extension checks for .NET 10 before starting it.
 
 ## Troubleshooting
 

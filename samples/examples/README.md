@@ -11,7 +11,7 @@ Walkthrough: [docs/getting-started.md](../../docs/getting-started.md).
 
 | Folder | `dotnet new` short name | Contract |
 | ------ | ----------------------- | -------- |
-| `Blank` | `neocontract` | Owner + `MyMethod` |
+| `Blank` | *(copy the folder; no matching template short name)* | Owner + `MyMethod` |
 | `Nep17` | `neocontractnep17` | NEP-17 token |
 | `Nep11` | `neocontractnep11` | NEP-11 NFT |
 | `Oracle` | `neocontractoracle` | Oracle request/response |
@@ -26,14 +26,13 @@ express.batch         # optional offline reset+deploy (`neoxp batch`)
 default.neo-express   # created on first `dotnet build` if missing
 ```
 
-Shared `Directory.Build.props` sets `Neo.SmartContract.Framework`, `Neo.BuildTasks`,
-`NeoExpressBatchFile`, and creates the chain file on first build.
+Shared `Directory.Build.props` sets `Neo.SmartContract.Framework` and `Neo.BuildTasks`,
+builds the repository `neoxp` when available, and deploys the compiled contract to the
+example's `default.neo-express` file on first build.
 
 Local tools (`neoxp`, `nccs`) come from [`samples/.config/dotnet-tools.json`](../.config/dotnet-tools.json).
 
 ## Build, deploy, invoke
-
-From the repository root:
 
 From an example folder:
 

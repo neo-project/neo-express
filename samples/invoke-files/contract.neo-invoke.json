@@ -1,6 +1,6 @@
 [
   {
-    "contract": "#contract",
+    "contract": "#SampleContract",
     "operation": "symbol"
   }
 ]

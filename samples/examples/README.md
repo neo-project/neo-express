@@ -32,6 +32,14 @@ example's `default.neo-express` file on first build.
 
 Local tools (`neoxp`, `nccs`) come from [`samples/.config/dotnet-tools.json`](../.config/dotnet-tools.json).
 
+## Source of the C# starters
+
+The C# source and template names are maintained in
+[neo-devpack-dotnet `master-n3`](https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template).
+These folders are Express integration copies: they add the project, local-chain, and deploy
+files needed by Neo Express while mirroring the canonical starter source. When a starter changes,
+sync the corresponding DevPack template and this integration copy together.
+
 ## Build, deploy, invoke
 
 From an example folder:

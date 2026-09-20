@@ -9,6 +9,8 @@ import {
   parseExpressWalletAddresses,
   resolveAccountForIdentifier,
   signerForAccountChoice,
+  supportedWorkspaceWalletAccounts,
+  uniqueWorkspaceWalletDisplayName,
   workspaceNep6AccountNames,
   workspaceWalletDisplayName,
 } from "./expressWalletAddresses";
@@ -65,6 +67,36 @@ test("workspaceWalletDisplayName uses the file name for Default account labels",
   assert.equal(
     workspaceWalletDisplayName("/wallets/ops.json", "Cold storage"),
     "Cold storage"
+  );
+});
+
+test("workspace wallet choices expose only accounts neoxp can sign with", () => {
+  const defaultAccount = { label: "Default", isDefault: true };
+  const otherAccount = { label: "Other", isDefault: false };
+  assert.deepEqual(
+    supportedWorkspaceWalletAccounts([defaultAccount, otherAccount]),
+    [defaultAccount]
+  );
+  assert.deepEqual(
+    supportedWorkspaceWalletAccounts([{ label: "Only", isDefault: false }]),
+    [{ label: "Only", isDefault: false }]
+  );
+  assert.deepEqual(
+    supportedWorkspaceWalletAccounts([otherAccount, { label: "Second", isDefault: false }]),
+    []
+  );
+});
+
+test("workspace wallet display names remain unique across same-named files", () => {
+  const used = new Set(["alice"]);
+  assert.equal(
+    uniqueWorkspaceWalletDisplayName("alice", "/wallets/a/alice.json", used),
+    "alice (alice.json)"
+  );
+  used.add("alice (alice.json)");
+  assert.equal(
+    uniqueWorkspaceWalletDisplayName("alice", "/wallets/b/alice.json", used),
+    "alice (alice.json) #2"
   );
 });
 

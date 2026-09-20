@@ -81,6 +81,39 @@ export function workspaceWalletDisplayName(
   return base || accountLabel || "wallet";
 }
 
+export function supportedWorkspaceWalletAccounts<T extends { isDefault?: boolean }>(
+  accounts: readonly T[]
+): T[] {
+  if (accounts.length <= 1) {
+    return [...accounts];
+  }
+  const defaultAccount = accounts.find((account) => account.isDefault);
+  return defaultAccount ? [defaultAccount] : [];
+}
+
+export function uniqueWorkspaceWalletDisplayName(
+  displayName: string,
+  filePath: string,
+  usedNames: Set<string>
+): string {
+  if (!usedNames.has(displayName)) {
+    return displayName;
+  }
+
+  const fileName = `${displayName} (${walletFileName(filePath)})`;
+  if (!usedNames.has(fileName)) {
+    return fileName;
+  }
+
+  let suffix = 2;
+  let candidate = `${fileName} #${suffix}`;
+  while (usedNames.has(candidate)) {
+    suffix += 1;
+    candidate = `${fileName} #${suffix}`;
+  }
+  return candidate;
+}
+
 export function contractsWithStandard(
   manifests: { [name: string]: { supportedstandards?: string[] } },
   standard: string

@@ -63,7 +63,6 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
     </ItemGroup>
     <PropertyGroup>
         <IncludeSymbols>false</IncludeSymbols>

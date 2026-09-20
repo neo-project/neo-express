@@ -32,8 +32,5 @@
     <ProjectReference Include="..\..\src\neoxp\neoxp.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="3.8.118" />
-  </ItemGroup>
 
 </Project>

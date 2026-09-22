@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using Neo.BlockchainToolkit.TraceDebug;
+using System;
 using System.IO;
 using Xunit;
 
@@ -17,19 +18,30 @@ namespace test.bctklib;
 public class TraceDebugStreamTests
 {
     [Fact]
-    public void FlushFailureIsExposedAfterDispose()
+    public void WriteFailureIsExposedAndStopsFurtherWrites()
     {
-        using var stream = new FlushFailingStream();
+        using var stream = new WriteFailingStream();
         var sink = new TraceDebugStream(stream);
 
         sink.ProtocolSettings(894710606, 53);
+        sink.ProtocolSettings(894710606, 53);
+
+        Assert.Equal(1, stream.WriteCount);
+        Assert.IsType<IOException>(sink.WriteError);
+
         sink.Dispose();
 
         Assert.IsType<IOException>(sink.WriteError);
     }
 
-    private sealed class FlushFailingStream : MemoryStream
+    private sealed class WriteFailingStream : MemoryStream
     {
-        public override void Flush() => throw new IOException("flush failed");
+        public int WriteCount { get; private set; }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            WriteCount++;
+            throw new IOException("write failed");
+        }
     }
 }

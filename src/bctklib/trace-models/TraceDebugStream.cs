@@ -42,8 +42,7 @@ namespace Neo.BlockchainToolkit.TraceDebug
 
         /// <summary>
         /// The first exception that occurred while writing the trace stream, if any.
-        /// Once a write fails the stream stops writing (the trace file is incomplete);
-        /// the error is also reported to stderr when the stream is disposed.
+        /// Once a write fails the stream stops writing because the trace file is incomplete.
         /// </summary>
         public Exception? WriteError => writeError;
 
@@ -73,11 +72,7 @@ namespace Neo.BlockchainToolkit.TraceDebug
                 flushError ??= ex;
             }
 
-            if ((writeError ?? flushError) is { } error)
-            {
-                Console.Error.WriteLine($"Error writing trace file: {error.Message}. The trace file may be incomplete or corrupted.");
-            }
-
+            writeError ??= flushError;
             GC.SuppressFinalize(this);
         }
 

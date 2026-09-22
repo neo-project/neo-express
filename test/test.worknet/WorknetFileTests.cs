@@ -17,8 +17,8 @@ using NeoWorkNet.Models;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using System.IO.Abstractions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace test.worknet;

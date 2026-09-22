@@ -17,12 +17,12 @@ may not exactly match a publicly released version.
 
 ### Added
 
-* NeoDebug — a Debug Adapter Protocol tool for replaying `.neo-trace` files and live-debugging contracts against a running instance
+* NeoDebug — a Debug Adapter Protocol tool for replaying `.neo-trace` files and live-debugging contracts in a fresh in-process chain
 
 ### Changed
 
 * `contract deploy --force` now updates the existing contract in place when the deployment hash matches
-* Deploy and update fee estimation is padded to cover the shortfall between RPC estimation and persist-time consumption, and deployment waits for FAULT confirmation
+* Deploy and update fee estimation is padded to cover the shortfall between RPC estimation and persist-time consumption; commands wait for the application log and report FAULT as an error
 * `show transaction` accepts unconfirmed online transactions
 * `contract download` defaults its RPC URI to MainNet
 

@@ -91,6 +91,15 @@ namespace NeoExpress
             if (!string.IsNullOrWhiteSpace(@this.ScriptHash))
                 return @this.ScriptHash.ToScriptHash(addressVersion);
 
+            if (!string.IsNullOrWhiteSpace(@this.Contract?.Script))
+            {
+                var contract = new Neo.SmartContract.Contract
+                {
+                    Script = @this.Contract.Script.HexToBytes()
+                };
+                return contract.ScriptHash;
+            }
+
             if (string.IsNullOrWhiteSpace(@this.PrivateKey))
                 throw new FormatException("Wallet account must specify a script hash or private key");
 
@@ -106,7 +115,13 @@ namespace NeoExpress
                 {
                     if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        accountHash = chain.Wallets[i].DefaultAccount.GetScriptHash(chain.AddressVersion);
+                        var account = chain.Wallets[i].DefaultAccount ?? chain.Wallets[i].Accounts.FirstOrDefault();
+                        if (account is null)
+                        {
+                            accountHash = null;
+                            return false;
+                        }
+                        accountHash = account.GetScriptHash(chain.AddressVersion);
                         return true;
                     }
                 }
@@ -119,7 +134,13 @@ namespace NeoExpress
                 var nodeWallet = chain.ConsensusNodes[i].Wallet;
                 if (string.Equals(name, nodeWallet.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    accountHash = nodeWallet.DefaultAccount.GetScriptHash(chain.AddressVersion);
+                    var account = nodeWallet.DefaultAccount ?? nodeWallet.Accounts.FirstOrDefault();
+                    if (account is null)
+                    {
+                        accountHash = null;
+                        return false;
+                    }
+                    accountHash = account.GetScriptHash(chain.AddressVersion);
                     return true;
                 }
             }

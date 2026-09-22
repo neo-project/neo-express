@@ -79,7 +79,7 @@ namespace NeoExpress.Commands
 
                         static void PrintAccountInfo(JsonTextWriter writer, string walletName, Neo.Wallets.WalletAccount account)
                         {
-                            var keyPair = account.GetKey() ?? throw new Exception();
+                            var keyPair = account.GetKey();
 
                             writer.WriteStartObject();
                             writer.WritePropertyName("account-name");
@@ -90,12 +90,15 @@ namespace NeoExpress.Commands
                             writer.WriteValue(account.Address);
                             writer.WritePropertyName("script-hash");
                             writer.WriteValue(account.ScriptHash.ToString());
-                            writer.WritePropertyName("private-key");
-                            writer.WriteValue(Convert.ToHexString(keyPair.PrivateKey));
-                            writer.WritePropertyName("private-key-wif");
-                            writer.WriteValue(keyPair.Export());
-                            writer.WritePropertyName("public-key");
-                            writer.WriteValue(Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
+                            if (keyPair is not null)
+                            {
+                                writer.WritePropertyName("private-key");
+                                writer.WriteValue(Convert.ToHexString(keyPair.PrivateKey));
+                                writer.WritePropertyName("private-key-wif");
+                                writer.WriteValue(keyPair.Export());
+                                writer.WritePropertyName("public-key");
+                                writer.WriteValue(Convert.ToHexString(keyPair.PublicKey.EncodePoint(true)));
+                            }
                             writer.WriteEndObject();
                         }
                     }
@@ -129,13 +132,16 @@ namespace NeoExpress.Commands
 
                         static void PrintAccountInfo(TextWriter writer, Neo.Wallets.WalletAccount account)
                         {
-                            var keyPair = account.GetKey() ?? throw new Exception();
+                            var keyPair = account.GetKey();
 
                             writer.WriteLine($"  {account.Address} ({(account.IsDefault ? "Default" : account.Label)})");
                             writer.WriteLine($"    script hash:       {account.ScriptHash.ToString()}");
-                            writer.WriteLine($"    public key:        {Convert.ToHexString(keyPair.PublicKey.EncodePoint(true))}");
-                            writer.WriteLine($"    private key:       {Convert.ToHexString(keyPair.PrivateKey)}");
-                            writer.WriteLine($"    private key (WIF): {keyPair.Export()}");
+                            if (keyPair is not null)
+                            {
+                                writer.WriteLine($"    public key:        {Convert.ToHexString(keyPair.PublicKey.EncodePoint(true))}");
+                                writer.WriteLine($"    private key:       {Convert.ToHexString(keyPair.PrivateKey)}");
+                                writer.WriteLine($"    private key (WIF): {keyPair.Export()}");
+                            }
                         }
                     }
 

@@ -114,7 +114,10 @@ namespace NeoExpress
                 {
                     if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        return chain.Wallets[i].DefaultAccount.GetScriptHash(chain.AddressVersion);
+                        var account = chain.Wallets[i].DefaultAccount ?? chain.Wallets[i].Accounts.FirstOrDefault();
+                        if (account is null)
+                            return new None();
+                        return account.GetScriptHash(chain.AddressVersion);
                     }
                 }
             }

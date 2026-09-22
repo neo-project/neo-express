@@ -13,8 +13,10 @@ using Neo.BlockchainToolkit.Models;
 using Neo.Extensions;
 using Neo.SmartContract;
 using Neo.Wallets;
+using Neo.Wallets.NEP6;
 using NeoExpress;
 using NeoExpress.Models;
+using System.IO;
 using Xunit;
 
 namespace test.workflowvalidation;
@@ -51,6 +53,22 @@ public class DevWalletTests
     }
 
     [Fact]
+    public void CustomContractWithoutScriptHashUsesContractScript()
+    {
+        var keyPair = new KeyPair(Convert.FromHexString(PrivateKey));
+        var contract = Contract.CreateMultiSigContract(1, new[] { keyPair.PublicKey });
+        var source = new ExpressWalletAccount
+        {
+            Contract = new ExpressWalletAccount.AccountContract
+            {
+                Script = contract.Script.ToHexString()
+            }
+        };
+
+        Assert.Equal(contract.ScriptHash, source.GetScriptHash(ProtocolSettings.Default.AddressVersion));
+    }
+
+    [Fact]
     public void KeylessAccountRoundTripsWithoutInventingAContract()
     {
         var scriptHash = UInt160.Parse("0x0101010101010101010101010101010101010101");
@@ -69,6 +87,32 @@ public class DevWalletTests
         Assert.Equal(source.Label, roundTrip.Label);
         Assert.Null(roundTrip.Contract);
         Assert.Empty(roundTrip.PrivateKey);
+    }
+
+    [Fact]
+    public void WatchOnlyAccountCanBeExportedToNep6()
+    {
+        var settings = ProtocolSettings.Default;
+        var scriptHash = UInt160.Parse("0x0101010101010101010101010101010101010101");
+        var account = DevWalletAccount.FromExpressWalletAccount(settings, new ExpressWalletAccount
+        {
+            ScriptHash = scriptHash.ToAddress(settings.AddressVersion)
+        });
+        var wallet = new DevWallet(settings, "watch-only", account);
+        var filename = Path.Combine(Path.GetTempPath(), $"neo-express-{Guid.NewGuid():N}.wallet.json");
+
+        try
+        {
+            wallet.Export(filename, "test-password");
+            var exported = new NEP6Wallet(filename, "test-password", settings).GetAccount(scriptHash);
+            Assert.NotNull(exported);
+            Assert.False(exported!.HasKey);
+            Assert.Equal(scriptHash, exported.ScriptHash);
+        }
+        finally
+        {
+            File.Delete(filename);
+        }
     }
 
     [Fact]
@@ -105,5 +149,37 @@ public class DevWalletTests
             new KeyPair(Convert.FromHexString(PrivateKey)).PublicKey).ScriptHash;
         Assert.Equal(expectedLegacyHash, legacyHash);
         Assert.Equal(scriptHash, watchOnlyHash);
+    }
+
+    [Fact]
+    public void AccountNameResolutionFallsBackWhenNoAccountIsDefault()
+    {
+        var settings = ProtocolSettings.Default;
+        var chain = new ExpressChain
+        {
+            Wallets =
+            [
+                new ExpressWallet
+                {
+                    Name = "legacy",
+                    Accounts = [new ExpressWalletAccount { PrivateKey = PrivateKey }]
+                }
+            ]
+        };
+
+        var expected = Contract.CreateSignatureContract(
+            new KeyPair(Convert.FromHexString(PrivateKey)).PublicKey).ScriptHash;
+        Assert.True(chain.TryGetAccountHash("legacy", out var actual));
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ScriptHashUsesTheConfiguredAddressVersion()
+    {
+        var settings = ProtocolSettings.Default with { AddressVersion = 0x17 };
+        var scriptHash = UInt160.Parse("0x0101010101010101010101010101010101010101");
+        var account = new ExpressWalletAccount { ScriptHash = scriptHash.ToAddress(settings.AddressVersion) };
+
+        Assert.Equal(scriptHash, account.GetScriptHash(settings.AddressVersion));
     }
 }

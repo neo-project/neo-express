@@ -59,7 +59,7 @@ static class Utility
         // entry (SaveWorknetFile has written it since introduction); fall back to the
         // default port when it is missing so hand-edited files keep working
         var rpcPort = json["consensus-nodes"]?.FirstOrDefault()?["rpc-port"]?.Value<ushort>()
-            ?? Commands.RunCommand.DEFAULT_RPC_PORT;
+            ?? WorknetFile.DefaultRpcPort;
         return new WorknetFile(new Uri(uri), branchInfo, wallet) { RpcPort = rpcPort };
     }
 
@@ -76,7 +76,7 @@ static class Utility
         {
             using var _1 = writer.WritePropertyArray("consensus-nodes");
             using var _2 = writer.WriteObject();
-            writer.WriteProperty("rpc-port", 30332);
+            writer.WriteProperty("rpc-port", WorknetFile.DefaultRpcPort);
             using var _3 = writer.WritePropertyObject("wallet");
             writer.WriteProperty("name", "node1");
             using var _4 = writer.WritePropertyArray("accounts");

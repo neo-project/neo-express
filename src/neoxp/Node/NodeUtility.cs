@@ -98,10 +98,13 @@ namespace NeoExpress.Node
         }
 
         // Copied from OracleService.CreateResponseTx to avoid taking dependency on OracleService package and it's 110mb GRPC runtime
-        public static Transaction? CreateResponseTx(DataCache snapshot, OracleRequest request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes, ProtocolSettings settings)
+        public static Transaction? CreateResponseTx(DataCache snapshot, OracleRequest? request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes, ProtocolSettings settings)
         {
             if (oracleNodes.Count == 0)
                 throw new Exception("No oracle nodes available. Have you enabled oracles via the `oracle enable` command?");
+
+            if (request is null)
+                throw new Exception($"No oracle request found for response id {response.Id}");
 
             var requestTx = NativeContract.Ledger.GetTransactionState(snapshot, request.OriginalTxid);
             if (requestTx is null)

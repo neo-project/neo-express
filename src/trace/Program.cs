@@ -169,17 +169,29 @@ namespace NeoTrace
                 if (txHash == null || txHash == tx.Hash)
                 {
                     var path = SysIO.Path.Combine(Environment.CurrentDirectory, $"{tx.Hash}.neo-trace");
-                    var sink = new TraceDebugStream(SysIO.File.OpenWrite(path));
-                    return new TraceApplicationEngine(
-                        sink,
-                        TriggerType.Application,
-                        tx,
-                        snapshot,
-                        block,
-                        settings,
-                        tx.SystemFee,
-                        knownContracts: knownContracts,
-                        includeStorageSnapshots: false);
+                    var stream = SysIO.File.OpenWrite(path);
+                    TraceDebugStream sink;
+                    try
+                    {
+                        sink = new TraceDebugStream(stream);
+                        return new TraceApplicationEngine(
+                            sink,
+                            TriggerType.Application,
+                            tx,
+                            snapshot,
+                            block,
+                            settings,
+                            tx.SystemFee,
+                            knownContracts: knownContracts,
+                            includeStorageSnapshots: false);
+                    }
+                    catch
+                    {
+                        // the engine owns (and disposes) the stream only once construction
+                        // succeeds; make sure a failed constructor does not leak the handle
+                        stream.Dispose();
+                        throw;
+                    }
                 }
                 else
                 {

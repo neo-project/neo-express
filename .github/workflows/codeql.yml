@@ -37,7 +37,7 @@ jobs:
           build-mode: manual
 
       - name: Build
-        run: dotnet build neo-express.sln -c Debug
+        run: dotnet build neo-express.sln --configuration Release
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4

@@ -128,40 +128,51 @@ namespace NeoTrace
             }
 
             var clonedSnapshot = snapshot.CloneCache();
+            TraceDebugStream? traceSink = null;
             for (int i = 0; i < block.Transactions.Length; i++)
             {
                 token.ThrowIfCancellationRequested();
                 Transaction tx = block.Transactions[i];
 
-                using var engine = GetEngine(tx, clonedSnapshot);
-                if (engine is TraceApplicationEngine)
+                using (var engine = GetEngine(tx, clonedSnapshot))
                 {
-                    await console.Out.WriteLineAsync($"Tracing Transaction #{i} ({tx.Hash})").ConfigureAwait(false);
-                }
-                else
-                {
-                    await console.Out.WriteLineAsync($"Executing Transaction #{i} ({tx.Hash})").ConfigureAwait(false);
+                    if (engine is TraceApplicationEngine)
+                    {
+                        await console.Out.WriteLineAsync($"Tracing Transaction #{i} ({tx.Hash})").ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await console.Out.WriteLineAsync($"Executing Transaction #{i} ({tx.Hash})").ConfigureAwait(false);
+                    }
+
+                    var appLog = await rpcClient.GetApplicationLogAsync(tx.Hash.ToString()).ConfigureAwait(false);
+                    token.ThrowIfCancellationRequested();
+                    if (appLog.Executions.Count != 1)
+                        throw new Exception($"Unexpected Application Log executions count. Expected 1, got {appLog.Executions.Count}");
+                    var execution = appLog.Executions[0];
+
+                    engine.LoadScript(tx.Script);
+                    engine.Execute();
+                    if (engine.State != execution.VMState)
+                        throw new Exception($"Unexpected script execution state. Expected {execution.VMState} got {engine.State} reason: {engine.FaultException}");
+
+                    if (traceSink?.WriteError is { } writeError)
+                        throw new Exception($"Failed to write trace file for transaction {tx.Hash}: {writeError.Message}", writeError);
+
+                    if (engine.State == VMState.HALT)
+                    {
+                        clonedSnapshot.Commit();
+                    }
+                    else
+                    {
+                        clonedSnapshot = snapshot.CloneCache();
+                    }
                 }
 
-                var appLog = await rpcClient.GetApplicationLogAsync(tx.Hash.ToString()).ConfigureAwait(false);
-                token.ThrowIfCancellationRequested();
-                if (appLog.Executions.Count != 1)
-                    throw new Exception($"Unexpected Application Log executions count. Expected 1, got {appLog.Executions.Count}");
-                var execution = appLog.Executions[0];
-
-                engine.LoadScript(tx.Script);
-                engine.Execute();
-                if (engine.State != execution.VMState)
-                    throw new Exception($"Unexpected script execution state. Expected {execution.VMState} got {engine.State} reason: {engine.FaultException}");
-
-                if (engine.State == VMState.HALT)
-                {
-                    clonedSnapshot.Commit();
-                }
-                else
-                {
-                    clonedSnapshot = snapshot.CloneCache();
-                }
+                // TraceApplicationEngine disposes the sink with the engine. Check again so a
+                // failure reported only by the final Flush/Dispose is not returned as success.
+                if (traceSink?.WriteError is { } finalWriteError)
+                    throw new Exception($"Failed to finalize trace file for transaction {tx.Hash}: {finalWriteError.Message}", finalWriteError);
             }
 
             ApplicationEngine GetEngine(Transaction tx, DataCache snapshot)
@@ -174,6 +185,7 @@ namespace NeoTrace
                     try
                     {
                         sink = new TraceDebugStream(stream);
+                        traceSink = sink;
                         return new TraceApplicationEngine(
                             sink,
                             TriggerType.Application,
@@ -195,6 +207,7 @@ namespace NeoTrace
                 }
                 else
                 {
+                    traceSink = null;
                     return ApplicationEngine.Create(TriggerType.Application, tx, snapshot, block, settings, tx.SystemFee);
                 }
             }

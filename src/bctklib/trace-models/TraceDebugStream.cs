@@ -37,6 +37,14 @@ namespace Neo.BlockchainToolkit.TraceDebug
 
         private readonly Stream stream;
         private readonly Sequence<byte> sequence = new Sequence<byte>();
+        private bool writeFailed;
+        private Exception? writeError;
+
+        /// <summary>
+        /// The first exception that occurred while writing the trace stream, if any.
+        /// Once a write fails the stream stops writing because the trace file is incomplete.
+        /// </summary>
+        public Exception? WriteError => writeError;
 
         public TraceDebugStream(Stream stream)
         {
@@ -45,13 +53,34 @@ namespace Neo.BlockchainToolkit.TraceDebug
 
         public void Dispose()
         {
-            stream.Flush();
-            stream.Dispose();
+            Exception? flushError = null;
+            try
+            {
+                stream.Flush();
+            }
+            catch (Exception ex)
+            {
+                flushError = ex;
+            }
+
+            try
+            {
+                stream.Dispose();
+            }
+            catch (Exception ex)
+            {
+                flushError ??= ex;
+            }
+
+            writeError ??= flushError;
             GC.SuppressFinalize(this);
         }
 
         private void Write(Action<IBufferWriter<byte>, MessagePackSerializerOptions> funcWrite)
         {
+            if (writeFailed)
+                return;
+
             try
             {
                 sequence.Reset();
@@ -61,8 +90,10 @@ namespace Neo.BlockchainToolkit.TraceDebug
                     stream.Write(segment.Span);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                writeFailed = true;
+                writeError = ex;
             }
         }
 

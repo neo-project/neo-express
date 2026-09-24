@@ -807,6 +807,12 @@ enables a variety of debug and test scenarios.
 > Note, all `checkpoint` subcommands require a single-node Neo-Express blockchain.
 > Multi-node blockchains cannot be check pointed.
 
+> **Security note:** a checkpoint contains the complete on-chain state, including balances,
+> deployed contracts, and contract storage. The associated `.neo-express` data file stores
+> wallet private keys unencrypted. Keep the data file private and do not commit or publish it.
+> Checkpoints may be committed for reproducible local tests when their state is intended to be
+> shared, but review balances and contract storage before distributing one.
+
 ### neoxp checkpoint create
 
 ```

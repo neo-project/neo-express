@@ -54,7 +54,13 @@ static class Utility
         var uri = json.Value<string>("uri") ?? throw new JsonException("uri");
         var branchInfo = BranchInfo.Parse(json["branch-info"] as JObject ?? throw new JsonException("branch-info"));
         var wallet = ToolkitWallet.Parse(json["consensus-wallet"] as JObject ?? throw new JsonException("consensus-wallet"), branchInfo.ProtocolSettings);
-        return new WorknetFile(new Uri(uri), branchInfo, wallet);
+
+        // older worknet files always carry an rpc-port property in their consensus-nodes
+        // entry (SaveWorknetFile has written it since introduction); fall back to the
+        // default port when it is missing so hand-edited files keep working
+        var rpcPort = json["consensus-nodes"]?.FirstOrDefault()?["rpc-port"]?.Value<ushort>()
+            ?? WorknetFile.DefaultRpcPort;
+        return new WorknetFile(new Uri(uri), branchInfo, wallet) { RpcPort = rpcPort };
     }
 
     public static void SaveWorknetFile(this IFileSystem fs, string filename, Uri uri, BranchInfo branch, ToolkitWallet wallet)
@@ -70,7 +76,7 @@ static class Utility
         {
             using var _1 = writer.WritePropertyArray("consensus-nodes");
             using var _2 = writer.WriteObject();
-            writer.WriteProperty("rpc-port", 30332);
+            writer.WriteProperty("rpc-port", WorknetFile.DefaultRpcPort);
             using var _3 = writer.WritePropertyObject("wallet");
             writer.WriteProperty("name", "node1");
             using var _4 = writer.WritePropertyArray("accounts");
@@ -92,6 +98,25 @@ static class Utility
         branch.WriteJson(writer);
         writer.WritePropertyName("consensus-wallet");
         wallet.WriteJson(writer);
+    }
+
+    // Record the RPC port the node is (about to be) listening on so StopCommand can
+    // reach it even when RunCommand was started with a non-default --rpc-port.
+    public static void UpdateWorknetRpcPort(this IFileSystem fs, string filename, ushort rpcPort)
+    {
+        var json = fs.File.Exists(filename)
+            ? JsonConvert.DeserializeObject<JObject>(fs.File.ReadAllText(filename))
+                ?? throw new JsonException($"Could not parse {filename}")
+            : throw new FileNotFoundException($"Could not find {filename}");
+
+        var consensusNodes = json["consensus-nodes"] as JArray
+            ?? throw new JsonException("consensus-nodes");
+        if (consensusNodes.Count == 0)
+            throw new JsonException("consensus-nodes is empty");
+
+        consensusNodes[0]!["rpc-port"] = rpcPort;
+
+        fs.File.WriteAllText(filename, JsonConvert.SerializeObject(json, Formatting.Indented));
     }
 
     public static CancellationToken OverrideCancelKeyPress(this IConsole console, CancellationToken token, bool continueRunning = false)

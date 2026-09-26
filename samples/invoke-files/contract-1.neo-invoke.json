@@ -1,0 +1,7 @@
+[
+  {
+    "contract": "#SampleContract",
+    "operation": "symbol",
+    "args": []
+  }
+]

@@ -20,6 +20,114 @@ body,
   margin: 0;
 }
 
+.panel-shell {
+  background-color: var(--vscode-sideBar-background);
+  box-sizing: border-box;
+  height: 100%;
+}
+
+html[data-view="invokeFile"],
+html[data-view="invokeFile"] body,
+html[data-view="invokeFile"] #root,
+html[data-view="invokeFile"] .panel-shell {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html[data-view="tracker"],
+html[data-view="tracker"] body,
+html[data-view="tracker"] #root,
+html[data-view="tracker"] .panel-shell {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html[data-view="tracker"] .panel-shell {
+  margin: 0;
+  padding: 0 var(--neo-space-3);
+}
+
+.tracker {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.tracker__blocks {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.tracker__blocks table {
+  height: auto;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.tracker__blocks th,
+.tracker__blocks td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tracker__blocks thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Sidebar Quick Start: no inner scrollbar. The view container scrolls. */
+html[data-view="quickStart"],
+html[data-view="quickStart"] body,
+html[data-view="quickStart"] #root {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+html[data-view="quickStart"] .panel-shell {
+  height: auto;
+  margin: 0;
+  overflow: visible;
+}
+
+.quick-start {
+  align-items: stretch;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--neo-space-3);
+  height: auto;
+  max-width: 100%;
+  overflow: visible;
+  padding: var(--neo-space-3) var(--neo-space-3) var(--neo-space-5);
+  text-align: center;
+}
+
+.quick-start .neo-button-wrap,
+.quick-start .neo-button {
+  width: 100%;
+}
+
+.quick-start .neo-button {
+  white-space: normal;
+}
+
+.quick-start > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.quick-start div {
+  overflow-wrap: anywhere;
+}
+
 body {
   background: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
@@ -38,6 +146,10 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+select.neo-select {
+  appearance: auto;
 }
 
 button:focus-visible,
@@ -225,18 +337,20 @@ textarea:focus-visible,
 
 .contract-studio__content {
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .contract-studio__content > * {
-  height: 100%;
+  box-sizing: border-box;
+  min-height: 100%;
+  height: auto;
 }
 
 .contract-studio__interactive {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 0;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  overflow: visible;
 }
 
 .execution-context {
@@ -305,9 +419,10 @@ textarea:focus-visible,
 
 .contract-studio__workspace {
   display: grid;
+  flex: 1 1 auto;
   grid-template-columns: minmax(420px, 1.4fr) minmax(300px, 0.8fr);
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .contract-studio__workspace--single {
@@ -316,7 +431,7 @@ textarea:focus-visible,
 
 .contract-studio__steps {
   min-width: 0;
-  overflow: auto;
+  overflow: visible;
   padding: var(--neo-space-4);
 }
 
@@ -324,7 +439,7 @@ textarea:focus-visible,
   background: var(--vscode-panel-background);
   border-left: 1px solid var(--neo-border);
   min-width: 0;
-  overflow: auto;
+  overflow: visible;
 }
 
 .invocation-step {
@@ -568,6 +683,74 @@ textarea:focus-visible,
   white-space: pre-wrap;
 }
 
+.invocation-result {
+  background: var(--vscode-sideBar-background);
+  border: 1px solid var(--neo-border);
+  border-radius: var(--neo-radius);
+  margin-bottom: var(--neo-space-4);
+  padding: var(--neo-space-3);
+}
+
+.invocation-result--success {
+  border-color: var(--neo-success);
+}
+
+.invocation-result--error {
+  border-color: var(--neo-danger);
+}
+
+.invocation-result__header {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--neo-space-2);
+  justify-content: space-between;
+  margin-bottom: var(--neo-space-2);
+}
+
+.invocation-result__title {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.invocation-result__meta {
+  color: var(--neo-muted);
+  font-size: 12px;
+}
+
+.invocation-result__body {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.invocation-result__txids {
+  color: var(--neo-muted);
+  display: grid;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  gap: 2px;
+  margin-top: var(--neo-space-2);
+}
+
+.neo-dialog__body .invocation-result {
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.neo-dialog__body .invocation-result__body {
+  max-height: min(360px, 50vh);
+}
+
 @media (max-width: 900px) {
   .execution-context {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -575,12 +758,35 @@ textarea:focus-visible,
 
   .contract-studio__workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(320px, 1fr) minmax(180px, 0.55fr);
+    grid-template-rows: auto auto;
   }
 
   .contract-studio__transactions {
     border-left: 0;
     border-top: 1px solid var(--neo-border);
+  }
+}
+
+@media (min-width: 901px) and (min-height: 560px) {
+  .contract-studio__content {
+    overflow: hidden;
+  }
+
+  .contract-studio__content > * {
+    height: 100%;
+  }
+
+  .contract-studio__interactive {
+    overflow: hidden;
+  }
+
+  .contract-studio__workspace {
+    overflow: hidden;
+  }
+
+  .contract-studio__steps,
+  .contract-studio__transactions {
+    overflow: auto;
   }
 }
 

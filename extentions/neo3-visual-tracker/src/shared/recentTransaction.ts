@@ -8,6 +8,7 @@ type RecentTransaction = {
   blockchain: string;
   log?: ApplicationLog;
   operation?: string;
+  output?: string;
   txid: string;
   state: TransactionStatus;
   submittedAt?: string;

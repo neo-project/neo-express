@@ -1,9 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 import AutoCompleteData from "../../../shared/autoCompleteData";
-import ContractTile from "./ContractTile";
 import dedupeAndSort from "../../../extension/util/dedupeAndSort";
-import InputNonDraggable from "../InputNonDraggable";
 
 type Props = {
   autoCompleteData: AutoCompleteData;
@@ -14,6 +12,15 @@ type Props = {
   setContract: (newValue: string) => void;
 };
 
+export function listContractOptions(autoCompleteData: AutoCompleteData): string[] {
+  const names = Object.keys(autoCompleteData.contractManifests)
+    .filter((candidate) => !candidate.startsWith("0x"))
+    .map((candidate) =>
+      candidate.startsWith("#") ? candidate : `#${candidate}`
+    );
+  return dedupeAndSort(names);
+}
+
 export default function ContractInput({
   autoCompleteData,
   contract,
@@ -22,70 +29,63 @@ export default function ContractInput({
   isReadOnly,
   setContract,
 }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
   const inputId = useRef(
     `neo-contract-${Math.random().toString(36).slice(2)}`
   ).current;
-  const [hasFocus, setHasFocus] = useState(false);
 
   useEffect(() => {
     if (forceFocus) {
-      inputRef.current?.focus();
+      selectRef.current?.focus();
     }
   }, [forceFocus]);
 
-  const allNamesAndHashes = dedupeAndSort(
-    Object.keys(autoCompleteData.contractManifests).map((candidate) =>
-      candidate.startsWith("0x")
-        ? autoCompleteData.contractNames[candidate] || candidate
-        : candidate
-    )
-  );
-  let contractHashOrName = contract || "";
-  if (contractHashOrName.startsWith("#")) {
-    contractHashOrName = contractHashOrName.substring(1);
+  const options = listContractOptions(autoCompleteData);
+  const current = contract || "";
+  const known = options.includes(current);
+
+  if (options.length) {
+    return (
+      <div className="neo-field">
+        <label className="neo-field__label" htmlFor={inputId}>
+          Contract
+        </label>
+        <select
+          className="neo-select"
+          disabled={isReadOnly}
+          id={inputId}
+          ref={selectRef}
+          value={known ? current : ""}
+          onChange={(event) => setContract(event.target.value)}
+        >
+          <option value="">Select a contract…</option>
+          {options.map((candidate) => (
+            <option key={candidate} value={candidate}>
+              {candidate.replace(/^#/, "")}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
   }
-  const alternateName =
-    autoCompleteData.contractNames[contractHashOrName] || "";
 
   return (
-    <div className="neo-field neo-combobox">
+    <div className="neo-field">
       <label className="neo-field__label" htmlFor={inputId}>
         Contract
       </label>
-      <InputNonDraggable
+      <input
         className="neo-input"
         disabled={isReadOnly}
         id={inputId}
-        inputRef={inputRef}
         type="text"
-        value={contract || ""}
-        onBlur={() => setHasFocus(false)}
+        value={current}
         onChange={(event) => setContract(event.target.value)}
-        onFocus={() => setHasFocus(true)}
       />
-      {hasFocus && !!allNamesAndHashes.length && (
-        <div className="neo-combobox__menu">
-          {allNamesAndHashes.map((candidate) => (
-            <ContractTile
-              key={candidate}
-              contractHashOrName={candidate}
-              autoCompleteData={autoCompleteData}
-              onMouseDown={setContract}
-            />
-          ))}
-        </div>
-      )}
-      {!isPartOfDiffView && !!alternateName && (
+      {!isPartOfDiffView && (
         <div className="neo-field__meta">
-          Alias:{" "}
-          <button
-            className="neo-inline-action"
-            onClick={() => setContract(alternateName)}
-            type="button"
-          >
-            {alternateName}
-          </button>
+          No contracts found. Build a .nef in the workspace or wait for the
+          connected chain to load native contracts.
         </div>
       )}
     </div>

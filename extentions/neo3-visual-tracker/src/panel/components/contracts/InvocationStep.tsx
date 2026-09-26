@@ -7,6 +7,10 @@ import AutoCompleteData from "../../../shared/autoCompleteData";
 import ContractInput from "./ContractInput";
 import NavButton from "../NavButton";
 import OperationInput from "./OperationInput";
+import {
+  manifestMethods,
+  resolveContractManifest,
+} from "../../../shared/resolveContractManifest";
 
 type Props = {
   i: number;
@@ -56,19 +60,10 @@ export default function InvocationStep({
     if (contractHashOrName.startsWith("#")) {
       contractHashOrName = contractHashOrName.substring(1);
     }
-    let manifest = autoCompleteData.contractManifests[contractHashOrName];
-    if (!manifest) {
-      for (const contractHash of Object.keys(autoCompleteData.contractNames)) {
-        if (autoCompleteData.contractNames[contractHash] === contractHashOrName) {
-          manifest = autoCompleteData.contractManifests[contractHash];
-        }
-      }
-    }
+    const manifest = resolveContractManifest(autoCompleteData, contract);
     const paths = autoCompleteData.contractPaths[contractHashOrName] || [];
     canDebug = !!operation && paths.length > 0 && debugScopeReady;
-    if (manifest?.abi) {
-      operations = manifest.abi.methods;
-    }
+    operations = manifestMethods(manifest) as neonSc.ContractMethodDefinitionJson[];
   }
 
   const canRun = !!contract && !!operation && executionReady;
@@ -117,7 +112,13 @@ export default function InvocationStep({
           forceFocus={forceFocus}
           isPartOfDiffView={isPartOfDiffView}
           isReadOnly={isReadOnly}
-          setContract={(newContract) => onUpdate(newContract, operation, args)}
+          setContract={(newContract) =>
+            onUpdate(
+              newContract,
+              newContract === contract ? operation : undefined,
+              newContract === contract ? args : []
+            )
+          }
         />
         <OperationInput
           isReadOnly={isReadOnly}

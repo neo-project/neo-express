@@ -3,11 +3,13 @@ import test from "node:test";
 
 import {
   areInvocationStepsReady,
+  areInvocationStepsSafe,
   isLiveDebugWitnessScopeSupported,
   isWitnessScope,
   resolveSelectedAccount,
   toInvocationAccounts,
 } from "./invocationExecution";
+import AutoCompleteData from "./autoCompleteData";
 
 test("toInvocationAccounts returns stable alphabetic account options", () => {
   assert.deepEqual(
@@ -56,4 +58,45 @@ test("live debugging only supports CalledByEntry witness scope", () => {
   assert.equal(isLiveDebugWitnessScopeSupported("CalledByEntry"), true);
   assert.equal(isLiveDebugWitnessScopeSupported("Global"), false);
   assert.equal(isLiveDebugWitnessScopeSupported("None"), false);
+});
+
+test("areInvocationStepsSafe requires every method to be marked safe", () => {
+  const autoCompleteData = {
+    contractManifests: {
+      SuperTokenContract: {
+        abi: {
+          methods: [
+            { name: "getOwner", parameters: [], safe: true },
+            { name: "transfer", parameters: [], safe: false },
+          ],
+          events: [],
+        },
+      },
+    },
+    contractNames: {},
+    contractPaths: {},
+    wellKnownAddresses: {},
+    addressNames: {},
+  } as unknown as AutoCompleteData;
+  assert.equal(
+    areInvocationStepsSafe(
+      [{ contract: "#SuperTokenContract", operation: "getOwner" }],
+      autoCompleteData
+    ),
+    true
+  );
+  assert.equal(
+    areInvocationStepsSafe(
+      [{ contract: "#SuperTokenContract", operation: "transfer" }],
+      autoCompleteData
+    ),
+    false
+  );
+  assert.equal(
+    areInvocationStepsSafe(
+      [{ contract: "#Missing", operation: "getOwner" }],
+      autoCompleteData
+    ),
+    false
+  );
 });

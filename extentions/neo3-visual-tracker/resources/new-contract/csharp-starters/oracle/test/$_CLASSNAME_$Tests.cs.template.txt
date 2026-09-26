@@ -1,0 +1,34 @@
+using FluentAssertions;
+using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.SmartContract;
+using Neo.VM;
+using NeoTestHarness;
+using Xunit;
+
+namespace $_CONTRACTNAME_$Tests
+{
+    [CheckpointPath("test/bin/checkpoints/contract-deployed.neoxp-checkpoint")]
+    public class $_CLASSNAME_$Tests : IClassFixture<CheckpointFixture<$_CLASSNAME_$Tests>>
+    {
+        readonly CheckpointFixture fixture;
+        readonly ExpressChain chain;
+
+        public $_CLASSNAME_$Tests(CheckpointFixture<$_CLASSNAME_$Tests> fixture)
+        {
+            this.fixture = fixture;
+            this.chain = fixture.FindChain();
+        }
+
+        [Fact]
+        public void get_response_halts_after_deploy()
+        {
+            var settings = chain.GetProtocolSettings();
+            using var snapshot = fixture.GetSnapshot();
+            using var engine = new TestApplicationEngine(snapshot, settings);
+
+            engine.ExecuteScript<$_CLASSNAME_$>(c => c.getResponse());
+            engine.State.Should().Be(VMState.HALT);
+        }
+    }
+}

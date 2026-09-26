@@ -130,10 +130,11 @@ neoxp run
 neoxp show balances genesis
 ```
 
-> **Tip:** While the blockchain is running it mints a new block every 3 seconds by
+> **Tip:** While the blockchain is running it mints a new block every 15 seconds by
 > default, so a transaction is not reflected in queries such as `show balances` until the
 > next block is produced. For faster local iteration, start the chain with a shorter block
-> time, for example `neoxp run --seconds-per-block 1`.
+> time, for example `neoxp run --seconds-per-block 1`, or set `chain.AutoMine` to `true` in
+> the `.neo-express` settings file to confirm transactions immediately on single-node chains.
 
 For writing automated smart-contract tests against a Neo-Express checkpoint — including build
 integration, typed contract interfaces, assertions and contract code coverage — see the

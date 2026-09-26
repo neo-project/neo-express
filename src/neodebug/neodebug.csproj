@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="5.1.0" />
-        <PackageReference Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol" Version="17.14.10225.1" />
+        <PackageReference Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol" Version="18.0.10427.1" />
     </ItemGroup>
 
     <ItemGroup>

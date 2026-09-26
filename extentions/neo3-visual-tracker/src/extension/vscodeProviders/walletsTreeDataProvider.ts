@@ -5,6 +5,7 @@ import AutoComplete from "../autoComplete";
 import Log from "../util/log";
 import posixPath from "../util/posixPath";
 import WalletDetector from "../fileDetectors/walletDetector";
+import { workspaceWalletDisplayName } from "../../shared/expressWalletAddresses";
 
 const LOG_PREFIX = "WalletsTreeDataProvider";
 
@@ -64,7 +65,7 @@ export default class WalletsTreeDataProvider
       for (const account of nep6Wallet.accounts) {
         newData.push({
           address: account.address,
-          name: account.label,
+          name: workspaceWalletDisplayName(nep6Wallet.path, account.label),
           path: nep6Wallet.path,
           isNeoExpress: false,
         });

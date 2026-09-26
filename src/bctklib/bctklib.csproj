@@ -17,6 +17,7 @@
         <PackageReference Include="MessagePack" Version="2.5.301" />
         <PackageReference Include="Neo" Version="$(NeoVersion)" />
         <PackageReference Include="Nerdbank.Streams" Version="2.14.354" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="10.2.1.58549" />
         <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />

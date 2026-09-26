@@ -29,7 +29,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.5.1
+      uses: dotnet/nbgv@v0.5.2
       id: nbgv
 
     - name: Build (${{ matrix.runtime }})

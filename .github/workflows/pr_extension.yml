@@ -32,7 +32,7 @@ jobs:
         cache-dependency-path: extentions/neo3-visual-tracker/package-lock.json
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5.2.0
+      uses: actions/setup-dotnet@v6.0.0
       with:
         dotnet-version: '10.0.x'
 

@@ -190,6 +190,9 @@ Usage: neoxp wallet create [Options] <Name>
 Arguments:
 [Options]:
   -f|--force          Overwrite existing data
+  --private-key <PRIVATE_KEY>
+                      Private key for account (Format: HEX, Base64, or WIF)
+                      Default: Random
   -i|--input <INPUT>  Path to neo-express data file
 <Name>: Wallet name
 ```
@@ -201,6 +204,10 @@ Ne4Ko2JkzjAd8q2sasXsQCLfZ7nu8Gm5vR.
 
 To overwrite an existing wallet, the `--force` option must be specified.
 
+> **Security note:** the wallet's private key is stored unencrypted in the neo-express data file.
+> Avoid passing `--private-key` on the command line where shell history or process listings could
+> capture it; these keys are for development use only and must never be used on public networks.
+
 ### neoxp wallet list
 
 ```
@@ -208,6 +215,7 @@ Usage: neoxp wallet list [Options]
 
 Arguments:
 [Options]:
+  -j|--json           Output as JSON
   -i|--input <INPUT>  Path to neo-express data file
 ```
 
@@ -262,6 +270,7 @@ Usage: neoxp transfer [Options] <Quantity> <Asset> <Sender> <Receiver>
 Arguments:
 [Options]:
   -p|--password <PASSWORD>  password to use for NEP-2/NEP-6 sender
+  -d|--data <DATA>          Optional data parameter to pass to transfer operation
   -i|--input <INPUT>        Path to neo-express data file
   -t|--trace                Enable contract execution tracing
   -j|--json                 Output as JSON
@@ -329,6 +338,7 @@ Arguments:
                                       Default: CalledByEntry
                                       Allowed values are: None, CalledByEntry, Global.
   -p|--password <PASSWORD>            password to use for NEP-2/NEP-6 account
+  -d|--data <DATA>                    Optional data parameter to pass to _deploy operation
   -i|--input <INPUT>                  Path to neo-express data file
   -t|--trace                          Enable contract execution tracing
   -f|--force                          Deploy despite a name conflict, or update the
@@ -529,6 +539,7 @@ Arguments:
                                       Default: CalledByEntry
                                       Allowed values are: None, CalledByEntry, Global.
   -p|--password <PASSWORD>            password to use for NEP-2/NEP-6 account
+  -d|--data <DATA>                    Data parameter for update method on contract (Format: JSON)
   -i|--input <INPUT>                  Path to neo-express data file
   -t|--trace                          Enable contract execution tracing
   -g|--gas <GAS>                      Additional GAS applied to the update
@@ -572,13 +583,13 @@ Arguments:
 
 The `neoxp contract validate` checks a given contract for compliance with proposal specification. It has two subcommands.
 
-#### nepxp contract validate nep11
+#### neoxp contract validate nep11
 
 ```
 Usage: neoxp contract validate nep11 [options] <ContractHash>
 
 Arguments:
-  ContractHash        Path to contract .nef file
+  ContractHash        Contract script hash
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
@@ -586,13 +597,13 @@ Options:
 
 This command checks if the specified contract is NEP-11 compliant.
 
-#### nepxp contract validate nep17
+#### neoxp contract validate nep17
 
 ```
 Usage: neoxp contract validate nep17 [options] <ContractHash>
 
 Arguments:
-  ContractHash        Path to contract .nef file
+  ContractHash        Contract script hash
 
 Options:
   -i|--input <INPUT>  Path to neo-express data file
@@ -674,7 +685,7 @@ Usage: neoxp show notifications [options]
 
 Options:
   -c|--contract <CONTRACT>      Limit shown notifications to the specified contract
-  -n|--count                    Limit number of shown notifications
+  -n|--count <COUNT>            Limit number of shown notifications
   -e|--event-name <EVENT_NAME>  Limit shown notifications to specified event name
   -i|--input <INPUT>            Path to neo-express data file
 ```
@@ -699,8 +710,11 @@ The `show transaction` displays the contents of a transaction specified by hash 
 
 ### neoxp show state
 
-``` 
-Usage: neoxp show state
+```
+Usage: neoxp show state [Options]
+
+Options:
+  -i|--input <INPUT>  Path to neo-express data file
 ```
 
 Outputs the current block height, running status, and configuration file location. Example:
@@ -955,6 +969,8 @@ Options:
                                       NEP-2/NEP-6 account
   -t|--trace                          Enable contract execution
                                       tracing
+  -j|--json                           Output as JSON
+  -i|--input <INPUT>                  Path to neo-express data file
 ```
 
 This command invokes a custom script, the input text will be converted to script with a priority: hex, base64, file path.

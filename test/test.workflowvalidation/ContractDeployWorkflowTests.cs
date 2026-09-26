@@ -166,16 +166,50 @@ public class ContractDeployWorkflowTests
         }
     }
 
+    [Fact]
+    public async Task checkpoint_create_makes_missing_parent_directory()
+    {
+        using var workspace = Workspace.Create();
+        var checkpointRoot = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            $"neo-express-checkpoint-workflow-{Guid.NewGuid():N}");
+        var checkpointPath = Path.Combine(
+            checkpointRoot,
+            "nested",
+            "deployed.neoxp-checkpoint");
+
+        try
+        {
+            var manager = new ExpressChainManager(new FileSystem(), workspace.Chain);
+            var result = await manager.CreateCheckpointAsync(
+                workspace.Node,
+                checkpointPath,
+                force: false);
+
+            result.path.Should().Be(Path.GetFullPath(checkpointPath));
+            File.Exists(result.path).Should().BeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(checkpointRoot))
+            {
+                Directory.Delete(checkpointRoot, recursive: true);
+            }
+        }
+    }
+
     sealed class Workspace : IDisposable
     {
         public OfflineNode Node { get; }
+        public ExpressChain Chain { get; }
         public Wallet Wallet { get; }
         public UInt160 AccountHash { get; }
         readonly string nodePath;
 
-        Workspace(OfflineNode node, Wallet wallet, UInt160 accountHash, string nodePath)
+        Workspace(OfflineNode node, ExpressChain chain, Wallet wallet, UInt160 accountHash, string nodePath)
         {
             Node = node;
+            Chain = chain;
             Wallet = wallet;
             AccountHash = accountHash;
             this.nodePath = nodePath;
@@ -194,7 +228,7 @@ public class ContractDeployWorkflowTests
                 chain,
                 enableTrace: false);
             var (wallet, accountHash) = chain.GetGenesisAccount(settings);
-            return new Workspace(node, wallet, accountHash, nodePath);
+            return new Workspace(node, chain, wallet, accountHash, nodePath);
         }
 
         public void Dispose()
@@ -273,7 +307,6 @@ public class ContractDeployWorkflowTests
 
         public event ConsoleCancelEventHandler? CancelKeyPress { add { } remove { } }
     }
-
     static string FindRepositoryRoot(string startPath)
     {
         var directory = new DirectoryInfo(startPath);

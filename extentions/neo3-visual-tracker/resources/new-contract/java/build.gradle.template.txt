@@ -6,11 +6,10 @@ plugins {
 group '$_REVERSEDOMAINNAME_$'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 11
+targetCompatibility = 11
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
@@ -18,7 +17,7 @@ dependencies {
     implementation 'io.neow3j:contract:$_NEOW3JLIBVERSION_$'
     implementation 'io.neow3j:devpack:$_NEOW3JLIBVERSION_$'
     implementation 'io.neow3j:compiler:$_NEOW3JLIBVERSION_$'
-    implementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 neow3jCompiler {

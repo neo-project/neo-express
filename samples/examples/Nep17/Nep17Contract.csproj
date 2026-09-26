@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NeoContractName>Nep17Contract</NeoContractName>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+</Project>

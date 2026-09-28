@@ -14,13 +14,13 @@
         <InternalsVisibleTo Include="test.bctklib" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="MessagePack" Version="2.5.301" />
+        <PackageReference Include="MessagePack" Version="2.5.305" />
         <PackageReference Include="Neo" Version="$(NeoVersion)" />
         <PackageReference Include="Nerdbank.Streams" Version="2.14.354" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="OneOf" Version="3.0.271" />
         <PackageReference Include="rocksdb" Version="11.8.1.5032" />
-        <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
+        <PackageReference Include="System.IO.Abstractions" Version="22.3.0" />
         <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoModuleVersion)" />
         <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoModuleVersion)" />
     </ItemGroup>

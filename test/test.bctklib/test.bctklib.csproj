@@ -10,19 +10,19 @@
         <ProjectReference Include="..\..\src\bctklib\bctklib.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="10.0.1">
+        <PackageReference Include="coverlet.collector" Version="10.1.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="FluentAssertions" Version="7.2.0" />
+        <PackageReference Include="FluentAssertions" Version="7.2.2" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
         <PackageReference Include="Neo.Plugins.Storage.RocksDBStore" Version="3.10.1" />
-        <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.2.0" />
-        <PackageReference Include="Xunit.Combinatorial" Version="2.1.41" />
+        <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.3.0" />
+        <PackageReference Include="Xunit.Combinatorial" Version="2.1.43" />
         <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="xunit.v3" Version="3.1.0" />
+        <PackageReference Include="xunit.v3" Version="3.2.2" />
     </ItemGroup>
 </Project>

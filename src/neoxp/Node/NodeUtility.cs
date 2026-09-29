@@ -269,7 +269,7 @@ namespace NeoExpress.Node
             if (contractState.Id < 0)
                 throw new NotSupportedException("Contract download not supported for native contracts");
 
-            var states = Enumerable.Empty<(string key, string value)>();
+            var states = new List<(string key, string value)>();
             ReadOnlyMemory<byte> start = default;
 
             while (true)
@@ -288,11 +288,10 @@ namespace NeoExpress.Node
                     ValidateProof(stateRoot.RootHash, (JString)response["lastProof"]!, (JObject)results[^1]!);
                 }
 
-                states = states.Concat(results
-                    .Select(j => (
-                        j!["key"]!.AsString(),
-                        j!["value"]!.AsString()
-                    )));
+                states.AddRange(results.Select(j => (
+                    j!["key"]!.AsString(),
+                    j!["value"]!.AsString()
+                )));
 
                 var truncated = response["truncated"]!.AsBoolean();
                 if (!truncated)
@@ -300,7 +299,7 @@ namespace NeoExpress.Node
                 start = Convert.FromBase64String(results[^1]!["key"]!.AsString());
             }
 
-            return (contractState, states.ToList());
+            return (contractState, states);
 
             static void ValidateProof(UInt256 rootHash, JString proof, JObject result)
             {

@@ -65,7 +65,7 @@ namespace NeoExpress.Commands
             {
                 try
                 {
-                    await ExecuteAsync(Console.Out).ConfigureAwait(false);
+                    await ExecuteAsync(console.Out).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

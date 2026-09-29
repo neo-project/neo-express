@@ -41,6 +41,8 @@ public class ExpressChainManagerSettingsTests
     [Theory]
     [InlineData("127.0.0.2", "http://127.0.0.2:50002/")]
     [InlineData("0.0.0.0", "http://127.0.0.1:50002/")]
+    [InlineData("::2", "http://[::2]:50002/")]
+    [InlineData("::", "http://[::1]:50002/")]
     public void GetRpcUri_uses_the_configured_bind_address(string bindAddress, string expected)
     {
         var chain = CreateChain();

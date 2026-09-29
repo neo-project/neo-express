@@ -290,13 +290,14 @@ namespace NeoExpress
             var nodePath = fileSystem.GetNodePath(node);
             var nodePathBackup = string.Concat(nodePath, ".backup-", Guid.NewGuid().ToString("N"));
 
-            // Step 1: Restore checkpoint to temp location
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
 
             try
             {
+                // Step 1: Restore checkpoint to temp location
+                RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+
                 // Step 2: Backup existing node directory (if exists)
                 if (fileSystem.Directory.Exists(nodePath))
                 {

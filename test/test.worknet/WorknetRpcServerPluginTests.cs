@@ -12,6 +12,7 @@ using FluentAssertions;
 using Neo;
 using Neo.BlockchainToolkit.Plugins;
 using Neo.Json;
+using NeoWorkNet.Commands;
 using System.Numerics;
 using Xunit;
 

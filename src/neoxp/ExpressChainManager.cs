@@ -372,7 +372,7 @@ namespace NeoExpress
             if (!IsNodeRunning(node))
                 return false;
 
-            var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
+            using var rpcClient = new Neo.Network.RPC.RpcClient(GetRpcUri(chain, node), protocolSettings: ProtocolSettings);
             var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
             var processIdToken = json["processId"] ?? json["process-id"];
             var processId = int.Parse(processIdToken!.AsString());
@@ -469,8 +469,7 @@ namespace NeoExpress
 
         internal static RpcServersSettings CreateRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
         {
-            var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
-                ? bindAddress : IPAddress.Loopback;
+            var ipAddress = GetRpcBindAddress(chain);
 
             var settings = new Dictionary<string, string>()
             {
@@ -506,6 +505,25 @@ namespace NeoExpress
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
             return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
         }
+
+        internal static Uri GetRpcUri(ExpressChain chain, ExpressConsensusNode node)
+        {
+            var ipAddress = GetRpcBindAddress(chain);
+            if (IPAddress.Any.Equals(ipAddress))
+            {
+                ipAddress = IPAddress.Loopback;
+            }
+            else if (IPAddress.IPv6Any.Equals(ipAddress))
+            {
+                ipAddress = IPAddress.IPv6Loopback;
+            }
+
+            return new UriBuilder(Uri.UriSchemeHttp, ipAddress.ToString(), node.RpcPort).Uri;
+        }
+
+        static IPAddress GetRpcBindAddress(ExpressChain chain)
+            => chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+                ? bindAddress : IPAddress.Loopback;
 
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {

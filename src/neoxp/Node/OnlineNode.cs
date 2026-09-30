@@ -46,7 +46,7 @@ namespace NeoExpress.Node
         {
             this.ProtocolSettings = settings;
             this.chain = chain;
-            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
+            rpcClient = new RpcClient(ExpressChainManager.GetRpcUri(chain, node), protocolSettings: settings);
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
             autoMine = ShouldAutoMine(chain);
         }

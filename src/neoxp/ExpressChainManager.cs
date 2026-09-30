@@ -290,13 +290,14 @@ namespace NeoExpress
             var nodePath = fileSystem.GetNodePath(node);
             var nodePathBackup = string.Concat(nodePath, ".backup-", Guid.NewGuid().ToString("N"));
 
-            // Step 1: Restore checkpoint to temp location
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
 
             try
             {
+                // Step 1: Restore checkpoint to temp location
+                RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+
                 // Step 2: Backup existing node directory (if exists)
                 if (fileSystem.Directory.Exists(nodePath))
                 {
@@ -335,9 +336,16 @@ namespace NeoExpress
             finally
             {
                 // Clean up temp folder if it still exists
-                if (fileSystem.Directory.Exists(checkpointTempPath))
+                try
                 {
-                    fileSystem.Directory.Delete(checkpointTempPath, true);
+                    if (fileSystem.Directory.Exists(checkpointTempPath))
+                    {
+                        fileSystem.Directory.Delete(checkpointTempPath, true);
+                    }
+                }
+                catch
+                {
+                    // Preserve the original restore exception if cleanup fails.
                 }
             }
         }

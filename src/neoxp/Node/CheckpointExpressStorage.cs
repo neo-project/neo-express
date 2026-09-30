@@ -50,10 +50,28 @@ namespace NeoExpress.Node
         public static CheckpointExpressStorage OpenCheckpoint(string checkpointPath, uint? network = null, byte? addressVersion = null, UInt160? scriptHash = null)
         {
             var checkpointTempPath = RocksDbUtility.GetTempPath();
-            var metadata = RocksDbUtility.RestoreCheckpoint(checkpointPath, checkpointTempPath, network, addressVersion, scriptHash);
-
-            var db = RocksDbUtility.OpenReadOnlyDb(checkpointTempPath);
-            return new CheckpointExpressStorage(db, checkpointTempPath);
+            RocksDb? db = null;
+            try
+            {
+                _ = RocksDbUtility.RestoreCheckpoint(checkpointPath, checkpointTempPath, network, addressVersion, scriptHash);
+                db = RocksDbUtility.OpenReadOnlyDb(checkpointTempPath);
+                return new CheckpointExpressStorage(db, checkpointTempPath);
+            }
+            catch
+            {
+                db?.Dispose();
+                if (Directory.Exists(checkpointTempPath))
+                {
+                    try
+                    {
+                        Directory.Delete(checkpointTempPath, true);
+                    }
+                    catch
+                    {
+                    }
+                }
+                throw;
+            }
         }
 
         public static IExpressStorage OpenForDiscard(string path)

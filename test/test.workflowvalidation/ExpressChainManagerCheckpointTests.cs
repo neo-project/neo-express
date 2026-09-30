@@ -23,8 +23,10 @@ namespace test.workflowvalidation;
 
 public class ExpressChainManagerCheckpointTests
 {
-    [Fact]
-    public void RestoreCheckpoint_removes_partial_extraction_without_touching_node_data()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RestoreCheckpoint_preserves_extraction_error_and_node_data(bool cleanupFails)
     {
         var chain = CreateSingleNodeChain();
         var (checkpointPath, checkpointRoot) = CreateCheckpointArchive(chain);
@@ -53,15 +55,24 @@ public class ExpressChainManagerCheckpointTests
         file.Setup(f => f.Exists(checkpointPath)).Returns(true);
         directory.Setup(d => d.GetCurrentDirectory()).Returns(checkpointRoot);
         directory.Setup(d => d.Exists(It.IsAny<string>())).Returns((string p) => Directory.Exists(p));
-        directory.Setup(d => d.Delete(It.IsAny<string>(), true)).Callback<string, bool>(Directory.Delete);
+        if (cleanupFails)
+        {
+            directory.Setup(d => d.Delete(restorePath, true))
+                .Throws(new UnauthorizedAccessException("Temporary directory cleanup denied"));
+        }
+        else
+        {
+            directory.Setup(d => d.Delete(It.IsAny<string>(), true)).Callback<string, bool>(Directory.Delete);
+        }
         var manager = new ExpressChainManager(fileSystem.Object, chain);
 
         try
         {
             Action action = () => manager.RestoreCheckpoint(checkpointPath, true);
 
-            action.Should().Throw<IOException>();
-            Directory.Exists(restorePath).Should().BeFalse();
+            action.Should().ThrowExactly<IOException>();
+            Directory.Exists(restorePath).Should().Be(cleanupFails);
+            directory.Verify(d => d.Delete(restorePath, true), Times.Once);
             directory.Verify(d => d.Move(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
         finally

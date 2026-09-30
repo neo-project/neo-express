@@ -336,9 +336,16 @@ namespace NeoExpress
             finally
             {
                 // Clean up temp folder if it still exists
-                if (fileSystem.Directory.Exists(checkpointTempPath))
+                try
                 {
-                    fileSystem.Directory.Delete(checkpointTempPath, true);
+                    if (fileSystem.Directory.Exists(checkpointTempPath))
+                    {
+                        fileSystem.Directory.Delete(checkpointTempPath, true);
+                    }
+                }
+                catch
+                {
+                    // Preserve the original restore exception if cleanup fails.
                 }
             }
         }

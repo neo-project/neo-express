@@ -385,7 +385,17 @@ namespace NeoExpress
             var processIdToken = json["processId"] ?? json["process-id"];
             var processId = int.Parse(processIdToken!.AsString());
             var process = System.Diagnostics.Process.GetProcessById(processId);
-            await process.WaitForExitAsync().ConfigureAwait(false);
+            // A node that acknowledges expressshutdown but never exits would otherwise
+            // hang neoxp stop (and stop --all) forever.
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new Exception($"Node process {processId} did not exit within 30 seconds of the shutdown request");
+            }
             return true;
         }
 

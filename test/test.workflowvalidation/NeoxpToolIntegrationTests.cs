@@ -82,7 +82,6 @@ public class NeoxpToolIntegrationTests : IDisposable
             Path.Combine(Environment.CurrentDirectory, "..", "..", ".."),
 
             // Try common development paths (Windows)
-            @"C:\Users\liaoj\git\neo-express",
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "git", "neo-express"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "source", "neo-express"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "repos", "neo-express"),

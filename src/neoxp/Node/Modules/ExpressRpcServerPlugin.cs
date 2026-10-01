@@ -160,7 +160,9 @@ namespace NeoExpress.Node
 
             if (contractParam is JNumber number)
             {
-                var id = (int)number.AsNumber();
+                // A JSON number outside the int range must surface as an invalid-params
+                // RPC error, not an unhandled OverflowException.
+                var id = ParseParam(() => checked((int)number.AsNumber()));
                 foreach (var native in NativeContract.Contracts)
                 {
                     if (id == native.Id)

@@ -148,6 +148,12 @@ namespace NeoExpress.Node
                 notificationIndex.AsSpan(0, sizeof(uint)),
                 block.Index);
 
+            // applicationExecutedList interleaves block-level executions (null
+            // Transaction) with the block's transactions, so the list position is not
+            // the transaction's index within the block. Track the real index so the
+            // stored notification key matches the semantics of the standard
+            // ApplicationLogs plugin (used as transfernotifyindex by RPC consumers).
+            var blockTxIndex = 0;
             for (int i = 0; i < applicationExecutedList.Count; i++)
             {
                 ApplicationExecuted appExec = applicationExecutedList[i];
@@ -162,7 +168,8 @@ namespace NeoExpress.Node
                     if (appExec.Notifications.Length > ushort.MaxValue)
                         throw new Exception("appExec.Notifications too big");
 
-                    BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)i);
+                    BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)blockTxIndex);
+                    blockTxIndex++;
 
                     for (int j = 0; j < appExec.Notifications.Length; j++)
                     {
@@ -172,6 +179,10 @@ namespace NeoExpress.Node
                         var record = new NotificationRecord(appExec.Notifications[j]);
                         notificationsSnapshot.Put(notificationIndex.ToArray(), record.ToArray());
                     }
+                }
+                else
+                {
+                    blockTxIndex++;
                 }
             }
 

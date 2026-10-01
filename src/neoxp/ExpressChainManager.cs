@@ -380,8 +380,23 @@ namespace NeoExpress
             if (!IsNodeRunning(node))
                 return false;
 
+            var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
             using var rpcClient = new Neo.Network.RPC.RpcClient(GetRpcUri(chain, node), protocolSettings: ProtocolSettings);
-            var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+            Neo.Json.JToken json;
+            try
+            {
+                json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or FormatException)
+            {
+                // A node that is already shutting down can accept the connection but
+                // close it before the response body is written, which surfaces as an
+                // empty-body parse error. Re-probe: if the node is gone it was stopping
+                // anyway; otherwise report a diagnosable error.
+                if (!IsNodeRunning(node))
+                    return true;
+                throw new Exception($"Node {scriptHash} did not respond to the shutdown request: {ex.Message}", ex);
+            }
             var processIdToken = json["processId"] ?? json["process-id"];
             var processId = int.Parse(processIdToken!.AsString());
             var process = System.Diagnostics.Process.GetProcessById(processId);

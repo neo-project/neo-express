@@ -402,7 +402,15 @@ namespace NeoExpress
                 try
                 {
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
-                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
+                    // Claiming the named mutex is the real single-instance guard. The
+                    // IsNodeRunning probe in RunAsync can race another process claiming the
+                    // same mutex; only a fresh acquire (createdNew) proves this process owns
+                    // the node slot.
+                    using var mutex = new Mutex(initiallyOwned: true, GLOBAL_PREFIX + defaultAccount.ScriptHash, out var createdNew);
+                    if (!createdNew)
+                    {
+                        throw new Exception("Node already running");
+                    }
 
                     var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();

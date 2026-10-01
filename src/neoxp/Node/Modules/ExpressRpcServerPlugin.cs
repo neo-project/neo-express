@@ -252,7 +252,10 @@ namespace NeoExpress.Node
                     // node's working directory (the same restriction the CLI applies before
                     // sending) so a caller cannot create a checkpoint at an arbitrary path.
                     filename = EnsureCheckpointPathWithinDirectory(filename, System.IO.Directory.GetCurrentDirectory());
-                    rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
+                    // Take the checkpoint outside any in-flight persist cycle so a block
+                    // and its application logs are always captured together.
+                    persistencePlugin.Value.RunOutsidePersistCycle(
+                        () => rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress));
                 }
                 catch (Exception ex) when (ex is ArgumentException
                     or System.IO.IOException

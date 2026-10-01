@@ -34,10 +34,65 @@ namespace NeoExpress.Node
         IStoreSnapshot? notificationsSnapshot;
         bool disposedValue;
 
+        // Blocks and application logs do not land in RocksDB at the same instant: the
+        // plugin stages log writes during Committing and commits them in Committed,
+        // after the block itself is already persisted. A RocksDB checkpoint taken on
+        // another thread between those two moments would capture the block without its
+        // logs. This gate serializes whole persist cycles against checkpoint creation
+        // so a checkpoint always observes either both stores or neither.
+        readonly object persistGate = new();
+        bool persisting;
+        bool checkpointing;
+
         public ExpressPersistencePlugin()
         {
             Blockchain.Committing += OnCommitting;
             Blockchain.Committed += OnCommitted;
+        }
+
+        // Runs the action while no persist cycle is in flight and holds new cycles off
+        // until it completes. Only checkpoint creation should use this.
+        public void RunOutsidePersistCycle(Action action)
+        {
+            lock (persistGate)
+            {
+                while (persisting)
+                    System.Threading.Monitor.Wait(persistGate);
+                checkpointing = true;
+            }
+            try
+            {
+                action();
+            }
+            finally
+            {
+                lock (persistGate)
+                {
+                    checkpointing = false;
+                    System.Threading.Monitor.PulseAll(persistGate);
+                }
+            }
+        }
+
+        void BeginPersistCycle()
+        {
+            // If a previous cycle never saw Committed (failed persist), a new Committing
+            // supersedes it rather than deadlocking checkpoint creators forever.
+            lock (persistGate)
+            {
+                while (checkpointing)
+                    System.Threading.Monitor.Wait(persistGate);
+                persisting = true;
+            }
+        }
+
+        void EndPersistCycle()
+        {
+            lock (persistGate)
+            {
+                persisting = false;
+                System.Threading.Monitor.PulseAll(persistGate);
+            }
         }
 
         public override void Dispose()
@@ -135,10 +190,26 @@ namespace NeoExpress.Node
             if (notificationsStore is null)
                 throw new NullReferenceException(nameof(notificationsStore));
 
+            BeginPersistCycle();
+            try
+            {
+                StageApplicationLogs(block, applicationExecutedList);
+            }
+            catch
+            {
+                // Committed never fires for a failed persist; release the gate so
+                // checkpoint creation cannot wait on a cycle that already ended.
+                EndPersistCycle();
+                throw;
+            }
+        }
+
+        void StageApplicationLogs(Block block, IReadOnlyList<ApplicationExecuted> applicationExecutedList)
+        {
             appLogsSnapshot?.Dispose();
             notificationsSnapshot?.Dispose();
-            appLogsSnapshot = appLogsStore.GetSnapshot();
-            notificationsSnapshot = notificationsStore.GetSnapshot();
+            appLogsSnapshot = appLogsStore!.GetSnapshot();
+            notificationsSnapshot = notificationsStore!.GetSnapshot();
 
             if (applicationExecutedList.Count > ushort.MaxValue)
                 throw new Exception("applicationExecutedList too big");
@@ -186,6 +257,7 @@ namespace NeoExpress.Node
         {
             appLogsSnapshot?.Commit();
             notificationsSnapshot?.Commit();
+            EndPersistCycle();
         }
 
         // TxLogToJson and BlockLogToJson copied from Neo.Plugins.LogReader in the ApplicationLogs plugin

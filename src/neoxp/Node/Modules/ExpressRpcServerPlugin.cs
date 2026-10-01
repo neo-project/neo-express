@@ -636,9 +636,13 @@ namespace NeoExpress.Node
             using var engine = ApplicationEngine.Run(builder.ToArray(), snapshot, settings: neoSystem.Settings);
 
             JObject json = new();
-            if (engine.State == VMState.HALT)
+            // A HALT only proves the invocation finished; the contract decides what the
+            // properties call returns. Anything other than a map on the result stack
+            // yields an empty response instead of an unhandled cast.
+            if (engine.State == VMState.HALT
+                && engine.ResultStack.Count > 0
+                && engine.ResultStack.Peek() is Neo.VM.Types.Map map)
             {
-                var map = engine.ResultStack.Pop<Neo.VM.Types.Map>();
                 foreach (var keyValue in map)
                 {
                     if (keyValue.Value is Neo.VM.Types.CompoundType)

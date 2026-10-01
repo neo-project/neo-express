@@ -31,8 +31,26 @@ namespace test.neodebug
 {
     // Drives the live (in-process) launch path: a deployed contract is invoked and stepped to HALT, with no
     // recorded trace. The contract is built in memory so no compiler is required.
-    public class LiveLaunchTests
+    public class LiveLaunchTests : IDisposable
     {
+        // Contract files are written into one per-class directory that Dispose removes,
+        // instead of leaking .nef/.manifest.json pairs into the system temp folder.
+        static readonly string ContractFileDirectory
+            = Path.Combine(Path.GetTempPath(), "neo-livelaunch-" + Guid.NewGuid().ToString("N"));
+
+        public void Dispose()
+        {
+            try
+            {
+                if (Directory.Exists(ContractFileDirectory))
+                    Directory.Delete(ContractFileDirectory, true);
+            }
+            catch (IOException)
+            {
+                // best effort cleanup
+            }
+        }
+
         // A one-method contract: main() returns the integer 7 (PUSH7; RET at offset 0).
         const string ManifestJson = @"{
             ""name"": ""LiveTest"",
@@ -47,7 +65,8 @@ namespace test.neodebug
 
         static string WriteContractFiles(byte[]? script = null, JObject? manifest = null, ContractParameterType returnType = ContractParameterType.Integer)
         {
-            var basePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(ContractFileDirectory);
+            var basePath = Path.Combine(ContractFileDirectory, Guid.NewGuid().ToString("N"));
 
             var nef = new NefFile
             {

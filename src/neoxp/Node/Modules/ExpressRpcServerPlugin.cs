@@ -104,6 +104,12 @@ namespace NeoExpress.Node
 
             var populatedBlocks = new JArray();
             var index = start;
+            // Bound the backward scan: on a chain that was fast-forwarded to a high
+            // height with sparsely populated blocks, the search for `count` populated
+            // blocks would otherwise walk back to genesis (O(chain height) storage
+            // reads). Clients continue paging from the last returned index.
+            const uint MaxBlocksScanned = 1000;
+            var scanned = 0u;
             while (true)
             {
                 var hash = NativeContract.Ledger.GetBlockHash(snapshot, index)
@@ -118,7 +124,7 @@ namespace NeoExpress.Node
                     populatedBlocks.Add(index);
                 }
 
-                if (index == 0 || populatedBlocks.Count >= count)
+                if (index == 0 || populatedBlocks.Count >= count || ++scanned >= MaxBlocksScanned)
                     break;
                 index--;
             }

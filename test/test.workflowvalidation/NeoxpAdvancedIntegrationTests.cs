@@ -259,13 +259,22 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             // We'll run this with a timeout to simulate the GitHub Actions timeout-minutes: 1
             var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(1), "run", "--seconds-per-block", "3", "--discard");
 
-            // Wait a bit to let it start
-            await Task.Delay(5000, TestContext.Current.CancellationToken);
+            // Wait until the node actually reports it is running before issuing the
+            // online commands; a fixed delay races the RPC server startup on slower
+            // machines and fails the transfers spuriously.
+            var ready = false;
+            for (var attempt = 0; attempt < 30 && !ready; attempt++)
+            {
+                var (stateExitCode, stateOutput, _) = await _runCommand.RunNeoxpCommand("show", "state");
+                ready = stateExitCode == 0 && stateOutput.Contains("IsRunning: True");
+                if (!ready)
+                    await Task.Delay(200, TestContext.Current.CancellationToken);
+            }
+            ready.Should().BeTrue("node should report IsRunning within 30 seconds of neoxp run");
 
             // Test that we can run commands while it's running
             // Equivalent to: neoxp transfer 10000 gas genesis node1 (online)
             await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
-            // Note: This might fail if the blockchain isn't fully started yet
 
             // Equivalent to: neoxp transfer 10000 gas genesis bob (online)
             await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");

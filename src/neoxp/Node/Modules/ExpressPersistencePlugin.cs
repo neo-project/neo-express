@@ -251,10 +251,6 @@ namespace NeoExpress.Node
                         notificationsSnapshot.Put(notificationIndex.ToArray(), record.ToArray());
                     }
                 }
-                else
-                {
-                    blockTxIndex++;
-                }
             }
 
             var blockJson = BlockLogToJson(block, applicationExecutedList);

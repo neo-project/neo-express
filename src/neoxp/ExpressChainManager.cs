@@ -380,12 +380,37 @@ namespace NeoExpress
             if (!IsNodeRunning(node))
                 return false;
 
+            var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
             using var rpcClient = new Neo.Network.RPC.RpcClient(GetRpcUri(chain, node), protocolSettings: ProtocolSettings);
-            var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+            Neo.Json.JToken json;
+            try
+            {
+                json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or FormatException)
+            {
+                // A node that is already shutting down can accept the connection but
+                // close it before the response body is written, which surfaces as an
+                // empty-body parse error. Re-probe: if the node is gone it was stopping
+                // anyway; otherwise report a diagnosable error.
+                if (!IsNodeRunning(node))
+                    return true;
+                throw new Exception($"Node {scriptHash} did not respond to the shutdown request: {ex.Message}", ex);
+            }
             var processIdToken = json["processId"] ?? json["process-id"];
             var processId = int.Parse(processIdToken!.AsString());
             var process = System.Diagnostics.Process.GetProcessById(processId);
-            await process.WaitForExitAsync().ConfigureAwait(false);
+            // A node that acknowledges expressshutdown but never exits would otherwise
+            // hang neoxp stop (and stop --all) forever.
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new Exception($"Node process {processId} did not exit within 30 seconds of the shutdown request");
+            }
             return true;
         }
 
@@ -402,7 +427,15 @@ namespace NeoExpress
                 try
                 {
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
-                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
+                    // Claiming the named mutex is the real single-instance guard. The
+                    // IsNodeRunning probe in RunAsync can race another process claiming the
+                    // same mutex; only a fresh acquire (createdNew) proves this process owns
+                    // the node slot.
+                    using var mutex = new Mutex(initiallyOwned: true, GLOBAL_PREFIX + defaultAccount.ScriptHash, out var createdNew);
+                    if (!createdNew)
+                    {
+                        throw new Exception("Node already running");
+                    }
 
                     var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();

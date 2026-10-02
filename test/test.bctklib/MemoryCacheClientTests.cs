@@ -13,7 +13,9 @@ using Neo;
 using Neo.BlockchainToolkit.Persistence;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace test.bctklib
@@ -93,6 +95,39 @@ namespace test.bctklib
             client.TryGetCachedFoundStates(CONTRACT_B, 1, out _).Should().BeFalse();
             Assert.Single(prefix1);
             Assert.Single(prefix2);
+        }
+
+        [Fact]
+        public async Task concurrent_cache_writes_do_not_throw_and_keep_a_consistent_value()
+        {
+            // Two readers fetching the same storage key or found-states prefix concurrently
+            // used to race: the loser of CacheStorage.TryAdd / Snapshot.Commit threw, which
+            // surfaced as a random RPC failure. The caches now publish idempotently: the first
+            // complete result wins and concurrent duplicates are dropped silently.
+            var key = new byte[] { 0x0a, 0x0b, 0x0c };
+            using var client = new StateServiceStore.MemoryCacheClient();
+
+            var writers = Enumerable.Range(0, 8)
+                .Select(_ => Task.Run(() => client.CacheStorage(CONTRACT_A, key, new byte[] { 7 })))
+                .ToArray();
+            await Task.WhenAll(writers);
+
+            client.TryGetCachedStorage(CONTRACT_A, key, out var cached).Should().BeTrue();
+            cached.Should().Equal(new byte[] { 7 });
+
+            var foundWriters = Enumerable.Range(0, 8)
+                .Select(_ => Task.Run(() =>
+                {
+                    using var snapshot = client.GetFoundStatesSnapshot(CONTRACT_A, 3);
+                    snapshot.Add(key, new byte[] { 9 });
+                    snapshot.Commit();
+                }))
+                .ToArray();
+            await Task.WhenAll(foundWriters);
+
+            client.TryGetCachedFoundStates(CONTRACT_A, 3, out var found).Should().BeTrue();
+            found.Should().ContainSingle();
+            found.Single().value.Should().Equal(new byte[] { 9 });
         }
 
         // Replicates the hash the cache previously used as its dictionary key and finds two

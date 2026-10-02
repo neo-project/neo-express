@@ -268,7 +268,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
                 var (stateExitCode, stateOutput, _) = await _runCommand.RunNeoxpCommand("show", "state");
                 ready = stateExitCode == 0 && stateOutput.Contains("IsRunning: True");
                 if (!ready)
-                    await Task.Delay(1000, TestContext.Current.CancellationToken);
+                    await Task.Delay(200, TestContext.Current.CancellationToken);
             }
             ready.Should().BeTrue("node should report IsRunning within 30 seconds of neoxp run");
 

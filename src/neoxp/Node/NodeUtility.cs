@@ -40,7 +40,19 @@ namespace NeoExpress.Node
         internal const long InvokeEstimatePadDatoshi = 10_000_000L; // 0.1 GAS
 
         internal static long SystemFeeDelta(decimal additionalGas, bool padInvokeEstimate = false)
-            => AdditionalGasSystemFee(additionalGas) + (padInvokeEstimate ? InvokeEstimatePadDatoshi : 0L);
+        {
+            var additionalGasFee = AdditionalGasSystemFee(additionalGas);
+            if (padInvokeEstimate)
+            {
+                // AdditionalGasSystemFee accepts a value that scales to exactly
+                // long.MaxValue; adding the estimate pad to it would overflow into a
+                // negative system fee, so reject it with the same clear error.
+                if (additionalGasFee > long.MaxValue - InvokeEstimatePadDatoshi)
+                    throw new Exception($"--additional-gas value {additionalGas} is too large");
+                return additionalGasFee + InvokeEstimatePadDatoshi;
+            }
+            return additionalGasFee;
+        }
 
         // Convert an --additional-gas amount to the system-fee delta (in GAS datoshi),
         // with clear errors instead of the raw exceptions the bare conversion throws: an

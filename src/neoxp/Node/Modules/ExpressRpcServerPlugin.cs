@@ -104,6 +104,12 @@ namespace NeoExpress.Node
 
             var populatedBlocks = new JArray();
             var index = start;
+            // Bound the backward scan: on a chain that was fast-forwarded to a high
+            // height with sparsely populated blocks, the search for `count` populated
+            // blocks would otherwise walk back to genesis (O(chain height) storage
+            // reads). Clients continue paging from the last returned index.
+            const uint MaxBlocksScanned = 1000;
+            var scanned = 0u;
             while (true)
             {
                 var hash = NativeContract.Ledger.GetBlockHash(snapshot, index)
@@ -118,7 +124,7 @@ namespace NeoExpress.Node
                     populatedBlocks.Add(index);
                 }
 
-                if (index == 0 || populatedBlocks.Count >= count)
+                if (index == 0 || populatedBlocks.Count >= count || ++scanned >= MaxBlocksScanned)
                     break;
                 index--;
             }
@@ -160,7 +166,9 @@ namespace NeoExpress.Node
 
             if (contractParam is JNumber number)
             {
-                var id = (int)number.AsNumber();
+                // A JSON number outside the int range must surface as an invalid-params
+                // RPC error, not an unhandled OverflowException.
+                var id = ParseParam(() => checked((int)number.AsNumber()));
                 foreach (var native in NativeContract.Contracts)
                 {
                     if (id == native.Id)
@@ -634,9 +642,13 @@ namespace NeoExpress.Node
             using var engine = ApplicationEngine.Run(builder.ToArray(), snapshot, settings: neoSystem.Settings);
 
             JObject json = new();
-            if (engine.State == VMState.HALT)
+            // A HALT only proves the invocation finished; the contract decides what the
+            // properties call returns. Anything other than a map on the result stack
+            // yields an empty response instead of an unhandled cast.
+            if (engine.State == VMState.HALT
+                && engine.ResultStack.Count > 0
+                && engine.ResultStack.Peek() is Neo.VM.Types.Map map)
             {
-                var map = engine.ResultStack.Pop<Neo.VM.Types.Map>();
                 foreach (var keyValue in map)
                 {
                     if (keyValue.Value is Neo.VM.Types.CompoundType)

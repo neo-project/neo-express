@@ -134,7 +134,7 @@ namespace NeoExpress
 
         internal static string ResolveCheckpointFileName(IFileSystem fileSystem, string path)
         {
-            var checkpointPath = fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
+            var checkpointPath = fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-HHmmss}");
             checkpointPath = fileSystem.Path.GetFullPath(checkpointPath);
 
             var currentDirectory = fileSystem.Path.GetFullPath(fileSystem.Directory.GetCurrentDirectory());

@@ -6,6 +6,7 @@ const PREFIX_COLUMN_WIDTH = 20;
 const startTimeMs = new Date().getTime();
 
 let outputChannel: vscode.OutputChannel | null = null;
+let invocationChannel: vscode.OutputChannel | null = null;
 
 function secondsSinceStart() {
   return `${((new Date().getTime() - startTimeMs) / 1000).toFixed(2)}s`;
@@ -27,20 +28,43 @@ function log(
 ) {
   const prefix = `${secondsSinceStart()}\t${truncate(logPrefix)}`;
   consoleLogger(prefix, ...args);
+  ensureOutputChannel().appendLine(
+    `${level} ${prefix} ${args.map((_) => JSON.stringify(_)).join(" ")}`
+  );
+}
+
+function ensureOutputChannel() {
   if (!outputChannel) {
     outputChannel = vscode.window.createOutputChannel(
       "Neo N3 Visual DevTracker"
     );
   }
-  outputChannel.appendLine(
-    `${level} ${prefix} ${args.map((_) => JSON.stringify(_)).join(" ")}`
-  );
+  return outputChannel;
+}
+
+function ensureInvocationChannel() {
+  if (!invocationChannel) {
+    invocationChannel = vscode.window.createOutputChannel(
+      "Neo Express Invocation"
+    );
+  }
+  return invocationChannel;
 }
 
 export default class Log {
   static close() {
     outputChannel?.dispose();
     outputChannel = null;
+    invocationChannel?.dispose();
+    invocationChannel = null;
+  }
+
+  static writeInvocation(text: string) {
+    ensureInvocationChannel().appendLine(text);
+  }
+
+  static showInvocation(preserveFocus = true) {
+    ensureInvocationChannel().show(preserveFocus);
   }
 
   static debug(logPrefix: string, ...args: any[]) {

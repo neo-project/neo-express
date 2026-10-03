@@ -1,0 +1,98 @@
+using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Attributes;
+using Neo.SmartContract.Framework.Native;
+using Neo.SmartContract.Framework.Services;
+using System;
+using System.ComponentModel;
+using System.Numerics;
+
+namespace Nep17;
+
+[DisplayName(nameof(Nep17Contract))]
+[ContractAuthor("<Your Name Or Company Here>", "<Your Public Email Here>")]
+[ContractDescription("<Description Here>")]
+[ContractVersion("<Version String Here>")]
+[ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template/templates/neocontractnep17")]
+[ContractPermission(Permission.Any, "onNEP17Payment")]
+[SupportedStandards(NepStandard.Nep17)]
+public class Nep17Contract : Nep17Token
+{
+    private const byte Prefix_Owner = 0xff;
+
+    [Safe]
+    public static UInt160 GetOwner()
+    {
+        return (UInt160)Storage.Get(new[] { Prefix_Owner });
+    }
+
+    private static bool IsOwner() =>
+        Runtime.CheckWitness(GetOwner());
+
+    public delegate void OnSetOwnerDelegate(UInt160 previousOwner, UInt160 newOwner);
+
+    [DisplayName("SetOwner")]
+    public static event OnSetOwnerDelegate OnSetOwner;
+
+    public static void SetOwner(UInt160 newOwner)
+    {
+        if (!IsOwner())
+            throw new InvalidOperationException("No Authorization!");
+
+        ExecutionEngine.Assert(newOwner.IsValid && newOwner.NotZero, "owner must be valid");
+
+        UInt160 previous = GetOwner();
+        Storage.Put(new[] { Prefix_Owner }, newOwner);
+        OnSetOwner(previous, newOwner);
+    }
+
+    public override string Symbol { [Safe] get => "EXAMPLE"; }
+
+    public override byte Decimals { [Safe] get => 8; }
+
+    public static new void Burn(UInt160 account, BigInteger amount)
+    {
+        if (!IsOwner())
+            throw new InvalidOperationException("No Authorization!");
+        Nep17Token.Burn(account, amount);
+    }
+
+    public static new void Mint(UInt160 to, BigInteger amount)
+    {
+        if (!IsOwner())
+            throw new InvalidOperationException("No Authorization!");
+        Nep17Token.Mint(to, amount);
+    }
+
+    [Safe]
+    public static bool Verify() => IsOwner();
+
+    public static string MyMethod()
+    {
+        return Storage.Get("Hello");
+    }
+
+    public static void _deploy(object data, bool update)
+    {
+        if (update)
+        {
+            return;
+        }
+
+        if (data is null) data = Runtime.Transaction.Sender;
+
+        UInt160 initialOwner = (UInt160)data;
+
+        ExecutionEngine.Assert(initialOwner.IsValid && initialOwner.NotZero, "owner must exists");
+
+        Storage.Put(new[] { Prefix_Owner }, initialOwner);
+        OnSetOwner(null, initialOwner);
+        Storage.Put("Hello", "World");
+    }
+
+    public static void Update(ByteString nefFile, string manifest, object? data = null)
+    {
+        if (!IsOwner())
+            throw new InvalidOperationException("No authorization.");
+        ContractManagement.Update(nefFile, manifest, data);
+    }
+}

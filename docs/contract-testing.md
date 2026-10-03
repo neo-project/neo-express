@@ -1,6 +1,8 @@
 <!-- markdownlint-enable -->
 # Testing Neo Smart Contracts in C#
 
+New to Neo Express? Start at [getting-started.md](getting-started.md).
+
 This repository ships four NuGet packages that together provide an end-to-end workflow for
 building and testing Neo N3 smart contracts from a standard `dotnet test` run — no running
 network required:
@@ -12,8 +14,9 @@ network required:
 | `Neo.Assertions` | [FluentAssertions](https://fluentassertions.com/) extensions for `StackItem`, `NotifyEventArgs` and `StorageItem` |
 | `Neo.Collector` | A VSTest data collector that reports per-instruction contract coverage in Cobertura and LCOV formats |
 
-A complete working example lives under [`samples/`](../samples): a contract project, a test
-project, and the batch file that connects them.
+A complete working example lives under [`samples/`](../samples/README.md): a contract project, a test
+project, and the batch file that connects them. Official C# starters (no unit-test projects)
+are in [`samples/examples/`](../samples/examples/README.md).
 
 ## 1. The contract project
 
@@ -25,8 +28,9 @@ compile and drops `<name>.nef`, `<name>.manifest.json` and `<name>.nefdbgnfo` un
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NeoContractName>$(AssemblyName)</NeoContractName>
+    <NeoContractName>SampleContract</NeoContractName>
     <NeoExpressBatchFile>../express.batch</NeoExpressBatchFile>
+    <NeoExpressBatchInputFile>../default.neo-express</NeoExpressBatchInputFile>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
@@ -48,6 +52,11 @@ Useful MSBuild properties understood by `Neo.BuildTasks`:
 | `NeoExpressBatchInputFile` | *(unset)* | `.neo-express` file the batch runs against |
 | `NeoExpressBatchNoReset` | `false` | Skip the chain reset that normally precedes the batch |
 
+`Neo.BuildTasks` writes a stamp under `obj/` after a successful batch. **Clean** and
+**Rebuild** delete that stamp (including the older `obj/$(Configuration)/*.neoxp.touch`
+path) so the next build resets the chain and redeploys. Incremental `dotnet build` skips
+the batch when the `.nef` and batch file have not changed.
+
 ## 2. Creating the test checkpoint
 
 Contract tests run against a **checkpoint**: a frozen snapshot of a Neo-Express chain with the
@@ -56,9 +65,13 @@ contract already deployed. The sample produces one automatically on every contra
 ([`samples/express.batch`](../samples/express.batch)):
 
 ```
-contract deploy ./src/bin/sc/contract.nef genesis
+contract deploy ./src/bin/sc/SampleContract.nef genesis
 checkpoint create ./checkpoints/contract-deployed -f
 ```
+
+The deploy path is relative to the batch file (`samples/`). The checkpoint path is relative
+to the contract project directory (`samples/src`), so the file is
+`samples/src/checkpoints/contract-deployed.neoxp-checkpoint`.
 
 The batch runs against the default `.neo-express` file, resetting the chain first, so the
 checkpoint is reproducible: genesis state, plus your contract, and nothing else. Any other
@@ -76,12 +89,12 @@ project ([`samples/test/contract-test.csproj`](../samples/test/contract-test.csp
   <NeoContractReference Include="..\src\contract.csproj" />
 </ItemGroup>
 <ItemGroup>
-  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.0" />
+  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
   <PackageReference Include="Neo.Assertions" Version="3.10.1" />
   <PackageReference Include="Neo.BuildTasks" Version="3.10.1" PrivateAssets="all" />
   <PackageReference Include="Neo.Test.Harness" Version="3.10.1" />
-  <PackageReference Include="xunit" Version="2.4.2" />
-  <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
+  <PackageReference Include="xunit" Version="2.9.3" />
+  <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
 </ItemGroup>
 ```
 
@@ -96,7 +109,7 @@ Tests bind a checkpoint to an xUnit class fixture with the `CheckpointPath` attr
 ([`samples/test/contract-tests.cs`](../samples/test/contract-tests.cs)):
 
 ```csharp
-[CheckpointPath("checkpoints/contract-deployed.neoxp-checkpoint")]
+[CheckpointPath("src/checkpoints/contract-deployed.neoxp-checkpoint")]
 public class ContractDeployedTests : IClassFixture<CheckpointFixture<ContractDeployedTests>>
 {
     readonly CheckpointFixture fixture;
@@ -115,7 +128,7 @@ public class ContractDeployedTests : IClassFixture<CheckpointFixture<ContractDep
         using var snapshot = fixture.GetSnapshot();
         using var engine = new TestApplicationEngine(snapshot, settings);
 
-        var state = engine.ExecuteScript<contract>(c => c.symbol());
+        var state = engine.ExecuteScript<SampleContract>(c => c.symbol());
 
         engine.State.Should().Be(VMState.HALT);
         engine.ResultStack.Should().HaveCount(1);
@@ -131,7 +144,7 @@ the script in-process against that snapshot: no node, no block times, millisecon
 
 Beyond executing scripts, `Neo.Test.Harness` and `Neo.Assertions` provide:
 
-- `engine.GetContractStorages<contract>()` — the contract's storage as a dictionary, with
+- `engine.GetContractStorages<SampleContract>()` — the contract's storage as a dictionary, with
   `StorageMap(prefix)` and `TryGetValue(key, out item)` helpers for drilling into storage maps;
 - signer-aware engines — `new TestApplicationEngine(snapshot, settings, signer, witnessScope)`
   runs the script as a specific account so `CheckWitness`-guarded paths can be tested;

@@ -38,10 +38,13 @@ Platform libraries (RocksDB) are listed in [installation.md](installation.md).
 
 ## 2. Create and use a private chain
 
-Use **one** chain file. From the repository, stay in `samples/examples/Nep17`:
+Use **one** chain file. Create a contract with `dotnet new`, then stay in that folder:
 
 ```shell
-cd samples/examples/Nep17
+dotnet new install Neo.SmartContract.Template
+dotnet new neocontractnep17 -n Nep17Contract -o Nep17
+cd Nep17
+dotnet build
 neoxp create -o default.neo-express
 neoxp wallet list -i default.neo-express
 neoxp show balances genesis -i default.neo-express
@@ -58,52 +61,40 @@ Full command list: [command-reference.md](command-reference.md).
 
 ## 3. Compile a C# contract
 
-This repo already has Express-ready starters. Stay in `samples/examples/Nep17`:
+Official C# starters come from [Neo.SmartContract.Template](https://www.nuget.org/packages/Neo.SmartContract.Template).
+`dotnet build` in the folder you created writes `bin/sc/Nep17Contract.nef`.
 
-```shell
-dotnet build
-```
-
-That:
-
-- restores local `neoxp` and `nccs` tools
-- compiles `Nep17Contract.nef` / `.manifest.json` to `samples/examples/Nep17/bin/sc`
-- creates `default.neo-express` next to the example if it is missing
-- deploys with `genesis`; when the chain is already running, the repository build uses
-  `contract deploy --force` so the build does not try to reset live node state
-
-| Starter | Path |
-| ------- | ---- |
-| Blank | `samples/examples/Blank` |
-| NEP-17 token | `samples/examples/Nep17` |
-| NEP-11 NFT | `samples/examples/Nep11` |
-| Oracle | `samples/examples/Oracle` |
-| Ownable | `samples/examples/Ownable` |
+| `dotnet new` short name | What it creates |
+| ----------------------- | --------------- |
+| `neocontract` | Solution: contract + unit-test project |
+| `neocontractnep17` | NEP-17 token |
+| `neocontractnep11` | NEP-11 NFT |
+| `neocontractoracle` | Oracle request/response |
+| `neocontractowner` | Owner + `Destroy` |
 
 Details: [samples/examples/README.md](../samples/examples/README.md).
 
 ### Create your own contract
 
 **VS Code:** Quick Start / Smart contracts → **New contract** → C# → pick Blank, NEP-17,
-NEP-11, Oracle, Ownable, or Storage.
+NEP-11, Oracle, Ownable, or Storage. The wizard runs the same `dotnet new` short names.
 
-**Terminal:** install [Neo.SmartContract.Template](https://www.nuget.org/packages/Neo.SmartContract.Template)
-and add `Neo.BuildTasks` like the examples, or copy an example folder:
+**Terminal:**
 
 ```shell
 dotnet new install Neo.SmartContract.Template
 dotnet new neocontractnep17 -n MyToken -o ./MyToken
 ```
 
-`dotnet build` on an example project runs `nccs` through `Neo.BuildTasks`. You can also run
-`nccs` yourself after `dotnet tool install Neo.Compiler.CSharp -g`. Output is `bin/sc/*.nef`.
+You can also run `nccs` yourself after `dotnet tool install Neo.Compiler.CSharp -g`.
+Output is `bin/sc/*.nef`.
 
 ## 4. Deploy and invoke
 
-If you used `samples/examples/*`, the first `dotnet build` already deployed. With `neoxp run`
-in another terminal:
+With `neoxp run` in another terminal, deploy then invoke:
 
 ```shell
+neoxp contract deploy bin/sc/Nep17Contract.nef genesis -i default.neo-express
 neoxp contract run -i default.neo-express Nep17Contract symbol --results
 ```
 
@@ -122,7 +113,7 @@ neoxp contract deploy ./bin/sc/Nep17Contract.nef genesis -i default.neo-express
 Reusable calls belong in a `.neo-invoke.json` file:
 
 ```shell
-neoxp contract invoke ./invoke-files/symbol.neo-invoke.json genesis -i default.neo-express
+neoxp contract invoke ./symbol.neo-invoke.json genesis -i default.neo-express
 ```
 
 See [Neo Express Invocation File](Neo%20Express%20Invocation%20File.md).
@@ -133,11 +124,9 @@ Stop the chain before a rebuild so its persisted state can be reset safely:
 
 ```shell
 neoxp stop -a -i default.neo-express
-dotnet build -t:Rebuild
+dotnet build
+neoxp contract deploy bin/sc/Nep17Contract.nef genesis -i default.neo-express --force
 neoxp run -i default.neo-express --seconds-per-block 1
 ```
-
-The repository build records a deploy stamp under `obj/`. After **Clean** or **Rebuild**, the
-stamp is deleted and the next build deploys again.
 
 Checkpoint-backed `dotnet test` workflow: [contract-testing.md](contract-testing.md).

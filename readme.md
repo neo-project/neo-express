@@ -56,19 +56,13 @@ published release, which may not yet contain fixes present in this checkout.
 ```shell
 dotnet tool restore --tool-manifest samples/.config/dotnet-tools.json
 dotnet build src/neoxp/neoxp.csproj
-dotnet build samples/examples/Nep17
-dotnet exec src/neoxp/bin/Debug/net10.0/neoxp.dll run -i samples/examples/Nep17/default.neo-express --seconds-per-block 1
+dotnet new install Neo.SmartContract.Template
+dotnet new neocontractnep17 -n Nep17Contract -o Nep17
 ```
 
-In another terminal:
-
-```shell
-dotnet exec src/neoxp/bin/Debug/net10.0/neoxp.dll contract run -i samples/examples/Nep17/default.neo-express Nep17Contract symbol --results
-```
-
-C# starters (Blank, NEP-17, NEP-11, Oracle, Ownable) live in
-[`samples/examples/`](samples/examples/README.md). The VS Code **New contract** wizard offers
-the same templates.
+C# starters (Blank, NEP-17, NEP-11, Oracle, Ownable) come from
+[`Neo.SmartContract.Template`](samples/examples/README.md). The VS Code **New contract**
+wizard runs the same `dotnet new` short names.
 
 ## Download Links
 

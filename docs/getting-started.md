@@ -18,8 +18,8 @@ On Ubuntu, install RocksDB libraries and **do not** install .NET via Snap (see
 
 ## Use the command line
 
-Work in **one folder** for the rest of this page: `samples/examples/Nep17`. That is the
-only `default.neo-express` these steps use.
+Work in **one folder** for the rest of this page: a contract you create with
+`dotnet new neocontractnep17`. That is the only `default.neo-express` these steps use.
 
 Published `Neo.Express` 3.10.1 can print “Transaction submitted” while persist-time `_deploy`
 FAULTs with Insufficient GAS, so the next `contract run` fails. Build `neoxp` from **this
@@ -51,10 +51,29 @@ function neoxp { dotnet exec "$repoRoot\src\neoxp\bin\Debug\net10.0\neoxp.dll" @
 restores them before you build a sample.
 Full install options (release zip, Trace, WorkNet) are in [installation.md](installation.md).
 
-### 2. Create and run a local chain
+### 2. Create a contract from the official template
+
+From the repository root (or any working folder):
 
 ```shell
-cd samples/examples/Nep17
+dotnet new install Neo.SmartContract.Template
+dotnet new neocontractnep17 -n Nep17Contract -o Nep17
+cd Nep17
+dotnet build
+```
+
+That compiles `bin/sc/Nep17Contract.nef`. Short names: `neocontract` (solution + tests),
+`neocontractnep17`, `neocontractnep11`, `neocontractoracle`, `neocontractowner`.
+Details: [`samples/examples/README.md`](../samples/examples/README.md).
+
+The original simple sample (a `TokenContract` plus checkpoint tests) is
+[`samples/src`](../samples/src) — see [contract testing](contract-testing.md).
+
+### 3. Create and run a local chain
+
+Still in `Nep17`:
+
+```shell
 neoxp create -o default.neo-express
 neoxp wallet list -i default.neo-express
 neoxp run -i default.neo-express --seconds-per-block 1
@@ -70,48 +89,26 @@ neoxp show balances genesis -i default.neo-express
 By default a new block is minted every 15 seconds. `--seconds-per-block 1` makes transfers
 and deploys show up immediately while you are iterating.
 
-### 3. Build and deploy a contract
+### 4. Deploy and invoke the contract
 
-With the chain still running:
-
-```shell
-dotnet build
-```
-
-The first build compiles `bin/sc/Nep17Contract.nef` and deploys with `genesis` against
-this folder’s `default.neo-express`.
-
-Other starters in [`samples/examples/`](../samples/examples/README.md):
-
-| Folder | What it is |
-| ------ | ---------- |
-| `Blank` | Owner + `MyMethod` |
-| `Nep17` | NEP-17 token |
-| `Nep11` | NEP-11 NFT |
-| `Oracle` | Oracle request / response |
-| `Ownable` | Owner + `Destroy` |
-
-`dotnet clean` or `dotnet build -t:Rebuild` deletes the deploy stamp so the next build
-deploys again.
-
-The original simple sample (a `TokenContract` plus checkpoint tests) is
-[`samples/src`](../samples/src) — see [contract testing](contract-testing.md).
-
-### 4. Invoke the contract
-
-Still in `samples/examples/Nep17`, with `neoxp run` in the other terminal:
+With the chain still running, from `Nep17`:
 
 ```shell
+neoxp contract deploy bin/sc/Nep17Contract.nef genesis -i default.neo-express
 neoxp contract run -i default.neo-express Nep17Contract symbol --results
 neoxp contract run -i default.neo-express Nep17Contract decimals --results
 ```
 
 `--results` is a trial run (no transaction). Drop it and pass `--account genesis` to submit.
 
-Or use a `.neo-invoke.json` file next to this example:
+Reusable calls belong in a `.neo-invoke.json` file:
+
+```json
+[{ "contract": "Nep17Contract", "operation": "symbol" }]
+```
 
 ```shell
-neoxp contract invoke ./invoke-files/symbol.neo-invoke.json genesis -i default.neo-express
+neoxp contract invoke ./symbol.neo-invoke.json genesis -i default.neo-express
 ```
 
 File format: [Neo Express Invocation File](Neo%20Express%20Invocation%20File.md).
@@ -121,7 +118,7 @@ method, choose the signing account, and run.
 
 ### 5. Reset and rebuild
 
-From `samples/examples/Nep17`:
+From `Nep17`:
 
 ```shell
 # stop the node before resetting its persisted state
@@ -130,16 +127,12 @@ neoxp stop -a -i default.neo-express
 # wipe chain state (keeps wallets)
 neoxp reset -f -i default.neo-express
 
-# rebuild contract + redeploy (stamp is deleted)
-dotnet build -t:Rebuild
+dotnet build
+neoxp contract deploy bin/sc/Nep17Contract.nef genesis -i default.neo-express --force
 
 # start the chain again for subsequent invocations
 neoxp run -i default.neo-express --seconds-per-block 1
 ```
-
-`Neo.BuildTasks` records a stamp under `obj/` after a **successful** deploy. **Clean** and
-**Rebuild** delete that stamp so deploy runs again. Incremental `dotnet build` skips deploy
-when the `.nef` has not changed.
 
 ## New contract wizard in Visual Studio Code
 
@@ -161,9 +154,8 @@ dotnet new install Neo.SmartContract.Template
 dotnet new neocontractnep17 -n MyToken -o ./MyToken
 ```
 
-That template compiles with `nccs`. To get the Neo Express layout used in this repo
-(auto-compile via `Neo.BuildTasks` and deploy on build), copy a `samples/examples/*`
-project and replace the `.cs` files, or use the VS Code wizard.
+That template compiles with `nccs`. The VS Code **New contract** wizard runs the same
+`dotnet new` short names and then adds Express test overlays.
 
 ## Use Visual Studio Code
 

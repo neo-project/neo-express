@@ -24,7 +24,7 @@ test("samples/examples documents official templates instead of copies", () => {
   );
 });
 
-test("getting-started walkthrough matches the repo layout without --configuration", () => {
+test("getting-started walkthrough uses official templates and a source-built neoxp", () => {
   const gettingStarted = readFileSync(
     join(repoRoot, "docs", "getting-started.md"),
     "utf8"
@@ -33,33 +33,19 @@ test("getting-started walkthrough matches the repo layout without --configuratio
     join(repoRoot, "docs", "quickstart.md"),
     "utf8"
   );
-  const props = readFileSync(
-    join(examplesRoot, "Directory.Build.props"),
-    "utf8"
-  );
 
   assert.match(gettingStarted, /#use-the-command-line/);
   assert.match(gettingStarted, /REPO_ROOT=/);
   assert.match(gettingStarted, /\$repoRoot/);
+  assert.match(gettingStarted, /dotnet new install Neo\.SmartContract\.Template/);
+  assert.match(gettingStarted, /dotnet new neocontractnep17/);
   assert.doesNotMatch(gettingStarted, /dotnet exec "\$\(pwd\)\/src\/neoxp/);
+  assert.doesNotMatch(gettingStarted, /cd samples\/examples\/Nep17/);
   assert.doesNotMatch(gettingStarted, /transfer\.neo-invoke\.json/);
-  assert.match(gettingStarted, /invoke-files\/symbol\.neo-invoke\.json/);
 
   assert.match(quickstart, /REPO_ROOT=/);
   assert.match(quickstart, /\$repoRoot/);
-  assert.match(quickstart, /cd samples\/examples\/Nep17/);
-  assert.match(quickstart, /```shell\r?\ndotnet build\r?\n```/);
+  assert.match(quickstart, /dotnet new neocontractnep17/);
+  assert.doesNotMatch(quickstart, /cd samples\/examples\/Nep17/);
   assert.doesNotMatch(quickstart, /dotnet build samples\/examples\/Nep17/);
-
-  assert.match(props, /Configuration Condition="'\$\(Configuration\)'==''">Debug/);
-  assert.doesNotMatch(props, /bin\/\/net10\.0/);
-
-  const invoke = JSON.parse(
-    readFileSync(
-      join(examplesRoot, "Nep17", "invoke-files", "symbol.neo-invoke.json"),
-      "utf8"
-    )
-  );
-  assert.equal(invoke[0].contract, "Nep17Contract");
-  assert.equal(invoke[0].operation, "symbol");
 });

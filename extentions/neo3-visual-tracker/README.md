@@ -12,7 +12,8 @@ Repo-wide walkthrough: [Getting started](../../docs/getting-started.md).
    restore the pinned sample tools with
    `dotnet tool restore --tool-manifest samples/.config/dotnet-tools.json`; a packaged VSIX
    already bundles `neoxp`.
-2. Open a folder in VS Code. For this repo, `samples/examples/Nep17` (then `dotnet build` in the terminal) or the repo root works.
+2. Open a folder in VS Code. The repo root works, or a folder you created with
+   `dotnet new` / **New contract**.
 3. Load the extension: from the Marketplace, or from source (`npm install` and `npm run compile`
    in this directory, then **F5**, or
    `code --extensionDevelopmentPath=<this-folder> <workspace>`).
@@ -22,7 +23,7 @@ Repo-wide walkthrough: [Getting started](../../docs/getting-started.md).
    **Storage**. The scaffold restores tools and builds under `contracts/<name>/`.
 7. Deploy from **Smart contracts**, then open Contract Studio (rocket) to invoke.
 
-Ready-made Express layouts (no wizard) are in
+Official C# starters (no wizard) are documented in
 [`samples/examples/`](../../samples/examples/README.md).
 
 ## Features
@@ -45,7 +46,7 @@ Contract Studio keeps contract source in the normal VS Code editor while opening
 ### Run a contract invocation
 
 1. Open a folder containing a `.neo-express` file and a Neo smart contract project
-   (`dotnet build` on `samples/examples/*` creates the chain file if it is missing).
+   (`neoxp create` writes the chain file).
 2. Build the contract so its `.nef`, manifest, and debug information are available.
 3. Start the blockchain from the **Blockchains** view and connect to it.
 4. In **Smart contracts**, select the rocket action on a workspace contract. You can also right-click a `.nef` file and select **Open Contract Studio**.

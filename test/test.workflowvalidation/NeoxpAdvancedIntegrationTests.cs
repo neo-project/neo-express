@@ -10,6 +10,7 @@
 
 using FluentAssertions;
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Text.Json;
 using Xunit;
 
@@ -259,23 +260,11 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             // Equivalent to: neoxp run --seconds-per-block 3 --discard &
             var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(2), "run", "--seconds-per-block", "3", "--discard");
 
-            // show state can print IsRunning: True after serving OfflineNode
-            // (the run process takes the node mutex during GetLatestBlockAsync)
-            // while RPC is still down. Once the mutex is held, show block uses
-            // OnlineNode and fails with Connection refused until RPC listens.
-            var ready = false;
-            for (var attempt = 0; attempt < 60 && !ready; attempt++)
-            {
-                var (stateExitCode, stateOutput, _) = await _runCommand.RunNeoxpCommand("show", "state");
-                var (blockExitCode, _, blockError) = await _runCommand.RunNeoxpCommand("show", "block");
-                ready = stateExitCode == 0
-                    && stateOutput.Contains("IsRunning: True")
-                    && blockExitCode == 0
-                    && (string.IsNullOrEmpty(blockError) || !blockError.Contains("Connection refused"));
-                if (!ready)
-                    await Task.Delay(500, TestContext.Current.CancellationToken);
-            }
-            ready.Should().BeTrue("node RPC should accept show block within 30 seconds of neoxp run");
+            // Probe the RPC port directly. show state / show block go through
+            // GetExpressNode, which can open OfflineNode (and RocksDB) while
+            // run --discard is still starting, and can print IsRunning True
+            // before the RPC server is listening.
+            await WaitUntilRpcReadyAsync(runTask);
 
             var (transferExitCode1, _, transferError1) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
             transferExitCode1.Should().Be(0, transferError1);
@@ -366,6 +355,46 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         {
             Directory.SetCurrentDirectory(originalDir);
         }
+    }
+
+    private async Task WaitUntilRpcReadyAsync(Task<(int ExitCode, string Output, string Error)> runTask)
+    {
+        var configFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".neo-express",
+            "default.neo-express");
+        var json = await File.ReadAllTextAsync(configFile, TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        var rpcPort = doc.RootElement.GetProperty("consensus-nodes")[0].GetProperty("rpc-port").GetInt32();
+
+        var ready = false;
+        for (var attempt = 0; attempt < 60 && !ready; attempt++)
+        {
+            if (runTask.IsCompleted)
+            {
+                var (runExitCode, runOutput, runError) = await runTask;
+                throw new InvalidOperationException(
+                    $"neoxp run exited before RPC was ready. Exit={runExitCode} Error={runError} Output={runOutput}");
+            }
+
+            try
+            {
+                using var client = new TcpClient();
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+                cts.CancelAfter(TimeSpan.FromMilliseconds(250));
+                await client.ConnectAsync("127.0.0.1", rpcPort, cts.Token);
+                ready = client.Connected;
+            }
+            catch (Exception ex) when (ex is SocketException or OperationCanceledException)
+            {
+                ready = false;
+            }
+
+            if (!ready)
+                await Task.Delay(500, TestContext.Current.CancellationToken);
+        }
+
+        ready.Should().BeTrue($"node RPC should accept TCP connections on port {rpcPort} within 30 seconds of neoxp run");
     }
 
     private async Task EnsureWalletsCreated()

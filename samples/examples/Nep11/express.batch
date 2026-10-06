@@ -1,1 +1,0 @@
-contract deploy ./bin/sc/Nep11Contract.nef genesis

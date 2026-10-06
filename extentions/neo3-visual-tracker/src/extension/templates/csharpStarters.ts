@@ -1,21 +1,47 @@
 export type CsharpStarter = {
   id: string;
   label: string;
-  /** Overlay files from csharp-starters/<id> after the C# scaffold. */
+  /** Overlay Express test files from csharp-starters/<id> after the C# scaffold. */
   overlay: boolean;
+  /** `dotnet new` short name from Neo.SmartContract.Template. */
+  template?: string;
 };
 
 /**
- * C# starters based on Neo.SmartContract.Template
- * (https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template).
- * Official unit-test projects are not included.
+ * C# starters from Neo.SmartContract.Template (`dotnet new install`).
+ * Official unit-test projects are not copied; Express tests overlay instead.
  */
 export const csharpStarters: CsharpStarter[] = [
-  { id: "blank", label: "Blank contract", overlay: true },
-  { id: "nep17", label: "NEP-17 token", overlay: true },
-  { id: "nep11", label: "NEP-11 NFT", overlay: true },
-  { id: "oracle", label: "Oracle", overlay: true },
-  { id: "ownable", label: "Ownable", overlay: true },
+  {
+    id: "blank",
+    label: "Blank contract",
+    overlay: true,
+    template: "neocontract",
+  },
+  {
+    id: "nep17",
+    label: "NEP-17 token",
+    overlay: true,
+    template: "neocontractnep17",
+  },
+  {
+    id: "nep11",
+    label: "NEP-11 NFT",
+    overlay: true,
+    template: "neocontractnep11",
+  },
+  {
+    id: "oracle",
+    label: "Oracle",
+    overlay: true,
+    template: "neocontractoracle",
+  },
+  {
+    id: "ownable",
+    label: "Ownable",
+    overlay: true,
+    template: "neocontractowner",
+  },
   { id: "storage", label: "Storage (number map)", overlay: false },
 ];
 

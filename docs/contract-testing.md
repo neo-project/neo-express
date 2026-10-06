@@ -1,7 +1,7 @@
 <!-- markdownlint-enable -->
 # Testing Neo Smart Contracts in C#
 
-New to Neo Express? Start at [getting-started.md](getting-started.md).
+New to Neo Express? Start at [quickstart.md](quickstart.md).
 
 This repository ships four NuGet packages that together provide an end-to-end workflow for
 building and testing Neo N3 smart contracts from a standard `dotnet test` run — no running
@@ -15,8 +15,8 @@ network required:
 | `Neo.Collector` | A VSTest data collector that reports per-instruction contract coverage in Cobertura and LCOV formats |
 
 A complete working example lives under [`samples/`](../samples/README.md): a contract project, a test
-project, and the batch file that connects them. Official C# starters (no unit-test projects)
-are in [`samples/examples/`](../samples/examples/README.md).
+project, and the batch file that connects them. Official C# starters come from
+`dotnet new install Neo.SmartContract.Template` — see [`samples/examples/`](../samples/examples/README.md).
 
 ## 1. The contract project
 

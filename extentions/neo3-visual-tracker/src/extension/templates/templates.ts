@@ -9,6 +9,7 @@ import {
   CsharpStarter,
 } from "./csharpStarters";
 import { hydrateFiles } from "./hydrateTemplates";
+import { instantiateOfficialContract } from "./instantiateSmartContractTemplate";
 import { Language, languages } from "./languages";
 import posixPath from "../util/posixPath";
 import workspaceFolder from "../util/workspaceFolder";
@@ -83,18 +84,38 @@ export default class Templates {
     }
 
     await hydrateFiles(templatePath, contractPath, parameters);
-    if (csharpStarter?.overlay) {
-      await hydrateFiles(
-        posixPath(
-          context.extensionPath,
-          "resources",
-          "new-contract",
-          "csharp-starters",
-          csharpStarter.id
-        ),
-        contractPath,
-        parameters
+    try {
+      if (csharpStarter?.template) {
+        await instantiateOfficialContract({
+          shortName: csharpStarter.template,
+          className: parameters["$_CLASSNAME_$"],
+          contractName: parameters["$_CONTRACTNAME_$"],
+          destinationSrcFile: posixPath(
+            contractPath,
+            "src",
+            `${parameters["$_CLASSNAME_$"]}.cs`
+          ),
+        });
+      }
+      if (csharpStarter?.overlay) {
+        await hydrateFiles(
+          posixPath(
+            context.extensionPath,
+            "resources",
+            "new-contract",
+            "csharp-starters",
+            csharpStarter.id
+          ),
+          contractPath,
+          parameters
+        );
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(
+        `Could not create ${contractName} from Neo.SmartContract.Template: ${detail}`
       );
+      return;
     }
 
     const starterNote = csharpStarter

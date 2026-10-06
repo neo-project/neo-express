@@ -14,16 +14,20 @@ test("New contract wizard asks for a C# starter after language", () => {
   assert.match(templatesSource, /Contract template/);
   assert.match(templatesSource, /csharpStarterLabels\(\)/);
   assert.match(templatesSource, /csharpStarter\?\.overlay/);
+  assert.match(templatesSource, /csharpStarter\?\.template/);
+  assert.match(templatesSource, /instantiateOfficialContract/);
   assert.match(
     templatesSource,
     /resources",\s+"new-contract",\s+"csharp-starters"/
   );
 });
 
-test("C# wizard starters include official Neo.SmartContract.Template overlays", () => {
+test("C# wizard starters include official Neo.SmartContract.Template short names", () => {
   assert.match(startersSource, /NEP-17/);
   assert.match(startersSource, /NEP-11/);
   assert.match(startersSource, /Oracle/);
   assert.match(startersSource, /Ownable/);
   assert.match(startersSource, /overlay: true/);
+  assert.match(startersSource, /template: "neocontractnep17"/);
+  assert.match(startersSource, /template: "neocontractowner"/);
 });

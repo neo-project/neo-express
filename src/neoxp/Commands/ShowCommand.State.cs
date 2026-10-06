@@ -32,10 +32,14 @@ namespace NeoExpress.Commands
                 try
                 {
                     var (chainManager, config) = chainManagerFactory.LoadChain(Input);
+                    // Snapshot before GetExpressNode: that call can open OfflineNode
+                    // and then the run process takes the mutex during GetLatestBlockAsync,
+                    // so printing IsRunning afterwards reports True while RPC is still down.
+                    var running = chainManager.IsRunning(null);
                     using var expressNode = chainManager.GetExpressNode();
                     var blockHeight = (await expressNode.GetLatestBlockAsync().ConfigureAwait(false)).Index;
                     console.WriteLine($"Block height: {blockHeight}");
-                    console.WriteLine($"IsRunning: {chainManager.IsRunning(null)}");
+                    console.WriteLine($"IsRunning: {running}");
                     console.WriteLine($"Config file: {config}");
                     return 0;
                 }

@@ -63,7 +63,10 @@ namespace NeoExpress.Models
             var nep6Wallet = new NEP6Wallet(filename, password, ProtocolSettings, Name);
             foreach (var account in GetAccounts())
             {
-                nep6Wallet.CreateAccount(account.Contract, account.GetKey());
+                if (account.Contract is null)
+                    nep6Wallet.CreateAccount(account.ScriptHash);
+                else
+                    nep6Wallet.CreateAccount(account.Contract, account.GetKey());
             }
             nep6Wallet.Save();
         }

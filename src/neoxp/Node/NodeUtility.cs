@@ -40,7 +40,19 @@ namespace NeoExpress.Node
         internal const long InvokeEstimatePadDatoshi = 10_000_000L; // 0.1 GAS
 
         internal static long SystemFeeDelta(decimal additionalGas, bool padInvokeEstimate = false)
-            => AdditionalGasSystemFee(additionalGas) + (padInvokeEstimate ? InvokeEstimatePadDatoshi : 0L);
+        {
+            var additionalGasFee = AdditionalGasSystemFee(additionalGas);
+            if (padInvokeEstimate)
+            {
+                // AdditionalGasSystemFee accepts a value that scales to exactly
+                // long.MaxValue; adding the estimate pad to it would overflow into a
+                // negative system fee, so reject it with the same clear error.
+                if (additionalGasFee > long.MaxValue - InvokeEstimatePadDatoshi)
+                    throw new Exception($"--additional-gas value {additionalGas} is too large");
+                return additionalGasFee + InvokeEstimatePadDatoshi;
+            }
+            return additionalGasFee;
+        }
 
         // Convert an --additional-gas amount to the system-fee delta (in GAS datoshi),
         // with clear errors instead of the raw exceptions the bare conversion throws: an
@@ -98,10 +110,13 @@ namespace NeoExpress.Node
         }
 
         // Copied from OracleService.CreateResponseTx to avoid taking dependency on OracleService package and it's 110mb GRPC runtime
-        public static Transaction? CreateResponseTx(DataCache snapshot, OracleRequest request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes, ProtocolSettings settings)
+        public static Transaction? CreateResponseTx(DataCache snapshot, OracleRequest? request, OracleResponse response, IReadOnlyList<ECPoint> oracleNodes, ProtocolSettings settings)
         {
             if (oracleNodes.Count == 0)
                 throw new Exception("No oracle nodes available. Have you enabled oracles via the `oracle enable` command?");
+
+            if (request is null)
+                throw new Exception($"No oracle request found for response id {response.Id}");
 
             var requestTx = NativeContract.Ledger.GetTransactionState(snapshot, request.OriginalTxid);
             if (requestTx is null)
@@ -266,7 +281,7 @@ namespace NeoExpress.Node
             if (contractState.Id < 0)
                 throw new NotSupportedException("Contract download not supported for native contracts");
 
-            var states = Enumerable.Empty<(string key, string value)>();
+            var states = new List<(string key, string value)>();
             ReadOnlyMemory<byte> start = default;
 
             while (true)
@@ -285,11 +300,10 @@ namespace NeoExpress.Node
                     ValidateProof(stateRoot.RootHash, (JString)response["lastProof"]!, (JObject)results[^1]!);
                 }
 
-                states = states.Concat(results
-                    .Select(j => (
-                        j!["key"]!.AsString(),
-                        j!["value"]!.AsString()
-                    )));
+                states.AddRange(results.Select(j => (
+                    j!["key"]!.AsString(),
+                    j!["value"]!.AsString()
+                )));
 
                 var truncated = response["truncated"]!.AsBoolean();
                 if (!truncated)
@@ -297,7 +311,7 @@ namespace NeoExpress.Node
                 start = Convert.FromBase64String(results[^1]!["key"]!.AsString());
             }
 
-            return (contractState, states.ToList());
+            return (contractState, states);
 
             static void ValidateProof(UInt256 rootHash, JString proof, JObject result)
             {

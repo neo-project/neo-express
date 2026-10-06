@@ -27,7 +27,7 @@ namespace NeoWorkNet.Commands;
 [Command("run", Description = "Run Neo-WorkNet instance node")]
 partial class RunCommand
 {
-    internal const ushort DEFAULT_RPC_PORT = 30332;
+    internal const ushort DEFAULT_RPC_PORT = WorknetFile.DefaultRpcPort;
     internal const ushort DEFAULT_TCP_PORT = 30333;
 
     readonly IFileSystem fs;
@@ -61,7 +61,14 @@ partial class RunCommand
             ValidatePorts(RpcPort, TcpPort);
 
             var secondsPerBlock = SecondsPerBlock ?? 0;
-            await RunAsync(worknet, dataDir, secondsPerBlock, RpcPort, TcpPort, DisableLog, console, token).ConfigureAwait(false);
+
+            bool updateRpcPort = RpcPort != worknet.RpcPort;
+            worknet = worknet with { RpcPort = RpcPort };
+            Action? onStarted = !updateRpcPort
+                ? null
+                : () => fs.UpdateWorknetRpcPort(filename, RpcPort);
+
+            await RunAsync(worknet, dataDir, secondsPerBlock, RpcPort, TcpPort, DisableLog, console, token, onStarted).ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)
@@ -112,7 +119,7 @@ partial class RunCommand
         return new DbftSettings(config.GetSection("PluginConfiguration"));
     }
 
-    static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, ushort rpcPort, ushort tcpPort, bool disableLog, IConsole console, CancellationToken token)
+    static async Task RunAsync(WorknetFile worknet, string dataDir, uint secondsPerBlock, ushort rpcPort, ushort tcpPort, bool disableLog, IConsole console, CancellationToken token, Action? onStarted = null)
     {
         var tcs = new TaskCompletionSource<bool>();
         _ = Task.Run(() =>
@@ -140,6 +147,7 @@ partial class RunCommand
                     Tcp = new IPEndPoint(IPAddress.Loopback, tcpPort)
                 });
                 dbftPlugin.Start(worknet.ConsensusWallet);
+                onStarted?.Invoke();
 
                 // DevTracker looks for a string that starts with "Neo express is running" to confirm that the instance has started
                 // Do not remove or re-word this console output:

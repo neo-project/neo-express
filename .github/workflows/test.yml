@@ -94,11 +94,12 @@ jobs:
         neoxp run --seconds-per-block 3 --discard &
         READY=0
         for _ in $(seq 1 60); do
-          if neoxp show state 2>/dev/null | grep -q "IsRunning: True"; then READY=1; break; fi
+          if neoxp show state 2>/dev/null | grep -q "IsRunning: True" \
+             && neoxp show block >/dev/null 2>&1; then READY=1; break; fi
           sleep 1
         done
         if [ "$READY" != "1" ]; then
-          echo "neo-express node did not report IsRunning within 60 seconds"
+          echo "neo-express node RPC did not accept show block within 60 seconds"
           exit 1
         fi
         neoxp show state

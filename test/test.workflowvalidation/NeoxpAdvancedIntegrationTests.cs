@@ -247,6 +247,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
     public async Task Test03_RunCommandWithTimeout()
     {
         await EnsureSetup();
+        await EnsureWalletsCreated();
 
         _output.WriteLine("=== Testing neoxp run command with timeout ===");
 
@@ -256,30 +257,32 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp run --seconds-per-block 3 --discard &
-            // We'll run this with a timeout to simulate the GitHub Actions timeout-minutes: 1
-            var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(1), "run", "--seconds-per-block", "3", "--discard");
+            var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(2), "run", "--seconds-per-block", "3", "--discard");
 
-            // Wait until the node actually reports it is running before issuing the
-            // online commands; a fixed delay races the RPC server startup on slower
-            // machines and fails the transfers spuriously.
+            // show state can print IsRunning: True after serving OfflineNode
+            // (the run process takes the node mutex during GetLatestBlockAsync)
+            // while RPC is still down. Once the mutex is held, show block uses
+            // OnlineNode and fails with Connection refused until RPC listens.
             var ready = false;
-            for (var attempt = 0; attempt < 30 && !ready; attempt++)
+            for (var attempt = 0; attempt < 60 && !ready; attempt++)
             {
                 var (stateExitCode, stateOutput, _) = await _runCommand.RunNeoxpCommand("show", "state");
-                ready = stateExitCode == 0 && stateOutput.Contains("IsRunning: True");
+                var (blockExitCode, _, blockError) = await _runCommand.RunNeoxpCommand("show", "block");
+                ready = stateExitCode == 0
+                    && stateOutput.Contains("IsRunning: True")
+                    && blockExitCode == 0
+                    && (string.IsNullOrEmpty(blockError) || !blockError.Contains("Connection refused"));
                 if (!ready)
-                    await Task.Delay(200, TestContext.Current.CancellationToken);
+                    await Task.Delay(500, TestContext.Current.CancellationToken);
             }
-            ready.Should().BeTrue("node should report IsRunning within 30 seconds of neoxp run");
+            ready.Should().BeTrue("node RPC should accept show block within 30 seconds of neoxp run");
 
-            // Test that we can run commands while it's running
-            // Equivalent to: neoxp transfer 10000 gas genesis node1 (online)
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
+            var (transferExitCode1, _, transferError1) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
+            transferExitCode1.Should().Be(0, transferError1);
 
-            // Equivalent to: neoxp transfer 10000 gas genesis bob (online)
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
+            var (transferExitCode2, _, transferError2) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
+            transferExitCode2.Should().Be(0, transferError2);
 
-            // Equivalent to: neoxp stop --all
             var (stopExitCode, _, stopError) = await _runCommand.RunNeoxpCommand("stop", "--all");
             stopExitCode.Should().Be(0, stopError);
 

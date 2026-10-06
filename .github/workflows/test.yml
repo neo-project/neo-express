@@ -93,13 +93,12 @@ jobs:
       run: |
         neoxp run --seconds-per-block 3 --discard &
         READY=0
-        PORT=50012
         for _ in $(seq 1 60); do
-          if timeout 1 bash -c "echo >/dev/tcp/127.0.0.1/${PORT}" 2>/dev/null; then READY=1; break; fi
+          if neoxp show state 2>/dev/null | grep -q "IsRunning: True"; then READY=1; break; fi
           sleep 1
         done
         if [ "$READY" != "1" ]; then
-          echo "neo-express node RPC did not accept TCP connections on port ${PORT} within 60 seconds"
+          echo "neo-express node did not report IsRunning within 60 seconds"
           exit 1
         fi
         neoxp show state

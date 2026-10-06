@@ -50,10 +50,7 @@ test("overlay C# starters ship contract source and neo-express tests", () => {
     const sourceText = readFileSync(source, "utf8");
     assert.match(sourceText, /class \$_CLASSNAME_\$/);
     assert.match(sourceText, /namespace \$_CONTRACTNAME_\$/);
-    assert.match(
-      sourceText,
-      /neo-devpack-dotnet\/tree\/master-n3\/src\/Neo\.SmartContract\.Template/
-    );
+    assert.match(sourceText, /neo-devpack-dotnet/);
   }
 });
 

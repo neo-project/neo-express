@@ -11,9 +11,9 @@ namespace $_CONTRACTNAME_$
     [ContractAuthor("<Your Name Or Company Here>", "<Your Public Email Here>")]
     [ContractDescription("<Description Here>")]
     [ContractVersion("<Version String Here>")]
-    [ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template")]
+    [ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet")]
     [ContractPermission(Permission.Any, Method.Any)]
-    public class $_CLASSNAME_$ : SmartContract
+    public class $_CLASSNAME_$ : Neo.SmartContract.Framework.SmartContract
     {
         #region Owner
 
@@ -47,21 +47,28 @@ namespace $_CONTRACTNAME_$
 
         #endregion
 
+        // When this contract address is included in the transaction signature,
+        // this method will be triggered as a VerificationTrigger to verify that the signature is correct.
+        // For example, this method needs to be called when withdrawing token from the contract.
         [Safe]
         public static bool Verify() => IsOwner();
 
+        // TODO: Replace it with your methods.
         public static string MyMethod()
         {
             return Storage.Get("Hello");
         }
 
+        // This will be executed during deploy
         public static void _deploy(object data, bool update)
         {
             if (update)
             {
+                // This will be executed during update
                 return;
             }
 
+            // Init method, you must deploy the contract with the owner as an argument, or it will take the sender
             if (data is null) data = Runtime.Transaction.Sender;
 
             UInt160 initialOwner = (UInt160)data;

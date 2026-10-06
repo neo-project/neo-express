@@ -6,8 +6,8 @@ export type CsharpStarter = {
 };
 
 /**
- * C# starters based on Neo.SmartContract.Template
- * (https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template).
+ * C# starters generated from Neo.SmartContract.Template.
+ * The commit is pinned in samples/examples/devpack-source.json.
  * Official unit-test projects are not included.
  */
 export const csharpStarters: CsharpStarter[] = [

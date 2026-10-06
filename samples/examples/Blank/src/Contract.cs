@@ -5,74 +5,86 @@ using Neo.SmartContract.Framework.Services;
 using System;
 using System.ComponentModel;
 
-namespace Blank;
-
-[DisplayName(nameof(Contract))]
-[ContractAuthor("<Your Name Or Company Here>", "<Your Public Email Here>")]
-[ContractDescription("<Description Here>")]
-[ContractVersion("<Version String Here>")]
-[ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template")]
-[ContractPermission(Permission.Any, Method.Any)]
-public class Contract : SmartContract
+namespace NeoContractSolution
 {
-    private const byte Prefix_Owner = 0xff;
-
-    [Safe]
-    public static UInt160 GetOwner()
+    [DisplayName(nameof(Contract))]
+    [ContractAuthor("<Your Name Or Company Here>", "<Your Public Email Here>")]
+    [ContractDescription("<Description Here>")]
+    [ContractVersion("<Version String Here>")]
+    [ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet")]
+    [ContractPermission(Permission.Any, Method.Any)]
+    public class Contract : Neo.SmartContract.Framework.SmartContract
     {
-        return (UInt160)Storage.Get(new[] { Prefix_Owner });
-    }
+        #region Owner
 
-    private static bool IsOwner() =>
-        Runtime.CheckWitness(GetOwner());
+        private const byte Prefix_Owner = 0xff;
 
-    public delegate void OnSetOwnerDelegate(UInt160 previousOwner, UInt160 newOwner);
-
-    [DisplayName("SetOwner")]
-    public static event OnSetOwnerDelegate OnSetOwner;
-
-    public static void SetOwner(UInt160 newOwner)
-    {
-        if (!IsOwner())
-            throw new InvalidOperationException("No Authorization!");
-
-        ExecutionEngine.Assert(newOwner.IsValid && newOwner.NotZero, "owner must be valid");
-
-        UInt160 previous = GetOwner();
-        Storage.Put(new[] { Prefix_Owner }, newOwner);
-        OnSetOwner(previous, newOwner);
-    }
-
-    [Safe]
-    public static bool Verify() => IsOwner();
-
-    public static string MyMethod()
-    {
-        return Storage.Get("Hello");
-    }
-
-    public static void _deploy(object data, bool update)
-    {
-        if (update)
+        [Safe]
+        public static UInt160 GetOwner()
         {
-            return;
+            return (UInt160)Storage.Get(new[] { Prefix_Owner });
         }
 
-        if (data is null) data = Runtime.Transaction.Sender;
+        private static bool IsOwner() =>
+            Runtime.CheckWitness(GetOwner());
 
-        UInt160 initialOwner = (UInt160)data;
+        public delegate void OnSetOwnerDelegate(UInt160 previousOwner, UInt160 newOwner);
 
-        ExecutionEngine.Assert(initialOwner.IsValid && initialOwner.NotZero, "owner must exist");
+        [DisplayName("SetOwner")]
+        public static event OnSetOwnerDelegate OnSetOwner;
 
-        Storage.Put(new[] { Prefix_Owner }, initialOwner);
-        OnSetOwner(null, initialOwner);
-        Storage.Put("Hello", "World");
-    }
+        public static void SetOwner(UInt160 newOwner)
+        {
+            if (!IsOwner())
+                throw new InvalidOperationException("No Authorization!");
 
-    public static void Update(ByteString nefFile, string manifest, object? data = null)
-    {
-        if (!IsOwner())
-            throw new InvalidOperationException("No authorization.");
-        ContractManagement.Update(nefFile, manifest, data);
+            ExecutionEngine.Assert(newOwner.IsValid && newOwner.NotZero, "owner must be valid");
+
+            UInt160 previous = GetOwner();
+            Storage.Put(new[] { Prefix_Owner }, newOwner);
+            OnSetOwner(previous, newOwner);
+        }
+
+        #endregion
+
+        // When this contract address is included in the transaction signature,
+        // this method will be triggered as a VerificationTrigger to verify that the signature is correct.
+        // For example, this method needs to be called when withdrawing token from the contract.
+        [Safe]
+        public static bool Verify() => IsOwner();
+
+        // TODO: Replace it with your methods.
+        public static string MyMethod()
+        {
+            return Storage.Get("Hello");
+        }
+
+        // This will be executed during deploy
+        public static void _deploy(object data, bool update)
+        {
+            if (update)
+            {
+                // This will be executed during update
+                return;
+            }
+
+            // Init method, you must deploy the contract with the owner as an argument, or it will take the sender
+            if (data is null) data = Runtime.Transaction.Sender;
+
+            UInt160 initialOwner = (UInt160)data;
+
+            ExecutionEngine.Assert(initialOwner.IsValid && initialOwner.NotZero, "owner must exist");
+
+            Storage.Put(new[] { Prefix_Owner }, initialOwner);
+            OnSetOwner(null, initialOwner);
+            Storage.Put("Hello", "World");
+        }
+
+        public static void Update(ByteString nefFile, string manifest, object? data = null)
+        {
+            if (!IsOwner())
+                throw new InvalidOperationException("No authorization.");
+            ContractManagement.Update(nefFile, manifest, data);
+        }
     }
 }

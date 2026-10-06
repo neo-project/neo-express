@@ -42,7 +42,10 @@ test("hydrateFiles overlays a C# starter onto the scaffold", async () => {
       join(destination, "src/TokenEscrowContract.cs"),
       "utf8"
     );
-    assert.match(contract, /class TokenEscrowContract : Nep17Token/);
+    assert.match(
+      contract,
+      /class TokenEscrowContract : (Neo\.SmartContract\.Framework\.)?Nep17Token/
+    );
     assert.match(contract, /namespace TokenEscrow/);
     assert.doesNotMatch(contract, /\$_CLASSNAME_\$/);
     assert.doesNotMatch(contract, /ChangeNumber/);
@@ -92,7 +95,10 @@ test("hydrateFiles can create a blank official starter", async () => {
       join(destination, "src/HelloContract.cs"),
       "utf8"
     );
-    assert.match(contract, /class HelloContract : SmartContract/);
+    assert.match(
+      contract,
+      /class HelloContract : (Neo\.SmartContract\.Framework\.)?SmartContract/
+    );
     assert.match(contract, /MyMethod/);
     assert.doesNotMatch(contract, /ChangeNumber/);
   } finally {

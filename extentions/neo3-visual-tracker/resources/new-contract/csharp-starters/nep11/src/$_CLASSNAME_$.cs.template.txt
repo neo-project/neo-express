@@ -11,10 +11,10 @@ namespace $_CONTRACTNAME_$
     [ContractAuthor("<Your Name Or Company Here>", "<Your Public Email Here>")]
     [ContractDescription("<Description Here>")]
     [ContractVersion("<Version String Here>")]
-    [ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template/templates/neocontractnep11")]
+    [ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet/tree/master/src/Neo.SmartContract.Template/templates/neocontractnep11/Nep11Contract.cs")]
     [ContractPermission(Permission.Any, Method.OnNEP11Payment)]
     [SupportedStandards(NepStandard.Nep11)]
-    public class $_CLASSNAME_$ : Nep11Token<TokenState>
+    public class $_CLASSNAME_$ : Neo.SmartContract.Framework.Nep11Token<TokenState>
     {
         #region Owner
 

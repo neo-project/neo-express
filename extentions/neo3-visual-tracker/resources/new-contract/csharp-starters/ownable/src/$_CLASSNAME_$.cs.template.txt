@@ -1,3 +1,4 @@
+using Neo.SmartContract;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Attributes;
 using Neo.SmartContract.Framework.Native;
@@ -10,10 +11,10 @@ namespace $_CONTRACTNAME_$
 {
     [DisplayName(nameof($_CLASSNAME_$))]
     [ContractAuthor("<Your Name Or Company Here>", "<Your Public Email Here>")]
-    [ContractDescription("<Description Here>")]
+    [ContractDescription( "<Description Here>")]
     [ContractVersion("<Version String Here>")]
-    [ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template/templates/neocontractowner")]
-    public class $_CLASSNAME_$ : SmartContract
+    [ContractSourceCode("https://github.com/neo-project/neo-devpack-dotnet/tree/master/src/Neo.SmartContract.Template/templates/neocontractowner/Ownable.cs")]
+    public class $_CLASSNAME_$ : Neo.SmartContract.Framework.SmartContract
     {
         #region Owner
 
@@ -47,18 +48,22 @@ namespace $_CONTRACTNAME_$
 
         #endregion
 
+        // TODO: Replace it with your methods.
         public static string MyMethod()
         {
             return Storage.Get(Storage.CurrentReadOnlyContext, "Hello");
         }
 
+        // This will be executed during deploy
         public static void _deploy(object data, bool update)
         {
             if (update)
             {
+                // This will be executed during update
                 return;
             }
 
+            // Init method, you must deploy the contract with the owner as an argument, or it will take the sender
             if (data is null) data = Runtime.Transaction.Sender;
 
             UInt160 initialOwner = (UInt160)data;

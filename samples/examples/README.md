@@ -11,7 +11,7 @@ Walkthrough: [docs/getting-started.md](../../docs/getting-started.md).
 
 | Folder | `dotnet new` short name | Contract |
 | ------ | ----------------------- | -------- |
-| `Blank` | *(copy the folder; no matching template short name)* | Owner + `MyMethod` |
+| `Blank` | `neocontract` | Owner + `MyMethod` (contract file only; the template's unit-test project is not copied) |
 | `Nep17` | `neocontractnep17` | NEP-17 token |
 | `Nep11` | `neocontractnep11` | NEP-11 NFT |
 | `Oracle` | `neocontractoracle` | Oracle request/response |
@@ -34,11 +34,18 @@ Local tools (`neoxp`, `nccs`) come from [`samples/.config/dotnet-tools.json`](..
 
 ## Source of the C# starters
 
-The C# source and template names are maintained in
-[neo-devpack-dotnet `master-n3`](https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template).
-These folders are Express integration copies: they add the project, local-chain, and deploy
-files needed by Neo Express while mirroring the canonical starter source. When a starter changes,
-sync the corresponding DevPack template and this integration copy together.
+Contract logic is owned by
+[neo-devpack-dotnet](https://github.com/neo-project/neo-devpack-dotnet/tree/master-n3/src/Neo.SmartContract.Template).
+The `.cs` files under `samples/examples/*/src` and the wizard overlays in
+`csharp-starters/*/src` are generated from the commit pinned in
+[`devpack-source.json`](devpack-source.json). Do not edit those files here.
+Neo Express owns only the integration around them: project files, `express.batch`,
+`Directory.Build.props`, and the wizard test projects.
+
+```shell
+node scripts/sync-devpack-starters.mjs
+node scripts/sync-devpack-starters.mjs --check
+```
 
 ## Build, deploy, invoke
 

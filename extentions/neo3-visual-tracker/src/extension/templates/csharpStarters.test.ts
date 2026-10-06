@@ -27,11 +27,15 @@ test("C# starter catalog matches Neo.SmartContract.Template plus storage", () =>
     "Storage (number map)",
   ]);
   assert.equal(findCsharpStarter("NEP-17 token")?.id, "nep17");
+  assert.equal(findCsharpStarter("NEP-17 token")?.template, "neocontractnep17");
+  assert.equal(findCsharpStarter("Blank contract")?.template, "neocontract");
+  assert.equal(findCsharpStarter("Ownable")?.template, "neocontractowner");
   assert.equal(findCsharpStarter("Storage (number map)")?.overlay, false);
+  assert.equal(findCsharpStarter("Storage (number map)")?.template, undefined);
   assert.equal(findCsharpStarter("missing"), undefined);
 });
 
-test("overlay C# starters ship contract source and neo-express tests", () => {
+test("overlay C# starters ship neo-express tests and not contract source", () => {
   for (const starter of csharpStarters.filter((item) => item.overlay)) {
     const source = join(
       startersRoot,
@@ -45,12 +49,9 @@ test("overlay C# starters ship contract source and neo-express tests", () => {
       "test",
       "$_CLASSNAME_$Tests.cs.template.txt"
     );
-    assert.equal(existsSync(source), true, `missing ${source}`);
+    assert.equal(existsSync(source), false, `vendored ${source}`);
     assert.equal(existsSync(tests), true, `missing ${tests}`);
-    const sourceText = readFileSync(source, "utf8");
-    assert.match(sourceText, /class \$_CLASSNAME_\$/);
-    assert.match(sourceText, /namespace \$_CONTRACTNAME_\$/);
-    assert.match(sourceText, /neo-devpack-dotnet/);
+    assert.ok(starter.template, `${starter.id} must map to a dotnet new short name`);
   }
 });
 

@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { csharpStarters } from "./csharpStarters";
 import { hydrateFiles, substituteParameters } from "./hydrateTemplates";
+import { instantiateOfficialContract } from "./instantiateSmartContractTemplate";
 
 const packageRoot = join(__dirname, "../../..");
 
@@ -32,6 +34,12 @@ test("hydrateFiles overlays a C# starter onto the scaffold", async () => {
       destination,
       parameters
     );
+    await instantiateOfficialContract({
+      shortName: "neocontractnep17",
+      className: "TokenEscrowContract",
+      contractName: "TokenEscrow",
+      destinationSrcFile: join(destination, "src/TokenEscrowContract.cs"),
+    });
     await hydrateFiles(
       join(packageRoot, "resources/new-contract/csharp-starters/nep17"),
       destination,
@@ -42,7 +50,10 @@ test("hydrateFiles overlays a C# starter onto the scaffold", async () => {
       join(destination, "src/TokenEscrowContract.cs"),
       "utf8"
     );
-    assert.match(contract, /class TokenEscrowContract : Nep17Token/);
+    assert.match(
+      contract,
+      /class TokenEscrowContract : (Neo\.SmartContract\.Framework\.)?Nep17Token/
+    );
     assert.match(contract, /namespace TokenEscrow/);
     assert.doesNotMatch(contract, /\$_CLASSNAME_\$/);
     assert.doesNotMatch(contract, /ChangeNumber/);
@@ -83,6 +94,12 @@ test("hydrateFiles can create a blank official starter", async () => {
       destination,
       parameters
     );
+    await instantiateOfficialContract({
+      shortName: "neocontract",
+      className: "HelloContract",
+      contractName: "Hello",
+      destinationSrcFile: join(destination, "src/HelloContract.cs"),
+    });
     await hydrateFiles(
       join(packageRoot, "resources/new-contract/csharp-starters/blank"),
       destination,
@@ -92,7 +109,10 @@ test("hydrateFiles can create a blank official starter", async () => {
       join(destination, "src/HelloContract.cs"),
       "utf8"
     );
-    assert.match(contract, /class HelloContract : SmartContract/);
+    assert.match(
+      contract,
+      /class HelloContract : (Neo\.SmartContract\.Framework\.)?SmartContract/
+    );
     assert.match(contract, /MyMethod/);
     assert.doesNotMatch(contract, /ChangeNumber/);
   } finally {
@@ -112,6 +132,12 @@ const overlayStarters: {
   { id: "ownable", className: "VaultContract", abiCall: /c\.myMethod\(\)/ },
 ];
 
+function templateShortName(id: string): string {
+  const starter = csharpStarters.find((item) => item.id === id);
+  assert.ok(starter?.template, `${id} is missing a dotnet new short name`);
+  return starter.template;
+}
+
 test("every official C# starter hydrates, uses ABI casing, and builds", async () => {
   const { spawnSync } = await import("node:child_process");
   for (const starter of overlayStarters) {
@@ -127,6 +153,16 @@ test("every official C# starter hydrates, uses ABI casing, and builds", async ()
         destination,
         parameters
       );
+      await instantiateOfficialContract({
+        shortName: templateShortName(starter.id),
+        className: starter.className,
+        contractName: starter.className.replace(/Contract$/, ""),
+        destinationSrcFile: join(
+          destination,
+          "src",
+          `${starter.className}.cs`
+        ),
+      });
       await hydrateFiles(
         join(packageRoot, "resources/new-contract/csharp-starters", starter.id),
         destination,

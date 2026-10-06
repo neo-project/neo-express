@@ -12,6 +12,7 @@ using FluentAssertions;
 using Moq;
 using Neo.BlockchainToolkit.Models;
 using NeoExpress;
+using NeoExpress.Node;
 using Newtonsoft.Json;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
@@ -22,6 +23,110 @@ namespace test.workflowvalidation;
 
 public class ExpressChainManagerCheckpointTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RestoreCheckpoint_preserves_extraction_error_and_node_data(bool cleanupFails)
+    {
+        var chain = CreateSingleNodeChain();
+        var (checkpointPath, checkpointRoot) = CreateCheckpointArchive(chain);
+        var restorePath = Path.Combine(checkpointRoot, "restore-temp");
+        using (var archive = ZipFile.Open(checkpointPath, ZipArchiveMode.Update))
+        {
+            archive.CreateEntry("CURRENT");
+        }
+
+        var fileSystem = new Mock<IFileSystem>();
+        var file = new Mock<IFile>();
+        var directory = new Mock<IDirectory>();
+        var path = new Mock<IPath>();
+        fileSystem.SetupGet(f => f.File).Returns(file.Object);
+        fileSystem.SetupGet(f => f.Directory).Returns(directory.Object);
+        fileSystem.SetupGet(f => f.Path).Returns(path.Object);
+        path.SetupGet(p => p.DirectorySeparatorChar).Returns(Path.DirectorySeparatorChar);
+        path.SetupGet(p => p.AltDirectorySeparatorChar).Returns(Path.AltDirectorySeparatorChar);
+        path.Setup(p => p.IsPathFullyQualified(It.IsAny<string>())).Returns((string p) => Path.IsPathFullyQualified(p));
+        path.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>())).Returns((string a, string b) => Path.Combine(a, b));
+        path.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns((string a, string b, string c, string d) => Path.Combine(a, b, c, d));
+        path.Setup(p => p.GetExtension(It.IsAny<string>())).Returns((string p) => Path.GetExtension(p));
+        path.Setup(p => p.GetFullPath(It.IsAny<string>())).Returns((string p) => Path.GetFullPath(p));
+        path.Setup(p => p.GetTempPath()).Returns(checkpointRoot);
+        path.Setup(p => p.GetRandomFileName()).Returns("restore-temp");
+        file.Setup(f => f.Exists(checkpointPath)).Returns(true);
+        directory.Setup(d => d.GetCurrentDirectory()).Returns(checkpointRoot);
+        directory.Setup(d => d.Exists(It.IsAny<string>())).Returns((string p) => Directory.Exists(p));
+        if (cleanupFails)
+        {
+            directory.Setup(d => d.Delete(restorePath, true))
+                .Throws(new UnauthorizedAccessException("Temporary directory cleanup denied"));
+        }
+        else
+        {
+            directory.Setup(d => d.Delete(It.IsAny<string>(), true)).Callback<string, bool>(Directory.Delete);
+        }
+        var manager = new ExpressChainManager(fileSystem.Object, chain);
+
+        try
+        {
+            Action action = () => manager.RestoreCheckpoint(checkpointPath, true);
+
+            action.Should().ThrowExactly<IOException>();
+            Directory.Exists(restorePath).Should().Be(cleanupFails);
+            directory.Verify(d => d.Delete(restorePath, true), Times.Once);
+            directory.Verify(d => d.Move(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+        finally
+        {
+            Directory.Delete(checkpointRoot, true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void OpenCheckpoint_removes_extracted_files_on_failure(bool failDuringExtraction)
+    {
+        var (checkpointPath, checkpointRoot) = CreateCheckpointArchive(CreateSingleNodeChain());
+        var marker = $"checkpoint-marker-{Guid.NewGuid():N}";
+        using (var archive = ZipFile.Open(checkpointPath, ZipArchiveMode.Update))
+        {
+            archive.CreateEntry(marker);
+            if (failDuringExtraction)
+            {
+                archive.CreateEntry(marker);
+            }
+        }
+
+        string[] GetExtractedDirectories() => Directory.GetDirectories(Path.GetTempPath())
+            .Where(p => File.Exists(Path.Combine(p, marker))).ToArray();
+
+        try
+        {
+            Action action = () =>
+            {
+                using var storage = CheckpointExpressStorage.OpenCheckpoint(checkpointPath);
+            };
+
+            if (failDuringExtraction)
+            {
+                action.Should().Throw<IOException>();
+            }
+            else
+            {
+                action.Should().Throw<RocksDbSharp.RocksDbException>();
+            }
+            GetExtractedDirectories().Should().BeEmpty();
+        }
+        finally
+        {
+            foreach (var directory in GetExtractedDirectories())
+            {
+                Directory.Delete(directory, true);
+            }
+            Directory.Delete(checkpointRoot, true);
+        }
+    }
+
     [Fact]
     public void ResolveCheckpointFileName_allows_relative_subdirectory_paths()
     {

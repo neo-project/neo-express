@@ -71,27 +71,25 @@ async function findContractSources(root: string): Promise<string[]> {
   return results;
 }
 
-export async function ensureSmartContractTemplateInstalled(): Promise<void> {
-  if (templateInstalled) {
-    return;
-  }
+async function templatesAreInstalled(): Promise<boolean> {
   const listed = await runDotnet(["new", "list"]);
-  const output = `${listed.stdout}\n${listed.stderr}`;
-  if (listed.status === 0 && /\bneocontractnep17\b/.test(output)) {
+  return /\bneocontractnep17\b/.test(`${listed.stdout}\n${listed.stderr}`);
+}
+
+export async function ensureSmartContractTemplateInstalled(): Promise<void> {
+  if (templateInstalled || (await templatesAreInstalled())) {
     templateInstalled = true;
     return;
   }
-  const install = await runDotnet([
-    "new",
-    "install",
-    `${SMART_CONTRACT_TEMPLATE_PACKAGE}@${SMART_CONTRACT_TEMPLATE_VERSION}`,
-  ]);
-  if (install.status !== 0) {
-    throw new Error(
-      `dotnet new install ${SMART_CONTRACT_TEMPLATE_PACKAGE} failed:\n${install.stdout}\n${install.stderr}`
-    );
+  const pkg = `${SMART_CONTRACT_TEMPLATE_PACKAGE}@${SMART_CONTRACT_TEMPLATE_VERSION}`;
+  const install = await runDotnet(["new", "install", pkg, "--force"]);
+  if (await templatesAreInstalled()) {
+    templateInstalled = true;
+    return;
   }
-  templateInstalled = true;
+  throw new Error(
+    `dotnet new install ${SMART_CONTRACT_TEMPLATE_PACKAGE} failed:\n${install.stdout}\n${install.stderr}`
+  );
 }
 
 export async function instantiateOfficialContract(options: {

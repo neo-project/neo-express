@@ -155,7 +155,10 @@ namespace NeoExpress.Node
         IExpressNode.CheckpointMode CreateCheckpoint(string checkPointPath)
         {
             var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-            expressStorage.CreateCheckpoint(checkPointPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+            // Take the checkpoint outside any in-flight persist cycle so a block and its
+            // application logs are always captured together.
+            persistencePlugin.RunOutsidePersistCycle(
+                () => expressStorage.CreateCheckpoint(checkPointPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash));
             return IExpressNode.CheckpointMode.Offline;
         }
 

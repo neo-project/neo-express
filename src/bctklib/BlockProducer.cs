@@ -27,7 +27,7 @@ namespace Neo.BlockchainToolkit
     {
         public const uint MaxFastForwardCount = 100_000;
 
-        public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0)
+        public static Block CreateSignedBlock(Header prevHeader, IReadOnlyList<KeyPair> keyPairs, uint network, Transaction[]? transactions = null, ulong timestamp = 0, ulong? nonce = null)
         {
             transactions ??= Array.Empty<Transaction>();
 
@@ -36,17 +36,16 @@ namespace Neo.BlockchainToolkit
             // dBFT assigns each block a random nonce. Mirror that here so the block
             // nonce contribution to System.Runtime.GetRandom varies per block instead
             // of being a constant 0, which otherwise makes on-chain randomness behave
-            // differently from a real network.
-            Span<byte> nonceBuffer = stackalloc byte[sizeof(ulong)];
-            System.Security.Cryptography.RandomNumberGenerator.Fill(nonceBuffer);
-            var nonce = BitConverter.ToUInt64(nonceBuffer);
+            // differently from a real network. A caller that needs deterministic block
+            // hashes (for example a golden-file test) can pass an explicit nonce.
+            var nonceValue = nonce ?? RandomNonce();
 
             var block = new Block
             {
                 Header = new Header
                 {
                     Version = 0,
-                    Nonce = nonce,
+                    Nonce = nonceValue,
                     PrevHash = prevHeader.Hash,
                     MerkleRoot = MerkleTree.ComputeRoot(transactions.Select(t => t.Hash).ToArray()),
                     Timestamp = timestamp > prevHeader.Timestamp
@@ -76,6 +75,13 @@ namespace Neo.BlockchainToolkit
             block.Header.Witness = signingContext.GetWitnesses()[0];
 
             return block;
+        }
+
+        static ulong RandomNonce()
+        {
+            Span<byte> nonceBuffer = stackalloc byte[sizeof(ulong)];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(nonceBuffer);
+            return BitConverter.ToUInt64(nonceBuffer);
         }
 
         public static async Task FastForwardAsync(Header prevHeader, uint blockCount, TimeSpan timestampDelta, KeyPair[] keyPairs, uint network, Func<Block, Task> submitBlockAsync)

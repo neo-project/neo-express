@@ -748,6 +748,8 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
+            ValidatePolicyValues(policyValues);
+
             var faunExecFeeScale = await IsFaunHardforkEnabledForNextTxAsync().ConfigureAwait(false);
 
             using var builder = new ScriptBuilder();
@@ -760,7 +762,42 @@ namespace NeoExpress
             builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.GetScaledExecFeeFactorArgument(faunExecFeeScale));
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await expressNode.EnsureTransactionSucceededAsync(txHash).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
+        }
+
+        // Bounds enforced by the native policy setters, mirrored here so that invalid
+        // values fail fast instead of producing a transaction that faults on-chain.
+        // Gas-denominated policies are validated in datoshi after decimal scaling.
+        internal static void ValidatePolicyValues(PolicyValues policyValues)
+        {
+            if (policyValues.GasPerBlock.Value < 0 || policyValues.GasPerBlock.Value > 10 * NativeContract.GAS.Factor)
+                throw new InvalidOperationException($"GasPerBlock policy requires a value between 0 and 10 GAS");
+            if (policyValues.MinimumDeploymentFee.Value < 0)
+                throw new InvalidOperationException($"MinimumDeploymentFee policy requires a non-negative value");
+            if (policyValues.CandidateRegistrationFee.Value <= 0)
+                throw new InvalidOperationException($"CandidateRegistrationFee policy requires a positive value");
+            if (policyValues.OracleRequestFee.Value <= 0)
+                throw new InvalidOperationException($"OracleRequestFee policy requires a positive value");
+            if (policyValues.NetworkFeePerByte.Value < 0 || policyValues.NetworkFeePerByte.Value > MaxFeePerByte)
+                throw new InvalidOperationException($"NetworkFeePerByte policy requires a value between 0 and {MaxFeePerByte}");
+            ValidateStoragePrice(policyValues.StorageFeeFactor);
+            ValidateExecFeeFactor(policyValues.ExecutionFeeFactor);
+        }
+
+        // Policy.SetFeePerByte accepts [0, 100000000]
+        internal const long MaxFeePerByte = 100_000_000;
+
+        internal static void ValidateStoragePrice(uint value)
+        {
+            if (value < 1 || value > PolicyContract.MaxStoragePrice)
+                throw new InvalidOperationException($"StorageFeeFactor policy requires a value between 1 and {PolicyContract.MaxStoragePrice}");
+        }
+
+        internal static void ValidateExecFeeFactor(uint value)
+        {
+            if (value < 1 || value > PolicyContract.MaxExecFeeFactor)
+                throw new InvalidOperationException($"ExecutionFeeFactor policy requires a value between 1 and {PolicyContract.MaxExecFeeFactor}");
         }
 
         public async Task SetPolicyAsync(PolicySettings policy, decimal value, string account, string password)
@@ -792,21 +829,27 @@ namespace NeoExpress
                 if (decimalValue.Decimals > NativeContract.GAS.Decimals)
                     throw new InvalidOperationException($"{policy} policy requires a value with no more than eight decimal places");
                 decimalValue = decimalValue.ChangeDecimals(NativeContract.GAS.Decimals);
+                ValidateGasPolicySetting(policy, decimalValue.Value);
                 builder.EmitDynamicCall(hash, operation, decimalValue.Value);
             }
             else
             {
                 if (decimalCount != 0)
                     throw new InvalidOperationException($"{policy} policy requires a whole number value");
-                if (decimalValue.Value > uint.MaxValue)
-                    throw new InvalidOperationException($"{policy} policy requires a value less than {uint.MaxValue}");
+                if (decimalValue.Value < 0 || decimalValue.Value > uint.MaxValue)
+                    throw new InvalidOperationException($"{policy} policy requires a value between 0 and {uint.MaxValue}");
                 var whole = (uint)decimalValue.Value;
                 var faunExecFeeScale = policy == PolicySettings.ExecutionFeeFactor
                     && await IsFaunHardforkEnabledForNextTxAsync().ConfigureAwait(false);
+                if (policy == PolicySettings.StorageFeeFactor)
+                    ValidateStoragePrice(whole);
+                if (policy == PolicySettings.ExecutionFeeFactor)
+                    ValidateExecFeeFactor(whole);
                 builder.EmitDynamicCall(hash, operation, PolicyExecutionFeeExtensions.GetScaledExecFeeFactorArgument(whole, faunExecFeeScale));
             }
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await expressNode.EnsureTransactionSucceededAsync(txHash).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"{policy} Policy Set", json).ConfigureAwait(false);
 
             static bool GasPolicySetting(PolicySettings policy)
@@ -822,6 +865,30 @@ namespace NeoExpress
                     default:
                         return false;
                 }
+            }
+        }
+
+        internal static void ValidateGasPolicySetting(PolicySettings policy, BigInteger datoshi)
+        {
+            switch (policy)
+            {
+                case PolicySettings.GasPerBlock:
+                    if (datoshi < 0 || datoshi > 10 * NativeContract.GAS.Factor)
+                        throw new InvalidOperationException($"{policy} policy requires a value between 0 and 10 GAS");
+                    break;
+                case PolicySettings.MinimumDeploymentFee:
+                    if (datoshi < 0)
+                        throw new InvalidOperationException($"{policy} policy requires a non-negative value");
+                    break;
+                case PolicySettings.CandidateRegistrationFee:
+                case PolicySettings.OracleRequestFee:
+                    if (datoshi <= 0)
+                        throw new InvalidOperationException($"{policy} policy requires a positive value");
+                    break;
+                case PolicySettings.NetworkFeePerByte:
+                    if (datoshi < 0 || datoshi > MaxFeePerByte)
+                        throw new InvalidOperationException($"{policy} policy requires a value between 0 and {MaxFeePerByte}");
+                    break;
             }
         }
 

@@ -16,4 +16,12 @@ namespace NeoWorkNet.Models;
 public record WorknetFile(
     Uri Uri,
     BranchInfo BranchInfo,
-    Wallet ConsensusWallet);
+    Wallet ConsensusWallet)
+{
+    public const ushort DefaultRpcPort = 30332;
+
+    // RPC port of the running instance as recorded in the worknet file's
+    // consensus-nodes entry. RunCommand refreshes it on startup so that
+    // StopCommand can reach the node when a non-default --rpc-port was used.
+    public ushort RpcPort { get; init; } = DefaultRpcPort;
+}

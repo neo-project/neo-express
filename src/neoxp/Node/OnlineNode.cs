@@ -46,7 +46,7 @@ namespace NeoExpress.Node
         {
             this.ProtocolSettings = settings;
             this.chain = chain;
-            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
+            rpcClient = new RpcClient(ExpressChainManager.GetRpcUri(chain, node), protocolSettings: settings);
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
             autoMine = ShouldAutoMine(chain);
         }
@@ -364,17 +364,19 @@ namespace NeoExpress.Node
 
         public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
         {
+            // Express storage listing must remain independent of findstorage's pagination format.
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
 
-            if (json is not null && json is JArray array)
-            {
-                return array
-                    .Select(s => (s!["key"]!.AsString(), s!["value"]!.AsString()))
-                    .ToList();
-            }
+            if (json is null)
+                return Array.Empty<(string, string)>();
 
-            return Array.Empty<(string, string)>();
+            if (json is not JArray array)
+                throw new InvalidOperationException("Unexpected expressgetcontractstorage response: expected an array.");
+
+            return array
+                .Select(s => (s!["key"]!.AsString(), s!["value"]!.AsString()))
+                .ToList();
         }
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)

@@ -19,17 +19,17 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v7.0.1
       with:
         fetch-depth: 0
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5.2.0
+      uses: actions/setup-dotnet@v6.0.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.5.1
+      uses: dotnet/nbgv@v0.5.2
       id: nbgv
 
     - name: Build (${{ matrix.runtime }})

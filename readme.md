@@ -7,9 +7,11 @@
 [Neo-Express, Neo-WorkNet and Neo-Trace](#neo-express-neo-worknet-and-neo-trace)
 
 - [Overview](#overview)
+- [Getting started](#getting-started)
 - [Download Links](#download-links)
 - [Installation Guide](#installation-guide)
 - [Usage Guide](#usage-guide)
+- [Documentation](#documentation)
 - [New Features or issues](#new-features-or-issues)
 - [License](#license)
 
@@ -41,6 +43,26 @@ These tools provide developers with a complete local development environment for
   - Generate trace files for Neo Smart Contract Debugger
   - Support specifying blocks by index or hash and transactions by hash
   - Replay public-chain transactions from StateService-enabled RPC nodes
+
+## Getting started
+
+**[Full getting-started guide](docs/getting-started.md)** â€” install, create a chain, build a
+contract from the official templates, invoke it, and optionally use Visual Studio Code.
+
+When working from this source checkout, follow that guide's source-build path: restore the
+pinned sample tools and build `src/neoxp`. The global tool commands below install the latest
+published release, which may not yet contain fixes present in this checkout.
+
+```shell
+dotnet tool restore --tool-manifest samples/.config/dotnet-tools.json
+dotnet build src/neoxp/neoxp.csproj
+dotnet new install Neo.SmartContract.Template
+dotnet new neocontractnep17 -n Nep17Contract -o Nep17
+```
+
+C# starters (Blank, NEP-17, NEP-11, Oracle, Ownable) come from
+[`Neo.SmartContract.Template`](samples/examples/README.md). The VS Code **New contract**
+wizard runs the same `dotnet new` short names.
 
 ## Download Links
 
@@ -114,19 +136,12 @@ brew install rocksdb
 
 ### Quick Start
 
-Get started with Neo-Express in just a few commands:
+See **[Getting started](docs/getting-started.md)** for the full walkthrough (CLI and VS Code).
 
 ```shell
-# Install Neo-Express
 dotnet tool install Neo.Express -g
-
-# Create a new blockchain
 neoxp create
-
-# Start the blockchain
-neoxp run
-
-# Check wallet balances
+neoxp run --seconds-per-block 1
 neoxp show balances genesis
 ```
 
@@ -168,10 +183,10 @@ integration, typed contract interfaces, assertions and contract code coverage â€
   neoxp transfer 1 gas genesis node1
   ```
 
-- Invoke a deployed contract with an invocation file:
+- Invoke the sample contract after building `samples/src` with an invocation file:
 
   ```shell
-  neoxp contract invoke transfer.neo-invoke.json genesis
+  neoxp contract invoke samples/invoke-files/contract.neo-invoke.json genesis -i samples/default.neo-express
   ```
 
   Invocation files identify deployed contracts by name or script hash. See the
@@ -219,6 +234,23 @@ Please review the [Neo-WorkNet Command Reference](docs/worknet-command-reference
 Please review the [NeoTrace Command Reference](docs/trace-command-reference.md) for the full list of commands and options.
 
 > Note: Neo-Trace depends on the [StateService plugin module](https://github.com/neo-project/neo-modules/tree/master/src/StateService) running with `FullState` enabled. If a public seed node returns an `Old state not supported` error, use a JSON-RPC node with full-state StateService enabled. Neo-Trace does not include per-instruction storage snapshots from public-chain StateService replay. For local Neo-Express transactions with storage snapshots, use the `--trace` option on commands such as `neoxp run`, `neoxp contract invoke`, or `neoxp contract run` to write `.neo-trace` files locally.
+
+## Documentation
+
+| Doc | Topic |
+| --- | ----- |
+| [Getting started](docs/getting-started.md) | Install, first chain, first contract (CLI and VS Code) |
+| [Installation](docs/installation.md) | Global tools, release zips, Ubuntu/macOS |
+| [Quickstart](docs/quickstart.md) | Create, compile, deploy, invoke |
+| [Contract testing](docs/contract-testing.md) | `dotnet test` against a checkpoint |
+| [Samples](samples/README.md) | Simple sample and official C# templates |
+| [Command reference](docs/command-reference.md) | `neoxp` commands |
+| [Settings](docs/settings.md) | `.neo-express` settings |
+| [Invocation files](docs/Neo%20Express%20Invocation%20File.md) | `.neo-invoke.json` |
+| [Visual DevTracker](extentions/neo3-visual-tracker/README.md) | VS Code extension |
+| [Debugger](docs/debugger-command-reference.md) | VS Code `neo-contract` launch config |
+| [WorkNet](docs/worknet-command-reference.md) | Branch MainNet/TestNet |
+| [Trace](docs/trace-command-reference.md) | Public-chain traces |
 
 ### NeoDebug
 

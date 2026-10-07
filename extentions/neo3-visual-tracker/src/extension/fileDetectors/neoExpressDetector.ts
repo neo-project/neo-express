@@ -1,5 +1,6 @@
 import BlockchainIdentifier from "../blockchainIdentifier";
 import DetectorBase from "./detectorBase";
+import { isHiddenExpressConfig } from "../../shared/expressWalletAddresses";
 
 const SEARCH_PATTERN = "**/*.neo-express";
 
@@ -15,9 +16,10 @@ export default class NeoExpressDetector extends DetectorBase {
   }
 
   async processFiles() {
+    const visible = this.files.filter((file) => !isHiddenExpressConfig(file));
     this.blockchainsSnapshot = (
       await Promise.all(
-        this.files.map((_) =>
+        visible.map((_) =>
           BlockchainIdentifier.fromNeoExpressConfig(this.extensionPath, _)
         )
       )

@@ -10,6 +10,7 @@ import InvokeFileViewRequest from "../../shared/messages/invokeFileViewRequest";
 import InvokeFileViewState from "../../shared/viewState/invokeFileViewState";
 import {
   areInvocationStepsReady,
+  areInvocationStepsSafe,
   isLiveDebugWitnessScopeSupported,
   isWitnessScope,
   resolveSelectedAccount,
@@ -22,10 +23,36 @@ import Log from "../util/log";
 import NeoExpress from "../neoExpress/neoExpress";
 import PanelControllerBase from "./panelControllerBase";
 import posixPath from "../util/posixPath";
+import stripAnsi from "../util/stripAnsi";
+import {
+  formatInvokeMessage,
+  isFailedTx,
+  parseSubmittedTxids,
+} from "../../shared/neoExpressTx";
+import { ensureAccountHasGas, passwordFlags, withStatus } from "../util/txPrep";
 import TransactionStatus from "../../shared/transactionStatus";
 
 const LOG_PREFIX = "InvokeFilePanelController";
 const MAX_RECENT_TXS = 10;
+
+function formatInvokeError(message: string): string {
+  const notFound = /contract "([^"]+)" not found/i.exec(message);
+  if (notFound) {
+    return (
+      `Contract "${notFound[1]}" is not deployed on this Neo Express chain. ` +
+      `Deploy the matching .nef (Smart contracts → deploy, or neoxp contract deploy) ` +
+      `or invoke a deployed name such as SampleContract. ` +
+      `The # prefix is a workspace name, not a file path.`
+    );
+  }
+  if (/insufficient gas/i.test(message)) {
+    return (
+      `${message} The signing account needs GAS for fees. Use genesis (it holds genesis GAS), ` +
+      `or Quick Start → Transfer NEO, GAS, or NEP-17 to send GAS from genesis to the wallet.`
+    );
+  }
+  return message;
+}
 
 export default class InvokeFilePanelController extends PanelControllerBase<
   InvokeFileViewState,
@@ -61,9 +88,11 @@ export default class InvokeFilePanelController extends PanelControllerBase<
         isPartOfDiffView,
         isReadOnly,
         jsonMode: false,
+        lastInvocation: null,
         recentTransactions: [],
         selectedAccount: null,
         selectedTransactionId: null,
+        showInvocationResult: false,
         witnessScope: "CalledByEntry",
       },
       context,
@@ -77,6 +106,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
       }
     });
     this.autoComplete.onChange(async () => {
+      await this.refreshExecutionContext();
       await this.updateViewState({
         autoCompleteData: await this.augmentAutoCompleteData(
           this.autoComplete.data
@@ -160,8 +190,16 @@ export default class InvokeFilePanelController extends PanelControllerBase<
           "Configure a contract and method for every invocation before running all steps."
         );
       } else {
-        await this.runFile(this.document.uri.fsPath, "All steps");
+        await this.runFile(
+          this.document.uri.fsPath,
+          "All steps",
+          this.viewState.fileContents
+        );
       }
+    }
+
+    if (request.dismissInvocationResult) {
+      await this.updateViewState({ showInvocationResult: false });
     }
 
     if (request.runStep) {
@@ -174,6 +212,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
         await this.runFragment(fragment);
       }
     }
+
 
     if (request.selectTransaction) {
       await this.updateViewState({
@@ -349,7 +388,11 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     }
   }
 
-  private async runFile(filePath: string, operation?: string) {
+  private async runFile(
+    filePath: string,
+    operation?: string,
+    steps?: { contract?: string; operation?: string }[]
+  ) {
     let connection = this.activeConnection.connection;
     if (!connection) {
       await this.activeConnection.connect();
@@ -366,7 +409,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
       connection.blockchainIdentifier.blockchainType === "express"
     ) {
       const walletNames = Object.keys(
-        await connection.blockchainIdentifier.getWalletAddresses()
+        this.autoComplete.data.wellKnownAddresses
       );
       let account = this.viewState.selectedAccount || undefined;
       if (!account || !walletNames.includes(account)) {
@@ -378,43 +421,116 @@ export default class InvokeFilePanelController extends PanelControllerBase<
       if (!account) {
         return;
       }
-      const witnessScope = this.viewState.witnessScope;
-      await this.document.save();
-      await this.updateViewState({ collapseTransactions: false });
-      const result = await this.neoExpress.runInDirectory(
-        path.dirname(this.document.uri.fsPath),
-        "contract",
-        "invoke",
-        "-w",
-        witnessScope,
-        "-i",
-        connection.blockchainIdentifier.configPath,
-        filePath,
-        account
-      );
-      if (result.isError) {
-        // showErrorMessage is not await'ed so that the loading spinner does not hang:
-        vscode.window.showErrorMessage(result.message);
-      } else {
-        const recentTransactions = [...this.viewState.recentTransactions];
-        for (const txidMatch of ` ${result.message} `.matchAll(
-          /\s0x[0-9a-f]+\s/gi
-        )) {
-          const txid = txidMatch[0].trim();
-          recentTransactions.unshift({
-            account,
-            txid,
-            blockchain: connection.blockchainIdentifier.name,
-            operation,
-            state: "pending",
-            submittedAt: new Date().toISOString(),
-          });
-        }
-        if (recentTransactions.length > MAX_RECENT_TXS) {
-          recentTransactions.length = MAX_RECENT_TXS;
-        }
-        await this.updateViewState({ recentTransactions });
+      const displayName = account;
+      account =
+        this.autoComplete.data.accountSigners?.[account] || account;
+      const password = await passwordFlags(account);
+      if (!password) {
+        return;
       }
+      const trial = areInvocationStepsSafe(
+        steps || this.viewState.fileContents,
+        this.viewState.autoCompleteData
+      );
+      let result: { message: string; isError?: boolean };
+      try {
+        result = await withStatus("Invoking contract", async (report) => {
+          if (!trial) {
+            report("Checking GAS balance...");
+            if (
+              !(await ensureAccountHasGas(
+                this.neoExpress,
+                connection.blockchainIdentifier,
+                displayName,
+                account,
+                report,
+                this.autoComplete.data.wellKnownAddresses[displayName]
+              ))
+            ) {
+              return { isError: true, message: "" };
+            }
+          }
+          const witnessScope = this.viewState.witnessScope;
+          await this.document.save();
+          await this.updateViewState({ collapseTransactions: false });
+          report(
+            trial
+              ? "Running invocation for results..."
+              : "Submitting invocation..."
+          );
+          Log.writeInvocation("");
+          Log.writeInvocation(
+            `----- ${operation || "Invocation"} (${trial ? "results" : "submit"}) -----`
+          );
+          Log.writeInvocation("Running...");
+          Log.showInvocation();
+          return this.neoExpress.runInDirectory(
+            path.dirname(this.document.uri.fsPath),
+            "contract",
+            "invoke",
+            "-w",
+            witnessScope,
+            "-i",
+            connection.blockchainIdentifier.configPath,
+            filePath,
+            account,
+            ...(trial ? ["--results", "--json"] : []),
+            ...password
+          );
+        });
+      } catch (error: any) {
+        await this.showInvocationResult({
+          operation,
+          success: false,
+          message: `Invocation failed: ${error?.message || error}`,
+          txids: [],
+        });
+        return;
+      }
+      if (!result.message) {
+        if (result.isError) {
+          return;
+        }
+        await this.showInvocationResult({
+          operation,
+          success: false,
+          message:
+            "Invocation finished with no output. Check the Neo N3 Visual DevTracker output channel.",
+          txids: [],
+        });
+        return;
+      }
+      const rawMessage = stripAnsi(result.message);
+      const success = !result.isError && !isFailedTx(rawMessage);
+      const message = success
+        ? formatInvokeMessage(rawMessage)
+        : formatInvokeError(rawMessage);
+      const txids = parseSubmittedTxids(rawMessage);
+      const submittedAt = new Date().toISOString();
+      const recentTransactions = [...this.viewState.recentTransactions];
+      for (const txid of txids) {
+        recentTransactions.unshift({
+          account,
+          txid,
+          blockchain: connection.blockchainIdentifier.name,
+          operation,
+          output: message,
+          state: "pending",
+          submittedAt,
+        });
+      }
+      if (recentTransactions.length > MAX_RECENT_TXS) {
+        recentTransactions.length = MAX_RECENT_TXS;
+      }
+      await this.showInvocationResult(
+        {
+          operation,
+          success,
+          message,
+          txids,
+        },
+        recentTransactions
+      );
     } else {
       // showWarningMessage is not await'ed so that the loading spinner does not hang:
       vscode.window.showWarningMessage(
@@ -431,7 +547,9 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     );
     try {
       fs.writeFileSync(tempFile, JSONC.stringify([fragment]));
-      await this.runFile(tempFile, fragment?.operation || "Invocation");
+      await this.runFile(tempFile, fragment?.operation || "Invocation", [
+        fragment,
+      ]);
     } catch (e : any) {
       Log.warn(
         LOG_PREFIX,
@@ -536,6 +654,36 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     }
   }
 
+  private async showInvocationResult(
+    result: {
+      message: string;
+      operation?: string;
+      success: boolean;
+      txids: string[];
+    },
+    recentTransactions?: InvokeFileViewState["recentTransactions"]
+  ) {
+    Log.writeInvocation(result.success ? "Succeeded" : "Failed");
+    if (result.operation) {
+      Log.writeInvocation(`Operation: ${result.operation}`);
+    }
+    if (result.message) {
+      Log.writeInvocation(result.message);
+    }
+    for (const txid of result.txids) {
+      Log.writeInvocation(txid);
+    }
+    Log.showInvocation();
+    await this.updateViewState({
+      lastInvocation: {
+        ...result,
+        submittedAt: new Date().toISOString(),
+      },
+      showInvocationResult: true,
+      ...(recentTransactions ? { recentTransactions } : {}),
+    });
+  }
+
   private async updateTransactionList() {
     const connection = this.activeConnection.connection;
 
@@ -579,9 +727,7 @@ export default class InvokeFilePanelController extends PanelControllerBase<
     const isExpressConnection =
       connection?.blockchainIdentifier.blockchainType === "express";
     const executionAccounts = isExpressConnection
-      ? toInvocationAccounts(
-          await connection.blockchainIdentifier.getWalletAddresses()
-        )
+      ? toInvocationAccounts(this.autoComplete.data.wellKnownAddresses)
       : [];
     await this.updateViewState({
       connectionHealthy: connection?.blockchainMonitor.healthy || false,

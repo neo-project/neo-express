@@ -1,0 +1,41 @@
+using FluentAssertions;
+using Neo.Assertions;
+using Neo.BlockchainToolkit;
+using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.SmartContract;
+using Neo.VM;
+using NeoTestHarness;
+using Xunit;
+
+namespace $_CONTRACTNAME_$Tests
+{
+    [CheckpointPath("test/bin/checkpoints/contract-deployed.neoxp-checkpoint")]
+    public class $_CLASSNAME_$Tests : IClassFixture<CheckpointFixture<$_CLASSNAME_$Tests>>
+    {
+        readonly CheckpointFixture fixture;
+        readonly ExpressChain chain;
+
+        public $_CLASSNAME_$Tests(CheckpointFixture<$_CLASSNAME_$Tests> fixture)
+        {
+            this.fixture = fixture;
+            this.chain = fixture.FindChain();
+        }
+
+        [Fact]
+        public void symbol_and_decimals()
+        {
+            var settings = chain.GetProtocolSettings();
+            using var snapshot = fixture.GetSnapshot();
+            using var engine = new TestApplicationEngine(snapshot, settings);
+
+            engine.ExecuteScript<$_CLASSNAME_$>(c => c.symbol());
+            engine.State.Should().Be(VMState.HALT);
+            engine.ResultStack.Peek(0).Should().BeEquivalentTo("EXAMPLE");
+
+            using var decimalsEngine = new TestApplicationEngine(snapshot, settings);
+            decimalsEngine.ExecuteScript<$_CLASSNAME_$>(c => c.decimals());
+            decimalsEngine.State.Should().Be(VMState.HALT);
+            decimalsEngine.ResultStack.Peek(0).Should().BeEquivalentTo(8);
+        }
+    }
+}

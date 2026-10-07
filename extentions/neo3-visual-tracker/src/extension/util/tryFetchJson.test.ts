@@ -26,6 +26,7 @@ moduleLoader._load = function (
         createOutputChannel: () => ({
           appendLine: () => undefined,
           dispose: () => undefined,
+          show: () => undefined,
         }),
       },
     };

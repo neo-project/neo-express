@@ -10,6 +10,7 @@
 
 using FluentAssertions;
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Text.Json;
 using Xunit;
 
@@ -247,6 +248,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
     public async Task Test03_RunCommandWithTimeout()
     {
         await EnsureSetup();
+        await EnsureWalletsCreated();
 
         _output.WriteLine("=== Testing neoxp run command with timeout ===");
 
@@ -256,30 +258,20 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp run --seconds-per-block 3 --discard &
-            // We'll run this with a timeout to simulate the GitHub Actions timeout-minutes: 1
-            var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(1), "run", "--seconds-per-block", "3", "--discard");
+            var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(2), "run", "--seconds-per-block", "3", "--discard");
 
-            // Wait until the node actually reports it is running before issuing the
-            // online commands; a fixed delay races the RPC server startup on slower
-            // machines and fails the transfers spuriously.
-            var ready = false;
-            for (var attempt = 0; attempt < 30 && !ready; attempt++)
-            {
-                var (stateExitCode, stateOutput, _) = await _runCommand.RunNeoxpCommand("show", "state");
-                ready = stateExitCode == 0 && stateOutput.Contains("IsRunning: True");
-                if (!ready)
-                    await Task.Delay(200, TestContext.Current.CancellationToken);
-            }
-            ready.Should().BeTrue("node should report IsRunning within 30 seconds of neoxp run");
+            // Probe the RPC port directly. show state / show block go through
+            // GetExpressNode, which can open OfflineNode (and RocksDB) while
+            // run --discard is still starting, and can print IsRunning True
+            // before the RPC server is listening.
+            await WaitUntilRpcReadyAsync(runTask);
 
-            // Test that we can run commands while it's running
-            // Equivalent to: neoxp transfer 10000 gas genesis node1 (online)
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
+            var (transferExitCode1, _, transferError1) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
+            transferExitCode1.Should().Be(0, transferError1);
 
-            // Equivalent to: neoxp transfer 10000 gas genesis bob (online)
-            await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
+            var (transferExitCode2, _, transferError2) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
+            transferExitCode2.Should().Be(0, transferError2);
 
-            // Equivalent to: neoxp stop --all
             var (stopExitCode, _, stopError) = await _runCommand.RunNeoxpCommand("stop", "--all");
             stopExitCode.Should().Be(0, stopError);
 
@@ -363,6 +355,46 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         {
             Directory.SetCurrentDirectory(originalDir);
         }
+    }
+
+    private async Task WaitUntilRpcReadyAsync(Task<(int ExitCode, string Output, string Error)> runTask)
+    {
+        var configFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".neo-express",
+            "default.neo-express");
+        var json = await File.ReadAllTextAsync(configFile, TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        var rpcPort = doc.RootElement.GetProperty("consensus-nodes")[0].GetProperty("rpc-port").GetInt32();
+
+        var ready = false;
+        for (var attempt = 0; attempt < 60 && !ready; attempt++)
+        {
+            if (runTask.IsCompleted)
+            {
+                var (runExitCode, runOutput, runError) = await runTask;
+                throw new InvalidOperationException(
+                    $"neoxp run exited before RPC was ready. Exit={runExitCode} Error={runError} Output={runOutput}");
+            }
+
+            try
+            {
+                using var client = new TcpClient();
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+                cts.CancelAfter(TimeSpan.FromMilliseconds(250));
+                await client.ConnectAsync("127.0.0.1", rpcPort, cts.Token);
+                ready = client.Connected;
+            }
+            catch (Exception ex) when (ex is SocketException or OperationCanceledException)
+            {
+                ready = false;
+            }
+
+            if (!ready)
+                await Task.Delay(500, TestContext.Current.CancellationToken);
+        }
+
+        ready.Should().BeTrue($"node RPC should accept TCP connections on port {rpcPort} within 30 seconds of neoxp run");
     }
 
     private async Task EnsureWalletsCreated()

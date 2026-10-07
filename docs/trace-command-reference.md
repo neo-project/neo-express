@@ -1,6 +1,8 @@
 <!-- markdownlint-enable -->
 # NeoTrace Command Reference
 
+New to Neo Express? Start at [getting-started.md](getting-started.md).
+
 NeoTrace generates `.neo-trace` files for transactions on public Neo N3 blockchains. These
 files can be opened in [NeoDebug](debugger-command-reference.md) to step through the recorded
 execution, forwards and backwards.

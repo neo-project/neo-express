@@ -48,8 +48,10 @@ namespace NeoExpress.Node
         }
 
         public static CheckpointExpressStorage OpenCheckpoint(string checkpointPath, uint? network = null, byte? addressVersion = null, UInt160? scriptHash = null)
+            => OpenCheckpoint(checkpointPath, RocksDbUtility.GetTempPath(), network, addressVersion, scriptHash);
+
+        internal static CheckpointExpressStorage OpenCheckpoint(string checkpointPath, string checkpointTempPath, uint? network = null, byte? addressVersion = null, UInt160? scriptHash = null)
         {
-            var checkpointTempPath = RocksDbUtility.GetTempPath();
             RocksDb? db = null;
             try
             {

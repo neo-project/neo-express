@@ -1,2 +1,2 @@
-contract deploy ./src/bin/sc/contract.nef genesis
+contract deploy ./src/bin/sc/SampleContract.nef genesis
 checkpoint create ./checkpoints/contract-deployed -f

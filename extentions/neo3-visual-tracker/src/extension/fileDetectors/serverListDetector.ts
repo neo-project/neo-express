@@ -10,6 +10,7 @@ import Log from "../util/log";
 import posixPath from "../util/posixPath";
 import parseServerListConfig from "./serverListConfig";
 import getTrustedWorkspaceServerListFiles from "./serverListWorkspaceTrust";
+import { knownGenesisHashForSeed } from "../../shared/publicChainSeeds";
 
 const LOG_PREFIX = "ServerListDetector";
 
@@ -168,7 +169,7 @@ export default class ServerListDetector extends DetectorBase {
     }
     const uniqueUrls = Object.getOwnPropertyNames(rpcUrls);
     const genesisBlockHashes = await Promise.all(
-      uniqueUrls.map((_) => this.tryGetGenesisBlockHash(_))
+      uniqueUrls.map((url) => this.identifyGenesisBlockHash(url))
     );
     const urlsByBlockchain: { [genesisHash: string]: string[] } = {};
     for (let i = 0; i < uniqueUrls.length; i++) {
@@ -193,10 +194,23 @@ export default class ServerListDetector extends DetectorBase {
     this.blockchainsSnapshot = newBlockchainsSnapshot;
   }
 
+  private identifyGenesisBlockHash(rpcUrl: string): Promise<string> {
+    const known = knownGenesisHashForSeed(rpcUrl);
+    if (known) {
+      return Promise.resolve(known);
+    }
+    return this.tryGetGenesisBlockHash(rpcUrl);
+  }
+
   private async tryGetGenesisBlockHash(rpcUrl: string) {
     try {
       const rpcClient = new neonCore.rpc.RPCClient(rpcUrl);
-      const genesisBlock = await rpcClient.getBlock(0, true);
+      const genesisBlock = await Promise.race([
+        rpcClient.getBlock(0, true),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("RPC timeout")), 2500)
+        ),
+      ]);
       return genesisBlock.hash;
     } catch (e : any) {
       Log.log(
@@ -209,3 +223,5 @@ export default class ServerListDetector extends DetectorBase {
     }
   }
 }
+
+

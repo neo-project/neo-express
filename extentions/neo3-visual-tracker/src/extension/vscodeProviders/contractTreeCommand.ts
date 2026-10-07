@@ -24,8 +24,8 @@ export default function getContractTreeCommand(contract: ContractTreeData) {
   }
 
   return {
-    command: "neo3-visual-devtracker.tracker.openContract",
-    arguments: [{ hash: contract.hash }],
-    title: contract.hash,
+    command: "neo3-visual-devtracker.neo.openContractStudio",
+    arguments: [contract],
+    title: "Invoke in Contract Studio",
   };
 }

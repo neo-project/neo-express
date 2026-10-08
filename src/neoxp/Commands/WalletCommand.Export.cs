@@ -40,16 +40,20 @@ namespace NeoExpress.Commands
             internal string Output { get; init; } = string.Empty;
 
             [Option(Description = "Overwrite existing data")]
-            internal bool Force { get; }
+            internal bool Force { get; init; }
 
             [Option(Description = "Password to use for the exported NEP-6 wallet (prompted for if unspecified)")]
             internal string Password { get; init; } = string.Empty;
 
             internal string Execute()
+                => Execute(Console.IsInputRedirected,
+                    () => Prompt.GetPassword("Input password to use for exported wallet"));
+
+            internal string Execute(bool isInputRedirected, Func<string> promptForPassword)
             {
                 var output = string.IsNullOrEmpty(Output)
                    ? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), $"{Name}.wallet.json")
-                   : Output;
+                   : fileSystem.Path.GetFullPath(Output);
 
                 var (chainManager, chainPath) = chainManagerFactory.LoadChain(Input);
                 var wallet = chainManager.Chain.GetWallet(Name);
@@ -61,21 +65,32 @@ namespace NeoExpress.Commands
 
                 if (fileSystem.File.Exists(output))
                 {
-                    if (Force)
-                    {
-                        fileSystem.File.Delete(output);
-                    }
-                    else
+                    if (!Force)
                     {
                         throw new Exception("You must specify force to overwrite an exported wallet.");
                     }
                 }
 
-                var password = Extensions.ResolveExportPassword(Password, Console.IsInputRedirected,
-                    () => Prompt.GetPassword("Input password to use for exported wallet"));
+                var password = Extensions.ResolveExportPassword(Password, isInputRedirected, promptForPassword);
                 var devWallet = DevWallet.FromExpressWallet(chainManager.ProtocolSettings, wallet);
-                devWallet.Export(output, password);
-                return output;
+                var directory = fileSystem.Path.GetDirectoryName(output)
+                    ?? fileSystem.Directory.GetCurrentDirectory();
+                var temporaryOutput = fileSystem.Path.Combine(
+                    directory,
+                    $".{fileSystem.Path.GetFileName(output)}.{Guid.NewGuid():N}.tmp");
+                try
+                {
+                    devWallet.Export(temporaryOutput, password);
+                    fileSystem.File.Move(temporaryOutput, output, Force);
+                    return output;
+                }
+                finally
+                {
+                    if (fileSystem.File.Exists(temporaryOutput))
+                    {
+                        fileSystem.File.Delete(temporaryOutput);
+                    }
+                }
             }
 
             private int OnExecute(CommandLineApplication app, IConsole console)

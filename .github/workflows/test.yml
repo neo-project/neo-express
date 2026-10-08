@@ -85,22 +85,35 @@ jobs:
         neoxp transfer 10000 gas genesis bob
 
     - name: Test Run Command (online) (neoxp)
-      # Start the node in the background and wait until it is actually running
-      # before the online commands below; without the readiness wait they can
-      # race the RPC server startup and fail spuriously on slower runners.
+      # Probe RPC directly: show state can use offline storage during startup
+      # and observe the mutex before the RPC server is accepting connections.
       shell: bash
       timeout-minutes: 2
       run: |
-        neoxp run --seconds-per-block 3 --discard &
+        neoxp run --seconds-per-block 3 --discard > neoxp-node.log 2>&1 &
+        NODE_PID=$!
         READY=0
-        for _ in $(seq 1 60); do
-          if neoxp show state 2>/dev/null | grep -q "IsRunning: True"; then READY=1; break; fi
+        for _ in $(seq 1 30); do
+          if ! kill -0 "$NODE_PID" 2>/dev/null; then
+            cat neoxp-node.log
+            exit 1
+          fi
+          if curl --silent --fail --max-time 1 \
+            --header 'Content-Type: application/json' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"getversion","params":[]}' \
+            http://127.0.0.1:50012 > neoxp-rpc.json \
+            && grep -Eq '"result"[[:space:]]*:[[:space:]]*[{]' neoxp-rpc.json; then
+            READY=1
+            break
+          fi
           sleep 1
         done
         if [ "$READY" != "1" ]; then
-          echo "neo-express node did not report IsRunning within 60 seconds"
+          echo "neo-express RPC did not become ready within 60 seconds"
+          cat neoxp-node.log
           exit 1
         fi
+        cat neoxp-node.log
         neoxp show state
 
     - name: Test Transfer Command (online) (neoxp)

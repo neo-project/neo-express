@@ -388,7 +388,7 @@
     "bignumber.js": "^9.3.1",
     "bitset": "^5.2.3",
     "buffer": "^6.0.3",
-    "concurrently": "^10.0.4",
+    "concurrently": "^10.0.6",
     "crypto-js": "^4.2.0",
     "css-loader": "^7.1.2",
     "eslint": "^10.2.1",

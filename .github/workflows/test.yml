@@ -66,6 +66,38 @@ jobs:
     - name: Test Create Command (neoxp)
       run: neoxp create --force
 
+    - name: Configure available smoke-test ports
+      id: smoke_ports
+      shell: python {0}
+      run: |
+        import contextlib
+        import json
+        import os
+        import pathlib
+        import socket
+
+        path = pathlib.Path.home() / ".neo-express" / "default.neo-express"
+        chain = json.loads(path.read_text(encoding="utf-8"))
+        # Stay outside the default Windows dynamic port range and check binds.
+        with contextlib.ExitStack() as sockets:
+            for node in chain["consensus-nodes"]:
+                for field in ("rpc-port", "tcp-port"):
+                    for port in range(20000, 20100):
+                        listener = socket.socket()
+                        try:
+                            listener.bind(("127.0.0.1", port))
+                        except OSError:
+                            listener.close()
+                            continue
+                        sockets.enter_context(listener)
+                        node[field] = port
+                        break
+                    else:
+                        raise RuntimeError("No available smoke-test port")
+            path.write_text(json.dumps(chain), encoding="utf-8")
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+                output.write(f"rpc_port={chain['consensus-nodes'][0]['rpc-port']}\n")
+
     - name: Test Checkpoint Command (offline) (neoxp)
       run: neoxp checkpoint create checkpoints/init --force
 
@@ -89,6 +121,8 @@ jobs:
       # and observe the mutex before the RPC server is accepting connections.
       shell: bash
       timeout-minutes: 2
+      env:
+        NEOXP_RPC_PORT: ${{ steps.smoke_ports.outputs.rpc_port }}
       run: |
         neoxp run --seconds-per-block 3 --discard > neoxp-node.log 2>&1 &
         NODE_PID=$!
@@ -101,7 +135,7 @@ jobs:
           if curl --silent --fail --max-time 1 \
             --header 'Content-Type: application/json' \
             --data '{"jsonrpc":"2.0","id":1,"method":"getversion","params":[]}' \
-            http://127.0.0.1:50012 > neoxp-rpc.json \
+            "http://127.0.0.1:$NEOXP_RPC_PORT" > neoxp-rpc.json \
             && grep -Eq '"result"[[:space:]]*:[[:space:]]*[{]' neoxp-rpc.json; then
             READY=1
             break

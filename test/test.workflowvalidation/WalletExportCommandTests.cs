@@ -102,6 +102,28 @@ public class WalletExportCommandTests
     }
 
     [Fact]
+    public void failed_replacement_preserves_the_existing_directory_and_cleans_the_temporary_file()
+    {
+        var (directory, command, output, _) = CreateValidCommand("test-password");
+        try
+        {
+            Directory.CreateDirectory(output);
+            var marker = Path.Combine(output, "existing-data.txt");
+            File.WriteAllText(marker, "previous data");
+
+            var action = () => command.Execute(true, () => throw new InvalidOperationException("must not prompt"));
+
+            action.Should().Throw<Exception>();
+            File.ReadAllText(marker).Should().Be("previous data");
+            Directory.EnumerateFiles(directory, "*.tmp").Should().BeEmpty();
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
     public void export_without_force_rejects_an_existing_wallet_without_staging()
     {
         var (directory, command, output, _) = CreateValidCommand("test-password", force: false);

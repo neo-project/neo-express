@@ -52,9 +52,8 @@ namespace Neo.BlockchainToolkit.Persistence
             [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
             public byte[]? TryGet(byte[]? key)
             {
-                if (snapshot.Handle == IntPtr.Zero)
-                    throw new ObjectDisposedException(nameof(Snapshot));
-                return db.Get(key ?? Array.Empty<byte>(), columnFamily, readOptions);
+                TryGet(key, out var value);
+                return value;
             }
 
             public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)
@@ -65,9 +64,10 @@ namespace Neo.BlockchainToolkit.Persistence
                 var keyBytes = key ?? Array.Empty<byte>();
 
                 // First check pending writes
-                if (pendingWrites.TryGetValue(keyBytes, out value))
+                if (pendingWrites.TryGetValue(keyBytes, out var pendingValue))
                 {
-                    return value != null; // null means deleted
+                    value = pendingValue?.ToArray(); // null means deleted
+                    return value is not null;
                 }
 
                 // Then check the database snapshot

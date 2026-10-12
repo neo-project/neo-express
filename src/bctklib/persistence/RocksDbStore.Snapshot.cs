@@ -80,7 +80,13 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
 
-                return TryGet(key, out _);
+                var keyBytes = key ?? Array.Empty<byte>();
+                if (pendingWrites.TryGetValue(keyBytes, out var pendingValue))
+                {
+                    return pendingValue is not null; // null means deleted
+                }
+
+                return db.Get(keyBytes, columnFamily, readOptions) is not null;
             }
 
             [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]

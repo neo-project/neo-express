@@ -36,7 +36,7 @@ jobs:
       run: dotnet pack neo-express.sln --output ./dist --configuration Release --no-restore --verbosity normal
 
     - name: Download Standalone Distributions
-      uses: actions/download-artifact@v8.0.1
+      uses: actions/download-artifact@v8.0.2
       with:
         path: /tmp/dist
         pattern: standalone-*

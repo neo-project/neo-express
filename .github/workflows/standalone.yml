@@ -79,7 +79,7 @@ jobs:
       run: zip ${{ env.ZIP_FILE }} -r *
 
     - name: Upload Distribution
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7.0.2
       with:
         name: standalone-${{ matrix.runtime }}
         path: ${{ env.DIST_PATH }}/*

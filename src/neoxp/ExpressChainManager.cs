@@ -249,7 +249,7 @@ namespace NeoExpress
                 // only replace an existing checkpoint once the new archive is complete.
                 var temporaryPath = fileSystem.Path.Combine(
                     parentPath,
-                    $".{fileSystem.Path.GetFileName(checkpointPath)}.{Guid.NewGuid():N}.tmp");
+                    $".checkpoint-{Guid.NewGuid():N}.tmp");
                 IExpressNode.CheckpointMode mode;
                 try
                 {

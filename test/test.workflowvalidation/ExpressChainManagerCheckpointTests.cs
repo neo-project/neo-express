@@ -224,6 +224,87 @@ public class ExpressChainManagerCheckpointTests
         fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CreateCheckpointAsync_supports_long_valid_file_names(bool replaceExisting)
+    {
+        var directory = Path.Combine(Directory.GetCurrentDirectory(), $"checkpoint-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            // The final name fits the filesystem's component limit; staging must also fit.
+            var checkpointPath = Path.Combine(directory, new string('a', 230) + ".neoxp-checkpoint");
+            File.WriteAllText(checkpointPath, "existing");
+            if (!replaceExisting)
+                File.Delete(checkpointPath);
+            var node = new CheckpointStubNode
+            {
+                CreateCheckpoint = path =>
+                {
+                    File.WriteAllText(path, "replacement");
+                    return Task.FromResult(IExpressNode.CheckpointMode.Offline);
+                }
+            };
+            var manager = new ExpressChainManager(new FileSystem(), CreateSingleNodeChain());
+
+            var (path, _) = await manager.CreateCheckpointAsync(node, checkpointPath, replaceExisting);
+
+            path.Should().Be(checkpointPath);
+            File.ReadAllText(path).Should().Be("replacement");
+            Directory.GetFiles(directory).Should().ContainSingle();
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_removes_partial_archive_when_creation_fails()
+    {
+        var fileSystem = CreateFileSystem();
+        fileSystem.Directory.CreateDirectory("/work/checkpoints");
+        fileSystem.File.WriteAllText("/work/checkpoints/init.neoxp-checkpoint", "existing");
+        var node = new CheckpointStubNode
+        {
+            CreateCheckpoint = path =>
+            {
+                fileSystem.File.WriteAllText(path, "partial");
+                throw new InvalidOperationException("checkpoint creation failed");
+            }
+        };
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var act = () => manager.CreateCheckpointAsync(node, "checkpoints/init", force: true);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("checkpoint creation failed");
+        fileSystem.File.ReadAllText("/work/checkpoints/init.neoxp-checkpoint").Should().Be("existing");
+        fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_preserves_concurrent_destination_without_force()
+    {
+        var fileSystem = CreateFileSystem();
+        var node = new CheckpointStubNode
+        {
+            CreateCheckpoint = path =>
+            {
+                fileSystem.File.WriteAllText(path, "replacement");
+                fileSystem.File.WriteAllText("/work/checkpoints/init.neoxp-checkpoint", "concurrent");
+                return Task.FromResult(IExpressNode.CheckpointMode.Online);
+            }
+        };
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var act = () => manager.CreateCheckpointAsync(node, "checkpoints/init", force: false);
+
+        await act.Should().ThrowAsync<IOException>();
+        fileSystem.File.ReadAllText("/work/checkpoints/init.neoxp-checkpoint").Should().Be("concurrent");
+        fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
+    }
+
     [Fact]
     public void RestoreCheckpoint_RecoveryOnMoveFail_RestoresBackup()
     {

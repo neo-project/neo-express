@@ -406,6 +406,177 @@ public class ReadWriteStoreTests : IDisposable
         committedValue.Should().BeNull();
     }
 
+    [Fact]
+    public void RocksDbSnapshotTryGetReflectsPendingInsert()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        test_snapshot_tryget_overloads_reflect_pending_insert(store);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotTryGetReflectsPendingUpdate()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        test_snapshot_tryget_overloads_reflect_pending_update(store);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotTryGetReflectsPendingDelete()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        test_snapshot_tryget_overloads_reflect_pending_delete(store);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotNullAndEmptyKeysAreEquivalent()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        test_snapshot_null_and_empty_keys_are_equivalent(store);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotTryGetReturnsIndependentBuffer()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        test_snapshot_tryget_returns_independent_buffer(store);
+    }
+
+    [Fact]
+    public void RocksDbSnapshotCopiesPutInputs()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        var key = Bytes(0);
+        var value = new byte[] { 0x42 };
+        var expectedKey = key.ToArray();
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, value);
+        key[0] = 0xff;
+        value[0] = 0x77;
+
+        snapshot.TryGet(expectedKey, out var result).Should().BeTrue();
+        result.Should().Equal(new byte[] { 0x42 });
+    }
+
+    [Fact]
+    public void RocksDbSnapshotDisposedTryGetThrows()
+    {
+        using var store = GetPopulatedRocksDbStore(path);
+        var snapshot = store.GetSnapshot();
+        snapshot.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => snapshot.TryGet(Bytes(0), out _));
+#pragma warning disable CS0618
+        Assert.Throws<ObjectDisposedException>(() => snapshot.TryGet(Bytes(0)));
+#pragma warning restore CS0618
+    }
+
+    internal static void test_snapshot_tryget_overloads_reflect_pending_insert(IStore store)
+    {
+        var key = Bytes(0);
+        var value = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, value);
+
+        AssertTryGetBoth(snapshot, key, value);
+        snapshot.Contains(key).Should().BeTrue();
+        AssertFindContains(snapshot, key, value);
+        store.Contains(key).Should().BeFalse();
+    }
+
+    internal static void test_snapshot_tryget_overloads_reflect_pending_update(IStore store)
+    {
+        var (key, original) = TestData.ElementAt(0);
+        var newValue = Bytes("test-value");
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, newValue);
+
+        AssertTryGetBoth(snapshot, key, newValue);
+        store.TryGet(key, out var underlying).Should().BeTrue();
+        underlying.Should().Equal(original);
+
+        snapshot.Commit();
+        store.TryGet(key, out var committed).Should().BeTrue();
+        committed.Should().Equal(newValue);
+    }
+
+    internal static void test_snapshot_tryget_overloads_reflect_pending_delete(IStore store)
+    {
+        var (key, original) = TestData.ElementAt(0);
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Delete(key);
+
+        snapshot.TryGet(key, out var value).Should().BeFalse();
+        value.Should().BeNull();
+#pragma warning disable CS0618
+        snapshot.TryGet(key).Should().BeNull();
+#pragma warning restore CS0618
+        snapshot.Contains(key).Should().BeFalse();
+        AssertFindDoesNotContain(snapshot, key, original);
+        store.Contains(key).Should().BeTrue();
+
+        snapshot.Commit();
+        store.Contains(key).Should().BeFalse();
+    }
+
+    internal static void test_snapshot_null_and_empty_keys_are_equivalent(IStore store)
+    {
+        var value = Bytes("test-value");
+        var empty = Array.Empty<byte>();
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(null!, value);
+        AssertTryGetBoth(snapshot, null, value);
+        AssertTryGetBoth(snapshot, empty, value);
+
+        var updated = Bytes("updated");
+        snapshot.Put(empty, updated);
+        AssertTryGetBoth(snapshot, null, updated);
+
+        snapshot.Delete(null!);
+        snapshot.TryGet(empty, out var deleted).Should().BeFalse();
+        deleted.Should().BeNull();
+#pragma warning disable CS0618
+        snapshot.TryGet(null!).Should().BeNull();
+#pragma warning restore CS0618
+    }
+
+    internal static void test_snapshot_tryget_returns_independent_buffer(IStore store)
+    {
+        var key = Bytes(0);
+
+        using var snapshot = store.GetSnapshot();
+        snapshot.Put(key, new byte[] { 0x42 });
+
+        snapshot.TryGet(key, out var first).Should().BeTrue();
+        first![0] = 0x77;
+#pragma warning disable CS0618
+        var obsolete = snapshot.TryGet(key);
+#pragma warning restore CS0618
+        obsolete.Should().Equal(new byte[] { 0x42 });
+        obsolete![0] = 0x78;
+
+        snapshot.TryGet(key, out var second).Should().BeTrue();
+        second.Should().Equal(new byte[] { 0x42 });
+        AssertFindContains(snapshot, key, new byte[] { 0x42 });
+
+        snapshot.Commit();
+        store.TryGet(key, out var committed).Should().BeTrue();
+        committed.Should().Equal(new byte[] { 0x42 });
+    }
+
+    static void AssertTryGetBoth(IStoreSnapshot snapshot, byte[]? key, byte[] expected)
+    {
+        snapshot.TryGet(key!, out var value).Should().BeTrue();
+        value.Should().Equal(expected);
+#pragma warning disable CS0618
+        snapshot.TryGet(key!).Should().Equal(expected);
+#pragma warning restore CS0618
+    }
+
     [Theory, CombinatorialData]
     public void put_null_value_throws(StoreType storeType)
     {

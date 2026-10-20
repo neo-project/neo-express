@@ -138,7 +138,7 @@ function templateShortName(id: string): string {
   return starter.template;
 }
 
-test("every official C# starter hydrates, uses ABI casing, and builds", async () => {
+test("every official C# starter hydrates and passes its tests from a clean project", async () => {
   const { spawnSync } = await import("node:child_process");
   for (const starter of overlayStarters) {
     const destination = await mkdtemp(join(tmpdir(), `neoxp-${starter.id}-`));
@@ -198,32 +198,20 @@ test("every official C# starter hydrates, uses ABI casing, and builds", async ()
         `${starter.id} tool restore failed:\n${restore.stdout}\n${restore.stderr}`
       );
 
-      const buildSrc = spawnSync(
-        "dotnet",
-        ["build", join("src", `${starter.className}.csproj`), "-v", "q"],
-        { cwd: destination, encoding: "utf8" }
-      );
-      assert.equal(
-        buildSrc.status,
-        0,
-        `${starter.id} src failed to build:\n${buildSrc.stdout}\n${buildSrc.stderr}`
-      );
-
-      const buildTests = spawnSync(
+      const runTests = spawnSync(
         "dotnet",
         [
-          "build",
+          "test",
           join("test", `${starter.className}Tests.csproj`),
           "-v",
           "q",
-          "/p:NeoExpressBatchFile=",
         ],
         { cwd: destination, encoding: "utf8" }
       );
       assert.equal(
-        buildTests.status,
+        runTests.status,
         0,
-        `${starter.id} tests failed to build:\n${buildTests.stdout}\n${buildTests.stderr}`
+        `${starter.id} clean test project failed:\n${runTests.stdout}\n${runTests.stderr}`
       );
     } finally {
       await rm(destination, { recursive: true, force: true });

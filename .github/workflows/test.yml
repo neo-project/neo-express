@@ -61,10 +61,42 @@ jobs:
       run: neodebug --version
 
     - name: Install neoxp tool
-      run: dotnet tool install --add-source ./out --verbosity normal --global --prerelease neo.express
+      run: dotnet tool install --add-source ./out --verbosity normal --global --version ${{ steps.nbgv.outputs.NuGetPackageVersion }} neo.express
 
     - name: Test Create Command (neoxp)
       run: neoxp create --force
+
+    - name: Configure available smoke-test ports
+      id: smoke_ports
+      shell: python {0}
+      run: |
+        import contextlib
+        import json
+        import os
+        import pathlib
+        import socket
+
+        path = pathlib.Path.home() / ".neo-express" / "default.neo-express"
+        chain = json.loads(path.read_text(encoding="utf-8"))
+        # Stay outside the default Windows dynamic port range and check binds.
+        with contextlib.ExitStack() as sockets:
+            for node in chain["consensus-nodes"]:
+                for field in ("rpc-port", "tcp-port"):
+                    for port in range(20000, 20100):
+                        listener = socket.socket()
+                        try:
+                            listener.bind(("127.0.0.1", port))
+                        except OSError:
+                            listener.close()
+                            continue
+                        sockets.enter_context(listener)
+                        node[field] = port
+                        break
+                    else:
+                        raise RuntimeError("No available smoke-test port")
+            path.write_text(json.dumps(chain), encoding="utf-8")
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+                output.write(f"rpc_port={chain['consensus-nodes'][0]['rpc-port']}\n")
 
     - name: Test Checkpoint Command (offline) (neoxp)
       run: neoxp checkpoint create checkpoints/init --force
@@ -85,23 +117,38 @@ jobs:
         neoxp transfer 10000 gas genesis bob
 
     - name: Test Run Command (online) (neoxp)
-      # Start the node in the background and wait until it is actually running
-      # before the online commands below; without the readiness wait they can
-      # race the RPC server startup and fail spuriously on slower runners.
+      # Probe RPC directly: show state can use offline storage during startup
+      # and observe the mutex before the RPC server is accepting connections.
       shell: bash
       timeout-minutes: 2
+      env:
+        NEOXP_RPC_PORT: ${{ steps.smoke_ports.outputs.rpc_port }}
       run: |
-        neoxp run --seconds-per-block 3 --discard &
+        neoxp run --seconds-per-block 3 --discard > neoxp-node.log 2>&1 &
+        NODE_PID=$!
         READY=0
-        for _ in $(seq 1 60); do
-          if (echo >/dev/tcp/127.0.0.1/50012) >/dev/null 2>&1; then READY=1; break; fi
+        for _ in $(seq 1 30); do
+          if ! kill -0 "$NODE_PID" 2>/dev/null; then
+            cat neoxp-node.log
+            exit 1
+          fi
+          if curl --silent --fail --max-time 1 \
+            --header 'Content-Type: application/json' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"getversion","params":[]}' \
+            "http://127.0.0.1:$NEOXP_RPC_PORT" > neoxp-rpc.json \
+            && grep -Eq '"result"[[:space:]]*:[[:space:]]*[{]' neoxp-rpc.json; then
+            READY=1
+            break
+          fi
           sleep 1
         done
         if [ "$READY" != "1" ]; then
-          echo "neo-express node RPC did not accept TCP connections on port 50012 within 60 seconds"
+          echo "neo-express RPC did not become ready within 60 seconds"
+          cat neoxp-node.log
           exit 1
         fi
-        neoxp show state || true
+        cat neoxp-node.log
+        neoxp show state
 
     - name: Test Transfer Command (online) (neoxp)
       run: |

@@ -24,6 +24,7 @@ public class NeoxpToolIntegrationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
     private readonly string _tempDirectory;
+    private string ChainPath => Path.Combine(_tempDirectory, "test.neo-express");
     private readonly string _solutionPath;
     private readonly string _neoxpProjectPath;
     private readonly string _configuration = "Release";
@@ -47,7 +48,7 @@ public class NeoxpToolIntegrationTests : IDisposable
         _toolDirectory = Path.Combine(_tempDirectory, "tools");
         Directory.CreateDirectory(_outDirectory);
         Directory.CreateDirectory(_toolDirectory);
-        _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
+        _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory, ChainPath);
 
         _output.WriteLine($"Test temp directory: {_tempDirectory}");
         _output.WriteLine($"Solution path: {_solutionPath}");
@@ -191,10 +192,11 @@ public class NeoxpToolIntegrationTests : IDisposable
         var packages = Directory.GetFiles(_outDirectory, "*.nupkg")
             .Where(file => Path.GetFileName(file).StartsWith("Neo.Express", StringComparison.OrdinalIgnoreCase))
             .ToArray();
-        packages.Should().NotBeEmpty("neo.express package should be created");
+        packages.Should().ContainSingle("exactly one neo.express package should be created");
+        var toolVersion = Path.GetFileNameWithoutExtension(packages.Single())["Neo.Express.".Length..];
 
         // Install neoxp tool to a local tool path to avoid mutating global state
-        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
+        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--version", toolVersion, "neo.express");
 
         // Handle various installation scenarios
         if (toolInstallExitCode != 0)
@@ -204,11 +206,11 @@ public class NeoxpToolIntegrationTests : IDisposable
                 toolInstallError.Contains("file or directory with the same name already exists"))
             {
                 _output.WriteLine("Tool already exists, trying to update...");
-                var (toolUpdateExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
+                var (toolUpdateExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--version", toolVersion, "neo.express");
                 if (toolUpdateExitCode != 0)
                 {
                     _output.WriteLine("Update failed, trying reinstall...");
-                    var (toolReinstallExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
+                    var (toolReinstallExitCode, _, _) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--version", toolVersion, "neo.express");
                     toolReinstallExitCode.Should().Be(0, "tool reinstall should succeed");
                 }
             }
@@ -243,10 +245,9 @@ public class NeoxpToolIntegrationTests : IDisposable
             var (createExitCode, _, _) = await _runCommand.RunNeoxpCommand("create", "--force");
             createExitCode.Should().Be(0, "neoxp create should succeed");
 
-            // Verify that default.neo-express was created in ~/.neo-express/ directory
-            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
-            var configFile = Path.Combine(neoExpressDir, "default.neo-express");
-            File.Exists(configFile).Should().BeTrue("default.neo-express should be created in ~/.neo-express/");
+            // Verify that the fixture chain was created.
+            var configFile = ChainPath;
+            File.Exists(configFile).Should().BeTrue("the fixture chain should be created");
 
             // Verify the config file is valid JSON
             var configContent = await File.ReadAllTextAsync(configFile, TestContext.Current.CancellationToken);
@@ -282,9 +283,7 @@ public class NeoxpToolIntegrationTests : IDisposable
             walletCreateExitCode.Should().Be(0, "neoxp wallet create should succeed");
 
             // Verify wallet was created (check for wallet file or in config)
-            // neoxp creates the config file in ~/.neo-express/ directory
-            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
-            var configFile = Path.Combine(neoExpressDir, "default.neo-express");
+            var configFile = ChainPath;
 
             // Check if config file exists and contains the wallet
             if (File.Exists(configFile))
@@ -316,9 +315,6 @@ public class NeoxpToolIntegrationTests : IDisposable
         await EnsureProjectCreated();
 
         _output.WriteLine("=== Testing neoxp checkpoint create command ===");
-
-        // Clean up any existing RocksDB lock files before starting
-        await CleanupRocksDbLockFiles();
 
         var originalDir = Directory.GetCurrentDirectory();
         try
@@ -360,9 +356,7 @@ public class NeoxpToolIntegrationTests : IDisposable
 
     private async Task EnsureProjectCreated()
     {
-        // neoxp creates the config file in ~/.neo-express/ directory
-        var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
-        var configFile = Path.Combine(neoExpressDir, "default.neo-express");
+        var configFile = ChainPath;
 
         if (!File.Exists(configFile))
         {
@@ -379,68 +373,22 @@ public class NeoxpToolIntegrationTests : IDisposable
         }
     }
 
-    private async Task CleanupRocksDbLockFiles()
-    {
-        try
-        {
-            _output.WriteLine("Cleaning up RocksDB lock files...");
-
-            // Stop any running neoxp processes first
-            await _runCommand.RunNeoxpCommand("stop", "--all");
-            await Task.Delay(1000); // Wait for processes to stop
-
-            // Clean up the neo-express directory which contains RocksDB files
-            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
-            if (Directory.Exists(neoExpressDir))
-            {
-                var blockchainNodesDir = Path.Combine(neoExpressDir, "blockchain-nodes");
-                if (Directory.Exists(blockchainNodesDir))
-                {
-                    _output.WriteLine($"Removing blockchain nodes directory: {blockchainNodesDir}");
-                    Directory.Delete(blockchainNodesDir, true);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _output.WriteLine($"Warning: Could not clean up RocksDB lock files: {ex.Message}");
-        }
-    }
-
     public void Dispose()
     {
-        // Stop any running neoxp processes first
+        // Only stop and reset this fixture's chain, never the user's default chain.
         try
         {
-            var stopTask = _runCommand.RunNeoxpCommand("stop", "--all");
-            stopTask.Wait(5000); // Wait up to 5 seconds
-        }
-        catch (Exception ex)
-        {
-            _output.WriteLine($"Warning: Could not stop neoxp processes: {ex.Message}");
-        }
-
-        // Clean up any running processes
-        _runCommand.Dispose();
-
-        // Clean up RocksDB files
-        try
-        {
-            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
-            if (Directory.Exists(neoExpressDir))
+            if (File.Exists(ChainPath))
             {
-                var blockchainNodesDir = Path.Combine(neoExpressDir, "blockchain-nodes");
-                if (Directory.Exists(blockchainNodesDir))
-                {
-                    _output.WriteLine($"Cleaning up blockchain nodes directory: {blockchainNodesDir}");
-                    Directory.Delete(blockchainNodesDir, true);
-                }
+                _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromSeconds(10), "stop", "--all").GetAwaiter().GetResult();
+                _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromSeconds(10), "reset", "--all", "--force").GetAwaiter().GetResult();
             }
         }
         catch (Exception ex)
         {
-            _output.WriteLine($"Warning: Could not clean up RocksDB files: {ex.Message}");
+            _output.WriteLine($"Warning: Could not clean up fixture chain: {ex.Message}");
         }
+        _runCommand.Dispose();
 
         // Clean up temp directory
         try

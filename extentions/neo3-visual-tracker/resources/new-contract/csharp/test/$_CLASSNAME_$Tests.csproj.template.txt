@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\src\$_CLASSNAME_$.csproj" ReferenceOutputAssembly="false" />
     <NeoContractReference Include="..\src\$_CLASSNAME_$.csproj" />
   </ItemGroup>
 

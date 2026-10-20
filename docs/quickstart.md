@@ -55,7 +55,8 @@ neoxp run -i default.neo-express --seconds-per-block 1
 `genesis` is the consensus multi-sig that holds the genesis NEO and GAS. `node1` is the
 default consensus-node wallet.
 
-Leave `neoxp run` going. Other commands use a second terminal in the same folder.
+Leave `neoxp run` going. In a second terminal, define the same `neoxp` helper from
+step 1 and change to the contract folder before running other commands.
 
 Full command list: [command-reference.md](command-reference.md).
 
@@ -120,10 +121,13 @@ See [Neo Express Invocation File](Neo%20Express%20Invocation%20File.md).
 
 ## 5. Rebuild so the contract redeploys
 
-Stop the chain before a rebuild so its persisted state can be reset safely:
+Stop and reset the local chain before redeploying. Reset removes its persisted
+contracts and transactions while keeping the configured wallets. `--force` alone
+does not reset the chain.
 
 ```shell
 neoxp stop -a -i default.neo-express
+neoxp reset -f -i default.neo-express
 dotnet build
 neoxp contract deploy bin/sc/Nep17Contract.nef genesis -i default.neo-express --force
 neoxp run -i default.neo-express --seconds-per-block 1

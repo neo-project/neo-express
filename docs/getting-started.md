@@ -80,7 +80,8 @@ neoxp run -i default.neo-express --seconds-per-block 1
 ```
 
 `neoxp create` writes `default.neo-express` in this folder (genesis plus `node1`).
-Leave `neoxp run` in that terminal. In another terminal in the **same folder**:
+Leave `neoxp run` in that terminal. In a second terminal, define the same `neoxp`
+helper from step 1, then change to the **same contract folder**:
 
 ```shell
 neoxp show balances genesis -i default.neo-express

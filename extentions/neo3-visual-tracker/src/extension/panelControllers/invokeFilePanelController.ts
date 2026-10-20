@@ -478,11 +478,11 @@ export default class InvokeFilePanelController extends PanelControllerBase<
             ...password
           );
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         await this.showInvocationResult({
           operation,
           success: false,
-          message: `Invocation failed: ${error?.message || error}`,
+          message: `Invocation failed: ${error instanceof Error ? error.message : String(error)}`,
           txids: [],
         });
         return;

@@ -10,8 +10,11 @@
 
 using FluentAssertions;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace test.workflowvalidation;
@@ -26,6 +29,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
     private readonly string _tempDirectory;
+    private string ChainPath => Path.Combine(_tempDirectory, "test.neo-express");
     private readonly string _solutionPath;
     private readonly string _neoxpProjectPath;
     private readonly string _configuration = "Release";
@@ -50,7 +54,7 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         _toolDirectory = Path.Combine(_tempDirectory, "tools");
         Directory.CreateDirectory(_outDirectory);
         Directory.CreateDirectory(_toolDirectory);
-        _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory);
+        _runCommand = new RunCommand(_output, _solutionPath, _tempDirectory, ChainPath);
 
         _output.WriteLine($"Test temp directory: {_tempDirectory}");
         _output.WriteLine($"Solution path: {_solutionPath}");
@@ -258,20 +262,48 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
 
             // Equivalent to: neoxp run --seconds-per-block 3 --discard &
-            var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(2), "run", "--seconds-per-block", "3", "--discard");
+            // We'll run this with a timeout to simulate the GitHub Actions timeout-minutes: 1
+            var runTask = _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromMinutes(1), "run", "--seconds-per-block", "3", "--discard");
 
-            // Probe the RPC port directly. show state / show block go through
-            // GetExpressNode, which can open OfflineNode (and RocksDB) while
-            // run --discard is still starting, and can print IsRunning True
-            // before the RPC server is listening.
-            await WaitUntilRpcReadyAsync(runTask);
+            // Probe RPC directly: show state can open offline storage while run is
+            // initializing it, and the node mutex does not prove RPC is listening.
+            using var config = JsonDocument.Parse(await File.ReadAllTextAsync(ChainPath, TestContext.Current.CancellationToken));
+            var rpcPort = config.RootElement.GetProperty("consensus-nodes")[0].GetProperty("rpc-port").GetInt32();
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+            var timer = Stopwatch.StartNew();
+            var ready = false;
+            while (timer.Elapsed < TimeSpan.FromSeconds(30) && !ready)
+            {
+                if (runTask.IsCompleted)
+                {
+                    var (exitCode, output, error) = await runTask;
+                    Assert.Fail($"Node exited before RPC was ready ({exitCode}): {output} {error}");
+                }
+                try
+                {
+                    using var request = new StringContent(
+                        """{"jsonrpc":"2.0","id":1,"method":"getversion","params":[]}""",
+                        Encoding.UTF8, "application/json");
+                    using var response = await http.PostAsync($"http://127.0.0.1:{rpcPort}", request, TestContext.Current.CancellationToken);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+                        ready = json.RootElement.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.Object;
+                    }
+                }
+                catch (HttpRequestException) { }
+                catch (TaskCanceledException) when (!TestContext.Current.CancellationToken.IsCancellationRequested) { }
+                if (!ready)
+                    await Task.Delay(200, TestContext.Current.CancellationToken);
+            }
+            ready.Should().BeTrue("RPC should respond within 30 seconds of neoxp run");
 
             var (transferExitCode1, _, transferError1) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
             transferExitCode1.Should().Be(0, transferError1);
-
             var (transferExitCode2, _, transferError2) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");
             transferExitCode2.Should().Be(0, transferError2);
 
+            // Equivalent to: neoxp stop --all
             var (stopExitCode, _, stopError) = await _runCommand.RunNeoxpCommand("stop", "--all");
             stopExitCode.Should().Be(0, stopError);
 
@@ -319,17 +351,20 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
     {
         // Pack neoxp tool (build happens during test project build)
         _output.WriteLine("BuildAndInstallTool: pack");
-        await _runCommand.RunDotNetCommand("pack", _neoxpProjectPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
+        var (packExitCode, _, packError) = await _runCommand.RunDotNetCommand("pack", _neoxpProjectPath, "--configuration", _configuration, "--output", _outDirectory, "--no-build");
+        packExitCode.Should().Be(0, packError);
+        var package = Directory.GetFiles(_outDirectory, "Neo.Express.*.nupkg").Single();
+        var toolVersion = Path.GetFileNameWithoutExtension(package)["Neo.Express.".Length..];
 
         // Uninstall existing tool first (ignore errors if not installed)
         // Try to install the tool, if it fails try to update instead
         _output.WriteLine("BuildAndInstallTool: install");
-        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
+        var (toolInstallExitCode, _, toolInstallError) = await _runCommand.RunDotNetCommand("tool", "install", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--version", toolVersion, "neo.express");
         if (toolInstallExitCode != 0)
         {
             // If install failed, try update instead
             _output.WriteLine("BuildAndInstallTool: update");
-            var (toolUpdateExitCode, _, toolUpdateError) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--prerelease", "neo.express");
+            var (toolUpdateExitCode, _, toolUpdateError) = await _runCommand.RunDotNetCommand("tool", "update", "--add-source", _outDirectory, "--verbosity", "normal", "--tool-path", _toolDirectory, "--version", toolVersion, "neo.express");
             if (toolUpdateExitCode != 0)
             {
                 throw new InvalidOperationException($"Failed to install or update neo.express tool. Install error: {toolInstallError}. Update error: {toolUpdateError}");
@@ -348,7 +383,18 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         {
             Directory.SetCurrentDirectory(_tempDirectory);
             _output.WriteLine("CreateProject: neoxp create --force");
-            await _runCommand.RunNeoxpCommand("create", "--force");
+            var (exitCode, _, error) = await _runCommand.RunNeoxpCommand("create", "--force");
+            exitCode.Should().Be(0, error);
+            // Let the OS select available, distinct ports while both reservations are held.
+            using var rpc = new TcpListener(IPAddress.Loopback, 0);
+            using var tcp = new TcpListener(IPAddress.Loopback, 0);
+            rpc.Start();
+            tcp.Start();
+            var config = JsonNode.Parse(await File.ReadAllTextAsync(ChainPath, TestContext.Current.CancellationToken))!;
+            var node = config["consensus-nodes"]![0]!;
+            node["rpc-port"] = ((IPEndPoint)rpc.LocalEndpoint).Port;
+            node["tcp-port"] = ((IPEndPoint)tcp.LocalEndpoint).Port;
+            await File.WriteAllTextAsync(ChainPath, config.ToJsonString(), TestContext.Current.CancellationToken);
             _projectCreated = true;
         }
         finally
@@ -357,105 +403,28 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
         }
     }
 
-    private async Task WaitUntilRpcReadyAsync(Task<(int ExitCode, string Output, string Error)> runTask)
-    {
-        var configFile = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".neo-express",
-            "default.neo-express");
-        var json = await File.ReadAllTextAsync(configFile, TestContext.Current.CancellationToken);
-        using var doc = JsonDocument.Parse(json);
-        var rpcPort = doc.RootElement.GetProperty("consensus-nodes")[0].GetProperty("rpc-port").GetInt32();
-
-        var ready = false;
-        for (var attempt = 0; attempt < 60 && !ready; attempt++)
-        {
-            if (runTask.IsCompleted)
-            {
-                var (runExitCode, runOutput, runError) = await runTask;
-                throw new InvalidOperationException(
-                    $"neoxp run exited before RPC was ready. Exit={runExitCode} Error={runError} Output={runOutput}");
-            }
-
-            try
-            {
-                using var client = new TcpClient();
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-                cts.CancelAfter(TimeSpan.FromMilliseconds(250));
-                await client.ConnectAsync("127.0.0.1", rpcPort, cts.Token);
-                ready = client.Connected;
-            }
-            catch (Exception ex) when (ex is SocketException or OperationCanceledException)
-            {
-                ready = false;
-            }
-
-            if (!ready)
-                await Task.Delay(500, TestContext.Current.CancellationToken);
-        }
-
-        ready.Should().BeTrue($"node RPC should accept TCP connections on port {rpcPort} within 30 seconds of neoxp run");
-    }
-
     private async Task EnsureWalletsCreated()
     {
-        var originalDir = Directory.GetCurrentDirectory();
-        try
-        {
-            Directory.SetCurrentDirectory(_tempDirectory);
-
-            // Create bob wallet if it doesn't exist
-            // neoxp creates the config file in ~/.neo-express/ directory
-            var neoExpressDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".neo-express");
-            var configFile = Path.Combine(neoExpressDir, "default.neo-express");
-
-            if (File.Exists(configFile))
-            {
-                var configContent = await File.ReadAllTextAsync(configFile);
-                if (!configContent.Contains("bob"))
-                {
-                    await _runCommand.RunNeoxpCommand("wallet", "create", "bob", "--force");
-                }
-            }
-            else
-            {
-                // If config doesn't exist, create wallet anyway
-                await _runCommand.RunNeoxpCommand("wallet", "create", "bob", "--force");
-            }
-        }
-        finally
-        {
-            Directory.SetCurrentDirectory(originalDir);
-        }
+        var (exitCode, _, error) = await _runCommand.RunNeoxpCommand("wallet", "create", "bob", "--force");
+        exitCode.Should().Be(0, error);
     }
 
     public void Dispose()
     {
-        // Clean up any running processes
-        _runCommand.Dispose();
-
-        // Ensure neoxp is stopped
+        // Only stop and reset this fixture's chain, never the user's default chain.
         try
         {
-            var stopProcess = new Process
+            if (File.Exists(ChainPath))
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = _runCommand.NeoxpPath,
-                    Arguments = "stop --all",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WorkingDirectory = _tempDirectory
-                }
-            };
-            stopProcess.Start();
-            stopProcess.WaitForExit(5000);
-            stopProcess.Dispose();
+                _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromSeconds(10), "stop", "--all").GetAwaiter().GetResult();
+                _runCommand.RunNeoxpCommandWithTimeout(TimeSpan.FromSeconds(10), "reset", "--all", "--force").GetAwaiter().GetResult();
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore cleanup errors
+            _output.WriteLine($"Warning: Could not clean up fixture chain: {ex.Message}");
         }
+        _runCommand.Dispose();
 
         // Clean up temp directory
         try

@@ -42,7 +42,11 @@ namespace Neo.BlockchainToolkit.Persistence
             public void Dispose() { }
 
             [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
-            public byte[]? TryGet(byte[]? key) => MemoryTrackingStore.TryGet(key, trackingMap, store);
+            public byte[]? TryGet(byte[]? key)
+            {
+                TryGet(key, out var value);
+                return value;
+            }
 
             public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)
             {

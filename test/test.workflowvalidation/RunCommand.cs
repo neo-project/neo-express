@@ -14,7 +14,7 @@ using Xunit;
 
 namespace test.workflowvalidation;
 
-public sealed class RunCommand(ITestOutputHelper output, string solutionPath, string tempDirectory) : IDisposable
+public sealed class RunCommand(ITestOutputHelper output, string solutionPath, string tempDirectory, string? chainPath = null) : IDisposable
 {
     private const string COMMAND_DOTNET = "dotnet";
     private const string COMMAND_NEOXP = "neoxp";
@@ -117,15 +117,19 @@ public sealed class RunCommand(ITestOutputHelper output, string solutionPath, st
         return (exitCode, output, error);
     }
 
+    private string[] WithChainPath(string[] arguments) => chainPath is null
+        ? arguments
+        : [.. arguments, arguments[0] == "create" ? "--output" : "--input", chainPath];
+
     internal async Task<(int ExitCode, string Output, string Error)> RunNeoxpCommand(params string[] arguments)
     {
-        var (exitCode, output, error) = await RunProcess(_neoxpPath, null, null, arguments);
+        var (exitCode, output, error) = await RunProcess(_neoxpPath, null, null, WithChainPath(arguments));
         return (exitCode, output, error);
     }
 
     internal async Task<(int ExitCode, string Output, string Error)> RunNeoxpCommandWithTimeout(TimeSpan timeout, params string[] arguments)
     {
-        var (exitCode, output, error) = await RunProcess(_neoxpPath, null, timeout, arguments);
+        var (exitCode, output, error) = await RunProcess(_neoxpPath, null, timeout, WithChainPath(arguments));
         return (exitCode, output, error);
     }
 

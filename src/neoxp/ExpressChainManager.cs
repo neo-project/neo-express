@@ -232,16 +232,10 @@ namespace NeoExpress
             try
             {
                 checkpointPath = ResolveCheckpointFileName(checkpointPath);
-                if (fileSystem.File.Exists(checkpointPath))
+                var checkpointExists = fileSystem.File.Exists(checkpointPath);
+                if (checkpointExists && !force)
                 {
-                    if (force)
-                    {
-                        fileSystem.File.Delete(checkpointPath);
-                    }
-                    else
-                    {
-                        throw new Exception("You must specify --force to overwrite an existing file");
-                    }
+                    throw new Exception("You must specify --force to overwrite an existing file");
                 }
 
                 var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath)
@@ -251,7 +245,24 @@ namespace NeoExpress
                     fileSystem.Directory.CreateDirectory(parentPath);
                 }
 
-                var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+                // The node writes the archive directly, so create it next to the destination and
+                // only replace an existing checkpoint once the new archive is complete.
+                var temporaryPath = fileSystem.Path.Combine(
+                    parentPath,
+                    $".checkpoint-{Guid.NewGuid():N}.tmp");
+                IExpressNode.CheckpointMode mode;
+                try
+                {
+                    mode = await expressNode.CreateCheckpointAsync(temporaryPath).ConfigureAwait(false);
+                    fileSystem.File.Move(temporaryPath, checkpointPath, checkpointExists);
+                }
+                finally
+                {
+                    if (fileSystem.File.Exists(temporaryPath))
+                    {
+                        fileSystem.File.Delete(temporaryPath);
+                    }
+                }
 
                 if (writer is not null)
                 {

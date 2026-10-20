@@ -10,13 +10,25 @@
 
 using FluentAssertions;
 using Moq;
+using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.Cryptography.ECC;
+using Neo.Network.P2P.Payloads;
+using Neo.Network.RPC.Models;
+using Neo.SmartContract;
+using Neo.SmartContract.Manifest;
+using Neo.SmartContract.Native;
+using Neo.VM;
+using Neo.Wallets;
 using NeoExpress;
+using NeoExpress.Commands;
+using NeoExpress.Models;
 using NeoExpress.Node;
 using Newtonsoft.Json;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.IO.Compression;
+using System.Numerics;
 using Xunit;
 
 namespace test.workflowvalidation;
@@ -127,6 +139,170 @@ public class ExpressChainManagerCheckpointTests
         var checkpointPath = ExpressChainManager.ResolveCheckpointFileName(fileSystem, "checkpoints/init");
 
         checkpointPath.Should().Be(fileSystem.Path.Combine("/work", "checkpoints", "init.neoxp-checkpoint"));
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_keeps_existing_checkpoint_when_creation_fails()
+    {
+        var fileSystem = CreateFileSystem();
+        fileSystem.Directory.CreateDirectory("/work/checkpoints");
+        fileSystem.File.WriteAllText("/work/checkpoints/init.neoxp-checkpoint", "existing");
+        var node = new CheckpointStubNode
+        {
+            CreateCheckpoint = _ => throw new InvalidOperationException("checkpoint creation failed")
+        };
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var act = () => manager.CreateCheckpointAsync(node, "checkpoints/init", force: true);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        fileSystem.File.ReadAllText("/work/checkpoints/init.neoxp-checkpoint").Should().Be("existing");
+        fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_replaces_existing_checkpoint_after_success()
+    {
+        var fileSystem = CreateFileSystem();
+        fileSystem.Directory.CreateDirectory("/work/checkpoints");
+        fileSystem.File.WriteAllText("/work/checkpoints/init.neoxp-checkpoint", "existing");
+        string? createdPath = null;
+        var node = new CheckpointStubNode
+        {
+            CreateCheckpoint = path =>
+            {
+                createdPath = path;
+                fileSystem.File.WriteAllText(path, "replacement");
+                return Task.FromResult(IExpressNode.CheckpointMode.Offline);
+            }
+        };
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var (path, mode) = await manager.CreateCheckpointAsync(node, "checkpoints/init", force: true);
+
+        path.Should().Be(fileSystem.Path.Combine("/work", "checkpoints", "init.neoxp-checkpoint"));
+        mode.Should().Be(IExpressNode.CheckpointMode.Offline);
+        createdPath.Should().NotBeNull().And.NotBe(path);
+        fileSystem.File.Exists(createdPath!).Should().BeFalse();
+        fileSystem.File.ReadAllText(path).Should().Be("replacement");
+        fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_rejects_existing_checkpoint_without_force()
+    {
+        var fileSystem = CreateFileSystem();
+        fileSystem.Directory.CreateDirectory("/work/checkpoints");
+        fileSystem.File.WriteAllText("/work/checkpoints/init.neoxp-checkpoint", "existing");
+        var node = new CheckpointStubNode();
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var act = () => manager.CreateCheckpointAsync(node, "checkpoints/init", force: false);
+
+        await act.Should().ThrowAsync<Exception>().WithMessage("*--force*");
+        node.CreateCheckpointCalls.Should().Be(0);
+        fileSystem.File.ReadAllText("/work/checkpoints/init.neoxp-checkpoint").Should().Be("existing");
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_creates_new_checkpoint()
+    {
+        var fileSystem = CreateFileSystem();
+        var node = new CheckpointStubNode
+        {
+            CreateCheckpoint = path =>
+            {
+                fileSystem.File.WriteAllText(path, "new");
+                return Task.FromResult(IExpressNode.CheckpointMode.Offline);
+            }
+        };
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var (path, _) = await manager.CreateCheckpointAsync(node, "checkpoints/init", force: false);
+
+        fileSystem.File.ReadAllText(path).Should().Be("new");
+        fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CreateCheckpointAsync_supports_long_valid_file_names(bool replaceExisting)
+    {
+        var directory = Path.Combine(Directory.GetCurrentDirectory(), $"checkpoint-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            // The final name fits the filesystem's component limit; staging must also fit.
+            var checkpointPath = Path.Combine(directory, new string('a', 230) + ".neoxp-checkpoint");
+            File.WriteAllText(checkpointPath, "existing");
+            if (!replaceExisting)
+                File.Delete(checkpointPath);
+            var node = new CheckpointStubNode
+            {
+                CreateCheckpoint = path =>
+                {
+                    File.WriteAllText(path, "replacement");
+                    return Task.FromResult(IExpressNode.CheckpointMode.Offline);
+                }
+            };
+            var manager = new ExpressChainManager(new FileSystem(), CreateSingleNodeChain());
+
+            var (path, _) = await manager.CreateCheckpointAsync(node, checkpointPath, replaceExisting);
+
+            path.Should().Be(checkpointPath);
+            File.ReadAllText(path).Should().Be("replacement");
+            Directory.GetFiles(directory).Should().ContainSingle();
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_removes_partial_archive_when_creation_fails()
+    {
+        var fileSystem = CreateFileSystem();
+        fileSystem.Directory.CreateDirectory("/work/checkpoints");
+        fileSystem.File.WriteAllText("/work/checkpoints/init.neoxp-checkpoint", "existing");
+        var node = new CheckpointStubNode
+        {
+            CreateCheckpoint = path =>
+            {
+                fileSystem.File.WriteAllText(path, "partial");
+                throw new InvalidOperationException("checkpoint creation failed");
+            }
+        };
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var act = () => manager.CreateCheckpointAsync(node, "checkpoints/init", force: true);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("checkpoint creation failed");
+        fileSystem.File.ReadAllText("/work/checkpoints/init.neoxp-checkpoint").Should().Be("existing");
+        fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task CreateCheckpointAsync_preserves_concurrent_destination_without_force()
+    {
+        var fileSystem = CreateFileSystem();
+        var node = new CheckpointStubNode
+        {
+            CreateCheckpoint = path =>
+            {
+                fileSystem.File.WriteAllText(path, "replacement");
+                fileSystem.File.WriteAllText("/work/checkpoints/init.neoxp-checkpoint", "concurrent");
+                return Task.FromResult(IExpressNode.CheckpointMode.Online);
+            }
+        };
+        var manager = new ExpressChainManager(fileSystem, CreateSingleNodeChain());
+
+        var act = () => manager.CreateCheckpointAsync(node, "checkpoints/init", force: false);
+
+        await act.Should().ThrowAsync<IOException>();
+        fileSystem.File.ReadAllText("/work/checkpoints/init.neoxp-checkpoint").Should().Be("concurrent");
+        fileSystem.Directory.GetFiles("/work/checkpoints").Should().ContainSingle();
     }
 
     [Fact]
@@ -409,5 +585,67 @@ public class ExpressChainManagerCheckpointTests
         fileSystem.Directory.CreateDirectory("/work");
         fileSystem.Directory.SetCurrentDirectory("/work");
         return fileSystem;
+    }
+
+    private sealed class CheckpointStubNode : IExpressNode
+    {
+        public Func<string, Task<IExpressNode.CheckpointMode>> CreateCheckpoint { get; init; } =
+            _ => Task.FromResult(IExpressNode.CheckpointMode.Offline);
+
+        public int CreateCheckpointCalls { get; private set; }
+
+        public ProtocolSettings ProtocolSettings => Neo.ProtocolSettings.Default;
+
+        public void Dispose()
+        {
+        }
+
+        public Task<IExpressNode.CheckpointMode> CreateCheckpointAsync(string checkPointPath)
+        {
+            CreateCheckpointCalls++;
+            return CreateCheckpoint(checkPointPath);
+        }
+
+        public Task<RpcInvokeResult> InvokeAsync(Script script, Signer? signer = null) => throw new NotSupportedException();
+
+        public Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0, bool padInvokeEstimate = false) => throw new NotSupportedException();
+
+        public Task<UInt256> SubmitOracleResponseAsync(OracleResponse response, IReadOnlyList<ECPoint> oracleNodes) => throw new NotSupportedException();
+
+        public Task FastForwardAsync(uint blockCount, TimeSpan timestampDelta) => throw new NotSupportedException();
+
+        public Task<Block> GetBlockAsync(UInt256 blockHash) => throw new NotSupportedException();
+
+        public Task<Block> GetBlockAsync(uint blockIndex) => throw new NotSupportedException();
+
+        public Task<ContractManifest> GetContractAsync(UInt160 scriptHash) => throw new NotSupportedException();
+
+        public Task<Block> GetLatestBlockAsync() => throw new NotSupportedException();
+
+        public Task<(Transaction tx, RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash) => throw new NotSupportedException();
+
+        public Task<uint> GetTransactionHeightAsync(UInt256 txHash) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(TokenContract contract, BigInteger balance)>> ListBalancesAsync(UInt160 address) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(UInt160 hash, ContractManifest manifest)>> ListContractsAsync() => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<string>> ListNftTokenIdsAsync(UInt160 address, UInt160 assetHash) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(ulong requestId, OracleRequest request)>> ListOracleRequestsAsync() => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<TokenContract>> ListTokenContractsAsync() => throw new NotSupportedException();
+
+        public Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force) => throw new NotSupportedException();
+
+        public Task<int> PersistStorageKeyValueAsync(UInt160 scripthash, (string key, string value) storagePair) => throw new NotSupportedException();
+
+        public IAsyncEnumerable<(uint blockIndex, NotificationRecord notification)> EnumerateNotificationsAsync(IReadOnlySet<UInt160>? contractFilter, IReadOnlySet<string>? eventFilter) => throw new NotSupportedException();
+
+        public Task<bool> IsNep17CompliantAsync(UInt160 contractHash) => throw new NotSupportedException();
+
+        public Task<bool> IsNep11CompliantAsync(UInt160 contractHash) => throw new NotSupportedException();
     }
 }

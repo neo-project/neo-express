@@ -223,5 +223,3 @@ export default class ServerListDetector extends DetectorBase {
     }
   }
 }
-
-

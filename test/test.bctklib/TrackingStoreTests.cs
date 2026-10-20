@@ -309,6 +309,34 @@ public class TrackingStoreTests : IDisposable
         resetDeletedValue.Should().BeEquivalentTo(deletedValue);
     }
 
+    [Theory, CombinatorialData]
+    public void snapshot_tryget_overloads_reflect_pending_insert(StoreType storeType)
+    {
+        using var store = GetStore(storeType);
+        test_snapshot_tryget_overloads_reflect_pending_insert(store);
+    }
+
+    [Theory, CombinatorialData]
+    public void snapshot_tryget_overloads_reflect_pending_update(StoreType storeType)
+    {
+        using var store = GetStore(storeType);
+        test_snapshot_tryget_overloads_reflect_pending_update(store);
+    }
+
+    [Theory, CombinatorialData]
+    public void snapshot_tryget_overloads_reflect_pending_delete(StoreType storeType)
+    {
+        using var store = GetStore(storeType);
+        test_snapshot_tryget_overloads_reflect_pending_delete(store);
+    }
+
+    [Theory, CombinatorialData]
+    public void snapshot_null_and_empty_keys_are_equivalent(StoreType storeType)
+    {
+        using var store = GetStore(storeType);
+        test_snapshot_null_and_empty_keys_are_equivalent(store);
+    }
+
     internal IStore GetStore(StoreType type)
     {
         var memoryStore = new MemoryStore();

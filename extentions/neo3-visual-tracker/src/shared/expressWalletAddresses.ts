@@ -96,11 +96,9 @@ export function uniqueWorkspaceWalletDisplayName(
   filePath: string,
   usedNames: Set<string>
 ): string {
-  if (!usedNames.has(displayName)) {
-    return displayName;
-  }
-
-  const fileName = `${displayName} (${walletFileName(filePath)})`;
+  // Include the path even before a collision occurs so discovery order cannot
+  // reassign an existing selection to a different wallet.
+  const fileName = `${displayName} (${filePath})`;
   if (!usedNames.has(fileName)) {
     return fileName;
   }

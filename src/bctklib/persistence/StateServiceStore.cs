@@ -252,8 +252,11 @@ namespace Neo.BlockchainToolkit.Persistence
             return contracts;
         }
 
-        static void ValidateFoundStates(UInt256 rootHash, RpcFoundStates foundStates)
+        internal static void ValidateFoundStates(UInt256 rootHash, RpcFoundStates foundStates)
         {
+            if (foundStates.Truncated && foundStates.Results.Length == 0)
+                throw new InvalidOperationException("State service returned an empty truncated page.");
+
             if (foundStates.Results.Length > 0)
             {
                 ValidateProof(rootHash, foundStates.FirstProof, foundStates.Results[0]);

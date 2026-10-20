@@ -12,6 +12,7 @@ Two layouts:
 Express sample (this repo):
 
 ```shell
+dotnet tool restore --tool-manifest samples/.config/dotnet-tools.json
 dotnet test samples/test
 ```
 

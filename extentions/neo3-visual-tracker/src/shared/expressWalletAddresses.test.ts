@@ -91,12 +91,12 @@ test("workspace wallet display names remain unique across same-named files", () 
   const used = new Set(["alice"]);
   assert.equal(
     uniqueWorkspaceWalletDisplayName("alice", "/wallets/a/alice.json", used),
-    "alice (alice.json)"
+    "alice (/wallets/a/alice.json)"
   );
-  used.add("alice (alice.json)");
+  used.add("alice (/wallets/a/alice.json)");
   assert.equal(
     uniqueWorkspaceWalletDisplayName("alice", "/wallets/b/alice.json", used),
-    "alice (alice.json) #2"
+    "alice (/wallets/b/alice.json)"
   );
 });
 
@@ -198,4 +198,29 @@ test("contractsWithStandard lists NEP-17 names and skips hashes", () => {
     ),
     ["Nep17Contract"]
   );
+});
+
+test("workspace wallet selection survives discovery order and new collisions", () => {
+  const first = { path: "/wallets/a/alice.json", address: "address-a" };
+  const second = { path: "/wallets/b/alice.json", address: "address-b" };
+  const added = { path: "/wallets/0/alice.json", address: "address-new" };
+  const choices = (wallets: typeof first[]) => {
+    const used = new Set<string>();
+    const signers: Record<string, string> = {};
+    const addresses: Record<string, string> = {};
+    for (const wallet of wallets) {
+      const label = uniqueWorkspaceWalletDisplayName("Treasury", wallet.path, used);
+      used.add(label);
+      signers[label] = wallet.path;
+      addresses[label] = wallet.address;
+    }
+    return buildAccountChoices({}, signers, addresses);
+  };
+  const original = choices([first, second]);
+  for (const refreshed of [choices([second, first]), choices([added, first, second])]) {
+    for (const selected of original) {
+      assert.equal(signerForAccountChoice(selected.label, refreshed), selected.signer);
+      assert.equal(addressForAccountChoice(selected.label, refreshed), selected.address);
+    }
+  }
 });

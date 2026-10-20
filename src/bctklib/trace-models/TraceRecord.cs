@@ -15,7 +15,8 @@ using ExecutionContext = Neo.VM.ExecutionContext;
 
 namespace Neo.BlockchainToolkit.TraceDebug
 {
-    [MessagePackObject]
+    // The custom formatter also reads legacy records without a gas-consumed field.
+    [MessagePackObject(SuppressSourceGeneration = true)]
     public partial class TraceRecord : ITraceDebugRecord
     {
         public const int RecordKey = 0;

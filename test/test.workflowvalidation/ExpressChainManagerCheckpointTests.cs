@@ -87,24 +87,20 @@ public class ExpressChainManagerCheckpointTests
     public void OpenCheckpoint_removes_extracted_files_on_failure(bool failDuringExtraction)
     {
         var (checkpointPath, checkpointRoot) = CreateCheckpointArchive(CreateSingleNodeChain());
-        var marker = $"checkpoint-marker-{Guid.NewGuid():N}";
+        var extractedPath = Path.Combine(checkpointRoot, "extracted-checkpoint");
         using (var archive = ZipFile.Open(checkpointPath, ZipArchiveMode.Update))
         {
-            archive.CreateEntry(marker);
             if (failDuringExtraction)
             {
-                archive.CreateEntry(marker);
+                archive.CreateEntry("CURRENT");
             }
         }
-
-        string[] GetExtractedDirectories() => Directory.GetDirectories(Path.GetTempPath())
-            .Where(p => File.Exists(Path.Combine(p, marker))).ToArray();
 
         try
         {
             Action action = () =>
             {
-                using var storage = CheckpointExpressStorage.OpenCheckpoint(checkpointPath);
+                using var storage = CheckpointExpressStorage.OpenCheckpoint(checkpointPath, extractedPath);
             };
 
             if (failDuringExtraction)
@@ -115,14 +111,10 @@ public class ExpressChainManagerCheckpointTests
             {
                 action.Should().Throw<RocksDbSharp.RocksDbException>();
             }
-            GetExtractedDirectories().Should().BeEmpty();
+            Directory.Exists(extractedPath).Should().BeFalse();
         }
         finally
         {
-            foreach (var directory in GetExtractedDirectories())
-            {
-                Directory.Delete(directory, true);
-            }
             Directory.Delete(checkpointRoot, true);
         }
     }

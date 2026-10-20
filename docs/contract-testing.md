@@ -86,6 +86,7 @@ project ([`samples/test/contract-test.csproj`](../samples/test/contract-test.csp
 
 ```xml
 <ItemGroup>
+  <ProjectReference Include="..\src\contract.csproj" ReferenceOutputAssembly="false" />
   <NeoContractReference Include="..\src\contract.csproj" />
 </ItemGroup>
 <ItemGroup>

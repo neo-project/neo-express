@@ -1,6 +1,8 @@
 <!-- markdownlint-enable -->
 # Neo-Express N3 Command Reference
 
+New to Neo Express? Start at [getting-started.md](getting-started.md).
+
 > Note: This is the command reference for Neo-Express 3.10.1, targeting N3.
 >
 > You can pass -?|-h|--help to show a list of supported commands or to show

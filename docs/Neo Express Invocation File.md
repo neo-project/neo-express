@@ -1,6 +1,8 @@
 <!-- markdownlint-enable -->
 # Neo Express Contract Invocation File
 
+New to Neo Express? Start at [getting-started.md](getting-started.md).
+
 ## Overview
 
 Neo Express uses a JSON file containing contract invocation information, which can be passed by path to the `contract invoke` neo-express command.

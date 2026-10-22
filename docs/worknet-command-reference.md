@@ -1,6 +1,8 @@
 <!-- markdownlint-enable -->
 # Neo-WorkNet Command Reference
 
+New to Neo Express? Start at [getting-started.md](getting-started.md).
+
 The `neo-worknet` tool enables a developer to create and run a Neo N3 consensus node that branches
 from a public Neo N3 blockchain - including the official Neo N3 MainNet and T5 TestNet. This provides
 the developer a local scratchpad environment that mirrors the state of a known public network at a 

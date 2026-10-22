@@ -1,3 +1,9 @@
+import AutoCompleteData from "./autoCompleteData";
+import {
+  manifestMethods,
+  resolveContractManifest,
+} from "./resolveContractManifest";
+
 export type InvocationAccount = {
   address: string;
   name: string;
@@ -46,4 +52,19 @@ export function areInvocationStepsReady(
 
 export function isLiveDebugWitnessScopeSupported(scope: WitnessScope) {
   return scope === "CalledByEntry";
+}
+
+export function areInvocationStepsSafe(
+  steps: { contract?: string; operation?: string }[],
+  autoCompleteData: AutoCompleteData
+): boolean {
+  return (
+    steps.length > 0 &&
+    steps.every((step) => {
+      const method = manifestMethods(
+        resolveContractManifest(autoCompleteData, step.contract)
+      ).find((candidate) => candidate.name === step.operation);
+      return method?.safe === true;
+    })
+  );
 }

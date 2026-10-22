@@ -25,6 +25,7 @@ type CommandArguments = {
   receiver?: string;
   secondsPerBlock?: number;
   sender?: string;
+  force?: boolean;
 };
 
 async function sanitizeCommandArguments(input: any): Promise<CommandArguments> {

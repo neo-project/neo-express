@@ -60,18 +60,9 @@ export default class NeoExpressInstanceManager {
       return;
     }
 
-    const secondsPerBlock = commandArguments.secondsPerBlock || 15;
+    const secondsPerBlock = commandArguments.secondsPerBlock || 3;
 
-    const runningPreviously = this.running;
-    await this.stopAll();
-
-    const connectedTo = this.activeConnection.connection?.blockchainIdentifier;
-    if (
-      connectedTo?.blockchainType === "express" &&
-      connectedTo?.configPath === runningPreviously?.configPath
-    ) {
-      await this.activeConnection.disconnect(true);
-    }
+    await this.stopAll(identifier);
 
     const children = identifier.getChildren();
     if (children.length) {
@@ -106,12 +97,17 @@ export default class NeoExpressInstanceManager {
       }
     }
 
-    this.running = identifier;
-
-    if (!this.activeConnection.connection?.blockchainMonitor.healthy) {
-      await this.activeConnection.connect(identifier);
+    if (!this.terminals.length) {
+      this.running = null;
+      vscode.window.showErrorMessage(
+        "Neo Express failed to start. Check the terminal for details."
+      );
+      this.onChangeEmitter.fire();
+      return;
     }
 
+    this.running = identifier;
+    await this.activeConnection.connect(identifier);
     this.onChangeEmitter.fire();
   }
 
@@ -153,6 +149,14 @@ export default class NeoExpressInstanceManager {
 
   async stopAll(identifier?: BlockchainIdentifier) {
     const target = identifier || this.running;
+    if (
+      target &&
+      this.activeConnection.connection?.blockchainIdentifier.configPath ===
+        target.configPath
+    ) {
+      await this.activeConnection.disconnect(true);
+    }
+
     if (target?.blockchainType === "express") {
       const output = await this.neoExpress.run(
         "stop",
@@ -171,14 +175,18 @@ export default class NeoExpressInstanceManager {
     }
 
     try {
-      for (const terminal of this.terminals) {
+      const terminals = this.matchingTerminals(target);
+      for (const terminal of terminals) {
         if (!terminal.exitStatus) {
           terminal.dispose();
-          while (!terminal.exitStatus) {
-            Log.log("Waiting for terminal to close...");
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          }
         }
+      }
+      const deadline = Date.now() + 8000;
+      while (
+        terminals.some((terminal) => !terminal.exitStatus) &&
+        Date.now() < deadline
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
     } catch (e : any) {
       Log.warn(
@@ -192,6 +200,22 @@ export default class NeoExpressInstanceManager {
       this.running = null;
       this.onChangeEmitter.fire();
     }
+  }
+
+  private matchingTerminals(target?: BlockchainIdentifier | null) {
+    const known = new Set(this.terminals);
+    if (target) {
+      const names = new Set<string>([
+        target.name,
+        ...target.getChildren().map((child) => child.name),
+      ]);
+      for (const terminal of vscode.window.terminals) {
+        if (names.has(terminal.name)) {
+          known.add(terminal);
+        }
+      }
+    }
+    return [...known];
   }
 
   private async checkTerminals() {

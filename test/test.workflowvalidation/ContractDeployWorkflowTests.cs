@@ -307,6 +307,7 @@ public class ContractDeployWorkflowTests
 
         public event ConsoleCancelEventHandler? CancelKeyPress { add { } remove { } }
     }
+
     static string FindRepositoryRoot(string startPath)
     {
         var directory = new DirectoryInfo(startPath);

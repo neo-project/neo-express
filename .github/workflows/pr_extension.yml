@@ -37,7 +37,7 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Install Neo.SmartContract.Template
-      run: dotnet new install Neo.SmartContract.Template@3.10.1 --force
+      run: dotnet new install Neo.SmartContract.Template --force
 
     - name: Install dependencies
       working-directory: extentions/neo3-visual-tracker

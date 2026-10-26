@@ -61,6 +61,32 @@ public class StateServiceStoreExactReadTests
     }
 
     [Fact]
+    public void TryGet_for_missing_key_with_cached_null_is_served_from_cache_without_rpc()
+    {
+        var contractId = 1;
+        var contractHash = UInt160.Parse("0x1111111111111111111111111111111111111111");
+        var contractKey = new byte[] { 0x01, 0x02 };
+        var rpcClient = new RecordingRpcClient((method, _) =>
+            throw new InvalidOperationException($"{method} should not be called when null is cached"));
+        var branchInfo = new BranchInfo(
+            ProtocolSettings.Default.Network,
+            ProtocolSettings.Default.AddressVersion,
+            1,
+            UInt256.Zero,
+            UInt256.Zero,
+            new[] { new ContractInfo(contractId, contractHash, "SampleContract") });
+        var cache = new StateServiceStore.MemoryCacheClient();
+        cache.CacheStorage(contractHash, contractKey, null);
+        using var store = new StateServiceStore(rpcClient, cache, branchInfo);
+        var fullKey = new StorageKey { Id = contractId, Key = contractKey }.ToArray();
+
+        store.TryGet(fullKey, out _).Should().BeFalse();
+        store.TryGet(fullKey, out _).Should().BeFalse();
+
+        rpcClient.Methods.Should().BeEmpty();
+    }
+
+    [Fact]
     public void Find_supports_policy_blocked_account_prefix()
     {
         var rpcClient = new RecordingRpcClient((method, _) =>

@@ -130,7 +130,114 @@ namespace test.bctklib
             found.Single().value.Should().Equal(new byte[] { 9 });
         }
 
-        // Replicates the hash the cache previously used as its dictionary key and finds two
+        [Fact]
+        public void caching_null_does_not_throw_and_reads_back_as_cached_null()
+        {
+            using var client = new StateServiceStore.MemoryCacheClient();
+            var key = new byte[] { 1 };
+
+            client.Invoking(c => c.CacheStorage(CONTRACT_A, key, null)).Should().NotThrow();
+
+            client.TryGetCachedStorage(CONTRACT_A, key, out var value).Should().BeTrue();
+            value.Should().BeNull();
+        }
+
+        [Fact]
+        public void uncached_key_returns_false_and_null()
+        {
+            using var client = new StateServiceStore.MemoryCacheClient();
+
+            client.TryGetCachedStorage(CONTRACT_A, new byte[] { 1 }, out var value).Should().BeFalse();
+            value.Should().BeNull();
+        }
+
+        [Fact]
+        public void cached_empty_array_is_not_null()
+        {
+            using var client = new StateServiceStore.MemoryCacheClient();
+            var key = new byte[] { 1 };
+
+            client.CacheStorage(CONTRACT_A, key, Array.Empty<byte>());
+
+            client.TryGetCachedStorage(CONTRACT_A, key, out var value).Should().BeTrue();
+            value.Should().NotBeNull();
+            value.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void mutating_input_value_does_not_change_cached_value()
+        {
+            using var client = new StateServiceStore.MemoryCacheClient();
+            var key = new byte[] { 1 };
+            var input = new byte[] { 1, 2, 3 };
+
+            client.CacheStorage(CONTRACT_A, key, input);
+            input[0] = 99;
+
+            client.TryGetCachedStorage(CONTRACT_A, key, out var value).Should().BeTrue();
+            value.Should().Equal(new byte[] { 1, 2, 3 });
+        }
+
+        [Fact]
+        public void mutating_returned_value_does_not_change_cached_value()
+        {
+            using var client = new StateServiceStore.MemoryCacheClient();
+            var key = new byte[] { 1 };
+            client.CacheStorage(CONTRACT_A, key, new byte[] { 1, 2, 3 });
+
+            client.TryGetCachedStorage(CONTRACT_A, key, out var first).Should().BeTrue();
+            first![0] = 99;
+
+            client.TryGetCachedStorage(CONTRACT_A, key, out var second).Should().BeTrue();
+            second.Should().Equal(new byte[] { 1, 2, 3 });
+        }
+
+        [Fact]
+        public void equal_content_keys_from_different_arrays_resolve_to_same_entry_first_writer_wins()
+        {
+            using var client = new StateServiceStore.MemoryCacheClient();
+
+            client.CacheStorage(CONTRACT_A, new byte[] { 1, 2 }, new byte[] { 1 });
+            client.CacheStorage(CONTRACT_A, new byte[] { 1, 2 }, new byte[] { 2 });
+
+            client.TryGetCachedStorage(CONTRACT_A, new byte[] { 1, 2 }, out var value).Should().BeTrue();
+            value.Should().Equal(new byte[] { 1 });
+        }
+
+        [Fact]
+        public async Task concurrent_null_and_non_null_writes_publish_one_consistent_value()
+        {
+            using var client = new StateServiceStore.MemoryCacheClient();
+            var key = new byte[] { 5 };
+
+            var writers = Enumerable.Range(0, 16)
+                .Select(i => Task.Run(() => client.CacheStorage(CONTRACT_A, key, i % 2 == 0 ? null : new byte[] { 7 })))
+                .ToArray();
+            await Task.WhenAll(writers);
+
+            client.TryGetCachedStorage(CONTRACT_A, key, out var first).Should().BeTrue();
+            client.TryGetCachedStorage(CONTRACT_A, key, out var second).Should().BeTrue();
+            if (first is null)
+                second.Should().BeNull();
+            else
+            {
+                first.Should().Equal(new byte[] { 7 });
+                second.Should().Equal(first);
+            }
+        }
+
+        [Fact]
+        public void disposed_cache_throws_object_disposed()
+        {
+            var client = new StateServiceStore.MemoryCacheClient();
+            client.Dispose();
+            var key = new byte[] { 1 };
+
+            client.Invoking(c => c.CacheStorage(CONTRACT_A, key, null)).Should().Throw<ObjectDisposedException>();
+            client.Invoking(c => c.TryGetCachedStorage(CONTRACT_A, key, out _)).Should().Throw<ObjectDisposedException>();
+        }
+
+        // Replicates the hash the cache previously used
         // distinct keys that collide under it. ~80k random keys hit a 32-bit collision with
         // high probability (birthday bound); the loop is capped well above that.
         static (byte[] first, byte[] second) FindCollidingKeys(UInt160 contract)

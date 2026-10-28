@@ -83,8 +83,12 @@ export default class Templates {
       return;
     }
 
-    await hydrateFiles(templatePath, contractPath, parameters);
+    let ownsDestination = false;
     try {
+      await fs.promises.mkdir(posixPath(rootFolder, "contracts"), { recursive: true });
+      await fs.promises.mkdir(contractPath);
+      ownsDestination = true;
+      await hydrateFiles(templatePath, contractPath, parameters);
       if (csharpStarter?.template) {
         await instantiateOfficialContract({
           shortName: csharpStarter.template,
@@ -111,7 +115,17 @@ export default class Templates {
         );
       }
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
+      let detail = error instanceof Error ? error.message : String(error);
+      if (ownsDestination) {
+        try {
+          await fs.promises.rm(contractPath, { recursive: true, force: true });
+        } catch (cleanupError) {
+          const cleanupDetail = cleanupError instanceof Error
+            ? cleanupError.message
+            : String(cleanupError);
+          detail += `; could not remove partial contract: ${cleanupDetail}`;
+        }
+      }
       vscode.window.showErrorMessage(
         `Could not create ${contractName} from Neo.SmartContract.Template: ${detail}`
       );

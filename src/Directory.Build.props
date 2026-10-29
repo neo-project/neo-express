@@ -17,8 +17,8 @@
         <ApplicationIcon>../neo-cli.ico</ApplicationIcon>
     </PropertyGroup>
     <PropertyGroup>
-        <NeoVersion>3.10.1</NeoVersion>
-        <NeoModuleVersion>3.10.1</NeoModuleVersion>
+        <NeoVersion>3.10.2</NeoVersion>
+        <NeoModuleVersion>3.10.2</NeoModuleVersion>
         <NeoConsensusDbftVersion>3.10.1</NeoConsensusDbftVersion>
     </PropertyGroup>
     <ItemGroup>

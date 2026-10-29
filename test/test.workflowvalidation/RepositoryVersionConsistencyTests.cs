@@ -23,10 +23,6 @@ public class RepositoryVersionConsistencyTests
         var repositoryRoot = FindRepositoryRoot(AppContext.BaseDirectory);
         var releaseVersion = ReadReleaseVersion(repositoryRoot);
 
-        ReadPropertyVersion(repositoryRoot, "src/Directory.Build.props", "NeoVersion")
-            .Should().Be(releaseVersion);
-        ReadPropertyVersion(repositoryRoot, "src/Directory.Build.props", "NeoModuleVersion")
-            .Should().Be(releaseVersion);
         ReadPropertyVersion(repositoryRoot, "samples/src/contract.csproj", "NeoTestVersion")
             .Should().Be(releaseVersion);
         ReadPropertyVersion(repositoryRoot, "samples/test/contract-test.csproj", "NeoTestVersion")

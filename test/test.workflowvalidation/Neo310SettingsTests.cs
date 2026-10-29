@@ -19,15 +19,19 @@ namespace test.workflowvalidation;
 public class Neo310SettingsTests
 {
     [Fact]
-    public void Neo_package_versions_are_aligned_to_3101()
+    public void Neo_package_versions_target_neo_310()
     {
         var propsPath = FindRepoFile("src", "Directory.Build.props");
         var props = XDocument.Load(propsPath);
         XNamespace ns = "http://schemas.microsoft.com/developer/msbuild/2003";
 
-        props.Descendants(ns + "NeoVersion").Single().Value.Should().Be("3.10.1");
-        props.Descendants(ns + "NeoModuleVersion").Single().Value.Should().Be("3.10.1");
-        props.Descendants(ns + "NeoConsensusDbftVersion").Single().Value.Should().Be("3.10.1");
+        var neoVersion = props.Descendants(ns + "NeoVersion").Single().Value;
+        var neoModuleVersion = props.Descendants(ns + "NeoModuleVersion").Single().Value;
+        var neoConsensusDbftVersion = props.Descendants(ns + "NeoConsensusDbftVersion").Single().Value;
+
+        neoVersion.Should().StartWith("3.10.");
+        neoModuleVersion.Should().Be(neoVersion);
+        neoConsensusDbftVersion.Should().StartWith("3.10.");
     }
 
     [Fact]

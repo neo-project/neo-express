@@ -1,5 +1,7 @@
 # Neo-Express for N3 Settings Reference
 
+New to Neo Express? Start at [getting-started.md](getting-started.md).
+
 The `.neo-express` file for Neo N3 compatible versions of N3 includes a `settings` object property. 
 This document details the values that Neo-Express reads from the `settings` object.
 

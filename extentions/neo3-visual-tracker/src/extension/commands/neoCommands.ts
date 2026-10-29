@@ -14,6 +14,7 @@ import JSONC from "../util/JSONC";
 import posixPath from "../util/posixPath";
 import sameFilePath from "../util/sameFilePath";
 import WalletDetector from "../fileDetectors/walletDetector";
+import { resolveInvokeFilePath } from "../util/invokeFilePath";
 import workspaceFolder from "../util/workspaceFolder";
 
 export default class NeoCommands {
@@ -221,44 +222,17 @@ export default class NeoCommands {
 
   static async invokeContract(
     activeConnection: ActiveConnection,
+    autoComplete: AutoComplete,
     blockchainsTreeDataProvider: BlockchainsTreeDataProvider,
+    contractDetector: ContractDetector,
     commandArguments?: CommandArguments
   ) {
-    const identifier =
-      commandArguments?.blockchainIdentifier ||
-      (await blockchainsTreeDataProvider.select());
-    if (!identifier) {
-      return;
-    }
-    if (
-      activeConnection.connection?.blockchainIdentifier.name !== identifier.name
-    ) {
-      await activeConnection.connect(identifier);
-    }
-    const rootFolder = workspaceFolder();
-    if (!rootFolder) {
-      vscode.window.showErrorMessage(
-        "Please open a folder in your Visual Studio Code workspace before invoking a contract"
-      );
-      return;
-    }
-    const invokeFilesFolder = posixPath(rootFolder, "invoke-files");
-    try {
-      await fs.promises.mkdir(invokeFilesFolder);
-    } catch {}
-    let filename = posixPath(invokeFilesFolder, "Untitled.neo-invoke.json");
-    let i = 0;
-    while (fs.existsSync(filename)) {
-      i++;
-      filename = posixPath(
-        invokeFilesFolder,
-        `Untitled (${i}).neo-invoke.json`
-      );
-    }
-    await fs.promises.writeFile(filename, "[{}]");
-    await vscode.commands.executeCommand(
-      "vscode.open",
-      vscode.Uri.file(filename)
+    await NeoCommands.openContractStudio(
+      activeConnection,
+      autoComplete,
+      blockchainsTreeDataProvider,
+      contractDetector,
+      commandArguments || {}
     );
   }
 
@@ -324,10 +298,13 @@ export default class NeoCommands {
         );
         return;
       }
-      contractReference = await IoHelpers.multipleChoice(
-        "Select a contract for Contract Studio",
-        ...uniqueChoices
-      );
+      contractReference =
+        uniqueChoices.length === 1
+          ? uniqueChoices[0]
+          : await IoHelpers.multipleChoice(
+              "Select a contract for Contract Studio",
+              ...uniqueChoices
+            );
       if (!contractReference) {
         return;
       }
@@ -337,27 +314,28 @@ export default class NeoCommands {
         referenceWithoutPrefix;
     }
 
+    const deployedNames = new Set(Object.values(autoComplete.data.contractNames));
+    const studioName = (contractName || "").replace(/^#/, "");
+    if (studioName && !deployedNames.has(studioName) && contractReference?.startsWith("#")) {
+      vscode.window.showWarningMessage(
+        `"${studioName}" is a workspace contract that is not deployed on this chain. ` +
+          `Deploy it before Run invocation, or open SampleContract (or another on-chain name).`
+      );
+    }
+
     const invokeFilesFolder = posixPath(rootFolder, "invoke-files");
     await fs.promises.mkdir(invokeFilesFolder, { recursive: true });
-    const safeContractName =
-      (contractName || "Contract").replace(/[^-_.a-z0-9]/gi, "-") ||
-      "Contract";
-    let filename = posixPath(
+    const { path: filename, reuse } = resolveInvokeFilePath(
       invokeFilesFolder,
-      `${safeContractName}.neo-invoke.json`
+      contractName || "Contract",
+      (candidate) => fs.existsSync(candidate)
     );
-    let i = 1;
-    while (fs.existsSync(filename)) {
-      filename = posixPath(
-        invokeFilesFolder,
-        `${safeContractName}-${i}.neo-invoke.json`
+    if (!reuse) {
+      await fs.promises.writeFile(
+        filename,
+        JSONC.stringify([{ contract: contractReference, operation: "" }])
       );
-      i++;
     }
-    await fs.promises.writeFile(
-      filename,
-      JSONC.stringify([{ contract: contractReference, operation: "" }])
-    );
     await vscode.commands.executeCommand(
       "vscode.openWith",
       vscode.Uri.file(filename),

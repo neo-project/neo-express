@@ -1,9 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 
 import * as neonSc from "@cityofzion/neon-core/lib/sc";
-
-import InputNonDraggable from "../InputNonDraggable";
-import OperationTile from "./OperationTile";
 
 type Props = {
   isReadOnly: boolean;
@@ -18,42 +15,58 @@ export default function OperationInput({
   operations,
   setOperation,
 }: Props) {
-  const [hasFocus, setHasFocus] = useState(false);
   const inputId = useRef(
     `neo-operation-${Math.random().toString(36).slice(2)}`
   ).current;
 
+  if (operations.length) {
+    const known = operations.some((candidate) => candidate.name === operation);
+    return (
+      <div className="neo-field">
+        <label className="neo-field__label" htmlFor={inputId}>
+          Method
+        </label>
+        <select
+          className="neo-select"
+          disabled={isReadOnly}
+          id={inputId}
+          value={known ? operation : ""}
+          onChange={(event) => setOperation(event.target.value)}
+        >
+          <option value="">Select a method…</option>
+          {operations.map((candidate, index) => (
+            <option
+              key={`${candidate.name}-${index}`}
+              value={candidate.name}
+            >
+              {candidate.name}
+              {candidate.parameters?.length
+                ? ` (${candidate.parameters.map((p) => p.name).join(", ")})`
+                : ""}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
   return (
-    <div className="neo-field neo-combobox">
+    <div className="neo-field">
       <label className="neo-field__label" htmlFor={inputId}>
         Method
       </label>
-      <InputNonDraggable
+      <input
         className="neo-input"
         disabled={isReadOnly}
         id={inputId}
         type="text"
         value={operation || ""}
-        onBlur={() => setHasFocus(false)}
         onChange={(event) => setOperation(event.target.value)}
-        onFocus={() => setHasFocus(true)}
       />
-      {hasFocus && !!operations.length && (
-        <div className="neo-combobox__menu">
-          {operations.map((candidate, index) => (
-            <OperationTile
-              key={`${candidate.name}-${index}`}
-              operation={candidate}
-              onMouseDown={setOperation}
-            />
-          ))}
-        </div>
-      )}
-      {!operations.length && (
-        <div className="neo-field__meta">
-          Enter a method name or select a contract with a detected manifest.
-        </div>
-      )}
+      <div className="neo-field__meta">
+        No ABI methods found for this contract. Build the project so a
+        .manifest.json sits next to the .nef, or pick a deployed contract.
+      </div>
     </div>
   );
 }

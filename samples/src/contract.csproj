@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NeoContractName>$(AssemblyName)</NeoContractName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NeoContractName>SampleContract</NeoContractName>
     <NeoExpressBatchFile>../express.batch</NeoExpressBatchFile>
+    <NeoExpressBatchInputFile>../default.neo-express</NeoExpressBatchInputFile>
     <Nullable>enable</Nullable>
     <TargetFramework>net10.0</TargetFramework>
     <NeoTestVersion>3.10.1</NeoTestVersion>

@@ -42,6 +42,7 @@
     "onCommand:neo3-visual-devtracker.express.run",
     "onCommand:neo3-visual-devtracker.express.runAdvanced",
     "onCommand:neo3-visual-devtracker.express.transfer",
+    "onCommand:neo3-visual-devtracker.express.transferNft",
     "onCommand:neo3-visual-devtracker.express.walletCreate",
     "onCommand:neo3-visual-devtracker.neo.contractDeploy",
     "onCommand:neo3-visual-devtracker.neo.invokeContract",
@@ -138,7 +139,12 @@
       },
       {
         "command": "neo3-visual-devtracker.express.transfer",
-        "title": "Transfer assets",
+        "title": "Transfer NEO, GAS, or NEP-17",
+        "category": "Neo Express N3"
+      },
+      {
+        "command": "neo3-visual-devtracker.express.transferNft",
+        "title": "Transfer NFT (NEP-11)",
         "category": "Neo Express N3"
       },
       {
@@ -164,8 +170,9 @@
       },
       {
         "command": "neo3-visual-devtracker.neo.newContract",
-        "title": "Create contract",
-        "category": "Neo N3"
+        "title": "New contract",
+        "category": "Neo N3",
+        "icon": "$(new-file)"
       },
       {
         "command": "neo3-visual-devtracker.neo.walletCreate",
@@ -209,6 +216,11 @@
     ],
     "menus": {
       "explorer/context": [
+        {
+          "command": "neo3-visual-devtracker.neo.newContract",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@2"
+        },
         {
           "command": "neo3-visual-devtracker.neo.openContractStudio",
           "when": "isFileSystemResource && resourceExtname == .nef",
@@ -270,6 +282,10 @@
           "when": "view == neo3-visual-devtracker.views.blockchains && viewItem == express"
         },
         {
+          "command": "neo3-visual-devtracker.express.transferNft",
+          "when": "view == neo3-visual-devtracker.views.blockchains && viewItem == express"
+        },
+        {
           "command": "neo3-visual-devtracker.express.walletCreate",
           "when": "view == neo3-visual-devtracker.views.blockchains && viewItem == express"
         },
@@ -307,7 +323,8 @@
         },
         {
           "command": "neo3-visual-devtracker.neo.newContract",
-          "when": "view == neo3-visual-devtracker.views.contracts"
+          "when": "view == neo3-visual-devtracker.views.contracts",
+          "group": "navigation"
         },
         {
           "command": "neo3-visual-devtracker.neo.walletCreate",
@@ -317,6 +334,10 @@
     },
     "views": {
       "neo3-visual-devtracker-mainView": [
+        {
+          "id": "neo3-visual-devtracker.views.quickStart",
+          "name": "Quick Start"
+        },
         {
           "id": "neo3-visual-devtracker.views.blockchains",
           "name": "Blockchains"
@@ -328,11 +349,6 @@
         {
           "id": "neo3-visual-devtracker.views.contracts",
           "name": "Smart contracts"
-        },
-        {
-          "id": "neo3-visual-devtracker.views.quickStart",
-          "name": "Quick Start",
-          "type": "webview"
         }
       ]
     },
@@ -344,7 +360,13 @@
           "icon": "resources/n3-logo.png"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "neo3-visual-devtracker.views.contracts",
+        "contents": "[Create a new contract](command:neo3-visual-devtracker.neo.newContract)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile-prod && npm run bundle-nxp",

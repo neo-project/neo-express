@@ -2,6 +2,7 @@ import React, { Fragment, useMemo, useState } from "react";
 
 import Dialog from "../Dialog";
 import DropTarget from "../DropTarget";
+import InvocationResultView from "./InvocationResult";
 import InvocationStep from "./InvocationStep";
 import InvokeFileViewRequest from "../../../shared/messages/invokeFileViewRequest";
 import InvokeFileViewState from "../../../shared/viewState/invokeFileViewState";
@@ -180,6 +181,21 @@ export default function InvokeFileInteractiveEditor({
         }`}
       >
         <main className="contract-studio__steps">
+          {viewState.showInvocationResult && viewState.lastInvocation && (
+            <Dialog
+              title={
+                viewState.lastInvocation.success
+                  ? "Invocation result"
+                  : "Invocation failed"
+              }
+              onClose={() => postMessage({ dismissInvocationResult: true })}
+            >
+              <InvocationResultView result={viewState.lastInvocation} />
+            </Dialog>
+          )}
+          {!!viewState.lastInvocation && (
+            <InvocationResultView result={viewState.lastInvocation} />
+          )}
           {viewState.fileContents.map((step, i) => (
             <Fragment key={i}>
               <DropTarget i={i} onDrop={moveStep} dragActive={dragActive} />

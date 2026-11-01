@@ -31,17 +31,7 @@ export default function QuickStart({ viewState, postMessage }: Props) {
   });
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-evenly",
-        alignItems: "center",
-        textAlign: "center",
-        minHeight: "calc(100% - 20px)",
-        padding: 10,
-      }}
-    >
+    <div className="quick-start">
       {actions}
     </div>
   );

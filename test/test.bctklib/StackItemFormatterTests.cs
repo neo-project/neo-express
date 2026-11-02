@@ -100,7 +100,7 @@ namespace test.bctklib
         public void map_with_bytestring_key_parses_through_reader()
         {
             // Same shape as the corrupt inputs, but the Map key is a ByteString
-            // (0x28) — a valid primitive key that must keep parsing cleanly.
+            // (0x28) - a valid primitive key that must keep parsing cleanly.
             byte[] trace = { 0x92, 0x03, 0x93, 0x00, 0x00, 0x91, 0x92, 0x48, 0x81, 0x92, 0x28, 0xC4, 0x01, 0x01, 0x92, 0x00, 0xC0 };
 
             using var reader = new TraceDebugReader(new MemoryStream(trace, writable: false));

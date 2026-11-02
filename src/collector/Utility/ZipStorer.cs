@@ -932,6 +932,15 @@ namespace System.IO.Compression
             return new DateTime(year, month, day, hours, minutes, seconds);
         }
 
+        private static bool IsValidFileTime(long fileTime)
+        {
+            // range accepted by DateTime.FromFileTime: 0 (1601-01-01) to
+            // DateTime.MaxValue.ToFileTime() (9999-12-31 23:59:59.999...)
+            const long maxFileTime = 2650467743999999999;
+
+            return fileTime >= 0 && fileTime <= maxFileTime;
+        }
+
         private byte[] CreateExtraInfo(ZipFileEntry _zfe)
         {
             byte[] buffer = new byte[36 + 36];
@@ -990,9 +999,19 @@ namespace System.IO.Compression
 
                     if (tag == 1 && size == 24)
                     {
-                        _zfe.ModifyTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 12));
-                        _zfe.AccessTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 20));
-                        _zfe.CreationTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 28));
+                        long modifyTime = BitConverter.ToInt64(buffer, pos + 12);
+                        long accessTime = BitConverter.ToInt64(buffer, pos + 20);
+                        long creationTime = BitConverter.ToInt64(buffer, pos + 28);
+
+                        // NTFS timestamps are optional metadata: out of range
+                        // values are skipped so the entry keeps the DOS timestamp
+                        // already read from the central directory record
+                        if (IsValidFileTime(modifyTime))
+                            _zfe.ModifyTime = DateTime.FromFileTime(modifyTime);
+                        if (IsValidFileTime(accessTime))
+                            _zfe.AccessTime = DateTime.FromFileTime(accessTime);
+                        if (IsValidFileTime(creationTime))
+                            _zfe.CreationTime = DateTime.FromFileTime(creationTime);
                     }
                 }
 

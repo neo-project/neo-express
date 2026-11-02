@@ -331,44 +331,44 @@ public class TrackingStoreTests : IDisposable
         test_snapshot_tryget_overloads_reflect_pending_delete(store);
     }
 
-        [Theory, CombinatorialData]
-        public void snapshot_null_and_empty_keys_are_equivalent(StoreType storeType)
+    [Theory, CombinatorialData]
+    public void snapshot_null_and_empty_keys_are_equivalent(StoreType storeType)
+    {
+        using var store = GetStore(storeType);
+        test_snapshot_null_and_empty_keys_are_equivalent(store);
+    }
+
+    [Theory, CombinatorialData]
+    public async Task concurrent_snapshot_commits_do_not_throw_and_keep_consistent_state(StoreType storeType)
+    {
+        // Multiple threads committing snapshots concurrently could race in the CAS loop.
+        // The CommitSnapshot implementation uses proper compare-and-swap semantics to
+        // ensure each commit applies its changes correctly without losing concurrent updates.
+        using var store = GetStore(storeType);
+        var (key, originalValue) = TestData.ElementAt(0);
+
+        // Verify initial state
+        store.TryGet(key, out var initial).Should().BeTrue();
+        initial.Should().Equal(originalValue);
+
+        // Create multiple snapshots and have them commit concurrently
+        var tasks = Enumerable.Range(0, 8).Select(i => Task.Run(() =>
         {
-            using var store = GetStore(storeType);
-            test_snapshot_null_and_empty_keys_are_equivalent(store);
-        }
+            using var snapshot = store.GetSnapshot();
+            var newValue = Bytes($"value-{i}");
+            snapshot.Put(key, newValue);
+            snapshot.Commit();
+        })).ToArray();
 
-        [Theory, CombinatorialData]
-        public async Task concurrent_snapshot_commits_do_not_throw_and_keep_consistent_state(StoreType storeType)
-        {
-            // Multiple threads committing snapshots concurrently could race in the CAS loop.
-            // The CommitSnapshot implementation uses proper compare-and-swap semantics to
-            // ensure each commit applies its changes correctly without losing concurrent updates.
-            using var store = GetStore(storeType);
-            var (key, originalValue) = TestData.ElementAt(0);
+        await Task.WhenAll(tasks);
 
-            // Verify initial state
-            store.TryGet(key, out var initial).Should().BeTrue();
-            initial.Should().Equal(originalValue);
+        // After all commits, the final value should be one of the committed values
+        store.TryGet(key, out var final).Should().BeTrue();
+        final.Should().NotBeNull();
+        final.Should().NotEqual(originalValue);
+    }
 
-            // Create multiple snapshots and have them commit concurrently
-            var tasks = Enumerable.Range(0, 8).Select(i => Task.Run(() =>
-            {
-                using var snapshot = store.GetSnapshot();
-                var newValue = Bytes($"value-{i}");
-                snapshot.Put(key, newValue);
-                snapshot.Commit();
-            })).ToArray();
-
-            await Task.WhenAll(tasks);
-
-            // After all commits, the final value should be one of the committed values
-            store.TryGet(key, out var final).Should().BeTrue();
-            final.Should().NotBeNull();
-            final.Should().NotEqual(originalValue);
-        }
-
-        internal IStore GetStore(StoreType type)
+    internal IStore GetStore(StoreType type)
     {
         var memoryStore = new MemoryStore();
         var trackingStore = GetTrackingStore(type, (IReadOnlyStore<byte[], byte[]>)memoryStore);

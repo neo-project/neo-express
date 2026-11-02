@@ -958,7 +958,9 @@ namespace System.IO.Compression
             int minutes = (int)(_dt >> 5) & 63;
             int seconds = (int)(_dt & 31) * 2;
 
-            if (month == 0 || day == 0 || year >= 2107)
+            if (month == 0 || day == 0 || year >= 2107
+                || hours > 23 || minutes > 59 || seconds > 59
+                || day > DateTime.DaysInMonth(year, month))
                 return DateTime.Now;
 
             return new DateTime(year, month, day, hours, minutes, seconds);

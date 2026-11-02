@@ -668,6 +668,8 @@ namespace SimpleJSON
                         ++i;
                         if (QuoteMode)
                         {
+                            if (i >= aJSON.Length)
+                                throw new Exception("JSON Parse: Incomplete escape sequence.");
                             char C = aJSON[i];
                             switch (C)
                             {

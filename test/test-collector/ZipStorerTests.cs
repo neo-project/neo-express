@@ -126,4 +126,130 @@ public class ZipStorerTests
         Assert.False(NeoDebugInfo.TryLoadCompressed(stream, out var debugInfo));
         Assert.Null(debugInfo);
     }
+
+    [Fact]
+    public void zip_file_offset_overflowing_uint_throws_InvalidDataException()
+    {
+        // Regression test: the file data offset was validated only AFTER casting
+        // to uint, so an offset larger than 4 GiB wrapped around on the cast and
+        // silently passed the bounds check. The offset must be validated as a
+        // long before the cast. A sparse seekable stream fakes a >4 GiB archive.
+        const uint headerOffset = 0xFFFFF000;             // just below 4 GiB
+        const long streamLength = 0x1_0000_0000L + 2048;  // 4 GiB + 2 KiB
+        const long centralDirOffset = 4096;
+
+        // central directory record pointing at the far-away local header
+        var centralDir = new MemoryStream();
+        using (var writer = new BinaryWriter(centralDir, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(0x02014b50u);         // central directory signature
+            writer.Write((ushort)20);          // version made by
+            writer.Write((ushort)20);          // version needed to extract
+            writer.Write((ushort)0);           // general purpose bit flag
+            writer.Write((ushort)0);           // compression method (store)
+            writer.Write((ushort)0);           // last mod file time
+            writer.Write((ushort)0);           // last mod file date
+            writer.Write(0u);                  // crc-32
+            writer.Write(0u);                  // compressed size
+            writer.Write(0u);                  // uncompressed size
+            writer.Write((ushort)6);           // filename length
+            writer.Write((ushort)0);           // extra field length
+            writer.Write((ushort)0);           // file comment length
+            writer.Write((ushort)0);           // disk number start
+            writer.Write((ushort)0);           // internal file attributes
+            writer.Write(0u);                  // external file attributes
+            writer.Write(headerOffset);        // relative offset of local header
+            writer.Write(Encoding.UTF8.GetBytes("a.json"));
+        }
+        var centralDirBytes = centralDir.ToArray();
+
+        // end of central directory record
+        var eocd = new MemoryStream();
+        using (var writer = new BinaryWriter(eocd, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(0x06054b50u);         // end of central dir signature
+            writer.Write((ushort)0);           // number of this disk
+            writer.Write((ushort)0);           // disk with start of central directory
+            writer.Write((ushort)1);           // entries on this disk
+            writer.Write((ushort)1);           // total entries
+            writer.Write((uint)centralDirBytes.Length); // size of central directory
+            writer.Write((uint)centralDirOffset);       // offset of central directory
+            writer.Write((ushort)0);           // zipfile comment length
+        }
+
+        // fake local header at headerOffset: the filename/extra length fields
+        // at +26/+28 push the file data offset past uint.MaxValue
+        var localHeader = new byte[30];
+        BitConverter.GetBytes((ushort)0xFF00).CopyTo(localHeader, 26);
+        BitConverter.GetBytes((ushort)0xFFFF).CopyTo(localHeader, 28);
+
+        var stream = new SparseStream(streamLength,
+            (0, new byte[] { 0x50, 0x4B, 0x03, 0x04 }),      // local file header signature
+            (centralDirOffset, centralDirBytes),
+            (headerOffset, localHeader),
+            (streamLength - 22, eocd.ToArray()));
+
+        using var zip = ZipStorer.Open(stream, FileAccess.Read);
+
+        Assert.Throws<InvalidDataException>(() => zip.ReadCentralDir());
+    }
+
+    // Seekable read-only stream of the given length whose non-zero content
+    // lives in a few small segments; reads outside the segments return zeros.
+    // Lets tests fake multi-gigabyte archives without allocating them.
+    sealed class SparseStream : Stream
+    {
+        private readonly long length;
+        private readonly (long Start, byte[] Data)[] segments;
+        private long position;
+
+        public SparseStream(long length, params (long Start, byte[] Data)[] segments)
+        {
+            this.length = length;
+            this.segments = segments;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => true;
+        public override long Length => length;
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var toRead = (int)Math.Min(count, length - position);
+            for (var i = 0; i < toRead; i++)
+            {
+                byte value = 0;
+                foreach (var (start, data) in segments)
+                {
+                    var index = position - start;
+                    if (index >= 0 && index < data.Length)
+                    {
+                        value = data[index];
+                        break;
+                    }
+                }
+                buffer[offset + i] = value;
+                position++;
+            }
+            return toRead;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => position = origin switch
+        {
+            SeekOrigin.Begin => offset,
+            SeekOrigin.Current => position + offset,
+            SeekOrigin.End => length + offset,
+            _ => throw new ArgumentOutOfRangeException(nameof(origin)),
+        };
+
+        public override void Flush() { }
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override bool CanWrite => false;
+        public override long Position
+        {
+            get => position;
+            set => position = value;
+        }
+    }
 }

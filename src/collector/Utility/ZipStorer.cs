@@ -659,11 +659,14 @@ namespace System.IO.Compression
             _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort extraSize = BitConverter.ToUInt16(buffer, 0);
 
-            uint fileOffset = (uint)((long)_headerOffset + 30 + filenameSize + extraSize);
+            // validate as long BEFORE the cast: on a large stream the value
+            // can exceed uint.MaxValue and would wrap around on the cast,
+            // silently passing the bounds check below
+            long fileOffset = (long)_headerOffset + 30 + filenameSize + extraSize;
             if (fileOffset > this.ZipFileStream.Length)
                 throw new System.IO.InvalidDataException($"File data offset {fileOffset} is outside the zip archive");
 
-            return fileOffset;
+            return (uint)fileOffset;
         }
 
         /* Local file header:

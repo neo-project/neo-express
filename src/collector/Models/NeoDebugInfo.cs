@@ -172,6 +172,9 @@ namespace Neo.Collector.Models
 
         static Method MethodFromJson(SimpleJSON.JSONNode json)
         {
+            if (json is null || !json.IsObject)
+                throw new FormatException("Invalid debug info JSON: expected a JSON object for each method entry");
+
             // TODO: parse return, params and variables
             var id = json["id"].Value;
             var (@namespace, name) = NameFromJson(json["name"]);

@@ -668,6 +668,8 @@ namespace SimpleJSON
                         ++i;
                         if (QuoteMode)
                         {
+                            if (i >= aJSON.Length)
+                                throw new Exception("JSON Parse: Incomplete escape sequence.");
                             char C = aJSON[i];
                             switch (C)
                             {
@@ -688,6 +690,8 @@ namespace SimpleJSON
                                     break;
                                 case 'u':
                                     {
+                                        if (i + 4 >= aJSON.Length)
+                                            throw new Exception("JSON Parse: Incomplete Unicode escape sequence.");
                                         string s = aJSON.Substring(i + 1, 4);
                                         Token.Append((char)int.Parse(
                                             s,

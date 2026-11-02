@@ -528,6 +528,10 @@ namespace System.IO.Compression
                 throw new InvalidOperationException("Stream cannot be written");
 
             // check signature
+            if (_zfe.HeaderOffset < 0 || _zfe.HeaderOffset > this.ZipFileStream.Length - 4)
+                throw new System.IO.InvalidDataException(
+                    $"Invalid local header offset {_zfe.HeaderOffset} for entry '{_zfe.FilenameInZip}'");
+
             byte[] signature = new byte[4];
             this.ZipFileStream.Seek(_zfe.HeaderOffset, SeekOrigin.Begin);
 

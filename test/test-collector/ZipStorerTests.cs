@@ -633,17 +633,23 @@ public class ZipStorerTests
         "00630100000000000001000000504B050600000000FFFFFFFFFFFFFFFFFFFFFFFF0000";
 
     [Fact]
-    public async Task ExtractFile_rejects_entry_with_out_of_range_header_offset()
+    public void ReadCentralDir_rejects_entry_with_out_of_range_header_offset()
     {
         var bytes = Convert.FromHexString(InvalidHeaderOffsetZipHex);
 
         // open/extract the same way the coverage collector loads .nefdbgnfo
         // archives (NeoDebugInfo.TryLoadCompressed)
+        //
+        // With the combined hardening, the untrusted header offset is caught
+        // even earlier: ZipStorer.GetFileOffset (invoked from ReadCentralDir)
+        // rejects local header offsets beyond the end of the stream, so the
+        // archive never reaches ExtractFileAsync. Either way the malformed
+        // archive must be rejected with a clean InvalidDataException that
+        // mentions the header offset instead of an unhandled
+        // ArgumentOutOfRangeException from Stream.Seek.
         using var zip = ZipStorer.Open(new MemoryStream(bytes), FileAccess.Read);
-        var entry = Assert.Single(zip.ReadCentralDir());
 
-        var ex = await Assert.ThrowsAsync<System.IO.InvalidDataException>(
-            () => zip.ExtractFileAsync(entry, new MemoryStream()));
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => zip.ReadCentralDir());
 
         Assert.Contains("header offset", ex.Message, StringComparison.OrdinalIgnoreCase);
     }

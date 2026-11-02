@@ -68,6 +68,40 @@ public class ZipStorerTests
         Assert.Equal("a", entry.FilenameInZip);
     }
 
+    [Fact]
+    public void ReadCentralDir_ignores_a_short_trailing_record_in_the_central_directory()
+    {
+        // Regression test: the 46-byte minimum-length check used to run before
+        // the signature check, so a valid archive with a short (<46 byte)
+        // trailing record (e.g. a digital signature record 0x05054b50) inside
+        // the declared central directory image was rejected with
+        // InvalidDataException, though the scan previously (and should still)
+        // stop gracefully at the unrecognized signature.
+        var bytes = CreateZip(1, 0, 0);
+
+        // digital signature record: 4-byte signature + 4 payload bytes (<46)
+        var trailingRecord = new byte[] { 0x50, 0x4B, 0x05, 0x05, 0x01, 0x02, 0x03, 0x04 };
+
+        // insert the trailing record after the last central directory entry,
+        // before the end-of-central-directory record, and count it as part of
+        // the declared central directory size
+        var eocdOffset = bytes.Length - 22;
+        var centralSize = BitConverter.ToUInt32(bytes, eocdOffset + 12);
+        BitConverter.GetBytes(centralSize + (uint)trailingRecord.Length).CopyTo(bytes, eocdOffset + 12);
+
+        var withTrailingRecord = new byte[bytes.Length + trailingRecord.Length];
+        Array.Copy(bytes, 0, withTrailingRecord, 0, eocdOffset);
+        Array.Copy(trailingRecord, 0, withTrailingRecord, eocdOffset, trailingRecord.Length);
+        Array.Copy(bytes, eocdOffset, withTrailingRecord, eocdOffset + trailingRecord.Length, 22);
+
+        using var zip = ZipStorer.Open(new MemoryStream(withTrailingRecord), FileAccess.Read);
+
+        var entries = zip.ReadCentralDir();
+
+        var entry = Assert.Single(entries);
+        Assert.Equal("a", entry.FilenameInZip);
+    }
+
     // Builds a minimal zip with one stored entry "a". The central directory record
     // declares the given filename, extra field and comment lengths while the image
     // actually contains only the single byte filename, mimicking a mutated archive.

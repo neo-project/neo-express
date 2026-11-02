@@ -947,6 +947,15 @@ namespace System.IO.Compression
             return new DateTime(year, month, day, hours, minutes, seconds);
         }
 
+        private static bool IsValidFileTime(long fileTime)
+        {
+            // range accepted by DateTime.FromFileTime: 0 (1601-01-01) to
+            // DateTime.MaxValue.ToFileTime() (9999-12-31 23:59:59.999...)
+            const long maxFileTime = 2650467743999999999;
+
+            return fileTime >= 0 && fileTime <= maxFileTime;
+        }
+
         private byte[] CreateExtraInfo(ZipFileEntry _zfe)
         {
             byte[] buffer = new byte[36 + 36];
@@ -984,11 +993,21 @@ namespace System.IO.Compression
 
                 if (extraId == 0x0001) // ZIP64 Information
                 {
+                    // tag/size are read at pos+8..pos+11: a record truncated
+                    // before that point is skipped
+                    if (pos + 12 > buffer.Length)
+                        break;
+
                     tag = BitConverter.ToUInt16(buffer, pos + 8);
                     size = BitConverter.ToUInt16(buffer, pos + 10);
 
                     if (tag == 1 && size >= 24)
                     {
+                        // three 8-byte values are read at pos+12..pos+35:
+                        // a record truncated before that point is skipped
+                        if (pos + 36 > buffer.Length)
+                            break;
+
                         if (_zfe.FileSize == 0xFFFFFFFF)
                             _zfe.FileSize = BitConverter.ToInt64(buffer, pos + 12);
                         if (_zfe.CompressedSize == 0xFFFFFFFF)
@@ -1000,14 +1019,34 @@ namespace System.IO.Compression
 
                 if (extraId == 0x000A) // NTFS FileTime
                 {
+                    // tag/size are read at pos+8..pos+11: a record truncated
+                    // before that point is skipped
+                    if (pos + 12 > buffer.Length)
+                        break;
+
                     tag = BitConverter.ToUInt16(buffer, pos + 8);
                     size = BitConverter.ToUInt16(buffer, pos + 10);
 
                     if (tag == 1 && size == 24)
                     {
-                        _zfe.ModifyTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 12));
-                        _zfe.AccessTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 20));
-                        _zfe.CreationTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 28));
+                        // three 8-byte values are read at pos+12..pos+35:
+                        // a record truncated before that point is skipped
+                        if (pos + 36 > buffer.Length)
+                            break;
+
+                        long modifyTime = BitConverter.ToInt64(buffer, pos + 12);
+                        long accessTime = BitConverter.ToInt64(buffer, pos + 20);
+                        long creationTime = BitConverter.ToInt64(buffer, pos + 28);
+
+                        // NTFS timestamps are optional metadata: out of range
+                        // values are skipped so the entry keeps the DOS timestamp
+                        // already read from the central directory record
+                        if (IsValidFileTime(modifyTime))
+                            _zfe.ModifyTime = DateTime.FromFileTime(modifyTime);
+                        if (IsValidFileTime(accessTime))
+                            _zfe.AccessTime = DateTime.FromFileTime(accessTime);
+                        if (IsValidFileTime(creationTime))
+                            _zfe.CreationTime = DateTime.FromFileTime(creationTime);
                     }
                 }
 

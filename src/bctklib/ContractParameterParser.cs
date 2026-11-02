@@ -67,6 +67,11 @@ namespace Neo.BlockchainToolkit
             try
             {
                 var document = await JContainer.LoadAsync(jsonReader).ConfigureAwait(false);
+                while (await jsonReader.ReadAsync().ConfigureAwait(false))
+                {
+                    if (jsonReader.TokenType != JsonToken.Comment)
+                        throw new JsonException("additional content after invocation document");
+                }
                 return LoadInvocationScript(document);
             }
             catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or IOException

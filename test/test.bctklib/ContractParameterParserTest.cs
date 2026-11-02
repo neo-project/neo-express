@@ -379,6 +379,8 @@ namespace test.bctklib
         [InlineData("NaN")]
         [InlineData("\"not an invocation\"")]
         [InlineData("[\"not an invocation\"]")]
+        [InlineData("{\"contract\":\"0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b\",\"operation\":\"x\"}{\"contract\":\"0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b\",\"operation\":\"x\"}")]
+        [InlineData("{\"contract\":\"0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b\",\"operation\":\"x\"}garbage")]
         public async Task LoadInvocationScriptAsync_reports_invalid_invocation_file(string content)
         {
             var fileSystem = new MockFileSystem();

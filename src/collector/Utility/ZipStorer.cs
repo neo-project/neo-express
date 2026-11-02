@@ -548,7 +548,13 @@ namespace System.IO.Compression
                 int bytesRead = await inStream.ReadAsync(buffer, 0, (int)Math.Min(bytesPending, buffer.Length));
 #endif
                 if (bytesRead <= 0)
-                    throw new InvalidDataException("zip archive is truncated: declared file size exceeds available data");
+                {
+                    // dispose the DeflateStream wrapper before throwing so it
+                    // is not leaked by the early exit from the copy loop
+                    if (_zfe.Method == Compression.Deflate)
+                        inStream.Dispose();
+                    throw new InvalidDataException("Zip archive is truncated: declared file size exceeds available data");
+                }
 
 #if NOASYNC
                     _stream.Write(buffer, 0, bytesRead);

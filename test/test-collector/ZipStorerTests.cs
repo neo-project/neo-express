@@ -11,6 +11,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -56,5 +57,98 @@ public class ZipStorerTests
         Assert.True(completed, "ExtractFileAsync did not complete within 10 seconds (infinite hang on truncated archive)");
 
         await Assert.ThrowsAsync<InvalidDataException>(() => extractTask);
+    }
+
+    [Fact]
+    public async Task ExtractFileAsync_rejects_truncated_deflate_entry_and_disposes_the_inflater()
+    {
+        // Same truncated-FileSize scenario as the Store test above, but with a
+        // Deflate entry: the EOF throw happens while the copy loop reads through
+        // a DeflateStream wrapper, which must be disposed by the throw path
+        // instead of leaked (it is created with leaveOpen so the underlying
+        // archive stream must stay usable afterwards).
+        var archiveBytes = CreateTruncatedDeflateZip();
+
+        var stream = new MemoryStream(archiveBytes);
+        using var zip = ZipStorer.Open(stream, FileAccess.Read);
+        var entry = Assert.Single(zip.ReadCentralDir());
+        Assert.Equal(ZipStorer.Compression.Deflate, entry.Method);
+        Assert.Equal(1000L, entry.FileSize);
+
+        using var output = new MemoryStream();
+        await Assert.ThrowsAsync<InvalidDataException>(() => zip.ExtractFileAsync(entry, output));
+
+        // the archive stream was handed to the DeflateStream with leaveOpen:
+        // it must still be open and usable after the failed extraction
+        Assert.True(stream.CanRead);
+        _ = stream.Seek(0, SeekOrigin.Begin);
+        Assert.Equal(archiveBytes[0], stream.ReadByte());
+    }
+
+    static byte[] CreateTruncatedDeflateZip()
+    {
+        // deflate-compressed payload "hello"; the central directory lies about
+        // the uncompressed size (1000) so the copy loop hits EOF
+        var payload = Encoding.UTF8.GetBytes("hello");
+        var compressed = new MemoryStream();
+        using (var deflater = new DeflateStream(compressed, CompressionMode.Compress, leaveOpen: true))
+        {
+            deflater.Write(payload, 0, payload.Length);
+        }
+        var compressedBytes = compressed.ToArray();
+
+        using var archive = new MemoryStream();
+        using var writer = new BinaryWriter(archive, Encoding.UTF8, leaveOpen: true);
+
+        // local file header
+        writer.Write(0x04034b50u);         // local file header signature
+        writer.Write((ushort)20);          // version needed to extract
+        writer.Write((ushort)0);           // general purpose bit flag
+        writer.Write((ushort)8);           // compression method: deflate
+        writer.Write((ushort)0);           // last mod file time
+        writer.Write((ushort)0x21);        // last mod file date (1980-01-01)
+        writer.Write(0u);                  // crc-32
+        writer.Write((uint)compressedBytes.Length); // compressed size
+        writer.Write(1000u);               // uncompressed size (lies)
+        writer.Write((ushort)1);           // filename length
+        writer.Write((ushort)0);           // extra field length
+        writer.Write((byte)'a');            // filename
+        writer.Write(compressedBytes);      // file data
+
+        var centralDirOffset = (uint)archive.Length;
+
+        // central directory record
+        writer.Write(0x02014b50u);         // central directory signature
+        writer.Write((ushort)20);          // version made by
+        writer.Write((ushort)20);          // version needed to extract
+        writer.Write((ushort)0);           // general purpose bit flag
+        writer.Write((ushort)8);           // compression method: deflate
+        writer.Write((ushort)0);           // last mod file time
+        writer.Write((ushort)0x21);        // last mod file date (1980-01-01)
+        writer.Write(0u);                  // crc-32
+        writer.Write((uint)compressedBytes.Length); // compressed size
+        writer.Write(1000u);               // uncompressed size (lies)
+        writer.Write((ushort)1);           // filename length
+        writer.Write((ushort)0);           // extra field length
+        writer.Write((ushort)0);           // file comment length
+        writer.Write((ushort)0);           // disk number start
+        writer.Write((ushort)0);           // internal file attributes
+        writer.Write(0u);                  // external file attributes
+        writer.Write(0u);                  // relative offset of local header
+        writer.Write((byte)'a');            // filename
+
+        var centralDirSize = (uint)archive.Length - centralDirOffset;
+
+        // end of central directory record
+        writer.Write(0x06054b50u);         // end of central dir signature
+        writer.Write((ushort)0);           // number of this disk
+        writer.Write((ushort)0);           // disk with start of central directory
+        writer.Write((ushort)1);           // entries on this disk
+        writer.Write((ushort)1);           // total entries
+        writer.Write(centralDirSize);      // size of central directory
+        writer.Write(centralDirOffset);    // offset of central directory
+        writer.Write((ushort)0);           // zipfile comment length
+
+        return archive.ToArray();
     }
 }

@@ -15,6 +15,14 @@ namespace build_tasks
 {
     public class TestNeoManifest
     {
+        [Theory]
+        [InlineData("a,")]
+        public void rejects_top_level_comma(string json)
+        {
+            var exception = Assert.Throws<Exception>(() => SimpleJSON.JSON.Parse(json));
+            Assert.StartsWith("JSON Parse:", exception.Message);
+        }
+
         [Fact]
         public void parse_sample_manifest()
         {

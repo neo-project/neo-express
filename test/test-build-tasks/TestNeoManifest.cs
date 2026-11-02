@@ -15,6 +15,15 @@ namespace build_tasks
 {
     public class TestNeoManifest
     {
+        [Theory]
+        [InlineData("\"abc\\")]
+        [InlineData("\"\\u12\"")]
+        public void rejects_truncated_escape_sequences(string json)
+        {
+            var exception = Assert.Throws<Exception>(() => SimpleJSON.JSON.Parse(json));
+            Assert.StartsWith("JSON Parse:", exception.Message);
+        }
+
         [Fact]
         public void parse_sample_manifest()
         {

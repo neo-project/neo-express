@@ -134,9 +134,10 @@ namespace Neo.BlockchainToolkit
                     return 0;
 
                 var remaining = maxBytes - bytesRead;
-                if (remaining <= 0)
+                if (remaining < 0)
                     throw new IOException($"file is larger than {maxBytes} bytes");
 
+                // At the exact limit, allow one final byte so EOF is not mistaken for oversized input.
                 return (int)Math.Min(requestedCount, remaining + 1);
             }
 

@@ -85,8 +85,10 @@ namespace MessagePack.Formatters.Neo.BlockchainToolkit
                             var mapCount = reader.ReadMapHeader();
                             for (int i = 0; i < mapCount; i++)
                             {
-                                var key = (PrimitiveType)Deserialize(ref reader, options);
-                                map[key] = Deserialize(ref reader, options);
+                                var key = Deserialize(ref reader, options);
+                                if (key is not PrimitiveType primitiveKey)
+                                    throw new MessagePackSerializationException($"Invalid StackItem Map key type {key.Type}. Only primitive stack items can be used as map keys.");
+                                map[primitiveKey] = Deserialize(ref reader, options);
                             }
                             return map;
                         }

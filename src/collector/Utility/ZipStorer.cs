@@ -398,6 +398,10 @@ namespace System.IO.Compression
 
             for (int pointer = 0; pointer < this.CentralDirImage.Length;)
             {
+                // The fixed portion of a central directory file header is 46 bytes long.
+                if (this.CentralDirImage.Length - pointer < 46)
+                    throw new InvalidDataException("Central directory entry is truncated");
+
                 uint signature = BitConverter.ToUInt32(CentralDirImage, pointer);
                 if (signature != 0x02014b50)
                     break;
@@ -414,6 +418,11 @@ namespace System.IO.Compression
                 uint headerOffset = BitConverter.ToUInt32(CentralDirImage, pointer + 42);
                 uint headerSize = (uint)(46 + filenameSize + extraSize + commentSize);
                 DateTime modifyTimeDT = DosTimeToDateTime(modifyTime) ?? DateTime.Now;
+
+                // The variable-length filename, extra field and comment must fit
+                // within the central directory image read from the archive.
+                if ((long)pointer + 46 + filenameSize + extraSize + commentSize > this.CentralDirImage.Length)
+                    throw new InvalidDataException("Central directory entry filename, extra field or comment exceeds the central directory size");
 
                 Encoding encoder = encodeUTF8 ? Encoding.UTF8 : DefaultEncoding;
 

@@ -544,9 +544,15 @@ namespace System.IO.Compression
             {
 #if NOASYNC
                     int bytesRead = inStream.Read(buffer, 0, (int)Math.Min(bytesPending, buffer.Length));
-                    _stream.Write(buffer, 0, bytesRead);
 #else
                 int bytesRead = await inStream.ReadAsync(buffer, 0, (int)Math.Min(bytesPending, buffer.Length));
+#endif
+                if (bytesRead <= 0)
+                    throw new InvalidDataException("zip archive is truncated: declared file size exceeds available data");
+
+#if NOASYNC
+                    _stream.Write(buffer, 0, bytesRead);
+#else
                 await _stream.WriteAsync(buffer, 0, bytesRead);
 #endif
 

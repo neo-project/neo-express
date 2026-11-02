@@ -647,13 +647,23 @@ namespace System.IO.Compression
         {
             byte[] buffer = new byte[2];
 
-            this.ZipFileStream.Seek(_headerOffset + 26, SeekOrigin.Begin);
+            // _headerOffset comes from the (untrusted) central directory: reject
+            // archives whose local header (including its filename/extra length
+            // fields) lies outside the stream before seeking
+            if ((long)_headerOffset + 30 > this.ZipFileStream.Length)
+                throw new System.IO.InvalidDataException($"Local file header offset {_headerOffset} is outside the zip archive");
+
+            this.ZipFileStream.Seek((long)_headerOffset + 26, SeekOrigin.Begin);
             _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort filenameSize = BitConverter.ToUInt16(buffer, 0);
             _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort extraSize = BitConverter.ToUInt16(buffer, 0);
 
-            return (uint)(30 + filenameSize + extraSize + _headerOffset);
+            uint fileOffset = (uint)((long)_headerOffset + 30 + filenameSize + extraSize);
+            if (fileOffset > this.ZipFileStream.Length)
+                throw new System.IO.InvalidDataException($"File data offset {fileOffset} is outside the zip archive");
+
+            return fileOffset;
         }
 
         /* Local file header:

@@ -8,17 +8,12 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-
-
-
-
-
 using Neo.Collector.Models;
-using System.IO.Compression;
+using System;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
-using System;
 using Xunit;
 
 namespace test_collector;
@@ -797,7 +792,7 @@ public class ZipStorerTests
         // The extract must complete (by succeeding or throwing) within the
         // timeout. Without the EOF guard in the copy loop, ReadAsync returns
         // 0 forever and this task never finishes.
-        var completed = await Task.WhenAny(extractTask, Task.Delay(TimeSpan.FromSeconds(10))) == extractTask;
+        var completed = await Task.WhenAny(extractTask, Task.Delay(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)) == extractTask;
         Assert.True(completed, "ExtractFileAsync did not complete within 10 seconds (infinite hang on truncated archive)");
 
         await Assert.ThrowsAsync<InvalidDataException>(() => extractTask);

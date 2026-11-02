@@ -645,6 +645,8 @@ namespace SimpleJSON
                             Token.Append(aJSON[i]);
                             break;
                         }
+                        if (ctx == null)
+                            throw new Exception("JSON Parse: Unexpected comma at top level.");
                         if (Token.Length > 0 || TokenIsQuoted)
                             ctx.Add(TokenName, ParseElement(Token.ToString(), TokenIsQuoted));
                         TokenIsQuoted = false;

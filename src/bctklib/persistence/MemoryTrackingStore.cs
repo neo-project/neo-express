@@ -145,7 +145,7 @@ namespace Neo.BlockchainToolkit.Persistence
             var priorCollection = Volatile.Read(ref trackingMap);
             do
             {
-                var updatedCollection = Volatile.Read(ref trackingMap);
+                var updatedCollection = priorCollection;
                 foreach (var change in writeBatchMap)
                 {
                     updatedCollection = updatedCollection.SetItem(change.Key, change.Value);

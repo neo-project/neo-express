@@ -39,10 +39,81 @@ static class Utility
     public static string ResolveWorkNetFileName(this IFileSystem fs, string path)
         => fs.ResolveFileName(path, WORKNET_EXTENSION, () => DEFAULT_WORKNET_FILENAME);
 
+    const string LegacyDataDirectoryName = "data";
+
+    // default worknet keeps the legacy "data" directory (backward compatible);
+    // every other worknet file gets its own "<filename>.data" directory so that
+    // worknets sharing a directory never share a RocksDB database
     public static string GetWorknetDataDirectory(this IFileSystem fs, string filename)
     {
-        var dirname = fs.Path.GetDirectoryName(filename) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
-        return fs.Path.Combine(dirname, "data");
+        var fullPath = fs.Path.GetFullPath(filename);
+        var dirname = fs.Path.GetDirectoryName(fullPath) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
+        var name = GetCanonicalFileName(fs, dirname, fs.Path.GetFileName(fullPath));
+
+        if (IsDefaultWorknetName(name))
+            return fs.Path.Combine(dirname, LegacyDataDirectoryName);
+
+        return fs.Path.Combine(dirname, $"{name}.data");
+    }
+
+    // The legacy "data" directory may belong to any worknet file in the directory. Refuse to replace it
+    // (via --force) when other worknet files exist, since its owner cannot be determined.
+    public static void EnsureLegacyDataNotShared(this IFileSystem fs, string filename, string dataDir)
+    {
+        if (!fs.Directory.Exists(dataDir) || !IsDefaultWorknetName(fs.Path.GetFileName(fs.Path.GetFullPath(filename))))
+            return;
+
+        var dirname = fs.Path.GetDirectoryName(fs.Path.GetFullPath(filename))!;
+        var others = fs.Directory.EnumerateFiles(dirname, "*" + WORKNET_EXTENSION)
+            .Where(f => !IsDefaultWorknetName(fs.Path.GetFileName(f)))
+            .ToList();
+        if (others.Count > 0)
+        {
+            throw new Exception(
+                $"{dataDir} may belong to another worknet in this directory ({fs.Path.GetFileName(others[0])}). " +
+                "It will not be replaced automatically. Move or remove it manually if it is not needed.");
+        }
+    }
+
+    static bool IsCaseInsensitiveFileSystem => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
+    static bool IsDefaultWorknetName(string name)
+        => name.Equals(DEFAULT_WORKNET_FILENAME, IsCaseInsensitiveFileSystem ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    // use the on-disk casing of an existing file so that differently-cased spellings of the same
+    // file on a case-insensitive filesystem resolve to the same data directory
+    static string GetCanonicalFileName(IFileSystem fs, string dirname, string name)
+    {
+        if (!fs.Directory.Exists(dirname))
+            return name;
+        var existing = fs.Directory.EnumerateFiles(dirname)
+            .Select(f => fs.Path.GetFileName(f))
+            .Where(f => f.Equals(name, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        return existing.Contains(name, StringComparer.Ordinal) ? name
+            : IsCaseInsensitiveFileSystem && existing.Count > 0 ? existing[0]
+            : name;
+    }
+
+    // Resolves the data directory of an existing worknet.
+    // assumed to belong to a named worknet, since ownership cannot be determined reliably.
+    public static string GetExistingWorknetDataDirectory(this IFileSystem fs, string filename)
+    {
+        var dataDir = fs.GetWorknetDataDirectory(filename);
+        if (fs.Directory.Exists(dataDir))
+            return dataDir;
+
+        var legacyDir = fs.Path.Combine(fs.Path.GetDirectoryName(fs.Path.GetFullPath(filename))!, LegacyDataDirectoryName);
+        if (!fs.Path.GetFullPath(legacyDir).Equals(fs.Path.GetFullPath(dataDir), StringComparison.Ordinal)
+            && fs.Directory.Exists(legacyDir))
+        {
+            throw new Exception(
+                $"Cannot locate data directory {dataDir}. A legacy shared data directory exists at {legacyDir}, " +
+                $"but its owner cannot be determined automatically. If it belongs to {fs.Path.GetFileName(filename)}, " +
+                $"stop any running worknet and manually move (not copy) it to {dataDir}.");
+        }
+
+        throw new Exception($"Cannot locate data directory {dataDir}");
     }
 
     public static async Task<WorknetFile> LoadWorknetAsync(this IFileSystem fs, string filename)

@@ -54,9 +54,7 @@ partial class RunCommand
         try
         {
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
-            var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir))
-                throw new Exception($"Cannot locate data directory {dataDir}");
+            var dataDir = fs.GetExistingWorknetDataDirectory(filename);
 
             ValidatePorts(RpcPort, TcpPort);
 

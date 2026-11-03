@@ -109,8 +109,8 @@ namespace NeoExpress.Commands
                         continue;
 
                     var batchApp = new CommandLineApplication<BatchFileCommands>();
-                    batchApp.UseInvariantValueParsing();
                     batchApp.Conventions.UseDefaultConventions();
+                    batchApp.UseInvariantValueParsing();
 
                     var pr = batchApp.Parse(args);
 

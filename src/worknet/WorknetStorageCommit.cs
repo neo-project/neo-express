@@ -79,7 +79,13 @@ static class WorknetStorageCommit
 
     static void Attempt(Action action, List<Exception> errors)
     {
-        try { action(); }
-        catch (Exception ex) { errors.Add(ex); }
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(ex);
+        }
     }
 }

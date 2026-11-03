@@ -159,14 +159,26 @@ class CreateCommand
 
     void TryDeleteFile(string path)
     {
-        try { if (fs.File.Exists(path)) fs.File.Delete(path); }
-        catch (Exception) { }
+        try
+        {
+            if (fs.File.Exists(path))
+                fs.File.Delete(path);
+        }
+        catch (Exception)
+        {
+        }
     }
 
     void TryDeleteDirectory(string path)
     {
-        try { if (fs.Directory.Exists(path)) fs.Directory.Delete(path, true); }
-        catch (Exception) { }
+        try
+        {
+            if (fs.Directory.Exists(path))
+                fs.Directory.Delete(path, true);
+        }
+        catch (Exception)
+        {
+        }
     }
 
     internal static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)

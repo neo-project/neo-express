@@ -89,6 +89,9 @@ class CreateCommand
             if (fs.Directory.Exists(dataDir) && !Force)
                 throw new Exception($"{dataDir} already exists");
             fs.EnsureLegacyDataNotShared(filename, dataDir);
+            var leftovers = WorknetStorageCommit.FindLeftoverBackups(fs, filename, dataDir);
+            if (leftovers.Count > 0)
+                throw new Exception(WorknetStorageCommit.DescribeLeftoverBackups(leftovers, filename, dataDir));
 
             console.WriteLine($"Retrieving branch information from {RpcUri}");
             using var rpcClient = new RpcClient(uri);
@@ -128,6 +131,7 @@ class CreateCommand
                     InitializeStore(trackStore, Gas, new[] { consensusAccount }, branchInfo.ProtocolSettings);
                 }
 
+                fs.WriteWorknetOwnerMarker(tempData, filename);
                 WorknetStorageCommit.Commit(fs, Force, filename, dataDir, tempFile, tempData, backupFile, backupData);
                 committed = true;
             }
@@ -140,8 +144,8 @@ class CreateCommand
                 }
             }
 
-            TryDeleteFile(backupFile);
-            TryDeleteDirectory(backupData);
+            if (!(TryDeleteFile(backupFile) & TryDeleteDirectory(backupData)))
+                console.WriteLine($"Warning: could not delete the backup of the previous worknet ({backupFile}, {backupData}). Delete it manually.");
 
             console.WriteLine($"Created {filename}");
             console.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
@@ -157,27 +161,31 @@ class CreateCommand
 
     internal const decimal DEFAULT_GAS_SEED = 10_000m;
 
-    void TryDeleteFile(string path)
+    bool TryDeleteFile(string path)
     {
         try
         {
             if (fs.File.Exists(path))
                 fs.File.Delete(path);
+            return true;
         }
         catch (Exception)
         {
+            return false;
         }
     }
 
-    void TryDeleteDirectory(string path)
+    bool TryDeleteDirectory(string path)
     {
         try
         {
             if (fs.Directory.Exists(path))
                 fs.Directory.Delete(path, true);
+            return true;
         }
         catch (Exception)
         {
+            return false;
         }
     }
 

@@ -69,6 +69,32 @@ public class WorknetStorageIntegrationTests : IDisposable
     }
 
     [Fact]
+    public void ScenarioE_force_on_named_worknet_leaves_default_legacy_data_unchanged()
+    {
+        var def = Create("default.neo-worknet", "D");
+        var named = Create("testnet.neo-worknet", "T");
+        File.WriteAllText(Path.Combine(fs.GetWorknetDataDirectory(def), ".worknet-owner"), "default.neo-worknet");
+
+        fs.EnsureLegacyDataNotShared(named, fs.GetWorknetDataDirectory(named));
+        Replace(named, "T2", force: true);
+
+        Read(fs.GetWorknetDataDirectory(def)).Should().Be("D");
+        Read(fs.GetWorknetDataDirectory(named)).Should().Be("T2");
+    }
+
+    [Fact]
+    public void Force_on_default_is_refused_when_legacy_data_is_ambiguous_and_data_is_untouched()
+    {
+        var def = Create("default.neo-worknet", "D");
+        File.WriteAllText(Path.Combine(root, "testnet.neo-worknet"), "legacy config without own data");
+
+        var act = () => fs.EnsureLegacyDataNotShared(def, fs.GetWorknetDataDirectory(def));
+
+        act.Should().Throw<Exception>().WithMessage("*may belong to another worknet*");
+        Read(fs.GetWorknetDataDirectory(def)).Should().Be("D");
+    }
+
+    [Fact]
     public void ScenarioA_worknets_in_same_directory_have_isolated_databases()
     {
         var a = Create("a.neo-worknet", "A");

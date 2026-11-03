@@ -33,6 +33,9 @@ static class WorknetStorageCommit
         if (fs.Directory.Exists(dataDir) && fs.DirectoryInfo.New(dataDir).Attributes.HasFlag(FileAttributes.ReparsePoint))
             throw new IOException($"{dataDir} is a symbolic link or reparse point and will not be replaced");
 
+        if (!OperatingSystem.IsWindows() && fs.File.Exists(filename))
+            fs.File.SetUnixFileMode(tempFile, fs.File.GetUnixFileMode(filename));
+
         var movedData = false;
         var movedFile = false;
         var placedData = false;

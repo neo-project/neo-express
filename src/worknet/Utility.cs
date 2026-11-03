@@ -184,6 +184,12 @@ static class Utility
 
     public static void SaveWorknetFile(this IFileSystem fs, string filename, Uri uri, BranchInfo branch, ToolkitWallet wallet)
     {
+        // the file holds unencrypted private keys: create it owner-only before any content is written
+        if (!OperatingSystem.IsWindows())
+        {
+            fs.File.Create(filename).Dispose();
+            fs.File.SetUnixFileMode(filename, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
         using var stream = fs.File.Open(filename, FileMode.Create, FileAccess.Write);
         using var textWriter = new StreamWriter(stream);
         using var writer = new JsonTextWriter(textWriter);

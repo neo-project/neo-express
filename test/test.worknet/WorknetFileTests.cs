@@ -276,6 +276,33 @@ public class WorknetFileTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public void Commit_preserves_restrictive_permissions_of_replaced_config()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes do not exist on Windows; covered by the Linux/macOS CI jobs
+        var root = NewRoot();
+        try
+        {
+            var fs = new FileSystem();
+            var file = Path.Combine(root, "test.neo-worknet");
+            var data = file + ".data";
+            var stagedFile = file + ".tmp";
+            var stagedData = data + ".tmp";
+            File.WriteAllText(file, "original");
+            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            File.WriteAllText(stagedFile, "replacement");
+            File.SetUnixFileMode(stagedFile, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+            Directory.CreateDirectory(stagedData);
+
+            WorknetStorageCommit.Commit(fs, true, file, data, stagedFile, stagedData, file + ".bak", data + ".bak");
+
+            File.ReadAllText(file).Should().Be("replacement");
+            File.GetUnixFileMode(file).Should().Be(UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     static bool IsCaseSensitive(string dir)
     {
         var probe = Path.Combine(dir, "case-probe");

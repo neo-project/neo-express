@@ -67,6 +67,11 @@ namespace Neo.BlockchainToolkit
                 return ProtocolSettings.Default;
             }
 
+            if (chain.ConsensusNodes is null)
+            {
+                throw new ArgumentException("chain consensus-nodes section is missing", nameof(chain));
+            }
+
             var settings = ProtocolSettings.Default with
             {
                 Network = chain.Network,
@@ -93,7 +98,27 @@ namespace Neo.BlockchainToolkit
             return settings;
 
             static ECPoint GetPublicKey(ExpressConsensusNode node)
-                => new KeyPair(node.Wallet.Accounts.Select(a => a.PrivateKey).Distinct().Single().HexToBytes()).PublicKey;
+            {
+                var wallet = node?.Wallet
+                    ?? throw new ArgumentException("consensus node wallet is missing", nameof(chain));
+                var accounts = wallet.Accounts
+                    ?? throw new ArgumentException($"{wallet.Name} consensus node wallet accounts section is missing", nameof(chain));
+                if (accounts.Any(a => a is null))
+                {
+                    throw new ArgumentException($"{wallet.Name} consensus node wallet has a null account entry", nameof(chain));
+                }
+
+                var privateKeys = accounts.Select(a => a!.PrivateKey).Distinct().ToList();
+                if (privateKeys.Count != 1)
+                {
+                    throw new ArgumentException(privateKeys.Count == 0
+                        ? $"{wallet.Name} consensus node wallet has no private key"
+                        : $"{wallet.Name} consensus node wallet has more than one private key",
+                        nameof(chain));
+                }
+
+                return new KeyPair(privateKeys[0].HexToBytes()).PublicKey;
+            }
         }
 
         static ProtocolSettings ApplyProtocolSettings(ExpressChain chain, ProtocolSettings settings)

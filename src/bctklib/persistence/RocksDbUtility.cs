@@ -195,9 +195,16 @@ namespace Neo.BlockchainToolkit.Persistence
                 ExtractCheckpoint(checkPointArchive, restorePath);
                 return metadata;
             }
-            catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException or FormatException or OverflowException)
+            // InvalidOperationException (missing ADDRESS entry) and malformed archive errors
+            // must be wrapped in the friendly message. Keep extraction I/O failures as
+            // IOExceptions so callers can still distinguish them from invalid metadata.
+            catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException or FormatException or OverflowException or InvalidOperationException)
             {
                 throw new Exception($"Checkpoint {checkPointArchive} is not a valid checkpoint archive: {ex.Message}");
+            }
+            catch (IOException ex)
+            {
+                throw new IOException($"Checkpoint {checkPointArchive} is not a valid checkpoint archive: {ex.Message}", ex);
             }
 
 

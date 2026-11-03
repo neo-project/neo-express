@@ -122,15 +122,16 @@ namespace Neo.BlockchainToolkit.Models
         {
             var value = GetStringValue(token, "sequence-points") ?? throw new FormatException("invalid Sequence Point token");
             var match = spRegex.Match(value);
-            if (match.Groups.Count != 7)
+            if (match.Groups.Count != 7
+                || !int.TryParse(match.Groups[1].Value, out var address)
+                || !int.TryParse(match.Groups[2].Value, out var document)
+                || !int.TryParse(match.Groups[3].Value, out var startLine)
+                || !int.TryParse(match.Groups[4].Value, out var startColumn)
+                || !int.TryParse(match.Groups[5].Value, out var endLine)
+                || !int.TryParse(match.Groups[6].Value, out var endColumn))
                 throw new FormatException($"Invalid Sequence Point \"{value}\"");
 
-            var address = int.Parse(match.Groups[1].Value);
-            var document = int.Parse(match.Groups[2].Value);
-            var start = (int.Parse(match.Groups[3].Value), int.Parse(match.Groups[4].Value));
-            var end = (int.Parse(match.Groups[5].Value), int.Parse(match.Groups[6].Value));
-
-            return new SequencePoint(address, document, start, end);
+            return new SequencePoint(address, document, (startLine, startColumn), (endLine, endColumn));
         }
 
         static Method ParseMethod(JToken token)
@@ -159,10 +160,14 @@ namespace Neo.BlockchainToolkit.Models
         static (int, int) ParseRange(JToken? token)
         {
             var range = GetStringValue(token, "range") ?? throw new FormatException("Missing range");
-            var values = range.Split('-') ?? throw new FormatException($"Invalid range '{range}'");
-            return values.Length == 2
-                ? (int.Parse(values[0]), int.Parse(values[1]))
-                : throw new FormatException($"Invalid range '{range}'");
+            var values = range.Split('-');
+            if (values.Length != 2
+                || !int.TryParse(values[0], out var start)
+                || !int.TryParse(values[1], out var end))
+            {
+                throw new FormatException($"Invalid range '{range}'");
+            }
+            return (start, end);
         }
 
         static string? GetStringValue(JToken? token, string fieldName)

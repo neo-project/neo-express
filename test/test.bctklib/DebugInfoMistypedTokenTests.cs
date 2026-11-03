@@ -262,5 +262,77 @@ namespace test.bctklib
 
             Assert.Throws<FormatException>(() => DebugInfo.Parse(json));
         }
+
+        // Numeric fields beyond Int32 range must be rejected with a clean
+        // FormatException rather than a raw OverflowException from int.Parse.
+        [Fact]
+        public void cant_parse_sequence_point_address_overflow()
+        {
+            var json = new JObject
+            {
+                ["hash"] = TEST_HASH,
+                ["methods"] = new JArray(new JObject
+                {
+                    ["id"] = "0",
+                    ["name"] = "Neo.Express,Main",
+                    ["range"] = "0-1",
+                    ["sequence-points"] = new JArray("99999999999999999999[1]10:5-10:20"),
+                }),
+            };
+
+            Assert.Throws<FormatException>(() => DebugInfo.Parse(json));
+        }
+
+        [Fact]
+        public void cant_parse_sequence_point_end_column_overflow()
+        {
+            var json = new JObject
+            {
+                ["hash"] = TEST_HASH,
+                ["methods"] = new JArray(new JObject
+                {
+                    ["id"] = "0",
+                    ["name"] = "Neo.Express,Main",
+                    ["range"] = "0-1",
+                    ["sequence-points"] = new JArray("10[1]10:5-10:99999999999999999999"),
+                }),
+            };
+
+            Assert.Throws<FormatException>(() => DebugInfo.Parse(json));
+        }
+
+        [Fact]
+        public void cant_parse_method_range_start_overflow()
+        {
+            var json = new JObject
+            {
+                ["hash"] = TEST_HASH,
+                ["methods"] = new JArray(new JObject
+                {
+                    ["id"] = "0",
+                    ["name"] = "Neo.Express,Main",
+                    ["range"] = "99999999999999999999-1",
+                }),
+            };
+
+            Assert.Throws<FormatException>(() => DebugInfo.Parse(json));
+        }
+
+        [Fact]
+        public void cant_parse_method_range_end_overflow()
+        {
+            var json = new JObject
+            {
+                ["hash"] = TEST_HASH,
+                ["methods"] = new JArray(new JObject
+                {
+                    ["id"] = "0",
+                    ["name"] = "Neo.Express,Main",
+                    ["range"] = "0-99999999999999999999",
+                }),
+            };
+
+            Assert.Throws<FormatException>(() => DebugInfo.Parse(json));
+        }
     }
 }

@@ -37,11 +37,11 @@ namespace Neo.BlockchainToolkit.Models
 
         public static BranchInfo Parse(JObject json)
         {
-            var network = json.Value<uint>("network");
-            var addressVersion = json.Value<byte>("address-version");
-            var index = json.Value<uint>("index");
-            var indexHash = UInt256.Parse(json.Value<string>("index-hash"));
-            var rootHash = UInt256.Parse(json.Value<string>("root-hash"));
+            var network = GetValidatedValue<uint>(json["network"], "network");
+            var addressVersion = GetValidatedValue<byte>(json["address-version"], "address-version");
+            var index = GetValidatedValue<uint>(json["index"], "index");
+            var indexHash = UInt256.Parse(GetValidatedValue<string>(json["index-hash"], "index-hash") ?? "");
+            var rootHash = UInt256.Parse(GetValidatedValue<string>(json["root-hash"], "root-hash") ?? "");
             var hardforks = ParseHardforks(json["hardforks"] as JObject);
 
             var contracts = new List<ContractInfo>();
@@ -50,9 +50,9 @@ namespace Neo.BlockchainToolkit.Models
             {
                 foreach (var value in contractsJson)
                 {
-                    var id = value.Value<int>("id");
-                    var hash = UInt160.Parse(value.Value<string>("hash"));
-                    var name = value.Value<string>("name") ?? "";
+                    var id = GetValidatedValue<int>(value["id"], "id");
+                    var hash = UInt160.Parse(GetValidatedValue<string>(value["hash"], "hash") ?? "");
+                    var name = GetValidatedValue<string>(value["name"], "name") ?? "";
                     contracts.Add(new ContractInfo(id, hash, name));
                 }
             }
@@ -102,7 +102,30 @@ namespace Neo.BlockchainToolkit.Models
             return json.Properties()
                 .ToDictionary(
                     static p => Enum.Parse<Hardfork>(p.Name, ignoreCase: true),
-                    static p => p.Value.Value<uint>());
+                    static p => GetValidatedValue<uint>(p.Value, p.Name));
+        }
+
+        // Guards JToken.Value<T> reads against wrong-typed tokens (raw
+        // InvalidCastException from non-JValue or non-IConvertible values)
+        // and out-of-range digits (OverflowException), reporting a clean
+        // FormatException naming the offending field instead.
+        static T? GetValidatedValue<T>(JToken? token, string fieldName)
+        {
+            if (token is null)
+            {
+                return default;
+            }
+            if (token is JValue value)
+            {
+                try
+                {
+                    return value.Value<T>();
+                }
+                catch (Exception ex) when (ex is InvalidCastException or OverflowException or FormatException)
+                {
+                }
+            }
+            throw new FormatException($"Invalid {fieldName} value");
         }
 
         static ImmutableDictionary<Hardfork, uint> GetHardforkSettings(IReadOnlyDictionary<Hardfork, uint>? hardforks)

@@ -61,14 +61,14 @@ namespace Neo.BlockchainToolkit.Models
         public static DebugInfo Parse(JObject json)
         {
             var hash = json.TryGetValue("hash", out var hashToken)
-                ? UInt160.Parse(hashToken.Value<string>() ?? "")
+                ? UInt160.Parse(GetStringValue(hashToken, "hash") ?? "")
                 : throw new FormatException("Missing hash value");
 
             var docRoot = json.TryGetValue("document-root", out var docRootToken)
-                ? docRootToken.Value<string>() ?? ""
+                ? GetStringValue(docRootToken, "document-root") ?? ""
                 : "";
 
-            var documents = json["documents"]?.Select(token => token.Value<string>() ?? "").ToArray() ?? Array.Empty<string>();
+            var documents = json["documents"]?.Select(token => GetStringValue(token, "documents") ?? "").ToArray() ?? Array.Empty<string>();
             var events = json["events"]?.Select(ParseEvent).ToArray() ?? Array.Empty<Event>();
             var methods = json["methods"]?.Select(ParseMethod).ToArray() ?? Array.Empty<Method>();
             var staticVars = ParseSlotVariables(json["static-variables"]).ToArray();
@@ -91,7 +91,7 @@ namespace Neo.BlockchainToolkit.Models
 
             static (string name, string type, int? slotIndex) ParseType(JToken token)
             {
-                var value = token.Value<string>() ?? throw new FormatException("invalid type token");
+                var value = GetStringValue(token, "type") ?? throw new FormatException("invalid type token");
                 var values = value.Split(',');
                 if (values.Length == 2)
                 {
@@ -111,7 +111,7 @@ namespace Neo.BlockchainToolkit.Models
 
         static Event ParseEvent(JToken token)
         {
-            var id = token.Value<string>("id") ?? throw new FormatException("Invalid event id");
+            var id = GetStringValue(token, "id", "event id") ?? throw new FormatException("Invalid event id");
             var (@namespace, name) = ParseName(token["name"]);
             var @params = ParseSlotVariables(token["params"]).ToImmutableList();
 
@@ -120,7 +120,7 @@ namespace Neo.BlockchainToolkit.Models
 
         static SequencePoint ParseSequencePoint(JToken token)
         {
-            var value = token.Value<string>() ?? throw new FormatException("invalid Sequence Point token");
+            var value = GetStringValue(token, "sequence-points") ?? throw new FormatException("invalid Sequence Point token");
             var match = spRegex.Match(value);
             if (match.Groups.Count != 7)
                 throw new FormatException($"Invalid Sequence Point \"{value}\"");
@@ -135,9 +135,9 @@ namespace Neo.BlockchainToolkit.Models
 
         static Method ParseMethod(JToken token)
         {
-            var id = token.Value<string>("id") ?? throw new FormatException("Invalid method id");
+            var id = GetStringValue(token, "id", "method id") ?? throw new FormatException("Invalid method id");
             var (@namespace, name) = ParseName(token["name"]);
-            var @return = token.Value<string>("return") ?? "Void";
+            var @return = GetStringValue(token, "return", "return") ?? "Void";
             var @params = ParseSlotVariables(token["params"]).ToArray();
             var variables = ParseSlotVariables(token["variables"]).ToArray();
             var sequencePoints = token["sequence-points"]?.Select(ParseSequencePoint).ToArray()
@@ -149,7 +149,7 @@ namespace Neo.BlockchainToolkit.Models
 
         static (string, string) ParseName(JToken? token)
         {
-            var name = token?.Value<string>() ?? throw new FormatException("Missing name");
+            var name = GetStringValue(token, "name") ?? throw new FormatException("Missing name");
             var values = name.Split(',') ?? throw new FormatException($"Invalid name '{name}'");
             return values.Length == 2
                 ? (values[0], values[1])
@@ -158,11 +158,29 @@ namespace Neo.BlockchainToolkit.Models
 
         static (int, int) ParseRange(JToken? token)
         {
-            var range = token?.Value<string>() ?? throw new FormatException("Missing range");
+            var range = GetStringValue(token, "range") ?? throw new FormatException("Missing range");
             var values = range.Split('-') ?? throw new FormatException($"Invalid range '{range}'");
             return values.Length == 2
                 ? (int.Parse(values[0]), int.Parse(values[1]))
                 : throw new FormatException($"Invalid range '{range}'");
+        }
+
+        static string? GetStringValue(JToken? token, string fieldName)
+        {
+            if (token is null)
+            {
+                return null;
+            }
+            if (token is JValue value)
+            {
+                return value.Value<string>();
+            }
+            throw new FormatException($"Invalid {fieldName} value");
+        }
+
+        static string? GetStringValue(JToken container, string key, string fieldName)
+        {
+            return container is JObject obj ? GetStringValue(obj[key], fieldName) : null;
         }
 
         [Obsolete($"use {nameof(LoadContractDebugInfoAsync)} instead")]

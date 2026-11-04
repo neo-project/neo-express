@@ -172,7 +172,9 @@ namespace Neo.BlockchainToolkit
             var delta = string.IsNullOrEmpty(timestampDelta)
                 ? TimeSpan.Zero
                 : ulong.TryParse(timestampDelta, out var @ulong)
-                    ? TimeSpan.FromSeconds(@ulong)
+                    ? @ulong > (ulong)TimeSpan.MaxValue.TotalSeconds
+                        ? throw new Exception($"Timestamp delta {timestampDelta} is too large")
+                        : TimeSpan.FromSeconds(@ulong)
                     : TimeSpan.TryParse(timestampDelta, out var timeSpan)
                         ? timeSpan
                         : throw new Exception($"Could not parse timestamp delta {timestampDelta}");

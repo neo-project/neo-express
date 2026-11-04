@@ -59,6 +59,13 @@ namespace test.bctklib
 
         static TraceDebugReader Open(byte[] trace) => new(new MemoryStream(trace), leaveOpen: false);
 
+        // A hand-edited .neo-trace whose first record carries an unregistered MessagePack union key
+        // (int32 0xC0000007; valid ITraceDebugRecord union keys are 0-7). Such a record deserializes to
+        // null, which must never be handed back as a valid record. Mirrors the round-8 fuzz repro
+        // (crashes-round8/treplay-1.bin).
+        static byte[] UnregisteredUnionKeyTrace() => Convert.FromHexString(
+            "92D2C000000792CE334F45933592D20000000491A76D00000491A76D696E696D616C");
+
         [Fact]
         public void returns_main_records_in_order_and_absorbs_side_records()
         {
@@ -161,6 +168,17 @@ namespace test.bctklib
             Assert.Equal(100, trace.GasConsumed);
             Assert.Single(trace.StackFrames);
             Assert.Equal(0, trace.StackFrames[0].InstructionPointer);
+        }
+
+        [Fact]
+        public void unregistered_union_key_throws_invalid_data_instead_of_returning_null()
+        {
+            using var reader = Open(UnregisteredUnionKeyTrace());
+
+            // Honor the [MaybeNullWhen(false)] contract: a corrupt/unrecognized union key must surface as a
+            // clean InvalidDataException, never as a true-with-null return (which crashes consumers with an
+            // opaque NullReferenceException).
+            Assert.Throws<InvalidDataException>(() => { reader.TryGetNext(out _); });
         }
 
         [Fact]

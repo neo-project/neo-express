@@ -130,7 +130,9 @@ namespace NeoDebug.Neo3
                     FaultException = stepBack ? null : new Exception(fault.Exception);
                     break;
                 default:
-                    throw new InvalidDataException($"Unexpected trace record {record.GetType().Name}");
+                    // Defense-in-depth: the reader rejects null records, but never dereference record here or the
+                    // intended friendly error would itself crash with a NullReferenceException.
+                    throw new InvalidDataException($"Unexpected trace record {record?.GetType().Name ?? "null"}");
             }
         }
 

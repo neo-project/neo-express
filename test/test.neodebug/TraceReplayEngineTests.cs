@@ -70,6 +70,24 @@ namespace test.neodebug
 
         static TraceReplayEngine Open() => new(new TraceDebugReader(new MemoryStream(SampleTrace())));
 
+        // A hand-edited .neo-trace whose first record carries an unregistered MessagePack union key
+        // (int32 0xC0000007; valid ITraceDebugRecord union keys are 0-7). Deserializes to null. Mirrors the
+        // round-8 fuzz repro (crashes-round8/treplay-1.bin) that crashed debugger session launch.
+        static byte[] UnregisteredUnionKeyTrace() => Convert.FromHexString(
+            "92D2C000000792CE334F45933592D20000000491A76D00000491A76D696E696D616C");
+
+        [Fact]
+        public void opening_a_trace_with_an_unrecognized_record_throws_invalid_data_not_nre()
+        {
+            // Regression (round-8 fuzz): a corrupt .neo-trace with an unregistered union key used to reach
+            // ProcessRecord's default arm as a null record and crash session launch with an opaque
+            // NullReferenceException. It must surface as a clean InvalidDataException instead.
+            Assert.Throws<InvalidDataException>(() =>
+            {
+                using var engine = new TraceReplayEngine(new TraceDebugReader(new MemoryStream(UnregisteredUnionKeyTrace())));
+            });
+        }
+
         [Fact]
         public void opens_positioned_at_the_entry_step()
         {

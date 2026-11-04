@@ -97,6 +97,11 @@ namespace Neo.BlockchainToolkit.TraceDebug
                         Network = protocol.Network;
                         AddressVersion = protocol.AddressVersion;
                         break;
+                    case null:
+                        // An unregistered MessagePack union key (or a malformed record) deserializes to null.
+                        // Honor the [MaybeNullWhen(false)] contract instead of returning true with a null record,
+                        // which would crash consumers with an opaque NullReferenceException.
+                        throw new InvalidDataException("The trace contains an unrecognized or malformed record.");
                     default:
                         _previous.Push(record);
                         return true;

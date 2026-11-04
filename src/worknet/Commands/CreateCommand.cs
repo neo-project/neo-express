@@ -82,7 +82,7 @@ class CreateCommand
                 throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
             }
 
-            var filename = fs.ResolveWorkNetFileName(Output);
+            var filename = fs.GetCanonicalWorknetFilePath(fs.ResolveWorkNetFileName(Output));
             if (fs.File.Exists(filename) && !Force)
                 throw new Exception($"{filename} already exists");
             var dataDir = fs.GetWorknetDataDirectory(filename);

@@ -58,6 +58,15 @@ static class Utility
 
     const string OwnerMarkerFileName = ".worknet-owner";
 
+    // Path of the worknet file using the spelling stored on disk when it already exists, so a
+    // replacement keeps the existing file name (and therefore its data directory resolution).
+    public static string GetCanonicalWorknetFilePath(this IFileSystem fs, string filename)
+    {
+        var fullPath = fs.Path.GetFullPath(filename);
+        var dirname = fs.Path.GetDirectoryName(fullPath) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
+        return fs.Path.Combine(dirname, GetCanonicalFileName(fs, dirname, fs.Path.GetFileName(fullPath)));
+    }
+
     // Records which worknet file owns a data directory. Written by `create` so that the shared
     // "data" directory of the default worknet can be told apart from legacy, unowned data.
     public static void WriteWorknetOwnerMarker(this IFileSystem fs, string dataDir, string filename)

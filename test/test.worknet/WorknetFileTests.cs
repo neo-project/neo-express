@@ -303,6 +303,34 @@ public class WorknetFileTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public void Force_replacement_keeps_existing_default_config_spelling()
+    {
+        var root = NewRoot();
+        try
+        {
+            var fs = new FileSystem();
+            var existing = Path.Combine(root, "default.neo-worknet");
+            File.WriteAllText(existing, "x");
+            var typed = Path.Combine(root, "DEFAULT.neo-worknet");
+
+            var canonical = fs.GetCanonicalWorknetFilePath(typed);
+
+            if (IsCaseSensitive(root))
+            {
+                canonical.Should().Be(typed);
+                fs.GetWorknetDataDirectory(canonical).Should().Be(Path.Combine(root, "DEFAULT.neo-worknet.data"));
+            }
+            else
+            {
+                canonical.Should().Be(existing);
+                fs.GetWorknetDataDirectory(canonical).Should().Be(Path.Combine(root, "data"));
+                fs.GetWorknetDataDirectory(canonical).Should().Be(fs.GetWorknetDataDirectory(typed));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     static bool IsCaseSensitive(string dir)
     {
         var probe = Path.Combine(dir, "case-probe");

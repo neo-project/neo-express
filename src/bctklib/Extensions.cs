@@ -15,6 +15,7 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
@@ -104,6 +105,29 @@ namespace Neo.BlockchainToolkit
             {
                 return path.Replace('\\', '/');
             }
+        }
+
+        // Guards JToken.Value<T> reads against wrong-typed tokens (raw
+        // InvalidCastException from non-JValue or non-IConvertible values)
+        // and out-of-range digits (OverflowException), reporting a clean
+        // FormatException naming the offending field instead.
+        public static T? GetValidatedValue<T>(JToken? token, string fieldName)
+        {
+            if (token is null)
+            {
+                return default;
+            }
+            if (token is JValue value)
+            {
+                try
+                {
+                    return value.Value<T>();
+                }
+                catch (Exception ex) when (ex is InvalidCastException or OverflowException or FormatException)
+                {
+                }
+            }
+            throw new FormatException($"Invalid {fieldName} value");
         }
 
         public static ReadOnlySpan<byte> AsSpan(this Script script) => ((ReadOnlyMemory<byte>)script).Span;

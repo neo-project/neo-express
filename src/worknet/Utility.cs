@@ -51,7 +51,7 @@ static class Utility
         using var textReader = new StreamReader(stream);
         using var reader = new JsonTextReader(textReader);
         var json = await JObject.LoadAsync(reader).ConfigureAwait(false);
-        var uri = GetValidatedValue<string>(json["uri"], "uri") ?? throw new JsonException("uri");
+        var uri = Neo.BlockchainToolkit.Extensions.GetValidatedValue<string>(json["uri"], "uri") ?? throw new JsonException("uri");
         var branchInfo = BranchInfo.Parse(json["branch-info"] as JObject ?? throw new JsonException("branch-info"));
         var wallet = ToolkitWallet.Parse(json["consensus-wallet"] as JObject ?? throw new JsonException("consensus-wallet"), branchInfo.ProtocolSettings);
 
@@ -61,31 +61,8 @@ static class Utility
         var rpcPortToken = json["consensus-nodes"]?.FirstOrDefault()?["rpc-port"];
         var rpcPort = rpcPortToken is null
             ? WorknetFile.DefaultRpcPort
-            : GetValidatedValue<ushort>(rpcPortToken, "rpc-port");
+            : Neo.BlockchainToolkit.Extensions.GetValidatedValue<ushort>(rpcPortToken, "rpc-port");
         return new WorknetFile(new Uri(uri), branchInfo, wallet) { RpcPort = rpcPort };
-    }
-
-    // Guards JToken.Value<T> reads against wrong-typed tokens (raw
-    // InvalidCastException from non-JValue or non-IConvertible values)
-    // and out-of-range digits (OverflowException), reporting a clean
-    // FormatException naming the offending field instead.
-    static T? GetValidatedValue<T>(JToken? token, string fieldName)
-    {
-        if (token is null)
-        {
-            return default;
-        }
-        if (token is JValue value)
-        {
-            try
-            {
-                return value.Value<T>();
-            }
-            catch (Exception ex) when (ex is InvalidCastException or OverflowException or FormatException)
-            {
-            }
-        }
-        throw new FormatException($"Invalid {fieldName} value");
     }
 
     public static void SaveWorknetFile(this IFileSystem fs, string filename, Uri uri, BranchInfo branch, ToolkitWallet wallet)

@@ -78,8 +78,11 @@ namespace NeoExpress.Commands
             }
             finally
             {
-                TryDelete(walletTemp);
-                TryDelete(configTemp);
+                foreach (var temp in new[] { walletTemp, configTemp })
+                {
+                    if (!TryDelete(temp))
+                        warnings?.WriteLine($"Warning: temporary file could not be deleted and may contain sensitive data: {temp}");
+                }
             }
         }
 
@@ -126,7 +129,10 @@ namespace NeoExpress.Commands
             {
                 var unrestored = new List<string>();
                 foreach (var path in placed)
-                    TryDelete(path);
+                {
+                    if (!TryDelete(path))
+                        unrestored.Add($"'{path}' (new file could not be removed)");
+                }
                 foreach (var (path, backup) in movedAside)
                 {
                     try
@@ -141,7 +147,7 @@ namespace NeoExpress.Commands
 
                 if (unrestored.Count > 0)
                     throw new System.IO.IOException(
-                        $"Export failed and rollback was incomplete. Original files preserved at: {string.Join(", ", unrestored)}", ex);
+                        $"Export failed and rollback was incomplete. Files requiring manual attention: {string.Join(", ", unrestored)}", ex);
                 throw;
             }
 

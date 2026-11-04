@@ -339,6 +339,70 @@ public class ExportCommandTests
     }
 
     [Fact]
+    public void failed_removal_of_new_wallet_is_reported_when_no_original_existed()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var chain = ExpressChainManagerFactory.CreateChain(1, null);
+            var node = chain.ConsensusNodes[0];
+            var wallet = Path.Combine(directory, $"{node.Wallet.Name}.wallet.json");
+            var config = Path.Combine(directory, $"{node.Wallet.Name}.config.json");
+            var command = NewCommand(file =>
+            {
+                file.Setup(f => f.Move(Moq.It.Is<string>(s => s.EndsWith(".tmp")), config))
+                    .Throws(new IOException("simulated move failure"));
+                file.Setup(f => f.Delete(wallet))
+                    .Throws(new IOException("simulated delete failure"));
+            });
+
+            var action = () => command.ExportNode(chain.GetProtocolSettings(), node, directory, "pw");
+
+            var ex = action.Should().Throw<IOException>().Which;
+            ex.Message.Should().Contain(wallet);
+            ex.InnerException!.Message.Should().Be("simulated move failure");
+            File.Exists(wallet).Should().BeTrue();
+            File.Exists(config).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void undeletable_temporary_files_are_reported()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var chain = ExpressChainManagerFactory.CreateChain(1, null);
+            var node = chain.ConsensusNodes[0];
+            var config = Path.Combine(directory, $"{node.Wallet.Name}.config.json");
+            var command = NewCommand(file =>
+            {
+                file.Setup(f => f.Move(Moq.It.Is<string>(s => s.EndsWith(".tmp")), config))
+                    .Throws(new IOException("simulated move failure"));
+                file.Setup(f => f.Delete(Moq.It.Is<string>(p => p.EndsWith(".tmp"))))
+                    .Throws(new IOException("locked"));
+            });
+            using var warnings = new StringWriter();
+
+            var action = () => command.ExportNode(chain.GetProtocolSettings(), node, directory, "secret-pw", warnings);
+
+            action.Should().Throw<IOException>().WithMessage("simulated move failure");
+            var leftovers = Directory.EnumerateFiles(directory, "*.tmp").ToList();
+            leftovers.Should().ContainSingle();
+            warnings.ToString().Should().Contain(leftovers[0]);
+            warnings.ToString().Should().NotContain("secret-pw");
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
     public void export_writes_resolved_protocol_configuration_for_neo_cli()
     {
         var chain = ExpressChainManagerFactory.CreateChain(1, null);

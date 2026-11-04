@@ -16,6 +16,15 @@ using Xunit;
 
 namespace test.workflowvalidation;
 
+// The gate test constructs an ExpressPersistencePlugin, which registers itself in
+// the global plugin list and subscribes to the static Blockchain.Committing /
+// Committed events. If it runs in parallel with tests that build a NeoSystem (for
+// example the OfflineNode workflow tests), those systems load this plugin and fire
+// its handlers, corrupting the deterministic persisting/checkpointing timing the
+// test relies on. Run this collection without parallelization to isolate it.
+[CollectionDefinition("ExpressPersistencePluginGate", DisableParallelization = true)]
+public sealed class ExpressPersistencePluginGateCollection { }
+
 // The persist gate must guarantee two invariants: checkpoint actions never
 // overlap each other, and a block persist cycle is never admitted while a
 // checkpoint action is in flight (a checkpoint taken after a block is persisted
@@ -24,6 +33,7 @@ namespace test.workflowvalidation;
 // schedule, so the interleaving is deterministic. The only sleeps are bounded
 // windows in which a gate breach - if the bug is present - shows up immediately,
 // because the buggy admission does not block at all.
+[Collection("ExpressPersistencePluginGate")]
 public class ExpressPersistencePluginGateTests : IDisposable
 {
     static readonly TimeSpan EnterTimeout = TimeSpan.FromSeconds(5);

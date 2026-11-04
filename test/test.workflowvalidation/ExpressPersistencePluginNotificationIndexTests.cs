@@ -27,6 +27,9 @@ using Xunit;
 
 namespace test.workflowvalidation;
 
+[CollectionDefinition("ExpressPersistencePluginNotificationIndex", DisableParallelization = true)]
+public sealed class ExpressPersistencePluginNotificationIndexCollection { }
+
 // StageApplicationLogs persists notifications under the key
 // (blockIndex, txIndex, j) where txIndex is the transaction's position within
 // block.Transactions. ExpressRpcServerPlugin.GetTransfers returns that txIndex
@@ -44,6 +47,7 @@ namespace test.workflowvalidation;
 // ApplicationEngine (HALT/FAULT from a real RET/THROW execution), with
 // notifications installed as real NotifyEventArgs instances in the engine's
 // private notifications list.
+[Collection("ExpressPersistencePluginNotificationIndex")]
 public class ExpressPersistencePluginNotificationIndexTests
 {
     const BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;

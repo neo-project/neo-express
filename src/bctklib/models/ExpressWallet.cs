@@ -20,6 +20,10 @@ namespace Neo.BlockchainToolkit.Models
         [JsonProperty("accounts")]
         public List<ExpressWalletAccount> Accounts { get; set; } = new List<ExpressWalletAccount>();
 
+        // Newtonsoft.Json assigns null to Accounts for "accounts": null and
+        // deserializes "accounts": [null] into a list holding a null element, so
+        // both null guards are needed to keep a malformed chain file from
+        // throwing. FirstOrDefault keeps 2+ is-default accounts from throwing too.
         [JsonIgnore]
         public ExpressWalletAccount? DefaultAccount => Accounts?.FirstOrDefault(a => a?.IsDefault == true);
     }

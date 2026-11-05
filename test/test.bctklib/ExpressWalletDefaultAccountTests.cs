@@ -120,9 +120,11 @@ public class ExpressWalletDefaultAccountTests
         chain.CreateGenesisContract().Should().NotBeNull();
     }
 
-    // A missing or null accounts section must be handled the same way. The
-    // Accounts setter defaults to an empty list, but deserialization of an
-    // explicit `null` (or a missing value after the colon) leaves it null.
+    // Accounts is declared non-nullable and its initializer survives a missing
+    // "accounts" key, but Newtonsoft.Json assigns null to it for an explicit
+    // "accounts": null (and for a missing value after the colon), so the lookup
+    // has to tolerate a null list. Verified through IFileSystem.LoadChain and
+    // through a direct JsonConvert.DeserializeObject<ExpressWallet>.
     [Theory]
     [InlineData("{'magic': 42, 'wallets': [{'name': 'genesis', 'accounts': null}]}")]
     [InlineData("{'magic': 42, 'wallets': [{'name': 'genesis', 'accounts':,}]}")]
@@ -145,7 +147,22 @@ public class ExpressWalletDefaultAccountTests
             Wallets = new List<ExpressWallet> { new ExpressWallet { Name = "genesis", Accounts = null! } }
         };
 
+        Func<ExpressWalletAccount?> getDefaultAccount = () => chain.GetWallet("genesis").DefaultAccount;
+
+        getDefaultAccount.Should().NotThrow<ArgumentNullException>();
         chain.GetWallet("genesis").DefaultAccount.Should().BeNull();
+        chain.TryGetDefaultAccount("genesis", out var account).Should().BeFalse();
+        account.Should().BeNull();
+    }
+
+    [Fact]
+    public void missing_accounts_key_keeps_the_empty_list_initializer()
+    {
+        var chain = LoadChain("{'magic': 42, 'wallets': [{'name': 'genesis'}]}");
+        var wallet = chain.GetWallet("genesis");
+
+        wallet.Accounts.Should().NotBeNull().And.BeEmpty();
+        wallet.DefaultAccount.Should().BeNull();
         chain.TryGetDefaultAccount("genesis", out var account).Should().BeFalse();
         account.Should().BeNull();
     }

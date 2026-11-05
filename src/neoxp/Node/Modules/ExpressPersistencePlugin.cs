@@ -38,7 +38,8 @@ namespace NeoExpress.Node
         // plugin stages log writes during Committing and commits them in Committed,
         // after the block itself is already persisted. A RocksDB checkpoint taken on
         // another thread between those two moments would capture the block without its
-        // logs. This gate serializes whole persist cycles against checkpoint creation
+        // logs. This gate serializes whole persist cycles against checkpoint
+        // creation and makes concurrent checkpoint creations mutually exclusive,
         // so a checkpoint always observes either both stores or neither.
         readonly object persistGate = new();
         bool persisting;
@@ -50,13 +51,15 @@ namespace NeoExpress.Node
             Blockchain.Committed += OnCommitted;
         }
 
-        // Runs the action while no persist cycle is in flight and holds new cycles off
-        // until it completes. Only checkpoint creation should use this.
+        // Runs the action while no persist cycle and no other checkpoint action is
+        // in flight, and holds new persist cycles off until it completes. Only
+        // checkpoint creation should use this; a concurrent creator waits its turn,
+        // so at most one checkpoint action runs at a time.
         public void RunOutsidePersistCycle(Action action)
         {
             lock (persistGate)
             {
-                while (persisting)
+                while (persisting || checkpointing)
                     System.Threading.Monitor.Wait(persistGate);
                 checkpointing = true;
             }
@@ -74,7 +77,7 @@ namespace NeoExpress.Node
             }
         }
 
-        void BeginPersistCycle()
+        internal void BeginPersistCycle()
         {
             // If a previous cycle never saw Committed (failed persist), a new Committing
             // supersedes it rather than deadlocking checkpoint creators forever.
@@ -86,7 +89,7 @@ namespace NeoExpress.Node
             }
         }
 
-        void EndPersistCycle()
+        internal void EndPersistCycle()
         {
             lock (persistGate)
             {

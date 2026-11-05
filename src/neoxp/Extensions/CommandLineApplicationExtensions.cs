@@ -20,9 +20,13 @@ namespace NeoExpress
         // host machine's locale. Without this, McMaster parses with the current culture, so
         // on a ',' decimal-separator locale (e.g. de-DE) "1.5" is rejected outright and a
         // value typed as "1,5" is silently read differently than on an en-US machine.
+        // Each subcommand has its own value parsers, so this must be called after the
+        // conventions that create the subcommands (e.g. UseDefaultConventions) have run.
         public static void UseInvariantValueParsing(this CommandLineApplication app)
         {
             app.ValueParsers.ParseCulture = CultureInfo.InvariantCulture;
+            foreach (var subcommand in app.Commands)
+                subcommand.UseInvariantValueParsing();
         }
     }
 }

@@ -21,6 +21,6 @@ namespace Neo.BlockchainToolkit.Models
         public List<ExpressWalletAccount> Accounts { get; set; } = new List<ExpressWalletAccount>();
 
         [JsonIgnore]
-        public ExpressWalletAccount? DefaultAccount => Accounts.SingleOrDefault(a => a.IsDefault);
+        public ExpressWalletAccount? DefaultAccount => Accounts?.FirstOrDefault(a => a?.IsDefault == true);
     }
 }

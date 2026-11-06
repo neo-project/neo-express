@@ -82,12 +82,16 @@ class CreateCommand
                 throw new ArgumentException($"Invalid RpcUri value \"{RpcUri}\"");
             }
 
-            var filename = fs.ResolveWorkNetFileName(Output);
+            var filename = fs.GetCanonicalWorknetFilePath(fs.ResolveWorkNetFileName(Output));
             if (fs.File.Exists(filename) && !Force)
                 throw new Exception($"{filename} already exists");
             var dataDir = fs.GetWorknetDataDirectory(filename);
             if (fs.Directory.Exists(dataDir) && !Force)
                 throw new Exception($"{dataDir} already exists");
+            fs.EnsureLegacyDataNotShared(filename, dataDir);
+            var leftovers = WorknetStorageCommit.FindLeftoverBackups(fs, filename, dataDir);
+            if (leftovers.Count > 0)
+                throw new Exception(WorknetStorageCommit.DescribeLeftoverBackups(leftovers, filename, dataDir));
 
             console.WriteLine($"Retrieving branch information from {RpcUri}");
             using var rpcClient = new RpcClient(uri);
@@ -106,21 +110,42 @@ class CreateCommand
             var consensusAccount = consensusWallet.CreateAccount();
             consensusAccount.IsDefault = true;
 
-            fs.SaveWorknetFile(filename, uri, branchInfo, consensusWallet);
-
-            if (fs.Directory.Exists(dataDir))
+            // Stage the new configuration and database next to the target, then swap them in.
+            // Existing files are only moved aside (never deleted) until the swap has succeeded.
+            // The swap involves several filesystem operations and is not truly atomic; on failure
+            // the previous state is restored on a best-effort basis.
+            var stagingId = Guid.NewGuid().ToString("N");
+            var tempFile = $"{filename}.{stagingId}.tmp";
+            var tempData = $"{dataDir}.{stagingId}.tmp";
+            var backupFile = $"{filename}.{stagingId}.bak";
+            var backupData = $"{dataDir}.{stagingId}.bak";
+            var committed = false;
+            try
             {
-                if (!Force)
-                    throw new Exception($"{dataDir} already exists");
-                fs.Directory.Delete(dataDir, true);
+                fs.SaveWorknetFile(tempFile, uri, branchInfo, consensusWallet);
+                fs.Directory.CreateDirectory(tempData);
+                using (var db = RocksDbUtility.OpenDb(tempData))
+                using (var stateStore = new StateServiceStore(uri, branchInfo, db))
+                using (var trackStore = new PersistentTrackingStore(db, stateStore))
+                {
+                    InitializeStore(trackStore, Gas, new[] { consensusAccount }, branchInfo.ProtocolSettings);
+                }
+
+                fs.WriteWorknetOwnerMarker(tempData, filename);
+                WorknetStorageCommit.Commit(fs, Force, filename, dataDir, tempFile, tempData, backupFile, backupData);
+                committed = true;
             }
-            fs.Directory.CreateDirectory(dataDir);
+            finally
+            {
+                if (!committed)
+                {
+                    TryDeleteFile(tempFile);
+                    TryDeleteDirectory(tempData);
+                }
+            }
 
-            using var db = RocksDbUtility.OpenDb(dataDir);
-            using var stateStore = new StateServiceStore(uri, branchInfo, db);
-            using var trackStore = new PersistentTrackingStore(db, stateStore);
-
-            InitializeStore(trackStore, Gas, new[] { consensusAccount }, branchInfo.ProtocolSettings);
+            if (!(TryDeleteFile(backupFile) & TryDeleteDirectory(backupData)))
+                console.WriteLine($"Warning: could not delete the backup of the previous worknet ({backupFile}, {backupData}). Delete it manually.");
 
             console.WriteLine($"Created {filename}");
             console.WriteLine("    Note: The private keys for the accounts in this file are are *not* encrypted.");
@@ -135,6 +160,34 @@ class CreateCommand
     }
 
     internal const decimal DEFAULT_GAS_SEED = 10_000m;
+
+    bool TryDeleteFile(string path)
+    {
+        try
+        {
+            if (fs.File.Exists(path))
+                fs.File.Delete(path);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    bool TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (fs.Directory.Exists(path))
+                fs.Directory.Delete(path, true);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     internal static void InitializeStore(IStore store, params WalletAccount[] consensusAccounts)
         => InitializeStore(store, DEFAULT_GAS_SEED, consensusAccounts, ProtocolSettings.Default);

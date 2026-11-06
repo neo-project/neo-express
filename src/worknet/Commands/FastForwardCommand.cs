@@ -41,9 +41,7 @@ class FastForwardCommand
             var delta = BlockProducer.ParseTimestampDelta(TimestampDelta);
 
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
-            var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir))
-                throw new Exception($"Cannot locate data directory {dataDir}");
+            var dataDir = fs.GetExistingWorknetDataDirectory(filename);
 
             var key = worknet.ConsensusWallet.GetAccounts().Single().GetKey()
                 ?? throw new Exception("Consensus wallet is missing a private key");

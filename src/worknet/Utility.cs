@@ -39,10 +39,138 @@ static class Utility
     public static string ResolveWorkNetFileName(this IFileSystem fs, string path)
         => fs.ResolveFileName(path, WORKNET_EXTENSION, () => DEFAULT_WORKNET_FILENAME);
 
+    const string LegacyDataDirectoryName = "data";
+
+    // default worknet keeps the legacy "data" directory (backward compatible);
+    // every other worknet file gets its own "<filename>.data" directory so that
+    // worknets sharing a directory never share a RocksDB database
     public static string GetWorknetDataDirectory(this IFileSystem fs, string filename)
     {
-        var dirname = fs.Path.GetDirectoryName(filename) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
-        return fs.Path.Combine(dirname, "data");
+        var fullPath = fs.Path.GetFullPath(filename);
+        var dirname = fs.Path.GetDirectoryName(fullPath) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
+        var name = GetCanonicalFileName(fs, dirname, fs.Path.GetFileName(fullPath));
+
+        if (IsDefaultWorknetName(name))
+            return fs.Path.Combine(dirname, LegacyDataDirectoryName);
+
+        return fs.Path.Combine(dirname, $"{name}.data");
+    }
+
+    const string OwnerMarkerFileName = ".worknet-owner";
+
+    // Path of the worknet file using the spelling stored on disk when it already exists, so a
+    // replacement keeps the existing file name (and therefore its data directory resolution).
+    public static string GetCanonicalWorknetFilePath(this IFileSystem fs, string filename)
+    {
+        var fullPath = fs.Path.GetFullPath(filename);
+        var dirname = fs.Path.GetDirectoryName(fullPath) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
+        return fs.Path.Combine(dirname, GetCanonicalFileName(fs, dirname, fs.Path.GetFileName(fullPath)));
+    }
+
+    // Records which worknet file owns a data directory. Written by `create` so that the shared
+    // "data" directory of the default worknet can be told apart from legacy, unowned data.
+    public static void WriteWorknetOwnerMarker(this IFileSystem fs, string dataDir, string filename)
+        => fs.File.WriteAllText(fs.Path.Combine(dataDir, OwnerMarkerFileName), GetWorknetFileName(fs, filename));
+
+    static string? ReadOwnerMarker(IFileSystem fs, string dataDir)
+    {
+        var path = fs.Path.Combine(dataDir, OwnerMarkerFileName);
+        return fs.File.Exists(path) ? fs.File.ReadAllText(path).Trim() : null;
+    }
+
+    static string GetWorknetFileName(IFileSystem fs, string filename)
+    {
+        var fullPath = fs.Path.GetFullPath(filename);
+        var dirname = fs.Path.GetDirectoryName(fullPath) ?? throw new Exception($"GetDirectoryName({filename}) returned null");
+        return GetCanonicalFileName(fs, dirname, fs.Path.GetFileName(fullPath));
+    }
+
+    // Only the default worknet uses the shared legacy "data" directory. Refuse to use or replace it
+    // when its owner cannot be established: a marker naming another worknet, or no marker while
+    // another worknet file without its own "<name>.data" directory could be its legacy owner.
+    public static void EnsureLegacyDataNotShared(this IFileSystem fs, string filename, string dataDir)
+    {
+        if (!fs.Directory.Exists(dataDir))
+            return;
+        var name = GetWorknetFileName(fs, filename);
+        if (!IsDefaultWorknetName(name))
+            return;
+
+        var owner = ReadOwnerMarker(fs, dataDir);
+        if (owner is not null)
+        {
+            if (owner.Equals(name, StringComparison.Ordinal))
+                return;
+            throw new Exception(
+                $"{dataDir} belongs to {owner}, not {name}, and will not be used or replaced. " +
+                $"If that is wrong, fix the owner recorded in {fs.Path.Combine(dataDir, OwnerMarkerFileName)}.");
+        }
+
+        var dirname = fs.Path.GetDirectoryName(fs.Path.GetFullPath(filename))!;
+        var claimants = fs.Directory.EnumerateFiles(dirname, "*" + WORKNET_EXTENSION)
+            .Select(f => fs.Path.GetFileName(f))
+            .Where(n => !n.Equals(name, StringComparison.Ordinal) && !fs.Directory.Exists(fs.Path.Combine(dirname, $"{n}.data")))
+            .ToList();
+        if (claimants.Count > 0)
+        {
+            throw new Exception(
+                $"{dataDir} may belong to another worknet in this directory ({claimants[0]}) and its owner cannot be determined. " +
+                "It will not be used or replaced automatically. To resolve manually, stop any running worknet and either " +
+                $"write the owner's file name into {fs.Path.Combine(dataDir, OwnerMarkerFileName)} (for example \"{name}\"), " +
+                $"or move the directory to \"<worknet-file-name>.data\" next to its configuration file.");
+        }
+    }
+
+    static bool IsDefaultWorknetName(string name)
+        => name.Equals(DEFAULT_WORKNET_FILENAME, StringComparison.Ordinal);
+
+    // Different spellings of one existing file must share a data directory on case-insensitive
+    // filesystems, while genuinely different files must never share one. Case sensitivity is a
+    // property of the actual volume, so it is never assumed from the OS: the typed spelling is only
+    // mapped to an on-disk name when the filesystem itself resolves the typed path to an existing file.
+    static string GetCanonicalFileName(IFileSystem fs, string dirname, string name)
+    {
+        if (!fs.File.Exists(fs.Path.Combine(dirname, name)))
+            return name;
+
+        string? caseInsensitiveMatch = null;
+        foreach (var path in fs.Directory.EnumerateFiles(dirname))
+        {
+            var candidate = fs.Path.GetFileName(path);
+            if (candidate.Equals(name, StringComparison.Ordinal))
+                return name;
+            if (caseInsensitiveMatch is null && candidate.Equals(name, StringComparison.OrdinalIgnoreCase))
+                caseInsensitiveMatch = candidate;
+        }
+        return caseInsensitiveMatch ?? name;
+    }
+
+    // Resolves the data directory of an existing worknet. A legacy shared "data" directory is never
+    // assumed to belong to a named worknet, since ownership cannot be determined reliably.
+    public static string GetExistingWorknetDataDirectory(this IFileSystem fs, string filename)
+    {
+        var dataDir = fs.GetWorknetDataDirectory(filename);
+        if (fs.Directory.Exists(dataDir))
+        {
+            fs.EnsureLegacyDataNotShared(filename, dataDir);
+            return dataDir;
+        }
+
+        var legacyDir = fs.Path.Combine(fs.Path.GetDirectoryName(fs.Path.GetFullPath(filename))!, LegacyDataDirectoryName);
+        if (!fs.Path.GetFullPath(legacyDir).Equals(fs.Path.GetFullPath(dataDir), StringComparison.Ordinal)
+            && fs.Directory.Exists(legacyDir))
+        {
+            throw new Exception(
+                $"Cannot locate data directory {dataDir}. A legacy shared data directory exists at {legacyDir}, " +
+                $"but its owner cannot be determined automatically. If it belongs to {fs.Path.GetFileName(filename)}, " +
+                $"stop any running worknet and manually move (not copy) it to {dataDir}.");
+        }
+
+        var backups = WorknetStorageCommit.FindLeftoverBackups(fs, filename, dataDir);
+        if (backups.Count > 0)
+            throw new Exception($"Cannot locate data directory {dataDir}. " + WorknetStorageCommit.DescribeLeftoverBackups(backups, filename, dataDir));
+
+        throw new Exception($"Cannot locate data directory {dataDir}");
     }
 
     public static async Task<WorknetFile> LoadWorknetAsync(this IFileSystem fs, string filename)
@@ -65,6 +193,12 @@ static class Utility
 
     public static void SaveWorknetFile(this IFileSystem fs, string filename, Uri uri, BranchInfo branch, ToolkitWallet wallet)
     {
+        // the file holds unencrypted private keys: create it owner-only before any content is written
+        if (!OperatingSystem.IsWindows())
+        {
+            fs.File.Create(filename).Dispose();
+            fs.File.SetUnixFileMode(filename, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
         using var stream = fs.File.Open(filename, FileMode.Create, FileAccess.Write);
         using var textWriter = new StreamWriter(stream);
         using var writer = new JsonTextWriter(textWriter);

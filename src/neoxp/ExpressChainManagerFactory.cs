@@ -127,13 +127,22 @@ namespace NeoExpress
 
             var chain = fileSystem.LoadChain(path);
 
-            if (chain.ConsensusNodes.Count == 0)
+            // Newtonsoft.Json deserializes "consensus-nodes": null from a malformed
+            // chain file into a null list (and "wallet": null into a null Wallet),
+            // so guard before dereferencing to keep the file-validation errors below
+            // instead of a raw NullReferenceException.
+            if (chain.ConsensusNodes is null || chain.ConsensusNodes.Count == 0 || chain.ConsensusNodes[0] is null)
             {
                 throw new Exception($"{path} is not a valid neo-express file: it has no consensus nodes");
             }
 
+            if (chain.Wallets is null)
+            {
+                throw new Exception($"{path} is not a valid neo-express file: its wallets section is missing");
+            }
+
             // validate neo-express file by ensuring stored node zero default account SignatureRedeemScript matches a generated script
-            var account = chain.ConsensusNodes[0].Wallet.DefaultAccount ?? throw new InvalidOperationException("consensus node 0 missing default account");
+            var account = chain.ConsensusNodes[0]?.Wallet?.DefaultAccount ?? throw new InvalidOperationException("consensus node 0 missing default account");
             var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
             var contractScript = account.Contract?.Script.HexToBytes() ?? Array.Empty<byte>();
 

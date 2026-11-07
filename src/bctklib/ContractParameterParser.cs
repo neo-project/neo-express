@@ -577,11 +577,14 @@ namespace Neo.BlockchainToolkit
                 if (string.IsNullOrWhiteSpace(value))
                     throw new FormatException("PublicKey parameter value must be a non-empty string");
 
+                // ArithmeticException is included because a well-formed 33-byte compressed
+                // point whose X coordinate is off-curve makes ECPoint.DecompressPoint report
+                // an arithmetic failure rather than a malformed-input failure.
                 try
                 {
                     return ECPoint.Parse(value, ECCurve.Secp256r1);
                 }
-                catch (Exception ex) when (ex is ArgumentException or FormatException)
+                catch (Exception ex) when (ex is ArgumentException or FormatException or ArithmeticException)
                 {
                     throw new FormatException($"Invalid PublicKey parameter value: {ex.Message}", ex);
                 }

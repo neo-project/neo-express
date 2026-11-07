@@ -37,7 +37,7 @@ namespace Neo.BlockchainToolkit.Models
 
         public static BranchInfo Parse(JObject json)
         {
-            var network = Extensions.GetValidatedValue<uint>(json["network"], "network");
+            var network = json["network"].GetValidatedValue<uint>("network");
             var addressVersion = Extensions.GetValidatedValue<byte>(json["address-version"], "address-version");
             var index = Extensions.GetValidatedValue<uint>(json["index"], "index");
             var indexHash = UInt256.Parse(Extensions.GetValidatedValue<string>(json["index-hash"], "index-hash") ?? "");

@@ -111,7 +111,7 @@ namespace Neo.BlockchainToolkit
         // InvalidCastException from non-JValue or non-IConvertible values)
         // and out-of-range digits (OverflowException), reporting a clean
         // FormatException naming the offending field instead.
-        public static T? GetValidatedValue<T>(JToken? token, string fieldName)
+        public static T? GetValidatedValue<T>(this JToken? token, string fieldName)
         {
             if (token is null)
             {

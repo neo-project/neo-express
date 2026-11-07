@@ -46,30 +46,42 @@ namespace Neo.BlockchainToolkit
 
             var proofs = new HashSet<byte[]>();
 
-            using MemoryStream stream = new(proof, false);
-            using BinaryReader reader = new(stream, Neo.Utility.StrictUTF8);
-
-            var keyBuffer = reader.ReadVarBytes(Node.MaxKeyLength);
-
-            var count = reader.ReadVarInt();
-            for (ulong i = 0; i < count; i++)
+            // The proof bytes arrive from untrusted sources (remote state service
+            // RPC responses), so normalize malformed input exceptions into this
+            // method's existing "Verification failed" contract instead of letting
+            // raw EndOfStreamException (truncated stream) or the MPTTrie library's
+            // "Internal error" InvalidOperationException escape.
+            try
             {
-                proofs.Add(reader.ReadVarBytes());
+                using MemoryStream stream = new(proof, false);
+                using BinaryReader reader = new(stream, Neo.Utility.StrictUTF8);
+
+                var keyBuffer = reader.ReadVarBytes(Node.MaxKeyLength);
+
+                var count = reader.ReadVarInt();
+                for (ulong i = 0; i < count; i++)
+                {
+                    proofs.Add(reader.ReadVarBytes());
+                }
+
+                var value = Trie.VerifyProof(rootHash, keyBuffer, proofs);
+                if (value is null)
+                    throw new Exception("Verification failed");
+
+                // Note, StorageKey.Deserialized was removed in Neo 3.3.0
+                //       so VerifyProof has to deserialize StorageKey directly
+                //       https://github.com/neo-project/neo/issues/2765
+                var key = new StorageKey()
+                {
+                    Id = BinaryPrimitives.ReadInt32LittleEndian(keyBuffer),
+                    Key = keyBuffer.AsMemory(4)
+                };
+                return (key, value);
             }
-
-            var value = Trie.VerifyProof(rootHash, keyBuffer, proofs);
-            if (value is null)
-                throw new Exception("Verification failed");
-
-            // Note, StorageKey.Deserialized was removed in Neo 3.3.0
-            //       so VerifyProof has to deserialize StorageKey directly
-            //       https://github.com/neo-project/neo/issues/2765
-            var key = new StorageKey()
+            catch (Exception ex) when (ex is EndOfStreamException or InvalidOperationException)
             {
-                Id = BinaryPrimitives.ReadInt32LittleEndian(keyBuffer),
-                Key = keyBuffer.AsMemory(4)
-            };
-            return (key, value);
+                throw new Exception("Verification failed", ex);
+            }
         }
     }
 }

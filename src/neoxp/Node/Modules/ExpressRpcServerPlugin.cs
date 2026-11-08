@@ -199,14 +199,18 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JArray? ExpressGetContractStorage(JArray @params)
+        public JArray ExpressGetContractStorage(JArray @params)
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
             var scriptHash = ParseUInt160Param(@params, 0);
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
+            // Return an empty array rather than null for an unknown contract: the
+            // RpcServer framework throws NotSupportedException for null handler
+            // results, and OfflineNode.ListStorages already treats an unknown
+            // contract as an empty storage listing.
             if (contract is null)
-                return null;
+                return new JArray();
 
             var storages = new JArray();
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
@@ -336,7 +340,13 @@ namespace NeoExpress.Node
             var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
-            return tx is null ? null : Convert.ToBase64String(tx.ToArray());
+            // NodeUtility.CreateResponseTx returns null when the oracle contract's
+            // 'verify' execution does not HALT; report a clean error rather than a
+            // null result, which the RpcServer framework rejects with
+            // NotSupportedException.
+            return tx is null
+                ? throw new Exception($"Failed to create oracle response transaction for response id {response.Id}: oracle 'verify' execution did not HALT")
+                : Convert.ToBase64String(tx.ToArray());
         }
 
         const int MAX_NOTIFICATIONS = 100;

@@ -661,11 +661,21 @@ namespace test.bctklib
             using var bothInCallback = new Barrier(2);
             var nestedErrors = new System.Collections.Concurrent.ConcurrentBag<Exception?>();
 
-            Task Run(UInt160 own, UInt160 other) => Task.Run(() => store.PrefetchAsync(own, TestContext.Current.CancellationToken, _ =>
+            Task Run(UInt160 own, UInt160 other)
             {
-                bothInCallback.SignalAndWait(SafetyTimeout).Should().BeTrue();
-                nestedErrors.Add(Record.Exception(() => store.PrefetchAsync(other, TestContext.Current.CancellationToken).GetAwaiter().GetResult()));
-            }), TestContext.Current.CancellationToken);
+                var invoked = 0;
+                return Task.Run(() => store.PrefetchAsync(own, TestContext.Current.CancellationToken, _ =>
+                {
+                    // The callback runs once per page; only the first invocation takes part in the rendezvous.
+                    if (Interlocked.Exchange(ref invoked, 1) == 1)
+                        return;
+                    bothInCallback.SignalAndWait(SafetyTimeout).Should().BeTrue();
+                    nestedErrors.Add(Record.Exception(() => store.PrefetchAsync(other, TestContext.Current.CancellationToken).GetAwaiter().GetResult()));
+                    // Neither download may commit before both nested attempts ran; otherwise the
+                    // other key is already cached and the nested call returns without taking a lock.
+                    bothInCallback.SignalAndWait(SafetyTimeout).Should().BeTrue();
+                }), TestContext.Current.CancellationToken);
+            }
 
             await Task.WhenAll(Run(CONTRACT_X, CONTRACT_Y), Run(CONTRACT_Y, CONTRACT_X))
                 .WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);

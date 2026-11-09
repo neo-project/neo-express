@@ -500,24 +500,53 @@ namespace Neo.BlockchainToolkit
 
         internal ContractParameter ParseObjectParameter(JObject json)
         {
-            var typeString = json.Value<string>("type") ?? throw new JsonException("missing type field");
+            // A non-string "type" field (an object or array) makes Newtonsoft's
+            // Value<T> conversion throw a raw InvalidCastException. Normalize it to
+            // the FormatException this method already uses for malformed values so
+            // callers see one consistent error for malformed input.
+            string typeString;
+            try
+            {
+                typeString = json.Value<string>("type") ?? throw new JsonException("missing type field");
+            }
+            catch (Exception ex)
+            {
+                if (ex is JsonException)
+                    throw;
+                throw new FormatException("invalid parameter type", ex);
+            }
+
             if (!Enum.TryParse<ContractParameterType>(typeString, out var type))
                 throw new FormatException($"invalid parameter type \"{typeString}\"");
             var valueProp = json["value"] ?? throw new JsonException("missing value field");
 
-            object value = type switch
+            // A value token whose shape doesn't match the declared type (an object
+            // or array for an Integer/Boolean parameter, etc.) makes Newtonsoft's
+            // Value<T> conversion throw a raw InvalidCastException as well. Normalize
+            // it the same way.
+            object value;
+            try
             {
-                ContractParameterType.Signature or ContractParameterType.ByteArray => ParseBinary(valueProp),
-                ContractParameterType.Boolean => valueProp.Value<bool>(),
-                ContractParameterType.Integer => BigInteger.Parse(valueProp.Value<string>() ?? ""),
-                ContractParameterType.Hash160 => UInt160.Parse(valueProp.Value<string>()),
-                ContractParameterType.Hash256 => UInt256.Parse(valueProp.Value<string>()),
-                ContractParameterType.PublicKey => ParsePublicKey(valueProp),
-                ContractParameterType.String => valueProp.Value<string>() ?? throw new JsonException(),
-                ContractParameterType.Array => valueProp.Select(ParseParameter).ToList(),
-                ContractParameterType.Map => valueProp.Select(ParseMapElement).ToList(),
-                _ => throw new ArgumentException($"invalid type {type}", nameof(json)),
-            };
+                value = type switch
+                {
+                    ContractParameterType.Signature or ContractParameterType.ByteArray => ParseBinary(valueProp),
+                    ContractParameterType.Boolean => valueProp.Value<bool>(),
+                    ContractParameterType.Integer => BigInteger.Parse(valueProp.Value<string>() ?? ""),
+                    ContractParameterType.Hash160 => UInt160.Parse(valueProp.Value<string>()),
+                    ContractParameterType.Hash256 => UInt256.Parse(valueProp.Value<string>()),
+                    ContractParameterType.PublicKey => ParsePublicKey(valueProp),
+                    ContractParameterType.String => valueProp.Value<string>() ?? throw new JsonException("invalid String parameter value"),
+                    ContractParameterType.Array => valueProp.Select(ParseParameter).ToList(),
+                    ContractParameterType.Map => valueProp.Select(ParseMapElement).ToList(),
+                    _ => throw new ArgumentException($"invalid type {type}", nameof(json)),
+                };
+            }
+            catch (Exception ex)
+            {
+                if (ex is FormatException or JsonException)
+                    throw;
+                throw new FormatException($"invalid {type} parameter value", ex);
+            }
 
             return new ContractParameter() { Type = type, Value = value };
 

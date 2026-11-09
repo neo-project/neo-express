@@ -509,8 +509,10 @@ namespace Neo.BlockchainToolkit
             {
                 typeString = json.Value<string>("type") ?? throw new JsonException("missing type field");
             }
-            catch (InvalidCastException ex)
+            catch (Exception ex)
             {
+                if (ex is JsonException)
+                    throw;
                 throw new FormatException("invalid parameter type", ex);
             }
 
@@ -539,8 +541,10 @@ namespace Neo.BlockchainToolkit
                     _ => throw new ArgumentException($"invalid type {type}", nameof(json)),
                 };
             }
-            catch (InvalidCastException ex)
+            catch (Exception ex)
             {
+                if (ex is FormatException or JsonException)
+                    throw;
                 throw new FormatException($"invalid {type} parameter value", ex);
             }
 

@@ -556,7 +556,7 @@ namespace Neo.BlockchainToolkit
                 {
                     return ECPoint.Parse(value, ECCurve.Secp256r1);
                 }
-                catch (Exception ex) when (ex is ArgumentException or FormatException)
+                catch (Exception ex)
                 {
                     throw new FormatException($"Invalid PublicKey parameter value: {ex.Message}", ex);
                 }

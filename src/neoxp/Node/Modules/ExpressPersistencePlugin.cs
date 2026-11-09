@@ -227,6 +227,10 @@ namespace NeoExpress.Node
             // the transaction's index within the block. Track the real index so the
             // stored notification key matches the semantics of the standard
             // ApplicationLogs plugin (used as transfernotifyindex by RPC consumers).
+            // Faulted transactions are persisted in block.Transactions and therefore
+            // occupy a position in it, so the counter must advance for FAULT executions
+            // too; only their notifications are skipped, since a failed invocation's
+            // transfers did not take effect and must not be surfaced by gettransfers.
             var blockTxIndex = 0;
             for (int i = 0; i < applicationExecutedList.Count; i++)
             {
@@ -237,13 +241,13 @@ namespace NeoExpress.Node
                 var txJson = TxLogToJson(appExec);
                 appLogsSnapshot.Put(appExec.Transaction.Hash.ToArray(), Neo.Utility.StrictUTF8.GetBytes(txJson.ToString()));
 
+                BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)blockTxIndex);
+                blockTxIndex++;
+
                 if (appExec.VMState != VMState.FAULT)
                 {
                     if (appExec.Notifications.Length > ushort.MaxValue)
                         throw new Exception("appExec.Notifications too big");
-
-                    BinaryPrimitives.WriteUInt16BigEndian(notificationIndex.AsSpan(sizeof(uint), sizeof(ushort)), (ushort)blockTxIndex);
-                    blockTxIndex++;
 
                     for (int j = 0; j < appExec.Notifications.Length; j++)
                     {

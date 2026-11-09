@@ -141,8 +141,14 @@ namespace Neo.BlockchainToolkit.Persistence
 
         void DisposeResources()
         {
-            try { rpcClient.Dispose(); }
-            finally { cacheClient.Dispose(); }
+            try
+            {
+                rpcClient.Dispose();
+            }
+            finally
+            {
+                cacheClient.Dispose();
+            }
         }
 
         void ThrowIfCallbackReentry(UInt160 contractHash, byte? prefix)
@@ -167,7 +173,10 @@ namespace Neo.BlockchainToolkit.Persistence
                 Parent = currentCallback.Value
             };
             currentCallback.Value = context;
-            try { callback(found); }
+            try
+            {
+                callback(found);
+            }
             finally
             {
                 context.Active = false;

@@ -242,11 +242,11 @@ namespace test.bctklib
             Task? nested = null;
             try
             {
-                await store.PrefetchAsync(CONTRACT_X, CancellationToken.None, _ =>
+                await store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ =>
                 {
                     nested = store.PrefetchAsync(CONTRACT_X, cancellation.Token);
                     nested.IsCompleted.Should().BeTrue("reentry must fail immediately rather than await itself");
-                }).WaitAsync(SafetyTimeout);
+                }).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
                 var error = await Record.ExceptionAsync(() => nested!);
                 error.Should().BeOfType<InvalidOperationException>();
             }
@@ -254,7 +254,7 @@ namespace test.bctklib
             {
                 cancellation.Cancel();
                 if (nested is not null)
-                    await Record.ExceptionAsync(() => nested.WaitAsync(SafetyTimeout));
+                    await Record.ExceptionAsync(() => nested.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken));
             }
         }
 
@@ -291,20 +291,26 @@ namespace test.bctklib
             using var store = CreateStore(cache, handler, pages.branch);
 
             var a = Start(store, ownerSync);
-            await firstArrived.Task.WaitAsync(SafetyTimeout);
+            await firstArrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             var b = Start(store, waiterSync);
-            try { await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout); }
-            finally { gateA.TrySetResult(); }
-            await a.WaitAsync(SafetyTimeout);
-            await b.WaitAsync(SafetyTimeout);
+            try
+            {
+                await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            }
+            finally
+            {
+                gateA.TrySetResult();
+            }
+            await a.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            await b.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             handler.RequestCount.Should().Be(1);
             AssertContents(cache);
         }
 
         static Task Start(StateServiceStore store, bool sync)
             => sync
-                ? Task.Run(() => { _ = store.Seek(SeekKey(1), SeekDirection.Forward); })
-                : store.PrefetchAsync(CONTRACT_X, CancellationToken.None);
+                ? Task.Run(() => { _ = store.Seek(SeekKey(1), SeekDirection.Forward); }, TestContext.Current.CancellationToken)
+                : store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
 
         [Theory]
         [InlineData("memory", false)]
@@ -328,14 +334,20 @@ namespace test.bctklib
             using var cache = new ObservedCache(CreateCache(kind));
             using var store = CreateStore(cache, handler, pages.branch);
             var owner = Start(store, sync);
-            await secondPage.Task.WaitAsync(SafetyTimeout);
+            await secondPage.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             IsCached(cache, CONTRACT_X).Should().BeFalse();
             var waiter = Start(store, sync);
-            try { await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout); }
-            finally { fail.TrySetResult(); }
-            var error = await Record.ExceptionAsync(() => owner.WaitAsync(SafetyTimeout));
+            try
+            {
+                await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            }
+            finally
+            {
+                fail.TrySetResult();
+            }
+            var error = await Record.ExceptionAsync(() => owner.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken));
             error.Should().BeOfType<HttpRequestException>().Which.Message.Should().Be("second page failed");
-            await waiter.WaitAsync(SafetyTimeout);
+            await waiter.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             handler.RequestCount.Should().Be(3);
             AssertContents(cache);
         }
@@ -360,14 +372,14 @@ namespace test.bctklib
             using var store = CreateStore(cache, handler, pages.branch);
             using var cancellation = new CancellationTokenSource();
             var task = store.PrefetchAsync(CONTRACT_X, cancellation.Token);
-            await secondPage.Task.WaitAsync(SafetyTimeout);
+            await secondPage.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             IsCached(cache, CONTRACT_X).Should().BeFalse();
             cancellation.Cancel();
             release.SetResult();
-            var error = await Record.ExceptionAsync(() => task.WaitAsync(SafetyTimeout));
+            var error = await Record.ExceptionAsync(() => task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken));
             error.Should().BeAssignableTo<OperationCanceledException>();
             IsCached(cache, CONTRACT_X).Should().BeFalse();
-            await store.PrefetchAsync(CONTRACT_X, CancellationToken.None).WaitAsync(SafetyTimeout);
+            await store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             AssertContents(cache);
         }
 
@@ -391,11 +403,11 @@ namespace test.bctklib
         {
             using var cache = CreateCache(kind);
             using var store = CreateStore(cache, new ScriptedHandler(_ => Task.CompletedTask));
-            await store.PrefetchAsync(CONTRACT_X, CancellationToken.None, _ =>
+            await store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ =>
             {
                 Action seek = () => store.Seek(SeekKey(1), SeekDirection.Forward);
                 seek.Should().Throw<InvalidOperationException>().WithMessage("*callback*reenter*");
-            }).WaitAsync(SafetyTimeout);
+            }).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             IsCached(cache, CONTRACT_X).Should().BeTrue();
         }
 
@@ -412,17 +424,17 @@ namespace test.bctklib
             using var cache = new ObservedCache(CreateCache(kind));
             using var store = CreateStore(cache, handler);
             var owner = Start(store, sync);
-            await arrived.Task.WaitAsync(SafetyTimeout);
+            await arrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             var waiter = Start(store, sync);
-            await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout);
+            await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             store.Dispose();
             try
             {
-                var error = await Record.ExceptionAsync(() => store.PrefetchAsync(CONTRACT_Y, CancellationToken.None));
+                var error = await Record.ExceptionAsync(() => store.PrefetchAsync(CONTRACT_Y, TestContext.Current.CancellationToken));
                 error.Should().BeOfType<ObjectDisposedException>();
             }
             finally { release.TrySetResult(); }
-            await Task.WhenAll(owner, waiter).WaitAsync(SafetyTimeout);
+            await Task.WhenAll(owner, waiter).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             Action read = () => IsCached(cache, CONTRACT_X);
             read.Should().Throw<ObjectDisposedException>();
             handler.RequestCount.Should().Be(1);
@@ -435,7 +447,7 @@ namespace test.bctklib
         {
             using var cache = CreateCache(kind);
             using var store = CreateStore(cache, new ScriptedHandler(_ => Task.CompletedTask));
-            await store.PrefetchAsync(CONTRACT_X, CancellationToken.None, _ => store.Dispose()).WaitAsync(SafetyTimeout);
+            await store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ => store.Dispose()).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             Action read = () => IsCached(cache, CONTRACT_X);
             read.Should().Throw<ObjectDisposedException>();
         }
@@ -506,17 +518,17 @@ namespace test.bctklib
             using var store = CreateStore(cache, handler);
             using var cts = new CancellationTokenSource();
 
-            var a = store.PrefetchAsync(CONTRACT_X, CancellationToken.None);
-            await firstArrived.Task.WaitAsync(SafetyTimeout);
+            var a = store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
+            await firstArrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             var b = store.PrefetchAsync(CONTRACT_X, cts.Token);
-            await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout);
+            await cache.SecondAttempt.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             cts.Cancel();
 
-            var ex = await Record.ExceptionAsync(() => b.WaitAsync(SafetyTimeout));
+            var ex = await Record.ExceptionAsync(() => b.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken));
             ex.Should().BeAssignableTo<OperationCanceledException>("cancellation must interrupt waiting for A");
 
             gateA.SetResult();
-            await a.WaitAsync(SafetyTimeout);
+            await a.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             gateB.SetResult();
 
             handler.RequestCount.Should().Be(1);
@@ -540,12 +552,12 @@ namespace test.bctklib
             using var cache = CreateCache(kind);
             using var store = CreateStore(cache, handler);
 
-            var a = store.PrefetchAsync(CONTRACT_X, CancellationToken.None);
-            await arrived.Task.WaitAsync(SafetyTimeout);
+            var a = store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
+            await arrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             IsCached(cache, CONTRACT_X).Should().BeFalse("in-flight download is not complete");
 
             gate.SetResult();
-            var ex = await Record.ExceptionAsync(() => a.WaitAsync(SafetyTimeout));
+            var ex = await Record.ExceptionAsync(() => a.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken));
             ex.Should().BeOfType<HttpRequestException>().Which.Message.Should().Be("boom");
             IsCached(cache, CONTRACT_X).Should().BeFalse("failed download leaves nothing behind");
         }
@@ -567,12 +579,12 @@ namespace test.bctklib
             using var cache = CreateCache(kind);
             using var store = CreateStore(cache, handler);
 
-            var a = store.PrefetchAsync(CONTRACT_X, CancellationToken.None);
-            await arrived.Task.WaitAsync(SafetyTimeout);
-            var b = store.PrefetchAsync(CONTRACT_X, CancellationToken.None);
+            var a = store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
+            await arrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            var b = store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
 
             gate.SetResult();
-            await Task.WhenAll(a, b).WaitAsync(SafetyTimeout);
+            await Task.WhenAll(a, b).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
 
             handler.RequestCount.Should().Be(1);
             IsCached(cache, CONTRACT_X).Should().BeTrue();
@@ -594,14 +606,20 @@ namespace test.bctklib
             using var store1 = CreateStore(cache1, handler1, pages.branch);
             using var store2 = CreateStore(cache2, handler2, pages.branch);
 
-            var a = store1.PrefetchAsync(CONTRACT_X, CancellationToken.None);
-            await arrived.Task.WaitAsync(SafetyTimeout);
-            var b = store2.PrefetchAsync(CONTRACT_X, CancellationToken.None);
+            var a = store1.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
+            await arrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            var b = store2.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
 
-            try { await cache2.FirstAttempt.Task.WaitAsync(SafetyTimeout); }
-            finally { gate.TrySetResult(); }
-            await a.WaitAsync(SafetyTimeout);
-            await b.WaitAsync(SafetyTimeout);
+            try
+            {
+                await cache2.FirstAttempt.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            }
+            finally
+            {
+                gate.TrySetResult();
+            }
+            await a.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            await b.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
 
             AssertContents(cache1);
             AssertContents(cache2);
@@ -618,17 +636,17 @@ namespace test.bctklib
             var handler2 = new ScriptedHandler(_ => throw new InvalidOperationException("unexpected RPC"));
             using var store1 = CreateStore(cache1, new ScriptedHandler(_ => Task.CompletedTask));
             using var store2 = CreateStore(cache2, handler2);
-            await store1.PrefetchAsync(CONTRACT_X, CancellationToken.None, _ =>
+            await store1.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ =>
             {
                 Action reenter = () =>
                 {
                     if (sync)
                         store2.Seek(SeekKey(1), SeekDirection.Forward);
                     else
-                        store2.PrefetchAsync(CONTRACT_X, CancellationToken.None).GetAwaiter().GetResult();
+                        store2.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken).GetAwaiter().GetResult();
                 };
                 reenter.Should().Throw<InvalidOperationException>().WithMessage("*callback*reenter*");
-            }).WaitAsync(SafetyTimeout);
+            }).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             handler2.RequestCount.Should().Be(0);
             IsCached(cache2, CONTRACT_X).Should().BeTrue();
         }
@@ -643,8 +661,8 @@ namespace test.bctklib
             var handler2 = new ScriptedHandler(_ => Task.CompletedTask, _ => pages.complete);
             using var store1 = CreateStore(cache1, new ScriptedHandler(_ => Task.CompletedTask));
             using var store2 = CreateStore(cache2, handler2, pages.branch);
-            await store1.PrefetchAsync(CONTRACT_X, CancellationToken.None, _ =>
-                store2.PrefetchAsync(CONTRACT_X, CancellationToken.None).GetAwaiter().GetResult()).WaitAsync(SafetyTimeout);
+            await store1.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ =>
+                store2.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken).GetAwaiter().GetResult()).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             handler2.RequestCount.Should().Be(1);
             AssertContents(cache2);
             cache1.TryGetCachedFoundStates(CONTRACT_X, null, out var states).Should().BeTrue();
@@ -678,10 +696,10 @@ namespace test.bctklib
             using var cache = CreateCache(kind);
             using var store = CreateStore(cache, new ScriptedHandler(_ => Task.CompletedTask, _ => pages.complete), pages.branch);
             var expected = new InvalidOperationException("callback failed");
-            var error = await Record.ExceptionAsync(() => store.PrefetchAsync(CONTRACT_X, CancellationToken.None, _ => throw expected));
+            var error = await Record.ExceptionAsync(() => store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ => throw expected));
             error.Should().BeSameAs(expected);
             IsCached(cache, CONTRACT_X).Should().BeFalse();
-            await store.PrefetchAsync(CONTRACT_X, CancellationToken.None).WaitAsync(SafetyTimeout);
+            await store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
             AssertContents(cache);
         }
 
@@ -698,7 +716,7 @@ namespace test.bctklib
             var sameKey = cache.AcquireDownloadLockAsync(CONTRACT_X, 1, timeout.Token);
             sameKey.IsCompleted.Should().BeFalse();
             first.Dispose();
-            using var acquired = await sameKey.WaitAsync(SafetyTimeout);
+            using var acquired = await sameKey.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
         }
 
         [Fact]
@@ -741,19 +759,19 @@ namespace test.bctklib
             using var cache = CreateCache(kind);
             using var store = CreateStore(cache, handler);
 
-            var x = store.PrefetchAsync(CONTRACT_X, CancellationToken.None);
-            await arrived.Task.WaitAsync(SafetyTimeout);
+            var x = store.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken);
+            await arrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
 
             var y = sync
-                ? Task.Run(() => { _ = store.Seek(SeekKey(2), SeekDirection.Forward); })
-                : store.PrefetchAsync(CONTRACT_Y, CancellationToken.None);
-            await y.WaitAsync(SafetyTimeout);
+                ? Task.Run(() => { _ = store.Seek(SeekKey(2), SeekDirection.Forward); }, TestContext.Current.CancellationToken)
+                : store.PrefetchAsync(CONTRACT_Y, TestContext.Current.CancellationToken);
+            await y.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
 
             IsCached(cache, CONTRACT_Y).Should().BeTrue();
             IsCached(cache, CONTRACT_X).Should().BeFalse();
 
             gate.SetResult();
-            await x.WaitAsync(SafetyTimeout);
+            await x.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
         }
     }
 }

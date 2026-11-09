@@ -12,9 +12,12 @@ namespace Neo.BlockchainToolkit.Persistence;
 
 internal interface ICacheClient : IDisposable
 {
+    object DownloadLockScope { get; }
     bool TryGetCachedStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, out byte[]? value);
     void CacheStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, byte[]? value);
+    bool IsFoundStatesCached(UInt160 contractHash, byte? prefix);
     bool TryGetCachedFoundStates(UInt160 contractHash, byte? prefix, out IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> value);
-    void DropCachedFoundStates(UInt160 contractHash, byte? prefix);
     ICacheSnapshot GetFoundStatesSnapshot(UInt160 contractHash, byte? prefix);
+    IDisposable AcquireDownloadLock(UInt160 contractHash, byte? prefix, CancellationToken token);
+    Task<IDisposable> AcquireDownloadLockAsync(UInt160 contractHash, byte? prefix, CancellationToken token);
 }

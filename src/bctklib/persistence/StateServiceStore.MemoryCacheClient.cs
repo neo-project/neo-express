@@ -24,6 +24,16 @@ namespace Neo.BlockchainToolkit.Persistence
             readonly ConcurrentDictionary<(UInt160 contractHash, byte? prefix), IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap = new();
             private bool disposed;
 
+            readonly KeyedAsyncLock<(UInt160, byte?)> downloadLocks = new();
+
+            public object DownloadLockScope => downloadLocks;
+
+            public IDisposable AcquireDownloadLock(UInt160 contractHash, byte? prefix, CancellationToken token)
+                => downloadLocks.Acquire((contractHash, prefix), token);
+
+            public Task<IDisposable> AcquireDownloadLockAsync(UInt160 contractHash, byte? prefix, CancellationToken token)
+                => downloadLocks.AcquireAsync((contractHash, prefix), token);
+
             public void Dispose()
             {
                 if (!disposed)
@@ -68,6 +78,9 @@ namespace Neo.BlockchainToolkit.Persistence
                     throw new Exception($"Key already exists {Convert.ToHexString(key.Span)}");
             }
 
+            public bool IsFoundStatesCached(UInt160 contractHash, byte? prefix)
+                => TryGetCachedFoundStates(contractHash, prefix, out _);
+
             public bool TryGetCachedFoundStates(UInt160 contractHash, byte? prefix, out IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> value)
             {
                 if (disposed)
@@ -91,14 +104,6 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (foundStateMap.ContainsKey((contractHash, prefix)))
                     throw new Exception($"{contractHash}-{prefix} already cached");
                 return new Snapshot(foundStateMap, (contractHash, prefix));
-            }
-
-            public void DropCachedFoundStates(UInt160 contractHash, byte? prefix)
-            {
-                if (disposed)
-                    throw new ObjectDisposedException(nameof(MemoryCacheClient));
-
-                _ = foundStateMap.TryRemove((contractHash, prefix), out _);
             }
 
             class Snapshot : ICacheSnapshot

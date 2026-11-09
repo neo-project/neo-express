@@ -44,15 +44,26 @@ namespace NeoDebug.Neo3
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
             _seedContracts = seedContracts is null ? new() : new(seedContracts);
 
-            // Advance to the first recorded VM step so the engine opens positioned at the entry point.
-            while (_reader.TryGetNext(out var record))
+            try
             {
-                ProcessRecord(record);
-                if (record is TraceRecord trace)
+                // Advance to the first recorded VM step so the engine opens positioned at the entry point.
+                while (_reader.TryGetNext(out var record))
                 {
-                    _currentTraceRecord = trace;
-                    break;
+                    ProcessRecord(record);
+                    if (record is TraceRecord trace)
+                    {
+                        _currentTraceRecord = trace;
+                        break;
+                    }
                 }
+
+                if (_currentTraceRecord is null)
+                    throw new InvalidDataException("The trace does not contain a VM execution record.");
+            }
+            catch
+            {
+                Dispose();
+                throw;
             }
         }
 
@@ -119,7 +130,9 @@ namespace NeoDebug.Neo3
                     FaultException = stepBack ? null : new Exception(fault.Exception);
                     break;
                 default:
-                    throw new InvalidDataException($"Unexpected trace record {record.GetType().Name}");
+                    // Defense-in-depth: the reader rejects null records, but never dereference record here or the
+                    // intended friendly error would itself crash with a NullReferenceException.
+                    throw new InvalidDataException($"Unexpected trace record {record?.GetType().Name ?? "null"}");
             }
         }
 

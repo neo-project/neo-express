@@ -72,6 +72,10 @@ namespace NeoExpress.Node
 
             persistencePlugin = new ExpressPersistencePlugin();
             neoSystem = new NeoSystem(settings, storeProvider, null);
+            using (var snapshot = neoSystem.GetSnapshotCache())
+            {
+                chain.ApplyNativePolicySettings(snapshot, settings);
+            }
 
             ApplicationEngine.InstanceHandler += OnApplicationEngineCreated;
         }
@@ -151,7 +155,10 @@ namespace NeoExpress.Node
         IExpressNode.CheckpointMode CreateCheckpoint(string checkPointPath)
         {
             var multiSigAccount = nodeWallet.GetMultiSigAccounts().Single();
-            expressStorage.CreateCheckpoint(checkPointPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+            // Take the checkpoint outside any in-flight persist cycle so a block and its
+            // application logs are always captured together.
+            persistencePlugin.RunOutsidePersistCycle(
+                () => expressStorage.CreateCheckpoint(checkPointPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash));
             return IExpressNode.CheckpointMode.Offline;
         }
 
@@ -177,7 +184,7 @@ namespace NeoExpress.Node
         public Task<RpcInvokeResult> InvokeAsync(Neo.VM.Script script, Signer? signer = null)
             => MakeAsync(() => Invoke(script, signer));
 
-        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0)
+        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Neo.VM.Script script, decimal additionalGas = 0, bool padInvokeEstimate = false)
         {
             if (disposedValue)
                 throw new ObjectDisposedException(nameof(OfflineNode));
@@ -188,7 +195,7 @@ namespace NeoExpress.Node
             const long maxSafeGas = long.MaxValue / 10_000;
             var maxGas = balance.Amount > maxSafeGas ? maxSafeGas : (long)balance.Amount;
             var tx = wallet.MakeTransaction(neoSystem.StoreView, script, accountHash, new[] { signer }, maxGas: maxGas);
-            tx.SystemFee += NodeUtility.AdditionalGasSystemFee(additionalGas);
+            tx.SystemFee += NodeUtility.SystemFeeDelta(additionalGas, padInvokeEstimate);
 
             var context = new ContractParametersContext(neoSystem.StoreView, tx, ProtocolSettings.Network);
             var account = wallet.GetAccount(accountHash)

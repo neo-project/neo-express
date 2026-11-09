@@ -47,6 +47,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Password to use for NEP-2/NEP-6 account")]
             internal string Password { get; init; } = string.Empty;
 
+            [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the deployment (covers fee-estimation shortfall)")]
+            internal decimal AdditionalGas { get; init; } = 1;
+
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
@@ -66,7 +69,7 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force).ConfigureAwait(false);
+                    await txExec.ContractDeployAsync(Contract, Account, password, WitnessScope, Data, Force, AdditionalGas).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)

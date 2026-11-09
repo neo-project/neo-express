@@ -39,6 +39,8 @@ namespace Neo.BuildTasks
 
         public ITaskItem? WorkingDirectory { get; set; }
 
+        internal void SetResolvedToolType(DotNetToolType value) => toolType = value;
+
         protected DotNetToolTask(IProcessRunner? processRunner = null)
         {
             this.processRunner = processRunner ?? new ProcessRunner();
@@ -118,21 +120,27 @@ namespace Neo.BuildTasks
             return false;
         }
 
-        internal bool TryExecute(string command, string arguments, ITaskItem? directory, out IReadOnlyCollection<string> output)
+        protected ProcessResults LastProcessResults { get; private set; }
+
+        internal bool TryExecute(string command, string arguments, ITaskItem? directory, out IReadOnlyCollection<string> output, bool logFailure = true)
         {
             var results = processRunner.Run(command, arguments, directory?.ItemSpec ?? "");
+            LastProcessResults = results;
 
             if (results.ExitCode != 0)
             {
-                Log.LogError("{0} returned {1}", Command, results.ExitCode);
+                if (logFailure)
+                {
+                    Log.LogError("{0} returned {1}", Command, results.ExitCode);
 
-                foreach (var err in results.Error)
-                {
-                    Log.LogError(err);
-                }
-                foreach (var @out in results.Output)
-                {
-                    Log.LogWarning(@out);
+                    foreach (var err in results.Error)
+                    {
+                        Log.LogError(err);
+                    }
+                    foreach (var @out in results.Output)
+                    {
+                        Log.LogWarning(@out);
+                    }
                 }
 
                 output = Array.Empty<string>();

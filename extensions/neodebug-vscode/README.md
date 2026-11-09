@@ -27,7 +27,7 @@ Add a configuration to `.vscode/launch.json`. Replay a recorded trace (supports 
   "request": "launch",
   "program": "${workspaceFolder}/bin/sc/Contract.nef",
   "invocation": { "trace-file": "${workspaceFolder}/traces/transaction.neo-trace" },
-  "return-types": [ "int" ]
+  "returnTypes": [ "int" ]
 }
 ```
 
@@ -39,9 +39,13 @@ Add a configuration to `.vscode/launch.json`. Replay a recorded trace (supports 
   "type": "neo-contract",
   "request": "launch",
   "program": "${workspaceFolder}/bin/sc/Contract.nef",
+  "signers": [ "NXV7ZhHiyM1aHXwpVsRZC6BwNFP2jghXAq" ],
   "invocation": { "operation": "transfer", "args": [ "@NXV7ZhHiyM1aHXwpVsRZC6BwNFP2jghXAq", 100 ] }
 }
 ```
+
+`signers` is optional. When omitted, the live launcher uses the zero account; normal Neo witness
+scope rules still apply.
 
 Set breakpoints in your C# source, then start debugging. See the
 [NeoDebug command reference](../../docs/debugger-command-reference.md) for the full launch-configuration

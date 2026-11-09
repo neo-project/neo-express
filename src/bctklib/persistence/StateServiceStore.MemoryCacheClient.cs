@@ -20,7 +20,7 @@ namespace Neo.BlockchainToolkit.Persistence
             // Key the caches by the actual (contract, key) pair rather than by its 32-bit
             // hash code. Using the hash as the identity meant two distinct storage keys
             // could collide and silently serve each other's cached value.
-            readonly ConcurrentDictionary<(UInt160 contractHash, ReadOnlyMemory<byte> key), byte[]?> storageMap = new(StorageKeyComparer.Instance);
+            readonly ConcurrentDictionary<(UInt160 contractHash, ReadOnlyMemory<byte> key), CacheEntry> storageMap = new(StorageKeyComparer.Instance);
             readonly ConcurrentDictionary<(UInt160 contractHash, byte? prefix), IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap = new();
             private bool disposed;
 
@@ -33,6 +33,9 @@ namespace Neo.BlockchainToolkit.Persistence
 
             public Task<IDisposable> AcquireDownloadLockAsync(UInt160 contractHash, byte? prefix, CancellationToken token)
                 => downloadLocks.AcquireAsync((contractHash, prefix), token);
+
+            // Value is null when the key is cached as missing.
+            sealed record CacheEntry(byte[]? Value);
 
             public void Dispose()
             {
@@ -64,7 +67,14 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                return storageMap.TryGetValue((contractHash, key), out value);
+                if (storageMap.TryGetValue((contractHash, key), out var entry))
+                {
+                    value = entry.Value is null ? null : (byte[])entry.Value.Clone();
+                    return true;
+                }
+
+                value = null;
+                return false;
             }
 
             public void CacheStorage(UInt160 contractHash, ReadOnlyMemory<byte> key, byte[]? value)
@@ -72,10 +82,11 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                // Copy the key so the stored identity stays stable even if the caller
-                // reuses the underlying buffer.
-                if (!storageMap.TryAdd((contractHash, key.ToArray()), value))
-                    throw new Exception($"Key already exists {Convert.ToHexString(key.Span)}");
+                // Concurrent readers may fetch the same value before either one can
+                // publish it. The first result wins; all readers obtained the value
+                // from the same immutable state-service snapshot, so a duplicate
+                // publication is harmless.
+                _ = storageMap.TryAdd((contractHash, key.ToArray()), new CacheEntry(value is null ? null : (byte[])value.Clone()));
             }
 
             public bool IsFoundStatesCached(UInt160 contractHash, byte? prefix)
@@ -101,8 +112,9 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (disposed)
                     throw new ObjectDisposedException(nameof(MemoryCacheClient));
 
-                if (foundStateMap.ContainsKey((contractHash, prefix)))
-                    throw new Exception($"{contractHash}-{prefix} already cached");
+                // Multiple callers can start the same download concurrently. The
+                // snapshot commits only if this caller wins publication; otherwise
+                // its duplicate result is discarded without disturbing the winner.
                 return new Snapshot(foundStateMap, (contractHash, prefix));
             }
 
@@ -138,10 +150,10 @@ namespace Neo.BlockchainToolkit.Persistence
                 {
                     ObjectDisposedException.ThrowIf(disposed, nameof(MemoryCacheClient.Snapshot));
 
-                    if (!foundStateMap.TryAdd(key, entries))
-                    {
-                        throw new Exception("Failed to add cached entries");
-                    }
+                    // Another reader may have completed the same download while
+                    // this snapshot was being populated. Keep the first complete
+                    // result and discard this duplicate snapshot.
+                    _ = foundStateMap.TryAdd(key, entries);
                     // Just in case Add it's called after commit
                     entries = new();
                 }

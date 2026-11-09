@@ -58,9 +58,8 @@ namespace Neo.BlockchainToolkit.Persistence
             [Obsolete("use TryGet(byte[] key, out byte[]? value) instead.")]
             public byte[]? TryGet(byte[]? key)
             {
-                if (snapshot.Handle == IntPtr.Zero)
-                    throw new ObjectDisposedException(nameof(Snapshot));
-                return PersistentTrackingStore.TryGet(key, db, columnFamily, readOptions, store);
+                TryGet(key, out var value);
+                return value;
             }
 
             public bool TryGet(byte[]? key, [NotNullWhen(true)] out byte[]? value)

@@ -6,6 +6,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## Unreleased
 
+## [3.10.1] - 2026-07-09
+
+### Changed
+
+* Update Neo Express to 3.10.1 for Neo 3.10.1 compatibility
+* Align extension version with Neo 3.10.1 release
+
 ## [3.10.0] - 2026-06-15
 
 ### Changed

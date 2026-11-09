@@ -34,6 +34,7 @@
       <NeoCscOutput Include="$(NeoCscManifestPath)" />
       <NeoCscOutput Include="$(NeoCscDebugInfoPath)" Condition="'$(NeoCscDebugInfo)'=='true'" />
       <NeoCscOutput Include="$(NeoCscAssemblyPath)" Condition="'$(NeoContractAssembly)'=='true'"/>
+      <FileWrites Include="@(NeoCscOutput)" />
     </ItemGroup>
   </Target>
 
@@ -69,16 +70,26 @@
 
   <Target Name="ConfigureNeoExpressBatch">
     <PropertyGroup>
-      <NeoExpressTouchFile>$([MSBuild]::NormalizePath($(IntermediateOutputPath), '$(NeoExpressBatchFile).neoxp.touch'))</NeoExpressTouchFile>
+      <!-- Use the batch file name only so a relative NeoExpressBatchFile (../express.batch)
+           does not place the stamp outside IntermediateOutputPath, where Clean would miss it. -->
+      <NeoExpressBatchFileName>$([System.IO.Path]::GetFileName($(NeoExpressBatchFile)))</NeoExpressBatchFileName>
+      <NeoExpressTouchFile>$([MSBuild]::NormalizePath($(IntermediateOutputPath), '$(NeoExpressBatchFileName).neoxp.touch'))</NeoExpressTouchFile>
       <NeoExpressNormalizedBatchFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(NeoExpressBatchFile)))</NeoExpressNormalizedBatchFile>
+      <NeoExpressNormalizedInputFile Condition="'$(NeoExpressBatchInputFile)'!=''">$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(NeoExpressBatchInputFile)))</NeoExpressNormalizedInputFile>
+      <!-- Older builds stamped obj/$(Configuration)/$(batch).neoxp.touch when NeoExpressBatchFile was a relative path. -->
+      <NeoExpressLegacyTouchFile Condition="'$(BaseIntermediateOutputPath)'!='' and '$(Configuration)'!='' and '$(NeoExpressBatchFileName)'!=''">$([MSBuild]::NormalizePath($(BaseIntermediateOutputPath), '$(Configuration)\$(NeoExpressBatchFileName).neoxp.touch'))</NeoExpressLegacyTouchFile>
     </PropertyGroup>
+    <ItemGroup>
+      <FileWrites Include="$(NeoExpressTouchFile)" Condition="'$(NeoExpressTouchFile)'!=''" />
+    </ItemGroup>
   </Target>
 
   <Target Name="ExecuteNeoExpressBatch"
     AfterTargets="Build" 
     DependsOnTargets="ConfigureNeoExpressBatch;ExecuteNeoCsc"
     Condition="'$(NeoExpressBatchFile)'!=''"
-    Inputs="@(NeoCscOutput);$(NeoExpressBatchFile);$(NeoExpressTouchFile)" Outputs="$(NeoExpressTouchFile)">
+    Inputs="@(NeoCscOutput);$(NeoExpressNormalizedBatchFile);$(NeoExpressNormalizedInputFile)"
+    Outputs="$(NeoExpressTouchFile)">
 
     <PropertyGroup>
       <NeoExpressBatchReset>true</NeoExpressBatchReset>
@@ -172,7 +183,8 @@
 
   </Target>
 
-  <Target Name="CleanNeoCsc" 
+  <Target Name="CleanNeoCsc"
+    BeforeTargets="CoreClean;Rebuild"
     DependsOnTargets="ConfigureNeoCsc"
     Condition="'$(NeoContractName)'!=''">
 
@@ -181,10 +193,11 @@
   </Target>
 
   <Target Name="CleanNeoExpressBatch"
+    BeforeTargets="CoreClean;Rebuild"
     DependsOnTargets="ConfigureNeoExpressBatch"
     Condition="'$(NeoExpressBatchFile)'!=''">
 
-     <Delete Files="$(NeoExpressTouchFile)" TreatErrorsAsWarnings="true"/>
+    <Delete Files="$(NeoExpressTouchFile);$(NeoExpressLegacyTouchFile)" TreatErrorsAsWarnings="true"/>
 
   </Target>
 

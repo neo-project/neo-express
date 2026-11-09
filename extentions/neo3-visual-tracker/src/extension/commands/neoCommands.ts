@@ -5,12 +5,14 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 import ActiveConnection from "../activeConnection";
+import AutoComplete from "../autoComplete";
 import BlockchainsTreeDataProvider from "../vscodeProviders/blockchainsTreeDataProvider";
 import { CommandArguments } from "./commandArguments";
 import ContractDetector from "../fileDetectors/contractDetector";
 import IoHelpers from "../util/ioHelpers";
 import JSONC from "../util/JSONC";
 import posixPath from "../util/posixPath";
+import sameFilePath from "../util/sameFilePath";
 import WalletDetector from "../fileDetectors/walletDetector";
 import workspaceFolder from "../util/workspaceFolder";
 
@@ -257,6 +259,114 @@ export default class NeoCommands {
     await vscode.commands.executeCommand(
       "vscode.open",
       vscode.Uri.file(filename)
+    );
+  }
+
+  static async openContractStudio(
+    activeConnection: ActiveConnection,
+    autoComplete: AutoComplete,
+    blockchainsTreeDataProvider: BlockchainsTreeDataProvider,
+    contractDetector: ContractDetector,
+    commandArguments: CommandArguments
+  ) {
+    const rootFolder = workspaceFolder();
+    if (!rootFolder) {
+      vscode.window.showErrorMessage(
+        "Open a workspace folder before opening Contract Studio."
+      );
+      return;
+    }
+
+    const activeIdentifier = activeConnection.connection?.blockchainIdentifier;
+    const identifier =
+      commandArguments.blockchainIdentifier ||
+      (activeIdentifier?.blockchainType === "express"
+        ? activeIdentifier
+        : await blockchainsTreeDataProvider.select("express"));
+    if (!identifier) {
+      vscode.window.showErrorMessage(
+        "Create or open a Neo Express blockchain before opening Contract Studio."
+      );
+      return;
+    }
+    if (activeIdentifier?.name !== identifier.name) {
+      await activeConnection.connect(identifier);
+    }
+
+    let contractReference: string | undefined;
+    let contractName: string | undefined;
+    const targetPath = commandArguments.path;
+    if (targetPath) {
+      const detectedContract = Object.entries(contractDetector.contracts).find(
+        ([, contract]) => sameFilePath(contract.absolutePathToNef, targetPath)
+      );
+      if (detectedContract) {
+        contractName = detectedContract[0];
+        contractReference = `#${contractName}`;
+      }
+    } else if (commandArguments.hash) {
+      contractReference = commandArguments.hash;
+      contractName =
+        autoComplete.data.contractNames[commandArguments.hash] || "Contract";
+    }
+
+    if (!contractReference) {
+      const choices = [
+        ...Object.keys(contractDetector.contracts).map((name) => `#${name}`),
+        ...Object.keys(autoComplete.data.contractNames),
+      ];
+      const uniqueChoices = [...new Set(choices)].sort((a, b) =>
+        a.localeCompare(b)
+      );
+      if (!uniqueChoices.length) {
+        vscode.window.showErrorMessage(
+          "Build a contract or connect to a chain with deployed contracts before opening Contract Studio."
+        );
+        return;
+      }
+      contractReference = await IoHelpers.multipleChoice(
+        "Select a contract for Contract Studio",
+        ...uniqueChoices
+      );
+      if (!contractReference) {
+        return;
+      }
+      const referenceWithoutPrefix = contractReference.replace(/^#/, "");
+      contractName =
+        autoComplete.data.contractNames[referenceWithoutPrefix] ||
+        referenceWithoutPrefix;
+    }
+
+    const invokeFilesFolder = posixPath(rootFolder, "invoke-files");
+    await fs.promises.mkdir(invokeFilesFolder, { recursive: true });
+    const safeContractName =
+      (contractName || "Contract").replace(/[^-_.a-z0-9]/gi, "-") ||
+      "Contract";
+    let filename = posixPath(
+      invokeFilesFolder,
+      `${safeContractName}.neo-invoke.json`
+    );
+    let i = 1;
+    while (fs.existsSync(filename)) {
+      filename = posixPath(
+        invokeFilesFolder,
+        `${safeContractName}-${i}.neo-invoke.json`
+      );
+      i++;
+    }
+    await fs.promises.writeFile(
+      filename,
+      JSONC.stringify([{ contract: contractReference, operation: "" }])
+    );
+    await vscode.commands.executeCommand(
+      "vscode.openWith",
+      vscode.Uri.file(filename),
+      "neo3-visual-devtracker.neo.neo-invoke-json",
+      {
+        preview: false,
+        preserveFocus: false,
+        viewColumn: vscode.ViewColumn.Beside,
+      }
     );
   }
 }

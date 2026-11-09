@@ -144,6 +144,8 @@ Usage: neo-worknet run [options]
 
 Options:
   -s|--seconds-per-block <SECONDS_PER_BLOCK>  Time between blocks
+  --rpc-port <PORT>                           RPC server port
+  --tcp-port <PORT>                           TCP server port
   --disable-log                               Disable verbose data logging
   -?|-h|--help                                Show help information.
   --input                                     Path to .neo-worknet data file
@@ -151,6 +153,9 @@ Options:
 
 Runs the branched blockchain locally. New blocks will be added to the chain every 15 seconds unless
 overridden with the `--seconds-per-block` option.
+
+The node listens on RPC port `30332` and TCP port `30333` by default. Use `--rpc-port` and `--tcp-port`
+when those ports are already in use by another local node. The RPC and TCP ports must be different.
 
 These new blocks added to the chain have *no* correlation to the blocks added to the public chain that
 was branched from. From the point of the branch, the original source chain and the local branched chain

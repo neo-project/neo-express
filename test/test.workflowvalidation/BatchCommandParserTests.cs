@@ -66,6 +66,44 @@ public class BatchCommandParserTests
         update.Model.Data.Should().Be("42");
     }
 
+    [Theory]
+    [InlineData("deploy")]
+    [InlineData("update")]
+    public void Contract_write_commands_default_additional_gas_to_one(string verb)
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var args = verb == "deploy"
+            ? new[] { "contract", verb, "contract.nef", "alice" }
+            : new[] { "contract", verb, "myContract", "contract.nef", "alice" };
+        var result = app.Parse(args);
+
+        var gas = verb == "deploy"
+            ? ((CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Deploy>)result.SelectedCommand).Model.AdditionalGas
+            : ((CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Update>)result.SelectedCommand).Model.AdditionalGas;
+        gas.Should().Be(1m);
+    }
+
+    [Theory]
+    [InlineData("deploy")]
+    [InlineData("update")]
+    public void Contract_write_commands_bind_additional_gas(string verb)
+    {
+        var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
+        app.Conventions.UseDefaultConventions();
+
+        var args = verb == "deploy"
+            ? new[] { "contract", verb, "contract.nef", "alice", "--gas", "1.5" }
+            : new[] { "contract", verb, "myContract", "contract.nef", "alice", "--gas", "1.5" };
+        var result = app.Parse(args);
+
+        var gas = verb == "deploy"
+            ? ((CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Deploy>)result.SelectedCommand).Model.AdditionalGas
+            : ((CommandLineApplication<BatchCommand.BatchFileCommands.Contract.Update>)result.SelectedCommand).Model.AdditionalGas;
+        gas.Should().Be(1.5m);
+    }
+
     [Fact]
     public void SplitCommandLine_reports_unbalanced_quotes()
     {

@@ -12,6 +12,7 @@ using FluentAssertions;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.Cryptography.ECC;
+using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Persistence.Providers;
 using Neo.SmartContract.Native;
@@ -85,6 +86,27 @@ namespace test.bctklib
             var act = () => BlockProducer.FastForward(store, 1, TimeSpan.FromSeconds(-1), new[] { consensusKey }, settings);
 
             act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void an_explicit_nonce_makes_the_block_hash_deterministic()
+        {
+            var settings = Settings;
+            using var store = new MemoryStore();
+            store.EnsureLedgerInitialized(settings);
+            Header prevHeader;
+            using (var snapshot = new StoreCache(store.GetSnapshot()))
+            {
+                var prevHash = NativeContract.Ledger.CurrentHash(snapshot);
+                prevHeader = NativeContract.Ledger.GetHeader(snapshot, prevHash);
+            }
+
+            var first = BlockProducer.CreateSignedBlock(prevHeader, new[] { consensusKey }, settings.Network, timestamp: prevHeader.Timestamp + 1000, nonce: 42);
+            var second = BlockProducer.CreateSignedBlock(prevHeader, new[] { consensusKey }, settings.Network, timestamp: prevHeader.Timestamp + 1000, nonce: 42);
+            var other = BlockProducer.CreateSignedBlock(prevHeader, new[] { consensusKey }, settings.Network, timestamp: prevHeader.Timestamp + 1000, nonce: 43);
+
+            first.Hash.Should().Be(second.Hash);
+            first.Hash.Should().NotBe(other.Hash);
         }
     }
 }

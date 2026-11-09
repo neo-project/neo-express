@@ -19,17 +19,17 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v7.0.1
       with:
         fetch-depth: 0
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5.2.0
+      uses: actions/setup-dotnet@v6.1.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Nerdbank.GitVersioning
-      uses: dotnet/nbgv@v0.5.1
+      uses: dotnet/nbgv@v0.5.2
       id: nbgv
 
     - name: Build (${{ matrix.runtime }})
@@ -78,9 +78,10 @@ jobs:
         ZIP_FILE: ${{ format('{0}/Neo.Express-{1}-{2}.zip', env.DIST_PATH, matrix.runtime, steps.nbgv.outputs.NuGetPackageVersion) }}
       run: zip ${{ env.ZIP_FILE }} -r *
 
-    - name: Cache Files
-      id: cache
-      uses: actions/cache@v5.0.5
+    - name: Upload Distribution
+      uses: actions/upload-artifact@v7.0.2
       with:
+        name: standalone-${{ matrix.runtime }}
         path: ${{ env.DIST_PATH }}/*
-        key: ${{ matrix.runtime }}
+        if-no-files-found: error
+        retention-days: 1

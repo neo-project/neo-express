@@ -1,6 +1,7 @@
 import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import * as neonSc from "@cityofzion/neon-core/lib/sc";
-import * as temp from "temp";
 import * as vscode from "vscode";
 
 import ActiveConnection from "./activeConnection";
@@ -79,11 +80,10 @@ export default class AutoComplete {
 
   private async initializeWellKnownManifests() {
     Log.log(LOG_PREFIX, "Initializing well-known manifests...");
-    const tempFile = await new Promise<temp.OpenFile>((resolve, reject) =>
-      temp.open({ suffix: ".neo-express" }, (err, result) =>
-        err ? reject(err) : resolve(result)
-      )
+    const tempDir = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), "neo3-visual-tracker-")
     );
+    const tempFilePath = path.join(tempDir, "well-known-contracts.neo-express");
     let wellKnownContracts: {
       [name: string]: { hash: string; manifest: neonSc.ContractManifestJson };
     } = {};
@@ -102,18 +102,16 @@ export default class AutoComplete {
         Log.log(LOG_PREFIX, "Using cache");
       } else {
         Log.log(LOG_PREFIX, "Creating temporary instance");
-        fs.closeSync(tempFile.fd);
-        await fs.promises.unlink(tempFile.path);
         const result = await this.neoExpress.run(
           "create",
           "-f",
           "-c",
           "1",
-          tempFile.path
+          tempFilePath
         );
         const identifier = await BlockchainIdentifier.fromNeoExpressConfig(
           this.context.extensionPath,
-          tempFile.path
+          tempFilePath
         );
         if (!identifier || result.isError) {
           Log.error(
@@ -160,7 +158,7 @@ export default class AutoComplete {
       );
     } finally {
       try {
-        await fs.promises.unlink(tempFile.path);
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
       } catch {}
       Log.log(LOG_PREFIX, "Finished initializing well-known manifests...");
       await this.update("finished initializing well-known manifests");

@@ -1,68 +1,72 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 type Props = {
-  children: JSX.Element | string;
+  children?: React.ReactNode;
+  ariaLabel?: string;
   clickOnEnter?: boolean;
+  className?: string;
   roundedBadge?: boolean;
   disabled?: boolean;
+  icon?: string;
+  iconOnly?: boolean;
   style?: React.CSSProperties;
   title?: string;
+  variant?: "primary" | "secondary" | "ghost" | "danger";
   onClick: () => void;
 };
 
 export default function NavButton({
   children,
+  ariaLabel,
   clickOnEnter,
+  className,
   roundedBadge,
   disabled,
+  icon,
+  iconOnly,
   style,
   title,
+  variant = "primary",
   onClick,
 }: Props) {
-  const [hover, setHover] = useState(false);
-  useEffect(() => setHover(disabled ? false : hover), [disabled]);
   const buttonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (clickOnEnter) {
       buttonRef.current?.focus();
-    } else {
-      buttonRef.current?.blur();
     }
-  });
-  const buttonStyle: React.CSSProperties = {
-    backgroundColor: disabled
-      ? "var(--vscode-button-secondaryBackground)"
-      : "var(--vscode-button-background)",
-    color: disabled
-      ? "var(--vscode-button-secondaryForeground)"
-      : "var(--vscode-button-foreground)",
-    border: "none",
-    padding: roundedBadge ? "5px 10px" : "1em 2em 1em 2em",
-    borderRadius: roundedBadge ? 10 : undefined,
-  };
-  const buttonStyleHover: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: "var(--vscode-button-hoverBackground)",
-    cursor: "pointer",
-  };
+  }, [clickOnEnter]);
+  const classes = [
+    "neo-button",
+    `neo-button--${variant}`,
+    roundedBadge ? "neo-button--badge" : "",
+    iconOnly ? "neo-button--icon" : "",
+    className || "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
-    <span style={style}>
+    <span className="neo-button-wrap" style={style}>
       <button
+        aria-label={
+          ariaLabel ||
+          (iconOnly && typeof title === "string" ? title : undefined)
+        }
+        className={classes}
         type="button"
-        style={hover && !disabled ? buttonStyleHover : buttonStyle}
         disabled={!!disabled}
         onClick={(e) => {
           if (roundedBadge) {
-            (e.target as HTMLButtonElement).blur();
+            e.currentTarget.blur();
           }
           onClick();
         }}
-        onMouseMove={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
         ref={buttonRef}
         title={title}
       >
-        {children}
+        {!!icon && (
+          <i aria-hidden="true" className={`codicon codicon-${icon}`} />
+        )}
+        {!iconOnly && children}
       </button>
     </span>
   );

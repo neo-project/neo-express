@@ -28,6 +28,26 @@ namespace test.bctklib
         }
 
         [Fact]
+        public void ValidateFoundStates_rejects_an_empty_truncated_page()
+        {
+            var found = Neo.Network.RPC.Models.RpcFoundStates.FromJson(
+                (Neo.Json.JObject)Neo.Json.JToken.Parse("{\"truncated\":true,\"results\":[]}")!);
+
+            Assert.Throws<InvalidOperationException>(
+                () => StateServiceStore.ValidateFoundStates(Neo.UInt256.Zero, found));
+        }
+
+        [Fact]
+        public void ValidateFoundStates_accepts_an_empty_final_page()
+        {
+            var found = Neo.Network.RPC.Models.RpcFoundStates.FromJson(
+                (Neo.Json.JObject)Neo.Json.JToken.Parse("{\"truncated\":false,\"results\":[]}")!);
+
+            var act = () => StateServiceStore.ValidateFoundStates(Neo.UInt256.Zero, found);
+            act.Should().NotThrow();
+        }
+
+        [Fact]
         public void EnsureCursorAdvanced_rejects_a_non_advancing_cursor()
         {
             var key = new byte[] { 1, 2, 3 };

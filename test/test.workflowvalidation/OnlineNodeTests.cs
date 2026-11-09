@@ -105,6 +105,15 @@ public class OnlineNodeTests
     }
 
     [Fact]
+    public void IsMissingApplicationLog_matches_unknown_transaction_rpc()
+    {
+        OnlineNode.IsMissingApplicationLog(new RpcException(-100, "Unknown transaction/blockhash"))
+            .Should().BeTrue();
+        OnlineNode.IsMissingApplicationLog(new RpcException(-500, "timeout"))
+            .Should().BeFalse();
+    }
+
+    [Fact]
     public void CreatePolicyFailException_explains_default_max_block_system_fee_when_system_fee_is_high()
     {
         var rpcException = new RpcException(OnlineNode.RpcPolicyFailedCode, "Policy check failed");

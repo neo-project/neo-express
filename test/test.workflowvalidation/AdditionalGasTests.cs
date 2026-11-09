@@ -24,6 +24,35 @@ public class AdditionalGasTests
         NodeUtility.AdditionalGasSystemFee(1.5m).Should().Be(150_000_000L);
     }
 
+    [Fact]
+    public void SystemFeeDelta_does_not_pad_ordinary_transactions()
+    {
+        NodeUtility.SystemFeeDelta(0m).Should().Be(0L);
+        NodeUtility.SystemFeeDelta(1m).Should().Be(100_000_000L);
+        NodeUtility.SystemFeeDelta(1m, padInvokeEstimate: false).Should().Be(100_000_000L);
+    }
+
+    [Fact]
+    public void SystemFeeDelta_pads_only_when_requested_for_deploy_or_update()
+    {
+        NodeUtility.SystemFeeDelta(0m, padInvokeEstimate: true).Should().Be(NodeUtility.InvokeEstimatePadDatoshi);
+        NodeUtility.SystemFeeDelta(1m, padInvokeEstimate: true).Should().Be(100_000_000L + NodeUtility.InvokeEstimatePadDatoshi);
+    }
+
+    [Fact]
+    public void SystemFeeDelta_rejects_a_padded_fee_that_would_overflow()
+    {
+        // 92233720368.54775807 GAS scales to exactly long.MaxValue datoshi, which the
+        // converter accepts; adding the deploy/update estimate pad to it used to wrap
+        // into a negative system fee.
+        var maxDatoshiGas = 92233720368.54775807m;
+
+        NodeUtility.SystemFeeDelta(maxDatoshiGas).Should().Be(long.MaxValue);
+        var act = () => NodeUtility.SystemFeeDelta(maxDatoshiGas, padInvokeEstimate: true);
+
+        act.Should().Throw<Exception>().WithMessage("*too large*");
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]

@@ -60,7 +60,7 @@ namespace NeoExpress
 
         public IExpressNode ExpressNode => expressNode;
 
-        public async Task ContractUpdateAsync(string contract, string nefFilePath, string accountName, string password, WitnessScope witnessScope, object? data = null)
+        public async Task ContractUpdateAsync(string contract, string nefFilePath, string accountName, string password, WitnessScope witnessScope, object? data = null, decimal additionalGas = 1m)
         {
             if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
@@ -89,12 +89,13 @@ namespace NeoExpress
 
             var (nefFile, manifest) = await fileSystem.LoadContractAsync(nefFilePath).ConfigureAwait(false);
             var txHash = await expressNode
-                .UpdateAsync(scriptHash, nefFile, manifest, wallet, accountHash, witnessScope, data)
+                .UpdateAsync(scriptHash, nefFile, manifest, wallet, accountHash, witnessScope, data, additionalGas)
                 .ConfigureAwait(false);
-            await writer.WriteTxHashAsync(txHash, "Update", json).ConfigureAwait(false);
+            await expressNode.EnsureTransactionSucceededAsync(txHash).ConfigureAwait(false);
+            await writer.WriteTxHashAsync(txHash, "Update", json, confirmed: true).ConfigureAwait(false);
         }
 
-        public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, string data, bool force)
+        public async Task ContractDeployAsync(string contract, string accountName, string password, WitnessScope witnessScope, string data, bool force, decimal additionalGas = 1m)
         {
             if (!chainManager.TryGetSigningAccount(accountName, password, out var wallet, out var accountHash))
             {
@@ -102,11 +103,34 @@ namespace NeoExpress
             }
 
             var (nefFile, manifest) = await fileSystem.LoadContractAsync(contract).ConfigureAwait(false);
+            var contractHash = Neo.SmartContract.Helper.GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
+            var existing = await expressNode.ListContractsAsync(manifest.Name).ConfigureAwait(false);
+            if (existing.Any(candidate => candidate.hash == contractHash))
+            {
+                var onChainManifest = existing.First(candidate => candidate.hash == contractHash).manifest;
+                if (!ExpressNodeExtensions.HasUpdateMethod(onChainManifest))
+                {
+                    throw new Exception(
+                        $"Contract {manifest.Name} ({contractHash}) is already deployed and has no update method. " +
+                        "Restore a checkpoint or reset the chain to remove it, then deploy again.");
+                }
+                if (!force)
+                {
+                    throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to update the existing contract.");
+                }
+
+                var updateTxHash = await expressNode
+                    .UpdateAsync(contractHash, nefFile, manifest, wallet, accountHash, witnessScope,
+                        string.IsNullOrEmpty(data) ? null : data, additionalGas)
+                    .ConfigureAwait(false);
+                await expressNode.EnsureTransactionSucceededAsync(updateTxHash).ConfigureAwait(false);
+                await WriteDeployResultAsync(manifest.Name, contractHash, updateTxHash, "Update").ConfigureAwait(false);
+                return;
+            }
 
             if (!force)
             {
-                var contracts = await expressNode.ListContractsAsync(manifest.Name).ConfigureAwait(false);
-                if (contracts.Count > 0)
+                if (existing.Count > 0)
                 {
                     throw new Exception($"Contract named {manifest.Name} already deployed. Use --force to deploy contract with conflicting name.");
                 }
@@ -194,25 +218,31 @@ namespace NeoExpress
             }
 
             var txHash = await expressNode
-                .DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope, dataParam)
+                .DeployAsync(nefFile, manifest, wallet, accountHash, witnessScope, dataParam, additionalGas)
                 .ConfigureAwait(false);
+            await expressNode.EnsureTransactionSucceededAsync(txHash).ConfigureAwait(false);
+            await WriteDeployResultAsync(manifest.Name, contractHash, txHash, "Deployment").ConfigureAwait(false);
+        }
 
-            var contractHash = Neo.SmartContract.Helper.GetContractHash(accountHash, nefFile.CheckSum, manifest.Name);
+        private async Task WriteDeployResultAsync(string name, UInt160 contractHash, UInt256 txHash, string action)
+        {
             if (json)
             {
                 using var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
                 await jsonWriter.WriteStartObjectAsync().ConfigureAwait(false);
                 await jsonWriter.WritePropertyNameAsync("contract-name").ConfigureAwait(false);
-                await jsonWriter.WriteValueAsync(manifest.Name).ConfigureAwait(false);
+                await jsonWriter.WriteValueAsync(name).ConfigureAwait(false);
                 await jsonWriter.WritePropertyNameAsync("contract-hash").ConfigureAwait(false);
                 await jsonWriter.WriteValueAsync($"{contractHash}").ConfigureAwait(false);
                 await jsonWriter.WritePropertyNameAsync("tx-hash").ConfigureAwait(false);
                 await jsonWriter.WriteValueAsync($"{txHash}").ConfigureAwait(false);
+                await jsonWriter.WritePropertyNameAsync("action").ConfigureAwait(false);
+                await jsonWriter.WriteValueAsync(action).ConfigureAwait(false);
                 await jsonWriter.WriteEndObjectAsync().ConfigureAwait(false);
             }
             else
             {
-                await writer.WriteLineAsync($"Deployment of {manifest.Name} ({contractHash}) Transaction {txHash} submitted").ConfigureAwait(false);
+                await writer.WriteLineAsync($"{action} of {name} ({contractHash}) Transaction {txHash} confirmed").ConfigureAwait(false);
             }
         }
 
@@ -718,6 +748,8 @@ namespace NeoExpress
                 throw new Exception($"{account} account not found.");
             }
 
+            ValidatePolicyValues(policyValues);
+
             var faunExecFeeScale = await IsFaunHardforkEnabledForNextTxAsync().ConfigureAwait(false);
 
             using var builder = new ScriptBuilder();
@@ -730,7 +762,42 @@ namespace NeoExpress
             builder.EmitDynamicCall(NativeContract.Policy.Hash, "setExecFeeFactor", policyValues.GetScaledExecFeeFactorArgument(faunExecFeeScale));
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await expressNode.EnsureTransactionSucceededAsync(txHash).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"Policies Set", json).ConfigureAwait(false);
+        }
+
+        // Bounds enforced by the native policy setters, mirrored here so that invalid
+        // values fail fast instead of producing a transaction that faults on-chain.
+        // Gas-denominated policies are validated in datoshi after decimal scaling.
+        internal static void ValidatePolicyValues(PolicyValues policyValues)
+        {
+            if (policyValues.GasPerBlock.Value < 0 || policyValues.GasPerBlock.Value > 10 * NativeContract.GAS.Factor)
+                throw new InvalidOperationException($"GasPerBlock policy requires a value between 0 and 10 GAS");
+            if (policyValues.MinimumDeploymentFee.Value < 0)
+                throw new InvalidOperationException($"MinimumDeploymentFee policy requires a non-negative value");
+            if (policyValues.CandidateRegistrationFee.Value <= 0)
+                throw new InvalidOperationException($"CandidateRegistrationFee policy requires a positive value");
+            if (policyValues.OracleRequestFee.Value <= 0)
+                throw new InvalidOperationException($"OracleRequestFee policy requires a positive value");
+            if (policyValues.NetworkFeePerByte.Value < 0 || policyValues.NetworkFeePerByte.Value > MaxFeePerByte)
+                throw new InvalidOperationException($"NetworkFeePerByte policy requires a value between 0 and {MaxFeePerByte}");
+            ValidateStoragePrice(policyValues.StorageFeeFactor);
+            ValidateExecFeeFactor(policyValues.ExecutionFeeFactor);
+        }
+
+        // Policy.SetFeePerByte accepts [0, 100000000]
+        internal const long MaxFeePerByte = 100_000_000;
+
+        internal static void ValidateStoragePrice(uint value)
+        {
+            if (value < 1 || value > PolicyContract.MaxStoragePrice)
+                throw new InvalidOperationException($"StorageFeeFactor policy requires a value between 1 and {PolicyContract.MaxStoragePrice}");
+        }
+
+        internal static void ValidateExecFeeFactor(uint value)
+        {
+            if (value < 1 || value > PolicyContract.MaxExecFeeFactor)
+                throw new InvalidOperationException($"ExecutionFeeFactor policy requires a value between 1 and {PolicyContract.MaxExecFeeFactor}");
         }
 
         public async Task SetPolicyAsync(PolicySettings policy, decimal value, string account, string password)
@@ -762,21 +829,27 @@ namespace NeoExpress
                 if (decimalValue.Decimals > NativeContract.GAS.Decimals)
                     throw new InvalidOperationException($"{policy} policy requires a value with no more than eight decimal places");
                 decimalValue = decimalValue.ChangeDecimals(NativeContract.GAS.Decimals);
+                ValidateGasPolicySetting(policy, decimalValue.Value);
                 builder.EmitDynamicCall(hash, operation, decimalValue.Value);
             }
             else
             {
                 if (decimalCount != 0)
                     throw new InvalidOperationException($"{policy} policy requires a whole number value");
-                if (decimalValue.Value > uint.MaxValue)
-                    throw new InvalidOperationException($"{policy} policy requires a value less than {uint.MaxValue}");
+                if (decimalValue.Value < 0 || decimalValue.Value > uint.MaxValue)
+                    throw new InvalidOperationException($"{policy} policy requires a value between 0 and {uint.MaxValue}");
                 var whole = (uint)decimalValue.Value;
                 var faunExecFeeScale = policy == PolicySettings.ExecutionFeeFactor
                     && await IsFaunHardforkEnabledForNextTxAsync().ConfigureAwait(false);
+                if (policy == PolicySettings.StorageFeeFactor)
+                    ValidateStoragePrice(whole);
+                if (policy == PolicySettings.ExecutionFeeFactor)
+                    ValidateExecFeeFactor(whole);
                 builder.EmitDynamicCall(hash, operation, PolicyExecutionFeeExtensions.GetScaledExecFeeFactorArgument(whole, faunExecFeeScale));
             }
 
             var txHash = await expressNode.ExecuteAsync(wallet, accountHash, WitnessScope.CalledByEntry, builder.ToArray()).ConfigureAwait(false);
+            await expressNode.EnsureTransactionSucceededAsync(txHash).ConfigureAwait(false);
             await writer.WriteTxHashAsync(txHash, $"{policy} Policy Set", json).ConfigureAwait(false);
 
             static bool GasPolicySetting(PolicySettings policy)
@@ -792,6 +865,30 @@ namespace NeoExpress
                     default:
                         return false;
                 }
+            }
+        }
+
+        internal static void ValidateGasPolicySetting(PolicySettings policy, BigInteger datoshi)
+        {
+            switch (policy)
+            {
+                case PolicySettings.GasPerBlock:
+                    if (datoshi < 0 || datoshi > 10 * NativeContract.GAS.Factor)
+                        throw new InvalidOperationException($"{policy} policy requires a value between 0 and 10 GAS");
+                    break;
+                case PolicySettings.MinimumDeploymentFee:
+                    if (datoshi < 0)
+                        throw new InvalidOperationException($"{policy} policy requires a non-negative value");
+                    break;
+                case PolicySettings.CandidateRegistrationFee:
+                case PolicySettings.OracleRequestFee:
+                    if (datoshi <= 0)
+                        throw new InvalidOperationException($"{policy} policy requires a positive value");
+                    break;
+                case PolicySettings.NetworkFeePerByte:
+                    if (datoshi < 0 || datoshi > MaxFeePerByte)
+                        throw new InvalidOperationException($"{policy} policy requires a value between 0 and {MaxFeePerByte}");
+                    break;
             }
         }
 

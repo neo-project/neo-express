@@ -15,6 +15,32 @@ namespace build_tasks
 {
     public class TestNeoManifest
     {
+        [Theory]
+        [InlineData("\"abc\\")]
+        [InlineData("\"\\u12\"")]
+        public void rejects_truncated_escape_sequences(string json)
+        {
+            var exception = Assert.Throws<Exception>(() => SimpleJSON.JSON.Parse(json));
+            Assert.StartsWith("JSON Parse:", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("a,")]
+        public void rejects_top_level_comma(string json)
+        {
+            var exception = Assert.Throws<Exception>(() => SimpleJSON.JSON.Parse(json));
+            Assert.StartsWith("JSON Parse:", exception.Message);
+        }
+
+        [Fact]
+        public void rejects_trailing_backslash()
+        {
+            // 2-char input: double-quote followed by a backslash (bytes 22 5C)
+            const string JSON = "\"\\";
+            var exception = Assert.Throws<Exception>(() => SimpleJSON.JSON.Parse(JSON));
+            Assert.StartsWith("JSON Parse:", exception.Message);
+        }
+
         [Fact]
         public void parse_sample_manifest()
         {

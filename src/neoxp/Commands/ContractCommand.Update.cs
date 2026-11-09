@@ -8,6 +8,7 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+using Neo.BlockchainToolkit.Models;
 using Neo.Network.P2P.Payloads;
 using System.ComponentModel.DataAnnotations;
 
@@ -51,6 +52,9 @@ namespace NeoExpress.Commands
             [Option(Description = "Password to use for NEP-2/NEP-6 account")]
             internal string Password { get; init; } = string.Empty;
 
+            [Option("--gas|-g", CommandOptionType.SingleValue, Description = "Additional GAS to apply to the update (covers fee-estimation shortfall)")]
+            internal decimal AdditionalGas { get; init; } = 1;
+
             [Option(Description = "Path to neo-express data file")]
             internal string Input { get; init; } = string.Empty;
 
@@ -67,8 +71,8 @@ namespace NeoExpress.Commands
                     var (chainManager, _) = chainManagerFactory.LoadChain(Input);
                     var password = chainManager.Chain.ResolvePassword(Account, Password);
                     using var txExec = txExecutorFactory.Create(chainManager, Trace, Json);
-                    var data = ParseUpdateData(Data, txExec.ContractParameterParser);
-                    await txExec.ContractUpdateAsync(Contract, NefFile, Account, password, WitnessScope, data).ConfigureAwait(false);
+                    var data = await ParseUpdateDataAsync(Data, txExec.ExpressNode, chainManager.Chain).ConfigureAwait(false);
+                    await txExec.ContractUpdateAsync(Contract, NefFile, Account, password, WitnessScope, data, AdditionalGas).ConfigureAwait(false);
                     return 0;
                 }
                 catch (Exception ex)
@@ -80,6 +84,15 @@ namespace NeoExpress.Commands
 
             internal static object? ParseUpdateData(string data, Func<string, object> parseData)
                 => string.IsNullOrEmpty(data) ? null : parseData(data);
+
+            internal static async Task<object?> ParseUpdateDataAsync(string data, IExpressNode expressNode, ExpressChain chain)
+            {
+                if (string.IsNullOrEmpty(data))
+                    return null;
+
+                var parser = await expressNode.GetContractParameterParserAsync(chain).ConfigureAwait(false);
+                return parser.ParseParameter(data);
+            }
         }
     }
 }

@@ -31,4 +31,18 @@ public class ContractUpdateCommandTests
 
         data.Should().Be(2);
     }
+
+    [Fact]
+    public void ParseUpdateData_forwards_the_json_to_the_parser()
+    {
+        string? seen = null;
+        var data = ContractCommand.Update.ParseUpdateData("{\"type\":\"Hash160\",\"value\":\"0x00\"}", value =>
+        {
+            seen = value;
+            return value;
+        });
+
+        seen.Should().Be("{\"type\":\"Hash160\",\"value\":\"0x00\"}");
+        data.Should().Be(seen);
+    }
 }

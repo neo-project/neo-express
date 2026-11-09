@@ -32,20 +32,31 @@ public class NeoCscTests
     }
 
     [Theory]
-    // optimize and inline are independent flags: each emits its --no- switch on its own.
+    // optimize and inline are independent flags: each emits its own compiler switch.
     [InlineData(true, true, false, false)]
     [InlineData(false, true, true, false)]
     [InlineData(true, false, false, true)]
     [InlineData(false, false, true, true)]
     public void BuildArguments_emits_independent_optimize_and_inline_switches(
-        bool optimize, bool inline, bool expectNoOptimize, bool expectNoInline)
+        bool optimize, bool inline, bool expectOptimizeNone, bool expectNoInline)
     {
         var args = NeoCsc.BuildArguments(
             new[] { "contract.csproj" }, null, "",
             debug: false, assembly: false, optimize: optimize, inline: inline, addressVersion: 53);
 
-        Assert.Equal(expectNoOptimize, args.Contains("--no-optimize"));
+        Assert.Equal(expectOptimizeNone, args.Contains("--optimize None"));
+        Assert.DoesNotContain("--no-optimize", args);
         Assert.Equal(expectNoInline, args.Contains("--no-inline"));
+    }
+
+    [Fact]
+    public void BuildArguments_emits_explicit_debug_level()
+    {
+        var args = NeoCsc.BuildArguments(
+            new[] { "contract.csproj" }, null, "",
+            debug: true, assembly: false, optimize: true, inline: true, addressVersion: 53);
+
+        Assert.Contains("--debug Extended", args);
     }
 
     [Fact]

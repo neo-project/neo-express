@@ -143,7 +143,7 @@ Run the following command. Note: please replace `hello.nef` with the name of you
 
 ```shell
 > .\neoxp contract deploy hello.nef genesis
-Deployment of hello (0x4e97b0370712bf9f5f0bbb7beb5e4127fac55040) Transaction 0x5933870616f13ceb41462fbae1d460edf998defda9d5c3f074ad785465130cf7 submitted
+Deployment of hello (0x4e97b0370712bf9f5f0bbb7beb5e4127fac55040) Transaction 0x5933870616f13ceb41462fbae1d460edf998defda9d5c3f074ad785465130cf7 confirmed
 ```
 
 ### Invoke

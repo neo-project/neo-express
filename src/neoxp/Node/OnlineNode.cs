@@ -46,7 +46,7 @@ namespace NeoExpress.Node
         {
             this.ProtocolSettings = settings;
             this.chain = chain;
-            rpcClient = new RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: settings);
+            rpcClient = new RpcClient(ExpressChainManager.GetRpcUri(chain, node), protocolSettings: settings);
             consensusNodesKeys = new Lazy<KeyPair[]>(() => chain.GetConsensusNodeKeys());
             autoMine = ShouldAutoMine(chain);
         }
@@ -87,12 +87,12 @@ namespace NeoExpress.Node
                 block => rpcClient.SubmitBlockAsync(block.ToArray()));
         }
 
-        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0)
+        public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0, bool padInvokeEstimate = false)
         {
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
             var tm = await TransactionManager.MakeTransactionAsync(rpcClient, script, signers).ConfigureAwait(false);
 
-            tm.Tx.SystemFee += NodeUtility.AdditionalGasSystemFee(additionalGas);
+            tm.Tx.SystemFee += NodeUtility.SystemFeeDelta(additionalGas, padInvokeEstimate);
 
             var account = wallet.GetAccount(accountHash)
                 ?? throw new Exception($"Account {accountHash} not found in wallet {wallet.Name}");
@@ -242,9 +242,21 @@ namespace NeoExpress.Node
         {
             var hash = txHash.ToString();
             var response = await rpcClient.GetRawTransactionAsync(hash).ConfigureAwait(false);
-            var log = await rpcClient.GetApplicationLogAsync(hash).ConfigureAwait(false);
+            RpcApplicationLog? log = null;
+            try
+            {
+                log = await rpcClient.GetApplicationLogAsync(hash).ConfigureAwait(false);
+            }
+            catch (RpcException ex) when (IsMissingApplicationLog(ex))
+            {
+                // Mempool / unconfirmed txs have no application log yet.
+            }
+
             return (response.Transaction, log);
         }
+
+        internal static bool IsMissingApplicationLog(RpcException ex)
+            => ex.HResult == -100;
 
         public Task<uint> GetTransactionHeightAsync(UInt256 txHash)
         {
@@ -352,17 +364,19 @@ namespace NeoExpress.Node
 
         public async Task<IReadOnlyList<(string key, string value)>> ListStoragesAsync(UInt160 scriptHash)
         {
+            // Express storage listing must remain independent of findstorage's pagination format.
             var json = await rpcClient.RpcSendAsync("expressgetcontractstorage", scriptHash.ToString())
                 .ConfigureAwait(false);
 
-            if (json is not null && json is JArray array)
-            {
-                return array
-                    .Select(s => (s!["key"]!.AsString(), s!["value"]!.AsString()))
-                    .ToList();
-            }
+            if (json is null)
+                return Array.Empty<(string, string)>();
 
-            return Array.Empty<(string, string)>();
+            if (json is not JArray array)
+                throw new InvalidOperationException("Unexpected expressgetcontractstorage response: expected an array.");
+
+            return array
+                .Select(s => (s!["key"]!.AsString(), s!["value"]!.AsString()))
+                .ToList();
         }
 
         public async Task<int> PersistContractAsync(ContractState state, IReadOnlyList<(string key, string value)> storagePairs, ContractCommand.OverwriteForce force)

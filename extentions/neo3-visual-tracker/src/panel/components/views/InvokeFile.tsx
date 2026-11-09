@@ -4,6 +4,7 @@ import InvokeFileInteractiveEditor from "../contracts/InvokeFileInteractiveEdito
 import InvokeFileJsonEditor from "../contracts/InvokeFileJsonEditor";
 import InvokeFileViewRequest from "../../../shared/messages/invokeFileViewRequest";
 import InvokeFileViewState from "../../../shared/viewState/invokeFileViewState";
+import NavButton from "../NavButton";
 
 type Props = {
   viewState: InvokeFileViewState;
@@ -11,20 +12,53 @@ type Props = {
 };
 
 export default function InvokeFile({ viewState, postMessage }: Props) {
+  const activeContract = viewState.fileContents[0]?.contract || "Invocation file";
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        height: "calc(100% - 1px)",
-        maxHeight: "calc(100% - 1px)",
-        borderTop: "1px solid var(--vscode-panel-border)",
-        backgroundColor: "var(--vscode-editor-background)",
-        color: "var(--vscode-editor-foreground)",
-      }}
-    >
-      <div style={{ flex: "2 0", overflow: "auto" }}>
+    <div className="contract-studio">
+      <header className="contract-studio__header">
+        <div className="contract-studio__title-group">
+          <i aria-hidden="true" className="codicon codicon-rocket" />
+          <h1 className="contract-studio__title">Contract Studio</h1>
+          <span className="contract-studio__subtitle">{activeContract}</span>
+        </div>
+        <div className="contract-studio__toolbar">
+          {!viewState.isPartOfDiffView && (
+            <NavButton
+              ariaLabel={
+                viewState.collapseTransactions
+                  ? "Show recent transactions"
+                  : "Hide recent transactions"
+              }
+              icon="history"
+              iconOnly
+              onClick={() => postMessage({ toggleTransactions: true })}
+              title={
+                viewState.collapseTransactions
+                  ? "Show recent transactions"
+                  : "Hide recent transactions"
+              }
+              variant="ghost"
+            />
+          )}
+          <NavButton
+            ariaLabel={
+              viewState.jsonMode
+                ? "Switch to interactive editor"
+                : "Switch to JSON editor"
+            }
+            icon={viewState.jsonMode ? "layout" : "code"}
+            iconOnly
+            onClick={() => postMessage({ toggleJsonMode: true })}
+            title={
+              viewState.jsonMode
+                ? "Switch to interactive editor"
+                : "Switch to JSON editor"
+            }
+            variant="ghost"
+          />
+        </div>
+      </header>
+      <div className="contract-studio__content">
         {viewState.jsonMode && (
           <InvokeFileJsonEditor
             fileContentsJson={viewState.fileContentsJson}
@@ -43,25 +77,18 @@ export default function InvokeFile({ viewState, postMessage }: Props) {
           />
         )}
       </div>
-      <div
-        style={{
-          flex: "0 1",
-          backgroundColor: "var(--vscode-statusBar-background)",
-          color: "var(--vscode-statusBar-foreground)",
-          borderTop: "var(--vscode-statusBar-border)",
-          padding: "3px 15px 3px 15px",
-          fontSize: "0.8rem",
-        }}
-      >
-        {viewState.jsonMode ? "JSON editor mode" : "Interactive mode"} ({" "}
-        <span
-          style={{ cursor: "pointer", textDecoration: "underline" }}
-          onClick={() => postMessage({ toggleJsonMode: true })}
-        >
-          Switch
-        </span>{" "}
-        )
-      </div>
+      <footer className="studio-footer">
+        <span className="studio-footer__mode">
+          <i
+            aria-hidden="true"
+            className={`codicon codicon-${viewState.jsonMode ? "code" : "layout"}`}
+          />
+          {viewState.jsonMode ? "JSON editor" : "Interactive editor"}
+        </span>
+        <span className="studio-footer__note">
+          Changes are saved to the invocation file
+        </span>
+      </footer>
     </div>
   );
 }

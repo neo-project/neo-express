@@ -437,6 +437,23 @@ namespace test.bctklib
         }
 
         [Fact]
+        public async Task LoadInvocationScriptAsync_accepts_invocation_file_at_size_limit()
+        {
+            var fileSystem = new MockFileSystem();
+            var rootPath = fileSystem.AllDirectories.First();
+            var invocationPath = fileSystem.Path.Combine(rootPath, "limit.neo-invoke.json");
+            const string prefix = "{\"contract\":\"0xbcbbcd38fb0c097be28e6aef0177f5d65534eb3b\",\"operation\":\"";
+            const string suffix = "\"}";
+            var content = prefix + new string('x', (int)ContractParameterParser.MaxInvocationFileBytes - prefix.Length - suffix.Length) + suffix;
+            fileSystem.AddFile(invocationPath, new MockFileData(content));
+
+            var parser = new ContractParameterParser(DEFAULT_ADDRESS_VERSION, fileSystem: fileSystem);
+            var script = await parser.LoadInvocationScriptAsync(invocationPath);
+
+            script.Length.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
         public async Task LoadInvocationScriptAsync_rejects_oversized_invocation_file()
         {
             var fileSystem = new MockFileSystem();

@@ -29,6 +29,26 @@ public class NodeUtilityOracleResponseTests
     const byte Prefix_Transaction = 11;
 
     [Fact]
+    public void CreateResponseTx_throws_descriptive_error_when_request_missing()
+    {
+        using var store = new MemoryStore();
+        using var snapshot = new StoreCache(store.GetSnapshot());
+
+        var response = new OracleResponse
+        {
+            Id = 42,
+            Code = OracleResponseCode.Success,
+            Result = System.Array.Empty<byte>(),
+        };
+        var oracleNodes = new[] { ECCurve.Secp256r1.G };
+
+        var action = () => NodeUtility.CreateResponseTx(snapshot, null, response, oracleNodes, ProtocolSettings.Default);
+
+        action.Should().Throw<System.Exception>()
+            .WithMessage("*oracle request found for response id 42*");
+    }
+
+    [Fact]
     public void CreateResponseTx_throws_descriptive_error_when_original_transaction_missing()
     {
         // An empty ledger does not contain the request's original transaction, so

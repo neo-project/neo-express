@@ -23,6 +23,7 @@ using Nito.Disposables;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Net;
+using System.Threading;
 
 namespace NeoExpress
 {
@@ -133,7 +134,7 @@ namespace NeoExpress
 
         internal static string ResolveCheckpointFileName(IFileSystem fileSystem, string path)
         {
-            var checkpointPath = fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-hhmmss}");
+            var checkpointPath = fileSystem.ResolveFileName(path, CHECKPOINT_EXTENSION, () => $"{DateTimeOffset.Now:yyyyMMdd-HHmmss}");
             checkpointPath = fileSystem.Path.GetFullPath(checkpointPath);
 
             var currentDirectory = fileSystem.Path.GetFullPath(fileSystem.Directory.GetCurrentDirectory());
@@ -158,10 +159,48 @@ namespace NeoExpress
         private static bool IsNodeRunning(ExpressConsensusNode node)
         {
             // Check to see if there's a neo-express blockchain currently running by
-            // attempting to open a mutex with the multisig account address for a name
+            // attempting to open a mutex with the consensus account script hash for a name.
+            // TryOpenExisting only returns a handle; WaitOne is required to detect
+            // abandonment when the previous process died without releasing it.
 
             var account = node.Wallet.Accounts.Single(a => a.IsDefault);
-            return Mutex.TryOpenExisting(GLOBAL_PREFIX + account.ScriptHash, out var _);
+            return IsHeldNamedMutex(GLOBAL_PREFIX + account.ScriptHash);
+        }
+
+        internal static bool IsHeldNamedMutex(string mutexName)
+        {
+            try
+            {
+                if (!Mutex.TryOpenExisting(mutexName, out var mutex))
+                    return false;
+
+                using (mutex)
+                {
+                    try
+                    {
+                        if (!mutex.WaitOne(1))
+                            return true;
+
+                        mutex.ReleaseMutex();
+                        return false;
+                    }
+                    catch (AbandonedMutexException)
+                    {
+                        try
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                        catch (ApplicationException)
+                        {
+                        }
+                        return false;
+                    }
+                }
+            }
+            catch (AbandonedMutexException)
+            {
+                return false;
+            }
         }
 
         public bool IsRunning(ExpressConsensusNode? node = null)
@@ -193,16 +232,10 @@ namespace NeoExpress
             try
             {
                 checkpointPath = ResolveCheckpointFileName(checkpointPath);
-                if (fileSystem.File.Exists(checkpointPath))
+                var checkpointExists = fileSystem.File.Exists(checkpointPath);
+                if (checkpointExists && !force)
                 {
-                    if (force)
-                    {
-                        fileSystem.File.Delete(checkpointPath);
-                    }
-                    else
-                    {
-                        throw new Exception("You must specify --force to overwrite an existing file");
-                    }
+                    throw new Exception("You must specify --force to overwrite an existing file");
                 }
 
                 var parentPath = fileSystem.Path.GetDirectoryName(checkpointPath)
@@ -212,7 +245,24 @@ namespace NeoExpress
                     fileSystem.Directory.CreateDirectory(parentPath);
                 }
 
-                var mode = await expressNode.CreateCheckpointAsync(checkpointPath).ConfigureAwait(false);
+                // The node writes the archive directly, so create it next to the destination and
+                // only replace an existing checkpoint once the new archive is complete.
+                var temporaryPath = fileSystem.Path.Combine(
+                    parentPath,
+                    $".checkpoint-{Guid.NewGuid():N}.tmp");
+                IExpressNode.CheckpointMode mode;
+                try
+                {
+                    mode = await expressNode.CreateCheckpointAsync(temporaryPath).ConfigureAwait(false);
+                    fileSystem.File.Move(temporaryPath, checkpointPath, checkpointExists);
+                }
+                finally
+                {
+                    if (fileSystem.File.Exists(temporaryPath))
+                    {
+                        fileSystem.File.Delete(temporaryPath);
+                    }
+                }
 
                 if (writer is not null)
                 {
@@ -251,13 +301,14 @@ namespace NeoExpress
             var nodePath = fileSystem.GetNodePath(node);
             var nodePathBackup = string.Concat(nodePath, ".backup-", Guid.NewGuid().ToString("N"));
 
-            // Step 1: Restore checkpoint to temp location
             var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
             var multiSigAccount = wallet.GetMultiSigAccounts().Single();
-            RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
 
             try
             {
+                // Step 1: Restore checkpoint to temp location
+                RocksDbUtility.RestoreCheckpoint(checkPointArchive, checkpointTempPath, ProtocolSettings.Network, ProtocolSettings.AddressVersion, multiSigAccount.ScriptHash);
+
                 // Step 2: Backup existing node directory (if exists)
                 if (fileSystem.Directory.Exists(nodePath))
                 {
@@ -296,9 +347,16 @@ namespace NeoExpress
             finally
             {
                 // Clean up temp folder if it still exists
-                if (fileSystem.Directory.Exists(checkpointTempPath))
+                try
                 {
-                    fileSystem.Directory.Delete(checkpointTempPath, true);
+                    if (fileSystem.Directory.Exists(checkpointTempPath))
+                    {
+                        fileSystem.Directory.Delete(checkpointTempPath, true);
+                    }
+                }
+                catch
+                {
+                    // Preserve the original restore exception if cleanup fails.
                 }
             }
         }
@@ -333,12 +391,37 @@ namespace NeoExpress
             if (!IsNodeRunning(node))
                 return false;
 
-            var rpcClient = new Neo.Network.RPC.RpcClient(new Uri($"http://localhost:{node.RpcPort}"), protocolSettings: ProtocolSettings);
-            var json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+            var scriptHash = node.Wallet.DefaultAccount?.ScriptHash ?? "<unknown>";
+            using var rpcClient = new Neo.Network.RPC.RpcClient(GetRpcUri(chain, node), protocolSettings: ProtocolSettings);
+            Neo.Json.JToken json;
+            try
+            {
+                json = await rpcClient.RpcSendAsync("expressshutdown").ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or FormatException)
+            {
+                // A node that is already shutting down can accept the connection but
+                // close it before the response body is written, which surfaces as an
+                // empty-body parse error. Re-probe: if the node is gone it was stopping
+                // anyway; otherwise report a diagnosable error.
+                if (!IsNodeRunning(node))
+                    return true;
+                throw new Exception($"Node {scriptHash} did not respond to the shutdown request: {ex.Message}", ex);
+            }
             var processIdToken = json["processId"] ?? json["process-id"];
             var processId = int.Parse(processIdToken!.AsString());
             var process = System.Diagnostics.Process.GetProcessById(processId);
-            await process.WaitForExitAsync().ConfigureAwait(false);
+            // A node that acknowledges expressshutdown but never exits would otherwise
+            // hang neoxp stop (and stop --all) forever.
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new Exception($"Node process {processId} did not exit within 30 seconds of the shutdown request");
+            }
             return true;
         }
 
@@ -355,7 +438,15 @@ namespace NeoExpress
                 try
                 {
                     var defaultAccount = node.Wallet.Accounts.Single(a => a.IsDefault);
-                    using var mutex = new Mutex(true, GLOBAL_PREFIX + defaultAccount.ScriptHash);
+                    // Claiming the named mutex is the real single-instance guard. The
+                    // IsNodeRunning probe in RunAsync can race another process claiming the
+                    // same mutex; only a fresh acquire (createdNew) proves this process owns
+                    // the node slot.
+                    using var mutex = new Mutex(initiallyOwned: true, GLOBAL_PREFIX + defaultAccount.ScriptHash, out var createdNew);
+                    if (!createdNew)
+                    {
+                        throw new Exception("Node already running");
+                    }
 
                     var wallet = DevWallet.FromExpressWallet(ProtocolSettings, node.Wallet);
                     var multiSigAccount = wallet.GetMultiSigAccounts().Single();
@@ -373,6 +464,10 @@ namespace NeoExpress
                         using var rpcServerPlugin = new ExpressRpcServerPlugin(CreateRpcServerSettings(chain, node),
                             expressStorage, multiSigAccount.ScriptHash);
                         using var neoSystem = new Neo.NeoSystem(ProtocolSettings, storeProvider.Name);
+                        using (var snapshot = neoSystem.GetSnapshotCache())
+                        {
+                            chain.ApplyNativePolicySettings(snapshot, ProtocolSettings);
+                        }
 
                         neoSystem.StartNode(new Neo.Network.P2P.ChannelsConfig
                         {
@@ -410,8 +505,8 @@ namespace NeoExpress
         {
             var settings = new Dictionary<string, string>()
             {
-                { "PluginConfiguration:Network", $"{chain.Network}" },
-                { "IgnoreRecoveryLogs", "true" }
+                { "PluginConfiguration:AutoStart", $"{false}" },
+                { "PluginConfiguration:IgnoreRecoveryLogs", $"{true}" }
             };
 
             if (chain.TryReadSetting<long>(MaxBlockSystemFeeSetting, long.TryParse, out var maxBlockSystemFee)
@@ -426,12 +521,10 @@ namespace NeoExpress
 
         internal static RpcServersSettings CreateRpcServerSettings(ExpressChain chain, ExpressConsensusNode node)
         {
-            var ipAddress = chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
-                ? bindAddress : IPAddress.Loopback;
+            var ipAddress = GetRpcBindAddress(chain);
 
             var settings = new Dictionary<string, string>()
             {
-                { "PluginConfiguration:Network", $"{chain.Network}" },
                 { "PluginConfiguration:BindAddress", $"{ipAddress}" },
                 { "PluginConfiguration:Port", $"{node.RpcPort}" },
             };
@@ -446,6 +539,12 @@ namespace NeoExpress
                 settings.Add("PluginConfiguration:MaxFee", $"{maxFee}");
             }
 
+            if (chain.TryReadSetting<int>("rpc.MaxRequestBodySize", int.TryParse, out var maxRequestBodySize)
+                && maxRequestBodySize > 0)
+            {
+                settings.Add("PluginConfiguration:MaxRequestBodySize", $"{maxRequestBodySize}");
+            }
+
             if (chain.TryReadSetting<int>("rpc.MaxIteratorResultItems", int.TryParse, out var maxIteratorResultItems)
                 && maxIteratorResultItems > 0)
             {
@@ -458,6 +557,25 @@ namespace NeoExpress
             var config = new ConfigurationBuilder().AddInMemoryCollection(settings!).Build();
             return RpcServersSettings.Load(config.GetSection("PluginConfiguration"));
         }
+
+        internal static Uri GetRpcUri(ExpressChain chain, ExpressConsensusNode node)
+        {
+            var ipAddress = GetRpcBindAddress(chain);
+            if (IPAddress.Any.Equals(ipAddress))
+            {
+                ipAddress = IPAddress.Loopback;
+            }
+            else if (IPAddress.IPv6Any.Equals(ipAddress))
+            {
+                ipAddress = IPAddress.IPv6Loopback;
+            }
+
+            return new UriBuilder(Uri.UriSchemeHttp, ipAddress.ToString(), node.RpcPort).Uri;
+        }
+
+        static IPAddress GetRpcBindAddress(ExpressChain chain)
+            => chain.TryReadSetting<IPAddress>("rpc.BindAddress", IPAddress.TryParse, out var bindAddress)
+                ? bindAddress : IPAddress.Loopback;
 
         public IExpressStorage GetNodeStorageProvider(ExpressConsensusNode node, bool discard)
         {

@@ -42,27 +42,41 @@ namespace NeoExpress.Models
             ScriptHash = ScriptHash.ToAddress(ProtocolSettings.AddressVersion),
             Label = Label,
             IsDefault = IsDefault,
-            Contract = new ExpressWalletAccount.AccountContract()
-            {
-                Script = Contract.Script.ToHexString(),
-                Parameters = Contract.ParameterList
-                        .Select(p => Enum.GetName(typeof(ContractParameterType), p) ?? string.Empty)
-                        .ToList()
-            }
+            Contract = Contract is null
+                ? null
+                : new ExpressWalletAccount.AccountContract()
+                {
+                    Script = Contract.Script!.ToHexString(),
+                    Parameters = Contract.ParameterList
+                            .Select(p => Enum.GetName(typeof(ContractParameterType), p) ?? string.Empty)
+                            .ToList()
+                }
         };
 
         public static DevWalletAccount FromExpressWalletAccount(ProtocolSettings settings, ExpressWalletAccount account)
         {
-            var keyPair = new KeyPair(account.PrivateKey.HexToBytes());
-            var contract = new Contract()
-            {
-                Script = account.Contract?.Script.HexToBytes(),
-                ParameterList = account.Contract?.Parameters
-                    .Select(Enum.Parse<ContractParameterType>)
-                    .ToArray()
-            };
+            ArgumentNullException.ThrowIfNull(account);
 
-            var scriptHash = account.ScriptHash.ToScriptHash(settings.AddressVersion);
+            KeyPair? keyPair = string.IsNullOrWhiteSpace(account.PrivateKey)
+                ? null
+                : new KeyPair(account.PrivateKey.HexToBytes());
+
+            Contract? contract = !string.IsNullOrWhiteSpace(account.Contract?.Script)
+                ? new Contract()
+                {
+                    Script = account.Contract.Script.HexToBytes(),
+                    ParameterList = account.Contract.Parameters
+                        .Select(Enum.Parse<ContractParameterType>)
+                        .ToArray()
+                }
+                : keyPair is null
+                    ? null
+                    : Contract.CreateSignatureContract(keyPair.PublicKey);
+
+            var scriptHash = !string.IsNullOrWhiteSpace(account.ScriptHash)
+                ? account.ScriptHash.ToScriptHash(settings.AddressVersion)
+                : contract?.ScriptHash
+                    ?? throw new FormatException("Wallet account must specify a script hash or private key");
 
             return new DevWalletAccount(settings, keyPair, contract, scriptHash)
             {

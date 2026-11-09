@@ -196,7 +196,12 @@ const languages: { [code: string]: Language } = {
         group: "set-private-chain",
         type: "shell",
         command: "neoxp",
-        args: ["batch", "-i", "$_CONTRACTNAME_$Tests.neo-express", "test/setup-test-chain.batch"],
+        args: [
+          "batch",
+          "-i",
+          "test/$_CONTRACTNAME_$Tests.neo-express",
+          "test/setup-test-chain.batch",
+        ],
         problemMatcher: [],
       },
       {

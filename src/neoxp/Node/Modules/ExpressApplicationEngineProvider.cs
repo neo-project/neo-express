@@ -20,7 +20,7 @@ namespace NeoExpress.Node
 {
     class ExpressApplicationEngineProvider : IApplicationEngineProvider
     {
-        public ApplicationEngine Create(TriggerType trigger, IVerifiable container, DataCache snapshot, Block persistingBlock, ProtocolSettings settings, long gas, IDiagnostic diagnostic, JumpTable jumpTable)
+        public ApplicationEngine Create(TriggerType trigger, IVerifiable? container, DataCache snapshot, Block? persistingBlock, ProtocolSettings settings, long gas, IDiagnostic? diagnostic, JumpTable jumpTable)
         {
             if (trigger == TriggerType.Application
                     && container is Transaction tx

@@ -1,13 +1,13 @@
 [
   {
-    "contract": "YourName.SampleContract",
+    "contract": "SampleContract",
     "operation": "changeNumber",
     "args": [
       42
     ]
   },
   {
-    "contract": "YourName.SampleContract",
+    "contract": "SampleContract",
     "operation": "getNumber"
   }
 ]

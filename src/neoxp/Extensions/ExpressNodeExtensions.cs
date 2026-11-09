@@ -114,7 +114,10 @@ namespace NeoExpress
                 {
                     if (string.Equals(name, chain.Wallets[i].Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        return chain.Wallets[i].DefaultAccount.GetScriptHash();
+                        var account = chain.Wallets[i].DefaultAccount ?? chain.Wallets[i].Accounts.FirstOrDefault();
+                        if (account is null)
+                            return new None();
+                        return account.GetScriptHash(chain.AddressVersion);
                     }
                 }
             }
@@ -271,6 +274,16 @@ namespace NeoExpress
             return await expressNode.ExecuteAsync(sender, senderHash, WitnessScope.CalledByEntry, script).ConfigureAwait(false);
         }
 
+        public static bool HasUpdateMethod(ContractManifest? manifest)
+        {
+            if (manifest?.Abi is null)
+            {
+                return false;
+            }
+            return manifest.Abi.GetMethod("update", 2) is not null
+                || manifest.Abi.GetMethod("update", 3) is not null;
+        }
+
         public static async Task<UInt256> UpdateAsync(this IExpressNode expressNode,
                                                       UInt160 contractHash,
                                                       NefFile nefFile,
@@ -278,9 +291,13 @@ namespace NeoExpress
                                                       Wallet wallet,
                                                       UInt160 accountHash,
                                                       WitnessScope witnessScope,
-                                                      object? data = null)
+                                                      object? data = null,
+                                                      decimal additionalGas = 1m)
         {
             CheckNefFile(nefFile);
+            // Native ContractManagement.Update only succeeds when the calling
+            // script is the contract itself. Invoke the contract's update method,
+            // which must call ContractManagement.Update internally.
             using var sb = new ScriptBuilder();
             if (data == null)
                 sb.EmitDynamicCall(contractHash,
@@ -294,7 +311,7 @@ namespace NeoExpress
                     manifest.ToJson().ToString(),
                     data);
 
-            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
+            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray(), additionalGas, padInvokeEstimate: true).ConfigureAwait(false);
         }
 
         public static async Task<UInt256> DeployAsync(this IExpressNode expressNode,
@@ -303,7 +320,8 @@ namespace NeoExpress
                                                       Wallet wallet,
                                                       UInt160 accountHash,
                                                       WitnessScope witnessScope,
-                                                      ContractParameter? data)
+                                                      ContractParameter? data,
+                                                      decimal additionalGas = 1m)
         {
             CheckNefFile(nefFile);
 
@@ -314,7 +332,52 @@ namespace NeoExpress
                 nefFile.ToArray(),
                 manifest.ToJson().ToString(),
                 data);
-            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray()).ConfigureAwait(false);
+            // RPC fee estimation is slightly below actual _deploy consumption (observed 480 datoshi).
+            return await expressNode.ExecuteAsync(wallet, accountHash, witnessScope, sb.ToArray(), additionalGas, padInvokeEstimate: true).ConfigureAwait(false);
+        }
+
+        internal static TimeSpan GetConfirmationTimeout(uint millisecondsPerBlock)
+        {
+            var minimum = TimeSpan.FromSeconds(30);
+            var fromBlocks = TimeSpan.FromMilliseconds((long)millisecondsPerBlock * 3 + 5_000);
+            return fromBlocks > minimum ? fromBlocks : minimum;
+        }
+
+        public static async Task EnsureTransactionSucceededAsync(this IExpressNode expressNode, UInt256 txHash, TimeSpan? timeout = null)
+        {
+            timeout ??= GetConfirmationTimeout(expressNode.ProtocolSettings.MillisecondsPerBlock);
+            var stopwatch = Stopwatch.StartNew();
+            Exception? lastError = null;
+            while (stopwatch.Elapsed < timeout)
+            {
+                try
+                {
+                    var (_, log) = await expressNode.GetTransactionAsync(txHash).ConfigureAwait(false);
+                    if (log?.Executions is { Count: > 0 })
+                    {
+                        var fault = log.Executions.FirstOrDefault(execution => execution.VMState == VMState.FAULT);
+                        if (fault is not null)
+                        {
+                            var detail = string.IsNullOrEmpty(fault.ExceptionMessage)
+                                ? string.Empty
+                                : $": {fault.ExceptionMessage}";
+                            throw new Exception($"Transaction {txHash} FAULT{detail}");
+                        }
+                        if (log.Executions.Any(execution => execution.VMState == VMState.HALT))
+                        {
+                            return;
+                        }
+                    }
+                }
+                catch (Exception ex) when (!ex.Message.Contains("FAULT", StringComparison.OrdinalIgnoreCase))
+                {
+                    lastError = ex;
+                }
+                await Task.Delay(400).ConfigureAwait(false);
+            }
+
+            var suffix = lastError is null ? string.Empty : $" {lastError.Message}";
+            throw new TimeoutException($"Transaction {txHash} was not confirmed within {timeout.Value.TotalSeconds:0} seconds.{suffix}");
         }
 
         static void CheckNefFile(NefFile nefFile)

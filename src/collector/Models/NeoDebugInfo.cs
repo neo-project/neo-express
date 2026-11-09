@@ -158,6 +158,11 @@ namespace Neo.Collector.Models
 
         public static NeoDebugInfo FromDebugInfoJson(SimpleJSON.JSONNode json)
         {
+            if (json is null || !json.IsObject)
+            {
+                throw new FormatException("Invalid debug info JSON: expected a JSON object at the root");
+            }
+
             var hash = Hash160.TryParse(json["hash"].Value, out var _hash)
                 ? _hash
                 : throw new FormatException($"Invalid hash {json["hash"].Value}");
@@ -172,6 +177,9 @@ namespace Neo.Collector.Models
 
         static Method MethodFromJson(SimpleJSON.JSONNode json)
         {
+            if (json is null || !json.IsObject)
+                throw new FormatException("Invalid debug info JSON: expected a JSON object for each method entry");
+
             // TODO: parse return, params and variables
             var id = json["id"].Value;
             var (@namespace, name) = NameFromJson(json["name"]);

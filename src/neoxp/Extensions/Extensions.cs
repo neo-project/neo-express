@@ -249,7 +249,7 @@ namespace NeoExpress
                 settings: settings,
                 container: container);
 
-        public static async Task WriteTxHashAsync(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false)
+        public static async Task WriteTxHashAsync(this TextWriter writer, UInt256 txHash, string txType = "", bool json = false, bool confirmed = false)
         {
             if (json)
             {
@@ -259,7 +259,8 @@ namespace NeoExpress
             {
                 if (!string.IsNullOrEmpty(txType))
                     await writer.WriteAsync($"{txType} ").ConfigureAwait(false);
-                await writer.WriteLineAsync($"Transaction {txHash} submitted").ConfigureAwait(false);
+                var status = confirmed ? "confirmed" : "submitted";
+                await writer.WriteLineAsync($"Transaction {txHash} {status}").ConfigureAwait(false);
             }
         }
 

@@ -17,9 +17,6 @@ namespace NeoWorkNet.Commands;
 [Command("stop", Description = "Stop the running Neo-WorkNet instance node")]
 class StopCommand
 {
-    // must match the port hardcoded in RunCommand.GetRpcServerSettings
-    internal const int RPC_PORT = 30332;
-
     readonly IFileSystem fs;
 
     public StopCommand(IFileSystem fs)
@@ -33,7 +30,7 @@ class StopCommand
         {
             var (_, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
 
-            using var rpcClient = new RpcClient(new Uri($"http://localhost:{RPC_PORT}"),
+            using var rpcClient = new RpcClient(new Uri($"http://localhost:{worknet.RpcPort}"),
                 protocolSettings: worknet.BranchInfo.ProtocolSettings);
             Neo.Json.JToken json;
             try

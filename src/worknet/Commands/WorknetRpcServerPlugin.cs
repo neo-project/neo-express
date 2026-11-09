@@ -51,6 +51,7 @@ class WorknetRpcServerPlugin : Plugin
     public override void Dispose()
     {
         rpcServer?.Dispose();
+        rpcClient.Dispose();
         cancellationToken.Dispose();
         base.Dispose();
     }
@@ -142,32 +143,37 @@ class WorknetRpcServerPlugin : Plugin
         var jsonBalances = new JArray();
         foreach (var balance in balances)
         {
-            var jsonTokens = new JArray();
-            for (int i = 0; i < balance.Tokens.Count; i++)
-            {
-                var token = balance.Tokens[i];
-                jsonTokens.Add(new JObject
-                {
-                    ["tokenid"] = token.TokenId.Span.ToHexString(),
-                    ["amount"] = $"{token.Balance}",
-                    ["lastupdatedblock"] = token.LastUpdatedBlock,
-                });
-            }
-
-            jsonBalances.Add(new JObject
-            {
-                ["assethash"] = $"{balance.AssetHash}",
-                ["name"] = balance.Name,
-                ["symbol"] = balance.Symbol,
-                ["decimals"] = $"{balance.Decimals}",
-                ["token"] = jsonTokens,
-            });
+            jsonBalances.Add(CreateNep11BalanceJson(balance));
         }
 
         return new JObject
         {
             ["address"] = Neo.Wallets.Helper.ToAddress(address, neoSystem.Settings.AddressVersion),
             ["balance"] = jsonBalances
+        };
+    }
+
+    internal static JObject CreateNep11BalanceJson(ToolkitRpcServer.Nep11Balance balance)
+    {
+        var jsonTokens = new JArray();
+        for (int i = 0; i < balance.Tokens.Count; i++)
+        {
+            var token = balance.Tokens[i];
+            jsonTokens.Add(new JObject
+            {
+                ["tokenid"] = token.TokenId.Span.ToHexString(),
+                ["amount"] = $"{token.Balance}",
+                ["lastupdatedblock"] = token.LastUpdatedBlock,
+            });
+        }
+
+        return new JObject
+        {
+            ["assethash"] = $"{balance.AssetHash}",
+            ["name"] = balance.Name,
+            ["symbol"] = balance.Symbol,
+            ["decimals"] = $"{balance.Decimals}",
+            ["tokens"] = jsonTokens,
         };
     }
 

@@ -104,6 +104,12 @@ namespace NeoExpress.Node
 
             var populatedBlocks = new JArray();
             var index = start;
+            // Bound the backward scan: on a chain that was fast-forwarded to a high
+            // height with sparsely populated blocks, the search for `count` populated
+            // blocks would otherwise walk back to genesis (O(chain height) storage
+            // reads). Clients continue paging from the last returned index.
+            const uint MaxBlocksScanned = 1000;
+            var scanned = 0u;
             while (true)
             {
                 var hash = NativeContract.Ledger.GetBlockHash(snapshot, index)
@@ -118,7 +124,7 @@ namespace NeoExpress.Node
                     populatedBlocks.Add(index);
                 }
 
-                if (index == 0 || populatedBlocks.Count >= count)
+                if (index == 0 || populatedBlocks.Count >= count || ++scanned >= MaxBlocksScanned)
                     break;
                 index--;
             }
@@ -160,7 +166,9 @@ namespace NeoExpress.Node
 
             if (contractParam is JNumber number)
             {
-                var id = (int)number.AsNumber();
+                // A JSON number outside the int range must surface as an invalid-params
+                // RPC error, not an unhandled OverflowException.
+                var id = ParseParam(() => checked((int)number.AsNumber()));
                 foreach (var native in NativeContract.Contracts)
                 {
                     if (id == native.Id)
@@ -191,14 +199,18 @@ namespace NeoExpress.Node
         }
 
         [RpcMethod]
-        public JArray? ExpressGetContractStorage(JArray @params)
+        public JArray ExpressGetContractStorage(JArray @params)
         {
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
             var scriptHash = ParseUInt160Param(@params, 0);
             var contract = NativeContract.ContractManagement.GetContract(neoSystem.StoreView, scriptHash);
+            // Return an empty array rather than null for an unknown contract: the
+            // RpcServer framework throws NotSupportedException for null handler
+            // results, and OfflineNode.ListStorages already treats an unknown
+            // contract as an empty storage listing.
             if (contract is null)
-                return null;
+                return new JArray();
 
             var storages = new JArray();
             byte[] prefix = StorageKey.CreateSearchPrefix(contract.Id, default);
@@ -252,7 +264,10 @@ namespace NeoExpress.Node
                     // node's working directory (the same restriction the CLI applies before
                     // sending) so a caller cannot create a checkpoint at an arbitrary path.
                     filename = EnsureCheckpointPathWithinDirectory(filename, System.IO.Directory.GetCurrentDirectory());
-                    rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress);
+                    // Take the checkpoint outside any in-flight persist cycle so a block
+                    // and its application logs are always captured together.
+                    persistencePlugin.Value.RunOutsidePersistCycle(
+                        () => rocksDbExpressStorage.CreateCheckpoint(filename, neoSystem.Settings.Network, neoSystem.Settings.AddressVersion, nodeAccountAddress));
                 }
                 catch (Exception ex) when (ex is ArgumentException
                     or System.IO.IOException
@@ -325,7 +340,13 @@ namespace NeoExpress.Node
             var oracleNodes = NativeContract.RoleManagement.GetDesignatedByRole(snapshot, Role.Oracle, height);
             var request = NativeContract.Oracle.GetRequest(snapshot, response.Id);
             var tx = NodeUtility.CreateResponseTx(snapshot, request, response, oracleNodes, neoSystem.Settings);
-            return tx is null ? null : Convert.ToBase64String(tx.ToArray());
+            // NodeUtility.CreateResponseTx returns null when the oracle contract's
+            // 'verify' execution does not HALT; report a clean error rather than a
+            // null result, which the RpcServer framework rejects with
+            // NotSupportedException.
+            return tx is null
+                ? throw new Exception($"Failed to create oracle response transaction for response id {response.Id}: oracle 'verify' execution did not HALT")
+                : Convert.ToBase64String(tx.ToArray());
         }
 
         const int MAX_NOTIFICATIONS = 100;
@@ -631,9 +652,13 @@ namespace NeoExpress.Node
             using var engine = ApplicationEngine.Run(builder.ToArray(), snapshot, settings: neoSystem.Settings);
 
             JObject json = new();
-            if (engine.State == VMState.HALT)
+            // A HALT only proves the invocation finished; the contract decides what the
+            // properties call returns. Anything other than a map on the result stack
+            // yields an empty response instead of an unhandled cast.
+            if (engine.State == VMState.HALT
+                && engine.ResultStack.Count > 0
+                && engine.ResultStack.Peek() is Neo.VM.Types.Map map)
             {
-                var map = engine.ResultStack.Pop<Neo.VM.Types.Map>();
                 foreach (var keyValue in map)
                 {
                     if (keyValue.Value is Neo.VM.Types.CompoundType)

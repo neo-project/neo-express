@@ -398,9 +398,19 @@ namespace System.IO.Compression
 
             for (int pointer = 0; pointer < this.CentralDirImage.Length;)
             {
+                // Check the signature first: a trailing record that is not a
+                // central directory entry (e.g. a digital signature record or
+                // junk) ends the scan even when fewer than 46 bytes remain.
+                if (this.CentralDirImage.Length - pointer < 4)
+                    break;
+
                 uint signature = BitConverter.ToUInt32(CentralDirImage, pointer);
                 if (signature != 0x02014b50)
                     break;
+
+                // The fixed portion of a central directory file header is 46 bytes long.
+                if (this.CentralDirImage.Length - pointer < 46)
+                    throw new InvalidDataException("Central directory entry is truncated");
 
                 bool encodeUTF8 = (BitConverter.ToUInt16(CentralDirImage, pointer + 8) & 0x0800) != 0;
                 ushort method = BitConverter.ToUInt16(CentralDirImage, pointer + 10);
@@ -414,6 +424,11 @@ namespace System.IO.Compression
                 uint headerOffset = BitConverter.ToUInt32(CentralDirImage, pointer + 42);
                 uint headerSize = (uint)(46 + filenameSize + extraSize + commentSize);
                 DateTime modifyTimeDT = DosTimeToDateTime(modifyTime) ?? DateTime.Now;
+
+                // The variable-length filename, extra field and comment must fit
+                // within the central directory image read from the archive.
+                if ((long)pointer + 46 + filenameSize + extraSize + commentSize > this.CentralDirImage.Length)
+                    throw new InvalidDataException("Central directory entry filename, extra field or comment exceeds the central directory size");
 
                 Encoding encoder = encodeUTF8 ? Encoding.UTF8 : DefaultEncoding;
 
@@ -513,6 +528,10 @@ namespace System.IO.Compression
                 throw new InvalidOperationException("Stream cannot be written");
 
             // check signature
+            if (_zfe.HeaderOffset < 0 || _zfe.HeaderOffset > this.ZipFileStream.Length - 4)
+                throw new System.IO.InvalidDataException(
+                    $"Invalid local header offset {_zfe.HeaderOffset} for entry '{_zfe.FilenameInZip}'");
+
             byte[] signature = new byte[4];
             this.ZipFileStream.Seek(_zfe.HeaderOffset, SeekOrigin.Begin);
 
@@ -544,9 +563,21 @@ namespace System.IO.Compression
             {
 #if NOASYNC
                     int bytesRead = inStream.Read(buffer, 0, (int)Math.Min(bytesPending, buffer.Length));
-                    _stream.Write(buffer, 0, bytesRead);
 #else
                 int bytesRead = await inStream.ReadAsync(buffer, 0, (int)Math.Min(bytesPending, buffer.Length));
+#endif
+                if (bytesRead <= 0)
+                {
+                    // dispose the DeflateStream wrapper before throwing so it
+                    // is not leaked by the early exit from the copy loop
+                    if (_zfe.Method == Compression.Deflate)
+                        inStream.Dispose();
+                    throw new InvalidDataException("Zip archive is truncated: declared file size exceeds available data");
+                }
+
+#if NOASYNC
+                    _stream.Write(buffer, 0, bytesRead);
+#else
                 await _stream.WriteAsync(buffer, 0, bytesRead);
 #endif
 
@@ -647,13 +678,26 @@ namespace System.IO.Compression
         {
             byte[] buffer = new byte[2];
 
-            this.ZipFileStream.Seek(_headerOffset + 26, SeekOrigin.Begin);
+            // _headerOffset comes from the (untrusted) central directory: reject
+            // archives whose local header (including its filename/extra length
+            // fields) lies outside the stream before seeking
+            if ((long)_headerOffset + 30 > this.ZipFileStream.Length)
+                throw new System.IO.InvalidDataException($"Local file header offset {_headerOffset} is outside the zip archive");
+
+            this.ZipFileStream.Seek((long)_headerOffset + 26, SeekOrigin.Begin);
             _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort filenameSize = BitConverter.ToUInt16(buffer, 0);
             _ = this.ZipFileStream.Read(buffer, 0, 2);
             ushort extraSize = BitConverter.ToUInt16(buffer, 0);
 
-            return (uint)(30 + filenameSize + extraSize + _headerOffset);
+            // validate as long BEFORE the cast: on a large stream the value
+            // can exceed uint.MaxValue and would wrap around on the cast,
+            // silently passing the bounds check below
+            long fileOffset = (long)_headerOffset + 30 + filenameSize + extraSize;
+            if (fileOffset > this.ZipFileStream.Length)
+                throw new System.IO.InvalidDataException($"File data offset {fileOffset} is outside the zip archive");
+
+            return (uint)fileOffset;
         }
 
         /* Local file header:
@@ -926,10 +970,21 @@ namespace System.IO.Compression
             int minutes = (int)(_dt >> 5) & 63;
             int seconds = (int)(_dt & 31) * 2;
 
-            if (month == 0 || day == 0 || year >= 2107)
+            if (month == 0 || day == 0 || year >= 2107
+                || hours > 23 || minutes > 59 || seconds > 59
+                || day > DateTime.DaysInMonth(year, month))
                 return DateTime.Now;
 
             return new DateTime(year, month, day, hours, minutes, seconds);
+        }
+
+        private static bool IsValidFileTime(long fileTime)
+        {
+            // range accepted by DateTime.FromFileTime: 0 (1601-01-01) to
+            // DateTime.MaxValue.ToFileTime() (9999-12-31 23:59:59.999...)
+            const long maxFileTime = 2650467743999999999;
+
+            return fileTime >= 0 && fileTime <= maxFileTime;
         }
 
         private byte[] CreateExtraInfo(ZipFileEntry _zfe)
@@ -969,11 +1024,21 @@ namespace System.IO.Compression
 
                 if (extraId == 0x0001) // ZIP64 Information
                 {
+                    // tag/size are read at pos+8..pos+11: a record truncated
+                    // before that point is skipped
+                    if (pos + 12 > buffer.Length)
+                        break;
+
                     tag = BitConverter.ToUInt16(buffer, pos + 8);
                     size = BitConverter.ToUInt16(buffer, pos + 10);
 
                     if (tag == 1 && size >= 24)
                     {
+                        // three 8-byte values are read at pos+12..pos+35:
+                        // a record truncated before that point is skipped
+                        if (pos + 36 > buffer.Length)
+                            break;
+
                         if (_zfe.FileSize == 0xFFFFFFFF)
                             _zfe.FileSize = BitConverter.ToInt64(buffer, pos + 12);
                         if (_zfe.CompressedSize == 0xFFFFFFFF)
@@ -985,14 +1050,34 @@ namespace System.IO.Compression
 
                 if (extraId == 0x000A) // NTFS FileTime
                 {
+                    // tag/size are read at pos+8..pos+11: a record truncated
+                    // before that point is skipped
+                    if (pos + 12 > buffer.Length)
+                        break;
+
                     tag = BitConverter.ToUInt16(buffer, pos + 8);
                     size = BitConverter.ToUInt16(buffer, pos + 10);
 
                     if (tag == 1 && size == 24)
                     {
-                        _zfe.ModifyTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 12));
-                        _zfe.AccessTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 20));
-                        _zfe.CreationTime = DateTime.FromFileTime(BitConverter.ToInt64(buffer, pos + 28));
+                        // three 8-byte values are read at pos+12..pos+35:
+                        // a record truncated before that point is skipped
+                        if (pos + 36 > buffer.Length)
+                            break;
+
+                        long modifyTime = BitConverter.ToInt64(buffer, pos + 12);
+                        long accessTime = BitConverter.ToInt64(buffer, pos + 20);
+                        long creationTime = BitConverter.ToInt64(buffer, pos + 28);
+
+                        // NTFS timestamps are optional metadata: out of range
+                        // values are skipped so the entry keeps the DOS timestamp
+                        // already read from the central directory record
+                        if (IsValidFileTime(modifyTime))
+                            _zfe.ModifyTime = DateTime.FromFileTime(modifyTime);
+                        if (IsValidFileTime(accessTime))
+                            _zfe.AccessTime = DateTime.FromFileTime(accessTime);
+                        if (IsValidFileTime(creationTime))
+                            _zfe.CreationTime = DateTime.FromFileTime(creationTime);
                     }
                 }
 

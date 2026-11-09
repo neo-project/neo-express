@@ -78,6 +78,7 @@ namespace test.bctklib
         [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_returns_only_records_matching_the_filter()
         {
+            TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
             using var path = new CleanupPath();
             using var db = SeedTwoTransfers(path);
             using var plugin = new ToolkitPersistencePlugin(db);
@@ -94,6 +95,7 @@ namespace test.bctklib
         [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_returns_every_record_when_unfiltered()
         {
+            TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
             using var path = new CleanupPath();
             using var db = SeedTwoTransfers(path);
             using var plugin = new ToolkitPersistencePlugin(db);
@@ -110,6 +112,7 @@ namespace test.bctklib
         [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_matches_event_names_case_insensitively()
         {
+            TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
             using var path = new CleanupPath();
             using var db = SeedTwoTransfers(path);
             using var plugin = new ToolkitPersistencePlugin(db);
@@ -127,6 +130,7 @@ namespace test.bctklib
         [Fact(Timeout = RocksDbTimeout)]
         public void GetNotifications_walks_records_in_reverse_when_backward()
         {
+            TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
             using var path = new CleanupPath();
             using var db = SeedTwoTransfers(path);
             using var plugin = new ToolkitPersistencePlugin(db);

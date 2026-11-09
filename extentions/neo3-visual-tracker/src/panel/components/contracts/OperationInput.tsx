@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 import * as neonSc from "@cityofzion/neon-core/lib/sc";
 
@@ -9,7 +9,6 @@ type Props = {
   isReadOnly: boolean;
   operation?: string;
   operations: neonSc.ContractMethodDefinitionJson[];
-  style?: React.CSSProperties;
   setOperation: (newValue: string) => void;
 };
 
@@ -17,57 +16,42 @@ export default function OperationInput({
   isReadOnly,
   operation,
   operations,
-  style,
   setOperation,
 }: Props) {
   const [hasFocus, setHasFocus] = useState(false);
-  const inputStyle: React.CSSProperties = {
-    color: "var(--vscode-input-foreground)",
-    backgroundColor: "var(--vscode-input-background)",
-    border: "1px solid var(--vscode-input-border)",
-    boxSizing: "border-box",
-    width: "calc(100% - 15px)",
-    fontSize: "0.9rem",
-    padding: 2,
-    marginTop: 5,
-    marginLeft: 15,
-  };
-  const dropdownStyle: React.CSSProperties = {
-    position: "absolute",
-    zIndex: 1,
-    left: 20,
-    right: 20,
-    color: "var(--vscode-dropdown-foreground)",
-    backgroundColor: "var(--vscode-dropdown-background)",
-    borderBottom: "1px solid var(--vscode-dropdown-border)",
-    borderLeft: "1px solid var(--vscode-dropdown-border)",
-    borderRight: "1px solid var(--vscode-dropdown-border)",
-    maxHeight: "80vh",
-    overflow: "auto",
-  };
+  const inputId = useRef(
+    `neo-operation-${Math.random().toString(36).slice(2)}`
+  ).current;
+
   return (
-    <div style={{ ...style, position: "relative" }}>
-      <div>
-        <strong>Operation:</strong>
-      </div>
+    <div className="neo-field neo-combobox">
+      <label className="neo-field__label" htmlFor={inputId}>
+        Method
+      </label>
       <InputNonDraggable
+        className="neo-input"
         disabled={isReadOnly}
-        style={inputStyle}
+        id={inputId}
         type="text"
-        value={operation}
-        onChange={(e) => setOperation(e.target.value)}
-        onFocus={() => setHasFocus(true)}
+        value={operation || ""}
         onBlur={() => setHasFocus(false)}
+        onChange={(event) => setOperation(event.target.value)}
+        onFocus={() => setHasFocus(true)}
       />
       {hasFocus && !!operations.length && (
-        <div style={dropdownStyle}>
-          {operations.map((operation) => (
+        <div className="neo-combobox__menu">
+          {operations.map((candidate, index) => (
             <OperationTile
-              key={operation.name}
-              operation={operation}
+              key={`${candidate.name}-${index}`}
+              operation={candidate}
               onMouseDown={setOperation}
             />
           ))}
+        </div>
+      )}
+      {!operations.length && (
+        <div className="neo-field__meta">
+          Enter a method name or select a contract with a detected manifest.
         </div>
       )}
     </div>

@@ -3,12 +3,13 @@
   "tasks": [
     {
       "options": {
-        "cwd": "${workspaceFolder}/contract"
+        "cwd": "${workspaceFolder}"
       },
-      "label": "restore",
+      "label": "Sample: tool restore",
       "command": "dotnet",
       "type": "shell",
       "args": [
+        "tool",
         "restore"
       ],
       "group": "build",
@@ -16,25 +17,6 @@
         "reveal": "silent"
       },
       "problemMatcher": []
-    },
-    {
-      "options": {
-        "cwd": "${workspaceFolder}/contract"
-      },
-      "label": "build",
-      "command": "dotnet",
-      "type": "shell",
-      "args": [
-        "build",
-        "/property:GenerateFullPaths=true",
-        "/consoleloggerparameters:NoSummary"
-      ],
-      "group": "build",
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": "$msCompile",
-      "dependsOn": "restore"
     },
     {
       "options": {
@@ -50,7 +32,8 @@
       "presentation": {
         "reveal": "silent"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "dependsOn": "Sample: tool restore"
     },
     {
       "options": {

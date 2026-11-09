@@ -7,8 +7,31 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../../package.json"), "utf8")
 ) as {
   activationEvents?: string[];
-  contributes?: { customEditors?: { viewType?: string }[] };
+  contributes?: {
+    commands?: { command?: string }[];
+    customEditors?: { viewType?: string }[];
+  };
 };
+
+test("every onCommand activation event matches a contributed command", () => {
+  const commands = new Set(
+    (packageJson.contributes?.commands ?? [])
+      .map((entry) => entry.command)
+      .filter((command): command is string => typeof command === "string")
+  );
+
+  const commandEvents = (packageJson.activationEvents ?? []).filter((event) =>
+    event.startsWith("onCommand:")
+  );
+
+  for (const event of commandEvents) {
+    const command = event.slice("onCommand:".length);
+    assert.ok(
+      commands.has(command),
+      `activationEvents entry "${event}" has no matching contributes.commands entry`
+    );
+  }
+});
 
 test("every onCustomEditor activation event matches a contributed customEditor viewType", () => {
   const viewTypes = new Set(

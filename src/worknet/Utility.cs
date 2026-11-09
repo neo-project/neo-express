@@ -51,7 +51,7 @@ static class Utility
         using var textReader = new StreamReader(stream);
         using var reader = new JsonTextReader(textReader);
         var json = await JObject.LoadAsync(reader).ConfigureAwait(false);
-        var uri = Neo.BlockchainToolkit.Extensions.GetValidatedValue<string>(json["uri"], "uri") ?? throw new JsonException("uri");
+        var uri = json["uri"].GetValidatedValue<string>("uri") ?? throw new JsonException("uri");
         var branchInfo = BranchInfo.Parse(json["branch-info"] as JObject ?? throw new JsonException("branch-info"));
         var wallet = ToolkitWallet.Parse(json["consensus-wallet"] as JObject ?? throw new JsonException("consensus-wallet"), branchInfo.ProtocolSettings);
 
@@ -61,7 +61,7 @@ static class Utility
         var rpcPortToken = json["consensus-nodes"]?.FirstOrDefault()?["rpc-port"];
         var rpcPort = rpcPortToken is null
             ? WorknetFile.DefaultRpcPort
-            : Neo.BlockchainToolkit.Extensions.GetValidatedValue<ushort>(rpcPortToken, "rpc-port");
+            : rpcPortToken.GetValidatedValue<ushort>("rpc-port");
         return new WorknetFile(new Uri(uri), branchInfo, wallet) { RpcPort = rpcPort };
     }
 

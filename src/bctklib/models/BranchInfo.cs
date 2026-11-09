@@ -38,10 +38,10 @@ namespace Neo.BlockchainToolkit.Models
         public static BranchInfo Parse(JObject json)
         {
             var network = json["network"].GetValidatedValue<uint>("network");
-            var addressVersion = Extensions.GetValidatedValue<byte>(json["address-version"], "address-version");
-            var index = Extensions.GetValidatedValue<uint>(json["index"], "index");
-            var indexHash = UInt256.Parse(Extensions.GetValidatedValue<string>(json["index-hash"], "index-hash") ?? "");
-            var rootHash = UInt256.Parse(Extensions.GetValidatedValue<string>(json["root-hash"], "root-hash") ?? "");
+            var addressVersion = json["address-version"].GetValidatedValue<byte>("address-version");
+            var index = json["index"].GetValidatedValue<uint>("index");
+            var indexHash = UInt256.Parse(json["index-hash"].GetValidatedValue<string>("index-hash") ?? "");
+            var rootHash = UInt256.Parse(json["root-hash"].GetValidatedValue<string>("root-hash") ?? "");
             var hardforks = ParseHardforks(json["hardforks"] as JObject);
 
             var contracts = new List<ContractInfo>();
@@ -50,9 +50,9 @@ namespace Neo.BlockchainToolkit.Models
             {
                 foreach (var value in contractsJson)
                 {
-                    var id = Extensions.GetValidatedValue<int>(value["id"], "id");
-                    var hash = UInt160.Parse(Extensions.GetValidatedValue<string>(value["hash"], "hash") ?? "");
-                    var name = Extensions.GetValidatedValue<string>(value["name"], "name") ?? "";
+                    var id = value["id"].GetValidatedValue<int>("id");
+                    var hash = UInt160.Parse(value["hash"].GetValidatedValue<string>("hash") ?? "");
+                    var name = value["name"].GetValidatedValue<string>("name") ?? "";
                     contracts.Add(new ContractInfo(id, hash, name));
                 }
             }
@@ -102,7 +102,7 @@ namespace Neo.BlockchainToolkit.Models
             return json.Properties()
                 .ToDictionary(
                     static p => Enum.Parse<Hardfork>(p.Name, ignoreCase: true),
-                    static p => Extensions.GetValidatedValue<uint>(p.Value, p.Name));
+                    static p => p.Value.GetValidatedValue<uint>(p.Name));
         }
 
         static ImmutableDictionary<Hardfork, uint> GetHardforkSettings(IReadOnlyDictionary<Hardfork, uint>? hardforks)

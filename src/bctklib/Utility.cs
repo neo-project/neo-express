@@ -66,7 +66,7 @@ namespace Neo.BlockchainToolkit
 
                 var value = Trie.VerifyProof(rootHash, keyBuffer, proofs);
                 if (value is null)
-                    throw new Exception("Verification failed");
+                    throw new InvalidOperationException("Proof verification returned no value");
 
                 // Note, StorageKey.Deserialized was removed in Neo 3.3.0
                 //       so VerifyProof has to deserialize StorageKey directly
@@ -78,7 +78,7 @@ namespace Neo.BlockchainToolkit
                 };
                 return (key, value);
             }
-            catch (Exception ex) when (ex is EndOfStreamException or InvalidOperationException)
+            catch (Exception ex)
             {
                 throw new Exception("Verification failed", ex);
             }

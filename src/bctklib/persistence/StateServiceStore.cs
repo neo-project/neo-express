@@ -155,9 +155,8 @@ namespace Neo.BlockchainToolkit.Persistence
         {
             for (var context = currentCallback.Value; context is not null; context = context.Parent)
             {
-                if (context.Active && Equals(context.Scope, cacheClient.DownloadLockScope)
-                    && context.ContractHash == contractHash && context.Prefix == prefix)
-                    throw new InvalidOperationException("A download callback cannot reenter the same state cache download");
+                if (context.Active && Equals(context.Scope, cacheClient.DownloadLockScope))
+                    throw new InvalidOperationException("A download callback cannot reenter state cache downloads sharing the same cache");
             }
         }
 
@@ -613,8 +612,6 @@ namespace Neo.BlockchainToolkit.Persistence
 
         IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> FindStates(UInt160 contractHash, byte? prefix)
         {
-            ObjectDisposedException.ThrowIf(disposed, nameof(StateServiceStore));
-
             if (cacheClient.TryGetCachedFoundStates(contractHash, prefix, out var values))
             {
                 return values;

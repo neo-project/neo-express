@@ -651,6 +651,47 @@ namespace test.bctklib
             IsCached(cache2, CONTRACT_X).Should().BeTrue();
         }
 
+        [Theory]
+        [InlineData("memory")]
+        [InlineData("rocksdb")]
+        public async Task concurrent_callbacks_cannot_deadlock_across_different_keys(string kind)
+        {
+            using var cache = CreateCache(kind);
+            using var store = CreateStore(cache, new ScriptedHandler(_ => Task.CompletedTask));
+            using var bothInCallback = new Barrier(2);
+            var nestedErrors = new System.Collections.Concurrent.ConcurrentBag<Exception?>();
+
+            Task Run(UInt160 own, UInt160 other) => Task.Run(() => store.PrefetchAsync(own, TestContext.Current.CancellationToken, _ =>
+            {
+                bothInCallback.SignalAndWait(SafetyTimeout).Should().BeTrue();
+                nestedErrors.Add(Record.Exception(() => store.PrefetchAsync(other, TestContext.Current.CancellationToken).GetAwaiter().GetResult()));
+            }), TestContext.Current.CancellationToken);
+
+            await Task.WhenAll(Run(CONTRACT_X, CONTRACT_Y), Run(CONTRACT_Y, CONTRACT_X))
+                .WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            nestedErrors.Should().HaveCount(2).And.AllBeOfType<InvalidOperationException>();
+            IsCached(cache, CONTRACT_X).Should().BeTrue();
+            IsCached(cache, CONTRACT_Y).Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData("memory")]
+        [InlineData("rocksdb")]
+        public async Task dispose_during_active_seek_does_not_fail_the_seek(string kind)
+        {
+            var arrived = NewGate();
+            var release = NewGate();
+            var handler = new ScriptedHandler(async _ => { arrived.TrySetResult(); await release.Task; });
+            using var cache = CreateCache(kind);
+            var store = CreateStore(cache, handler);
+            var seek = Task.Run(() => store.Seek(SeekKey(1), SeekDirection.Forward).ToList(), TestContext.Current.CancellationToken);
+            await arrived.Task.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            store.Dispose();
+            release.SetResult();
+            var error = await Record.ExceptionAsync(() => seek.WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken));
+            error.Should().BeNull();
+        }
+
         [Fact]
         public async Task callback_can_download_the_same_contract_in_an_independent_cache_namespace()
         {

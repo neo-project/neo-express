@@ -403,6 +403,42 @@ public class ExportCommandTests
     }
 
     [Fact]
+    public void temporary_file_is_reported_when_exists_returns_false_but_delete_fails()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var chain = ExpressChainManagerFactory.CreateChain(1, null);
+            var node = chain.ConsensusNodes[0];
+            var config = Path.Combine(directory, $"{node.Wallet.Name}.config.json");
+            var command = NewCommand(file =>
+            {
+                file.Setup(f => f.Move(Moq.It.Is<string>(s => s.EndsWith(".tmp")), config))
+                    .Throws(new IOException("simulated move failure"));
+                // File.Exists can return false on permission/IO errors even though the file is
+                // present; deletion must still be attempted and its failure reported.
+                file.Setup(f => f.Exists(Moq.It.Is<string>(p => p.EndsWith(".tmp") && p.Contains(".config.json."))))
+                    .Returns(false);
+                file.Setup(f => f.Delete(Moq.It.Is<string>(p => p.EndsWith(".tmp") && p.Contains(".config.json."))))
+                    .Throws(new IOException("locked"));
+            });
+            using var warnings = new StringWriter();
+
+            var action = () => command.ExportNode(chain.GetProtocolSettings(), node, directory, "secret-pw", warnings);
+
+            action.Should().Throw<IOException>().WithMessage("simulated move failure");
+            var leftovers = Directory.EnumerateFiles(directory, "*.tmp").ToList();
+            leftovers.Should().ContainSingle();
+            warnings.ToString().Should().Contain(leftovers[0]);
+            warnings.ToString().Should().NotContain("secret-pw");
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
     public void export_writes_resolved_protocol_configuration_for_neo_cli()
     {
         var chain = ExpressChainManagerFactory.CreateChain(1, null);

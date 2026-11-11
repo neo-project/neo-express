@@ -95,8 +95,10 @@ namespace NeoExpress.Commands
         {
             try
             {
-                if (fileSystem.File.Exists(path))
-                    fileSystem.File.Delete(path);
+                // Delete unconditionally: File.Delete succeeds when the file is absent, while
+                // File.Exists can return false on permission/IO errors and silently skip deletion
+                // of a file that may contain sensitive data.
+                fileSystem.File.Delete(path);
                 return true;
             }
             catch (Exception)

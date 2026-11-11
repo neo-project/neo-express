@@ -87,7 +87,9 @@ static class Utility
 
     // Only the default worknet uses the shared legacy "data" directory. Refuse to use or replace it
     // when its owner cannot be established: a marker naming another worknet, or no marker while
-    // another worknet file without its own "<name>.data" directory could be its legacy owner.
+    // another worknet file exists in the directory. A named worknet having its own "<name>.data"
+    // directory does not prove the unmarked legacy data is not its earlier database, so it stays
+    // a claimant until ownership of the legacy directory is explicitly recorded.
     public static void EnsureLegacyDataNotShared(this IFileSystem fs, string filename, string dataDir)
     {
         if (!fs.Directory.Exists(dataDir))
@@ -109,7 +111,7 @@ static class Utility
         var dirname = fs.Path.GetDirectoryName(fs.Path.GetFullPath(filename))!;
         var claimants = fs.Directory.EnumerateFiles(dirname, "*" + WORKNET_EXTENSION)
             .Select(f => fs.Path.GetFileName(f))
-            .Where(n => !n.Equals(name, StringComparison.Ordinal) && !fs.Directory.Exists(fs.Path.Combine(dirname, $"{n}.data")))
+            .Where(n => !n.Equals(name, StringComparison.Ordinal))
             .ToList();
         if (claimants.Count > 0)
         {

@@ -95,6 +95,32 @@ public class WorknetStorageIntegrationTests : IDisposable
     }
 
     [Fact]
+    public void Force_on_default_is_refused_when_named_worknet_has_own_data_but_legacy_data_is_unmarked()
+    {
+        // Migration sequence: the unmarked legacy "data" directory holds TestNet's database, then
+        // TestNet is recreated with its own ".data" directory. The new directory does not prove the
+        // legacy data is not TestNet's earlier database, so forced replacement must stay refused
+        // until ownership of the legacy directory is explicitly recorded.
+        var def = Path.Combine(root, "default.neo-worknet");
+        File.WriteAllText(def, "D");
+        Directory.CreateDirectory(Path.Combine(root, "data"));
+        Write(Path.Combine(root, "data"), "T-legacy");
+        var named = Create("testnet.neo-worknet", "T");
+
+        var act = () => fs.EnsureLegacyDataNotShared(def, fs.GetWorknetDataDirectory(def));
+
+        act.Should().Throw<Exception>().WithMessage("*may belong to another worknet*");
+        Read(Path.Combine(root, "data")).Should().Be("T-legacy");
+
+        File.WriteAllText(Path.Combine(root, "data", ".worknet-owner"), "default.neo-worknet");
+        fs.EnsureLegacyDataNotShared(def, fs.GetWorknetDataDirectory(def));
+        Replace(def, "D2", force: true);
+
+        Read(fs.GetWorknetDataDirectory(def)).Should().Be("D2");
+        Read(fs.GetWorknetDataDirectory(named)).Should().Be("T");
+    }
+
+    [Fact]
     public void ScenarioA_worknets_in_same_directory_have_isolated_databases()
     {
         var a = Create("a.neo-worknet", "A");

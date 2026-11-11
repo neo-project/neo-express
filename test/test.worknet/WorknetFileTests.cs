@@ -611,7 +611,7 @@ public class WorknetFileTests
     }
 
     [Fact]
-    public void Default_with_legacy_data_and_named_worknet_with_own_data_are_both_usable()
+    public void Default_with_legacy_data_and_named_worknet_with_own_data_is_ambiguous_until_marked()
     {
         var root = NewRoot();
         try
@@ -624,8 +624,14 @@ public class WorknetFileTests
             Directory.CreateDirectory(Path.Combine(root, "data"));
             Directory.CreateDirectory(named + ".data");
 
-            fs.GetExistingWorknetDataDirectory(def).Should().Be(Path.Combine(root, "data"));
+            // The named worknet's own data directory does not prove the unmarked legacy
+            // "data" is not its earlier database, so the default must not adopt it.
+            ((Action)(() => fs.GetExistingWorknetDataDirectory(def)))
+                .Should().Throw<Exception>().WithMessage("*may belong to another worknet*");
             fs.GetExistingWorknetDataDirectory(named).Should().Be(named + ".data");
+
+            File.WriteAllText(Path.Combine(root, "data", ".worknet-owner"), "default.neo-worknet");
+            fs.GetExistingWorknetDataDirectory(def).Should().Be(Path.Combine(root, "data"));
         }
         finally { Directory.Delete(root, true); }
     }

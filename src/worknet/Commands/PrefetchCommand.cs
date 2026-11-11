@@ -47,9 +47,7 @@ class PrefetchCommand
             }
 
             var (filename, worknet) = await fs.LoadWorknetAsync(app).ConfigureAwait(false);
-            var dataDir = fs.GetWorknetDataDirectory(filename);
-            if (!fs.Directory.Exists(dataDir))
-                throw new Exception($"Cannot locate data directory {dataDir}");
+            var dataDir = fs.GetExistingWorknetDataDirectory(filename);
 
             var contracts = worknet.BranchInfo.Contracts;
             if (!UInt160.TryParse(Contract, out var contractHash))

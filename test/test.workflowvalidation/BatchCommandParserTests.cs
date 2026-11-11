@@ -10,6 +10,7 @@
 
 using FluentAssertions;
 using McMaster.Extensions.CommandLineUtils;
+using NeoExpress;
 using NeoExpress.Commands;
 using System.ComponentModel.DataAnnotations;
 using Xunit;
@@ -92,6 +93,7 @@ public class BatchCommandParserTests
     {
         var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
         app.Conventions.UseDefaultConventions();
+        app.UseInvariantValueParsing();
 
         var args = verb == "deploy"
             ? new[] { "contract", verb, "contract.nef", "alice", "--gas", "1.5" }
@@ -233,9 +235,9 @@ public class BatchCommandParserTests
     {
         var app = new CommandLineApplication<BatchCommand.BatchFileCommands>();
         app.Conventions.UseDefaultConventions();
+        app.UseInvariantValueParsing();
 
         var result = app.Parse("execute", "0c14aa", "--account", "genesis", "--gas", "1.5");
-
         result.SelectedCommand.GetValidationResult().Should().Be(ValidationResult.Success);
         var model = ((CommandLineApplication<BatchCommand.BatchFileCommands.Execute>)result.SelectedCommand).Model;
         model.InputText.Should().Be("0c14aa");

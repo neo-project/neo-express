@@ -36,8 +36,8 @@ public class CommandLineApplicationExtensionsTests
             CultureInfo.CurrentCulture = new CultureInfo("de-DE");
 
             var app = new CommandLineApplication<DecimalModel>();
-            app.UseInvariantValueParsing();
             app.Conventions.UseDefaultConventions();
+            app.UseInvariantValueParsing();
 
             app.Parse("--value", "1.5");
 

@@ -62,7 +62,17 @@ namespace Neo.BlockchainToolkit.Persistence
         readonly BranchInfo branchInfo;
         readonly IReadOnlyDictionary<int, UInt160> contractMap;
         readonly IReadOnlyDictionary<UInt160, string> contractNameMap;
-        bool disposed = false;
+        volatile bool disposed;
+        readonly object lifetimeGate = new();
+        int activeOperations;
+
+        sealed class DownloadCallback
+        {
+            public DownloadCallback? Parent;
+            public volatile bool Active = true;
+        }
+
+        static readonly AsyncLocal<DownloadCallback?> currentCallback = new();
 
         public ProtocolSettings Settings => branchInfo.ProtocolSettings;
 
@@ -95,16 +105,82 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public void Dispose()
         {
-            if (!disposed)
+            bool release;
+            lock (lifetimeGate)
+            {
+                if (disposed)
+                    return;
+                disposed = true;
+                release = activeOperations == 0;
+            }
+            if (release)
+                DisposeResources();
+        }
+
+        IDisposable BeginOperation()
+        {
+            lock (lifetimeGate)
+            {
+                ObjectDisposedException.ThrowIf(disposed, this);
+                activeOperations++;
+            }
+            return new DelegateDisposable(EndOperation);
+        }
+
+        void EndOperation()
+        {
+            bool release;
+            lock (lifetimeGate)
+                release = --activeOperations == 0 && disposed;
+            if (release)
+                DisposeResources();
+        }
+
+        void DisposeResources()
+        {
+            try
             {
                 rpcClient.Dispose();
+            }
+            finally
+            {
                 cacheClient.Dispose();
-                disposed = true;
+            }
+        }
+
+        void ThrowIfCallbackReentry()
+        {
+            for (var context = currentCallback.Value; context is not null; context = context.Parent)
+            {
+                if (context.Active)
+                    throw new InvalidOperationException("A download callback cannot reenter any state cache download");
+            }
+        }
+
+        void InvokeDownloadCallback(Action<RpcFoundStates>? callback, RpcFoundStates found)
+        {
+            if (callback is null)
+                return;
+            var context = new DownloadCallback
+            {
+                Parent = currentCallback.Value
+            };
+            currentCallback.Value = context;
+            try
+            {
+                callback(found);
+            }
+            finally
+            {
+                context.Active = false;
+                currentCallback.Value = context.Parent;
             }
         }
 
         public async Task<OneOf<Success, Error<string>>> PrefetchAsync(UInt160 contractHash, CancellationToken token, Action<RpcFoundStates>? callback = null)
         {
+            using var operation = BeginOperation();
+            token.ThrowIfCancellationRequested();
             var info = branchInfo.Contracts.Single(c => c.Hash == contractHash);
 
             if (info.Id < 0)
@@ -116,7 +192,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
                     for (var i = 0; i < prefixes.Count; i++)
                     {
-                        if (!cacheClient.TryGetCachedFoundStates(contractHash, prefixes[i], out var _))
+                        if (!cacheClient.IsFoundStatesCached(contractHash, prefixes[i]))
                         {
                             anyPrefixDownloaded = true;
                             await DownloadStatesAsync(contractHash, prefixes[i], callback, token).ConfigureAwait(false);
@@ -134,7 +210,7 @@ namespace Neo.BlockchainToolkit.Persistence
             }
             else
             {
-                if (cacheClient.TryGetCachedFoundStates(contractHash, null, out var _))
+                if (cacheClient.IsFoundStatesCached(contractHash, null))
                 {
                     return new Error<string>($"{info.Name} contract ({contractHash}) already fetched");
                 }
@@ -278,7 +354,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public byte[]? TryGet(byte[]? _key)
         {
-            ObjectDisposedException.ThrowIf(disposed, nameof(StateServiceStore));
+            using var operation = BeginOperation();
 
             _key ??= Array.Empty<byte>();
             var contractId = BinaryPrimitives.ReadInt32LittleEndian(_key.AsSpan(0, 4));
@@ -383,7 +459,7 @@ namespace Neo.BlockchainToolkit.Persistence
 
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? _key, SeekDirection direction)
         {
-            ObjectDisposedException.ThrowIf(disposed, nameof(StateServiceStore));
+            using var operation = BeginOperation();
 
             _key ??= Array.Empty<byte>();
             var contractId = BinaryPrimitives.ReadInt32LittleEndian(_key.AsSpan(0, 4));
@@ -530,8 +606,6 @@ namespace Neo.BlockchainToolkit.Persistence
 
         IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> FindStates(UInt160 contractHash, byte? prefix)
         {
-            ObjectDisposedException.ThrowIf(disposed, nameof(StateServiceStore));
-
             if (cacheClient.TryGetCachedFoundStates(contractHash, prefix, out var values))
             {
                 return values;
@@ -550,6 +624,15 @@ namespace Neo.BlockchainToolkit.Persistence
         async Task<int> DownloadStatesAsync(UInt160 contractHash, byte? prefix, Action<RpcFoundStates>? callback, CancellationToken token)
         {
             const string loggerName = nameof(DownloadStatesAsync);
+            token.ThrowIfCancellationRequested();
+            ThrowIfCallbackReentry();
+            // Serialize downloads of the same (contract, prefix) only. If another download
+            // finished while waiting, its committed entry is reused and nothing is fetched.
+            using var downloadLock = await cacheClient.AcquireDownloadLockAsync(contractHash, prefix, token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+            if (cacheClient.IsFoundStatesCached(contractHash, prefix))
+                return 0;
+
             Activity? activity = DownloadStatesStart(loggerName, contractHash, prefix);
             var count = 0;
             var stopwatch = Stopwatch.StartNew();
@@ -563,17 +646,13 @@ namespace Neo.BlockchainToolkit.Persistence
                     token.ThrowIfCancellationRequested();
                     var found = await rpcClient.FindStatesAsync(branchInfo.RootHash, contractHash, prefixOwner.Memory, from).ConfigureAwait(false);
                     token.ThrowIfCancellationRequested();
-                    callback?.Invoke(found);
+                    InvokeDownloadCallback(callback, found);
+                    token.ThrowIfCancellationRequested();
                     if (WriteFoundStates(found, snapshot, ref from, ref count, loggerName))
                         break;
                 }
                 snapshot.Commit();
                 return count;
-            }
-            catch
-            {
-                cacheClient.DropCachedFoundStates(contractHash, prefix);
-                throw;
             }
             finally
             {
@@ -584,6 +663,12 @@ namespace Neo.BlockchainToolkit.Persistence
         int DownloadStates(UInt160 contractHash, byte? prefix, CancellationToken token)
         {
             const string loggerName = nameof(DownloadStates);
+            token.ThrowIfCancellationRequested();
+            ThrowIfCallbackReentry();
+            using var downloadLock = cacheClient.AcquireDownloadLock(contractHash, prefix, token);
+            if (cacheClient.IsFoundStatesCached(contractHash, prefix))
+                return 0;
+
             Activity? activity = DownloadStatesStart(loggerName, contractHash, prefix);
             var count = 0;
             var stopwatch = Stopwatch.StartNew();
@@ -602,11 +687,6 @@ namespace Neo.BlockchainToolkit.Persistence
                 }
                 snapshot.Commit();
                 return count;
-            }
-            catch
-            {
-                cacheClient.DropCachedFoundStates(contractHash, prefix);
-                throw;
             }
             finally
             {

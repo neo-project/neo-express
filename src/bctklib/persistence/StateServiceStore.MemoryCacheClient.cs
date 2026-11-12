@@ -24,6 +24,16 @@ namespace Neo.BlockchainToolkit.Persistence
             readonly ConcurrentDictionary<(UInt160 contractHash, byte? prefix), IList<(ReadOnlyMemory<byte>, byte[])>> foundStateMap = new();
             private bool disposed;
 
+            readonly KeyedAsyncLock<(UInt160, byte?)> downloadLocks = new();
+
+            public object DownloadLockScope => downloadLocks;
+
+            public IDisposable AcquireDownloadLock(UInt160 contractHash, byte? prefix, CancellationToken token)
+                => downloadLocks.Acquire((contractHash, prefix), token);
+
+            public Task<IDisposable> AcquireDownloadLockAsync(UInt160 contractHash, byte? prefix, CancellationToken token)
+                => downloadLocks.AcquireAsync((contractHash, prefix), token);
+
             // Value is null when the key is cached as missing.
             sealed record CacheEntry(byte[]? Value);
 
@@ -79,6 +89,9 @@ namespace Neo.BlockchainToolkit.Persistence
                 _ = storageMap.TryAdd((contractHash, key.ToArray()), new CacheEntry(value is null ? null : (byte[])value.Clone()));
             }
 
+            public bool IsFoundStatesCached(UInt160 contractHash, byte? prefix)
+                => TryGetCachedFoundStates(contractHash, prefix, out _);
+
             public bool TryGetCachedFoundStates(UInt160 contractHash, byte? prefix, out IEnumerable<(ReadOnlyMemory<byte> key, byte[] value)> value)
             {
                 if (disposed)
@@ -103,14 +116,6 @@ namespace Neo.BlockchainToolkit.Persistence
                 // snapshot commits only if this caller wins publication; otherwise
                 // its duplicate result is discarded without disturbing the winner.
                 return new Snapshot(foundStateMap, (contractHash, prefix));
-            }
-
-            public void DropCachedFoundStates(UInt160 contractHash, byte? prefix)
-            {
-                if (disposed)
-                    throw new ObjectDisposedException(nameof(MemoryCacheClient));
-
-                _ = foundStateMap.TryRemove((contractHash, prefix), out _);
             }
 
             class Snapshot : ICacheSnapshot

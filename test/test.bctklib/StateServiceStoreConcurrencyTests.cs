@@ -703,21 +703,52 @@ namespace test.bctklib
         }
 
         [Fact]
-        public async Task callback_can_download_the_same_contract_in_an_independent_cache_namespace()
+        public async Task callback_cannot_download_in_an_independent_cache_namespace()
         {
             db = RocksDbUtility.OpenDb(dbPath);
             using var cache1 = new StateServiceStore.RocksDbCacheClient(db, true, "first");
             using var cache2 = new StateServiceStore.RocksDbCacheClient(db, true, "second");
-            var pages = ProvenPages();
-            var handler2 = new ScriptedHandler(_ => Task.CompletedTask, _ => pages.complete);
+            var handler2 = new ScriptedHandler(_ => throw new InvalidOperationException("unexpected RPC"));
             using var store1 = CreateStore(cache1, new ScriptedHandler(_ => Task.CompletedTask));
-            using var store2 = CreateStore(cache2, handler2, pages.branch);
+            using var store2 = CreateStore(cache2, handler2);
             await store1.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ =>
-                store2.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken).GetAwaiter().GetResult()).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
-            handler2.RequestCount.Should().Be(1);
-            AssertContents(cache2);
-            cache1.TryGetCachedFoundStates(CONTRACT_X, null, out var states).Should().BeTrue();
-            states.Should().BeEmpty();
+            {
+                Action nested = () => store2.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken).GetAwaiter().GetResult();
+                nested.Should().Throw<InvalidOperationException>().WithMessage("*callback*reenter*");
+            }).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            handler2.RequestCount.Should().Be(0);
+            IsCached(cache2, CONTRACT_X).Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task concurrent_callbacks_cannot_deadlock_across_independent_stores()
+        {
+            db = RocksDbUtility.OpenDb(dbPath);
+            using var cache1 = new StateServiceStore.RocksDbCacheClient(db, true, "first");
+            using var cache2 = new StateServiceStore.RocksDbCacheClient(db, true, "second");
+            using var store1 = CreateStore(cache1, new ScriptedHandler(_ => Task.CompletedTask));
+            using var store2 = CreateStore(cache2, new ScriptedHandler(_ => Task.CompletedTask));
+            using var bothInCallback = new Barrier(2);
+            var nestedErrors = new System.Collections.Concurrent.ConcurrentBag<Exception?>();
+
+            Task Run(StateServiceStore own, StateServiceStore other)
+            {
+                var invoked = 0;
+                return Task.Run(() => own.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken, _ =>
+                {
+                    if (Interlocked.Exchange(ref invoked, 1) == 1)
+                        return;
+                    bothInCallback.SignalAndWait(SafetyTimeout).Should().BeTrue();
+                    nestedErrors.Add(Record.Exception(() => other.PrefetchAsync(CONTRACT_X, TestContext.Current.CancellationToken).GetAwaiter().GetResult()));
+                    bothInCallback.SignalAndWait(SafetyTimeout).Should().BeTrue();
+                }), TestContext.Current.CancellationToken);
+            }
+
+            await Task.WhenAll(Run(store1, store2), Run(store2, store1))
+                .WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            nestedErrors.Should().HaveCount(2).And.AllBeOfType<InvalidOperationException>();
+            IsCached(cache1, CONTRACT_X).Should().BeTrue();
+            IsCached(cache2, CONTRACT_X).Should().BeTrue();
         }
 
         [Theory]

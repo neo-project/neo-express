@@ -68,9 +68,6 @@ namespace Neo.BlockchainToolkit.Persistence
 
         sealed class DownloadCallback
         {
-            public required object Scope;
-            public required UInt160 ContractHash;
-            public byte? Prefix;
             public DownloadCallback? Parent;
             public volatile bool Active = true;
         }
@@ -151,24 +148,21 @@ namespace Neo.BlockchainToolkit.Persistence
             }
         }
 
-        void ThrowIfCallbackReentry(UInt160 contractHash, byte? prefix)
+        void ThrowIfCallbackReentry()
         {
             for (var context = currentCallback.Value; context is not null; context = context.Parent)
             {
-                if (context.Active && Equals(context.Scope, cacheClient.DownloadLockScope))
-                    throw new InvalidOperationException("A download callback cannot reenter state cache downloads sharing the same cache");
+                if (context.Active)
+                    throw new InvalidOperationException("A download callback cannot reenter any state cache download");
             }
         }
 
-        void InvokeDownloadCallback(Action<RpcFoundStates>? callback, RpcFoundStates found, UInt160 contractHash, byte? prefix)
+        void InvokeDownloadCallback(Action<RpcFoundStates>? callback, RpcFoundStates found)
         {
             if (callback is null)
                 return;
             var context = new DownloadCallback
             {
-                Scope = cacheClient.DownloadLockScope,
-                ContractHash = contractHash,
-                Prefix = prefix,
                 Parent = currentCallback.Value
             };
             currentCallback.Value = context;
@@ -631,7 +625,7 @@ namespace Neo.BlockchainToolkit.Persistence
         {
             const string loggerName = nameof(DownloadStatesAsync);
             token.ThrowIfCancellationRequested();
-            ThrowIfCallbackReentry(contractHash, prefix);
+            ThrowIfCallbackReentry();
             // Serialize downloads of the same (contract, prefix) only. If another download
             // finished while waiting, its committed entry is reused and nothing is fetched.
             using var downloadLock = await cacheClient.AcquireDownloadLockAsync(contractHash, prefix, token).ConfigureAwait(false);
@@ -652,7 +646,7 @@ namespace Neo.BlockchainToolkit.Persistence
                     token.ThrowIfCancellationRequested();
                     var found = await rpcClient.FindStatesAsync(branchInfo.RootHash, contractHash, prefixOwner.Memory, from).ConfigureAwait(false);
                     token.ThrowIfCancellationRequested();
-                    InvokeDownloadCallback(callback, found, contractHash, prefix);
+                    InvokeDownloadCallback(callback, found);
                     token.ThrowIfCancellationRequested();
                     if (WriteFoundStates(found, snapshot, ref from, ref count, loggerName))
                         break;
@@ -670,7 +664,7 @@ namespace Neo.BlockchainToolkit.Persistence
         {
             const string loggerName = nameof(DownloadStates);
             token.ThrowIfCancellationRequested();
-            ThrowIfCallbackReentry(contractHash, prefix);
+            ThrowIfCallbackReentry();
             using var downloadLock = cacheClient.AcquireDownloadLock(contractHash, prefix, token);
             if (cacheClient.IsFoundStatesCached(contractHash, prefix))
                 return 0;

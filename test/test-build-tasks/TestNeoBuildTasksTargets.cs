@@ -63,7 +63,7 @@ namespace build_tasks
             {
                 var projectDir = Path.Combine(temp.FullName, "src");
                 Directory.CreateDirectory(projectDir);
-                var intermediate = Path.Combine(projectDir, "obj", "Debug", "net10.0");
+                var intermediate = Path.Combine(projectDir, "obj", "Debug", "net11.0");
                 var legacyDir = Path.Combine(projectDir, "obj", "Debug");
                 Directory.CreateDirectory(intermediate);
                 Directory.CreateDirectory(legacyDir);

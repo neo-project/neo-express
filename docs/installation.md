@@ -10,7 +10,7 @@ Neo-Express ships as a set of cross-platform [.NET global tools](https://learn.m
 
 ## Requirements
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) or later.
+- [.NET 11.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0) or later.
 
 ## Install via .NET tool (recommended)
 

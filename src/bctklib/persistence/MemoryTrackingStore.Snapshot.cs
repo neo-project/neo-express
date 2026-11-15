@@ -27,6 +27,7 @@ namespace Neo.BlockchainToolkit.Persistence
             readonly Action<TrackingMap> commitAction;
             readonly IStore storeRef;
             TrackingMap writeBatchMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
+            TrackingMap pendingMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
             TrackingMap? cachedSnapshotTrackingMap;
 
             public Snapshot(IReadOnlyStore<byte[], byte[]> store, TrackingMap trackingMap, Action<TrackingMap> commitAction, IStore storeRef)
@@ -113,16 +114,23 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (value is null)
                     throw new NullReferenceException(nameof(value));
                 MemoryTrackingStore.AtomicUpdate(ref writeBatchMap, key, (ReadOnlyMemory<byte>)value);
+                MemoryTrackingStore.AtomicUpdate(ref pendingMap, key, (ReadOnlyMemory<byte>)value);
                 cachedSnapshotTrackingMap = null;
             }
 
             public void Delete(byte[]? key)
             {
                 MemoryTrackingStore.AtomicUpdate(ref writeBatchMap, key, default(None));
+                MemoryTrackingStore.AtomicUpdate(ref pendingMap, key, default(None));
                 cachedSnapshotTrackingMap = null;
             }
 
-            public void Commit() => commitAction(writeBatchMap);
+            public void Commit()
+            {
+                var committed = Volatile.Read(ref pendingMap);
+                commitAction(committed);
+                Interlocked.CompareExchange(ref pendingMap, TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default), committed);
+            }
         }
     }
 }

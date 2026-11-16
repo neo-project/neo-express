@@ -156,25 +156,26 @@ public class SnapshotRepeatedCommitTests : IDisposable
     }
 
     [Fact]
-    public void memory_tracking_concurrent_put_and_commit_never_replays_committed_writes()
+    public async System.Threading.Tasks.Task memory_tracking_concurrent_put_and_commit_never_replays_committed_writes()
     {
         const int keyCount = 2000;
         using var store = new MemoryTrackingStore(new MemoryStore());
         using var a = store.GetSnapshot();
 
+        var token = TestContext.Current.CancellationToken;
         var writer = System.Threading.Tasks.Task.Run(() =>
         {
             for (var i = 0; i < keyCount; i++)
                 a.Put(Bytes($"key-{i}"), Bytes("old"));
-        });
+        }, token);
         var committers = Enumerable.Range(0, 2).Select(_ => System.Threading.Tasks.Task.Run(() =>
         {
             while (!writer.IsCompleted)
                 a.Commit();
-        })).ToArray();
+        }, token)).ToArray();
 
-        writer.Wait();
-        System.Threading.Tasks.Task.WaitAll(committers);
+        await writer;
+        await System.Threading.Tasks.Task.WhenAll(committers);
         a.Commit();
 
         using (var b = store.GetSnapshot())

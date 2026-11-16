@@ -127,9 +127,38 @@ namespace Neo.BlockchainToolkit.Persistence
 
             public void Commit()
             {
-                var committed = Volatile.Read(ref pendingMap);
-                commitAction(committed);
-                Interlocked.CompareExchange(ref pendingMap, TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default), committed);
+                // atomically take ownership of the pending operations so that each operation
+                // is handed to commitAction at most once, even with concurrent Put/Commit calls
+                var committed = Interlocked.Exchange(ref pendingMap, TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default));
+                try
+                {
+                    commitAction(committed);
+                }
+                catch
+                {
+                    RestorePending(committed);
+                    throw;
+                }
+            }
+
+            void RestorePending(TrackingMap failed)
+            {
+                // operations written after the handoff are newer and take precedence over the failed ones
+                var current = Volatile.Read(ref pendingMap);
+                do
+                {
+                    var merged = failed;
+                    foreach (var change in current)
+                    {
+                        merged = merged.SetItem(change.Key, change.Value);
+                    }
+
+                    var result = Interlocked.CompareExchange(ref pendingMap, merged, current);
+                    if (ReferenceEquals(current, result))
+                        break;
+                    current = result;
+                }
+                while (true);
             }
         }
     }

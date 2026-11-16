@@ -155,6 +155,44 @@ public class SnapshotRepeatedCommitTests : IDisposable
         v.Should().Equal(Bytes("v"));
     }
 
+    [Fact]
+    public void memory_tracking_concurrent_put_and_commit_never_replays_committed_writes()
+    {
+        const int keyCount = 2000;
+        using var store = new MemoryTrackingStore(new MemoryStore());
+        using var a = store.GetSnapshot();
+
+        var writer = System.Threading.Tasks.Task.Run(() =>
+        {
+            for (var i = 0; i < keyCount; i++)
+                a.Put(Bytes($"key-{i}"), Bytes("old"));
+        });
+        var committers = Enumerable.Range(0, 2).Select(_ => System.Threading.Tasks.Task.Run(() =>
+        {
+            while (!writer.IsCompleted)
+                a.Commit();
+        })).ToArray();
+
+        writer.Wait();
+        System.Threading.Tasks.Task.WaitAll(committers);
+        a.Commit();
+
+        using (var b = store.GetSnapshot())
+        {
+            for (var i = 0; i < keyCount; i++)
+                b.Put(Bytes($"key-{i}"), Bytes("newer"));
+            b.Commit();
+        }
+
+        a.Commit();
+
+        for (var i = 0; i < keyCount; i++)
+        {
+            store.TryGet(Bytes($"key-{i}"), out var value).Should().BeTrue();
+            value.Should().Equal(Bytes("newer"));
+        }
+    }
+
     [Theory, CombinatorialData]
     public void snapshot_read_semantics(StoreType storeType)
     {

@@ -10,10 +10,16 @@
 
 using FluentAssertions;
 using Neo.BlockchainToolkit.Persistence;
+using Neo.BlockchainToolkit.Utilities;
 using Neo.Persistence;
 using Neo.Persistence.Providers;
+using OneOf;
 using System;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace test.bctklib;
@@ -191,6 +197,124 @@ public class SnapshotRepeatedCommitTests : IDisposable
         {
             store.TryGet(Bytes($"key-{i}"), out var value).Should().BeTrue();
             value.Should().Equal(Bytes("newer"));
+        }
+    }
+
+    [Fact]
+    public async Task memory_tracking_serializes_pending_batches_in_handoff_order()
+    {
+        using var backing = new MemoryStore();
+        using var store = new MemoryTrackingStore(backing);
+        using var firstEntered = new ManualResetEventSlim();
+        using var releaseFirst = new ManualResetEventSlim();
+        using var secondEntered = new ManualResetEventSlim();
+        using var secondStarted = new ManualResetEventSlim();
+        var calls = 0;
+        var map = ImmutableDictionary<ReadOnlyMemory<byte>, OneOf<ReadOnlyMemory<byte>, OneOf.Types.None>>.Empty
+            .WithComparers(MemorySequenceComparer.Default);
+        Action<ImmutableDictionary<ReadOnlyMemory<byte>, OneOf<ReadOnlyMemory<byte>, OneOf.Types.None>>> commit = batch =>
+        {
+            if (Interlocked.Increment(ref calls) == 1)
+            {
+                firstEntered.Set();
+                releaseFirst.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue();
+            }
+            else secondEntered.Set();
+            foreach (var change in batch)
+                store.Put(change.Key.ToArray(), change.Value.AsT0.ToArray());
+        };
+        using var snapshot = (IStoreSnapshot)Activator.CreateInstance(
+            typeof(MemoryTrackingStore).GetNestedType("Snapshot", BindingFlags.NonPublic)!, backing, map, commit, store)!;
+        var key = Bytes("key");
+        snapshot.Put(key, Bytes("old"));
+        var first = Task.Run(snapshot.Commit, TestContext.Current.CancellationToken);
+        Task second = Task.CompletedTask;
+        var overtook = false;
+        try
+        {
+            firstEntered.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue();
+            snapshot.Put(key, Bytes("new"));
+            second = Task.Run(() => { secondStarted.Set(); snapshot.Commit(); }, TestContext.Current.CancellationToken);
+            secondStarted.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue();
+            overtook = secondEntered.Wait(TimeSpan.FromMilliseconds(250), TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            releaseFirst.Set();
+            await Task.WhenAll(first, second);
+        }
+        overtook.Should().BeFalse("a later batch must not commit ahead of an earlier batch");
+        store.TryGet(key, out var actual).Should().BeTrue();
+        actual.Should().Equal(Bytes("new"));
+    }
+
+    [Fact]
+    public async Task memory_tracking_same_key_writers_keep_local_and_committed_views_consistent()
+    {
+        using var store = new MemoryTrackingStore(new MemoryStore());
+        using var snapshot = store.GetSnapshot();
+        var key = Bytes("key");
+        using var start = new Barrier(2);
+        var writers = Enumerable.Range(0, 2).Select(writer => Task.Run(() =>
+        {
+            for (var i = 0; i < 500; i++)
+            {
+                start.SignalAndWait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue();
+                snapshot.Put(key, Bytes($"{writer}-{i}"));
+                start.SignalAndWait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue();
+                if (writer == 0)
+                {
+                    snapshot.Commit();
+                    snapshot.TryGet(key, out var local).Should().BeTrue();
+                    store.TryGet(key, out var committed).Should().BeTrue();
+                    committed.Should().Equal(local);
+                    snapshot.Find().Single().Value.Should().Equal(local);
+                }
+                start.SignalAndWait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue();
+            }
+        }, TestContext.Current.CancellationToken));
+        await Task.WhenAll(writers);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void memory_tracking_restores_failed_batch_without_overwriting_newer_changes(bool delete)
+    {
+        using var backing = new MemoryStore();
+        using var store = new MemoryTrackingStore(backing);
+        var key = Bytes("key");
+        var retained = Bytes("retained");
+        var calls = 0;
+        var empty = ImmutableDictionary<ReadOnlyMemory<byte>, OneOf<ReadOnlyMemory<byte>, OneOf.Types.None>>.Empty
+            .WithComparers(MemorySequenceComparer.Default);
+        var persisted = empty;
+        IStoreSnapshot snapshot = null!;
+        Action<ImmutableDictionary<ReadOnlyMemory<byte>, OneOf<ReadOnlyMemory<byte>, OneOf.Types.None>>> commit = batch =>
+        {
+            if (++calls == 1)
+            {
+                if (delete) snapshot.Delete(key);
+                else snapshot.Put(key, Bytes("new"));
+                throw new InvalidOperationException("Commit failed");
+            }
+            persisted = batch;
+        };
+        snapshot = (IStoreSnapshot)Activator.CreateInstance(
+            typeof(MemoryTrackingStore).GetNestedType("Snapshot", BindingFlags.NonPublic)!, backing, empty, commit, store)!;
+        using (snapshot)
+        {
+            snapshot.Put(key, Bytes("old"));
+            snapshot.Put(retained, Bytes("keep"));
+            Action firstCommit = snapshot.Commit;
+            firstCommit.Should().Throw<InvalidOperationException>();
+            snapshot.Commit();
+            persisted.Should().HaveCount(2);
+            persisted[retained].AsT0.ToArray().Should().Equal(Bytes("keep"));
+            persisted[key].IsT1.Should().Be(delete);
+            if (!delete) persisted[key].AsT0.ToArray().Should().Equal(Bytes("new"));
+            snapshot.Commit();
+            persisted.Should().BeEmpty();
         }
     }
 

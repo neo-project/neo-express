@@ -26,6 +26,8 @@ namespace Neo.BlockchainToolkit.Persistence
             readonly TrackingMap trackingMap;
             readonly Action<TrackingMap> commitAction;
             readonly IStore storeRef;
+            readonly object stateLock = new();
+            readonly object commitLock = new();
             TrackingMap writeBatchMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
             TrackingMap pendingMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
             TrackingMap? cachedSnapshotTrackingMap;
@@ -53,7 +55,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 // First check if the key is in the write batch
                 key ??= Array.Empty<byte>();
-                if (writeBatchMap.TryGetValue(key, out var batchValue))
+                if (Volatile.Read(ref writeBatchMap).TryGetValue(key, out var batchValue))
                 {
                     if (batchValue.TryPickT0(out var batchValueData, out var _))
                     {
@@ -77,7 +79,7 @@ namespace Neo.BlockchainToolkit.Persistence
             {
                 // First check if the key is in the write batch
                 key ??= Array.Empty<byte>();
-                if (writeBatchMap.TryGetValue(key, out var batchValue))
+                if (Volatile.Read(ref writeBatchMap).TryGetValue(key, out var batchValue))
                 {
                     return batchValue.IsT0; // True if it's a value, false if it's a deletion
                 }
@@ -95,70 +97,81 @@ namespace Neo.BlockchainToolkit.Persistence
 
             TrackingMap GetSnapshotTrackingMap()
             {
-                if (cachedSnapshotTrackingMap is { } snapshotTrackingMap)
+                lock (stateLock)
                 {
+                    if (cachedSnapshotTrackingMap is { } snapshotTrackingMap)
+                    {
+                        return snapshotTrackingMap;
+                    }
+
+                    snapshotTrackingMap = trackingMap;
+                    foreach (var change in writeBatchMap)
+                    {
+                        snapshotTrackingMap = snapshotTrackingMap.SetItem(change.Key, change.Value);
+                    }
+                    cachedSnapshotTrackingMap = snapshotTrackingMap;
                     return snapshotTrackingMap;
                 }
-
-                snapshotTrackingMap = trackingMap;
-                foreach (var change in writeBatchMap)
-                {
-                    snapshotTrackingMap = snapshotTrackingMap.SetItem(change.Key, change.Value);
-                }
-                cachedSnapshotTrackingMap = snapshotTrackingMap;
-                return snapshotTrackingMap;
             }
 
             public void Put(byte[]? key, byte[]? value)
             {
                 if (value is null)
                     throw new NullReferenceException(nameof(value));
-                MemoryTrackingStore.AtomicUpdate(ref writeBatchMap, key, (ReadOnlyMemory<byte>)value);
-                MemoryTrackingStore.AtomicUpdate(ref pendingMap, key, (ReadOnlyMemory<byte>)value);
-                cachedSnapshotTrackingMap = null;
+                lock (stateLock)
+                {
+                    MemoryTrackingStore.AtomicUpdate(ref writeBatchMap, key, (ReadOnlyMemory<byte>)value);
+                    MemoryTrackingStore.AtomicUpdate(ref pendingMap, key, (ReadOnlyMemory<byte>)value);
+                    cachedSnapshotTrackingMap = null;
+                }
             }
 
             public void Delete(byte[]? key)
             {
-                MemoryTrackingStore.AtomicUpdate(ref writeBatchMap, key, default(None));
-                MemoryTrackingStore.AtomicUpdate(ref pendingMap, key, default(None));
-                cachedSnapshotTrackingMap = null;
+                lock (stateLock)
+                {
+                    MemoryTrackingStore.AtomicUpdate(ref writeBatchMap, key, default(None));
+                    MemoryTrackingStore.AtomicUpdate(ref pendingMap, key, default(None));
+                    cachedSnapshotTrackingMap = null;
+                }
             }
 
             public void Commit()
             {
                 // atomically take ownership of the pending operations so that each operation
                 // is handed to commitAction at most once, even with concurrent Put/Commit calls
-                var committed = Interlocked.Exchange(ref pendingMap, TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default));
-                try
+                lock (commitLock)
                 {
-                    commitAction(committed);
-                }
-                catch
-                {
-                    RestorePending(committed);
-                    throw;
+                    TrackingMap committed;
+                    lock (stateLock)
+                    {
+                        committed = pendingMap;
+                        pendingMap = TrackingMap.Empty.WithComparers(MemorySequenceComparer.Default);
+                    }
+                    try
+                    {
+                        commitAction(committed);
+                    }
+                    catch
+                    {
+                        RestorePending(committed);
+                        throw;
+                    }
                 }
             }
 
             void RestorePending(TrackingMap failed)
             {
                 // operations written after the handoff are newer and take precedence over the failed ones
-                var current = Volatile.Read(ref pendingMap);
-                do
+                lock (stateLock)
                 {
                     var merged = failed;
-                    foreach (var change in current)
+                    foreach (var change in pendingMap)
                     {
                         merged = merged.SetItem(change.Key, change.Value);
                     }
-
-                    var result = Interlocked.CompareExchange(ref pendingMap, merged, current);
-                    if (ReferenceEquals(current, result))
-                        break;
-                    current = result;
+                    pendingMap = merged;
                 }
-                while (true);
             }
         }
     }

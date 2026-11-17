@@ -219,7 +219,8 @@ public class SnapshotRepeatedCommitTests : IDisposable
                 firstEntered.Set();
                 releaseFirst.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue();
             }
-            else secondEntered.Set();
+            else
+                secondEntered.Set();
             foreach (var change in batch)
                 store.Put(change.Key.ToArray(), change.Value.AsT0.ToArray());
         };
@@ -294,8 +295,10 @@ public class SnapshotRepeatedCommitTests : IDisposable
         {
             if (++calls == 1)
             {
-                if (delete) snapshot.Delete(key);
-                else snapshot.Put(key, Bytes("new"));
+                if (delete)
+                    snapshot.Delete(key);
+                else
+                    snapshot.Put(key, Bytes("new"));
                 throw new InvalidOperationException("Commit failed");
             }
             persisted = batch;
@@ -312,7 +315,8 @@ public class SnapshotRepeatedCommitTests : IDisposable
             persisted.Should().HaveCount(2);
             persisted[retained].AsT0.ToArray().Should().Equal(Bytes("keep"));
             persisted[key].IsT1.Should().Be(delete);
-            if (!delete) persisted[key].AsT0.ToArray().Should().Equal(Bytes("new"));
+            if (!delete)
+                persisted[key].AsT0.ToArray().Should().Equal(Bytes("new"));
             snapshot.Commit();
             persisted.Should().BeEmpty();
         }

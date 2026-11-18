@@ -186,6 +186,7 @@ namespace Neo.BlockchainToolkit.Persistence
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
                 db.Write(writeBatch);
+                writeBatch.Clear();
             }
         }
     }

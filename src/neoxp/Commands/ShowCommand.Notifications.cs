@@ -67,10 +67,10 @@ namespace NeoExpress.Commands
                         }
                     }
 
-                    IReadOnlySet<string>? eventFilter = null;
+                    HashSet<string>? eventFilter = null;
                     if (!string.IsNullOrEmpty(EventName))
                     {
-                        eventFilter = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { EventName };
+                        eventFilter = [with(StringComparer.OrdinalIgnoreCase), EventName];
                     }
 
                     using var writer = new JsonTextWriter(console.Out) { Formatting = Formatting.Indented };

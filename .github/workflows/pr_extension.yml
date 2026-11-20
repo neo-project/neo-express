@@ -34,7 +34,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v6.1.0
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: '11.0.x'
 
     - name: Install Neo.SmartContract.Template
       run: dotnet new install Neo.SmartContract.Template --force
@@ -67,7 +67,7 @@ jobs:
         NEO_EXPRESS_NUPKG="$nupkg" npx vsce package --no-git-tag-version
         vsix="$(find . -maxdepth 1 -name 'neo3-visual-tracker-*.vsix' -print -quit)"
         test -n "$vsix"
-        unzip -l "$vsix" | grep -q 'extension/deps/nxp/tools/net10.0/any/neoxp.dll'
+        unzip -l "$vsix" | grep -q 'extension/deps/nxp/tools/net11.0/any/neoxp.dll'
         if unzip -l "$vsix" | grep -q 'nxp\.nupkg'; then
           echo "The VSIX should not include the source Neo Express nupkg."
           exit 1

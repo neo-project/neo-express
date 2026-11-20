@@ -62,7 +62,7 @@ These tools provide developers with a complete local development environment for
 
 #### Requirements
 
-- [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) or higher
+- [.NET 11.0](https://dotnet.microsoft.com/en-us/download/dotnet/11.0) or higher
 
 #### Installation Steps
 

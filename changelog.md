@@ -25,12 +25,21 @@ may not exactly match a publicly released version.
 * Deploy and update fee estimation is padded to cover the shortfall between RPC estimation and persist-time consumption; commands wait for the application log and report FAULT as an error
 * `show transaction` accepts unconfirmed online transactions
 * `contract download` defaults its RPC URI to MainNet
+* Updated to Neo 3.11.2
+* Kept Neo module dependencies at 3.10.2 and Neo.Plugins.RpcServer at 3.10.2 (no matching 3.11.x packages published yet); Neo.Plugins.RpcServer now uses its own `NeoRpcServerVersion` property
+* Kept Neo.Consensus.DBFT at 3.10.1 (3.10.2 depends on Neo.ConsoleService 3.10.2, which is unpublished on NuGet.org and not vendored in `deps/`)
+* Rejected `protocol.Hardforks.*` settings for hardforks after `HF_Huyao` (`HF_Iara`, `HF_Jackalope`); these hardforks are activated on-chain via the Policy contract's `activateHardfork` method
+
+### Removed
+
+* Store tests for the Neo.Plugins.Storage.RocksDBStore plugin — the published 3.10.2 plugin predates the `skip` parameter Neo 3.11.2 added to `IReadOnlyStore.Find` and cannot load against Neo 3.11.2; tests will be restored when a compatible plugin is published
 
 ### Fixed
 
 * Parse `contract update --data` with the chain contract parameter resolver
 * Reject invalid hashes in `show transaction`
 * Treat a null wallet list in the neo-express data file as empty
+* Repaired `invokescript`, `invokefunction`, and `invokecontractverify` RPC methods, which fail with `MissingMethodException` on Neo 3.11.2 because the pinned Neo.Plugins.RpcServer 3.10.2 package constructs `Transaction.Script` as the `ReadOnlyMemory<byte>` property that Neo 3.11.2 replaced with `Neo.VM.Script`; these handlers plus the matching `traverseiterator`/`terminatesession` session handlers are served by a compatibility shim mirroring the package's behavior, removable once a Neo 3.11.x RpcServer package is published
 
 ## [3.10.1] - 2026-07-09
 

@@ -19,7 +19,7 @@ namespace test.workflowvalidation;
 public class Neo310SettingsTests
 {
     [Fact]
-    public void Neo_package_versions_target_neo_310()
+    public void Neo_package_versions_target_neo_311()
     {
         var propsPath = FindRepoFile("src", "Directory.Build.props");
         var props = XDocument.Load(propsPath);
@@ -28,10 +28,13 @@ public class Neo310SettingsTests
         var neoVersion = props.Descendants(ns + "NeoVersion").Single().Value;
         var neoModuleVersion = props.Descendants(ns + "NeoModuleVersion").Single().Value;
         var neoConsensusDbftVersion = props.Descendants(ns + "NeoConsensusDbftVersion").Single().Value;
+        var neoRpcServerVersion = props.Descendants(ns + "NeoRpcServerVersion").Single().Value;
 
-        neoVersion.Should().StartWith("3.10.");
-        neoModuleVersion.Should().Be(neoVersion);
+        neoVersion.Should().StartWith("3.11.");
+        // The module and neo-node package feeds have not published matching 3.11.x versions yet.
+        neoModuleVersion.Should().StartWith("3.10.");
         neoConsensusDbftVersion.Should().StartWith("3.10.");
+        neoRpcServerVersion.Should().StartWith("3.10.");
     }
 
     [Fact]

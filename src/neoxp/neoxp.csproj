@@ -14,7 +14,7 @@
         <PackageReference Include="Nito.Disposables" Version="2.5.0" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="5.1.0" />
         <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoConsensusDbftVersion)" />
-        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoRpcServerVersion)" />
     </ItemGroup>
 
     <ItemGroup>

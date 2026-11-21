@@ -274,9 +274,9 @@ namespace Neo.BlockchainToolkit.SmartContract
                 };
         }
 
-        protected override void PostExecuteInstruction(Instruction instruction)
+        protected override void PostExecuteInstruction(Instruction? instruction, RunStats priceArgs)
         {
-            base.PostExecuteInstruction(instruction);
+            base.PostExecuteInstruction(instruction, priceArgs);
 
             // if branchInstructionInfo is null, instruction is not a branch instruction
             if (branchInstructionInfo is null

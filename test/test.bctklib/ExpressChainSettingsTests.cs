@@ -71,6 +71,19 @@ namespace test.bctklib
         }
 
         [Fact]
+        public void get_protocol_settings_rejects_hardforks_activated_via_policy_contract()
+        {
+            var chain = CreateExpressChain();
+            chain.Settings["protocol.Hardforks.HF_Huyao"] = "84";
+            chain.Settings["protocol.Hardforks.HF_Iara"] = "100";
+
+            var action = () => chain.GetProtocolSettings();
+
+            action.Should().Throw<ArgumentException>()
+                .WithMessage("*HF_Iara*activateHardfork*");
+        }
+
+        [Fact]
         public void chain_seconds_per_block_overrides_protocol_milliseconds_per_block()
         {
             var chain = CreateExpressChain();

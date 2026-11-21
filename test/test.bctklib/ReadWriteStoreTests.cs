@@ -21,8 +21,8 @@ using static Utility;
 
 public class ReadWriteStoreTests : IDisposable
 {
-    // include Neo.Persistence MemoryStore and Neo.Plugins.Storage.RocksDBStore for comparison
-    public enum StoreType { Memory, NeoRocksDb, RocksDb }
+    // include Neo.Persistence MemoryStore for comparison
+    public enum StoreType { Memory, RocksDb }
 
     readonly CleanupPath path = new CleanupPath();
 
@@ -635,7 +635,6 @@ public class ReadWriteStoreTests : IDisposable
     {
         StoreType.Memory => ReadOnlyStoreTests.GetPopulatedMemoryStore(),
         StoreType.RocksDb => GetPopulatedRocksDbStore(path),
-        StoreType.NeoRocksDb => GetPopulatedNeoRocksDbStore(path),
         _ => throw new Exception($"Invalid {nameof(StoreType)}"),
     };
 
@@ -649,19 +648,4 @@ public class ReadWriteStoreTests : IDisposable
         return new RocksDbStore(RocksDbUtility.OpenDb(path));
     }
 
-    public static IStore GetPopulatedNeoRocksDbStore(string path)
-    {
-        using (var db = RocksDbUtility.OpenDb(path))
-        {
-            RocksDbFixture.Populate(db);
-        }
-
-        var storeType = typeof(Neo.Plugins.Storage.RocksDBStore).Assembly
-            .GetType("Neo.Plugins.Storage.Store");
-        var storeCtor = storeType?.GetConstructor(new[] { typeof(string) });
-        var store = storeCtor?.Invoke(new object[] { path }) as IStore;
-        if (store is null)
-            throw new NullReferenceException(nameof(Neo.Plugins.Storage.RocksDBStore));
-        return store;
-    }
 }

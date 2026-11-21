@@ -18,6 +18,7 @@ using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.Plugins;
 using Neo.Plugins.RpcServer;
+using Neo.Plugins.RpcServer.Model;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -28,6 +29,7 @@ using NeoExpress.Validators;
 using System.Collections.Immutable;
 using System.Numerics;
 using RpcException = Neo.Network.RPC.RpcException;
+using RpcServerCompat = Neo.BlockchainToolkit.Plugins.RpcServerCompat;
 
 namespace NeoExpress.Node
 {
@@ -35,6 +37,7 @@ namespace NeoExpress.Node
     {
         NeoSystem? neoSystem;
         RpcServer? rpcServer;
+        RpcServerCompat? rpcServerCompat;
         readonly IExpressStorage expressStorage;
         readonly RpcServersSettings settings;
         readonly UInt160 nodeAccountAddress;
@@ -60,6 +63,7 @@ namespace NeoExpress.Node
                 throw new Exception($"{nameof(OnSystemLoaded)} already called");
             neoSystem = system;
             rpcServer = new RpcServer(system, settings);
+            rpcServerCompat = new RpcServerCompat(system, settings);
             rpcServer.RegisterMethods(this);
             rpcServer.StartRpcServer();
 
@@ -68,6 +72,7 @@ namespace NeoExpress.Node
 
         public override void Dispose()
         {
+            rpcServerCompat?.Dispose();
             rpcServer?.Dispose();
             cancellationToken.Dispose();
             base.Dispose();
@@ -425,6 +430,49 @@ namespace NeoExpress.Node
             UInt256 hash = ParseUInt256Param(_params, 0);
             return persistencePlugin.Value.GetAppLog(hash) ?? throw new RpcException(-100, "Unknown transaction/blockhash");
         }
+
+        // The Neo.Plugins.RpcServer 3.10.2 invoke handlers construct Transactions with the
+        // ReadOnlyMemory<byte>-typed Script property that Neo 3.11.2 replaced with Neo.VM.Script,
+        // so every invokescript/invokefunction/invokecontractverify request fails with
+        // MissingMethodException before the requested script ever runs. RpcServer.RegisterMethods
+        // overwrites same-named methods, so these handlers substitute 3.11.2-clean
+        // implementations (see RpcServerCompat). They can be removed once a Neo 3.11.x
+        // compatible Neo.Plugins.RpcServer package is published.
+        [RpcMethod]
+        public JToken InvokeScript(byte[] script, SignersAndWitnesses signersAndWitnesses = default, bool useDiagnostic = false)
+        {
+            var (signers, witnesses) = signersAndWitnesses;
+            return rpcServerCompat!.GetInvokeResult(script, signers, witnesses, useDiagnostic);
+        }
+
+        [RpcMethod]
+        public JToken InvokeFunction(UInt160 scriptHash, string operation,
+            ContractParameter[]? args = null, SignersAndWitnesses signersAndWitnesses = default, bool useDiagnostic = false)
+        {
+            var (signers, witnesses) = signersAndWitnesses;
+            byte[] script;
+            using (var sb = new ScriptBuilder())
+            {
+                script = sb.EmitDynamicCall(scriptHash, operation, args ?? []).ToArray();
+            }
+            return rpcServerCompat!.GetInvokeResult(script, signers, witnesses, useDiagnostic);
+        }
+
+        [RpcMethod]
+        public JToken InvokeContractVerify(UInt160 scriptHash, ContractParameter[]? args = null,
+            SignersAndWitnesses signersAndWitnesses = default)
+        {
+            var (signers, witnesses) = signersAndWitnesses;
+            return rpcServerCompat!.GetVerificationResult(scriptHash, args ?? [], signers, witnesses);
+        }
+
+        [RpcMethod]
+        public JToken TraverseIterator(Guid sessionId, Guid iteratorId, int count)
+            => rpcServerCompat!.TraverseIterator(sessionId, iteratorId, count);
+
+        [RpcMethod]
+        public JToken TerminateSession(Guid sessionId)
+            => rpcServerCompat!.TerminateSession(sessionId);
 
         // Neo-Express uses a custom implementation of TokenTracker RPC methods. Originally, this was
         // because of https://github.com/neo-project/neo-modules/issues/614, but the custom implementation

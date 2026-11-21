@@ -83,8 +83,11 @@ namespace Neo.BlockchainToolkit.Persistence
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction)
             => Seek(key, direction, trackingMap, store);
 
-        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
-            => Seek(key_prefix, direction, trackingMap, store);
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(skip);
+            return Seek(key_prefix, direction, trackingMap, store).Skip(skip);
+        }
 
         static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, TrackingMap trackingMap, IReadOnlyStore<byte[], byte[]> store)
         {

@@ -124,6 +124,8 @@ namespace NeoExpress.Node
             var n = oracleNodes.Count;
             var m = n - (n - 1) / 3;
             var oracleSignContract = Contract.CreateMultiSigContract(m, oracleNodes);
+            if (!Neo.SmartContract.Helper.IsMultiSigContract(oracleSignContract.Script, out var multiSigParameters))
+                throw new InvalidOperationException("Invalid oracle multisignature contract.");
 
             var tx = new Transaction()
             {
@@ -175,8 +177,9 @@ namespace NeoExpress.Node
                 return null;
             tx.NetworkFee += engine.FeeConsumed;
 
-            var executionFactor = NativeContract.Policy.GetExecFeeFactor(engine);
-            var networkFee = executionFactor * Neo.SmartContract.Helper.MultiSignatureContractCost(m, n);
+            var height = NativeContract.Ledger.CurrentIndex(snapshot);
+            var executionFactor = NativeContract.Policy.GetExecFeeFactorWithDecimals(settings, snapshot, height);
+            var networkFee = Neo.SmartContract.Helper.MultiSignatureContractCost(settings, height + 1, executionFactor, multiSigParameters);
             tx.NetworkFee += networkFee;
 
             // Base size for transaction: includes const_header + signers + script + hashes + witnesses, except attributes

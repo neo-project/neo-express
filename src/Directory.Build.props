@@ -17,9 +17,16 @@
         <ApplicationIcon>../neo-cli.ico</ApplicationIcon>
     </PropertyGroup>
     <PropertyGroup>
-        <NeoVersion>3.10.2</NeoVersion>
+        <!-- Neo core packages (neo-project/neo). -->
+        <NeoVersion>3.11.2</NeoVersion>
+        <!-- Neo module packages (neo-project/neo-modules). Kept at 3.10.2 until matching 3.11.x packages are published. -->
         <NeoModuleVersion>3.10.2</NeoModuleVersion>
+        <!-- Neo.Consensus.DBFT (neo-project/neo-node). Pinned at 3.10.1 because 3.10.2 depends on Neo.ConsoleService 3.10.2,
+             which is unpublished on NuGet.org and not vendored in deps/; see changelog for the 3.10.1 release. -->
         <NeoConsensusDbftVersion>3.10.1</NeoConsensusDbftVersion>
+        <!-- Neo.Plugins.RpcServer (neo-project/neo-node). Decoupled from NeoVersion because neo-node has not published
+             a 3.11.x RpcServer package yet; 3.10.2 remains the latest. -->
+        <NeoRpcServerVersion>3.10.2</NeoRpcServerVersion>
     </PropertyGroup>
     <ItemGroup>
         <None Include="../neo-logo-72.png" Pack="true" Visible="false" PackagePath=""/>

@@ -113,11 +113,12 @@ namespace Neo.BlockchainToolkit.Persistence
                 return FindWithUncommittedChanges(key, direction);
             }
 
-            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
             {
+                ArgumentOutOfRangeException.ThrowIfNegative(skip);
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                return FindWithUncommittedChanges(key_prefix, direction);
+                return FindWithUncommittedChanges(key_prefix, direction).Skip(skip);
             }
 
             IEnumerable<(byte[] Key, byte[] Value)> FindWithUncommittedChanges(byte[]? key, SeekDirection direction)

@@ -95,7 +95,11 @@ namespace Neo.BlockchainToolkit.Persistence
         [Obsolete("use Find(byte[]? key_prefix, SeekDirection direction) instead.")]
         public IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[] key, SeekDirection direction) => store.Seek(key, direction);
 
-        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward) => store.Find(key_prefix, direction);
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(skip);
+            return store.Find(key_prefix, direction, skip);
+        }
 
         // IReadOnlyStore<StorageKey, StorageItem> implementation
         public StorageItem this[StorageKey key]
@@ -134,10 +138,11 @@ namespace Neo.BlockchainToolkit.Persistence
             return store.Contains(keyBytes);
         }
 
-        public IEnumerable<(StorageKey Key, StorageItem Value)> Find(StorageKey? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+        public IEnumerable<(StorageKey Key, StorageItem Value)> Find(StorageKey? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(skip);
             var prefixBytes = key_prefix?.ToArray();
-            foreach (var (keyBytes, valueBytes) in store.Find(prefixBytes, direction))
+            foreach (var (keyBytes, valueBytes) in store.Find(prefixBytes, direction, skip))
             {
                 yield return ((StorageKey)keyBytes, new StorageItem(valueBytes));
             }

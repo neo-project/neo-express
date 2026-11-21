@@ -17,7 +17,7 @@
         <PackageReference Include="Crayon" Version="2.0.69" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="5.1.0" />
         <PackageReference Include="Neo.Consensus.DBFT" Version="$(NeoConsensusDbftVersion)" />
-        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoVersion)" />
+        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoRpcServerVersion)" />
     </ItemGroup>
 
     <ItemGroup>

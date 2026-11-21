@@ -420,7 +420,10 @@ public class TrackingStoreTests : IDisposable
 
         public bool Contains(byte[] key) => false;
 
-        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
-            => Enumerable.Empty<(byte[], byte[])>();
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(skip);
+            return Enumerable.Empty<(byte[], byte[])>();
+        }
     }
 }

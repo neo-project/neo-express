@@ -127,7 +127,7 @@ namespace test.bctklib
 
             public bool Contains(byte[] key) => TryGet(key, out _);
 
-            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
             {
                 var comparer = direction == SeekDirection.Forward
                     ? MemorySequenceComparer.Default
@@ -135,7 +135,7 @@ namespace test.bctklib
                 var ordered = items
                     .Where(kvp => key_prefix is null || key_prefix.Length == 0 || comparer.Compare(kvp.Key, key_prefix) >= 0)
                     .OrderBy(kvp => kvp.Key, comparer);
-                foreach (var item in ordered)
+                foreach (var item in ordered.Skip(skip))
                 {
                     ItemsPulled++;
                     yield return item;

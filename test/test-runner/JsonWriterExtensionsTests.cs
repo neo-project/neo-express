@@ -63,8 +63,11 @@ public class JsonWriterExtensionsTests
             return true;
         }
 
-        public StackItem Value()
-            => value;
+        public StackItem Value(out int bytesDeserialized)
+        {
+            bytesDeserialized = 0;
+            return value;
+        }
 
         public void Dispose()
         {

@@ -97,9 +97,9 @@ namespace Neo.BlockchainToolkit.SmartContract
             return base.Execute();
         }
 
-        protected override void PostExecuteInstruction(Instruction instruction)
+        protected override void PostExecuteInstruction(Instruction? instruction, RunStats priceArgs)
         {
-            base.PostExecuteInstruction(instruction);
+            base.PostExecuteInstruction(instruction, priceArgs);
 
             if (State == VMState.HALT)
             {

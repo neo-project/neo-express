@@ -97,11 +97,12 @@ namespace Neo.BlockchainToolkit.Persistence
                 return FindWithPendingWrites(key, direction);
             }
 
-            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+            public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
             {
+                ArgumentOutOfRangeException.ThrowIfNegative(skip);
                 if (snapshot.Handle == IntPtr.Zero)
                     throw new ObjectDisposedException(nameof(Snapshot));
-                return FindWithPendingWrites(key_prefix, direction);
+                return FindWithPendingWrites(key_prefix, direction).Skip(skip);
             }
 
             IEnumerable<(byte[] Key, byte[] Value)> FindWithPendingWrites(byte[]? key, SeekDirection direction)

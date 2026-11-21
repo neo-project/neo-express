@@ -358,7 +358,7 @@ namespace Neo.BlockchainToolkit.Plugins
             {
                 while (iterator.Next())
                 {
-                    var value = iterator.Value();
+                    var value = iterator.Value(out _);
                     var byteString = value.Type == StackItemType.ByteString
                         ? (ByteString)value
                         : (ByteString)value.ConvertTo(StackItemType.ByteString);

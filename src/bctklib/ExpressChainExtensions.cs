@@ -168,10 +168,19 @@ namespace Neo.BlockchainToolkit
 
                 var hardforkName = key[ProtocolHardforksPrefix.Length..];
                 if (Enum.TryParse<Hardfork>(hardforkName, ignoreCase: true, out var hardfork)
-                    && Enum.IsDefined(hardfork)
-                    && uint.TryParse(value, out var height))
+                    && Enum.IsDefined(hardfork))
                 {
-                    configuredHardforks[hardfork] = height;
+                    // Neo core activates hardforks after ProtocolSettings.LastConfigManagedHardfork on-chain via the
+                    // Policy contract instead of protocol settings, and rejects them in ProtocolSettings.Hardforks.
+                    if (hardfork > ProtocolSettings.LastConfigManagedHardfork)
+                    {
+                        throw new ArgumentException($"Invalid hardfork configuration: {hardfork} cannot be configured via protocol.Hardforks settings. Hardforks after {ProtocolSettings.LastConfigManagedHardfork} are activated on-chain via the Policy contract's activateHardfork method.");
+                    }
+
+                    if (uint.TryParse(value, out var height))
+                    {
+                        configuredHardforks[hardfork] = height;
+                    }
                 }
             }
 

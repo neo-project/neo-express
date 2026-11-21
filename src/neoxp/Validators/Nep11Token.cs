@@ -112,7 +112,7 @@ internal class Nep11Token : TokenBase
             {
                 var lstOwners = new List<UInt160>();
                 while (iter.Next())
-                    lstOwners.Add(new UInt160(iter.Value().GetSpan()));
+                    lstOwners.Add(new UInt160(iter.Value(out _).GetSpan()));
                 return lstOwners;
             }
             return Array.Empty<UInt160>();
@@ -152,7 +152,7 @@ internal class Nep11Token : TokenBase
             {
                 var lstTokenIds = new List<byte[]>();
                 while (iter.Next())
-                    lstTokenIds.Add(iter.Value().GetSpan().ToArray());
+                    lstTokenIds.Add(iter.Value(out _).GetSpan().ToArray());
                 return lstTokenIds;
             }
             return Array.Empty<byte[]>();
@@ -173,7 +173,7 @@ internal class Nep11Token : TokenBase
             {
                 var lstTokenIds = new List<byte[]>();
                 while (iter.Next())
-                    lstTokenIds.Add(iter.Value().GetSpan().ToArray());
+                    lstTokenIds.Add(iter.Value(out _).GetSpan().ToArray());
                 return lstTokenIds;
             }
             return Array.Empty<byte[]>();

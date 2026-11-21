@@ -10,6 +10,7 @@
 
 using McMaster.Extensions.CommandLineUtils;
 using Neo;
+using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Persistence;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.BlockchainToolkit.TraceDebug;
@@ -87,7 +88,7 @@ namespace NeoTrace
             var settings = await GetProtocolSettingsAsync(uri).ConfigureAwait(false);
 
             using var rpcClient = new RpcClient(uri, protocolSettings: settings);
-            var rpcTx = await rpcClient.GetRawTransactionAsync($"{txHash}").ConfigureAwait(false);
+            var rpcTx = await RpcClientCompat.GetRawTransactionAsync(rpcClient, settings, $"{txHash}").ConfigureAwait(false);
             var block = await GetBlockAsync(rpcClient, rpcTx.BlockHash).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             await console.Out.WriteLineAsync($"Tracing transaction {txHash} in block {block.Index} ({block.Hash})").ConfigureAwait(false);

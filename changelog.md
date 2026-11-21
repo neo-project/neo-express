@@ -40,6 +40,7 @@ may not exactly match a publicly released version.
 * Reject invalid hashes in `show transaction`
 * Treat a null wallet list in the neo-express data file as empty
 * Repaired `invokescript`, `invokefunction`, and `invokecontractverify` RPC methods, which fail with `MissingMethodException` on Neo 3.11.2 because the pinned Neo.Plugins.RpcServer 3.10.2 package constructs `Transaction.Script` as the `ReadOnlyMemory<byte>` property that Neo 3.11.2 replaced with `Neo.VM.Script`; these handlers plus the matching `traverseiterator`/`terminatesession` session handlers are served by a compatibility shim mirroring the package's behavior, removable once a Neo 3.11.x RpcServer package is published
+* Migrated the `expresspersistcontract` and `expresspersiststorage` handlers to the compat `ContractState` parser — the pinned Neo.Network.RPC.RpcClient 3.10.2 package's parser sets `NefFile.Script` as `ReadOnlyMemory<byte>` and fails with `MissingMethodException` on Neo 3.11.2, breaking `contract download` and `contract storage` against a running node
 
 ## [3.10.1] - 2026-07-09
 

@@ -169,8 +169,10 @@ namespace Neo.BlockchainToolkit.Plugins
                     Script = new Script(new byte[] { 0x40 /* RET */ }),
                 };
 
+                // The replaced package handler passes the ApplicationEngine.Create default gas
+                // constant (20 GAS; decompiled 3.10.2 GetVerificationResult: 2000000000L).
                 using ApplicationEngine engine = ApplicationEngine.Create(
-                    TriggerType.Verification, tx, snapshot.CloneCache(), null, system.Settings, settings.MaxGasInvoke);
+                    TriggerType.Verification, tx, snapshot.CloneCache(), null, system.Settings, 20_00000000);
                 engine.LoadContract(contract, method, CallFlags.ReadOnly);
                 byte[] script = [];
                 if (args.Length > 0)

@@ -731,7 +731,7 @@ namespace NeoExpress.Node
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
             var payload = RequiredObjectParam(@params, 0);
-            var state = ParseParam(() => RpcClient.ContractStateFromJson(RequiredObjectProperty(payload, "state")));
+            var state = ParseParam(() => RpcClientCompat.ContractStateFromJson(RequiredObjectProperty(payload, "state")));
             var storagePairs = RequiredArrayProperty(payload, "storage")
                 .Select(s =>
                 {
@@ -752,7 +752,7 @@ namespace NeoExpress.Node
             if (neoSystem is null)
                 throw new NullReferenceException(nameof(neoSystem));
             var payload = RequiredObjectParam(@params, 0);
-            var state = ParseParam(() => RpcClient.ContractStateFromJson(RequiredObjectProperty(payload, "state")));
+            var state = ParseParam(() => RpcClientCompat.ContractStateFromJson(RequiredObjectProperty(payload, "state")));
             var storagePairs = RequiredArrayProperty(payload, "storage")
                 .Select(s =>
                 {

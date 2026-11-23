@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;

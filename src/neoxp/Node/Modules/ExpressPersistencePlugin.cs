@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.Extensions;
 using Neo.IO;
 using Neo.Json;

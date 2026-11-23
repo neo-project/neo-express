@@ -11,6 +11,7 @@
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.Cryptography.ECC;
 using Neo.Extensions;
 using Neo.IO;

@@ -21,6 +21,7 @@ may not exactly match a publicly released version.
 
 ### Changed
 
+* Updated to .NET 11.0
 * `contract deploy --force` now updates the existing contract in place when the deployment hash matches
 * Deploy and update fee estimation is padded to cover the shortfall between RPC estimation and persist-time consumption; commands wait for the application log and report FAULT as an error
 * `show transaction` accepts unconfirmed online transactions

@@ -31,7 +31,7 @@ compile and drops `<name>.nef`, `<name>.manifest.json` and `<name>.nefdbgnfo` un
     <NeoContractName>SampleContract</NeoContractName>
     <NeoExpressBatchFile>../express.batch</NeoExpressBatchFile>
     <NeoExpressBatchInputFile>../default.neo-express</NeoExpressBatchInputFile>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Neo.SmartContract.Framework" Version="3.10.1" />

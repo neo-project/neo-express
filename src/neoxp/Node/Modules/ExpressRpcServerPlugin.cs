@@ -442,7 +442,7 @@ namespace NeoExpress.Node
         public JToken InvokeScript(byte[] script, SignersAndWitnesses signersAndWitnesses = default, bool useDiagnostic = false)
         {
             var (signers, witnesses) = signersAndWitnesses;
-            return rpcServerCompat!.GetInvokeResult(script, signers, witnesses, useDiagnostic);
+            return rpcServerCompat!.GetInvokeResult(new Script(script), signers, witnesses, useDiagnostic);
         }
 
         [RpcMethod]
@@ -450,10 +450,10 @@ namespace NeoExpress.Node
             ContractParameter[]? args = null, SignersAndWitnesses signersAndWitnesses = default, bool useDiagnostic = false)
         {
             var (signers, witnesses) = signersAndWitnesses;
-            byte[] script;
+            Script script;
             using (var sb = new ScriptBuilder())
             {
-                script = sb.EmitDynamicCall(scriptHash, operation, args ?? []).ToArray();
+                script = new Script(sb.EmitDynamicCall(scriptHash, operation, args ?? []).ToArray());
             }
             return rpcServerCompat!.GetInvokeResult(script, signers, witnesses, useDiagnostic);
         }

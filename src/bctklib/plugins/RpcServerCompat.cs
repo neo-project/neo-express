@@ -83,17 +83,18 @@ namespace Neo.BlockchainToolkit.Plugins
         /// Runs <paramref name="script"/> in an ApplicationEngine and produces the
         /// invokescript/invokefunction JSON response. Replicates RpcServer.GetInvokeResult.
         /// </summary>
-        public JObject GetInvokeResult(byte[] script, Signer[]? signers, Witness[]? witnesses, bool useDiagnostic)
+        public JObject GetInvokeResult(Script script, Signer[]? signers, Witness[]? witnesses, bool useDiagnostic)
         {
             if (useDiagnostic)
                 throw new RpcException(RpcError.InternalServerError.WithData(
                     "diagnostics are not supported by this server"));
 
+            ReadOnlyMemory<byte> scriptBytes = script;
             JObject json = new();
             CompatSession session = new(system, script, signers, witnesses, settings.MaxGasInvoke);
             try
             {
-                json["script"] = Convert.ToBase64String(script);
+                json["script"] = Convert.ToBase64String(scriptBytes.Span);
                 json["state"] = $"{session.Engine.State}";
                 // Gas consumed in the unit of datoshi, 1 GAS = 10^8 datoshi
                 json["gasconsumed"] = session.Engine.FeeConsumed.ToString();
@@ -174,21 +175,25 @@ namespace Neo.BlockchainToolkit.Plugins
                 using ApplicationEngine engine = ApplicationEngine.Create(
                     TriggerType.Verification, tx, snapshot.CloneCache(), null, system.Settings, 20_00000000);
                 engine.LoadContract(contract, method, CallFlags.ReadOnly);
-                byte[] script = [];
+                Script script = Script.Empty;
                 if (args.Length > 0)
                 {
                     using var opScript = new ScriptBuilder();
                     for (int i = args.Length - 1; i >= 0; i--)
                         opScript.EmitPush(args[i]);
-                    script = opScript.ToArray();
+                    script = new Script(opScript.ToArray());
                     if (tx.Witnesses is null)
-                        tx.Witnesses = [new Witness { InvocationScript = script }];
-                    engine.LoadScript(new Script(script), -1, 0, p => p.CallFlags = CallFlags.None);
+                    {
+                        ReadOnlyMemory<byte> invocationScript = script;
+                        tx.Witnesses = [new Witness { InvocationScript = invocationScript.ToArray() }];
+                    }
+                    engine.LoadScript(script, -1, 0, p => p.CallFlags = CallFlags.None);
                 }
 
+                ReadOnlyMemory<byte> scriptBytes = script;
                 JObject json = new()
                 {
-                    ["script"] = Convert.ToBase64String(script),
+                    ["script"] = Convert.ToBase64String(scriptBytes.Span),
                     ["state"] = $"{engine.Execute()}",
                     // Gas consumed in the unit of datoshi, 1 GAS = 10^8 datoshi
                     ["gasconsumed"] = engine.FeeConsumed.ToString(),
@@ -312,7 +317,7 @@ namespace Neo.BlockchainToolkit.Plugins
             public readonly Dictionary<Guid, IIterator> Iterators = new();
             public DateTime StartTime;
 
-            public CompatSession(NeoSystem system, byte[] script, Signer[]? signers, Witness[]? witnesses, long datoshi)
+            public CompatSession(NeoSystem system, Script script, Signer[]? signers, Witness[]? witnesses, long datoshi)
             {
                 Snapshot = system.GetSnapshotCache();
                 if (signers == null)
@@ -325,7 +330,7 @@ namespace Neo.BlockchainToolkit.Plugins
                         + system.GetMaxValidUntilBlockIncrement(),
                     Signers = signers,
                     Attributes = [],
-                    Script = new Script(script),
+                    Script = script,
                     Witnesses = witnesses ?? []
                 };
                 Engine = ApplicationEngine.Run(script, Snapshot, container: tx, settings: system.Settings, gas: datoshi);

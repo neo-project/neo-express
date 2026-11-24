@@ -9,6 +9,7 @@
 // modifications are permitted.
 
 using Neo;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.VM.Types;
 using System.Numerics;
 

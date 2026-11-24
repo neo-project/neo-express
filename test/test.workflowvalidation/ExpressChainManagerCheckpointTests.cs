@@ -12,6 +12,7 @@ using FluentAssertions;
 using Moq;
 using Neo;
 using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.Cryptography.ECC;
 using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC.Models;

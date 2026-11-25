@@ -12,6 +12,7 @@ using Akka.Actor;
 using Neo;
 using Neo.BlockchainToolkit;
 using Neo.BlockchainToolkit.Models;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.BlockchainToolkit.SmartContract;
 using Neo.Cryptography.ECC;
 using Neo.Extensions;

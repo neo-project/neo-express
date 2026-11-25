@@ -10,6 +10,7 @@
 
 using FluentAssertions;
 using Neo;
+using Neo.BlockchainToolkit.Plugins;
 using Neo.Json;
 using Neo.Network.P2P.Payloads;
 using NeoExpress.Models;

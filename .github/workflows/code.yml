@@ -88,7 +88,7 @@ jobs:
         if: matrix.language == 'csharp'
         uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: "10.0.1xx"
+          dotnet-version: "11.0.1xx"
 
       - name: Nerdbank.GitVersioning
         uses: dotnet/nbgv@v0.5.2

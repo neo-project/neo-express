@@ -15,7 +15,10 @@ using Neo.Json;
 using Neo.Network.RPC;
 using Neo.Plugins;
 using Neo.Plugins.RpcServer;
+using Neo.Plugins.RpcServer.Model;
+using Neo.SmartContract;
 using Neo.SmartContract.Native;
+using Neo.VM;
 
 namespace NeoWorkNet.Commands;
 
@@ -27,6 +30,7 @@ class WorknetRpcServerPlugin : Plugin
     readonly CancellationTokenSource cancellationToken = new();
     NeoSystem? neoSystem;
     RpcServer? rpcServer;
+    RpcServerCompat? rpcServerCompat;
 
     public CancellationToken CancellationToken => cancellationToken.Token;
 
@@ -43,6 +47,7 @@ class WorknetRpcServerPlugin : Plugin
             throw new Exception($"{nameof(OnSystemLoaded)} already called");
         neoSystem = system;
         rpcServer = new RpcServer(system, settings);
+        rpcServerCompat = new RpcServerCompat(system, settings);
         rpcServer.RegisterMethods(this);
         rpcServer.StartRpcServer();
         base.OnSystemLoaded(system);
@@ -50,6 +55,7 @@ class WorknetRpcServerPlugin : Plugin
 
     public override void Dispose()
     {
+        rpcServerCompat?.Dispose();
         rpcServer?.Dispose();
         rpcClient.Dispose();
         cancellationToken.Dispose();
@@ -216,4 +222,47 @@ class WorknetRpcServerPlugin : Plugin
             throw new Neo.Network.RPC.RpcException(-32602, "Invalid params");
         return @params[index]!.AsString();
     }
+
+    // The Neo.Plugins.RpcServer 3.10.2 invoke handlers construct Transactions with the
+    // ReadOnlyMemory<byte>-typed Script property that Neo 3.11.2 replaced with Neo.VM.Script,
+    // so every invokescript/invokefunction/invokecontractverify request fails with
+    // MissingMethodException before the requested script ever runs. RpcServer.RegisterMethods
+    // overwrites same-named methods, so these handlers substitute 3.11.2-clean
+    // implementations (see RpcServerCompat). They can be removed once a Neo 3.11.x
+    // compatible Neo.Plugins.RpcServer package is published.
+    [RpcMethod]
+    public JToken InvokeScript(byte[] script, SignersAndWitnesses signersAndWitnesses = default, bool useDiagnostic = false)
+    {
+        var (signers, witnesses) = signersAndWitnesses;
+        return rpcServerCompat!.GetInvokeResult(new Script(script), signers, witnesses, useDiagnostic);
+    }
+
+    [RpcMethod]
+    public JToken InvokeFunction(UInt160 scriptHash, string operation,
+        ContractParameter[]? args = null, SignersAndWitnesses signersAndWitnesses = default, bool useDiagnostic = false)
+    {
+        var (signers, witnesses) = signersAndWitnesses;
+        Script script;
+        using (var sb = new ScriptBuilder())
+        {
+            script = new Script(sb.EmitDynamicCall(scriptHash, operation, args ?? []).ToArray());
+        }
+        return rpcServerCompat!.GetInvokeResult(script, signers, witnesses, useDiagnostic);
+    }
+
+    [RpcMethod]
+    public JToken InvokeContractVerify(UInt160 scriptHash, ContractParameter[]? args = null,
+        SignersAndWitnesses signersAndWitnesses = default)
+    {
+        var (signers, witnesses) = signersAndWitnesses;
+        return rpcServerCompat!.GetVerificationResult(scriptHash, args ?? [], signers, witnesses);
+    }
+
+    [RpcMethod]
+    public JToken TraverseIterator(Guid sessionId, Guid iteratorId, int count)
+        => rpcServerCompat!.TraverseIterator(sessionId, iteratorId, count);
+
+    [RpcMethod]
+    public JToken TerminateSession(Guid sessionId)
+        => rpcServerCompat!.TerminateSession(sessionId);
 }

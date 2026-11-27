@@ -46,17 +46,6 @@ static class Utility
         }
     }
 
-    public static IStore CreateNeoRocksDb(string path)
-    {
-        const string storeTypeName = "Neo.Plugins.Storage.Store";
-        var storeType = typeof(Neo.Plugins.Storage.RocksDBStore).Assembly.GetType(storeTypeName);
-        var storeCtor = storeType?.GetConstructor(new[] { typeof(string) });
-        var store = storeCtor?.Invoke(new object[] { path }) as IStore;
-        if (store == null)
-            throw new Exception($"Failed to create {storeTypeName} instance");
-        return store;
-    }
-
     public static Stream GetResourceStream(string name)
     {
         var assembly = typeof(DebugInfoTest).Assembly;

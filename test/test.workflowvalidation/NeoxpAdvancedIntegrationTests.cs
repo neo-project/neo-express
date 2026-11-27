@@ -298,6 +298,22 @@ public class NeoxpAdvancedIntegrationTests : IDisposable
             }
             ready.Should().BeTrue("RPC should respond within 30 seconds of neoxp run");
 
+            // The script pushes 1; the signer exercises transaction construction in the RPC handler.
+            using var invocation = new StringContent(
+                """
+                {"jsonrpc":"2.0","id":2,"method":"invokescript","params":["EQ==",[{"account":"0x0101010101010101010101010101010101010101","scopes":"CalledByEntry"}]]}
+                """,
+                Encoding.UTF8, "application/json");
+            using var invocationResponse = await http.PostAsync(
+                $"http://127.0.0.1:{rpcPort}", invocation, TestContext.Current.CancellationToken);
+            var invocationBody = await invocationResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            using var invocationJson = JsonDocument.Parse(invocationBody);
+            Assert.True(invocationJson.RootElement.TryGetProperty("result", out var invocationResult), invocationBody);
+            Assert.Equal("HALT", invocationResult.GetProperty("state").GetString());
+            var stackItem = Assert.Single(invocationResult.GetProperty("stack").EnumerateArray());
+            Assert.Equal("Integer", stackItem.GetProperty("type").GetString());
+            Assert.Equal("1", stackItem.GetProperty("value").GetString());
+
             var (transferExitCode1, _, transferError1) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "node1");
             transferExitCode1.Should().Be(0, transferError1);
             var (transferExitCode2, _, transferError2) = await _runCommand.RunNeoxpCommand("transfer", "10000", "gas", "genesis", "bob");

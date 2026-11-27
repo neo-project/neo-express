@@ -150,11 +150,12 @@ namespace Neo.BlockchainToolkit.Persistence
             return Seek(key, direction, db, columnFamily, null, store);
         }
 
-        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward)
+        public IEnumerable<(byte[] Key, byte[] Value)> Find(byte[]? key_prefix = null, SeekDirection direction = SeekDirection.Forward, int skip = 0)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(skip);
             if (disposed || db.Handle == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(RocksDbStore));
-            return Seek(key_prefix, direction, db, columnFamily, null, store);
+            return Seek(key_prefix, direction, db, columnFamily, null, store).Skip(skip);
         }
 
         public static IEnumerable<(byte[] Key, byte[] Value)> Seek(byte[]? key, SeekDirection direction, RocksDb db, ColumnFamilyHandle columnFamily, ReadOptions? readOptions, IReadOnlyStore<byte[], byte[]> store)

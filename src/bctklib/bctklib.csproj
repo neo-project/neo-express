@@ -23,5 +23,6 @@
         <PackageReference Include="System.IO.Abstractions" Version="23.0.1" />
         <PackageReference Include="Neo.Cryptography.MPT" Version="$(NeoModuleVersion)" />
         <PackageReference Include="Neo.Network.RPC.RpcClient" Version="$(NeoModuleVersion)" />
+        <PackageReference Include="Neo.Plugins.RpcServer" Version="$(NeoRpcServerVersion)" />
     </ItemGroup>
 </Project>

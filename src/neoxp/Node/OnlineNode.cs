@@ -91,7 +91,7 @@ namespace NeoExpress.Node
         public async Task<UInt256> ExecuteAsync(Wallet wallet, UInt160 accountHash, WitnessScope witnessScope, Script script, decimal additionalGas = 0, bool padInvokeEstimate = false)
         {
             var signers = new[] { new Signer { Account = accountHash, Scopes = witnessScope } };
-            var tm = await TransactionManager.MakeTransactionAsync(rpcClient, script, signers).ConfigureAwait(false);
+            var tm = await RpcClientCompat.MakeTransactionAsync(rpcClient, ProtocolSettings, script, signers).ConfigureAwait(false);
 
             tm.Tx.SystemFee += NodeUtility.SystemFeeDelta(additionalGas, padInvokeEstimate);
 
@@ -216,33 +216,30 @@ namespace NeoExpress.Node
 
         public async Task<Block> GetBlockAsync(UInt256 blockHash)
         {
-            var rpcBlock = await rpcClient.GetBlockAsync(blockHash.ToString()).ConfigureAwait(false);
-            return rpcBlock.Block;
+            return await RpcClientCompat.GetBlockAsync(rpcClient, ProtocolSettings, blockHash.ToString()).ConfigureAwait(false);
         }
 
         public async Task<Block> GetBlockAsync(uint blockIndex)
         {
-            var rpcBlock = await rpcClient.GetBlockAsync(blockIndex.ToString()).ConfigureAwait(false);
-            return rpcBlock.Block;
+            return await RpcClientCompat.GetBlockAsync(rpcClient, ProtocolSettings, blockIndex.ToString()).ConfigureAwait(false);
         }
 
         public async Task<ContractManifest> GetContractAsync(UInt160 scriptHash)
         {
-            var contractState = await rpcClient.GetContractStateAsync(scriptHash.ToString()).ConfigureAwait(false);
+            var contractState = await RpcClientCompat.GetContractStateAsync(rpcClient, scriptHash.ToString()).ConfigureAwait(false);
             return contractState.Manifest;
         }
 
         public async Task<Block> GetLatestBlockAsync()
         {
             var hash = await rpcClient.GetBestBlockHashAsync().ConfigureAwait(false);
-            var rpcBlock = await rpcClient.GetBlockAsync(hash).ConfigureAwait(false);
-            return rpcBlock.Block;
+            return await GetBlockAsync(hash).ConfigureAwait(false);
         }
 
         public async Task<(Transaction tx, Neo.Network.RPC.Models.RpcApplicationLog? appLog)> GetTransactionAsync(UInt256 txHash)
         {
             var hash = txHash.ToString();
-            var response = await rpcClient.GetRawTransactionAsync(hash).ConfigureAwait(false);
+            var response = await RpcClientCompat.GetRawTransactionAsync(rpcClient, ProtocolSettings, hash).ConfigureAwait(false);
             RpcApplicationLog? log = null;
             try
             {
@@ -413,7 +410,7 @@ namespace NeoExpress.Node
                 throw new ArgumentException("Contract storage update is only supported for single-node consensus");
             }
 
-            var state = await rpcClient.GetContractStateAsync(scripthash.ToString()).ConfigureAwait(false);
+            var state = await RpcClientCompat.GetContractStateAsync(rpcClient, scripthash.ToString()).ConfigureAwait(false);
             if (state is null)
             {
                 throw new Exception(NodeUtility.ContractNotFoundMessage(scripthash));

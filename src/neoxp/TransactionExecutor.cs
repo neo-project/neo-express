@@ -413,7 +413,7 @@ namespace NeoExpress
                         {
                             await WriteLineAsync($"{iop.Type}: ({iter.GetType().Name})").ConfigureAwait(false);
                             while (iter.Next())
-                                await WriteStackItemAsync(writer, iter.Value(), indent + 1).ConfigureAwait(false);
+                                await WriteStackItemAsync(writer, iter.Value(out _), indent + 1).ConfigureAwait(false);
                         }
                         break;
                 }

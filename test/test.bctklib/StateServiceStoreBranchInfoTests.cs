@@ -88,6 +88,53 @@ public class StateServiceStoreBranchInfoTests
         rpcClient.Methods.Should().ContainSingle("findstates");
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task GetBranchInfoAsync_only_accepts_empty_final_pages(bool includeContractNames, bool truncated)
+    {
+        const uint index = 7;
+        var rpcClient = new RecordingRpcClient((method, _) => method switch
+        {
+            "getversion" => JObject.Parse("""
+                {
+                    "tcpport": 10333, "nonce": 1, "useragent": "/test/",
+                    "protocol": {
+                        "network": 1, "addressversion": 53, "validatorscount": 1,
+                        "msperblock": 15000, "maxvaliduntilblockincrement": 5760,
+                        "maxtraceableblocks": 2102400, "maxtransactionsperblock": 512,
+                        "memorypoolmaxtransactions": 50000, "initialgasdistribution": 0,
+                        "hardforks": [], "seedlist": [], "standbycommittee": []
+                    }
+                }
+                """),
+            "getblockhash" => new JString(UInt256.Zero.ToString()),
+            "getstateroot" => new JObject
+            {
+                ["version"] = 0,
+                ["index"] = index,
+                ["roothash"] = UInt256.Zero.ToString(),
+                ["witnesses"] = new JArray()
+            },
+            "findstates" => new JObject { ["truncated"] = truncated, ["results"] = new JArray() },
+            _ => throw new InvalidOperationException($"Unexpected RPC method {method}")
+        });
+
+        if (truncated)
+        {
+            var error = await Record.ExceptionAsync(() => StateServiceStore.GetBranchInfoAsync(rpcClient, index, includeContractNames));
+            error.Should().BeOfType<InvalidOperationException>().Which.Message.Should().Be("State service returned an empty truncated page.");
+        }
+        else
+        {
+            var branch = await StateServiceStore.GetBranchInfoAsync(rpcClient, index, includeContractNames);
+            branch.Contracts.Count.Should().Be(includeContractNames ? 0 : NativeContract.Contracts.Count);
+        }
+        rpcClient.Methods.Should().ContainSingle(method => method == "findstates");
+    }
+
     static byte[] CreateContractHashKey(int contractId)
     {
         var key = new byte[5];

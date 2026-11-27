@@ -353,6 +353,36 @@ namespace test.bctklib
         }
 
         [Theory]
+        [InlineData("memory", false)]
+        [InlineData("memory", true)]
+        [InlineData("rocksdb", false)]
+        [InlineData("rocksdb", true)]
+        public async Task empty_truncated_page_leaves_no_partial_data_and_allows_retry(string kind, bool sync)
+        {
+            const string emptyTruncated = """{"jsonrpc":"2.0","id":1,"result":{"truncated":true,"results":[]}}""";
+            var pages = ProvenPages();
+            var handler = new ScriptedHandler(_ => Task.CompletedTask, n => n switch
+            {
+                1 => pages.first,
+                2 => emptyTruncated,
+                3 => pages.complete,
+                _ => throw new InvalidOperationException("Unexpected state-service request")
+            });
+            using var cache = CreateCache(kind);
+            using var store = CreateStore(cache, handler, pages.branch);
+
+            var error = await Record.ExceptionAsync(() => Start(store, sync).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken));
+
+            error.Should().BeOfType<InvalidOperationException>().Which.Message.Should().Be("State service returned an empty truncated page.");
+            handler.RequestCount.Should().Be(2);
+            IsCached(cache, CONTRACT_X).Should().BeFalse();
+
+            await Start(store, sync).WaitAsync(SafetyTimeout, TestContext.Current.CancellationToken);
+            handler.RequestCount.Should().Be(3);
+            AssertContents(cache);
+        }
+
+        [Theory]
         [InlineData("memory")]
         [InlineData("rocksdb")]
         public async Task cancellation_after_first_page_leaves_no_partial_data_and_allows_retry(string kind)
